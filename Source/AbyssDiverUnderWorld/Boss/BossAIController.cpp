@@ -38,7 +38,7 @@ void ABossAIController::OnPossess(APawn* InPawn)
 
 	if (IsValid(BehaviorTree))
 	{
-		UseBlackboard(BehaviorTree->BlackboardAsset, BlackboardComponent);
+		UseBlackboard(BehaviorTree->BlackboardAsset, (UBlackboardComponent*&)BlackboardComponent);
 		RunBehaviorTree(BehaviorTree);
 
 		LOG(TEXT("AIController Possess"));

@@ -29,16 +29,16 @@ public:
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|Blackboard")
-	UBlackboardComponent* BlackboardComponent;
+	TObjectPtr<UBlackboardComponent> BlackboardComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|AI")
-	ABossAIController* AIController;
+	TObjectPtr<ABossAIController> AIController;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Animation")
-	TArray<UAnimMontage*> NormalAttackAnimations;
+	TArray<TObjectPtr<UAnimMontage>> NormalAttackAnimations;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Animation")
-	TArray<UAnimMontage*> SpecialAttackAnimations;
+	TArray<TObjectPtr<UAnimMontage>> SpecialAttackAnimations;
 
 private:
 #pragma endregion
