@@ -12,18 +12,7 @@ public class AbyssDiverUnderWorld : ModuleRules
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 
-        PrivateIncludePaths.AddRange(new string[] {
-        "AbyssDiverUnderWorld/Framework",
-        "AbyssDiverUnderWorld/Character",
-        "AbyssDiverUnderWorld/Monster",
-        "AbyssDiverUnderWorld/Boss",
-        "AbyssDiverUnderWorld/Shop",
-        "AbyssDiverUnderWorld/UI",
-        "AbyssDiverUnderWorld/Equipment",
-        "AbyssDiverUnderWorld/Interactable",
-        "AbyssDiverUnderWorld/Inventory",
-        "AbyssDiverUnderWorld/LevelSequence"
-        });
+        PublicIncludePaths.AddRange(new string[] { "AbyssDiverUnderWorld" });
 
         // Uncomment if you are using Slate UI
         // PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
