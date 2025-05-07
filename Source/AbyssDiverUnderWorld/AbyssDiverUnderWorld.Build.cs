@@ -12,12 +12,25 @@ public class AbyssDiverUnderWorld : ModuleRules
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 
-		// Uncomment if you are using Slate UI
-		// PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
-		
-		// Uncomment if you are using online features
-		// PrivateDependencyModuleNames.Add("OnlineSubsystem");
+        PrivateIncludePaths.AddRange(new string[] {
+        "AbyssDiverUnderWorld/Framework",
+        "AbyssDiverUnderWorld/Character",
+        "AbyssDiverUnderWorld/Monster",
+        "AbyssDiverUnderWorld/Boss",
+        "AbyssDiverUnderWorld/Shop",
+        "AbyssDiverUnderWorld/UI",
+        "AbyssDiverUnderWorld/Equipment",
+        "AbyssDiverUnderWorld/Interactable",
+        "AbyssDiverUnderWorld/Inventory",
+        "AbyssDiverUnderWorld/LevelSequence"
+        });
 
-		// To include OnlineSubsystemSteam, add it to the plugins section in your uproject file with the Enabled attribute set to true
-	}
+        // Uncomment if you are using Slate UI
+        // PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
+
+        // Uncomment if you are using online features
+        // PrivateDependencyModuleNames.Add("OnlineSubsystem");
+
+        // To include OnlineSubsystemSteam, add it to the plugins section in your uproject file with the Enabled attribute set to true
+    }
 }
