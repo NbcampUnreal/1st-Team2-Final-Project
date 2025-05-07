@@ -28,7 +28,7 @@ protected:
 #pragma region Variable
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category="Stat")
-	class UStatComponent* StatComponent;
+	TObjectPtr<class UStatComponent> StatComponent;
 
 #pragma endregion
 };
