@@ -65,9 +65,9 @@ public:
 	UPROPERTY(ReplicatedUsing=OnRep_RemainingMines, EditAnywhere, Category = "Mining")
 	int32 RemainingMines = 3;
 	UPROPERTY(EditDefaultsOnly, Category = "Drops")
-	UDataTable* DropTable;
+	TObjectPtr<UDataTable> DropTable;
 	UPROPERTY(EditDefaultsOnly, Category = "Mining")
-	UParticleSystem* FractureFX;
+	TObjectPtr<UParticleSystem> FractureFX;
 	UPROPERTY(EditDefaultsOnly, Category = "Mining")
 	TObjectPtr<USoundBase> FractureSound;
 
