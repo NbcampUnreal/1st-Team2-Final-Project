@@ -2,5 +2,6 @@
 
 #include "AbyssDiverUnderWorld.h"
 #include "Modules/ModuleManager.h"
+DEFINE_LOG_CATEGORY(AbyssDiver);
 
 IMPLEMENT_PRIMARY_GAME_MODULE( FDefaultGameModuleImpl, AbyssDiverUnderWorld, "AbyssDiverUnderWorld" );
