@@ -52,16 +52,16 @@ public:
 #pragma region Getter Setter
 
 	/** 현재 최대 체력을 반환 */
-	FORCEINLINE float GetMaxHealth() const { return MaxHealth; }
+	FORCEINLINE int32 GetMaxHealth() const { return MaxHealth; }
 
 	/** 현재 체력을 반환 */
-	FORCEINLINE float GetCurrentHealth() const { return CurrentHealth; }
+	FORCEINLINE int32 GetCurrentHealth() const { return CurrentHealth; }
 
 	/** 기본 이동 속도를 반환 */
 	FORCEINLINE float GetMoveSpeed() const { return MoveSpeed; }
 
 	/** 공격력을 반환 */
-	FORCEINLINE float GetAttackPower() const { return AttackPower; }
+	FORCEINLINE int32 GetAttackPower() const { return AttackPower; }
 	
 #pragma endregion
 };
