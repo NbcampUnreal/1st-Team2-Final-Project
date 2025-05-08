@@ -20,6 +20,20 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
+#pragma region Methods
+
+public:
+
+	// 아군용 리턴 크기 조절
+	void ChangeFriendlyReturnSize(float NewSize);
+	// 적군용 리턴 크기 조절
+	void ChangeHostileReturnSize(float NewSize);
+	// 중립용 리턴 크기 조절
+	void ChangeNeutralReturnSize(float NewSize);
+
+#pragma endregion
+
+
 #pragma region Variables
 
 protected:
