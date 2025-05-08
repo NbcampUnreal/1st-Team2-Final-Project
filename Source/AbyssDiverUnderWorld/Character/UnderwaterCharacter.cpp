@@ -8,6 +8,7 @@
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/PhysicsVolume.h"
 
 AUnderwaterCharacter::AUnderwaterCharacter()
 {
@@ -15,11 +16,29 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	FirstPersonCameraComponent->SetupAttachment(GetCapsuleComponent());
 	FirstPersonCameraComponent->SetRelativeLocation(FVector(-10.f, 0.f, 60.f)); // Position the camera
 	FirstPersonCameraComponent->bUsePawnControlRotation = true;
+
+	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
+	{
+		Movement->SetMovementMode(MOVE_Swimming);
+		Movement->MaxSwimSpeed = 400.0f;
+	}
+	
+	// Temp: Player Mesh를 완전히 숨긴다.
+	// 추후 Player Mesh를 추가해서 보여주거나 일부분만 숨길 수 있는 방법에 대해서 찾아야 한다.
+	GetMesh()->SetOwnerNoSee(true);	
 }
 
 void AUnderwaterCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
+	{
+		// 현재 Physics Volume을 Water로 설정한다.
+		// 현재 Physics Volume이 Water가 아닐 경우 World의 Default Volume을 반환한다.
+		// Default Volume을 Water를 설정해서 Swim Mode를 사용할 수 있도록 한다.
+		Movement->GetPhysicsVolume()->bWaterVolume = true;
+	}
 }
 
 void AUnderwaterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -112,11 +131,35 @@ void AUnderwaterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 
 void AUnderwaterCharacter::Move(const FInputActionValue& InputActionValue)
 {
+	// 캐릭터의 XYZ 축을 기준으로 입력을 받는다.
+	const FVector MoveInput = InputActionValue.Get<FVector>();
+	
+	// Forward : Camera Forward with pitch
+	const FRotator ControlRotation = GetControlRotation();
+	const FVector ForwardVector = FRotationMatrix(ControlRotation).GetUnitAxis(EAxis::X);
 
+	// Right : Camera Right without pitch
+	const FRotator XYRotation = FRotator(0.f, ControlRotation.Yaw, 0.f);
+	const FVector RightVector = FRotationMatrix(XYRotation).GetUnitAxis(EAxis::Y);
+
+	if (!FMath::IsNearlyZero(MoveInput.X)) 
+	{
+		AddMovementInput(ForwardVector, MoveInput.X);
+	}
+
+	if (!FMath::IsNearlyZero(MoveInput.Y))
+	{
+		AddMovementInput(RightVector, MoveInput.Y);
+	}
 }
 
 void AUnderwaterCharacter::Look(const FInputActionValue& InputActionValue)
 {
+	FVector2d LookInput = InputActionValue.Get<FVector2d>();
+
+	// Y축은 반전되어서 들어오므로 그대로 적용한다.
+	AddControllerYawInput(LookInput.X);
+	AddControllerPitchInput(LookInput.Y);
 }
 
 void AUnderwaterCharacter::Fire(const FInputActionValue& InputActionValue)
