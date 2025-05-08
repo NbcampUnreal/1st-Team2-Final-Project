@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
@@ -8,6 +8,7 @@
 #include "ADOreRock.generated.h"
 
 class AADItemBase;
+class UNiagaraSystem;
 
 USTRUCT(BlueprintType)
 struct FDropEntry : public FTableRowBase
@@ -43,6 +44,7 @@ protected:
 
 #pragma region Method
 public:
+	UFUNCTION(BlueprintCallable)
 	virtual void Interact(AActor* InstigatorActor) override;
 	
 	void HandleMineRequest(APawn* InstigatorPawn);
@@ -50,6 +52,9 @@ public:
 	void SpawnDrops();
 
 	void OnAssetLoaded(FDropEntry* Entry, float Mass);
+
+	// 편향된 무게 한 점을 반환하는 함수
+	float SampleDropMass(float MinMass, float MaxMass) const;
 
 protected:
 	UFUNCTION()
@@ -67,18 +72,25 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Drops")
 	TObjectPtr<UDataTable> DropTable;
 	UPROPERTY(EditDefaultsOnly, Category = "Mining")
-	TObjectPtr<UParticleSystem> FractureFX;
-	UPROPERTY(EditDefaultsOnly, Category = "Mining")
 	TObjectPtr<USoundBase> FractureSound;
+	//도끼 타격 시 이펙트
+	UPROPERTY(EditDefaultsOnly, Category = "Mining")
+	TObjectPtr<UNiagaraSystem> PickAxeImpactFX;
+	// 암석 파편 이펙트
+	UPROPERTY(EditDefaultsOnly, Category = "Mining")
+	TObjectPtr<UNiagaraSystem> RockFragmentsFX;
 
 protected:
-
+	// 무게 샘플링 강도 (1.0 : 균등, 2.0 : 중간 편향, 클수록 편향이 강해짐)
+	UPROPERTY(EditAnywhere, Category = "Drops|Sampling")
+	float MassBiasExponent = 0.5f;
+	
 
 private:
 	TArray<FDropEntry*> CachedEntries;
 	TArray<float>  CumulativeWeights;
 	float TotalWeight = 0.f;
-	FStreamableManager Streamable;
+
 
 #pragma endregion
 

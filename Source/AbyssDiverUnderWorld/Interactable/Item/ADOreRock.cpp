@@ -1,7 +1,11 @@
-#include "Interactable/Item/ADOreRock.h"
+﻿#include "Interactable/Item/ADOreRock.h"
 #include "Net/UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"
 #include "ADItemBase.h"
+#include "ADExchangeableItem.h"
+#include "GameFramework/ProjectileMovementComponent.h"
+#include "NiagaraSystem.h"  
+#include "NiagaraFunctionLibrary.h"
 
 // Sets default values
 AADOreRock::AADOreRock()
@@ -43,12 +47,31 @@ void AADOreRock::HandleMineRequest(APawn* InstigatorPawn)
 	RemainingMines--;
 	OnRep_RemainingMines();
 
+	if (RemainingMines > 0)
+	{
+		if (PickAxeImpactFX)
+		{
+			UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+				GetWorld(),
+				PickAxeImpactFX,
+				GetActorLocation(),
+				FRotator::ZeroRotator
+			);
+		}
+	}
+
 	if (RemainingMines <= 0)
 	{
-		if (FractureFX)
+		if (RockFragmentsFX)
 		{
-			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), FractureFX, GetActorLocation());
+			UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+				GetWorld(),
+				RockFragmentsFX,
+				GetActorLocation(),
+				FRotator::ZeroRotator
+			);
 		}
+
 		if (FractureSound)
 		{
 			UGameplayStatics::PlaySoundAtLocation(this, FractureSound, GetActorLocation());
@@ -56,7 +79,7 @@ void AADOreRock::HandleMineRequest(APawn* InstigatorPawn)
 
 		SpawnDrops();
 
-		Destroy();
+		//Destroy();
 	}
 }
 
@@ -70,14 +93,14 @@ void AADOreRock::SpawnDrops()
 	FDropEntry* E = CachedEntries[Index];
 
 	int8 Count = FMath::RandRange(E->MinCount, E->MaxCount);
-	for (int32 i = 0; i < Count; i++)
+	for (int8 i = 0; i < Count; i++)
 	{
-		float Mass = FMath::FRandRange(E->MinMass, E->MaxMass);
+		float Mass = SampleDropMass(E->MinMass, E->MaxMass);
 		FSoftObjectPath Path = E->ItemClass.ToSoftObjectPath();
-		Streamable.RequestAsyncLoad(
+		UAssetManager& AssetMgr = UAssetManager::Get();
+		AssetMgr.GetStreamableManager().RequestAsyncLoad(
 			Path,
-			FStreamableDelegate::CreateUObject(
-				this, &AADOreRock::OnAssetLoaded, E, Mass)
+			FStreamableDelegate::CreateUObject(this, &AADOreRock::OnAssetLoaded, E, Mass)
 		);
 	}
 }
@@ -86,16 +109,45 @@ void AADOreRock::OnAssetLoaded(FDropEntry* Entry, float Mass)
 {
 	if (UClass* Class = Entry->ItemClass.Get())
 	{
+		const float SpawnHeight = 100.f;  // 스폰 높이
+		FVector SpawnLoc = GetActorLocation() + FVector(0, 0, SpawnHeight);
+
 		FActorSpawnParameters Params;
 		AADItemBase* Item = GetWorld()->SpawnActor<AADItemBase>(
 			Class,
-			GetActorLocation(),
+			SpawnLoc,
 			FRotator::ZeroRotator,
 			Params
 		);
+		Item->SetItemMass(Mass);
+
+		// 스폰 이후 발사체 컴포넌트 활성화
+		if (AADExchangeableItem* ExItem = Cast<AADExchangeableItem>(Item))
+		{
+			FVector RandomXY = FVector(FMath::RandRange(-100, 100), FMath::RandRange(-100, 100), 0);
+			FVector DropDir = RandomXY + FVector(0, 0, -200); // 아래쪽으로 힘
+			ExItem->DropMovement->Velocity = DropDir;
+			ExItem->DropMovement->Activate();
+		}
+		
+
 		// TODO
 		// Item->SetMass(Mass);
 	}
+
+	Destroy();
+}
+
+float AADOreRock::SampleDropMass(float MinMass, float MaxMass) const
+{
+	// 균등 난수 생성
+	float u = FMath::FRand();
+
+	// pow(u, α) → 저울질 편향
+	float biased = FMath::Pow(u, MassBiasExponent);
+
+	// 편향된 값을 [MinMass, MaxMass] 구간에 선형 매핑
+	return FMath::Lerp(MinMass, MaxMass, biased);
 }
 
 void AADOreRock::OnRep_RemainingMines()
