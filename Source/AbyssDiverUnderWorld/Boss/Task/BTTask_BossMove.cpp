@@ -19,6 +19,7 @@ EBTNodeResult::Type UBTTask_BossMove::ExecuteTask(UBehaviorTreeComponent& OwnerC
 	if (!IsValid(Boss)) return EBTNodeResult::Failed;
 
 	Boss->Move();
+	Boss->SetMoveSpeed(MoveSpeedMultiplier);
 
 	return EBTNodeResult::Succeeded;
 }
