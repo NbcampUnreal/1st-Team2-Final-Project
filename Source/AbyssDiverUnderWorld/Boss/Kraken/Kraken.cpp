@@ -7,8 +7,6 @@ AKraken::AKraken()
 void AKraken::BeginPlay()
 {
 	Super::BeginPlay();
-
-	Move();
 }
 
 void AKraken::Move()
@@ -24,15 +22,10 @@ void AKraken::Move()
 	FlyingMoveToTarget(TargetLocation);
 
 	++CurrentPatrolPointIndex;
-
-	SetMoveStopTimer();
 }
 
 void AKraken::MoveStop()
 {
 	Super::MoveStop();
-
 	FlyingMoveToTargetStop();
-	
-	SetMoveTimer();
 }

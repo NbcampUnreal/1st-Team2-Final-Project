@@ -25,9 +25,6 @@ public:
 	virtual void MoveStop();
 	
 protected:
-	virtual void SetMoveTimer();
-	virtual void SetMoveStopTimer();
-
 	UFUNCTION(NetMulticast, Reliable)
 	void M_PlayAnimation(UAnimMontage* AnimMontage, float InPlayRate = 1, FName StartSectionName = NAME_None);
 	void M_PlayAnimation_Implementation(UAnimMontage* AnimMontage, float InPlayRate = 1, FName StartSectionName = NAME_None);
@@ -58,7 +55,6 @@ protected:
 	TArray<TObjectPtr<UAnimMontage>> SpecialAttackAnimations;
 
 private:
-	FTimerHandle MovementTimer;
 	
 #pragma endregion
 
