@@ -40,11 +40,11 @@ private:
 public:
 	// 드롭 모션 적용을 위한 발사체 컴포넌트
 	UPROPERTY(VisibleAnywhere)
-	UProjectileMovementComponent* DropMovement;
+	TObjectPtr<UProjectileMovementComponent> DropMovement;
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Exchange")
-	UStaticMeshComponent* MeshComponent;
+	TObjectPtr<UStaticMeshComponent> MeshComponent;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Exchange")
 	float Mass = 1.f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Exchange")

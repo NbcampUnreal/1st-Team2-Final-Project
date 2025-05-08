@@ -75,10 +75,10 @@ public:
 	TObjectPtr<USoundBase> FractureSound;
 	//도끼 타격 시 이펙트
 	UPROPERTY(EditDefaultsOnly, Category = "Mining")
-	UNiagaraSystem* PickAxeImpactFX;
+	TObjectPtr<UNiagaraSystem> PickAxeImpactFX;
 	// 암석 파편 이펙트
 	UPROPERTY(EditDefaultsOnly, Category = "Mining")
-	UNiagaraSystem* RockFragmentsFX;
+	TObjectPtr<UNiagaraSystem> RockFragmentsFX;
 
 protected:
 	// 무게 샘플링 강도 (1.0 : 균등, 2.0 : 중간 편향, 클수록 편향이 강해짐)
