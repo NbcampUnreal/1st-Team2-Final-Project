@@ -8,6 +8,7 @@ ABoss::ABoss()
 	BlackboardComponent = nullptr;
 	AIController = nullptr;
 	TargetPlayer = nullptr;
+	LastDetectedLocation = FVector::ZeroVector;
 
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 }
@@ -22,6 +23,17 @@ void ABoss::BeginPlay()
 	{
 		BlackboardComponent = AIController->GetBlackboardComponent();
 	}
+}
+
+void ABoss::RotationToTarget()
+{
+	if (!IsValid(TargetPlayer)) return;
+
+	const FRotator CurrentRotation = GetActorRotation();
+	const FRotator TargetRotation = (TargetPlayer->GetActorLocation() - GetActorLocation()).Rotation();
+	const FRotator NewRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, GetWorld()->GetDeltaSeconds(), 2.0f);
+	
+	SetActorRotation(NewRotation);
 }
 
 void ABoss::Move()

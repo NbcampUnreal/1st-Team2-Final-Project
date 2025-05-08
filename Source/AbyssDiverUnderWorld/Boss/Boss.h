@@ -18,6 +18,9 @@ protected:
 
 #pragma region Method
 public:
+	/** 보스를 타겟 방향으로 회전시키는 함수 */
+	virtual void RotationToTarget();
+	
 	/** 보스를 움직이게 하고 Move Animation 재생 */
 	virtual void Move();
 
@@ -52,6 +55,9 @@ public:
 	FVector LastDetectedLocation;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Animation")
+	TObjectPtr<UAnimMontage> DetectedAnimation;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Animation")
 	TObjectPtr<UAnimMontage> IdleAnimation;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Animation")
@@ -78,6 +84,7 @@ private:
 public:
 	APawn* GetTarget();
 	void SetTarget(APawn* Target);
+	
 	void SetLastDetectedLocation(const FVector& InLastDetectedLocation);
 
 #pragma endregion
