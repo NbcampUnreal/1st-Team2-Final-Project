@@ -11,12 +11,11 @@ UBTTask_BossChasing::UBTTask_BossChasing()
 {
 	NodeName = TEXT("Boss Chasing");
 	bNotifyTick = true;
-	bTickIntervals = true;
 }
 
 EBTNodeResult::Type UBTTask_BossChasing::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
-	AAIController* AIController = OwnerComp.GetAIOwner();
+	ABossAIController* AIController = Cast<ABossAIController>(OwnerComp.GetAIOwner());
 	if (!IsValid(AIController)) return EBTNodeResult::Failed;
 
 	ACharacter* Character = AIController->GetCharacter();
@@ -25,6 +24,7 @@ EBTNodeResult::Type UBTTask_BossChasing::ExecuteTask(UBehaviorTreeComponent& Own
 	ABoss* Boss = Cast<ABoss>(Character);
 	if (!IsValid(Boss)) return EBTNodeResult::Failed;
 
+	AIController->SetChasingVisionAngle();
 	Boss->M_PlayAnimation(Boss->MoveAnimation);
 	Boss->SetMoveSpeed(MoveSpeedMultiplier);
 	
