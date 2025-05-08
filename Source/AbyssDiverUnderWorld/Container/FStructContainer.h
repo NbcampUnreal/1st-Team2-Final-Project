@@ -1,6 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "FStructContainer.generated.h"
@@ -10,11 +8,18 @@ struct FItemData
 {
     GENERATED_BODY()
 
-    UPROPERTY(EditAnywhere) FName Name;
+    UPROPERTY(EditAnywhere) 
+    FName Name;
 
-    UPROPERTY(EditAnywhere) int8 Id;
+    UPROPERTY(EditAnywhere) 
+    uint8 Id;
 
-    UPROPERTY(EditAnywhere) int8 Quantity;
+    UPROPERTY(EditAnywhere) 
+    uint8 Quantity;
 
-    UPROPERTY(EditAnywhere) int16 Amount;
+    UPROPERTY(EditAnywhere) 
+    int32 Amount;
+
+    UPROPERTY(EditAnywhere)
+    float Mass;
 };
