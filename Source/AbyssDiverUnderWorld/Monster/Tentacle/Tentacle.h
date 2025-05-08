@@ -6,9 +6,7 @@
 #include "Monster/Monster.h"
 #include "Tentacle.generated.h"
 
-/**
- * 
- */
+
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API ATentacle : public AMonster
 {

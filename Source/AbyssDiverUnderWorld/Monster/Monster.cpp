@@ -3,3 +3,10 @@
 
 #include "Monster/Monster.h"
 
+void AMonster::BeginPlay()
+{
+}
+
+AMonster::AMonster()
+{
+}
