@@ -3,3 +3,14 @@
 
 #include "Framework/ADPlayerController.h"
 
+#include "EnhancedInputSubsystems.h"
+
+void AADPlayerController::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (UEnhancedInputLocalPlayerSubsystem* Subsystem = GetLocalPlayer()->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
+	{
+		Subsystem->AddMappingContext(DefaultMappingContext, 0);
+	}
+}
