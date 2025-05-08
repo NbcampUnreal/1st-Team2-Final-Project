@@ -24,6 +24,8 @@ protected:
 
 #pragma region Method
 public:
+	void SetDefaultVisionAngle();
+	void SetChasingVisionAngle();
 	
 protected:
 	UFUNCTION()
@@ -58,6 +60,12 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI|Target")
 	TArray<TObjectPtr<AActor>> DetectedPlayers;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Sight")
+	float DefaultVisionAngle;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Sight")
+	float ChasingVisionAngle;
 
 private:
 	static const FName BossStateKey;

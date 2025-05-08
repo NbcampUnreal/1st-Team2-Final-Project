@@ -14,6 +14,9 @@ ABossAIController::ABossAIController()
 	AIPerceptionComponent = CreateDefaultSubobject<UAIPerceptionComponent>("PerceptionComponent");
 	SightConfig = CreateDefaultSubobject<UAISenseConfig_Sight>("SightConfig");
 
+	DefaultVisionAngle = 90.0f;
+	ChasingVisionAngle = 150.0f;
+
 	// 시야 설정
 	SightConfig->SightRadius = 5000.0f;					// 시야 범위
 	SightConfig->LoseSightRadius = 6000.0f;				// 시야 상실 범위
@@ -50,6 +53,20 @@ void ABossAIController::OnPossess(APawn* InPawn)
 		UseBlackboard(BehaviorTree->BlackboardAsset, (UBlackboardComponent*&)BlackboardComponent);
 		RunBehaviorTree(BehaviorTree);
 	}
+}
+
+void ABossAIController::SetDefaultVisionAngle()
+{
+	UAISenseConfig_Sight* SightConfigInstance = Cast<UAISenseConfig_Sight>(AIPerceptionComponent->GetSenseConfig(UAISense::GetSenseID(UAISense_Sight::StaticClass())));
+	SightConfigInstance->PeripheralVisionAngleDegrees = DefaultVisionAngle;
+	AIPerceptionComponent->ConfigureSense(*SightConfigInstance);
+}
+
+void ABossAIController::SetChasingVisionAngle()
+{
+	UAISenseConfig_Sight* SightConfigInstance = Cast<UAISenseConfig_Sight>(AIPerceptionComponent->GetSenseConfig(UAISense::GetSenseID(UAISense_Sight::StaticClass())));
+	SightConfigInstance->PeripheralVisionAngleDegrees = ChasingVisionAngle;
+	AIPerceptionComponent->ConfigureSense(*SightConfigInstance);
 }
 
 void ABossAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
