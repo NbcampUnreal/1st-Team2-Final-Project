@@ -20,6 +20,8 @@ protected:
 public:
 	virtual void Move() override;
 	virtual void MoveStop() override;
+	virtual void MoveToTarget() override;
+	virtual void MoveToLastDetectedLocation() override;
 	
 protected:
 	UFUNCTION(BlueprintImplementableEvent)
