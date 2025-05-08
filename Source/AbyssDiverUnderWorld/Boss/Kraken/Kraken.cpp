@@ -1,5 +1,7 @@
 #include "Boss/Kraken/Kraken.h"
 
+#include "AbyssDiverUnderWorld.h"
+
 AKraken::AKraken()
 {
 }
@@ -28,4 +30,18 @@ void AKraken::MoveStop()
 {
 	Super::MoveStop();
 	FlyingMoveToTargetStop();
+}
+
+void AKraken::MoveToTarget()
+{
+	Super::MoveToTarget();
+	if (!IsValid(TargetPlayer)) return;
+	FlyingMoveToTarget(TargetPlayer->GetActorLocation());
+	LOG(TEXT("%s"), *TargetPlayer->GetActorLocation().ToString())
+}
+
+void AKraken::MoveToLastDetectedLocation()
+{
+	Super::MoveToLastDetectedLocation();
+	FlyingMoveToTarget(LastDetectedLocation);
 }

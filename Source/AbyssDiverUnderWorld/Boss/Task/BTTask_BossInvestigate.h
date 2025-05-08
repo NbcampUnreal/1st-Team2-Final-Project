@@ -2,20 +2,16 @@
 
 #include "CoreMinimal.h"
 #include "BehaviorTree/Tasks/BTTask_BlackboardBase.h"
-#include "BTTask_BossMove.generated.h"
+#include "BTTask_BossInvestigate.generated.h"
 
 UCLASS()
-class ABYSSDIVERUNDERWORLD_API UBTTask_BossMove : public UBTTask_BlackboardBase
+class ABYSSDIVERUNDERWORLD_API UBTTask_BossInvestigate : public UBTTask_BlackboardBase
 {
 	GENERATED_BODY()
 
 public:
-	UBTTask_BossMove();
+	UBTTask_BossInvestigate();
 
 private:
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
-
-protected:
-	UPROPERTY(EditAnywhere)
-	float MoveSpeedMultiplier = 1.0f;
 };

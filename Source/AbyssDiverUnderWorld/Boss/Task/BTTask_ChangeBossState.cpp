@@ -12,7 +12,7 @@ UBTTask_ChangeBossState::UBTTask_ChangeBossState()
 
 EBTNodeResult::Type UBTTask_ChangeBossState::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
-    OwnerComp.GetBlackboardComponent()->SetValueAsEnum("BossState", static_cast<uint8>(BossState));
+    OwnerComp.GetBlackboardComponent()->SetValueAsEnum(BossStateKey, static_cast<uint8>(BossState));
 
 	return EBTNodeResult::Succeeded;
 }

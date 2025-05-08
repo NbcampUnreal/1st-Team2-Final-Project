@@ -1,13 +1,14 @@
-#include "Boss/Task/BTTask_BossMove.h"
+#include "Boss/Task/BTTask_BossInvestigate.h"
+#include "AbyssDiverUnderWorld.h"
 #include "AIController.h"
 #include "Boss/Boss.h"
 
-UBTTask_BossMove::UBTTask_BossMove()
+UBTTask_BossInvestigate::UBTTask_BossInvestigate()
 {
-	NodeName = TEXT("Boss Move");
+	NodeName = TEXT("Boss Investigate");
 }
 
-EBTNodeResult::Type UBTTask_BossMove::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
+EBTNodeResult::Type UBTTask_BossInvestigate::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
 	AAIController* AIController = OwnerComp.GetAIOwner();
 	if (!IsValid(AIController)) return EBTNodeResult::Failed;
@@ -18,8 +19,9 @@ EBTNodeResult::Type UBTTask_BossMove::ExecuteTask(UBehaviorTreeComponent& OwnerC
 	ABoss* Boss = Cast<ABoss>(Character);
 	if (!IsValid(Boss)) return EBTNodeResult::Failed;
 
-	Boss->Move();
-	Boss->SetMoveSpeed(MoveSpeedMultiplier);
+	Boss->MoveToLastDetectedLocation();
+
+	LOG(TEXT("Investigate Started !"));
 
 	return EBTNodeResult::Succeeded;
 }
