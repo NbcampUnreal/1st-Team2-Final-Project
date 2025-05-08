@@ -34,16 +34,6 @@ void ABoss::MoveStop()
 	PlayAnimMontage(IdleAnimation);
 }
 
-void ABoss::SetMoveTimer()
-{
-	GetWorldTimerManager().SetTimer(MovementTimer, this, &ABoss::Move, 5.0f, false);
-}
-
-void ABoss::SetMoveStopTimer()
-{
-	GetWorldTimerManager().SetTimer(MovementTimer, this, &ABoss::MoveStop, 5.0f, false);
-}
-
 void ABoss::M_PlayAnimation_Implementation(class UAnimMontage* AnimMontage, float InPlayRate, FName StartSectionName)
 {
 	PlayAnimMontage(AnimMontage, InPlayRate, StartSectionName);
