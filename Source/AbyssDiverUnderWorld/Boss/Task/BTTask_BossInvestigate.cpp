@@ -21,8 +21,6 @@ EBTNodeResult::Type UBTTask_BossInvestigate::ExecuteTask(UBehaviorTreeComponent&
 
 	AIController->SetDefaultVisionAngle();
 	Boss->MoveToLastDetectedLocation();
-
-	LOG(TEXT("Investigate Started !"));
-
+	
 	return EBTNodeResult::Succeeded;
 }

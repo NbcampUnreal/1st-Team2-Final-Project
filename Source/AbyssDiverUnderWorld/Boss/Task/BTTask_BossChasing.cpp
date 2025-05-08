@@ -11,7 +11,6 @@ UBTTask_BossChasing::UBTTask_BossChasing()
 {
 	NodeName = TEXT("Boss Chasing");
 	bNotifyTick = true;
-	bTickIntervals = true;
 }
 
 EBTNodeResult::Type UBTTask_BossChasing::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
