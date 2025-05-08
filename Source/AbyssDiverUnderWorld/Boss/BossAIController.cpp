@@ -89,9 +89,11 @@ void ABossAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Sti
 
 void ABossAIController::M_AddDetectedPlayer_Implementation(AActor* Target)
 {
-	DetectedPlayers.Add(Target);
-
-	//@TODO: 가까운 플레이어를 추적하도록 하는 로직 구현
+	// 감지된 플레이어가 0명이하인 경우
+	// Roar 애니메이션을 재생한지 30초가 지난 경우
+	// Roar 애니메이션 재생 후 체이스 모드로 전이
+	// 감지된 플레이어가 1명 이상인 경우는 그냥 넘어가자
+	// 최초로 감지된 플레이어를 우선 추적하도록 !
 
 	ACharacter* ABCharacter = GetCharacter();
 	if (!IsValid(ABCharacter)) return;
@@ -104,9 +106,14 @@ void ABossAIController::M_AddDetectedPlayer_Implementation(AActor* Target)
 	{
 		LOG(TEXT(" [AI] Target Perception Updated: %s"), *Player->GetName());
 		Boss->SetTarget((Player));
-	
-		BlackboardComponent->SetValueAsEnum(BossStateKey, static_cast<uint8>(EBossState::Chase));	
 	}
+	
+	if (DetectedPlayers.Num() <= 0)
+	{
+		BlackboardComponent->SetValueAsEnum(BossStateKey, static_cast<uint8>(EBossState::Detected));
+	}
+
+	DetectedPlayers.Add(Target);
 	
 }
 
