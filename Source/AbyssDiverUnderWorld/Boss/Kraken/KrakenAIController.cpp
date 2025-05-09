@@ -8,8 +8,6 @@ AKrakenAIController::AKrakenAIController()
 void AKrakenAIController::BeginPlay()
 {
 	Super::BeginPlay();
-
-	LOG(TEXT("KrakenAIController BeginPlay"));
 }
 
 void AKrakenAIController::OnPossess(APawn* InPawn)

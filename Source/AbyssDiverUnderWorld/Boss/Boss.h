@@ -18,32 +18,44 @@ protected:
 
 #pragma region Method
 public:
+	/** 보스를 타겟 방향으로 회전시키는 함수 */
+	virtual void RotationToTarget();
+	
 	/** 보스를 움직이게 하고 Move Animation 재생 */
 	virtual void Move();
 
 	/** 보스의 움직임을 정지하고 Idle Animation 재생 */
 	virtual void MoveStop();
-	
-protected:
-	virtual void SetMoveTimer();
-	virtual void SetMoveStopTimer();
 
+	/** 보스가 감지한 타겟을 추적하는 함수 */
+	virtual void MoveToTarget();
+
+	/** 보스가 마지막으로 감지한 타겟의 위치를 추적하는 함수 */
+	virtual void MoveToLastDetectedLocation();
+
+	/** 보스의 이동속도를 설정하는 함수 */
+	UFUNCTION(BlueprintImplementableEvent)
+	void SetMoveSpeed(float Speed);
+	
 	UFUNCTION(NetMulticast, Reliable)
 	void M_PlayAnimation(UAnimMontage* AnimMontage, float InPlayRate = 1, FName StartSectionName = NAME_None);
 	void M_PlayAnimation_Implementation(UAnimMontage* AnimMontage, float InPlayRate = 1, FName StartSectionName = NAME_None);
+	
+protected:
 private:
 	
 #pragma endregion
 
 #pragma region Variable
 public:
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Target")
+	TObjectPtr<APawn> TargetPlayer;
 
-protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|Blackboard")
-	TObjectPtr<UBlackboardComponent> BlackboardComponent;
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Target")
+	FVector LastDetectedLocation;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|AI")
-	TObjectPtr<ABossAIController> AIController;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Animation")
+	TObjectPtr<UAnimMontage> DetectedAnimation;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Animation")
 	TObjectPtr<UAnimMontage> IdleAnimation;
@@ -56,14 +68,24 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Animation")
 	TArray<TObjectPtr<UAnimMontage>> SpecialAttackAnimations;
+	
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|Blackboard")
+	TObjectPtr<UBlackboardComponent> BlackboardComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|AI")
+	TObjectPtr<ABossAIController> AIController;
 
 private:
-	FTimerHandle MovementTimer;
 	
 #pragma endregion
 
 #pragma region Getter, Setter
 public:
+	APawn* GetTarget();
+	void SetTarget(APawn* Target);
+	
+	void SetLastDetectedLocation(const FVector& InLastDetectedLocation);
 
 #pragma endregion
 	

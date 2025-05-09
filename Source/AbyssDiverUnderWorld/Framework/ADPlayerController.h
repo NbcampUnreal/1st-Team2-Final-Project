@@ -13,5 +13,17 @@ UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADPlayerController : public APlayerController
 {
 	GENERATED_BODY()
+
+	AADPlayerController();
 	
+protected:
+	virtual void BeginPlay() override;
+	
+#pragma region Variable
+
+private:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputMappingContext> DefaultMappingContext;
+	
+#pragma endregion 
 };

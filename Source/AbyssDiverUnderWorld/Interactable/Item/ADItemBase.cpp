@@ -1,4 +1,4 @@
-#include "Interactable/Item/ADItemBase.h"
+ï»¿#include "Interactable/Item/ADItemBase.h"
 #include "AbyssDiverUnderWorld.h"
 #include "Net/UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"
@@ -30,7 +30,7 @@ void AADItemBase::HandlePickup(APawn* InstigatorPawn)
 	if (!HasAuthority() || !InstigatorPawn) return;
 
 	LOG(TEXT("Add to Inventory"));
-	// TODO ÀÎº¥Åä¸® Ãß°¡ ·ÎÁ÷°ú È¹µæ È¿°ú Ãß°¡
+	// TODO ì¸ë²¤í† ë¦¬ ì¶”ê°€ ë¡œì§ê³¼ íšë“ íš¨ê³¼ ì¶”ê°€
 
 
 	Destroy();
@@ -38,13 +38,18 @@ void AADItemBase::HandlePickup(APawn* InstigatorPawn)
 
 void AADItemBase::OnRep_ItemData()
 {
-	// TODO UI ¾÷µ¥ÀÌÆ®
+	// TODO UI ì—…ë°ì´íŠ¸
 }
 
 void AADItemBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AADItemBase, ItemData);
+}
+
+void AADItemBase::SetItemMass(float InMass)
+{
+	ItemData.Mass = InMass;
 }
 
 

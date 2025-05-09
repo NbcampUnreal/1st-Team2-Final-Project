@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
@@ -21,14 +21,16 @@ protected:
 public:	
 	virtual void Interact(AActor* InstigatorActor) override;
 
-	void HandlePickup(APawn* InstigatorPawn);
+	virtual void HandlePickup(APawn* InstigatorPawn);
 
 protected:
 	UFUNCTION()
 	void OnRep_ItemData();
 
-private:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+private:
+	
 
 #pragma endregion
 
@@ -37,8 +39,8 @@ public:
 	UPROPERTY(ReplicatedUsing = OnRep_ItemData, EditAnywhere, Category = "Item")
 	FItemData ItemData;
 
-	// TODO : ÀÎº¥Åä¸® ÄÄÆ÷³ÍÆ® ÂüÁ¶
-	// TODO : PickupSound µî È¹µæ ½Ã È¿°ú Ãß°¡
+	// TODO : ì¸ë²¤í† ë¦¬ ì»´í¬ë„ŒíŠ¸ ì°¸ì¡°
+	// TODO : PickupSound ë“± íšë“ ì‹œ íš¨ê³¼ ì¶”ê°€
 protected:
 	
 
@@ -48,7 +50,7 @@ private:
 
 #pragma region Getter, Setteer
 public:
-
+	void SetItemMass(float InMass);
 #pragma endregion
 
 };
