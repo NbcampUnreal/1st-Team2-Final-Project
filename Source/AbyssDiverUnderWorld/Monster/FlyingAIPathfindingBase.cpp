@@ -15,7 +15,7 @@ void UFlyingAIPathfindingBase::BeginPlay()
 	Super::BeginPlay();
 }
 
-void UFlyingAIPathfindingBase::Server_MoveTo_Implementation(FVector TargetLocation)
+void UFlyingAIPathfindingBase::S_MoveTo_Implementation(FVector TargetLocation)
 {
 	MoveTo(TargetLocation);
 }

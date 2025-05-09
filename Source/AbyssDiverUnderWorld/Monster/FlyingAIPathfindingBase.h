@@ -21,8 +21,8 @@ protected:
 #pragma region Method
 public:
 	UFUNCTION(Server, Reliable)
-	void Server_MoveTo(FVector TargetLocation);
-	void Server_MoveTo_Implementation(FVector TargetLocation); // RPC
+	void S_MoveTo(FVector TargetLocation);
+	void S_MoveTo_Implementation(FVector TargetLocation); // RPC
 
 	UFUNCTION(BlueprintNativeEvent)
 	void MoveTo(FVector TargetLocation);

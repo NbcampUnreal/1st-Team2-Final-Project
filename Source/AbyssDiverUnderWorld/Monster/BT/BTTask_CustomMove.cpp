@@ -31,7 +31,7 @@ EBTNodeResult::Type UBTTask_CustomMove::ExecuteTask(UBehaviorTreeComponent& Owne
 
 	if (AIPawn->HasAuthority())
 	{
-		PathfindingComp->Server_MoveTo(TargetLocation);
+		PathfindingComp->S_MoveTo(TargetLocation);
 	}
 	else
 	{
