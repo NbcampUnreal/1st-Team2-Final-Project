@@ -9,6 +9,7 @@
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PhysicsVolume.h"
+#include "GameFramework/SpringArmComponent.h"
 
 AUnderwaterCharacter::AUnderwaterCharacter()
 {
@@ -25,7 +26,19 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	
 	// Temp: Player Mesh를 완전히 숨긴다.
 	// 추후 Player Mesh를 추가해서 보여주거나 일부분만 숨길 수 있는 방법에 대해서 찾아야 한다.
-	// GetMesh()->SetOwnerNoSee(true);	
+	// GetMesh()->SetOwnerNoSee(true);
+
+	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
+	CameraBoom->SetupAttachment(GetCapsuleComponent());
+	CameraBoom->TargetArmLength = 300.f;
+	CameraBoom->bUsePawnControlRotation = false;
+
+	ThirdPersonCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("ThirdPersonCamera"));
+	ThirdPersonCameraComponent->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
+	ThirdPersonCameraComponent->bUsePawnControlRotation = false;
+
+	bUseDebugCamera = false;
+	ThirdPersonCameraComponent->SetActive(false);
 }
 
 void AUnderwaterCharacter::BeginPlay()
@@ -39,6 +52,8 @@ void AUnderwaterCharacter::BeginPlay()
 		// Default Volume을 Water를 설정해서 Swim Mode를 사용할 수 있도록 한다.
 		Movement->GetPhysicsVolume()->bWaterVolume = true;
 	}
+
+	SetDebugCameraMode(bUseDebugCamera);
 }
 
 void AUnderwaterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -182,3 +197,23 @@ void AUnderwaterCharacter::Radar(const FInputActionValue& InputActionValue)
 {
 }
 
+void AUnderwaterCharacter::SetDebugCameraMode(bool bDebugCameraEnable)
+{
+	bUseDebugCamera = bDebugCameraEnable;
+	if (bUseDebugCamera)
+	{
+		FirstPersonCameraComponent->SetActive(false);
+		ThirdPersonCameraComponent->SetActive(true);
+	}
+	else
+	{
+		FirstPersonCameraComponent->SetActive(true);
+		ThirdPersonCameraComponent->SetActive(false);
+	}
+}
+
+void AUnderwaterCharacter::ToggleDebugCameraMode()
+{
+	bUseDebugCamera = !bUseDebugCamera;
+	SetDebugCameraMode(bUseDebugCamera);
+}
