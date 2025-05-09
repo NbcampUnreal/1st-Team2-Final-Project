@@ -2,6 +2,8 @@
 #include "AbyssDiverUnderWorld.h"
 #include "EBossState.h"
 #include "BehaviorTree/BlackboardComponent.h"
+#include "Character/StatComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 const FName ABoss::BossStateKey = "BossState";
 
@@ -22,11 +24,40 @@ void ABoss::BeginPlay()
 {
 	Super::BeginPlay();
 
+	AnimInstance = GetMesh()->GetAnimInstance();
+
 	AIController = Cast<ABossAIController>(GetController());
 
 	if (IsValid(AIController))
 	{
 		BlackboardComponent = AIController->GetBlackboardComponent();
+	}
+}
+
+float ABoss::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator,
+	AActor* DamageCauser)
+{
+	const float Damage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+	
+	if (IsValid(StatComponent))
+	{
+		if (StatComponent->GetCurrentHealth() <= 0)
+		{
+			OnDeath();
+		}
+	}
+	return Damage;
+}
+
+void ABoss::OnDeath()
+{
+	GetCharacterMovement()->GravityScale = 0.1f;
+	MoveStop();
+	AnimInstance->StopAllMontages(0.5f);
+	BlackboardComponent->SetValueAsEnum(BossStateKey, static_cast<uint8>(EBossState::Death));
+	if (IsValid(AIController))
+	{
+		AIController->UnPossess();
 	}
 }
 
@@ -43,12 +74,12 @@ void ABoss::RotationToTarget()
 
 void ABoss::Move()
 {
-	M_PlayAnimation(MoveAnimation);
+	//M_PlayAnimation(MoveAnimation);
 }
 
 void ABoss::MoveStop()
 {
-	M_PlayAnimation(IdleAnimation);
+	//M_PlayAnimation(IdleAnimation);
 }
 
 void ABoss::MoveToTarget()

@@ -25,7 +25,6 @@ EBTNodeResult::Type UBTTask_BossChasing::ExecuteTask(UBehaviorTreeComponent& Own
 	if (!IsValid(Boss)) return EBTNodeResult::Failed;
 
 	AIController->SetChasingVisionAngle();
-	Boss->M_PlayAnimation(Boss->MoveAnimation);
 	Boss->SetMoveSpeed(MoveSpeedMultiplier);
 	
 	return EBTNodeResult::InProgress;

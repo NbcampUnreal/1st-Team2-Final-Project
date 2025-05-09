@@ -21,6 +21,7 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	virtual void OnPossess(APawn* InPawn) override;
+	virtual void Tick(float DeltaSeconds) override;
 
 #pragma region Method
 public:
@@ -67,8 +68,13 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Sight")
 	float ChasingVisionAngle;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Sight")
+	float DetectedStateInterval;
+
 private:
 	static const FName BossStateKey;
+	uint8 bIsDetectedStatePossible : 1;
+	float AccumulatedTime;
 #pragma endregion
 
 #pragma region Getter, Setter

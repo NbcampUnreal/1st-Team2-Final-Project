@@ -31,6 +31,10 @@ ABossAIController::ABossAIController()
 	// 시각을 우선순위로 설정
 	AIPerceptionComponent->ConfigureSense(*SightConfig);
 	AIPerceptionComponent->SetDominantSense(SightConfig->GetSenseImplementation());
+
+	bIsDetectedStatePossible = true;
+	AccumulatedTime = 0.0f;
+	DetectedStateInterval = 20.0f;
 }
 
 void ABossAIController::BeginPlay()
@@ -55,8 +59,26 @@ void ABossAIController::OnPossess(APawn* InPawn)
 	}
 }
 
+void ABossAIController::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	// Detected 상태로 전이한지 DetectedStateInterval 만큼 지났는지 확인
+	if (!bIsDetectedStatePossible)
+	{
+		AccumulatedTime += DeltaSeconds;
+
+		if (AccumulatedTime >= DetectedStateInterval)
+		{
+			bIsDetectedStatePossible = true;
+			AccumulatedTime = 0.0f;
+		}
+	}
+}
+
 void ABossAIController::SetDefaultVisionAngle()
 {
+	// 기본 시야각으로 전환
 	UAISenseConfig_Sight* SightConfigInstance = Cast<UAISenseConfig_Sight>(AIPerceptionComponent->GetSenseConfig(UAISense::GetSenseID(UAISense_Sight::StaticClass())));
 	SightConfigInstance->PeripheralVisionAngleDegrees = DefaultVisionAngle;
 	AIPerceptionComponent->ConfigureSense(*SightConfigInstance);
@@ -64,6 +86,7 @@ void ABossAIController::SetDefaultVisionAngle()
 
 void ABossAIController::SetChasingVisionAngle()
 {
+	// 추적 시야각으로 전환
 	UAISenseConfig_Sight* SightConfigInstance = Cast<UAISenseConfig_Sight>(AIPerceptionComponent->GetSenseConfig(UAISense::GetSenseID(UAISense_Sight::StaticClass())));
 	SightConfigInstance->PeripheralVisionAngleDegrees = ChasingVisionAngle;
 	AIPerceptionComponent->ConfigureSense(*SightConfigInstance);
@@ -89,12 +112,6 @@ void ABossAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Sti
 
 void ABossAIController::M_AddDetectedPlayer_Implementation(AActor* Target)
 {
-	// 감지된 플레이어가 0명이하인 경우
-	// Roar 애니메이션을 재생한지 30초가 지난 경우
-	// Roar 애니메이션 재생 후 체이스 모드로 전이
-	// 감지된 플레이어가 1명 이상인 경우는 그냥 넘어가자
-	// 최초로 감지된 플레이어를 우선 추적하도록 !
-
 	ACharacter* ABCharacter = GetCharacter();
 	if (!IsValid(ABCharacter)) return;
 
@@ -110,7 +127,15 @@ void ABossAIController::M_AddDetectedPlayer_Implementation(AActor* Target)
 	
 	if (DetectedPlayers.Num() <= 0)
 	{
-		BlackboardComponent->SetValueAsEnum(BossStateKey, static_cast<uint8>(EBossState::Detected));
+		if (bIsDetectedStatePossible)
+		{
+			BlackboardComponent->SetValueAsEnum(BossStateKey, static_cast<uint8>(EBossState::Detected));
+			bIsDetectedStatePossible = false;
+		}
+		else
+		{
+			BlackboardComponent->SetValueAsEnum(BossStateKey, static_cast<uint8>(EBossState::Chase));
+		}
 	}
 
 	DetectedPlayers.Add(Target);
