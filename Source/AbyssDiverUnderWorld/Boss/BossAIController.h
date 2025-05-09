@@ -25,8 +25,7 @@ protected:
 
 #pragma region Method
 public:
-	void SetDefaultVisionAngle();
-	void SetChasingVisionAngle();
+	void SetVisionAngle(float& Angle);
 	
 protected:
 	UFUNCTION()
@@ -45,6 +44,11 @@ private:
 
 #pragma region Variable
 public:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Sight")
+	float DefaultVisionAngle;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Sight")
+	float ChasingVisionAngle;
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI|Blackboard")
@@ -61,12 +65,6 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI|Target")
 	TArray<TObjectPtr<AActor>> DetectedPlayers;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Sight")
-	float DefaultVisionAngle;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Sight")
-	float ChasingVisionAngle;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Sight")
 	float DetectedStateInterval;

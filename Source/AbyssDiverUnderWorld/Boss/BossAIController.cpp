@@ -43,7 +43,6 @@ void ABossAIController::BeginPlay()
 
 	if (IsValid(AIPerceptionComponent))
 	{
-		LOG(TEXT(" [AI] AIPerceptionComponent is valid."));
 		AIPerceptionComponent->OnTargetPerceptionUpdated.AddDynamic(this, &ABossAIController::OnTargetPerceptionUpdated);
 	}
 }
@@ -76,19 +75,11 @@ void ABossAIController::Tick(float DeltaSeconds)
 	}
 }
 
-void ABossAIController::SetDefaultVisionAngle()
+void ABossAIController::SetVisionAngle(float& Angle)
 {
-	// 기본 시야각으로 전환
+	// 시야각 전환 함수
 	UAISenseConfig_Sight* SightConfigInstance = Cast<UAISenseConfig_Sight>(AIPerceptionComponent->GetSenseConfig(UAISense::GetSenseID(UAISense_Sight::StaticClass())));
-	SightConfigInstance->PeripheralVisionAngleDegrees = DefaultVisionAngle;
-	AIPerceptionComponent->ConfigureSense(*SightConfigInstance);
-}
-
-void ABossAIController::SetChasingVisionAngle()
-{
-	// 추적 시야각으로 전환
-	UAISenseConfig_Sight* SightConfigInstance = Cast<UAISenseConfig_Sight>(AIPerceptionComponent->GetSenseConfig(UAISense::GetSenseID(UAISense_Sight::StaticClass())));
-	SightConfigInstance->PeripheralVisionAngleDegrees = ChasingVisionAngle;
+	SightConfigInstance->PeripheralVisionAngleDegrees = Angle;
 	AIPerceptionComponent->ConfigureSense(*SightConfigInstance);
 }
 
@@ -112,10 +103,7 @@ void ABossAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Sti
 
 void ABossAIController::M_AddDetectedPlayer_Implementation(AActor* Target)
 {
-	ACharacter* ABCharacter = GetCharacter();
-	if (!IsValid(ABCharacter)) return;
-
-	ABoss* Boss = Cast<ABoss>(ABCharacter);
+	ABoss* Boss = Cast<ABoss>(GetCharacter());
 	if (!IsValid(Boss)) return;
 
 	APawn* Player = Cast<APawn>(Target);
@@ -124,7 +112,8 @@ void ABossAIController::M_AddDetectedPlayer_Implementation(AActor* Target)
 		LOG(TEXT(" [AI] Target Perception Updated: %s"), *Player->GetName());
 		Boss->SetTarget((Player));
 	}
-	
+
+	// 처음으로 플레이어를 감지한 경우 조건에 따라 Detected | Chase 상태로 전이
 	if (DetectedPlayers.Num() <= 0)
 	{
 		if (bIsDetectedStatePossible)
@@ -138,21 +127,19 @@ void ABossAIController::M_AddDetectedPlayer_Implementation(AActor* Target)
 		}
 	}
 
+	// 감지된 플레이어 리스트에 추가
 	DetectedPlayers.Add(Target);
-	
 }
 
 void ABossAIController::M_RemoveDetectedPlayer_Implementation(AActor* Target)
 {
+	// 감지된 플레이어 리스트에서 제거
 	DetectedPlayers.Remove(Target);
-	LOG(TEXT(" [AI] Target Perception Lost: %s"), *Target->GetName());
 
+	// 감지한 플레이어가 리스트에서 모두 제거된 경우 Investigate 상태로 전이
 	if (DetectedPlayers.Num() <= 0)
 	{
-		ACharacter* ABCharacter = GetCharacter();
-		if (!IsValid(ABCharacter)) return;
-
-		ABoss* Boss = Cast<ABoss>(ABCharacter);
+		ABoss* Boss = Cast<ABoss>(GetCharacter());
 		if (!IsValid(Boss)) return;
 		
 		Boss->SetLastDetectedLocation(Target->GetActorLocation());

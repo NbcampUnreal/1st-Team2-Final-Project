@@ -18,13 +18,10 @@ EBTNodeResult::Type UBTTask_BossChasing::ExecuteTask(UBehaviorTreeComponent& Own
 	ABossAIController* AIController = Cast<ABossAIController>(OwnerComp.GetAIOwner());
 	if (!IsValid(AIController)) return EBTNodeResult::Failed;
 
-	ACharacter* Character = AIController->GetCharacter();
-	if (!IsValid(Character)) return EBTNodeResult::Failed;
-
-	ABoss* Boss = Cast<ABoss>(Character);
+	ABoss* Boss = Cast<ABoss>(AIController->GetCharacter());
 	if (!IsValid(Boss)) return EBTNodeResult::Failed;
 
-	AIController->SetChasingVisionAngle();
+	AIController->SetVisionAngle(AIController->ChasingVisionAngle);
 	Boss->SetMoveSpeed(MoveSpeedMultiplier);
 	
 	return EBTNodeResult::InProgress;
@@ -35,6 +32,7 @@ void UBTTask_BossChasing::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* Nod
 	Super::TickTask(OwnerComp, NodeMemory, DeltaSeconds);
 	
 	ABoss* Boss = Cast<ABoss>(OwnerComp.GetAIOwner()->GetCharacter());
+	
 	if (!IsValid(Boss))
 	{
 		FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
@@ -54,10 +52,7 @@ void UBTTask_BossChasing::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* Nod
 	
 	if (static_cast<EBossState>(OwnerComp.GetBlackboardComponent()->GetValueAsEnum(BossStateKey)) == EBossState::Investigate)
 	{
-		LOG(TEXT("Chasing Finished !"))
 		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 		return;
 	}
-
-	
 }
