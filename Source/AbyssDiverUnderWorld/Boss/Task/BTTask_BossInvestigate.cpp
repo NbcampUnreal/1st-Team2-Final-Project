@@ -10,7 +10,7 @@ UBTTask_BossInvestigate::UBTTask_BossInvestigate()
 
 EBTNodeResult::Type UBTTask_BossInvestigate::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
-	AAIController* AIController = OwnerComp.GetAIOwner();
+	ABossAIController* AIController = Cast<ABossAIController>(OwnerComp.GetAIOwner());
 	if (!IsValid(AIController)) return EBTNodeResult::Failed;
 
 	ACharacter* Character = AIController->GetCharacter();
@@ -19,9 +19,8 @@ EBTNodeResult::Type UBTTask_BossInvestigate::ExecuteTask(UBehaviorTreeComponent&
 	ABoss* Boss = Cast<ABoss>(Character);
 	if (!IsValid(Boss)) return EBTNodeResult::Failed;
 
+	AIController->SetDefaultVisionAngle();
 	Boss->MoveToLastDetectedLocation();
-
-	LOG(TEXT("Investigate Started !"));
-
+	
 	return EBTNodeResult::Succeeded;
 }
