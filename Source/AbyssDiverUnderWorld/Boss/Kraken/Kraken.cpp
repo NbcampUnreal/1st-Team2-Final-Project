@@ -10,6 +10,13 @@ void AKraken::BeginPlay()
 	Super::BeginPlay();
 }
 
+void AKraken::OnDeath()
+{
+	Super::OnDeath();
+
+	SetEmissiveTransition();
+}
+
 void AKraken::Move()
 {
 	Super::Move();
