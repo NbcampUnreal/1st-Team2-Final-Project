@@ -1,5 +1,9 @@
 #include "Boss/Boss.h"
 #include "AbyssDiverUnderWorld.h"
+#include "EBossState.h"
+#include "BehaviorTree/BlackboardComponent.h"
+
+const FName ABoss::BossStateKey = "BossState";
 
 ABoss::ABoss()
 {
@@ -9,6 +13,7 @@ ABoss::ABoss()
 	AIController = nullptr;
 	TargetPlayer = nullptr;
 	LastDetectedLocation = FVector::ZeroVector;
+	AttackRadius = 500.0f;
 
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 }
@@ -48,12 +53,35 @@ void ABoss::MoveStop()
 
 void ABoss::MoveToTarget()
 {
-	
+	if (!IsValid(TargetPlayer)) return;
+
+	const FVector TargetLocation = TargetPlayer->GetActorLocation();
+	const FVector CurrentLocation = GetActorLocation();
+	const float Distance = FVector::Distance(CurrentLocation, TargetLocation);
+
+	// 타겟이 공격 반경 내에 있다면 Attack 상태로 전이
+	if (Distance <= AttackRadius)
+	{
+		BlackboardComponent->SetValueAsEnum(BossStateKey, static_cast<uint8>(EBossState::Attack));
+	}
 }
 
 void ABoss::MoveToLastDetectedLocation()
 {
 
+}
+
+void ABoss::Attack()
+{
+	uint8 AttackType = FMath::RandRange(0, NormalAttackAnimations.Num() - 1);
+	if (IsValid(NormalAttackAnimations[AttackType]))
+	{
+		M_PlayAnimation(NormalAttackAnimations[AttackType]);
+	}
+	else
+	{
+		LOG(TEXT(" [Boss] Attack Animation is not valid."));
+	}
 }
 
 void ABoss::M_PlayAnimation_Implementation(class UAnimMontage* AnimMontage, float InPlayRate, FName StartSectionName)

@@ -33,6 +33,9 @@ public:
 	/** 보스가 마지막으로 감지한 타겟의 위치를 추적하는 함수 */
 	virtual void MoveToLastDetectedLocation();
 
+	/** 보스가 타겟을 향해 공격하는 함수 */
+	virtual void Attack();
+
 	/** 보스의 이동속도를 설정하는 함수 */
 	UFUNCTION(BlueprintImplementableEvent)
 	void SetMoveSpeed(float Speed);
@@ -76,7 +79,11 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|AI")
 	TObjectPtr<ABossAIController> AIController;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Stat")
+	float AttackRadius;
+
 private:
+	static const FName BossStateKey;
 	
 #pragma endregion
 

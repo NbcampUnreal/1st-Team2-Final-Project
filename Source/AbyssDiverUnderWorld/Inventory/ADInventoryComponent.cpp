@@ -3,16 +3,19 @@
 #include "Engine/World.h"
 #include "Engine/EngineTypes.h"
 #include "DataRow/FADItemDataRow.h"
-
+#include "UI/AllInventoryWidget.h"
 #include <Net/UnrealNetwork.h>
 
 UADInventoryComponent::UADInventoryComponent() :
 	ItemDataTable(nullptr),
+	InventoryWidgetClass(nullptr),
 	TotalWeight(0),
 	WeightMax(100),
-	bInventoryWidgetShowed(false)
+	bInventoryWidgetShowed(false), 
+	InventoryWidgetInstance(nullptr)
 {
 	PrimaryComponentTick.bCanEverTick = true;
+	SetIsReplicatedByDefault(true);
 
 	InventorySizeByType = { 3, 2, 9, 1, 3 };
 
@@ -26,7 +29,18 @@ UADInventoryComponent::UADInventoryComponent() :
 void UADInventoryComponent::BeginPlay()
 {
 	Super::BeginPlay();
+	if (InventoryWidgetClass)
+	{
+		APlayerController* PC = GetWorld()->GetFirstPlayerController();
+		InventoryWidgetInstance = CreateWidget<UAllInventoryWidget>(PC, InventoryWidgetClass);
 
+		if (InventoryWidgetInstance)
+		{
+			InventoryWidgetInstance->AddToViewport();
+			InventoryWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
+		}
+		InventoryWidgetInstance->InitializeInventoriesInfo(this);
+	}
 }
 
 void UADInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -35,15 +49,15 @@ void UADInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	DOREPLIFETIME(UADInventoryComponent, InventoryList);
 }
 
-void UADInventoryComponent::AddInventoryItem(FName Name, uint8 Count)
+void UADInventoryComponent::AddInventoryItem(FItemData ItemData, uint8 Count)
 {
 	bool bOverWeight = TotalWeight >= WeightMax;
 	if (ItemDataTable && !bOverWeight)
 	{
-		FFADItemDataRow* FoundRow = ItemDataTable->FindRow<FFADItemDataRow>(Name, TEXT("LookupItem")); //*데이터 테이블 위치 확정되면 수정
+		FFADItemDataRow* FoundRow = ItemDataTable->FindRow<FFADItemDataRow>(ItemData.Name, TEXT("LookupItem")); //*데이터 테이블 위치 확정되면 수정
 		if (FoundRow)
 		{
-			int16 ItemIndex = FindItemIndexById(Name);
+			int16 ItemIndex = FindItemIndexById(ItemData.Name);
 			if (ItemIndex > -1 && FoundRow->Stackable)
 			{
 				FItemData& Item = InventoryList.Items[ItemIndex];
@@ -52,21 +66,42 @@ void UADInventoryComponent::AddInventoryItem(FName Name, uint8 Count)
 			}
 			else
 			{
-				FItemData NewItem = { FoundRow->Name, FoundRow->Id, Count, FoundRow->Amount, FoundRow->ItemType, FoundRow->Thumbnail };
+				FItemData NewItem = { ItemData.Name, ItemData.Id, Count, ItemData.Amount, ItemData.ItemType, ItemData.Thumbnail };
 				if (InventoryIndexMapByType.Contains(NewItem.ItemType) && GetTypeInventoryEmptyIndex(NewItem.ItemType) != -1)
 				{
 					InventoryIndexMapByType[NewItem.ItemType][GetTypeInventoryEmptyIndex(NewItem.ItemType)] = InventoryList.Items.Num();
 					InventoryList.AddItem(NewItem);
 				}
 			}
-			UE_LOG(LogTemp, Warning, TEXT("Add Item, ItemIndex : %s"), *Name.ToString());
+			UE_LOG(LogTemp, Warning, TEXT("Add Item, ItemIndex : %s"), *ItemData.Name.ToString());
 
-			TotalWeight += FoundRow->Weight;
+
+			TotalWeight += ItemData.Mass;
 			if (InventoryUpdateDelegate.IsBound())
 			{
-				InventoryUpdateDelegate.Broadcast(FoundRow->ItemType);
+				InventoryUpdateDelegate.Broadcast(ItemData.ItemType);
 			}
 			PrintLogInventoryData();
+		}
+	}
+}
+
+void UADInventoryComponent::ToggleInventoryShowed()
+{
+	if (bInventoryWidgetShowed)
+	{
+		bInventoryWidgetShowed = false;
+		if (InventoryWidgetInstance)
+		{
+			InventoryWidgetInstance->SetVisibility(ESlateVisibility::Collapsed);
+		}
+	}
+	else
+	{
+		bInventoryWidgetShowed = true;
+		if (InventoryWidgetInstance)
+		{
+			InventoryWidgetInstance->SetVisibility(ESlateVisibility::Visible);
 		}
 	}
 }
