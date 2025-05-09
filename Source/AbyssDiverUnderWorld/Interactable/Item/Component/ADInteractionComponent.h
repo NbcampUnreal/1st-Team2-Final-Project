@@ -1,0 +1,84 @@
+﻿#pragma once
+
+#include "CoreMinimal.h"
+#include "Components/ActorComponent.h"
+#include "ADInteractionComponent.generated.h"
+
+class USphereComponent;
+class UADInteractableComponent;
+
+UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+class ABYSSDIVERUNDERWORLD_API UADInteractionComponent : public UActorComponent
+{
+	GENERATED_BODY()
+
+public:	
+	UADInteractionComponent();
+
+protected:
+	virtual void BeginPlay() override;
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+
+
+#pragma region Method
+public:
+    // Overlap 콜백 바인딩용 함수
+    UFUNCTION()
+    void HandleBeginOverlap(UPrimitiveComponent* OverlappedComp,
+        AActor* OtherActor,
+        UPrimitiveComponent* OtherComp,
+        int32 OtherBodyIndex,
+        bool bFromSweep,
+        const FHitResult& SweepResult);
+
+    UFUNCTION()
+    void HandleEndOverlap(UPrimitiveComponent* OverlappedComp,
+        AActor* OtherActor,
+        UPrimitiveComponent* OtherComp,
+        int32 OtherBodyIndex);
+
+    // 테스트 동안 OnInteractPressed 대신 사용할 함수
+    UFUNCTION(BlueprintCallable, Category = "Interaction")
+    void TryInteract();
+
+    // 실제 Focus 검사 함수
+    void PerformFocusCheck();
+
+    // Player가 E 키를 눌렀을 때 호출할 함수
+    void OnInteractPressed();
+
+
+
+protected:
+
+
+private:
+
+
+#pragma endregion
+
+#pragma region Variable
+public:
+    UPROPERTY()
+    TSet<TObjectPtr<UADInteractableComponent>> NearbyInteractables;
+    UPROPERTY()
+    TObjectPtr<USphereComponent> RangeSphere;
+    UPROPERTY()
+    TObjectPtr<UADInteractableComponent> FocusedInteractable = nullptr;
+
+protected:
+
+
+private:
+
+#pragma endregion
+
+#pragma region Getter, Setteer
+public:
+    UFUNCTION(BlueprintPure, Category = "Interaction")
+    UADInteractableComponent* GetFocusedInteractable() const
+    {
+        return FocusedInteractable;
+    }
+#pragma endregion
+};

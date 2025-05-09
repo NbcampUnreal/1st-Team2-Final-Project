@@ -9,6 +9,7 @@
 
 class AADItemBase;
 class UNiagaraSystem;
+class UADInteractableComponent;
 
 USTRUCT(BlueprintType)
 struct FDropEntry : public FTableRowBase
@@ -84,6 +85,8 @@ protected:
 	// 무게 샘플링 강도 (1.0 : 균등, 2.0 : 중간 편향, 클수록 편향이 강해짐)
 	UPROPERTY(EditAnywhere, Category = "Drops|Sampling")
 	float MassBiasExponent = 0.5f;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction")
+	TObjectPtr<UADInteractableComponent> InteractableComp;
 	
 
 private:

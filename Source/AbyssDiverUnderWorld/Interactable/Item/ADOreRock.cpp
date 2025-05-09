@@ -6,6 +6,7 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "NiagaraSystem.h"  
 #include "NiagaraFunctionLibrary.h"
+#include "Interactable/Item/Component/ADInteractableComponent.h"
 
 // Sets default values
 AADOreRock::AADOreRock()
@@ -13,6 +14,9 @@ AADOreRock::AADOreRock()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
 	bReplicates = true;
+
+	// InteractableComponent 생성
+	InteractableComp = CreateDefaultSubobject<UADInteractableComponent>(TEXT("InteractableComp"));
 }
 
 // Called when the game starts or when spawned
@@ -35,10 +39,9 @@ void AADOreRock::BeginPlay()
 
 void AADOreRock::Interact(AActor* InstigatorActor)
 {
-	if (HasAuthority())
-	{
-		HandleMineRequest(Cast<APawn>(InstigatorActor));
-	}
+	if (!HasAuthority()) return;
+
+	HandleMineRequest(Cast<APawn>(InstigatorActor));
 }
 void AADOreRock::HandleMineRequest(APawn* InstigatorPawn)
 {
@@ -109,7 +112,7 @@ void AADOreRock::OnAssetLoaded(FDropEntry* Entry, float Mass)
 {
 	if (UClass* Class = Entry->ItemClass.Get())
 	{
-		const float SpawnHeight = 100.f;  // 스폰 높이
+		const float SpawnHeight = 150.f;  // 스폰 높이
 		FVector SpawnLoc = GetActorLocation() + FVector(0, 0, SpawnHeight);
 
 		FActorSpawnParameters Params;
