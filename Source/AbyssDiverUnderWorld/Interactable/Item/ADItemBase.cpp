@@ -3,7 +3,6 @@
 #include "Net/UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"
 #include "Interactable/Item/Component/ADInteractableComponent.h"
-#include "Inve"
 
 // Sets default values
 AADItemBase::AADItemBase()
