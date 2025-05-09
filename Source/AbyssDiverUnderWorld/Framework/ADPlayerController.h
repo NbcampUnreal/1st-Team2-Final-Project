@@ -14,6 +14,8 @@ class ABYSSDIVERUNDERWORLD_API AADPlayerController : public APlayerController
 {
 	GENERATED_BODY()
 
+	AADPlayerController();
+	
 protected:
 	virtual void BeginPlay() override;
 	
