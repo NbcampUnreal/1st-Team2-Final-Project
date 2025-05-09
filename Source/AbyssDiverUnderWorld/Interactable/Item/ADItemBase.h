@@ -6,6 +6,8 @@
 #include "Container/FStructContainer.h"
 #include "ADItemBase.generated.h"
 
+class UADInteractableComponent;
+
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADItemBase : public AActor, public IIADInteractable
 {
@@ -38,6 +40,8 @@ private:
 public:
 	UPROPERTY(ReplicatedUsing = OnRep_ItemData, EditAnywhere, Category = "Item")
 	FItemData ItemData;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction")
+	TObjectPtr<UADInteractableComponent> InteractableComp;
 
 	// TODO : 인벤토리 컴포넌트 참조
 	// TODO : PickupSound 등 획득 시 효과 추가

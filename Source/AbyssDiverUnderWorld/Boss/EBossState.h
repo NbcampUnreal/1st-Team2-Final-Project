@@ -12,4 +12,5 @@ enum class EBossState : uint8
 	Chase = 3 UMETA(DisplayName = "Chase"),
 	Investigate = 4 UMETA(DisplayName = "Investigate"),
 	Detected = 5 UMETA(DisplayName = "Detected"),
+	Death = 6 UMETA(DisplayName = "Death"),
 };

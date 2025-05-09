@@ -10,25 +10,25 @@ struct FItemData : public FFastArraySerializerItem
 {
     GENERATED_BODY()
 
-    UPROPERTY(EditAnywhere) 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
     FName Name;
 
-    UPROPERTY(EditAnywhere) 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	uint8 Id;
 
-    UPROPERTY(EditAnywhere) 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	uint8 Quantity;
 
-    UPROPERTY(EditAnywhere) 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 Amount;
 
-    UPROPERTY(EditAnywhere)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
     float Mass;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	EItemType ItemType;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TObjectPtr<UTexture2D> Thumbnail;
 
 	FItemData()
