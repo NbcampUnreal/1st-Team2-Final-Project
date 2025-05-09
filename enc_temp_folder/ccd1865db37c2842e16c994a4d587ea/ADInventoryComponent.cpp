@@ -15,7 +15,6 @@ UADInventoryComponent::UADInventoryComponent() :
 	InventoryWidgetInstance(nullptr)
 {
 	PrimaryComponentTick.bCanEverTick = true;
-	SetIsReplicatedByDefault(true);
 
 	InventorySizeByType = { 3, 2, 9, 1, 3 };
 

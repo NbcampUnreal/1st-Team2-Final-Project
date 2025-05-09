@@ -25,7 +25,7 @@ protected:
 
 #pragma region Method
 public:
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override; 
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override; //FastArray 관련 함수
 
 	UFUNCTION(BlueprintCallable)
 	void AddInventoryItem(FItemData ItemData, uint8 Count);
