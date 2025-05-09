@@ -112,7 +112,6 @@ void AADOreRock::OnAssetLoaded(FDropEntry* Entry, float Mass)
 {
 	if (UClass* Class = Entry->ItemClass.Get())
 	{
-		const float SpawnHeight = 150.f;  // 스폰 높이
 		FVector SpawnLoc = GetActorLocation() + FVector(0, 0, SpawnHeight);
 
 		FActorSpawnParameters Params;
