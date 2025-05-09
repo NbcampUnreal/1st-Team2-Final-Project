@@ -2,6 +2,8 @@
 #include "AbyssDiverUnderWorld.h"
 #include "Net/UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"
+#include "Interactable/Item/Component/ADInteractableComponent.h"
+#include "Inve"
 
 // Sets default values
 AADItemBase::AADItemBase()
@@ -10,6 +12,9 @@ AADItemBase::AADItemBase()
 	PrimaryActorTick.bCanEverTick = false;
 	bReplicates = true;
 
+
+	// InteractableComponent 생성
+	InteractableComp = CreateDefaultSubobject<UADInteractableComponent>(TEXT("InteractableComp"));
 }
 
 void AADItemBase::BeginPlay()
@@ -31,7 +36,6 @@ void AADItemBase::HandlePickup(APawn* InstigatorPawn)
 
 	LOG(TEXT("Add to Inventory"));
 	// TODO 인벤토리 추가 로직과 획득 효과 추가
-
 
 	Destroy();
 }
