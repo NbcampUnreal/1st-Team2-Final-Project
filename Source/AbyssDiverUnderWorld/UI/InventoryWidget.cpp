@@ -6,9 +6,8 @@
 #include "Components/WrapBox.h"
 #include "Inventory/ADInventoryComponent.h"
 
-void UInventoryWidget::RefreshInventoryWidget(EItemType ItemType)
+void UInventoryWidget::RefreshInventoryWidget()
 {
-	if (!InventoryComp || ItemType != InventoryItemType) return;
 	if (InventoryWrapBox)
 	{
 		InventoryWrapBox->ClearChildren();
@@ -19,7 +18,7 @@ void UInventoryWidget::RefreshInventoryWidget(EItemType ItemType)
 			int8 InventoryItemIndexByType = InventoryComp->GetInventoryIndexesByType(InventoryItemType)[i];
 			if (InventoryItemIndexByType >= 0)
 			{
-				SlotWidget->SetItemData(InventoryComp->GetInventoryList().Items[InventoryItemIndexByType], i, InventoryComp);
+				SlotWidget->SetItemData(InventoryComp->GetInventoryList().Items[InventoryItemIndexByType], InventoryItemIndexByType, InventoryComp);
 				if (SlotWidget)
 				{
 					InventoryWrapBox->AddChild(SlotWidget);

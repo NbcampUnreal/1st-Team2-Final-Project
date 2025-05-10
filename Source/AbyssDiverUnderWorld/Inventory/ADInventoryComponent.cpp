@@ -26,6 +26,7 @@ UADInventoryComponent::UADInventoryComponent() :
 		InventoryIndexMapByType.FindOrAdd(static_cast<EItemType>(i));
 		InventoryIndexMapByType[static_cast<EItemType>(i)].Init(-1, InventorySizeByType[i]);
 	}
+
 }
 
 void UADInventoryComponent::BeginPlay()
@@ -45,6 +46,26 @@ void UADInventoryComponent::BeginPlay()
 		}
 		InventoryWidgetInstance->InitializeInventoriesInfo(this);
 	}
+
+	if (ItemDataTable)
+	{
+		const TMap<FName, uint8*>& RowMap = ItemDataTable->GetRowMap();
+		for (const TPair<FName, uint8*>& Pair : RowMap)
+		{
+			FFADItemDataRow* FoundRow = ItemDataTable->FindRow<FFADItemDataRow>(Pair.Key, TEXT("LookupItem"));
+
+			FItemData NewItem = { FoundRow->Name, FoundRow->Id, FoundRow->Quantity, FoundRow->Amount, FoundRow->Weight, FoundRow->Price, FoundRow->ItemType, FoundRow->Thumbnail };
+			if (NewItem.ItemType == EItemType::Exchangable)
+			{
+				NewItem.Mass = 0;
+				NewItem.Price = 0;
+			}
+			if (InventoryIndexMapByType.Contains(FoundRow->ItemType) && GetTypeInventoryEmptyIndex(FoundRow->ItemType) != -1)
+			{
+				InventoryList.AddItem(NewItem);
+			}
+		}
+	}
 }
 
 void UADInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -53,7 +74,7 @@ void UADInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	DOREPLIFETIME(UADInventoryComponent, InventoryList);
 }
 
-void UADInventoryComponent::Server_AddInventoryItem_Implementation(FItemData ItemData)
+void UADInventoryComponent::S_AddInventoryItem_Implementation(FItemData ItemData)
 {
 	AddInventoryItem(ItemData);
 }
@@ -62,55 +83,138 @@ void UADInventoryComponent::AddInventoryItem(FItemData ItemData)
 {
 	if (!GetOwner()->HasAuthority())
 	{
-		Server_AddInventoryItem(ItemData);
+		S_AddInventoryItem(ItemData);
 		return;
 	}
-	bool bOverWeight = TotalWeight >= WeightMax;
-	if (ItemDataTable && !bOverWeight)
+	if (TotalWeight + ItemData.Mass <= WeightMax)
 	{
 		FFADItemDataRow* FoundRow = ItemDataTable->FindRow<FFADItemDataRow>(ItemData.Name, TEXT("LookupItem")); //*데이터 테이블 위치 확정되면 수정
 		if (FoundRow)
 		{
 			int16 ItemIndex = FindItemIndexById(ItemData.Name);
-			if (ItemIndex > -1 && FoundRow->Stackable)
+			if (ItemIndex > -1)
 			{
 				FItemData& Item = InventoryList.Items[ItemIndex];
-				Item.Quantity += ItemData.Quantity;
+				if (InventoryIndexMapByType.Contains(ItemData.ItemType) && GetTypeInventoryEmptyIndex(ItemData.ItemType) != -1 && Item.Quantity == 0)
+				{
+					InventoryIndexMapByType[ItemData.ItemType][GetTypeInventoryEmptyIndex(ItemData.ItemType)] = ItemIndex;
+				}
+				if (FoundRow->Stackable)
+				{
+					Item.Quantity += ItemData.Quantity;
+					if (Item.ItemType == EItemType::Exchangable)
+					{
+						Item.Mass += ItemData.Mass;
+						Item.Price += ItemData.Price;
+						OnInventoryInfoUpdate(ItemData.Mass, ItemData.Price);
+					}
+				}
+				else
+				{
+					if (Item.Quantity == 0)
+					{
+						++Item.Quantity;
+					}
+				}
 				InventoryList.MarkItemDirty(Item); //FastArray 관련 함수
+				UE_LOG(LogTemp, Warning, TEXT("Add Item, ItemIndex : %s"), *ItemData.Name.ToString());
+				InventoryUIUpdate();
 			}
 			else
 			{
-				FItemData NewItem = { ItemData.Name, ItemData.Id, FoundRow->Quantity, ItemData.Amount, ItemData.ItemType, FoundRow->Thumbnail };
-				if (InventoryIndexMapByType.Contains(NewItem.ItemType) && GetTypeInventoryEmptyIndex(NewItem.ItemType) != -1)
-				{
-					InventoryIndexMapByType[NewItem.ItemType][GetTypeInventoryEmptyIndex(NewItem.ItemType)] = InventoryList.Items.Num();
-					InventoryList.AddItem(NewItem);
-				}
+				LOG(TEXT("It's not our game item."));
 			}
-			UE_LOG(LogTemp, Warning, TEXT("Add Item, ItemIndex : %s"), *ItemData.Name.ToString());
-
-			OnInventoryInfoUpdate(ItemData.Mass, 10/*ItemData.Price*/, ItemData.ItemType);
 		}
 	}
 }
 
-void UADInventoryComponent::OnInventoryInfoUpdate(int32 MassInfo, int32 PriceInfo, EItemType ItemType)
+bool UADInventoryComponent::RemoveInventoryItem(uint8 InventoryIndex, uint8 Count, bool bIsDropAction)
 {
-	TotalWeight += MassInfo;
-	//TotalPrice += PriceInfo;
-	InventoryWidgetInstance->RefreshExchangableInventoryInfo(TotalWeight, TotalPrice);
-
-	if (InventoryUpdateDelegate.IsBound())
+	if (InventoryList.Items.IsValidIndex(InventoryIndex))
 	{
-		InventoryUpdateDelegate.Broadcast(ItemType);
+		FItemData& Item = InventoryList.Items[InventoryIndex];
+		if (Item.Quantity < Count) return false;
+		else if (Item.Quantity == Count)
+		{
+			Item.Quantity = 0;
+			if(Item.ItemType == EItemType::Exchangable)
+			{
+				OnInventoryInfoUpdate(-Item.Mass, -Item.Price);
+				Item.Mass = 0;
+				Item.Price = 0;
+			}
+		}
+		else 
+		{
+			if(Item.ItemType != EItemType::Exchangable)
+				Item.Quantity -= Count;
+		}
+		InventoryList.MarkItemDirty(Item);
+		if (Item.Quantity <= 0)
+		{
+			for (int i = 0; i < InventoryIndexMapByType[InventoryList.Items[InventoryIndex].ItemType].Num(); ++i)
+			{
+				if (InventoryIndexMapByType[Item.ItemType][i] == InventoryIndex)
+					InventoryIndexMapByType[Item.ItemType][i] = -1;
+			}
+		}
+		InventoryUIUpdate();
+		
+		if (bIsDropAction)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Drop Items")));
+		}
+
+		return true;
 	}
-	PrintLogInventoryData();
+	else
+	{
+		LOG(TEXT("Invalid Inventory Index"));
+		return false;
+	}
 }
 
 void UADInventoryComponent::TransferSlots(uint8 FromIndex, uint8 ToIndex)
 {
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Transfer Items")));
+	if (InventoryList.Items.IsValidIndex(FromIndex) && InventoryList.Items.IsValidIndex(ToIndex))
+	{
+		FItemData& TempItem = InventoryList.Items[FromIndex];
+		EItemType Type = TempItem.ItemType;
+		for (int i = 0; i < InventoryIndexMapByType[Type].Num(); ++i)
+		{
+			if (InventoryIndexMapByType[Type][i] == ToIndex)
+				InventoryIndexMapByType[Type][i] = FromIndex;
+			else if(InventoryIndexMapByType[Type][i] == FromIndex)
+				InventoryIndexMapByType[Type][i] = ToIndex;
+		}
+		InventoryUIUpdate();
+	}
+	else
+	{
+		LOG(TEXT("Invalid Inventory Index"));
+	}
 }
+
+void UADInventoryComponent::OnInventoryInfoUpdate(int32 MassInfo, int32 PriceInfo)
+{
+	TotalWeight += MassInfo;
+	TotalPrice += PriceInfo;
+	PrintLogInventoryData();
+}
+
+void UADInventoryComponent::InventoryUIUpdate()
+{
+	if (InventoryWidgetInstance == nullptr) return;
+	if (InventoryUpdateDelegate.IsBound())
+	{
+		InventoryInfoUpdateDelegate.Broadcast(TotalWeight, TotalPrice);
+	}
+	if (InventoryUpdateDelegate.IsBound())
+	{
+		InventoryUpdateDelegate.Broadcast();
+	}
+}
+
 
 void UADInventoryComponent::ToggleInventoryShowed()
 {
@@ -134,7 +238,7 @@ void UADInventoryComponent::ToggleInventoryShowed()
 		if (InventoryWidgetInstance)
 		{
 			InventoryWidgetInstance->SetVisibility(ESlateVisibility::Visible);
-
+			InventoryUIUpdate();
 			PC->bShowMouseCursor = true;
 
 			FInputModeGameAndUI InputMode;

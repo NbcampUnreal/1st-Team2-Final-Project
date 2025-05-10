@@ -34,10 +34,13 @@ void AADItemBase::HandlePickup(APawn* InstigatorPawn)
 {
 	if (!HasAuthority() || !InstigatorPawn) return;
 
+	AController* PC = InstigatorPawn->GetController();
+
 	LOG(TEXT("Add to Inventory"));
 	// TODO 인벤토리 추가 로직과 획득 효과 추가
-	if (UADInventoryComponent* Inventory = InstigatorPawn->FindComponentByClass<UADInventoryComponent>())
+	if (UADInventoryComponent* Inventory = PC->FindComponentByClass<UADInventoryComponent>())
 	{
+		LOG(TEXT("Find Inventory"));
 		Inventory->AddInventoryItem(ItemData);
 	}
 
