@@ -1,5 +1,7 @@
 #include "ShopCategoryTabWidget.h"
 
+#include "AbyssDiverUnderWorld.h"
+
 #include "Components/Button.h"
 
 void UShopCategoryTabWidget::NativeConstruct()

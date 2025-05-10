@@ -12,10 +12,7 @@ EBTNodeResult::Type UBTTask_BossMove::ExecuteTask(UBehaviorTreeComponent& OwnerC
 	AAIController* AIController = OwnerComp.GetAIOwner();
 	if (!IsValid(AIController)) return EBTNodeResult::Failed;
 
-	ACharacter* Character = AIController->GetCharacter();
-	if (!IsValid(Character)) return EBTNodeResult::Failed;
-
-	ABoss* Boss = Cast<ABoss>(Character);
+	ABoss* Boss = Cast<ABoss>(AIController->GetCharacter());
 	if (!IsValid(Boss)) return EBTNodeResult::Failed;
 
 	Boss->Move();

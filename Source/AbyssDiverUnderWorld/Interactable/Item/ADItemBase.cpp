@@ -3,6 +3,7 @@
 #include "Net/UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"
 #include "Interactable/Item/Component/ADInteractableComponent.h"
+#include "Inventory/ADInventoryComponent.h"
 
 // Sets default values
 AADItemBase::AADItemBase()
@@ -35,6 +36,10 @@ void AADItemBase::HandlePickup(APawn* InstigatorPawn)
 
 	LOG(TEXT("Add to Inventory"));
 	// TODO 인벤토리 추가 로직과 획득 효과 추가
+	if (UADInventoryComponent* Inventory = InstigatorPawn->FindComponentByClass<UADInventoryComponent>())
+	{
+		Inventory->AddInventoryItem(ItemData);
+	}
 
 	Destroy();
 }
@@ -50,9 +55,15 @@ void AADItemBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifet
 	DOREPLIFETIME(AADItemBase, ItemData);
 }
 
-void AADItemBase::SetItemMass(float InMass)
+void AADItemBase::SetItemMass(int32 InMass)
 {
 	ItemData.Mass = InMass;
+	ItemData.Quantity = 1;
+}
+
+void AADItemBase::SetPrice(int32 InPrice)
+{
+	ItemData.Price = InPrice;
 }
 
 

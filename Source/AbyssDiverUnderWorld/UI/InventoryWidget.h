@@ -19,7 +19,7 @@ class ABYSSDIVERUNDERWORLD_API UInventoryWidget : public UUserWidget
 #pragma region Function
 public:
 	UFUNCTION()
-	void RefrashInventoryWidget(EItemType ItemType);
+	void RefreshInventoryWidget(EItemType ItemType);
 	void InitializeSlots();
 	void InventoryWidgetDelegateBind();
 	void SetInventoryInfo(int8 Size, EItemType Type, UADInventoryComponent* InventoryComponent);

@@ -13,13 +13,10 @@ EBTNodeResult::Type UBTTask_BossInvestigate::ExecuteTask(UBehaviorTreeComponent&
 	ABossAIController* AIController = Cast<ABossAIController>(OwnerComp.GetAIOwner());
 	if (!IsValid(AIController)) return EBTNodeResult::Failed;
 
-	ACharacter* Character = AIController->GetCharacter();
-	if (!IsValid(Character)) return EBTNodeResult::Failed;
-
-	ABoss* Boss = Cast<ABoss>(Character);
+	ABoss* Boss = Cast<ABoss>(AIController->GetCharacter());
 	if (!IsValid(Boss)) return EBTNodeResult::Failed;
 
-	AIController->SetDefaultVisionAngle();
+	AIController->SetVisionAngle(AIController->DefaultVisionAngle);
 	Boss->MoveToLastDetectedLocation();
 	
 	return EBTNodeResult::Succeeded;

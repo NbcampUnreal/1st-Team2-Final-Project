@@ -3,6 +3,7 @@
 #include "EBossState.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Character/StatComponent.h"
+#include "Engine/DamageEvents.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
 const FName ABoss::BossStateKey = "BossState";
@@ -38,6 +39,31 @@ float ABoss::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
 	AActor* DamageCauser)
 {
 	const float Damage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+	// 부위 타격 정보
+	// @TODO : 맞은 부위에 따라 추가 데미지 혹은 출혈 이펙트 출력
+	if (DamageEvent.IsOfType(FPointDamageEvent::ClassID))
+	{
+		const FPointDamageEvent* PointDamage = static_cast<const FPointDamageEvent*>(&DamageEvent);
+		
+		FHitResult HitResult = PointDamage->HitInfo;
+		if (HitResult.BoneName != NAME_None)
+		{
+			LOG(TEXT("Hit Bone: %s"), *HitResult.BoneName.ToString());
+		}
+
+		if (HitResult.PhysMaterial.IsValid())
+		{
+			FString CollisionName = HitResult.PhysMaterial->GetName();
+			LOG(TEXT("Hit Collision: %s"), *CollisionName);
+		}
+
+		if (HitResult.PhysicsObjectOwner.IsValid())
+		{
+			FName RegionName = *HitResult.PhysicsObjectOwner->GetName();
+			LOG(TEXT("%s"), *RegionName.ToString());			
+		}
+	}
 	
 	if (IsValid(StatComponent))
 	{
@@ -51,14 +77,18 @@ float ABoss::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
 
 void ABoss::OnDeath()
 {
+	// 사망 시 가라앉는 연출
 	GetCharacterMovement()->GravityScale = 0.1f;
+
+	// 이동을 멈추고 모든 애니메이션 출력 정지
 	MoveStop();
 	AnimInstance->StopAllMontages(0.5f);
+
+	// 사망 상태로 전이
 	BlackboardComponent->SetValueAsEnum(BossStateKey, static_cast<uint8>(EBossState::Death));
-	if (IsValid(AIController))
-	{
-		AIController->UnPossess();
-	}
+
+	// AIController 작동 중지
+	AIController->UnPossess();
 }
 
 void ABoss::RotationToTarget()
@@ -104,14 +134,11 @@ void ABoss::MoveToLastDetectedLocation()
 
 void ABoss::Attack()
 {
-	uint8 AttackType = FMath::RandRange(0, NormalAttackAnimations.Num() - 1);
+	const uint8 AttackType = FMath::RandRange(0, NormalAttackAnimations.Num() - 1);
+	
 	if (IsValid(NormalAttackAnimations[AttackType]))
 	{
 		M_PlayAnimation(NormalAttackAnimations[AttackType]);
-	}
-	else
-	{
-		LOG(TEXT(" [Boss] Attack Animation is not valid."));
 	}
 }
 
@@ -134,7 +161,6 @@ void ABoss::SetTarget(APawn* Target)
 {
 	if (IsValid(Target))
 	{
-		LOG(TEXT(" [Boss] Target Player is already set."));
 		TargetPlayer = Target;
 	}
 }
