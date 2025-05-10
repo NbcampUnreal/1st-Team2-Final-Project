@@ -5,11 +5,13 @@
 #include "DataRow/FADItemDataRow.h"
 #include "UI/AllInventoryWidget.h"
 #include <Net/UnrealNetwork.h>
+#include "AbyssDiverUnderWorld.h"
 
 UADInventoryComponent::UADInventoryComponent() :
 	ItemDataTable(nullptr),
 	InventoryWidgetClass(nullptr),
 	TotalWeight(0),
+	TotalPrice(0),
 	WeightMax(100),
 	bInventoryWidgetShowed(false), 
 	InventoryWidgetInstance(nullptr)
@@ -29,15 +31,17 @@ UADInventoryComponent::UADInventoryComponent() :
 void UADInventoryComponent::BeginPlay()
 {
 	Super::BeginPlay();
-	if (InventoryWidgetClass)
+	
+	APlayerController* PC = Cast<APlayerController>(GetOwner());
+	if (InventoryWidgetClass && PC && PC->IsLocalController())
 	{
-		APlayerController* PC = GetWorld()->GetFirstPlayerController();
 		InventoryWidgetInstance = CreateWidget<UAllInventoryWidget>(PC, InventoryWidgetClass);
+		LOG(TEXT("WidgetCreate!"));
 
 		if (InventoryWidgetInstance)
 		{
 			InventoryWidgetInstance->AddToViewport();
-			InventoryWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
+			InventoryWidgetInstance->SetVisibility(ESlateVisibility::Collapsed);
 		}
 		InventoryWidgetInstance->InitializeInventoriesInfo(this);
 	}
@@ -49,8 +53,18 @@ void UADInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	DOREPLIFETIME(UADInventoryComponent, InventoryList);
 }
 
-void UADInventoryComponent::AddInventoryItem(FItemData ItemData, uint8 Count)
+void UADInventoryComponent::Server_AddInventoryItem_Implementation(FItemData ItemData)
 {
+	AddInventoryItem(ItemData);
+}
+
+void UADInventoryComponent::AddInventoryItem(FItemData ItemData)
+{
+	if (!GetOwner()->HasAuthority())
+	{
+		Server_AddInventoryItem(ItemData);
+		return;
+	}
 	bool bOverWeight = TotalWeight >= WeightMax;
 	if (ItemDataTable && !bOverWeight)
 	{
@@ -61,12 +75,12 @@ void UADInventoryComponent::AddInventoryItem(FItemData ItemData, uint8 Count)
 			if (ItemIndex > -1 && FoundRow->Stackable)
 			{
 				FItemData& Item = InventoryList.Items[ItemIndex];
-				Item.Quantity += Count;
+				Item.Quantity += ItemData.Quantity;
 				InventoryList.MarkItemDirty(Item); //FastArray 관련 함수
 			}
 			else
 			{
-				FItemData NewItem = { ItemData.Name, ItemData.Id, Count, ItemData.Amount, ItemData.ItemType, ItemData.Thumbnail };
+				FItemData NewItem = { ItemData.Name, ItemData.Id, FoundRow->Quantity, ItemData.Amount, ItemData.ItemType, FoundRow->Thumbnail };
 				if (InventoryIndexMapByType.Contains(NewItem.ItemType) && GetTypeInventoryEmptyIndex(NewItem.ItemType) != -1)
 				{
 					InventoryIndexMapByType[NewItem.ItemType][GetTypeInventoryEmptyIndex(NewItem.ItemType)] = InventoryList.Items.Num();
@@ -75,25 +89,43 @@ void UADInventoryComponent::AddInventoryItem(FItemData ItemData, uint8 Count)
 			}
 			UE_LOG(LogTemp, Warning, TEXT("Add Item, ItemIndex : %s"), *ItemData.Name.ToString());
 
-
-			TotalWeight += ItemData.Mass;
-			if (InventoryUpdateDelegate.IsBound())
-			{
-				InventoryUpdateDelegate.Broadcast(ItemData.ItemType);
-			}
-			PrintLogInventoryData();
+			OnInventoryInfoUpdate(ItemData.Mass, 10/*ItemData.Price*/, ItemData.ItemType);
 		}
 	}
 }
 
+void UADInventoryComponent::OnInventoryInfoUpdate(int32 MassInfo, int32 PriceInfo, EItemType ItemType)
+{
+	TotalWeight += MassInfo;
+	//TotalPrice += PriceInfo;
+	InventoryWidgetInstance->RefreshExchangableInventoryInfo(TotalWeight, TotalPrice);
+
+	if (InventoryUpdateDelegate.IsBound())
+	{
+		InventoryUpdateDelegate.Broadcast(ItemType);
+	}
+	PrintLogInventoryData();
+}
+
+void UADInventoryComponent::TransferSlots(uint8 FromIndex, uint8 ToIndex)
+{
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Transfer Items")));
+}
+
 void UADInventoryComponent::ToggleInventoryShowed()
 {
+	APlayerController* PC = Cast<APlayerController>(GetOwner());
+	if (!PC) return;
 	if (bInventoryWidgetShowed)
 	{
 		bInventoryWidgetShowed = false;
 		if (InventoryWidgetInstance)
 		{
 			InventoryWidgetInstance->SetVisibility(ESlateVisibility::Collapsed);
+
+			PC->bShowMouseCursor = false;
+			PC->SetIgnoreLookInput(false);
+			PC->SetInputMode(FInputModeGameOnly());
 		}
 	}
 	else
@@ -102,9 +134,19 @@ void UADInventoryComponent::ToggleInventoryShowed()
 		if (InventoryWidgetInstance)
 		{
 			InventoryWidgetInstance->SetVisibility(ESlateVisibility::Visible);
+
+			PC->bShowMouseCursor = true;
+
+			FInputModeGameAndUI InputMode;
+			InputMode.SetWidgetToFocus(InventoryWidgetInstance->TakeWidget());
+			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+			InputMode.SetHideCursorDuringCapture(false);
+			PC->SetIgnoreLookInput(true);
+			PC->SetInputMode(InputMode);
 		}
 	}
 }
+
 
 int8 UADInventoryComponent::GetTypeInventoryEmptyIndex(EItemType ItemType)
 {

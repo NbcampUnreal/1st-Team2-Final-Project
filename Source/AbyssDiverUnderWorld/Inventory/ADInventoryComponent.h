@@ -27,12 +27,22 @@ protected:
 public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override; 
 
+	UFUNCTION(Server, Reliable)
+	void Server_AddInventoryItem(FItemData ItemData);
+	void Server_AddInventoryItem_Implementation(FItemData ItemData);
+
 	UFUNCTION(BlueprintCallable)
-	void AddInventoryItem(FItemData ItemData, uint8 Count);
+	void AddInventoryItem(FItemData ItemData);
+
+	void OnInventoryInfoUpdate(int32 MassInfo, int32 PriceInfo, EItemType ItemType);
+
+	UFUNCTION(BlueprintCallable)
+	void TransferSlots(uint8 FromIndex, uint8 ToIndex);
 
 	//*Remove 테스트 후 넣어야 함
 	UFUNCTION(BlueprintCallable)
 	void ToggleInventoryShowed(); //추후 나침반이나 서브미션 UI 추가되었을 때 고려 대상
+
 
 	FInventoryUpdateDelegate InventoryUpdateDelegate;
 
@@ -56,6 +66,7 @@ private:
 	FInventoryList InventoryList;
 
 	int16 TotalWeight;
+	int16 TotalPrice;
 	int16 WeightMax;
 
 	uint8 bInventoryWidgetShowed : 1;
