@@ -38,7 +38,7 @@ void AADItemBase::HandlePickup(APawn* InstigatorPawn)
 	// TODO 인벤토리 추가 로직과 획득 효과 추가
 	if (UADInventoryComponent* Inventory = InstigatorPawn->FindComponentByClass<UADInventoryComponent>())
 	{
-		Inventory->AddInventoryItem(ItemData, 1);
+		Inventory->AddInventoryItem(ItemData);
 	}
 
 	Destroy();
@@ -58,6 +58,7 @@ void AADItemBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifet
 void AADItemBase::SetItemMass(float InMass)
 {
 	ItemData.Mass = InMass;
+	ItemData.Quantity = 1;
 }
 
 
