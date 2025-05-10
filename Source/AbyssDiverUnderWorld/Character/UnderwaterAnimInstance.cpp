@@ -59,6 +59,4 @@ void UUnderwaterAnimInstance::UpdateVariables()
 
 	// Actor는 Z축 기준으로만 회전하기 때문에 Rotation으로만 계산해도 현재로서는 문제 없다.
 	Direction = UKismetAnimationLibrary::CalculateDirection(Velocity, UnderwaterCharacter->GetActorRotation());
-
-	UE_LOG(LogTemp,Display, TEXT("Speed : %f, ForwardSpeed : %f, RightSpeed : %f, UpSpeed : %f, Direction : %f"), Speed, ForwardSpeed, RightSpeed, UpSpeed, Direction);
 }

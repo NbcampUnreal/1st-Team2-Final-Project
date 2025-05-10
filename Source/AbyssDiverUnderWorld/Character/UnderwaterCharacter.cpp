@@ -26,7 +26,7 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	
 	// Temp: Player Mesh를 완전히 숨긴다.
 	// 추후 Player Mesh를 추가해서 보여주거나 일부분만 숨길 수 있는 방법에 대해서 찾아야 한다.
-	// GetMesh()->SetOwnerNoSee(true);
+	GetMesh()->SetOwnerNoSee(true);
 
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(GetCapsuleComponent());
