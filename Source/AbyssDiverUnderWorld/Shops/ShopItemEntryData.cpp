@@ -1,15 +1,12 @@
 #include "Shops/ShopItemEntryData.h"
 
-void UShopItemEntryData::Init(int32 NewPrice, UTexture2D* NewItemImage, const FString& NewToolTipText)
+#include "Shops/ShopWidgets/ShopItemSlotWidget.h"
+
+void UShopItemEntryData::Init(int32 NewSlotIndex, UTexture2D* NewItemImage, const FString& NewToolTipText)
 {
-	Price = NewPrice;
+	SlotIndex = NewSlotIndex;
 	ItemImage = NewItemImage;
 	ToolTipText = NewToolTipText;
-}
-
-int32 UShopItemEntryData::GetPrice() const
-{
-	return Price;
 }
 
 UTexture2D* UShopItemEntryData::GetItemImage() const
@@ -21,3 +18,14 @@ const FString& UShopItemEntryData::GetToolTipText() const
 {
 	return ToolTipText;
 }
+
+int32 UShopItemEntryData::GetSlotIndex() const
+{
+	return SlotIndex;
+}
+
+void UShopItemEntryData::SetSlotIndex(int32 NewSlotIndex)
+{
+	SlotIndex = NewSlotIndex;
+}
+

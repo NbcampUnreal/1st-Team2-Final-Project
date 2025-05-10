@@ -4,7 +4,8 @@
 #include "Shops/ShopWidgets/ShopCategoryTabWidget.h"
 #include "Shops/ShopWidgets/ShopWidget.h"
 #include "Shops/ShopItemEntryData.h"
-#include "DataRow/FADItemDataRow.h"
+#include "Shops/ShopWidgets/ShopElementInfoWidget.h"
+#include "Shops/ShopWidgets/ShopItemSlotWidget.h"
 #include "AbyssDiverUnderWorld.h"
 
 #include "DataRow/FADItemDataRow.h"
@@ -73,6 +74,7 @@ bool FShopItemIdList::TryAdd(uint8 NewId)
 		UE_LOG(LogTemp, Log, TEXT("You Trying to Add Exist Id : %d"), NewId);
 		return false;
 	}
+
 	FShopItemId ShopId;
 	ShopId.Id = NewId;
 
@@ -82,17 +84,18 @@ bool FShopItemIdList::TryAdd(uint8 NewId)
 	return true;
 }
 
-void FShopItemIdList::Remove(uint8 Id)
+int32 FShopItemIdList::Remove(uint8 Id)
 {
 	int32 Index = Contains(Id);
 	if (Index == INDEX_NONE)
 	{
 		UE_LOG(LogTemp, Log, TEXT("You Trying to Remove Not Exist Id : %d"), Id);
-		return;
+		return INDEX_NONE;
 	}
 
 	IdList.RemoveAt(Index);
 	MarkArrayDirty();
+	return Index;
 }
 
 void FShopItemIdList::Modify(uint8 InIndex, uint8 NewId)
@@ -124,6 +127,15 @@ AShop::AShop()
 {
 	PrimaryActorTick.bCanEverTick = false;
 	bReplicates = true;
+
+	ShopMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ShopMesh"));
+	SetRootComponent(ShopMeshComponent);
+
+	ItemMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ItemMesh"));
+	ItemMeshComponent->SetupAttachment(RootComponent);
+	ItemMeshComponent->SetVisibleInSceneCaptureOnly(true);
+	ItemMeshComponent->SetIsReplicated(false);
+	ItemMeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
 void AShop::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -211,7 +223,57 @@ void AShop::AddItemToList(uint8 ItemId, EShopCategoryTab TabType)
 		return;
 	}
 
-	ShopConsumableItemIdList.TryAdd(ItemId);
+	if (TabType >= EShopCategoryTab::Max)
+	{
+		LOGVN(Error, TEXT("Weird Category Type : %d"), TabType);
+		return;
+	}
+
+	bool bIsAddSucceeded = false;
+	int32 SlotIndex;
+	switch (TabType)
+	{
+	case EShopCategoryTab::Consumable:
+		bIsAddSucceeded = ShopConsumableItemIdList.TryAdd(ItemId);
+		SlotIndex = ShopConsumableItemIdList.IdList.Num() - 1;
+		break;
+	case EShopCategoryTab::Equipment:
+		bIsAddSucceeded = ShopEquipmentItemIdList.TryAdd(ItemId);
+		SlotIndex = ShopEquipmentItemIdList.IdList.Num() - 1;
+		break;
+	case EShopCategoryTab::Upgrade:
+		LOGV(Error, TEXT("Upgrade Tab is not Supported Currently"));
+		return;
+	case EShopCategoryTab::Max:
+		check(false);
+		return;
+	default:
+		check(false);
+		return;
+	}
+
+	if (bIsAddSucceeded == false)
+	{
+		return;
+	}
+
+	FFADItemDataRow*& Data = DataTableArray[ItemId];
+
+	UShopItemEntryData* EntryData = NewObject<UShopItemEntryData>();
+	EntryData->Init(SlotIndex, Data->Thumbnail, Data->Description); // 임시
+	EntryData->OnEntryUpdatedFromDataDelegate.AddUObject(this, &AShop::OnSlotEntryWidgetUpdated);
+
+	ShopWidget->AddItem(EntryData, TabType);
+
+	if (TabType == EShopCategoryTab::Consumable)
+	{
+		LOGVN(Error, TEXT("ItemAdded to Consumable Tab, Index : %d"), SlotIndex);
+	}
+	else
+	{
+		LOGVN(Error, TEXT("ItemAdded to Equipment Tab, Index : %d"), SlotIndex);
+	}
+	
 }
 
 void AShop::RemoveItemToList(uint8 ItemId, EShopCategoryTab TabType)
@@ -222,7 +284,39 @@ void AShop::RemoveItemToList(uint8 ItemId, EShopCategoryTab TabType)
 		return;
 	}
 
-	ShopConsumableItemIdList.Remove(ItemId);
+	if (TabType >= EShopCategoryTab::Max)
+	{
+		LOGVN(Error, TEXT("Weird Category Type : %d"), TabType);
+		return;
+	}
+
+	int32 RemovedIndex = INDEX_NONE;
+
+	switch (TabType)
+	{
+	case EShopCategoryTab::Consumable:
+		RemovedIndex = ShopConsumableItemIdList.Remove(ItemId);
+		break;
+	case EShopCategoryTab::Equipment:
+		RemovedIndex = ShopEquipmentItemIdList.Remove(ItemId);
+		break;
+	case EShopCategoryTab::Upgrade:
+		LOGV(Error, TEXT("Upgrade Tab is not Supported Currently"));
+		break;
+	case EShopCategoryTab::Max:
+		check(false);
+		break;
+	default:
+		check(false);
+		break;
+	}
+
+	if (RemovedIndex == INDEX_NONE)
+	{
+		return;
+	}
+
+	ShopWidget->RemoveItem(RemovedIndex, TabType);
 }
 
 void AShop::InitShopWidget()
@@ -242,6 +336,12 @@ void AShop::InitShopWidget()
 
 	ShopWidget->SetCurrentActivatedTab(EShopCategoryTab::Consumable);
 	ShopWidget->AddToViewport();
+
+	APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+	PC->SetInputMode(FInputModeUIOnly());
+	PC->SetShowMouseCursor(true);
+
+	ShopWidget->GetInfoWidget()->Init(ItemMeshComponent);
 }
 
 void AShop::InitData()
@@ -255,6 +355,13 @@ void AShop::InitData()
 			return A->Id < B->Id;
 		});
 
+	ItemMeshDataTable->GetAllRows<FItemMeshDataRow>(TEXT("TestMeshItemData"), MeshDataTableArray);
+
+	Algo::Sort(MeshDataTableArray, [](const FItemMeshDataRow* A, const FItemMeshDataRow* B)
+		{
+			return A->ItemId < B->ItemId;
+		});
+
 	if (HasAuthority() == false)
 	{
 		return;
@@ -264,17 +371,7 @@ void AShop::InitData()
 
 	for (const auto& Id : DefaultConsumableItemIdList)
 	{
-		FFADItemDataRow*& Data = DataTableArray[Id];
-
-		UShopItemEntryData* EntryData = NewObject<UShopItemEntryData>();
-		EntryData->Init(Data->Price, Data->Thumbnail, Data->Description); // 임시
-
-		if (Data->ItemType == EItemType::Consumable)
-		{
-			ShopWidget->AddItem(EntryData, EShopCategoryTab::Consumable);
-		}
-
-		ShopConsumableItemIdList.TryAdd(Id);
+		AddItemToList(Id, EShopCategoryTab::Consumable);
 	}
 
 	ShopWidget->ShowItemViewForTab(EShopCategoryTab::Consumable);
@@ -283,17 +380,7 @@ void AShop::InitData()
 
 	for (const auto& Id : DefaultEquipmentItemIdList)
 	{
-		FFADItemDataRow*& Data = DataTableArray[Id];
-
-		UShopItemEntryData* EntryData = NewObject<UShopItemEntryData>();
-		EntryData->Init(Data->Price, Data->Thumbnail, Data->Description); // 임시
-
-		if (Data->ItemType == EItemType::Equipment)
-		{
-			ShopWidget->AddItem(EntryData, EShopCategoryTab::Equipment);
-		}
-
-		ShopEquipmentItemIdList.TryAdd(Id);
+		AddItemToList(Id, EShopCategoryTab::Equipment);
 	}
 }
 
@@ -301,21 +388,92 @@ void AShop::OnShopItemListChanged(const FShopItemListChangeInfo& Info)
 {
 	LOGVN(Error, TEXT("Changed!"));
 	
+	if (Info.ChangeType >= EShopItemChangeType::Max)
+	{
+		LOGVN(Error, TEXT("Weird Change Type : %d"), Info.ChangeType);
+		return;
+	}
+
+	UShopItemEntryData* EntryData = nullptr;
 	FFADItemDataRow*& Data = DataTableArray[Info.ItemIdAfter];
 
-	UShopItemEntryData* EntryData = NewObject<UShopItemEntryData>();
-	EntryData->Init(Data->Price, Data->Thumbnail, Data->Description); // 임시
+	switch (Info.ChangeType)
+	{
+	case EShopItemChangeType::Added:
 
-	if (Data->ItemType == EItemType::Consumable)
-	{
-		ShopWidget->AddItem(EntryData, EShopCategoryTab::Consumable);
-	}
-	else if (Data->ItemType == EItemType::Equipment)
-	{
-		ShopWidget->AddItem(EntryData, EShopCategoryTab::Equipment);
+		EntryData = NewObject<UShopItemEntryData>();
+		EntryData->Init(Info.ShopIndex, Data->Thumbnail, Data->Description); // 임시
+		EntryData->OnEntryUpdatedFromDataDelegate.AddUObject(this, &AShop::OnSlotEntryWidgetUpdated);
+
+		if (Data->ItemType == EItemType::Consumable)
+		{
+			ShopWidget->AddItem(EntryData, EShopCategoryTab::Consumable);
+		}
+		else if (Data->ItemType == EItemType::Equipment)
+		{
+			ShopWidget->AddItem(EntryData, EShopCategoryTab::Equipment);
+		}
+
+		break;
+	case EShopItemChangeType::Removed:
+		ShopWidget->RemoveItem(Info.ShopIndex, Info.ShopTab);
+		break;
+	case EShopItemChangeType::Modified:
+		ShopWidget->ModifyItem(Info.ShopIndex, Data->Thumbnail, Data->Description, Info.ShopTab);
+		break;
+	case EShopItemChangeType::Max:
+		check(false);
+		break;
+	default:
+		check(false);
+		break;
 	}
 
 	ShopWidget->RefreshItemView();
+}
+
+void AShop::OnSlotEntryWidgetUpdated(UShopItemSlotWidget* SlotEntryWidget)
+{
+	SlotEntryWidget->OnShopItemSlotWidgetClickedDelegate.BindUObject(this, &AShop::OnSlotEntryClicked);
+	LOG(TEXT("%s bind Finc"), *SlotEntryWidget->GetName());
+}
+
+void AShop::OnSlotEntryClicked(int32 ClickedSlotIndex)
+{
+	EShopCategoryTab CurrentTab = ShopWidget->GetCurrentActivatedTab();
+
+	if (CurrentTab >= EShopCategoryTab::Max)
+	{
+		LOGV(Error, TEXT("Weird Tab Type : %d"), CurrentTab);
+		return;
+	}
+
+	int32 ItemId;
+	
+
+	switch (CurrentTab)
+	{
+	case EShopCategoryTab::Consumable:
+		ItemId = ShopConsumableItemIdList.IdList[ClickedSlotIndex].Id;
+		break;
+	case EShopCategoryTab::Equipment:
+		ItemId = ShopEquipmentItemIdList.IdList[ClickedSlotIndex].Id;
+		break;
+	case EShopCategoryTab::Upgrade:
+		LOGV(Error, TEXT("Upgrade is Not Supported Tab Type"));
+		return;
+	case EShopCategoryTab::Max:
+		check(false);
+		return;
+	default:
+		check(false);
+		return;
+	}
+
+	UStaticMesh* ItemMesh = MeshDataTableArray[ItemId]->ItemMesh;
+
+	ShopWidget->ShowItemInfos(ItemMesh, DataTableArray[ItemId]->Description, DataTableArray[ItemId]->Description);
+	LOG(TEXT("Showing Item Infos..., id : %d"), ItemId);
 }
 
 bool AShop::HasItem(int32 ItemId)

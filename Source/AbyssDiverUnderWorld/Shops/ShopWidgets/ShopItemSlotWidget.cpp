@@ -19,13 +19,20 @@ void UShopItemSlotWidget::NativeOnListItemObjectSet(UObject* ListItemObject)
 
     SetSlotImage(EntryData->GetItemImage());
     SetToolTipText(EntryData->GetToolTipText());
+    SlotIndex = EntryData->GetSlotIndex();
+
+    EntryData->OnEntryUpdatedFromDataDelegate.Broadcast(this);
+    LOG(TEXT("%s - EntryUpdated, Index : %d"), *GetName(), SlotIndex);
 }
 
 FReply UShopItemSlotWidget::NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
 {
-    Super::NativeOnMouseButtonUp(InGeometry, InMouseEvent);
+    FReply Replay =  Super::NativeOnMouseButtonUp(InGeometry, InMouseEvent);
 
-    return FReply::Handled();
+    LOG(TEXT("ShopItemSlotWidgetClicked, Index : %d"), SlotIndex);
+    OnShopItemSlotWidgetClickedDelegate.ExecuteIfBound(SlotIndex);
+
+    return Replay;
 }
 
 void UShopItemSlotWidget::NativeOnMouseEnter(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)

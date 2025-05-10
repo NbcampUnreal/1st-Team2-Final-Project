@@ -4,6 +4,7 @@
 #include "AbyssDiverUnderWorld.h"
 #include "ShopTileView.h"
 #include "Shops/ShopItemEntryData.h"
+#include "Shops/ShopWidgets/ShopElementInfoWidget.h"
 
 void UShopWidget::NativeConstruct()
 {
@@ -71,6 +72,62 @@ void UShopWidget::AddItem(UShopItemEntryData* EntryData, EShopCategoryTab Tab)
 	}
 }
 
+void UShopWidget::RemoveItem(int32 Index, EShopCategoryTab Tab)
+{
+	if (Tab >= EShopCategoryTab::Max)
+	{
+		LOGV(Error, TEXT("Weird Tab Type : %d"), Tab);
+		return;
+	}
+
+	switch (Tab)
+	{
+	case EShopCategoryTab::Consumable:
+		ConsumableTabEntryDataList.RemoveAt(Index);
+		break;
+	case EShopCategoryTab::Equipment:
+		EquipmentTabEntryDataList.RemoveAt(Index);
+		break;
+	case EShopCategoryTab::Upgrade:
+		LOGV(Error, TEXT("Upgrade Tab is not Supported Currently"));
+		return;
+	case EShopCategoryTab::Max:
+		check(false);
+		return;
+	default:
+		check(false);
+		return;
+	}
+}
+
+void UShopWidget::ModifyItem(int32 Index, UTexture2D* NewItemImage, const FString& NewToolTipText, EShopCategoryTab Tab)
+{
+	if (Tab >= EShopCategoryTab::Max)
+	{
+		LOGV(Error, TEXT("Weird Tab Type : %d"), Tab);
+		return;
+	}
+
+	switch (Tab)
+	{
+	case EShopCategoryTab::Consumable:
+		ConsumableTabEntryDataList[Index]->Init(Index, NewItemImage, NewToolTipText);
+		break;
+	case EShopCategoryTab::Equipment:
+		EquipmentTabEntryDataList[Index]->Init(Index, NewItemImage, NewToolTipText);
+		break;
+	case EShopCategoryTab::Upgrade:
+		LOGV(Error, TEXT("Upgrade Tab is not Supported Currently"));
+		return;
+	case EShopCategoryTab::Max:
+		check(false);
+		return;
+	default:
+		check(false);
+		return;
+	}
+}
+
 void UShopWidget::ShowItemViewForTab(EShopCategoryTab TabType)
 {
 	if (TabType >= EShopCategoryTab::Max)
@@ -109,6 +166,11 @@ void UShopWidget::RefreshItemView()
 		check(false);
 		return;
 	}
+}
+
+void UShopWidget::ShowItemInfos(UStaticMesh* NewItemMesh, const FString& NewDescription, const FString& NewInfoText)
+{
+	InfoWidget->ShowItemInfos(NewItemMesh, NewDescription, NewInfoText);
 }
 
 void UShopWidget::OnCategoryTabClicked(EShopCategoryTab CategoryTab)
@@ -168,4 +230,10 @@ UShopCategoryTabWidget* UShopWidget::GetCategoryTab(EShopCategoryTab CategoryTab
 	}
 
 	return Tab;
+}
+
+UShopElementInfoWidget* UShopWidget::GetInfoWidget() const
+{
+	check(InfoWidget);
+	return InfoWidget;
 }

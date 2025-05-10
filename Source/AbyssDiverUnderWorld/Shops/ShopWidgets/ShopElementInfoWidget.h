@@ -20,20 +20,26 @@ class ABYSSDIVERUNDERWORLD_API UShopElementInfoWidget : public UUserWidget
 
 public:
 
+	void Init(UStaticMeshComponent* NewItemMeshComp);
+
+	void ShowItemInfos(UStaticMesh* NewItemMesh, const FString& NewDescription, const FString& NewInfoText);
+
 	void ChangeItemDescription(const FString& NewDescription);
 	void ChangeInfoText(const FString& NewInfoText);
-	// Static Mesh, Skeletal Mesh 둘 다 전달 가능하도록 UObject
-	void ChangeItemMesh(const UObject* NewMesh);
+	void ChangeItemMesh(UStaticMesh* NewMesh);
 
 	void SetDescriptionActive(bool bShouldActivate);
 	void SetInfoTextActive(bool bShouldActivate);
-	void SetMeshActive(bool bShouldActivate);
+	void SetItemMeshActive(bool bShouldActivate);
 
 #pragma endregion
 
 #pragma region Variables
 
 protected:
+
+	UPROPERTY()
+	TObjectPtr<UStaticMeshComponent> ItemMeshComponent;
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<class UImage> ItemMeshImage;
