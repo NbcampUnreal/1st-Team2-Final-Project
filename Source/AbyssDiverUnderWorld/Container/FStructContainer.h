@@ -23,13 +23,16 @@ struct FItemData : public FFastArraySerializerItem
 	int32 Amount;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    float Mass;
+    int32 Mass;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	EItemType ItemType;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TObjectPtr<UTexture2D> Thumbnail;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 Price;
 
 	FItemData()
 		: Name(NAME_None), Id(0), Quantity(0), Amount(0), ItemType(EItemType::Max), Thumbnail(nullptr)
@@ -69,6 +72,7 @@ struct FInventoryList : public FFastArraySerializer
 		NewItem.ItemType = Item.ItemType;
 		NewItem.Thumbnail = Item.Thumbnail;
 		NewItem.Amount = Item.Amount;
+		NewItem.Price = Item.Price;
 		Items.Add(NewItem);
 		MarkArrayDirty();
 	}
