@@ -1,4 +1,4 @@
-﻿#include "Interactable/Item/ADItemBase.h"
+#include "Interactable/Item/ADItemBase.h"
 #include "AbyssDiverUnderWorld.h"
 #include "Net/UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"
