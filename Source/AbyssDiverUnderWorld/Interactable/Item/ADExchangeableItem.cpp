@@ -17,10 +17,10 @@ AADExchangeableItem::AADExchangeableItem()
 	DropMovement->bRotationFollowsVelocity = false;
 	DropMovement->bShouldBounce = true;            // 살짝 튕기게
 	DropMovement->Bounciness = 0.3f;
-
+	DropMovement->SetIsReplicated(true);
+	SetReplicateMovement(true);
 	bReplicates = true;
 }
-
 void AADExchangeableItem::BeginPlay()
 {
 	Super::BeginPlay();
