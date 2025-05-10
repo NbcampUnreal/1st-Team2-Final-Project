@@ -45,43 +45,35 @@ void AADOreRock::Interact(AActor* InstigatorActor)
 }
 void AADOreRock::HandleMineRequest(APawn* InstigatorPawn)
 {
-	if (!HasAuthority() || RemainingMines <= 0) return;
+	if (!HasAuthority() || CurrentMiningGauge <= 0) return;
 
-	RemainingMines--;
-	OnRep_RemainingMines();
+	// 25는 나중에 레이저 발사기가 생기면 변경해야 합니다..
+	CurrentMiningGauge = FMath::Max(0, CurrentMiningGauge - 25);
+	OnRep_CurrentMiningGauge();
 
-	if (RemainingMines > 0)
+	// 채광 이펙트
+	if (CurrentMiningGauge > 0 && PickAxeImpactFX)
 	{
-		if (PickAxeImpactFX)
-		{
-			UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-				GetWorld(),
-				PickAxeImpactFX,
-				GetActorLocation(),
-				FRotator::ZeroRotator
-			);
-		}
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			GetWorld(), PickAxeImpactFX, GetActorLocation(), FRotator::ZeroRotator
+		);
 	}
 
-	if (RemainingMines <= 0)
+	// 게이지 소진 시 파괴 이펙트 & 드롭
+	if (CurrentMiningGauge <= 0)
 	{
 		if (RockFragmentsFX)
 		{
 			UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-				GetWorld(),
-				RockFragmentsFX,
-				GetActorLocation(),
-				FRotator::ZeroRotator
+				GetWorld(), RockFragmentsFX, GetActorLocation(), FRotator::ZeroRotator
 			);
 		}
-
 		if (FractureSound)
 		{
 			UGameplayStatics::PlaySoundAtLocation(this, FractureSound, GetActorLocation());
 		}
 
 		SpawnDrops();
-
 		//Destroy();
 	}
 }
@@ -98,7 +90,7 @@ void AADOreRock::SpawnDrops()
 	int8 Count = FMath::RandRange(E->MinCount, E->MaxCount);
 	for (int8 i = 0; i < Count; i++)
 	{
-		float Mass = SampleDropMass(E->MinMass, E->MaxMass);
+		int32 Mass = SampleDropMass(E->MinMass, E->MaxMass);
 		FSoftObjectPath Path = E->ItemClass.ToSoftObjectPath();
 		UAssetManager& AssetMgr = UAssetManager::Get();
 		AssetMgr.GetStreamableManager().RequestAsyncLoad(
@@ -108,7 +100,7 @@ void AADOreRock::SpawnDrops()
 	}
 }
 
-void AADOreRock::OnAssetLoaded(FDropEntry* Entry, float Mass)
+void AADOreRock::OnAssetLoaded(FDropEntry* Entry, int32 Mass)
 {
 	if (UClass* Class = Entry->ItemClass.Get())
 	{
@@ -126,6 +118,8 @@ void AADOreRock::OnAssetLoaded(FDropEntry* Entry, float Mass)
 		// 스폰 이후 발사체 컴포넌트 활성화
 		if (AADExchangeableItem* ExItem = Cast<AADExchangeableItem>(Item))
 		{
+			ExItem->CalculateTotalPrice();
+
 			FVector RandomXY = FVector(FMath::RandRange(-100, 100), FMath::RandRange(-100, 100), 0);
 			FVector DropDir = RandomXY + FVector(0, 0, -200); // 아래쪽으로 힘
 			ExItem->DropMovement->Velocity = DropDir;
@@ -140,7 +134,7 @@ void AADOreRock::OnAssetLoaded(FDropEntry* Entry, float Mass)
 	Destroy();
 }
 
-float AADOreRock::SampleDropMass(float MinMass, float MaxMass) const
+int32 AADOreRock::SampleDropMass(int32 MinMass, int32 MaxMass) const
 {
 	// 균등 난수 생성
 	float u = FMath::FRand();
@@ -149,10 +143,12 @@ float AADOreRock::SampleDropMass(float MinMass, float MaxMass) const
 	float biased = FMath::Pow(u, MassBiasExponent);
 
 	// 편향된 값을 [MinMass, MaxMass] 구간에 선형 매핑
-	return FMath::Lerp(MinMass, MaxMass, biased);
+	float FValue = FMath::Lerp((float)MinMass, (float)MaxMass, biased);
+
+	return FMath::RoundToInt(FValue);
 }
 
-void AADOreRock::OnRep_RemainingMines()
+void AADOreRock::OnRep_CurrentMiningGauge()
 {
 	// TODO: UI update
 }
@@ -160,7 +156,7 @@ void AADOreRock::OnRep_RemainingMines()
 void AADOreRock::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	DOREPLIFETIME(AADOreRock, RemainingMines);
+	DOREPLIFETIME(AADOreRock, CurrentMiningGauge);
 }
 
 

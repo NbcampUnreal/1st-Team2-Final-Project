@@ -55,9 +55,14 @@ void AADItemBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifet
 	DOREPLIFETIME(AADItemBase, ItemData);
 }
 
-void AADItemBase::SetItemMass(float InMass)
+void AADItemBase::SetItemMass(int32 InMass)
 {
 	ItemData.Mass = InMass;
+}
+
+void AADItemBase::SetPrice(int32 InPrice)
+{
+	ItemData.Price = InPrice;
 }
 
 
