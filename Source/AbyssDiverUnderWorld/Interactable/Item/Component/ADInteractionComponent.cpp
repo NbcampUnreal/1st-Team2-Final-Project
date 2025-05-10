@@ -9,18 +9,6 @@ UADInteractionComponent::UADInteractionComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
 	PrimaryComponentTick.bStartWithTickEnabled = true;
-
-	
-//	// 에디터와 런타임 양쪽에서 보이도록 DefaultSubobject로 생성
-//	RangeSphere = CreateDefaultSubobject<USphereComponent>(TEXT("InteractionRange"));
-//	// 콜리전 설정
-//	RangeSphere->SetupAttachment(GetOwner()->GetRootComponent());
-//	RangeSphere->InitSphereRadius(400.f);
-//	RangeSphere->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
-//	RangeSphere->SetGenerateOverlapEvents(true);
-//	RangeSphere->OnComponentBeginOverlap.AddDynamic(this, &UADInteractionComponent::HandleBeginOverlap);
-//	RangeSphere->OnComponentEndOverlap.AddDynamic(this, &UADInteractionComponent::HandleEndOverlap);
-////	RangeSphere->RegisterComponent();
 }
 
 
@@ -96,10 +84,21 @@ void UADInteractionComponent::TryInteract()
 {
 	PerformFocusCheck();
 
+	APawn* Pawn = Cast<APawn>(GetOwner());
+	if (!Pawn) return;
+
+	// 포커싱 판정 로직...
 	if (FocusedInteractable)
 	{
-		// 인터페이스로 호출하거나 컴포넌트 함수를 직접 호출
-		FocusedInteractable->Interact(GetOwner());
+		if (Pawn->HasAuthority())
+		{
+			// 호스트 모드라면 바로 호출
+			FocusedInteractable->Interact(Pawn);
+		}
+		else
+		{
+			// TODO : 클라이언트 → 서버 요청 (서버 RPC 필요)
+		}
 	}
 }
 
