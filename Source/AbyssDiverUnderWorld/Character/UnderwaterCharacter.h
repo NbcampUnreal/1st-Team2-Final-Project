@@ -45,12 +45,19 @@ protected:
 
 	/** 레이더 함수. 미구현*/
 	void Radar(const FInputActionValue& InputActionValue);
+
+	/** 카메라 모드 전환 함수. 디버깅용으로 1인칭과 3인칭 카메라를 전환한다. */
+	void SetDebugCameraMode(bool bDebugCameraEnable);
+
+	UFUNCTION(CallInEditor)
+	void ToggleDebugCameraMode();
 	
 #pragma endregion
 	
 #pragma region Variable
 	
 private:
+	
 	/** 이동 입력, 3차원 입력을 받는다. 캐릭터의 XYZ 축대로 맵핑을 한다. Forward : X, Right : Y, Up : Z */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> MoveAction;
@@ -82,7 +89,17 @@ private:
 	/** 게임에 사용될 1인칭 Camera Component */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UCameraComponent> FirstPersonCameraComponent;
-	
+
+	/** 디버깅 목적으로 사용할 3인칭 Camera Component의 Spring Arm */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class USpringArmComponent> CameraBoom;
+
+	/** 디버깅 목적으로 사용될 3인칭 Camera Component */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UCameraComponent> ThirdPersonCameraComponent;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Debug, meta = (AllowPrivateAccess = "true"))
+	bool bUseDebugCamera;
+
 #pragma endregion
-	
 };
