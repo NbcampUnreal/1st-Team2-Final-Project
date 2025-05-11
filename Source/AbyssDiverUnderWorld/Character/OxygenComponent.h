@@ -137,7 +137,7 @@ public:
 	void SetShouldConsumeOxygen(bool bNewShouldConsumeOxygen);
 
 	/** 산소 소모 여부 */
-	FORCEINLINE bool IsShouldConsumeOxygen() const { return bShouldConsumeOxygen; }
+	FORCEINLINE bool ShouldConsumeOxygen() const { return bShouldConsumeOxygen; }
 
 	/** 최대 산소량 */
 	FORCEINLINE float GetMaxOxygenLevel() const { return OxygenState.MaxOxygenLevel; }
