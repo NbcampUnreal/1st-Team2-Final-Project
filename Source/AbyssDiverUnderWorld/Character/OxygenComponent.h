@@ -1,0 +1,158 @@
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "Components/ActorComponent.h"
+#include "OxygenComponent.generated.h"
+
+
+UENUM(BlueprintType)
+enum class EOXygenChangeResult : uint8
+{
+	Success UMETA(DisplayName = "Success"),
+	SystemDisabled UMETA(DisplayName = "SystemDisabled"),
+	NotAuthority UMETA(DisplayName = "NotAuthority"),
+	BlockedByLimit UMETA(DisplayName = "BlockedByLimit"),
+};
+
+// To-DO
+// 1. Timer를 이용해서 소모하는 방식으로 변경
+// 2. 산소 소모량을 깊이에 따라 변화하도록 한다.
+
+// Require System
+// 현재 수심을 확인할 수 있는 System이 필요하다.
+
+UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
+class ABYSSDIVERUNDERWORLD_API UOxygenComponent : public UActorComponent
+{
+	GENERATED_BODY()
+
+public:
+	// Sets default values for this component's properties
+	UOxygenComponent();
+
+protected:
+	// Called when the game starts
+	virtual void BeginPlay() override;
+
+public:
+	// Called every frame
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType,
+	                           FActorComponentTickFunction* ThisTickFunction) override;
+
+private:
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	
+#pragma region Method
+
+protected:
+
+	UFUNCTION(BlueprintImplementableEvent, meta=(DisplayName = "OnOxygenLevelChanged"))
+	void K2_OnOxygenLevelChanged(float CurrentOxygenLevel, float MaxOxygenLevel);
+
+	UFUNCTION(BlueprintImplementableEvent, meta=(DisplayName = "OnOxygenDepleted"))
+	void K2_OnOxygenDepleted();
+
+	UFUNCTION(BlueprintImplementableEvent, meta=(DisplayName = "OnOxygenRestored"))
+	void K2_OnOxygenRestored();
+	
+	UFUNCTION()
+	void OnRep_MaxOxygenLevel();
+	
+	UFUNCTION()
+	void OnRep_OxygenLevel();
+	
+private:
+	/** 매 틱마다 산소를 소모 */
+	void ConsumeOxygen(float DeltaTime);
+	
+#pragma endregion
+	
+#pragma region Varaible
+
+public:
+	
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOxygenLevelChanged, float, CurrentOxygenLevel, float, MaxOxygenLevel);
+	/** 산소량이 변경되었을 때 호출되는 델리게이트 */
+	UPROPERTY(BlueprintAssignable)
+	FOxygenLevelChanged OnOxygenLevelChanged;
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOxygenDepleted);
+	/** 산소가 전부 소모되었을 때 호출되는 델리게이트 */
+	UPROPERTY(BlueprintAssignable)
+	FOxygenDepleted OnOxygenDepleted;
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOxygenRestored);
+	/** 산소가 고갈되었다가 회복될 때 호출되는 델리게이트 */
+	UPROPERTY(BlueprintAssignable)
+	FOxygenRestored OnOxygenRestored;
+	
+private:
+	/** 산소 시스템 활성화 여부. 비활성화 되면 산소 회복, 소모를 정지한다. 사망 상태 등에서 사용 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat", meta = (AllowPrivateAccess = "true"))
+	bool bOxygenSystemEnabled;
+	
+	/** 산소 소모 여부 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stat", meta=(AllowPrivateAccess = "true"))
+	bool bShouldConsumeOxygen;
+	
+	/** 최대 산소량 */
+	UPROPERTY(ReplicatedUsing=OnRep_MaxOxygenLevel, EditAnywhere, BlueprintReadOnly, Category="Stat" , meta=(AllowPrivateAccess = "true"))
+	float MaxOxygenLevel;
+
+	/** 현재 산소량 */
+	UPROPERTY(ReplicatedUsing=OnRep_OxygenLevel, EditAnywhere, BlueprintReadOnly, Category="Stat", meta=(AllowPrivateAccess = "true"))
+	float OxygenLevel;
+
+	/** Client에서 OxygenRestore을 검사하기 위한 이전 OxygenLevel */
+	float OldOxygenLevel;
+
+	/** 산소 소모량, 깊이에 따라 변화하지만 현재는 고정값을 소모하도록 한다. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Stat", meta=(AllowPrivateAccess = "true"))
+	float OxygenConsumeRate;
+
+#pragma endregion
+
+#pragma region Getter Setter
+
+public:
+	void SetOxygenSystemEnabled(bool bNewOxygenSystemEnabled);
+	
+	/** 산소 시스템 활성화 여부, 비활성화 되면 산소 회복, 소모를 정지한다. */
+	FORCEINLINE bool IsOxygenSystemEnabled() const { return bOxygenSystemEnabled; }
+
+	/** 산소 소모 여부. 수중에서는 소모하고 지상에서는 소모하지 않는다. */
+	UFUNCTION(BlueprintCallable)
+	void SetShouldConsumeOxygen(bool bNewShouldConsumeOxygen);
+
+	/** 산소 소모 여부 */
+	FORCEINLINE bool IsShouldConsumeOxygen() const { return bShouldConsumeOxygen; }
+
+	/** 최대 산소량 */
+	FORCEINLINE float GetMaxOxygenLevel() const { return MaxOxygenLevel; }
+	
+	/** 최대 산소량을 설정한다. */
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE void SetMaxOxygenLevel(float NewMaxOxygenLevel);
+
+	/** 현재 산소량 */
+	FORCEINLINE float GetOxygenLevel() const { return OxygenLevel; }
+
+	/** 현재 산소량이 0보다 작거나 같으면 true를 반환한다. */
+	UFUNCTION(BlueprintPure)
+	FORCEINLINE float IsOxygenDepleted() const { return OxygenLevel <= 0; }
+
+	/** 산소를 충전 */
+	UFUNCTION(BlueprintCallable)
+	EOXygenChangeResult RefillOxygen(float RefillAmount);
+
+private:
+	/** 산소량을 설정한다. 산소량은 0보다 작거나 MaxOxygenLevel보다 클 수 없다.
+	 * 산소량이 변경되면 OnOxygenLevelChanged를 호출한다.
+	 * 산소량이 모두 소모되면 OnOxygenDepleted를 호출한다.
+	 * */
+	void SetOxygenLevel(float NexOxygenLevel, bool bForce);
+	
+#pragma endregion
+};
