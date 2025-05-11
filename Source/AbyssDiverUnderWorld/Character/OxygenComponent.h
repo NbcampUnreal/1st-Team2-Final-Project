@@ -16,6 +16,23 @@ enum class EOXygenChangeResult : uint8
 	BlockedByLimit UMETA(DisplayName = "BlockedByLimit"),
 };
 
+/** 현재 산소량과 최대 산소량이 개별적으로 Replicate 되었을 경우 최대 산소량을 변경할 때 일시적으로 Oxygen 퍼센티지가 일치하지 않는 현상이 발생한다.
+ * 해당 현상을 방지하기 위해서 2개의 변수를 동시에 동기화한다.
+ */
+USTRUCT(BlueprintType)
+struct FOxygenState
+{
+	GENERATED_BODY()
+
+	/** 최대 산소량 */
+	UPROPERTY(BlueprintReadOnly)
+	float MaxOxygenLevel;
+
+	/** 현재 산소량 */
+	UPROPERTY(BlueprintReadOnly)
+	float OxygenLevel;
+};
+
 // To-DO
 // 1. Timer를 이용해서 소모하는 방식으로 변경
 // 2. 산소 소모량을 깊이에 따라 변화하도록 한다.
@@ -56,12 +73,9 @@ protected:
 
 	UFUNCTION(BlueprintImplementableEvent, meta=(DisplayName = "OnOxygenRestored"))
 	void K2_OnOxygenRestored();
-	
+
 	UFUNCTION()
-	void OnRep_MaxOxygenLevel();
-	
-	UFUNCTION()
-	void OnRep_OxygenLevel();
+	void OnRep_OxygenStateChanged();
 	
 private:
 	/** 매 틱마다 산소를 소모 */
@@ -97,13 +111,8 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stat", meta=(AllowPrivateAccess = "true"))
 	bool bShouldConsumeOxygen;
 	
-	/** 최대 산소량 */
-	UPROPERTY(ReplicatedUsing=OnRep_MaxOxygenLevel, EditAnywhere, BlueprintReadOnly, Category="Stat" , meta=(AllowPrivateAccess = "true"))
-	float MaxOxygenLevel;
-
-	/** 현재 산소량 */
-	UPROPERTY(ReplicatedUsing=OnRep_OxygenLevel, EditAnywhere, BlueprintReadOnly, Category="Stat", meta=(AllowPrivateAccess = "true"))
-	float OxygenLevel;
+	UPROPERTY(ReplicatedUsing="OnRep_OxygenStatechanged", EditAnywhere, BlueprintReadOnly, Category = "Stat", meta = (AllowPrivateAccess = "true"))
+	FOxygenState OxygenState;
 
 	/** Client에서 OxygenRestore을 검사하기 위한 이전 OxygenLevel */
 	float OldOxygenLevel;
@@ -130,18 +139,18 @@ public:
 	FORCEINLINE bool IsShouldConsumeOxygen() const { return bShouldConsumeOxygen; }
 
 	/** 최대 산소량 */
-	FORCEINLINE float GetMaxOxygenLevel() const { return MaxOxygenLevel; }
+	FORCEINLINE float GetMaxOxygenLevel() const { return OxygenState.MaxOxygenLevel; }
 	
 	/** 최대 산소량을 설정한다. */
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE void SetMaxOxygenLevel(float NewMaxOxygenLevel);
 
 	/** 현재 산소량 */
-	FORCEINLINE float GetOxygenLevel() const { return OxygenLevel; }
+	FORCEINLINE float GetOxygenLevel() const { return OxygenState.OxygenLevel; }
 
 	/** 현재 산소량이 0보다 작거나 같으면 true를 반환한다. */
 	UFUNCTION(BlueprintPure)
-	FORCEINLINE float IsOxygenDepleted() const { return OxygenLevel <= 0; }
+	FORCEINLINE float IsOxygenDepleted() const { return OxygenState.OxygenLevel <= 0; }
 
 	/** 산소를 충전 */
 	UFUNCTION(BlueprintCallable)

@@ -30,7 +30,7 @@ void UOxygenComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 		return;
 	}
 	
-	if (GetOwnerRole() == ROLE_Authority && bShouldConsumeOxygen && OxygenLevel > 0)
+	if (GetOwnerRole() == ROLE_Authority && bShouldConsumeOxygen && GetOxygenLevel() > 0)
 	{
 		ConsumeOxygen(DeltaTime);
 	}
@@ -40,50 +40,33 @@ void UOxygenComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(UOxygenComponent, MaxOxygenLevel);
-	DOREPLIFETIME(UOxygenComponent, OxygenLevel);
+	DOREPLIFETIME(UOxygenComponent, OxygenState);
 }
 
-void UOxygenComponent::OnRep_MaxOxygenLevel()
+void UOxygenComponent::OnRep_OxygenStateChanged()
 {
-	OnOxygenLevelChanged.Broadcast(OxygenLevel, MaxOxygenLevel);
-	K2_OnOxygenLevelChanged(OxygenLevel, MaxOxygenLevel);
+	// MaxOxygenLevel, OxygenLevel이 한 번에 변경되어서 Replicate 되므로 따로 값을 수정할 필요는 없다.
+	OnOxygenLevelChanged.Broadcast(OxygenState.OxygenLevel, OxygenState.MaxOxygenLevel);
+	K2_OnOxygenLevelChanged(OxygenState.OxygenLevel, OxygenState.MaxOxygenLevel);
 
-	// MaxOxygenLevel을 변경하게 되면 OxygenLevel도 변경되어서 Replicate가 2번 발생한다.
-	if (OxygenLevel > MaxOxygenLevel)
-	{
-		SetOxygenLevel(MaxOxygenLevel);
-	}
-	else
-	{
-		OnOxygenLevelChanged.Broadcast(OxygenLevel, MaxOxygenLevel);
-		K2_OnOxygenLevelChanged(OxygenLevel, MaxOxygenLevel);
-	}
-}
-
-void UOxygenComponent::OnRep_OxygenLevel()
-{
-	OnOxygenLevelChanged.Broadcast(OxygenLevel, MaxOxygenLevel);
-	K2_OnOxygenLevelChanged(OxygenLevel, MaxOxygenLevel);
-	
-	if (OxygenLevel <= 0)
+	if (OxygenState.OxygenLevel <= 0)
 	{
 		OnOxygenDepleted.Broadcast();
 		K2_OnOxygenDepleted();
 	}
 
-	if (OldOxygenLevel <= 0 && OxygenLevel > 0)
+	if (OldOxygenLevel <= 0 && OxygenState.OxygenLevel > 0)
 	{
 		OnOxygenRestored.Broadcast();
 		K2_OnOxygenRestored();
 	}
-
-	OldOxygenLevel = OxygenLevel;
+	
+	OldOxygenLevel = OxygenState.OxygenLevel;
 }
 
 void UOxygenComponent::ConsumeOxygen(const float DeltaTime)
 {
-	SetOxygenLevel(OxygenLevel - OxygenConsumeRate * DeltaTime);
+	SetOxygenLevel(OxygenState.OxygenLevel - OxygenConsumeRate * DeltaTime);
 }
 
 void UOxygenComponent::SetOxygenSystemEnabled(const bool bNewOxygenSystemEnabled)
@@ -107,17 +90,17 @@ void UOxygenComponent::SetMaxOxygenLevel(float NewMaxOxygenLevel)
 		return;
 	}
 
-	MaxOxygenLevel = NewMaxOxygenLevel;
-	if (OxygenLevel > MaxOxygenLevel)
+	OxygenState.MaxOxygenLevel = NewMaxOxygenLevel;
+	if (OxygenState.OxygenLevel > OxygenState.MaxOxygenLevel)
 	{
-		SetOxygenLevel(MaxOxygenLevel);
+		SetOxygenLevel(OxygenState.MaxOxygenLevel);
 	}
 	else
 	{
 		// 현재는 MaxOxygenLevel이 변화하는 이벤트가 따로 있지는 않는다.
 		// 공통적으로 OnOxygenLevelChanged를 호출한다.
-		OnOxygenLevelChanged.Broadcast(OxygenLevel, MaxOxygenLevel);
-		K2_OnOxygenLevelChanged(OxygenLevel, MaxOxygenLevel);
+		OnOxygenLevelChanged.Broadcast(OxygenState.OxygenLevel, OxygenState.MaxOxygenLevel);
+		K2_OnOxygenLevelChanged(OxygenState.OxygenLevel, OxygenState.MaxOxygenLevel);
 	}
 }
 
@@ -131,40 +114,40 @@ EOXygenChangeResult UOxygenComponent::RefillOxygen(const float RefillAmount)
 	{
 		return EOXygenChangeResult::SystemDisabled;
 	}
-	if (OxygenLevel >= MaxOxygenLevel)
+	if (OxygenState.OxygenLevel >= OxygenState.MaxOxygenLevel)
 	{
 		return EOXygenChangeResult::BlockedByLimit;
 	}
 
-	SetOxygenLevel(OxygenLevel + RefillAmount);
+	SetOxygenLevel(OxygenState.OxygenLevel + RefillAmount);
 	
 	return EOXygenChangeResult::Success;
 }
 
 void UOxygenComponent::SetOxygenLevel(const float NexOxygenLevel, const bool bForce = false)
 {
-	if (OxygenLevel == NexOxygenLevel && !bForce)
+	if (OxygenState.OxygenLevel == NexOxygenLevel && !bForce)
 	{
 		return;
 	}
 
-	float OldOxygenLevel = OxygenLevel;
+	const float OldOxygenLevel = OxygenState.OxygenLevel;
 	
-	OxygenLevel  = FMath::Clamp(NexOxygenLevel, 0.0f, MaxOxygenLevel);
-	OnOxygenLevelChanged.Broadcast(OxygenLevel, MaxOxygenLevel);
-	K2_OnOxygenLevelChanged(OxygenLevel, MaxOxygenLevel);
+	OxygenState.OxygenLevel  = FMath::Clamp(NexOxygenLevel, 0.0f, OxygenState.MaxOxygenLevel);
+	OnOxygenLevelChanged.Broadcast(OxygenState.OxygenLevel, OxygenState.MaxOxygenLevel);
+	K2_OnOxygenLevelChanged(OxygenState.OxygenLevel, OxygenState.MaxOxygenLevel);
 	
-	if (OxygenLevel <= 0)
+	if (OxygenState.OxygenLevel <= 0)
 	{
 		OnOxygenDepleted.Broadcast();
 		K2_OnOxygenDepleted();
 	}
 
-	if (OldOxygenLevel <= 0 && OxygenLevel > 0)
+	if (OldOxygenLevel <= 0 && OxygenState.OxygenLevel > 0)
 	{
 		OnOxygenRestored.Broadcast();
 		K2_OnOxygenRestored();
 	}
 
-	LOGN(TEXT("OxygenLevel : %f, MaxOxygenLevel : %f"), OxygenLevel, MaxOxygenLevel);
+	LOGN(TEXT("OxygenLevel : %f, MaxOxygenLevel : %f"), OxygenState.OxygenLevel, OxygenState.MaxOxygenLevel);
 }
