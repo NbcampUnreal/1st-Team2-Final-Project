@@ -10,6 +10,8 @@
 UUnderwaterAnimInstance::UUnderwaterAnimInstance()
 {
 	ShouldMoveThresholdSpeed = 3.0f;
+
+	CharacterState = ECharacterState::Underwater;
 	
 	Speed = 0.0f;
 	ForwardSpeed = 0.0f;
@@ -45,6 +47,8 @@ void UUnderwaterAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 
 void UUnderwaterAnimInstance::UpdateVariables()
 {
+	CharacterState = UnderwaterCharacter->GetCharacterState();
+	
 	const FVector Velocity = UnderwaterCharacter->GetVelocity();
 	Speed = Velocity.Size();
 
