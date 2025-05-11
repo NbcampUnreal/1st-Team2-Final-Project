@@ -8,6 +8,7 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Monster.generated.h"
 
+class USplineComponent;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AMonster : public AUnitBase
@@ -23,26 +24,21 @@ protected:
 
 #pragma region Method
 public:
-	
-
-protected:
-	
-private:
+	UFUNCTION(BlueprintCallable)
+	FVector FindNextPatrolLocation(int32& InOutIndex) const;
 
 #pragma endregion
 
 #pragma region Variable
-public:
-
 protected:
-
-
-private:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI|Patrol")
+	TObjectPtr<USplineComponent> PatrolSpline;
 
 #pragma endregion
 
 #pragma region Getter, Setter
 public:
-
+	UFUNCTION(BlueprintCallable)
+	USplineComponent* GetSplineComp() const;
 #pragma endregion
 };

@@ -2,6 +2,7 @@
 
 
 #include "Monster/MonsterAIController.h"
+#include "BehaviorTree/BlackboardComponent.h"
 #include "AbyssDiverUnderWorld.h"
 
 AMonsterAIController::AMonsterAIController()
@@ -37,6 +38,9 @@ void AMonsterAIController::OnPossess(APawn* InPawn)
 
 		LOG(TEXT("AIController Possess"));
 	}
+
+	FTimerHandle TimerHandle;
+	GetWorldTimerManager().SetTimer(TimerHandle, this, &AMonsterAIController::InitializePatrolPoint, 0.5f, false);
 }
 
 void AMonsterAIController::LoadSightDataFromTable()
@@ -59,5 +63,13 @@ void AMonsterAIController::LoadSightDataFromTable()
 	else
 	{
 		LOG(TEXT("No matching row found for MonsterID"));
+	}
+}
+
+void AMonsterAIController::InitializePatrolPoint()
+{
+	if (BlackboardComponent)
+	{
+		BlackboardComponent->SetValueAsInt("PatrolIndex", 0);
 	}
 }
