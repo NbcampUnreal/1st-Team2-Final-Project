@@ -5,6 +5,7 @@
 
 #include "ShopElementInfoWidget.generated.h"
 
+DECLARE_MULTICAST_DELEGATE(FOnBuyButtonClickedDelegate);
 class URichTextBlock;
 
 /**
@@ -14,9 +15,12 @@ UCLASS()
 class ABYSSDIVERUNDERWORLD_API UShopElementInfoWidget : public UUserWidget
 {
 	GENERATED_BODY()
-	
 
-#pragma region Methods
+protected:
+
+	virtual void NativeConstruct() override;
+	
+#pragma region Methods, Delegates
 
 public:
 
@@ -32,6 +36,12 @@ public:
 	void SetInfoTextActive(bool bShouldActivate);
 	void SetItemMeshActive(bool bShouldActivate);
 
+	FOnBuyButtonClickedDelegate OnBuyButtonClickedDelegate;
+
+private:
+
+	UFUNCTION()
+	void OnBuyButtonClicked();
 #pragma endregion
 
 #pragma region Variables
@@ -49,6 +59,9 @@ protected:
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<URichTextBlock> InfoText;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<class UButton> BuyButton;
 
 #pragma endregion
 };
