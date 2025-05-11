@@ -11,12 +11,20 @@ UOxygenComponent::UOxygenComponent()
 	PrimaryComponentTick.bCanEverTick = true;
 	SetIsReplicatedByDefault(true);
 
+	bOxygenSystemEnabled = true;
+	bShouldConsumeOxygen = true;
 	
+	OxygenState.MaxOxygenLevel = 600.0f;
+	OxygenState.OxygenLevel = 600.0f;
+
+	OxygenConsumeRate = 1.0f;
 }
 
 void UOxygenComponent::BeginPlay()
 {
 	Super::BeginPlay();
+
+	OldOxygenLevel = OxygenState.OxygenLevel;
 }
 
 
@@ -124,16 +132,16 @@ EOXygenChangeResult UOxygenComponent::RefillOxygen(const float RefillAmount)
 	return EOXygenChangeResult::Success;
 }
 
-void UOxygenComponent::SetOxygenLevel(const float NexOxygenLevel, const bool bForce = false)
+void UOxygenComponent::SetOxygenLevel(const float NextOxygenLevel, const bool bForce)
 {
-	if (OxygenState.OxygenLevel == NexOxygenLevel && !bForce)
+	if (OxygenState.OxygenLevel == NextOxygenLevel && !bForce)
 	{
 		return;
 	}
 
-	const float OldOxygenLevel = OxygenState.OxygenLevel;
+	OldOxygenLevel = OxygenState.OxygenLevel;
 	
-	OxygenState.OxygenLevel  = FMath::Clamp(NexOxygenLevel, 0.0f, OxygenState.MaxOxygenLevel);
+	OxygenState.OxygenLevel  = FMath::Clamp(NextOxygenLevel, 0.0f, OxygenState.MaxOxygenLevel);
 	OnOxygenLevelChanged.Broadcast(OxygenState.OxygenLevel, OxygenState.MaxOxygenLevel);
 	K2_OnOxygenLevelChanged(OxygenState.OxygenLevel, OxygenState.MaxOxygenLevel);
 	

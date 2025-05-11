@@ -117,8 +117,8 @@ private:
 	/** Client에서 OxygenRestore을 검사하기 위한 이전 OxygenLevel */
 	float OldOxygenLevel;
 
-	/** 산소 소모량, 깊이에 따라 변화하지만 현재는 고정값을 소모하도록 한다. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Stat", meta=(AllowPrivateAccess = "true"))
+	/** 산소 소모량, 깊이에 따라 변화하지만 현재는 고정값을 소모하도록 한다. 양수 값을 입력으로 한다. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Stat", meta=(AllowPrivateAccess = "true", ClampMin="0.0"))
 	float OxygenConsumeRate;
 
 #pragma endregion
@@ -161,7 +161,7 @@ private:
 	 * 산소량이 변경되면 OnOxygenLevelChanged를 호출한다.
 	 * 산소량이 모두 소모되면 OnOxygenDepleted를 호출한다.
 	 * */
-	void SetOxygenLevel(float NexOxygenLevel, bool bForce);
+	void SetOxygenLevel(float NextOxygenLevel, bool bForce = false);
 	
 #pragma endregion
 };
