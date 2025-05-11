@@ -25,6 +25,7 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	{
 		Movement->SetMovementMode(MOVE_Swimming);
 		Movement->MaxSwimSpeed = 400.0f;
+		Movement->BrakingDecelerationSwimming = 500.0f;
 	}
 
 	// To-Do
