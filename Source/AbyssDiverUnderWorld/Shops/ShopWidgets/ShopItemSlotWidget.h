@@ -33,7 +33,7 @@ public:
 
 private:
 
-	void ShowOrNotToolTip(bool bShouldShow);
+	void UpdateToolTipVisibility(bool bShouldShow);
 
 #pragma endregion
 

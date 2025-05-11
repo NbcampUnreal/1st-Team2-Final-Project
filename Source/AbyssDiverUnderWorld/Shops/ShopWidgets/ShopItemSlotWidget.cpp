@@ -39,17 +39,17 @@ void UShopItemSlotWidget::NativeOnMouseEnter(const FGeometry& InGeometry, const 
 {
     Super::NativeOnMouseEnter(InGeometry, InMouseEvent);
 
-    ShowOrNotToolTip(true);
+    UpdateToolTipVisibility(true);
 }
 
 void UShopItemSlotWidget::NativeOnMouseLeave(const FPointerEvent& InMouseEvent)
 {
     Super::NativeOnMouseLeave(InMouseEvent);
 
-    ShowOrNotToolTip(false);
+    UpdateToolTipVisibility(false);
 }
 
-void UShopItemSlotWidget::ShowOrNotToolTip(bool bShouldShow)
+void UShopItemSlotWidget::UpdateToolTipVisibility(bool bShouldShow)
 {
     // 나중에 서서히 등장하는 효과를 넣을 수도 있다고 생각해서 Color로
     FLinearColor Color(1, 1, 1, 1);
