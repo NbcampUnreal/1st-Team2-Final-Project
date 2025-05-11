@@ -1,6 +1,12 @@
 #include "ShopElementInfoWidget.h"
 
 #include "Components/RichTextBlock.h"
+#include "Components/Button.h"
+
+void UShopElementInfoWidget::NativeConstruct()
+{
+	BuyButton->OnClicked.AddDynamic(this, &UShopElementInfoWidget::OnBuyButtonClicked);
+}
 
 void UShopElementInfoWidget::Init(UStaticMeshComponent* NewItemMeshComp)
 {
@@ -63,4 +69,9 @@ void UShopElementInfoWidget::SetItemMeshActive(bool bShouldActivate)
 {
 	check(ItemMeshComponent);
 	ItemMeshComponent->SetActive(bShouldActivate);
+}
+
+void UShopElementInfoWidget::OnBuyButtonClicked()
+{
+	OnBuyButtonClickedDelegate.Broadcast();
 }

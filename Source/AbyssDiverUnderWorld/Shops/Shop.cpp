@@ -7,6 +7,8 @@
 #include "Shops/ShopWidgets/ShopElementInfoWidget.h"
 #include "Shops/ShopWidgets/ShopItemSlotWidget.h"
 #include "AbyssDiverUnderWorld.h"
+#include "Character/UnderwaterCharacter.h"
+#include "ShopInteractionComponent.h"
 
 #include "DataRow/FADItemDataRow.h"
 #include "Net/UnrealNetwork.h"
@@ -154,16 +156,63 @@ void AShop::BeginPlay()
 	InitData();
 }
 
-void AShop::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-}
-
-EBuyResult AShop::BuyItem(uint8 ItemId, EShopCategoryTab TabType)
+void AShop::Interact(AActor* InstigatorActor)
 {
 	if (HasAuthority() == false)
 	{
-		LOGVN(Log, TEXT("Has No Authority"));
+		return;
+	}
+
+	AUnderwaterCharacter* InteractingCharacter = Cast<AUnderwaterCharacter>(InstigatorActor);
+	if (InteractingCharacter == nullptr)
+	{
+		return;
+	}
+
+	// 캐릭터로부터 컴포넌트 Get, 나중에 Getter로 가져옴
+	UShopInteractionComponent* ShopInteractionComp = InteractingCharacter->FindComponentByClass<UShopInteractionComponent>();
+	if (ShopInteractionComp == nullptr)
+	{
+		LOGV(Warning, TEXT("ShopInteractionComp == nullptr"));
+		return;
+	}
+
+	ShopInteractionComp->C_OpenShop(this);
+}
+
+void AShop::OpenShop(AUnderwaterCharacter* Requester)
+{
+	if (Requester->IsLocallyControlled() == false)
+	{
+		return;
+	}
+
+	ShopWidget->AddToViewport();
+
+	APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+	PC->SetInputMode(FInputModeUIOnly());
+	PC->SetShowMouseCursor(true);
+}
+
+void AShop::CloseShop(AUnderwaterCharacter* Requester)
+{
+	if (Requester->IsLocallyControlled() == false)
+	{
+		return;
+	}
+
+	ShopWidget->RemoveFromParent();
+
+	APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+	PC->SetInputMode(FInputModeGameOnly());
+	PC->SetShowMouseCursor(false);
+}
+
+EBuyResult AShop::BuyItem(uint8 ItemId)
+{
+	if (HasAuthority() == false)
+	{
+		LOGVN(Error, TEXT("Has No Authority"));
 		return EBuyResult::HasNoAuthority;
 	}
 
@@ -319,6 +368,11 @@ void AShop::RemoveItemToList(uint8 ItemId, EShopCategoryTab TabType)
 	ShopWidget->RemoveItem(RemovedIndex, TabType);
 }
 
+void AShop::Interact_Test(AActor* InstigatorActor)
+{
+	Interact(InstigatorActor);
+}
+
 void AShop::InitShopWidget()
 {
 	ShopConsumableItemIdList.IdList.Empty();
@@ -335,13 +389,12 @@ void AShop::InitShopWidget()
 	check(ShopWidget);
 
 	ShopWidget->SetCurrentActivatedTab(EShopCategoryTab::Consumable);
-	ShopWidget->AddToViewport();
 
-	APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
-	PC->SetInputMode(FInputModeUIOnly());
-	PC->SetShowMouseCursor(true);
+	UShopElementInfoWidget* InfoWidget = ShopWidget->GetInfoWidget();
+	check(InfoWidget);
 
-	ShopWidget->GetInfoWidget()->Init(ItemMeshComponent);
+	InfoWidget->Init(ItemMeshComponent);
+	InfoWidget->OnBuyButtonClickedDelegate.AddUObject(this, &AShop::OnBuyButtonClicked);
 }
 
 void AShop::InitData()
@@ -449,7 +502,6 @@ void AShop::OnSlotEntryClicked(int32 ClickedSlotIndex)
 	}
 
 	int32 ItemId;
-	
 
 	switch (CurrentTab)
 	{
@@ -474,6 +526,14 @@ void AShop::OnSlotEntryClicked(int32 ClickedSlotIndex)
 
 	ShopWidget->ShowItemInfos(ItemMesh, DataTableArray[ItemId]->Description, DataTableArray[ItemId]->Description);
 	LOG(TEXT("Showing Item Infos..., id : %d"), ItemId);
+	CurrentSelectedItemId = ItemId;
+}
+
+void AShop::OnBuyButtonClicked()
+{
+	// 서버에 구매 요청
+	// 아마 플레이어 캐릭터나 컨트롤러에 관련 컴포넌트를 만들고 Server RPC 쏴서 요청해야 하지 않을까
+	// 상점을 열면 아마 그쪽 컴포넌트에 상점을 캐싱해두고(서버에서) Buy누르면 RPC가 오니까 그때 캐싱한 상점에서 아이템 구매 시도 
 }
 
 bool AShop::HasItem(int32 ItemId)
