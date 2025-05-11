@@ -24,6 +24,8 @@ struct FOxygenState
 {
 	GENERATED_BODY()
 
+	FOxygenState() : MaxOxygenLevel(600.0f), OxygenLevel(600.0f) {};
+	
 	/** 최대 산소량 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	float MaxOxygenLevel;
