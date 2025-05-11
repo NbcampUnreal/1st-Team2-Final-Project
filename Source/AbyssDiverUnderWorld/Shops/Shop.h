@@ -10,21 +10,17 @@
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnShopItemListChangedDelegate, const FShopItemListChangeInfo&);
 
 USTRUCT()
-struct FShopItemData
+struct FItemMeshDataRow : public FTableRowBase
 {
 	GENERATED_BODY()
 
-	UPROPERTY();
-	TObjectPtr<UTexture2D> ItemImageTexture;
-
+	UPROPERTY(EditDefaultsOnly)
 	uint8 ItemId;
-	
-	int32 ItemPrice;
 
-	int32 StatValue; // 공격력, 힐량 등
-
-	FString Description;
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UStaticMesh> ItemMesh;
 };
+
 #pragma region Enums
 
 enum class EBuyResult
@@ -78,13 +74,13 @@ struct FShopItemListChangeInfo
 
 	FShopItemListChangeInfo(EShopCategoryTab InTab, int16 InShopIndex, uint8 InItemId, EShopItemChangeType InChangeType)
 	{
-		WhichTab = InTab;
+		ShopTab = InTab;
 		ShopIndex = InShopIndex;
 		ItemIdAfter = InItemId;
 		ChangeType = InChangeType;
 	}
 
-	EShopCategoryTab WhichTab;
+	EShopCategoryTab ShopTab;
 	int16 ShopIndex;
 	uint8 ItemIdAfter;
 	EShopItemChangeType ChangeType;
@@ -124,7 +120,8 @@ public:
 
 	bool TryAdd(uint8 NewId);
 
-	void Remove(uint8 Id);
+	// 지워진 인덱스 반환
+	int32 Remove(uint8 Id);
 
 	void Modify(uint8 InIndex, uint8 NewId);
 
@@ -192,6 +189,12 @@ private:
 	UFUNCTION()
 	void OnShopItemListChanged(const FShopItemListChangeInfo& Info);
 
+	UFUNCTION()
+	void OnSlotEntryWidgetUpdated(class UShopItemSlotWidget* SlotEntryWidget);
+
+	UFUNCTION()
+	void OnSlotEntryClicked(int32 ClickedSlotIndex);
+
 	bool HasItem(int32 ItemId);
 	bool IsItemMeshCached(int32 ItemId);
 
@@ -202,8 +205,17 @@ private:
 
 protected:
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(VisibleAnywhere, Category = "Shop")
+	TObjectPtr<UStaticMeshComponent> ShopMeshComponent;
+
+	UPROPERTY(VisibleAnywhere, Category = "Shop")
+	TObjectPtr<UStaticMeshComponent> ItemMeshComponent;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.FADItemDataRow"))
 	TObjectPtr<UDataTable> ItemDataTable; // 테스트용
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.ItemMeshDataRow"))
+	TObjectPtr<UDataTable> ItemMeshDataTable; // 테스트용
 
 	UPROPERTY(EditDefaultsOnly, Category = "Shop");
 	TArray<uint8> DefaultConsumableItemIdList; // 블루프린트 노출용
@@ -223,8 +235,6 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UShopWidget> ShopWidget;
 
-	TArray<FShopItemData> ShopItemDataList;
-	
 private:
 
 	// ItemId, Mesh류(SM, SKM)
@@ -232,6 +242,7 @@ private:
 	TMap<int32, TObjectPtr<UObject>> CachedMeshList;
 
 	TArray<FFADItemDataRow*> DataTableArray;
+	TArray<FItemMeshDataRow*> MeshDataTableArray;
 
 #pragma endregion
 };
