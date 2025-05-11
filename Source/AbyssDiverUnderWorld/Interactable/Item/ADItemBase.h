@@ -56,6 +56,7 @@ private:
 public:
 	void SetItemMass(int32 InMass);
 	void SetPrice(int32 InPrice);
+	virtual UADInteractableComponent* GetInteractableComponent() const override;
 #pragma endregion
 
 };

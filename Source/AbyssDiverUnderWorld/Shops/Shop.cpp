@@ -228,6 +228,7 @@ EBuyResult AShop::BuyItem(uint8 ItemId)
 
 	// 돈 차감 로직
 	// 인벤토리에 아이템 넣기
+	LOGV(Error, TEXT("Buying Item Succeeded : %s"), *DataTableArray[ItemId]->Name.ToString());
 	return EBuyResult::Succeeded;
 }
 
@@ -534,6 +535,23 @@ void AShop::OnBuyButtonClicked()
 	// 서버에 구매 요청
 	// 아마 플레이어 캐릭터나 컨트롤러에 관련 컴포넌트를 만들고 Server RPC 쏴서 요청해야 하지 않을까
 	// 상점을 열면 아마 그쪽 컴포넌트에 상점을 캐싱해두고(서버에서) Buy누르면 RPC가 오니까 그때 캐싱한 상점에서 아이템 구매 시도 
+
+	AUnderwaterCharacter* BuyingCharacter = Cast<AUnderwaterCharacter>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetPawn());
+	if (BuyingCharacter == nullptr)
+	{
+		LOGV(Warning, TEXT("BuyingCharacter == nullptr"));
+		return;
+	}
+
+	// 캐릭터로부터 컴포넌트 Get, 나중에 Getter로 가져옴
+	UShopInteractionComponent* ShopInteractionComp = BuyingCharacter->FindComponentByClass<UShopInteractionComponent>();
+	if (ShopInteractionComp == nullptr)
+	{
+		LOGV(Warning, TEXT("ShopInteractionComp == nullptr"));
+		return;
+	}
+
+	ShopInteractionComp->S_RequestBuyItem(CurrentSelectedItemId);
 }
 
 bool AShop::HasItem(int32 ItemId)
@@ -544,4 +562,9 @@ bool AShop::HasItem(int32 ItemId)
 bool AShop::IsItemMeshCached(int32 ItemId)
 {
 	return CachedMeshList.Contains(ItemId);
+}
+
+UADInteractableComponent* AShop::GetInteractableComponent() const
+{
+	return InteractableComp;
 }
