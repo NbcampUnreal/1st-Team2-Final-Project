@@ -104,6 +104,7 @@ private:
 
 #pragma region Getter, Setteer
 public:
+	virtual UADInteractableComponent* GetInteractableComponent() const override;
 
 #pragma endregion
 };

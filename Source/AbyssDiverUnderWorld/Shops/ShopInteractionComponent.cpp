@@ -7,6 +7,7 @@
 UShopInteractionComponent::UShopInteractionComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
+	SetIsReplicatedByDefault(true);
 }
 
 void UShopInteractionComponent::BeginPlay()

@@ -69,4 +69,9 @@ void AADItemBase::SetPrice(int32 InPrice)
 	ItemData.Price = InPrice;
 }
 
+UADInteractableComponent* AADItemBase::GetInteractableComponent() const
+{
+	return InteractableComp;
+}
+
 

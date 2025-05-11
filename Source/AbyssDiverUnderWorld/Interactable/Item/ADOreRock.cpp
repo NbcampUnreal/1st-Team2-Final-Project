@@ -159,4 +159,9 @@ void AADOreRock::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifeti
 	DOREPLIFETIME(AADOreRock, CurrentMiningGauge);
 }
 
+UADInteractableComponent* AADOreRock::GetInteractableComponent() const
+{
+	return InteractableComp;
+}
+
 

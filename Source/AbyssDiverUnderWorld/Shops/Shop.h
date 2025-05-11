@@ -248,6 +248,9 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UShopWidget> ShopWidget;
 
+	UPROPERTY()
+	TObjectPtr<class UADInteractableComponent> InteractableComp;
+
 private:
 
 	// ItemId, Mesh·ù(SM, SKM)
@@ -260,4 +263,11 @@ private:
 	int32 CurrentSelectedItemId = INDEX_NONE;
 
 #pragma endregion
+
+#pragma region Getters, Setters
+
+	virtual UADInteractableComponent* GetInteractableComponent() const override;
+
+#pragma endregion
+
 };
