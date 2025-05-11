@@ -5,6 +5,7 @@
 
 #include "AbyssDiverUnderWorld.h"
 #include "EnhancedInputComponent.h"
+#include "OxygenComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -39,6 +40,8 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 
 	bUseDebugCamera = false;
 	ThirdPersonCameraComponent->SetActive(false);
+
+	OxygenComponent = CreateDefaultSubobject<UOxygenComponent>(TEXT("OxygenComponent"));
 }
 
 void AUnderwaterCharacter::BeginPlay()
