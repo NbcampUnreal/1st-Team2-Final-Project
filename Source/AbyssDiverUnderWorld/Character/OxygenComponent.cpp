@@ -156,6 +156,4 @@ void UOxygenComponent::SetOxygenLevel(const float NextOxygenLevel, const bool bF
 		OnOxygenRestored.Broadcast();
 		K2_OnOxygenRestored();
 	}
-
-	LOGN(TEXT("OxygenLevel : %f, MaxOxygenLevel : %f"), OxygenState.OxygenLevel, OxygenState.MaxOxygenLevel);
 }

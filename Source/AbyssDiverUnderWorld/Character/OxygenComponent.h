@@ -46,15 +46,12 @@ class ABYSSDIVERUNDERWORLD_API UOxygenComponent : public UActorComponent
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this component's properties
 	UOxygenComponent();
 
 protected:
-	// Called when the game starts
 	virtual void BeginPlay() override;
 
 public:
-	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType,
 	                           FActorComponentTickFunction* ThisTickFunction) override;
 
@@ -64,13 +61,15 @@ private:
 #pragma region Method
 
 protected:
-
+	/** 현재 산소량이 변경됬을 떄 호출 */
 	UFUNCTION(BlueprintImplementableEvent, meta=(DisplayName = "OnOxygenLevelChanged"))
 	void K2_OnOxygenLevelChanged(float CurrentOxygenLevel, float MaxOxygenLevel);
 
+	/** 현재 산소량이 모두 소모되었을 때 호출 */
 	UFUNCTION(BlueprintImplementableEvent, meta=(DisplayName = "OnOxygenDepleted"))
 	void K2_OnOxygenDepleted();
 
+	/** 산소량이 모두 소모되었다가 회복되었을 때 호출 */
 	UFUNCTION(BlueprintImplementableEvent, meta=(DisplayName = "OnOxygenRestored"))
 	void K2_OnOxygenRestored();
 
