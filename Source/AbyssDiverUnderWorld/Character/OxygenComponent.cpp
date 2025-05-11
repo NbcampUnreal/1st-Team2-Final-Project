@@ -132,9 +132,9 @@ EOXygenChangeResult UOxygenComponent::RefillOxygen(const float RefillAmount)
 	return EOXygenChangeResult::Success;
 }
 
-void UOxygenComponent::SetOxygenLevel(const float NextOxygenLevel, const bool bForce)
+void UOxygenComponent::SetOxygenLevel(const float NextOxygenLevel, const bool bAlwaysUpdate)
 {
-	if (OxygenState.OxygenLevel == NextOxygenLevel && !bForce)
+	if (OxygenState.OxygenLevel == NextOxygenLevel && !bAlwaysUpdate)
 	{
 		return;
 	}

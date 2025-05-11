@@ -106,11 +106,11 @@ public:
 private:
 	/** 산소 시스템 활성화 여부. 비활성화 되면 산소 회복, 소모를 정지한다. 사망 상태 등에서 사용 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat", meta = (AllowPrivateAccess = "true"))
-	bool bOxygenSystemEnabled;
+	uint8 bOxygenSystemEnabled : 1;
 	
 	/** 산소 소모 여부 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stat", meta=(AllowPrivateAccess = "true"))
-	bool bShouldConsumeOxygen;
+	uint8 bShouldConsumeOxygen : 1;
 	
 	UPROPERTY(ReplicatedUsing="OnRep_OxygenStatechanged", EditAnywhere, BlueprintReadOnly, Category = "Stat", meta = (AllowPrivateAccess = "true"))
 	FOxygenState OxygenState;
@@ -162,7 +162,7 @@ private:
 	 * 산소량이 변경되면 OnOxygenLevelChanged를 호출한다.
 	 * 산소량이 모두 소모되면 OnOxygenDepleted를 호출한다.
 	 * */
-	void SetOxygenLevel(float NextOxygenLevel, bool bForce = false);
+	void SetOxygenLevel(float NextOxygenLevel, bool bAlwaysUpdate = false);
 	
 #pragma endregion
 };
