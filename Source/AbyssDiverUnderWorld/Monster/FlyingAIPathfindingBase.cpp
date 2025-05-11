@@ -25,5 +25,10 @@ void UFlyingAIPathfindingBase::MoveTo_Implementation(FVector TargetLocation)
 	LOG(TEXT("C++ MoveTo_Implementation called. It's BP fallback Method"));
 }
 
+void UFlyingAIPathfindingBase::TriggerMoveFinished()
+{
+	OnFinishedMoving.Broadcast();
+}
+
 
 

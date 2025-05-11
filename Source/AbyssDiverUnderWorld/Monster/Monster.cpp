@@ -5,6 +5,7 @@
 
 void AMonster::BeginPlay()
 {
+	Super::BeginPlay();
 }
 
 AMonster::AMonster()
