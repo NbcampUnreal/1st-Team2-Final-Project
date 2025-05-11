@@ -7,6 +7,7 @@
 #include "NiagaraSystem.h"  
 #include "NiagaraFunctionLibrary.h"
 #include "Interactable/Item/Component/ADInteractableComponent.h"
+#include "Interactable/OtherActors/Radars/RadarReturnComponent.h"
 
 // Sets default values
 AADOreRock::AADOreRock()
@@ -37,7 +38,7 @@ void AADOreRock::BeginPlay()
 	}
 }
 
-void AADOreRock::Interact(AActor* InstigatorActor)
+void AADOreRock::Interact_Implementation(AActor* InstigatorActor)
 {
 	if (!HasAuthority()) return;
 

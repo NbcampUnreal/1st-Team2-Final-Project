@@ -22,7 +22,7 @@ void AADItemBase::BeginPlay()
 	Super::BeginPlay();
 }
 
-void AADItemBase::Interact(AActor* InstigatorActor)
+void AADItemBase::Interact_Implementation(AActor* InstigatorActor)
 {
 	if (HasAuthority())
 	{
@@ -62,11 +62,6 @@ void AADItemBase::SetItemMass(int32 InMass)
 {
 	ItemData.Mass = InMass;
 	ItemData.Quantity = 1;
-}
-
-void AADItemBase::SetPrice(int32 InPrice)
-{
-	ItemData.Price = InPrice;
 }
 
 void AADItemBase::SetPrice(int32 InPrice)

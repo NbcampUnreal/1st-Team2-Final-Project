@@ -32,7 +32,7 @@ void AADExchangeableItem::OnRep_TotalPrice()
 	// TODO 클라이언트 UI 갱신
 }
 
-void AADExchangeableItem::Interact(AActor* InstigatorActor)
+void AADExchangeableItem::Interact_Implementation(AActor* InstigatorActor)
 {
 	if (!HasAuthority()) return;
 	LOG(TEXT("Mineral's Mass : %d"), ItemData.Mass);

@@ -10,6 +10,7 @@
 class AADItemBase;
 class UNiagaraSystem;
 class UADInteractableComponent;
+class URadarReturnComponent;
 
 USTRUCT(BlueprintType)
 struct FDropEntry : public FTableRowBase
@@ -45,8 +46,9 @@ protected:
 
 #pragma region Method
 public:
-	UFUNCTION(BlueprintCallable)
-	virtual void Interact(AActor* InstigatorActor) override;
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	void Interact(AActor* InstigatorActor);
+	void Interact_Implementation(AActor* InstigatorActor);
 	
 	void HandleMineRequest(APawn* InstigatorPawn);
 
@@ -83,6 +85,7 @@ public:
 	// 암석 파편 이펙트
 	UPROPERTY(EditDefaultsOnly, Category = "Mining")
 	TObjectPtr<UNiagaraSystem> RockFragmentsFX;
+	
 
 protected:
 	// 무게 샘플링 강도 (1.0 : 균등, 2.0 : 중간 편향, 클수록 편향이 강해짐)

@@ -85,6 +85,7 @@ private:
 #pragma region Getter, Setter
 public:
 	int16 GetTotalWeight() const { return TotalWeight; }
+	int16 GetTotalPrice() const { return TotalPrice; }
 	const FItemData& GetItemData(FName ItemNameToFind) { return InventoryList.Items[FindItemIndexById(ItemNameToFind)]; };
 	const FItemData& GetEquipmentItemDataByIndex(int8 KeyNum) { return InventoryList.Items[InventoryIndexMapByType[EItemType::Equipment][KeyNum]]; };
 	const FInventoryList& GetInventoryList() { return InventoryList; }
