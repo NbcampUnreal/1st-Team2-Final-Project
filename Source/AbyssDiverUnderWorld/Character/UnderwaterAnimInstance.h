@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "UnderwaterCharacter.h"
 #include "Animation/AnimInstance.h"
 #include "UnderwaterAnimInstance.generated.h"
 
@@ -30,12 +31,18 @@ protected:
 	
 #pragma region Variable
 
+	/** Character 약참조 */
 	UPROPERTY(BlueprintReadOnly)
 	TWeakObjectPtr<class AUnderwaterCharacter> UnderwaterCharacter;
 
+	/** Movement 약참조 */
 	UPROPERTY(BlueprintReadOnly)
 	TWeakObjectPtr<class UCharacterMovementComponent> CharacterMovement;
 
+	UPROPERTY(BlueprintReadOnly)
+	ECharacterState CharacterState;
+	
+	/** 캐릭터 Should Move에서 Move를 가능하게 하는 임계값 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	float ShouldMoveThresholdSpeed;
 
