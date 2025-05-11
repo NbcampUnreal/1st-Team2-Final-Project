@@ -38,16 +38,15 @@ FReply UShopItemSlotWidget::NativeOnMouseButtonUp(const FGeometry& InGeometry, c
 void UShopItemSlotWidget::NativeOnMouseEnter(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
 {
     Super::NativeOnMouseEnter(InGeometry, InMouseEvent);
-    // TODO : 시간 측정하고 툴팁 띄우기
 
-
+    ShowOrNotToolTip(true);
 }
 
 void UShopItemSlotWidget::NativeOnMouseLeave(const FPointerEvent& InMouseEvent)
 {
     Super::NativeOnMouseLeave(InMouseEvent);
 
-    // TODO : 시간 측정 초기화
+    ShowOrNotToolTip(false);
 }
 
 void UShopItemSlotWidget::ShowOrNotToolTip(bool bShouldShow)
@@ -66,6 +65,7 @@ void UShopItemSlotWidget::ShowOrNotToolTip(bool bShouldShow)
     }
 
     ToolTipImage->SetColorAndOpacity(Color);
+    ToolTipTextBlock->SetRenderOpacity(Color.A);
 }
 
 void UShopItemSlotWidget::SetSlotImage(UTexture2D* NewTexture)

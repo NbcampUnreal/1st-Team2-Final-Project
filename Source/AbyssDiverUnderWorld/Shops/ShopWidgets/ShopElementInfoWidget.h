@@ -35,6 +35,7 @@ public:
 	void SetDescriptionActive(bool bShouldActivate);
 	void SetInfoTextActive(bool bShouldActivate);
 	void SetItemMeshActive(bool bShouldActivate);
+	void SetBuyButtonActive(bool bShouldActivate);
 
 	FOnBuyButtonClickedDelegate OnBuyButtonClickedDelegate;
 
