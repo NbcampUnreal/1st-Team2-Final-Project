@@ -440,8 +440,6 @@ void AShop::InitData()
 
 void AShop::OnShopItemListChanged(const FShopItemListChangeInfo& Info)
 {
-	LOGVN(Error, TEXT("Changed!"));
-	
 	if (Info.ChangeType >= EShopItemChangeType::Max)
 	{
 		LOGVN(Error, TEXT("Weird Change Type : %d"), Info.ChangeType);
@@ -556,7 +554,10 @@ void AShop::OnBuyButtonClicked()
 
 bool AShop::HasItem(int32 ItemId)
 {
-	return (ShopConsumableItemIdList.Contains(ItemId) != INDEX_NONE);
+	bool bHasItem = (ShopConsumableItemIdList.Contains(ItemId) != INDEX_NONE);
+	bHasItem = bHasItem || (ShopEquipmentItemIdList.Contains(ItemId) != INDEX_NONE);
+
+	return bHasItem;
 }
 
 bool AShop::IsItemMeshCached(int32 ItemId)

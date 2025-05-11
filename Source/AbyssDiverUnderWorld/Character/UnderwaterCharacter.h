@@ -37,7 +37,7 @@ protected:
 	/** 조준 함수. 미구현*/
 	void Aim(const FInputActionValue& InputActionValue);
 
-	/** 상호작용 함수. 미구현*/
+	/** 상호작용 함수. Interaction의 Focus Interactable과 상호작용을 실행한다. 현재는 Start를 기점으로 작동 */
 	void Interaction(const FInputActionValue& InputActionValue);
 
 	/** 라이트 함수. 미구현*/
@@ -100,8 +100,27 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UCameraComponent> ThirdPersonCameraComponent;
 
+	/** 캐릭터의 산소 상태를 관리하는 Component */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UOxygenComponent> OxygenComponent;
+
+	/** 상호작용 실행하게 하는 Component */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UADInteractionComponent> InteractionComponent;
+
+	/** Shop의 Interaction을 실행할 Component */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UShopInteractionComponent> ShopInteractionComponent;
+	
+#pragma endregion
+
+#pragma region Getter Setter
+
+	/** Interaction Component를 반환 */
+	FORCEINLINE UADInteractionComponent* GetInteractionComponent() const { return InteractionComponent; }
+
+	/** Shop Interaction Component를 반환 */
+	FORCEINLINE UShopInteractionComponent* GetShopInteractionComponent() const { return ShopInteractionComponent; }
 	
 #pragma endregion
 };
