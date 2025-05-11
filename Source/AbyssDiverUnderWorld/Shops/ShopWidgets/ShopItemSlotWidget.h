@@ -6,7 +6,7 @@
 
 #include "ShopItemSlotWidget.generated.h"
 
-
+DECLARE_DELEGATE_OneParam(FOnShopItemSlotWidgetClickedDelegate, int32 /*SlotIndex*/);
 
 class UImage;
 /**
@@ -27,6 +27,9 @@ protected:
 
 #pragma region Methods, Delegates
 
+public:
+
+	FOnShopItemSlotWidgetClickedDelegate OnShopItemSlotWidgetClickedDelegate;
 
 private:
 
@@ -48,6 +51,8 @@ private:
 	TObjectPtr<class URichTextBlock> ToolTipTextBlock;
 
 	FTimerHandle ToolTipTimerHandle;
+
+	int32 SlotIndex;
 
 #pragma endregion
 

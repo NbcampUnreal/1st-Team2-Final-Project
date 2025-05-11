@@ -5,10 +5,11 @@
 
 #include "ShopWidget.generated.h"
 
-
 enum class EShopCategoryTab : uint8;
 class UShopCategoryTabWidget;
 class UShopItemEntryData;
+class UShopElementInfoWidget;
+
 /**
  * 
  */
@@ -28,9 +29,13 @@ public:
 
 	void SetAllItems(const TArray<UShopItemEntryData*>& EntryDataList, EShopCategoryTab Tab);
 	void AddItem(UShopItemEntryData* EntryData, EShopCategoryTab Tab);
+	void RemoveItem(int32 Index, EShopCategoryTab Tab);
+	void ModifyItem(int32 Index, UTexture2D* NewItemImage, const FString& NewToolTipText, EShopCategoryTab Tab);
 
 	void ShowItemViewForTab(EShopCategoryTab TabType);
 	void RefreshItemView();
+
+	void ShowItemInfos(UStaticMesh* NewItemMesh, const FString& NewDescription, const FString& NewInfoText);
 
 private:
 
@@ -53,13 +58,16 @@ private:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<class UShopTileView> ItemTileView;
 
-	EShopCategoryTab CurrentActivatedTab;
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UShopElementInfoWidget> InfoWidget;
 
 	UPROPERTY()
 	TArray<TObjectPtr<UShopItemEntryData>> ConsumableTabEntryDataList;
 
 	UPROPERTY()
 	TArray<TObjectPtr<UShopItemEntryData>> EquipmentTabEntryDataList;
+
+	EShopCategoryTab CurrentActivatedTab;
 
 	const int8 MAX_TAB_COUNT = 3;
 
@@ -74,6 +82,8 @@ public:
 
 
 	UShopCategoryTabWidget* GetCategoryTab(EShopCategoryTab CategoryTab) const;
+
+	UShopElementInfoWidget* GetInfoWidget() const;
 	
 #pragma endregion
 	
