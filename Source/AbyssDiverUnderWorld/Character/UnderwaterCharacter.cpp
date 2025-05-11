@@ -6,11 +6,13 @@
 #include "AbyssDiverUnderWorld.h"
 #include "EnhancedInputComponent.h"
 #include "OxygenComponent.h"
+#include "AbyssDiverUnderWorld/Interactable/Item/Component/ADInteractionComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PhysicsVolume.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Shops/ShopInteractionComponent.h"
 
 AUnderwaterCharacter::AUnderwaterCharacter()
 {
@@ -42,6 +44,9 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	ThirdPersonCameraComponent->SetActive(false);
 
 	OxygenComponent = CreateDefaultSubobject<UOxygenComponent>(TEXT("OxygenComponent"));
+
+	InteractionComponent = CreateDefaultSubobject<UADInteractionComponent>(TEXT("InteractionComponent"));
+	ShopInteractionComponent = CreateDefaultSubobject<UShopInteractionComponent>(TEXT("ShopInteractionComponent"));
 }
 
 void AUnderwaterCharacter::BeginPlay()
@@ -190,6 +195,7 @@ void AUnderwaterCharacter::Aim(const FInputActionValue& InputActionValue)
 
 void AUnderwaterCharacter::Interaction(const FInputActionValue& InputActionValue)
 {
+	InteractionComponent->TryInteract();
 }
 
 void AUnderwaterCharacter::Light(const FInputActionValue& InputActionValue)
