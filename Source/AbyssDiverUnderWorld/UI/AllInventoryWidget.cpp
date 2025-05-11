@@ -9,7 +9,7 @@
 void UAllInventoryWidget::InitializeInventoriesInfo(UADInventoryComponent* InventoryComp)
 {
 	const TArray<int8>& InventorySizeByType = InventoryComp->GetInventorySizeByType();
-
+	InventoryComp->InventoryInfoUpdateDelegate.AddUObject(this, &UAllInventoryWidget::RefreshExchangableInventoryInfo);
 	RefreshExchangableInventoryInfo(0, 0);
 
 	if (EquipmentInventory && ConsumableInventory && ExchangableInventory)

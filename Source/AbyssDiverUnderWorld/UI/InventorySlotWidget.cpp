@@ -33,9 +33,9 @@ void UInventorySlotWidget::NativeOnDragDetected(const FGeometry& InGeometry, con
 		UDragPreviewWidget* PreviewWidgetInstance = CreateWidget<UDragPreviewWidget>(this, DragPreviewWidgetClass);
 		if (PreviewWidgetInstance)
 		{
-			if (Image && Image->Brush.GetResourceObject())
+			if (Image && Image->GetBrush().GetResourceObject())
 			{
-				PreviewWidgetInstance->SetPreviewInfo(Cast<UTexture2D>(Image->Brush.GetResourceObject()));
+				PreviewWidgetInstance->SetPreviewInfo(Cast<UTexture2D>(Image->GetBrush().GetResourceObject()));
 			}
 			UInventoryDDO* DragDropOp = Cast<UInventoryDDO>(UWidgetBlueprintLibrary::CreateDragDropOperation(UInventoryDDO::StaticClass()));
 			DragDropOp->DefaultDragVisual = PreviewWidgetInstance;
@@ -82,7 +82,7 @@ void UInventorySlotWidget::SetItemData(FItemData ItemInfo, int32 Index, UADInven
 	QuantityText->SetText(FText::FromString(FString::Printf(TEXT("%d"), ItemInfo.Quantity)));
 	if (ItemInfo.Quantity == 0)
 	{
-		QuantityText->SetVisibility(ESlateVisibility::Hidden);
+		QuantityText->SetVisibility(ESlateVisibility::Collapsed);
 	}
 	Image->SetBrushFromTexture(ItemInfo.Thumbnail);
 
@@ -91,5 +91,6 @@ void UInventorySlotWidget::SetItemData(FItemData ItemInfo, int32 Index, UADInven
 
 void UInventorySlotWidget::HandleDragCancelled(UDragDropOperation* Operation)
 {
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Drop Items")));
+	int8 ItemQuantity = InventoryComponent->GetInventoryList().Items[SlotIndex].Quantity;
+	InventoryComponent->RemoveInventoryItem(SlotIndex, ItemQuantity, true);
 }
