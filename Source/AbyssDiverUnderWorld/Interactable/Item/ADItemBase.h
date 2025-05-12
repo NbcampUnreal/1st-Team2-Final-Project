@@ -54,7 +54,9 @@ private:
 
 #pragma region Getter, Setteer
 public:
-	void SetItemMass(float InMass);
+	void SetItemMass(int32 InMass);
+	void SetPrice(int32 InPrice);
+	virtual UADInteractableComponent* GetInteractableComponent() const override;
 #pragma endregion
 
 };

@@ -17,10 +17,10 @@ AADExchangeableItem::AADExchangeableItem()
 	DropMovement->bRotationFollowsVelocity = false;
 	DropMovement->bShouldBounce = true;            // 살짝 튕기게
 	DropMovement->Bounciness = 0.3f;
-
+	DropMovement->SetIsReplicated(true);
+	SetReplicateMovement(true);
 	bReplicates = true;
 }
-
 void AADExchangeableItem::BeginPlay()
 {
 	Super::BeginPlay();
@@ -35,16 +35,16 @@ void AADExchangeableItem::OnRep_TotalPrice()
 void AADExchangeableItem::Interact(AActor* InstigatorActor)
 {
 	if (!HasAuthority()) return;
+	LOG(TEXT("Mineral's Mass : %d"), ItemData.Mass);
+	ItemData.Price = TotalPrice;
+	LOG(TEXT("Mineral's Price : %d"), ItemData.Price);
 
-	LOG(TEXT("Mineral's Mass : %f"), ItemData.Mass);
-
-	CalculateTotalPrice();
 	HandlePickup(Cast<APawn>(InstigatorActor));
 }
 
 void AADExchangeableItem::CalculateTotalPrice()
 {
-	TotalPrice = Mass * ValuePerUnit;
+	TotalPrice = ItemData.Mass * ValuePerUnit;
 }
 
 void AADExchangeableItem::HandlePickup(APawn* InstigatgorPawn)

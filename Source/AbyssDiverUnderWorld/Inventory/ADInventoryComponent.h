@@ -11,7 +11,8 @@
 enum class EItemType : uint8;
 class UAllInventoryWidget;
 
-DECLARE_MULTICAST_DELEGATE_OneParam(FInventoryUpdateDelegate, EItemType);
+DECLARE_MULTICAST_DELEGATE(FInventoryUpdateDelegate);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FInventoryInfoUpdateDelegate, int32, int32);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class ABYSSDIVERUNDERWORLD_API UADInventoryComponent : public UActorComponent
@@ -27,14 +28,27 @@ protected:
 public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override; 
 
+	UFUNCTION(Server, Reliable)
+	void S_AddInventoryItem(FItemData ItemData);
+	void S_AddInventoryItem_Implementation(FItemData ItemData);
+
 	UFUNCTION(BlueprintCallable)
-	void AddInventoryItem(FItemData ItemData, uint8 Count);
+	void AddInventoryItem(FItemData ItemData);
+	UFUNCTION(BlueprintCallable)
+	bool RemoveInventoryItem(uint8 InventoryIndex, uint8 Count, bool bIsDropAction);
+	UFUNCTION(BlueprintCallable)
+	void TransferSlots(uint8 FromIndex, uint8 ToIndex);
+
+	void OnInventoryInfoUpdate(int32 MassInfo, int32 PriceInfo);
+	void InventoryUIUpdate(); 
 
 	//*Remove 테스트 후 넣어야 함
 	UFUNCTION(BlueprintCallable)
 	void ToggleInventoryShowed(); //추후 나침반이나 서브미션 UI 추가되었을 때 고려 대상
 
+
 	FInventoryUpdateDelegate InventoryUpdateDelegate;
+	FInventoryInfoUpdateDelegate InventoryInfoUpdateDelegate;
 
 private:
 	int8 GetTypeInventoryEmptyIndex(EItemType ItemType);
@@ -56,6 +70,7 @@ private:
 	FInventoryList InventoryList;
 
 	int16 TotalWeight;
+	int16 TotalPrice;
 	int16 WeightMax;
 
 	uint8 bInventoryWidgetShowed : 1;
@@ -70,6 +85,8 @@ private:
 #pragma region Getter, Setter
 public:
 	int16 GetTotalWeight() const { return TotalWeight; }
+	const FItemData& GetItemData(FName ItemNameToFind) { return InventoryList.Items[FindItemIndexById(ItemNameToFind)]; };
+	const FItemData& GetEquipmentItemDataByIndex(int8 KeyNum) { return InventoryList.Items[InventoryIndexMapByType[EItemType::Equipment][KeyNum]]; };
 	const FInventoryList& GetInventoryList() { return InventoryList; }
 	const TArray<int8>& GetInventoryIndexesByType(EItemType ItemType) const { return InventoryIndexMapByType[ItemType]; }
 	const TArray<int8>& GetInventorySizeByType() const { return InventorySizeByType; }

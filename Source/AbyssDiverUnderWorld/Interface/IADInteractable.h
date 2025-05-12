@@ -2,6 +2,8 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
+
+#include "Interactable/Item/Component/ADInteractableComponent.h"
 #include "IADInteractable.generated.h"
 
 // This class does not need to be modified.
@@ -19,4 +21,6 @@ class ABYSSDIVERUNDERWORLD_API IIADInteractable
 public:
 	UFUNCTION()
 	virtual void Interact(AActor* InstigatorActor) = 0;
+
+	virtual UADInteractableComponent* GetInteractableComponent() const = 0;
 };

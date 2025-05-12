@@ -8,6 +8,7 @@
 
 class UInventoryWidget;
 class UADInventoryComponent;
+class URichTextBlock;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API UAllInventoryWidget : public UUserWidget
@@ -17,6 +18,7 @@ class ABYSSDIVERUNDERWORLD_API UAllInventoryWidget : public UUserWidget
 #pragma region Function
 public:
 	void InitializeInventoriesInfo(UADInventoryComponent* InventoryComp);
+	void RefreshExchangableInventoryInfo(int32 Mass, int32 Price);
 #pragma endregion
 
 #pragma region Variable
@@ -27,6 +29,12 @@ protected:
 	TObjectPtr<UInventoryWidget> ConsumableInventory;
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UInventoryWidget> ExchangableInventory;
+private:
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<URichTextBlock> MassText;
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<URichTextBlock> PriceText;
+
 #pragma endregion
 
 #pragma region Getter/Setter

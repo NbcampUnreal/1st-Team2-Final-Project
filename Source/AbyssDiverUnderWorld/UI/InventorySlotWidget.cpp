@@ -5,15 +5,92 @@
 #include "Components/RichTextBlock.h"
 #include "Container/FStructContainer.h"
 #include "Components/Image.h"
+#include "Blueprint/WidgetBlueprintLibrary.h"
+#include "DragPreviewWidget.h"
+#include "InventoryDDO.h"
+#include "Inventory/ADInventoryComponent.h"
 
-void UInventorySlotWidget::SetItemData(FItemData ItemInfo, int32 Index)
+FReply UInventorySlotWidget::NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
 {
+	if (SlotIndex != -1)
+	{
+		if (InMouseEvent.IsMouseButtonDown(EKeys::LeftMouseButton))
+		{
+			FEventReply EventReply = UWidgetBlueprintLibrary::DetectDragIfPressed(InMouseEvent, this, EKeys::LeftMouseButton);
+			return EventReply.NativeReply;
+		}
+
+	}
+	return Super::NativeOnMouseButtonDown(InGeometry, InMouseEvent);
+}
+
+void UInventorySlotWidget::NativeOnDragDetected(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent, UDragDropOperation*& Operation)
+{
+	Super::NativeOnDragDetected(InGeometry, InMouseEvent, Operation);
+
+	if (Operation == nullptr)
+	{
+		UDragPreviewWidget* PreviewWidgetInstance = CreateWidget<UDragPreviewWidget>(this, DragPreviewWidgetClass);
+		if (PreviewWidgetInstance)
+		{
+			if (Image && Image->GetBrush().GetResourceObject())
+			{
+				PreviewWidgetInstance->SetPreviewInfo(Cast<UTexture2D>(Image->GetBrush().GetResourceObject()));
+			}
+			UInventoryDDO* DragDropOp = Cast<UInventoryDDO>(UWidgetBlueprintLibrary::CreateDragDropOperation(UInventoryDDO::StaticClass()));
+			DragDropOp->DefaultDragVisual = PreviewWidgetInstance;
+			DragDropOp->Pivot = EDragPivot::CenterCenter;
+			DragDropOp->Payload = this;
+			DragDropOp->Index = SlotIndex;
+			DragDropOp->Type = SlotType;
+			DragDropOp->OnDragCancelled.AddDynamic(this, &UInventorySlotWidget::HandleDragCancelled);
+			
+			Operation = DragDropOp;
+		}
+	}
+}
+
+bool UInventorySlotWidget::NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation)
+{
+	Super::NativeOnDrop(InGeometry, InDragDropEvent, InOperation);
+	
+	if (InOperation)
+	{
+		UInventoryDDO* DragDropOp = Cast<UInventoryDDO>(InOperation);
+		if (DragDropOp)
+		{
+			if (DragDropOp->Index != SlotIndex && DragDropOp->Type == SlotType)
+			{
+				InventoryComponent->TransferSlots(DragDropOp->Index, SlotIndex);
+				return true;
+			}
+			else
+			{
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+void UInventorySlotWidget::SetItemData(FItemData ItemInfo, int32 Index, UADInventoryComponent* InventoryComp)
+{
+	InventoryComponent = InventoryComp;
+	SlotType = ItemInfo.ItemType;
 	if (!QuantityText && !Image)
 		return;
 	QuantityText->SetText(FText::FromString(FString::Printf(TEXT("%d"), ItemInfo.Quantity)));
 	if (ItemInfo.Quantity == 0)
 	{
-		QuantityText->SetVisibility(ESlateVisibility::Hidden);
+		QuantityText->SetVisibility(ESlateVisibility::Collapsed);
 	}
 	Image->SetBrushFromTexture(ItemInfo.Thumbnail);
+
+	SlotIndex = Index;
+}
+
+void UInventorySlotWidget::HandleDragCancelled(UDragDropOperation* Operation)
+{
+	int8 ItemQuantity = InventoryComponent->GetInventoryList().Items[SlotIndex].Quantity;
+	InventoryComponent->RemoveInventoryItem(SlotIndex, ItemQuantity, true);
 }
