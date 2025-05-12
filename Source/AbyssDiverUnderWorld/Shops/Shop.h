@@ -175,10 +175,12 @@ public:
 	virtual void Interact_Implementation(AActor* InstigatorActor) override;
 
 	void OpenShop(AUnderwaterCharacter* Requester);
+
+	UFUNCTION(BlueprintCallable, Category = "Shop")
 	void CloseShop(AUnderwaterCharacter* Requester);
 
-	EBuyResult BuyItem(uint8 ItemId);
-	ESellResult SellItem(uint8 ItemId, class AUnitBase* Seller);
+	EBuyResult BuyItem(uint8 ItemId, AUnderwaterCharacter* Buyer);
+	ESellResult SellItem(uint8 ItemId, AUnderwaterCharacter* Seller);
 
 	void AddItems(const TArray<uint8>& Ids, EShopCategoryTab TabType);
 	void AddItemToList(uint8 ItemId, EShopCategoryTab TabType);
@@ -208,8 +210,6 @@ private:
 	void OnBuyButtonClicked();
 
 	bool HasItem(int32 ItemId);
-	bool IsItemMeshCached(int32 ItemId);
-
 
 #pragma endregion
 
@@ -222,12 +222,6 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, Category = "Shop")
 	TObjectPtr<UStaticMeshComponent> ItemMeshComponent;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.FADItemDataRow"))
-	TObjectPtr<UDataTable> ItemDataTable; // 테스트용
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.ItemMeshDataRow"))
-	TObjectPtr<UDataTable> ItemMeshDataTable; // 테스트용
 
 	UPROPERTY(EditDefaultsOnly, Category = "Shop");
 	TArray<uint8> DefaultConsumableItemIdList; // 블루프린트 노출용
@@ -251,13 +245,6 @@ protected:
 	TObjectPtr<class UADInteractableComponent> InteractableComp;
 
 private:
-
-	// ItemId, Mesh류(SM, SKM)
-	UPROPERTY()
-	TMap<int32, TObjectPtr<UObject>> CachedMeshList;
-
-	TArray<FFADItemDataRow*> DataTableArray;
-	TArray<FItemMeshDataRow*> MeshDataTableArray;
 
 	int32 CurrentSelectedItemId = INDEX_NONE;
 
