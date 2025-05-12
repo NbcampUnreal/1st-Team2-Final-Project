@@ -21,6 +21,11 @@ public class AbyssDiverUnderWorld : ModuleRules
             , "OnlineSubsystemSteam"
             , "AdvancedSessions"
             , "AdvancedSteamSessions"
+            , "Slate"
+            , "SlateCore"
+            , "NetCore"
+            , "Niagara"
+            , "AnimGraphRuntime"
         });
 		
         PublicIncludePaths.AddRange(new string[] { "AbyssDiverUnderWorld" });

@@ -119,6 +119,11 @@ public:
 	void RemoveReturn(URadarReturnComponent* RadarReturn, int32 InIndex);
 	void RemoveAllReturns();
 
+	// 레이더에 표시되는 리턴들 크기 조절
+	void ChangeReturnsSize(float NewSize);
+	// 레이더 반경을 넓히면 그만큼 레이더 리턴들도 크기가 작아진다
+	void ChangeRadarRadius(float NewRadius);
+
 private:
 
 	void FindIfReturnIsValidResponseForRader(AActor* RadarActor);

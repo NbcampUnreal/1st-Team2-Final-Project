@@ -1,10 +1,12 @@
-#pragma once
+Ôªø#pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Interface/IADInteractable.h"
 #include "Container/FStructContainer.h"
 #include "ADItemBase.generated.h"
+
+class UADInteractableComponent;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADItemBase : public AActor, public IIADInteractable
@@ -19,16 +21,19 @@ protected:
 
 #pragma region Method
 public:	
-	virtual void Interact(AActor* InstigatorActor) override;
 
-	void HandlePickup(APawn* InstigatorPawn);
+	virtual void Interact_Implementation(AActor* InstigatorActor) override;
+
+	virtual void HandlePickup(APawn* InstigatorPawn);
 
 protected:
 	UFUNCTION()
 	void OnRep_ItemData();
 
-private:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+private:
+	
 
 #pragma endregion
 
@@ -36,9 +41,11 @@ private:
 public:
 	UPROPERTY(ReplicatedUsing = OnRep_ItemData, EditAnywhere, Category = "Item")
 	FItemData ItemData;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction")
+	TObjectPtr<UADInteractableComponent> InteractableComp;
 
-	// TODO : ¿Œ∫•≈‰∏Æ ƒƒ∆˜≥Õ∆Æ ¬¸¡∂
-	// TODO : PickupSound µÓ »πµÊ Ω√ »ø∞˙ √ﬂ∞°
+	// TODO : Ïù∏Î≤§ÌÜ†Î¶¨ Ïª¥Ìè¨ÎÑåÌä∏ Ï∞∏Ï°∞
+	// TODO : PickupSound Îì± ÌöçÎìù Ïãú Ìö®Í≥º Ï∂îÍ∞Ä
 protected:
 	
 
@@ -48,7 +55,9 @@ private:
 
 #pragma region Getter, Setteer
 public:
-
+	void SetItemMass(int32 InMass);
+	void SetPrice(int32 InPrice);
+	virtual UADInteractableComponent* GetInteractableComponent() const override;
 #pragma endregion
 
 };

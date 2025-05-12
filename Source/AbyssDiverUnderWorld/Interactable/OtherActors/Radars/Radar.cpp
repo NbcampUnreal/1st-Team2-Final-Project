@@ -1,6 +1,7 @@
 #include "Interactable/OtherActors/Radars/Radar.h"
 
 #include "RadarReturnComponent.h"
+#include "AbyssDiverUnderWorld.h"
 
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
@@ -90,7 +91,7 @@ void ARadar::BeginPlay()
 void ARadar::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
+	
 	if (bIsRadarActive)
 	{
 		TArray<AActor*> ActorList;
@@ -292,6 +293,17 @@ void ARadar::RemoveAllReturns()
 
 		RemoveReturn(ReturnsArray[Count - 1 - i], RemovingIndex);
 	}
+}
+
+void ARadar::ChangeReturnsSize(float NewSize)
+{
+	ScaleReturnSizes = NewSize;
+}
+
+void ARadar::ChangeRadarRadius(float NewRadius)
+{
+	RadarOuterDimensionRadiusMetersFromSphere = NewRadius;
+	RadarOuterDimensionLimitRadiusMetersFromSphere = NewRadius;
 }
 
 void ARadar::FindIfReturnIsValidResponseForRader(AActor* RadarActor)
@@ -966,17 +978,17 @@ void ARadar::UpdateExistingReturnMesh()
 	switch (FoF)
 	{
 	case EFriendOrFoe::Friendly:
-		UE_LOG(LogTemp, Error, TEXT("F"));
+
 		ReturnMesh->SetStaticMesh(CurrentRadarReturn->GetFriendlyMesh());
 		ReturnMesh->SetMaterial(0, CurrentRadarReturn->GetFriendlyMaterial());
 		break;
 	case EFriendOrFoe::Hostile:
-		UE_LOG(LogTemp, Error, TEXT("H"));
+
 		ReturnMesh->SetStaticMesh(CurrentRadarReturn->GetHostileMesh());
 		ReturnMesh->SetMaterial(0, CurrentRadarReturn->GetHostileMaterial());
 		break;
 	case EFriendOrFoe::Neutral:
-		UE_LOG(LogTemp, Error, TEXT("N"));
+
 		ReturnMesh->SetStaticMesh(CurrentRadarReturn->GetNeutralMesh());
 		ReturnMesh->SetMaterial(0, CurrentRadarReturn->GetNeutralMaterial());
 		break;
