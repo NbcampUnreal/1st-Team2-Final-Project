@@ -29,6 +29,10 @@ protected:
 	virtual void PostInitProperties() override;
 
 #pragma region Method
+
+protected:
+	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "OnUpgradePerformed"))
+	void K2_OnUpgradePerformed(EUpgradeType UpgradeType, uint8 Grade);
 	
 #pragma endregion
 	
@@ -53,18 +57,23 @@ private:
 public:
 	
 	/** Upgrade Type에 해당하는 Grade를 반환, Grade는 1부터 시작하며 잘못된 입력을 할 경우 0을 반환 */
+	UFUNCTION(BlueprintCallable)
 	uint8 GetCurrentGrade(EUpgradeType UpgradeType) const;
 
 	/** Upgrade Type에 해당하는 Grade를 1 증가, 최대 레벨일 경우 false를 반환 */
+	UFUNCTION(BlueprintCallable)
 	bool Upgrade(EUpgradeType UpgradeType);
 	
 	/** Upgrade Type의 Grade를 지정, 최대 레벨을 벗어날 경우 false를 반환 */
+	UFUNCTION(BlueprintCallable)
 	bool SetCurrentGrade(EUpgradeType UpgradeType, uint8 Grade);
 
 	/** 현재 Type을 Upgrade하기 위한 비용을 반환, 최대 레벨일 경우 음수를 반환 */
+	UFUNCTION(BlueprintCallable)
 	int32 GetUpgradeCost(EUpgradeType UpgradeType) const;
 
 	/** Upgrade Type이 최대 레벨인지 확인, 다음 Grade가 없으면 Max Level이다. */
+	UFUNCTION(BlueprintCallable)
 	bool IsMaxGrade(EUpgradeType UpgradeType) const;
 
 protected:

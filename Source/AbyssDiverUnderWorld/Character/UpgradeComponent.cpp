@@ -4,6 +4,7 @@
 #include "UpgradeComponent.h"
 
 #include "AbyssDiverUnderWorld.h"
+#include "Kismet/GameplayStatics.h"
 #include "Subsystems/DataTableSubsystem.h"
 
 // Sets default values for this component's properties
@@ -20,13 +21,8 @@ UUpgradeComponent::UUpgradeComponent()
 void UUpgradeComponent::BeginPlay()
 {
 	Super::BeginPlay();
-}
 
-void UUpgradeComponent::PostInitProperties()
-{
-	Super::PostInitProperties();
-
-	if (const UGameInstance* GameInstance = GetWorld()->GetGameInstance())
+	if (const UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this))
 	{
 		DataTableSubsystem = GameInstance->GetSubsystem<UDataTableSubsystem>();
 	}
@@ -41,6 +37,11 @@ void UUpgradeComponent::PostInitProperties()
 			UpgradeGradeMap.Add(static_cast<EUpgradeType>(i), DefaultGrade);
 		}
 	}
+}
+
+void UUpgradeComponent::PostInitProperties()
+{
+	Super::PostInitProperties();
 }
 
 uint8 UUpgradeComponent::GetCurrentGrade(EUpgradeType UpgradeType) const
@@ -110,6 +111,6 @@ bool UUpgradeComponent::IsMaxGrade(EUpgradeType UpgradeType) const
 	}
 
 	const uint8 NextGrade = UpgradeGradeMap.FindRef(UpgradeType) + 1;
-	return DataTableSubsystem->GetUpgradeData(UpgradeType, NextGrade) != nullptr;
+	return DataTableSubsystem->GetUpgradeData(UpgradeType, NextGrade) == nullptr;
 }
 
