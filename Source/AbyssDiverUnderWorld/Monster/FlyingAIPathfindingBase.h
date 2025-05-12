@@ -32,11 +32,13 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void TriggerMoveFinished(); // In Blueprint, Event Dispatcher Call Node
+
 #pragma endregion
 		
 #pragma region Variable
 public:
 	UPROPERTY(BlueprintAssignable)
 	FOnFinishedMoving OnFinishedMoving; 
+
 #pragma endregion
 };

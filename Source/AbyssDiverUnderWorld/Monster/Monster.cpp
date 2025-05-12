@@ -15,15 +15,18 @@ void AMonster::BeginPlay()
 	Super::BeginPlay();
 }
 
-FVector AMonster::FindNextPatrolLocation(int32& InOutIndex) const
+FVector AMonster::GetPatrolLocation(int32 Index) const
 {
 	if (!PatrolSpline || PatrolSpline->GetNumberOfSplinePoints() == 0) return GetActorLocation();
 
 	// Get SplinePoint to World Location
-	FVector Location = PatrolSpline->GetLocationAtSplinePoint(InOutIndex, ESplineCoordinateSpace::World); 
-	InOutIndex = (InOutIndex + 1) % PatrolSpline->GetNumberOfSplinePoints(); // Cycle
-
+	FVector Location = PatrolSpline->GetLocationAtSplinePoint(Index, ESplineCoordinateSpace::World);
 	return Location;
+}
+
+int32 AMonster::GetNextPatrolIndex(int32 CurrentIndex) const
+{
+	return (CurrentIndex + 1) % PatrolSpline->GetNumberOfSplinePoints(); // Cycle
 }
 
 USplineComponent* AMonster::GetSplineComp() const

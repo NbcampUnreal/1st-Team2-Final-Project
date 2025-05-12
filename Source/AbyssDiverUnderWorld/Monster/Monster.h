@@ -25,7 +25,10 @@ protected:
 #pragma region Method
 public:
 	UFUNCTION(BlueprintCallable)
-	FVector FindNextPatrolLocation(int32& InOutIndex) const;
+	FVector GetPatrolLocation(int32 Index) const;
+	UFUNCTION(BlueprintCallable)
+	int32 GetNextPatrolIndex(int32 CurrentIndex) const;
+
 
 #pragma endregion
 

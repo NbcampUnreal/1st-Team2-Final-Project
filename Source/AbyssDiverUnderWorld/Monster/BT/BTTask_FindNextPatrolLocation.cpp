@@ -30,10 +30,10 @@ EBTNodeResult::Type UBTTask_FindNextPatrolLocation::ExecuteTask(UBehaviorTreeCom
 	if (!BlackboardComp) return EBTNodeResult::Failed;
 
 	int32 Index = BlackboardComp->GetValueAsInt(PatrolIndexKey.SelectedKeyName);
-	FVector TargetLocation = Monster->FindNextPatrolLocation(Index);
+	FVector TargetLocation = Monster->GetPatrolLocation(Index);
 
 	BlackboardComp->SetValueAsVector(TargetLocationKey.SelectedKeyName, TargetLocation);
-	BlackboardComp->SetValueAsInt(PatrolIndexKey.SelectedKeyName, Index);
+	BlackboardComp->SetValueAsInt(PatrolIndexKey.SelectedKeyName, Monster->GetNextPatrolIndex(Index));
 
 	return EBTNodeResult::Succeeded;
 }
