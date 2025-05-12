@@ -7,9 +7,12 @@ AADExchangeableItem::AADExchangeableItem()
 {
 	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>("MeshComponent");
 	RootComponent = MeshComponent;
+	MeshComponent->SetMobility(EComponentMobility::Movable); 
+	MeshComponent->SetIsReplicated(true);
 
 	// 발사체 모션 세팅
 	DropMovement = CreateDefaultSubobject<UProjectileMovementComponent>("DropMovement");
+	DropMovement->SetUpdatedComponent(MeshComponent);
 	DropMovement->bAutoActivate = false;
 	DropMovement->ProjectileGravityScale = 1.5f;
 	DropMovement->InitialSpeed = 0.f;
