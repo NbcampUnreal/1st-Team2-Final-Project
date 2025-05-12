@@ -2,4 +2,10 @@
 
 
 #include "Framework/ADPlayerState.h"
+#include "Inventory/ADInventoryComponent.h"
 
+AADPlayerState::AADPlayerState()
+{
+	InventoryComp = CreateDefaultSubobject<UADInventoryComponent>(TEXT("InventoryComp"));
+
+}

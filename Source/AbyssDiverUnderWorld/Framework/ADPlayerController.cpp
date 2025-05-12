@@ -6,6 +6,8 @@
 #include "AbyssDiverUnderWorld.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputMappingContext.h"
+#include "ADPlayerState.h"
+#include "Inventory/ADInventoryComponent.h"
 
 AADPlayerController::AADPlayerController()
 {
@@ -31,4 +33,6 @@ void AADPlayerController::BeginPlay()
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
 	}
+
+	Cast<AADPlayerState>(PlayerState)->GetInventory()->InventoryInitialize();
 }

@@ -10,6 +10,7 @@
 
 enum class EItemType : uint8;
 class UAllInventoryWidget;
+class UDataTableSubsystem;
 
 DECLARE_MULTICAST_DELEGATE(FInventoryUpdateDelegate);
 DECLARE_MULTICAST_DELEGATE_TwoParams(FInventoryInfoUpdateDelegate, int32, int32);
@@ -29,23 +30,21 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override; 
 
 	UFUNCTION(Server, Reliable)
-	void S_AddInventoryItem(FItemData ItemData);
-	void S_AddInventoryItem_Implementation(FItemData ItemData);
+	void S_DropItem(FItemData ItemData);
+	void S_DropItem_Implementation(FItemData ItemData);
 
 	UFUNCTION(BlueprintCallable)
 	void AddInventoryItem(FItemData ItemData);
-	UFUNCTION(BlueprintCallable)
-	bool RemoveInventoryItem(uint8 InventoryIndex, uint8 Count, bool bIsDropAction);
+	bool RemoveInventoryItem(uint8 InventoryIndex, int8 Count, bool bIsDropAction);
+
 	UFUNCTION(BlueprintCallable)
 	void TransferSlots(uint8 FromIndex, uint8 ToIndex);
-
-	void OnInventoryInfoUpdate(int32 MassInfo, int32 PriceInfo);
-	void InventoryUIUpdate(); 
 
 	//*Remove 테스트 후 넣어야 함
 	UFUNCTION(BlueprintCallable)
 	void ToggleInventoryShowed(); //추후 나침반이나 서브미션 UI 추가되었을 때 고려 대상
-
+	UFUNCTION(BlueprintCallable)
+	void InventoryInitialize();
 
 	FInventoryUpdateDelegate InventoryUpdateDelegate;
 	FInventoryInfoUpdateDelegate InventoryInfoUpdateDelegate;
@@ -53,14 +52,16 @@ public:
 private:
 	int8 GetTypeInventoryEmptyIndex(EItemType ItemType);
 	int16 FindItemIndexById(FName ItemID);
+	void OnInventoryInfoUpdate(int32 MassInfo, int32 PriceInfo);
+
+	void InventoryUIUpdate();
+	FVector GetDropLocation();
 	void PrintLogInventoryData();
 
 #pragma endregion
 	
 #pragma region Variable
 public:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TObjectPtr<UDataTable> ItemDataTable; //*테스트용 추후 삭제
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TSubclassOf<UAllInventoryWidget> InventoryWidgetClass;
@@ -79,6 +80,8 @@ private:
 	TArray<int8> InventorySizeByType;
 
 	TObjectPtr<UAllInventoryWidget> InventoryWidgetInstance;
+	TObjectPtr<UDataTableSubsystem> ItemDataTableSubsystem; 
+	TObjectPtr<UDataTable> TestItemDataTable;
 #pragma endregion
 
 
