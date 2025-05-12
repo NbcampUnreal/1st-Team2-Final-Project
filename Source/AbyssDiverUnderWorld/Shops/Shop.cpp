@@ -156,7 +156,7 @@ void AShop::BeginPlay()
 	InitData();
 }
 
-void AShop::Interact(AActor* InstigatorActor)
+void AShop::Interact_Implementation(AActor* InstigatorActor)
 {
 	if (HasAuthority() == false)
 	{

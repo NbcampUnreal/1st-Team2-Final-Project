@@ -88,3 +88,8 @@ void AADDrone::OnDestroyTimer()
 	Destroy();
 }
 
+UADInteractableComponent* AADDrone::GetInteractableComponent() const
+{
+	return InteractableComp;
+}
+

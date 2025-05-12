@@ -75,3 +75,8 @@ void AADDroneSeller::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME(AADDroneSeller, CurrentMoney);
 }
 
+UADInteractableComponent* AADDroneSeller::GetInteractableComponent() const
+{
+	return InteractableComp;
+}
+

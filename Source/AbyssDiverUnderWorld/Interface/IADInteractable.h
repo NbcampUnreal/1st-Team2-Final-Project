@@ -29,4 +29,6 @@ public:
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interaction")
 	bool CanHighlight() const;
 	virtual bool CanHighlight_Implementation() const { return true; }
+
+	virtual UADInteractableComponent* GetInteractableComponent() const = 0;
 };

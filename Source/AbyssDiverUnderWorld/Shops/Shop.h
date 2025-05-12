@@ -173,7 +173,9 @@ protected:
 
 public:
 
-	virtual void Interact(AActor* InstigatorActor) override;
+	UFUNCTION(BlueprintNativeEvent, Category = "Interaction")
+	void Interact(AActor* InstigatorActor);
+	virtual void Interact_Implementation(AActor* InstigatorActor) override;
 
 	void OpenShop(AUnderwaterCharacter* Requester);
 	void CloseShop(AUnderwaterCharacter* Requester);

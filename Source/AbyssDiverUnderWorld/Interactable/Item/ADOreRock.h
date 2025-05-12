@@ -48,7 +48,7 @@ protected:
 public:
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
 	void Interact(AActor* InstigatorActor);
-	void Interact_Implementation(AActor* InstigatorActor);
+	virtual void Interact_Implementation(AActor* InstigatorActor);
 	
 	void HandleMineRequest(APawn* InstigatorPawn);
 

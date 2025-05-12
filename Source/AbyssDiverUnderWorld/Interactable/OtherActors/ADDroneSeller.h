@@ -59,7 +59,7 @@ private:
 public:
 	int32 GetCurrentMoney() const { return CurrentMoney; }
 	int32 GetTargetMoney() const { return TargetMoney; }
-
+	virtual UADInteractableComponent* GetInteractableComponent() const override;
 #pragma endregion
 
 };
