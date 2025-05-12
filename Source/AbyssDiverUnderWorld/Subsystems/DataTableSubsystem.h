@@ -16,7 +16,7 @@ class ABYSSDIVERUNDERWORLD_API UDataTableSubsystem : public UGameInstanceSubsyst
 public:
 
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
-
+	
 private:
 
 	TArray<struct FFADItemDataRow*> ItemDataTableArray;
@@ -25,6 +25,7 @@ private:
 
 public:
 
+	int8 GetItemDataTableArrayNum() const ;
 	FFADItemDataRow* GetItemData(int32 ItemId) const;
 	FADUpgradeDataRow* GetUpgradeDataTableArray(int32 Index) const;
 	FDropEntry* GetOreDropEntryTableArray(int32 Id) const;
