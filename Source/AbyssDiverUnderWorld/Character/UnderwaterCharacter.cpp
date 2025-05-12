@@ -20,12 +20,13 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	FirstPersonCameraComponent->SetupAttachment(GetCapsuleComponent());
 	FirstPersonCameraComponent->SetRelativeLocation(FVector(-10.f, 0.f, 60.f)); // Position the camera
 	FirstPersonCameraComponent->bUsePawnControlRotation = true;
-
+	
 	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
 	{
 		Movement->SetMovementMode(MOVE_Swimming);
 		Movement->MaxSwimSpeed = 400.0f;
 		Movement->BrakingDecelerationSwimming = 500.0f;
+		Movement->GravityScale = 0.0f;
 	}
 
 	// To-Do
@@ -74,6 +75,7 @@ void AUnderwaterCharacter::SetCharacterState(ECharacterState State)
 		GetCharacterMovement()->GetPhysicsVolume()->bWaterVolume = true;
 		GetCharacterMovement()->SetMovementMode(MOVE_Swimming);
 		GetCharacterMovement()->bOrientRotationToMovement = false;
+		GetCharacterMovement()->GravityScale = 0.0f;
 		bUseControllerRotationYaw = true;
 		break;
 	case ECharacterState::Ground:
@@ -81,6 +83,7 @@ void AUnderwaterCharacter::SetCharacterState(ECharacterState State)
 		GetCharacterMovement()->GetPhysicsVolume()->bWaterVolume = false;
 		GetCharacterMovement()->SetMovementMode(MOVE_Walking);
 		GetCharacterMovement()->bOrientRotationToMovement = true;
+		GetCharacterMovement()->GravityScale = 1.0f;
 		bUseControllerRotationYaw = false;
 		break;
 	default:
