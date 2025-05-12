@@ -3,12 +3,14 @@
 #include "ADInteractableComponent.h"
 #include "DrawDebugHelpers.h"
 #include "AbyssDiverUnderWorld.h"
+#include "Interface/IADInteractable.h"
 
 // Sets default values for this component's properties
 UADInteractionComponent::UADInteractionComponent()
 {
+	SetIsReplicatedByDefault(true);
 	PrimaryComponentTick.bCanEverTick = true;
-	PrimaryComponentTick.bStartWithTickEnabled = true;
+	PrimaryComponentTick.bStartWithTickEnabled = false;
 }
 
 
@@ -46,6 +48,26 @@ void UADInteractionComponent::TickComponent(float DeltaTime, ELevelTick TickType
 		16, FColor::Blue, false, -1.f, 0, 2.f
 	);
 }
+
+void UADInteractionComponent::S_RequestInteract_Implementation(AActor* TargetActor)
+{
+	if (!TargetActor) return;
+
+	if (UADInteractableComponent* ADIC = TargetActor->FindComponentByClass<UADInteractableComponent>())
+	{
+		APawn* Pawn = Cast<APawn>(GetOwner());
+		if (Pawn && Pawn->HasAuthority())
+			ADIC->Interact(Pawn);
+	}
+}
+
+void UADInteractionComponent::S_RequestInteractHold_Implementation(AActor* TargetActor)
+{
+	if (!TargetActor) return;
+
+	IIADInteractable::Execute_InteractHold(TargetActor, GetOwner());
+}
+
 
 void UADInteractionComponent::HandleBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
@@ -92,12 +114,14 @@ void UADInteractionComponent::TryInteract()
 	{
 		if (Pawn->HasAuthority())
 		{
+			LOG(TEXT("Server"));
 			// 호스트 모드라면 바로 호출
 			FocusedInteractable->Interact(Pawn);
 		}
 		else
 		{
-			// TODO : 클라이언트 → 서버 요청 (서버 RPC 필요)
+			LOG(TEXT("Client"));
+			S_RequestInteract(Pawn);
 		}
 	}
 }
@@ -106,65 +130,74 @@ void UADInteractionComponent::PerformFocusCheck()
 {
 	if (NearbyInteractables.Num() == 0) return;
 
-	APawn* Pawn = Cast<APawn>(GetOwner());
-	if (!Pawn) return;
-	APlayerController* PC = Cast<APlayerController>(Pawn->GetController());
-	if (!PC) return;
-
 	FVector CamLocation;
-	FRotator CamRotation;
-	PC->GetPlayerViewPoint(CamLocation, CamRotation);
+	FVector TraceEnd;
+	if (!ComputeViewTrace(CamLocation, TraceEnd))
+	{
+		ClearFocus();
+		return;
+	}
 
-	const float TraceDist = RangeSphere->GetScaledSphereRadius();
-	FVector End = CamLocation + CamRotation.Vector() * TraceDist;
+	UADInteractableComponent* HitInteractable = PerformLineTrace(CamLocation, TraceEnd);
+	if (HitInteractable && NearbyInteractables.Contains(HitInteractable))
+	{
+		UpdateFocus(HitInteractable);
+	}
+	else
+	{
+		ClearFocus();
+	}
+}
 
+bool UADInteractionComponent::ComputeViewTrace(FVector& OutStart, FVector& OutEnd) const
+{
+	APawn* Pawn = Cast<APawn>(GetOwner());
+	if (!Pawn) return false;
+	APlayerController* PC = Cast<APlayerController>(Pawn->GetController());	
+	if (!PC) return false;
+
+	FVector CamLoc;
+	FRotator CamRot;
+	PC->GetPlayerViewPoint(CamLoc, CamRot);
+
+	OutStart = CamLoc;
+	OutEnd = CamLoc + CamRot.Vector() * RangeSphere->GetScaledSphereRadius();
+	return true;
+}
+
+UADInteractableComponent* UADInteractionComponent::PerformLineTrace(const FVector& Start, const FVector& End) const
+{
+	FHitResult Hit;
 	FCollisionQueryParams Params;
 	Params.AddIgnoredActor(GetOwner());
 
-
-	FHitResult Hit;
-	bool bHit = GetWorld()->LineTraceSingleByChannel(
-		Hit, CamLocation, End, ECC_Visibility, Params
-	);
-
-
-	/*FColor LineColor = bHit ? FColor::Blue : FColor::Red;
-
-
-	DrawDebugLine(
-		GetWorld(),
-		CamLocation,
-		End,
-		LineColor,
-		false,  
-		2.0f,   
-		0,
-		1.5f   
-	);*/
-
-	if (bHit)
+	if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params))
 	{
-//		LOG(TEXT("Hit!!"));
-		if (UADInteractableComponent* ADIC = Hit.GetActor()->FindComponentByClass<UADInteractableComponent>())
-		{
-//			LOG(TEXT("Is ADInteractable"));
-			if (NearbyInteractables.Contains(ADIC))
-			{
-//				LOG(TEXT("Contain ADIC"));
-				if (ADIC != FocusedInteractable)
-				{
-//					LOG(TEXT("ADIC is not FocusInteractable"));
-					if (FocusedInteractable)
-						FocusedInteractable->SetHighLight(false);
-
-					FocusedInteractable = ADIC;
-					FocusedInteractable->SetHighLight(true);
-				}
-				return;
-			}
-		}
+		return Hit.GetActor()->FindComponentByClass<UADInteractableComponent>();
 	}
+	return nullptr;
+}
 
+void UADInteractionComponent::UpdateFocus(UADInteractableComponent* NewFocus)
+{
+	if (NewFocus == FocusedInteractable) return;
+
+	if (FocusedInteractable)
+		FocusedInteractable->SetHighLight(false);
+
+	if (ShouldHighlight(NewFocus))
+	{
+		FocusedInteractable = NewFocus;
+		FocusedInteractable->SetHighLight(true);
+	}
+	else
+	{
+		FocusedInteractable = nullptr;
+	}
+}
+
+void UADInteractionComponent::ClearFocus()
+{
 	if (FocusedInteractable)
 	{
 		FocusedInteractable->SetHighLight(false);
@@ -172,13 +205,63 @@ void UADInteractionComponent::PerformFocusCheck()
 	}
 }
 
-
 void UADInteractionComponent::OnInteractPressed()
 {
 	PerformFocusCheck();
-	if (FocusedInteractable)
+	if (!FocusedInteractable) return;
+
+	bHoldTriggered = false;
+	HoldInstigator = Cast<APawn>(GetOwner());
+
+	GetWorld()->GetTimerManager().SetTimer(
+		HoldTimerHandle,
+		this,
+		&UADInteractionComponent::OnHoldComplete,
+		HoldThreshold,
+		false
+	);
+}
+
+void UADInteractionComponent::OnInteractReleased()
+{
+	if (!bHoldTriggered && FocusedInteractable)
 	{
-		FocusedInteractable->Interact(GetOwner());
+		GetWorld()->GetTimerManager().ClearTimer(HoldTimerHandle);
+
+		if (GetOwner()->HasAuthority())
+		{
+			FocusedInteractable->Interact(Cast<APawn>(GetOwner()));
+		}
+		else
+		{
+			// 클라이언트 → 서버 RPC
+			S_RequestInteract(FocusedInteractable->GetOwner());
+		}
 	}
+	HoldInstigator = nullptr;
+}
+
+
+void UADInteractionComponent::OnHoldComplete()
+{
+	bHoldTriggered = true;
+	AActor* Instigator = HoldInstigator.Get();
+	if (!Instigator || !FocusedInteractable) return;
+
+	if (GetOwner()->HasAuthority())
+	{
+		IIADInteractable::Execute_InteractHold(FocusedInteractable->GetOwner(), Instigator);
+	}
+	else
+	{
+		S_RequestInteractHold(FocusedInteractable->GetOwner());
+	}
+}
+
+bool UADInteractionComponent::ShouldHighlight(const UADInteractableComponent* ADIC) const
+{
+	if (!ADIC) return false;
+	AActor* TargetActor = ADIC->GetOwner();
+	return IIADInteractable::Execute_CanHighlight(TargetActor);
 }
 

@@ -22,6 +22,13 @@ protected:
 
 #pragma region Method
 public:
+    UFUNCTION(Server, Reliable)
+    void S_RequestInteract(AActor* TargetActor);
+    void S_RequestInteract_Implementation(AActor* TargetActor);
+    UFUNCTION(Server, Reliable)
+    void S_RequestInteractHold(AActor* TargetActor);
+    void S_RequestInteractHold_Implementation(AActor* TargetActor);
+    
     // Overlap 콜백 바인딩용 함수
     UFUNCTION()
     void HandleBeginOverlap(UPrimitiveComponent* OverlappedComp,
@@ -43,11 +50,17 @@ public:
 
     // 실제 Focus 검사 함수
     void PerformFocusCheck();
+    bool ComputeViewTrace(FVector& OutStart, FVector& OutEnd) const;
+    UADInteractableComponent* PerformLineTrace(const FVector& Start, const FVector& End) const;
+    void UpdateFocus(UADInteractableComponent* NewFocus);
+    void ClearFocus();
 
-    // Player가 E 키를 눌렀을 때 호출할 함수
     void OnInteractPressed();
+    void OnInteractReleased();
+    // Player가 E 키를 홀드했을 때 호출할 함수
+    void OnHoldComplete();
 
-
+    bool ShouldHighlight(const UADInteractableComponent* ADIC) const;
 
 protected:
 
@@ -65,6 +78,13 @@ public:
     TObjectPtr<USphereComponent> RangeSphere;
     UPROPERTY()
     TObjectPtr<UADInteractableComponent> FocusedInteractable = nullptr;
+
+    UPROPERTY(EditAnywhere)
+    float HoldThreshold = 3.f;
+    FTimerHandle HoldTimerHandle;
+    bool bHoldTriggered = false;
+    TWeakObjectPtr<AActor> HoldInstigator;
+
 
 protected:
 
