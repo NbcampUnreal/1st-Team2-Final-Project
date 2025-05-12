@@ -42,7 +42,7 @@ void UADInteractableComponent::Interact(AActor* InstigatorActor)
 
 	if (IIADInteractable* Inter = Cast<IIADInteractable>(GetOwner()))
 	{
-		Inter->Interact(InstigatorActor);
+		IIADInteractable::Execute_Interact(GetOwner(), InstigatorActor);
 	}		
 }
 

@@ -21,7 +21,9 @@ protected:
 
 #pragma region Method
 public:	
-	virtual void Interact(AActor* InstigatorActor) override;
+	UFUNCTION(BlueprintNativeEvent)
+	void Interact(AActor* InstigatorActor);
+	virtual void Interact_Implementation(AActor* InstigatorActor);
 
 	virtual void HandlePickup(APawn* InstigatorPawn);
 

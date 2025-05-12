@@ -21,8 +21,8 @@ protected:
 public:
 	UFUNCTION()
 	void OnRep_TotalPrice();
-	UFUNCTION(BlueprintCallable)
-	virtual void Interact(AActor* InstigatorActor) override;
+
+	virtual void Interact_Implementation(AActor* InstigatorActor) override;
 
 	void CalculateTotalPrice();
 
