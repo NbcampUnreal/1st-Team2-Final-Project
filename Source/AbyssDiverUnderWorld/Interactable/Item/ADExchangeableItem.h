@@ -21,8 +21,8 @@ protected:
 public:
 	UFUNCTION()
 	void OnRep_TotalPrice();
-	UFUNCTION(BlueprintCallable)
-	virtual void Interact(AActor* InstigatorActor) override;
+
+	virtual void Interact_Implementation(AActor* InstigatorActor) override;
 
 	void CalculateTotalPrice();
 
@@ -46,11 +46,11 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Exchange")
 	TObjectPtr<UStaticMeshComponent> MeshComponent;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Exchange")
-	float Mass = 1.f;
+	int32 Mass = 1.f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Exchange")
-	float ValuePerUnit = 10.f;
+	int32 ValuePerUnit = 10;
 	UPROPERTY(ReplicatedUsing = OnRep_TotalPrice, EditAnywhere, BlueprintReadWrite, Category = "Exchange")
-	float TotalPrice = 0.f;
+	int32 TotalPrice = 0;
 
 
 private:
@@ -59,6 +59,8 @@ private:
 
 #pragma region Getter, Setteer
 public:
+	int32 GetMass() const { return Mass; }
+	int32 GetTotalPrice() const { return TotalPrice; }
 
 #pragma endregion
 

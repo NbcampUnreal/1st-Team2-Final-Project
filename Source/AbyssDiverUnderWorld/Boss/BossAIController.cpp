@@ -31,6 +31,10 @@ ABossAIController::ABossAIController()
 	// 시각을 우선순위로 설정
 	AIPerceptionComponent->ConfigureSense(*SightConfig);
 	AIPerceptionComponent->SetDominantSense(SightConfig->GetSenseImplementation());
+
+	bIsDetectedStatePossible = true;
+	AccumulatedTime = 0.0f;
+	DetectedStateInterval = 20.0f;
 }
 
 void ABossAIController::BeginPlay()
@@ -39,7 +43,6 @@ void ABossAIController::BeginPlay()
 
 	if (IsValid(AIPerceptionComponent))
 	{
-		LOG(TEXT(" [AI] AIPerceptionComponent is valid."));
 		AIPerceptionComponent->OnTargetPerceptionUpdated.AddDynamic(this, &ABossAIController::OnTargetPerceptionUpdated);
 	}
 }
@@ -55,17 +58,28 @@ void ABossAIController::OnPossess(APawn* InPawn)
 	}
 }
 
-void ABossAIController::SetDefaultVisionAngle()
+void ABossAIController::Tick(float DeltaSeconds)
 {
-	UAISenseConfig_Sight* SightConfigInstance = Cast<UAISenseConfig_Sight>(AIPerceptionComponent->GetSenseConfig(UAISense::GetSenseID(UAISense_Sight::StaticClass())));
-	SightConfigInstance->PeripheralVisionAngleDegrees = DefaultVisionAngle;
-	AIPerceptionComponent->ConfigureSense(*SightConfigInstance);
+	Super::Tick(DeltaSeconds);
+
+	// Detected 상태로 전이한지 DetectedStateInterval 만큼 지났는지 확인
+	if (!bIsDetectedStatePossible)
+	{
+		AccumulatedTime += DeltaSeconds;
+
+		if (AccumulatedTime >= DetectedStateInterval)
+		{
+			bIsDetectedStatePossible = true;
+			AccumulatedTime = 0.0f;
+		}
+	}
 }
 
-void ABossAIController::SetChasingVisionAngle()
+void ABossAIController::SetVisionAngle(float& Angle)
 {
+	// 시야각 전환 함수
 	UAISenseConfig_Sight* SightConfigInstance = Cast<UAISenseConfig_Sight>(AIPerceptionComponent->GetSenseConfig(UAISense::GetSenseID(UAISense_Sight::StaticClass())));
-	SightConfigInstance->PeripheralVisionAngleDegrees = ChasingVisionAngle;
+	SightConfigInstance->PeripheralVisionAngleDegrees = Angle;
 	AIPerceptionComponent->ConfigureSense(*SightConfigInstance);
 }
 
@@ -89,16 +103,7 @@ void ABossAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Sti
 
 void ABossAIController::M_AddDetectedPlayer_Implementation(AActor* Target)
 {
-	// 감지된 플레이어가 0명이하인 경우
-	// Roar 애니메이션을 재생한지 30초가 지난 경우
-	// Roar 애니메이션 재생 후 체이스 모드로 전이
-	// 감지된 플레이어가 1명 이상인 경우는 그냥 넘어가자
-	// 최초로 감지된 플레이어를 우선 추적하도록 !
-
-	ACharacter* ABCharacter = GetCharacter();
-	if (!IsValid(ABCharacter)) return;
-
-	ABoss* Boss = Cast<ABoss>(ABCharacter);
+	ABoss* Boss = Cast<ABoss>(GetCharacter());
 	if (!IsValid(Boss)) return;
 
 	APawn* Player = Cast<APawn>(Target);
@@ -107,27 +112,34 @@ void ABossAIController::M_AddDetectedPlayer_Implementation(AActor* Target)
 		LOG(TEXT(" [AI] Target Perception Updated: %s"), *Player->GetName());
 		Boss->SetTarget((Player));
 	}
-	
+
+	// 처음으로 플레이어를 감지한 경우 조건에 따라 Detected | Chase 상태로 전이
 	if (DetectedPlayers.Num() <= 0)
 	{
-		BlackboardComponent->SetValueAsEnum(BossStateKey, static_cast<uint8>(EBossState::Detected));
+		if (bIsDetectedStatePossible)
+		{
+			BlackboardComponent->SetValueAsEnum(BossStateKey, static_cast<uint8>(EBossState::Detected));
+			bIsDetectedStatePossible = false;
+		}
+		else
+		{
+			BlackboardComponent->SetValueAsEnum(BossStateKey, static_cast<uint8>(EBossState::Chase));
+		}
 	}
 
+	// 감지된 플레이어 리스트에 추가
 	DetectedPlayers.Add(Target);
-	
 }
 
 void ABossAIController::M_RemoveDetectedPlayer_Implementation(AActor* Target)
 {
+	// 감지된 플레이어 리스트에서 제거
 	DetectedPlayers.Remove(Target);
-	LOG(TEXT(" [AI] Target Perception Lost: %s"), *Target->GetName());
 
+	// 감지한 플레이어가 리스트에서 모두 제거된 경우 Investigate 상태로 전이
 	if (DetectedPlayers.Num() <= 0)
 	{
-		ACharacter* ABCharacter = GetCharacter();
-		if (!IsValid(ABCharacter)) return;
-
-		ABoss* Boss = Cast<ABoss>(ABCharacter);
+		ABoss* Boss = Cast<ABoss>(GetCharacter());
 		if (!IsValid(Boss)) return;
 		
 		Boss->SetLastDetectedLocation(Target->GetActorLocation());

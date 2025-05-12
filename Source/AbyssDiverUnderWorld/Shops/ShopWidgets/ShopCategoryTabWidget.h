@@ -5,16 +5,15 @@
 
 #include "ShopCategoryTabWidget.generated.h"
 
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnShopCategoryTabClickedDelegate, ECategoryTab);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnShopCategoryTabClickedDelegate, EShopCategoryTab);
 
 UENUM()
-enum class ECategoryTab : uint8
+enum class EShopCategoryTab : uint8
 {
-	None,
-	Consumable,
-	Weapons,
+	Consumable = 0,
+	Equipment,
 	Upgrade,
-	MAX
+	Max
 };
 
 /**
@@ -29,7 +28,7 @@ protected:
 
 	virtual void NativeConstruct() override;
 
-#pragma region Methods And Delegate
+#pragma region Methods And Delegates
 public:
 
 	FOnShopCategoryTabClickedDelegate OnShopCategoryTabClickedDelegate;
@@ -46,11 +45,11 @@ private:
 
 private:
 
+	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess), Category = "ShopCategoryTabWidget")
+	EShopCategoryTab CurrentCategoryTab = EShopCategoryTab::Max;
+
 	UPROPERTY(EditDefaultsOnly, meta = (BindWidget), Category = "ShopCategoryTabWidget")
 	TObjectPtr<class UButton> TabButton;
-
-	UPROPERTY(EditDefaultsOnly, meta = (AllowPrivateAccess), Category = "ShopCategoryTabWidget")
-	ECategoryTab CurrentCategoryTab = ECategoryTab::None;
 
 #pragma endregion
 };

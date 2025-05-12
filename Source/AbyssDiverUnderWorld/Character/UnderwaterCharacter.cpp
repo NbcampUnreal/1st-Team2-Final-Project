@@ -5,10 +5,14 @@
 
 #include "AbyssDiverUnderWorld.h"
 #include "EnhancedInputComponent.h"
+#include "OxygenComponent.h"
+#include "AbyssDiverUnderWorld/Interactable/Item/Component/ADInteractionComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PhysicsVolume.h"
+#include "GameFramework/SpringArmComponent.h"
+#include "Shops/ShopInteractionComponent.h"
 
 AUnderwaterCharacter::AUnderwaterCharacter()
 {
@@ -21,23 +25,67 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	{
 		Movement->SetMovementMode(MOVE_Swimming);
 		Movement->MaxSwimSpeed = 400.0f;
+		Movement->BrakingDecelerationSwimming = 500.0f;
 	}
-	
-	// Temp: Player Mesh를 완전히 숨긴다.
-	// 추후 Player Mesh를 추가해서 보여주거나 일부분만 숨길 수 있는 방법에 대해서 찾아야 한다.
-	GetMesh()->SetOwnerNoSee(true);	
+
+	// To-Do
+	// 외부에 보여지는 Mesh와 1인칭 Mesh를 다르게 구현
+	GetMesh()->SetOwnerNoSee(true);
+
+	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
+	CameraBoom->SetupAttachment(GetCapsuleComponent());
+	CameraBoom->TargetArmLength = 300.f;
+	CameraBoom->bUsePawnControlRotation = false;
+
+	ThirdPersonCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("ThirdPersonCamera"));
+	ThirdPersonCameraComponent->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
+	ThirdPersonCameraComponent->bUsePawnControlRotation = false;
+
+	bUseDebugCamera = false;
+	ThirdPersonCameraComponent->SetActive(false);
+
+	OxygenComponent = CreateDefaultSubobject<UOxygenComponent>(TEXT("OxygenComponent"));
+
+	InteractionComponent = CreateDefaultSubobject<UADInteractionComponent>(TEXT("InteractionComponent"));
+	ShopInteractionComponent = CreateDefaultSubobject<UShopInteractionComponent>(TEXT("ShopInteractionComponent"));
+
+	CharacterState = ECharacterState::Underwater;
 }
 
 void AUnderwaterCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
+	SetCharacterState(CharacterState);
+
+	SetDebugCameraMode(bUseDebugCamera);
+}
+
+void AUnderwaterCharacter::SetCharacterState(ECharacterState State)
+{
+	CharacterState = State;
+
+	switch (CharacterState)
 	{
+	case ECharacterState::Underwater:
 		// 현재 Physics Volume을 Water로 설정한다.
 		// 현재 Physics Volume이 Water가 아닐 경우 World의 Default Volume을 반환한다.
 		// Default Volume을 Water를 설정해서 Swim Mode를 사용할 수 있도록 한다.
-		Movement->GetPhysicsVolume()->bWaterVolume = true;
+		GetCharacterMovement()->GetPhysicsVolume()->bWaterVolume = true;
+		GetCharacterMovement()->SetMovementMode(MOVE_Swimming);
+		GetCharacterMovement()->bOrientRotationToMovement = false;
+		bUseControllerRotationYaw = true;
+		break;
+	case ECharacterState::Ground:
+		// 지상에서는 이동 방향으로 회전을 하게 한다.
+		GetCharacterMovement()->GetPhysicsVolume()->bWaterVolume = false;
+		GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+		GetCharacterMovement()->bOrientRotationToMovement = true;
+		bUseControllerRotationYaw = false;
+		break;
+	default:
+		UE_LOG(AbyssDiver, Error, TEXT("Invalid Character State"));
+		break;
 	}
 }
 
@@ -131,9 +179,24 @@ void AUnderwaterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 
 void AUnderwaterCharacter::Move(const FInputActionValue& InputActionValue)
 {
+	// To-Do
+	// Can Move 확인
+	
 	// 캐릭터의 XYZ 축을 기준으로 입력을 받는다.
 	const FVector MoveInput = InputActionValue.Get<FVector>();
-	
+
+	if (CharacterState == ECharacterState::Ground)
+	{
+		MoveGround(MoveInput);
+	}
+	else if (CharacterState == ECharacterState::Underwater)
+	{
+		MoveUnderwater(MoveInput);
+	}
+}
+
+void AUnderwaterCharacter::MoveUnderwater(const FVector MoveInput)
+{
 	// Forward : Camera Forward with pitch
 	const FRotator ControlRotation = GetControlRotation();
 	const FVector ForwardVector = FRotationMatrix(ControlRotation).GetUnitAxis(EAxis::X);
@@ -146,7 +209,26 @@ void AUnderwaterCharacter::Move(const FInputActionValue& InputActionValue)
 	{
 		AddMovementInput(ForwardVector, MoveInput.X);
 	}
+	if (!FMath::IsNearlyZero(MoveInput.Y))
+	{
+		AddMovementInput(RightVector, MoveInput.Y);
+	}
+}
 
+void AUnderwaterCharacter::MoveGround(FVector MoveInput)
+{
+	const FRotator ControllerRotator = FRotator(0.f, Controller->GetControlRotation().Yaw, 0.f);
+
+	// World에서 Controller의 X축, Y축 방향
+	const FVector ForwardVector = FRotationMatrix(ControllerRotator).GetUnitAxis(EAxis::X);
+	const FVector RightVector = FRotationMatrix(ControllerRotator).GetUnitAxis(EAxis::Y);
+
+	// 전후 이동
+	if (!FMath::IsNearlyZero(MoveInput.X))
+	{
+		AddMovementInput(ForwardVector, MoveInput.X);
+	}
+	// 좌우 이동
 	if (!FMath::IsNearlyZero(MoveInput.Y))
 	{
 		AddMovementInput(RightVector, MoveInput.Y);
@@ -172,6 +254,7 @@ void AUnderwaterCharacter::Aim(const FInputActionValue& InputActionValue)
 
 void AUnderwaterCharacter::Interaction(const FInputActionValue& InputActionValue)
 {
+	InteractionComponent->TryInteract();
 }
 
 void AUnderwaterCharacter::Light(const FInputActionValue& InputActionValue)
@@ -182,3 +265,25 @@ void AUnderwaterCharacter::Radar(const FInputActionValue& InputActionValue)
 {
 }
 
+void AUnderwaterCharacter::SetDebugCameraMode(bool bDebugCameraEnable)
+{
+	bUseDebugCamera = bDebugCameraEnable;
+	if (bUseDebugCamera)
+	{
+		FirstPersonCameraComponent->SetActive(false);
+		ThirdPersonCameraComponent->SetActive(true);
+		GetMesh()->SetOwnerNoSee(false);
+	}
+	else
+	{
+		FirstPersonCameraComponent->SetActive(true);
+		ThirdPersonCameraComponent->SetActive(false);
+		GetMesh()->SetOwnerNoSee(true);
+	}
+}
+
+void AUnderwaterCharacter::ToggleDebugCameraMode()
+{
+	bUseDebugCamera = !bUseDebugCamera;
+	SetDebugCameraMode(bUseDebugCamera);
+}

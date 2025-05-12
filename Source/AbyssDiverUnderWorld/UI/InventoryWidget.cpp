@@ -6,9 +6,8 @@
 #include "Components/WrapBox.h"
 #include "Inventory/ADInventoryComponent.h"
 
-void UInventoryWidget::RefrashInventoryWidget(EItemType ItemType)
+void UInventoryWidget::RefreshInventoryWidget()
 {
-	if (!InventoryComp || ItemType != InventoryItemType) return;
 	if (InventoryWrapBox)
 	{
 		InventoryWrapBox->ClearChildren();
@@ -19,7 +18,7 @@ void UInventoryWidget::RefrashInventoryWidget(EItemType ItemType)
 			int8 InventoryItemIndexByType = InventoryComp->GetInventoryIndexesByType(InventoryItemType)[i];
 			if (InventoryItemIndexByType >= 0)
 			{
-				SlotWidget->SetItemData(InventoryComp->GetInventoryList().Items[InventoryItemIndexByType], i);
+				SlotWidget->SetItemData(InventoryComp->GetInventoryList().Items[InventoryItemIndexByType], InventoryItemIndexByType, InventoryComp);
 				if (SlotWidget)
 				{
 					InventoryWrapBox->AddChild(SlotWidget);
@@ -28,9 +27,10 @@ void UInventoryWidget::RefrashInventoryWidget(EItemType ItemType)
 			else
 			{
 				FItemData EmptySlot;
-				SlotWidget->SetItemData(EmptySlot, i);
+				EmptySlot.ItemType = InventoryItemType;
 				if (SlotWidget)
 				{
+					SlotWidget->SetItemData(EmptySlot, -1, InventoryComp);
 					InventoryWrapBox->AddChild(SlotWidget);
 				}
 			}
@@ -47,9 +47,10 @@ void UInventoryWidget::InitializeSlots()
 		{
 			UInventorySlotWidget* SlotWidget = CreateWidget<UInventorySlotWidget>(PC, SlotWidgetClass);
 			FItemData EmptySlot;
+			EmptySlot.ItemType = InventoryItemType;
 			if (SlotWidget)
 			{
-				SlotWidget->SetItemData(EmptySlot, i);
+				SlotWidget->SetItemData(EmptySlot, -1, InventoryComp);
 				InventoryWrapBox->AddChild(SlotWidget);
 			}
 		}
@@ -58,7 +59,7 @@ void UInventoryWidget::InitializeSlots()
 
 void UInventoryWidget::InventoryWidgetDelegateBind()
 {
-	InventoryComp->InventoryUpdateDelegate.AddUObject(this, &UInventoryWidget::RefrashInventoryWidget);
+	InventoryComp->InventoryUpdateDelegate.AddUObject(this, &UInventoryWidget::RefreshInventoryWidget);
 }
 
 void UInventoryWidget::SetInventoryInfo(int8 Size, EItemType Type, UADInventoryComponent* InventoryComponent)

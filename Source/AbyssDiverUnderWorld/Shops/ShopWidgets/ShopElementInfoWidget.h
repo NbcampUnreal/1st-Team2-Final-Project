@@ -5,6 +5,7 @@
 
 #include "ShopElementInfoWidget.generated.h"
 
+DECLARE_MULTICAST_DELEGATE(FOnBuyButtonClickedDelegate);
 class URichTextBlock;
 
 /**
@@ -14,26 +15,42 @@ UCLASS()
 class ABYSSDIVERUNDERWORLD_API UShopElementInfoWidget : public UUserWidget
 {
 	GENERATED_BODY()
-	
 
-#pragma region Methods
+protected:
+
+	virtual void NativeConstruct() override;
+	
+#pragma region Methods, Delegates
 
 public:
 
+	void Init(UStaticMeshComponent* NewItemMeshComp);
+
+	void ShowItemInfos(UStaticMesh* NewItemMesh, const FString& NewDescription, const FString& NewInfoText);
+
 	void ChangeItemDescription(const FString& NewDescription);
 	void ChangeInfoText(const FString& NewInfoText);
-	// Static Mesh, Skeletal Mesh 둘 다 전달 가능하도록 UObject
-	void ChangeItemMesh(const UObject* NewMesh);
+	void ChangeItemMesh(UStaticMesh* NewMesh);
 
 	void SetDescriptionActive(bool bShouldActivate);
 	void SetInfoTextActive(bool bShouldActivate);
-	void SetMeshActive(bool bShouldActivate);
+	void SetItemMeshActive(bool bShouldActivate);
+	void SetBuyButtonActive(bool bShouldActivate);
 
+	FOnBuyButtonClickedDelegate OnBuyButtonClickedDelegate;
+
+private:
+
+	UFUNCTION()
+	void OnBuyButtonClicked();
 #pragma endregion
 
 #pragma region Variables
 
 protected:
+
+	UPROPERTY()
+	TObjectPtr<UStaticMeshComponent> ItemMeshComponent;
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<class UImage> ItemMeshImage;
@@ -43,6 +60,9 @@ protected:
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<URichTextBlock> InfoText;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<class UButton> BuyButton;
 
 #pragma endregion
 };
