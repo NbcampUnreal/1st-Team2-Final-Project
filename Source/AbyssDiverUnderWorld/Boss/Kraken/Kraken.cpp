@@ -1,5 +1,6 @@
 #include "Boss/Kraken/Kraken.h"
 #include "AbyssDiverUnderWorld.h"
+#include "Character/UnderwaterCharacter.h"
 #include "Components/CapsuleComponent.h"
 
 AKraken::AKraken()
@@ -41,6 +42,11 @@ void AKraken::BeginPlay()
 	TakeDownAttackCollision->OnComponentBeginOverlap.AddDynamic(this, &ABoss::OnMeshOverlapBegin);
 	WieldAttackCollision->OnComponentBeginOverlap.AddDynamic(this, &ABoss::OnMeshOverlapBegin);
 	PickAttackCollision->OnComponentBeginOverlap.AddDynamic(this, &ABoss::OnMeshOverlapBegin);
+}
+
+void AKraken::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
 }
 
 void AKraken::OnDeath()

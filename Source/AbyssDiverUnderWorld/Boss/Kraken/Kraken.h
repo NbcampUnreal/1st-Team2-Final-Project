@@ -15,7 +15,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
-
+	virtual void Tick(float DeltaTime) override;
 #pragma region Method
 public:
 	virtual void OnDeath() override;
