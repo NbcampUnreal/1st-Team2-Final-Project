@@ -3,14 +3,17 @@
 #include "EBossState.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Character/StatComponent.h"
+#include "Character/UnderwaterCharacter.h"
 #include "Engine/DamageEvents.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/PhysicsVolume.h"
+#include "Kismet/GameplayStatics.h"
 
 const FName ABoss::BossStateKey = "BossState";
 
 ABoss::ABoss()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 	
 	BlackboardComponent = nullptr;
 	AIController = nullptr;
@@ -24,6 +27,8 @@ ABoss::ABoss()
 void ABoss::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	TargetPlayer = Cast<AUnderwaterCharacter>(UGameplayStatics::GetPlayerPawn(GetWorld(), 0));
 
 	AnimInstance = GetMesh()->GetAnimInstance();
 
@@ -35,9 +40,19 @@ void ABoss::BeginPlay()
 	}
 }
 
-float ABoss::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator,
-	AActor* DamageCauser)
+void ABoss::Tick(float DeltaSeconds)
 {
+	Super::Tick(DeltaSeconds);
+
+	RotationToTarget();
+}
+
+float ABoss::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator,
+                        AActor* DamageCauser)
+{
+	// 사망 상태면 얼리 리턴
+	if (BlackboardComponent->GetValueAsEnum(BossStateKey) == static_cast<uint8>(EBossState::Death)) return 0.0f;
+
 	const float Damage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
 	// 부위 타격 정보
@@ -62,6 +77,11 @@ float ABoss::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
 		{
 			FName RegionName = *HitResult.PhysicsObjectOwner->GetName();
 			LOG(TEXT("%s"), *RegionName.ToString());			
+		}
+
+		if (HitResult.ImpactPoint != FVector::ZeroVector)
+		{
+			LOG(TEXT("Damage Location: %s"), *HitResult.ImpactPoint.ToString());
 		}
 	}
 	
@@ -142,9 +162,48 @@ void ABoss::Attack()
 	}
 }
 
+void ABoss::OnAttackEnded()
+{
+	AttackedPlayers.Empty();
+}
+
 void ABoss::M_PlayAnimation_Implementation(class UAnimMontage* AnimMontage, float InPlayRate, FName StartSectionName)
 {
 	PlayAnimMontage(AnimMontage, InPlayRate, StartSectionName);
+}
+
+void ABoss::OnMeshOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
+	int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	// 공격 대상이 플레이어가 아닌 경우 얼리 리턴
+	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(OtherActor);
+	if (!IsValid(Player)) return;
+
+	// 해당 플레이어가 이미 공격받은 상태인 경우 얼리 리턴
+	if (AttackedPlayers.Contains(Player)) return;
+
+	// 공격받은 대상 리스트에 플레이어 추가
+	AttackedPlayers.Add(Player);
+
+	// 해당 플레이어에게 데미지 적용
+	UGameplayStatics::ApplyDamage(Player, StatComponent->AttackPower, GetController(), this, UDamageType::StaticClass());
+
+	// 플레이어를 밀치는 로직
+	const FVector PushDirection = (Player->GetActorLocation() - GetActorLocation()).GetSafeNormal();
+	const float PushStrength = 1000.0f; // 밀치는 힘의 크기 -> 변수화 필요할 것 같은데 일단 고민
+	const FVector PushForce = PushDirection * PushStrength;
+	
+	// 물리 시뮬레이션이 아닌 경우 LaunchCharacter 사용
+	Player->LaunchCharacter(PushForce, false, false);
+
+	// 0.5초 후 캐릭터의 원래 움직임 복구
+	FTimerHandle TimerHandle;
+	GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this, Player]()
+	{
+		Player->GetCharacterMovement()->SetMovementMode(MOVE_Swimming);
+	}, 0.5f, false);
+	
+	LOG(TEXT("[Attack] %s"), *Player->GetName());
 }
 
 APawn* ABoss::GetTarget()
@@ -157,7 +216,7 @@ APawn* ABoss::GetTarget()
 	return nullptr;
 }
 
-void ABoss::SetTarget(APawn* Target)
+void ABoss::SetTarget(AUnderwaterCharacter* Target)
 {
 	if (IsValid(Target))
 	{

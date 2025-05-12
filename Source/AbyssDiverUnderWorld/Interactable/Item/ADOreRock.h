@@ -18,6 +18,8 @@ struct FDropEntry : public FTableRowBase
 	GENERATED_BODY()
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	uint8 Id = 1;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float SpawnWeight = 1.f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TSoftClassPtr<AADItemBase> ItemClass;
@@ -55,8 +57,13 @@ public:
 
 	void OnAssetLoaded(FDropEntry* Entry, int32 Mass);
 
+	void PlayMiningFX();
+	void PlayFractureFX();
+
 	// 편향된 무게 한 점을 반환하는 함수
 	int32 SampleDropMass(int32 MinMass, int32 MaxMass) const;
+	
+	
 
 protected:
 	UFUNCTION()

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h" 
@@ -26,16 +26,19 @@ public:
 
 	virtual void Interact_Implementation(AActor* InstigatorActor) override;
 
-	virtual bool CanHighlight_Implementation() const override { return true; }
+	virtual bool CanHighlight_Implementation() const override { return bIsActive; }
 	UFUNCTION()
 	void Activate(class AADDroneSeller* Seller);
+	UFUNCTION()
+	void OnRep_IsActive();
 	void StartRising();
 	void OnDestroyTimer();
 
 protected:
-
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 private:
+	
 #pragma endregion
 
 #pragma region Variable
@@ -47,8 +50,8 @@ public:
 	int32 TargetMoney = 1000;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Money")
 	int32 AccumulatedMoney = 0;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	bool bIsActive = false;
+	UPROPERTY(ReplicatedUsing = OnRep_IsActive, EditAnywhere, BlueprintReadWrite)
+	uint8 bIsActive : 1;
 	UPROPERTY()
 	AADDroneSeller* SellerRef = nullptr;
 	UPROPERTY(EditAnywhere)

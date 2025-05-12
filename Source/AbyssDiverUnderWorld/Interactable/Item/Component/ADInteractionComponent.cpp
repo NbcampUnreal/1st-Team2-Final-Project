@@ -57,7 +57,11 @@ void UADInteractionComponent::S_RequestInteract_Implementation(AActor* TargetAct
 	{
 		APawn* Pawn = Cast<APawn>(GetOwner());
 		if (Pawn && Pawn->HasAuthority())
+		{
 			ADIC->Interact(Pawn);
+			LOG(TEXT("Pawn HasAuthority"));
+		}
+			
 	}
 }
 
@@ -121,7 +125,7 @@ void UADInteractionComponent::TryInteract()
 		else
 		{
 			LOG(TEXT("Client"));
-			S_RequestInteract(Pawn);
+			S_RequestInteract(FocusedInteractable->GetOwner());
 		}
 	}
 }

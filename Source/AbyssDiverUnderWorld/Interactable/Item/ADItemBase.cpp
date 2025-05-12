@@ -4,6 +4,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Interactable/Item/Component/ADInteractableComponent.h"
 #include "Inventory/ADInventoryComponent.h"
+#include "Framework/ADPlayerState.h"
 
 // Sets default values
 AADItemBase::AADItemBase()
@@ -33,12 +34,12 @@ void AADItemBase::Interact_Implementation(AActor* InstigatorActor)
 void AADItemBase::HandlePickup(APawn* InstigatorPawn)
 {
 	if (!HasAuthority() || !InstigatorPawn) return;
-
-	AController* PC = InstigatorPawn->GetController();
+	APlayerController* PC = Cast<APlayerController>(InstigatorPawn->GetController());
+	AADPlayerState* PS = Cast<AADPlayerState>(PC->PlayerState);
 
 	LOG(TEXT("Add to Inventory"));
 	// TODO 인벤토리 추가 로직과 획득 효과 추가
-	if (UADInventoryComponent* Inventory = PC->FindComponentByClass<UADInventoryComponent>())
+	if (UADInventoryComponent* Inventory = PS->GetInventory())
 	{
 		LOG(TEXT("Find Inventory"));
 		Inventory->AddInventoryItem(ItemData);
