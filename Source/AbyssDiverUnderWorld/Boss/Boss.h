@@ -5,6 +5,8 @@
 #include "Character/UnitBase.h"
 #include "Boss.generated.h"
 
+class AUnderwaterCharacter;
+
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API ABoss : public AUnitBase
 {
@@ -39,8 +41,14 @@ public:
 	/** 보스가 마지막으로 감지한 타겟의 위치를 추적하는 함수 */
 	virtual void MoveToLastDetectedLocation();
 
-	/** 보스가 타겟을 향해 공격하는 함수 */
+	/** 보스의 공격 시 애니메이션 재생*/
 	virtual void Attack();
+
+	/** 보스의 공격이 끝난 후 타격 판정을 초기화하는 함수
+	 *
+	 * AnimNotify_BossAttack 호출 후 일정 시간 후 호출
+	 */
+	virtual void OnAttackEnded();
 
 	/** 보스의 이동속도를 설정하는 함수 */
 	UFUNCTION(BlueprintImplementableEvent)
@@ -49,6 +57,11 @@ public:
 	UFUNCTION(NetMulticast, Reliable)
 	void M_PlayAnimation(UAnimMontage* AnimMontage, float InPlayRate = 1, FName StartSectionName = NAME_None);
 	void M_PlayAnimation_Implementation(UAnimMontage* AnimMontage, float InPlayRate = 1, FName StartSectionName = NAME_None);
+
+	UFUNCTION()
+	void OnMeshOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, 
+							UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, 
+							bool bFromSweep, const FHitResult& SweepResult);
 	
 protected:
 private:
@@ -87,6 +100,15 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Stat")
 	float AttackRadius;
+
+	/** 공격 받은 플레이어 리스트
+	 * 
+	 * 중복 공격을 방지하기 위한 용도
+	 * 
+	 * 공격이 끝난 후 리스트는 초기화됨
+	 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Attack")
+	TArray<TObjectPtr<AUnderwaterCharacter>> AttackedPlayers;
 
 private:
 	static const FName BossStateKey;
