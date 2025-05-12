@@ -32,7 +32,7 @@ private:
 
 #pragma region Variable
 public:
-	UPROPERTY(Replicated = OnRep_Money)
+	UPROPERTY(ReplicatedUsing = OnRep_Money)
 	int32 TotalMoney;
 	UPROPERTY(ReplicatedUsing = OnRep_Phase, BlueprintReadOnly)
 	uint8 Phase = 0;
