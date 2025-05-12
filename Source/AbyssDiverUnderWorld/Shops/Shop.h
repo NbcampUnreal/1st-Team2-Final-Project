@@ -2,8 +2,9 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-
 #include "Net/Serialization/FastArraySerializer.h"
+
+#include "Interface/IADInteractable.h"
 
 #include "Shop.generated.h"
 
@@ -55,6 +56,7 @@ enum class EShopItemChangeType
 class AShop;
 class UShopWidget;
 class UShopItemEntryData;
+class AUnderwaterCharacter;
 
 struct FFADItemDataRow;
 struct FShopItemIdList;
@@ -154,7 +156,7 @@ struct TStructOpsTypeTraits<FShopItemIdList> : public TStructOpsTypeTraitsBase2<
 #pragma endregion
 
 UCLASS()
-class ABYSSDIVERUNDERWORLD_API AShop : public AActor
+class ABYSSDIVERUNDERWORLD_API AShop : public AActor, public IIADInteractable
 {
 	GENERATED_BODY()
 	
@@ -166,18 +168,26 @@ protected:
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void BeginPlay() override;
-	virtual void Tick(float DeltaTime) override;
 
 #pragma region Methods
 
 public:
 
-	EBuyResult BuyItem(uint8 ItemId, EShopCategoryTab TabType);
+	virtual void Interact(AActor* InstigatorActor) override;
+
+	void OpenShop(AUnderwaterCharacter* Requester);
+	void CloseShop(AUnderwaterCharacter* Requester);
+
+	EBuyResult BuyItem(uint8 ItemId);
 	ESellResult SellItem(uint8 ItemId, class AUnitBase* Seller);
 
 	void AddItems(const TArray<uint8>& Ids, EShopCategoryTab TabType);
 	void AddItemToList(uint8 ItemId, EShopCategoryTab TabType);
 	void RemoveItemToList(uint8 ItemId, EShopCategoryTab TabType);
+
+	// 테스트용, 캐릭터의 Interact를 대신함.
+	UFUNCTION(BlueprintCallable, Category = "Shop", CallInEditor)
+	void Interact_Test(AActor* InstigatorActor);
 
 protected:
 
@@ -194,6 +204,9 @@ private:
 
 	UFUNCTION()
 	void OnSlotEntryClicked(int32 ClickedSlotIndex);
+
+	UFUNCTION()
+	void OnBuyButtonClicked();
 
 	bool HasItem(int32 ItemId);
 	bool IsItemMeshCached(int32 ItemId);
@@ -235,6 +248,9 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UShopWidget> ShopWidget;
 
+	UPROPERTY()
+	TObjectPtr<class UADInteractableComponent> InteractableComp;
+
 private:
 
 	// ItemId, Mesh류(SM, SKM)
@@ -244,5 +260,14 @@ private:
 	TArray<FFADItemDataRow*> DataTableArray;
 	TArray<FItemMeshDataRow*> MeshDataTableArray;
 
+	int32 CurrentSelectedItemId = INDEX_NONE;
+
 #pragma endregion
+
+#pragma region Getters, Setters
+
+	virtual UADInteractableComponent* GetInteractableComponent() const override;
+
+#pragma endregion
+
 };

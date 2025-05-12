@@ -12,6 +12,8 @@ AUnitBase::AUnitBase()
 	bReplicates = true;
 
 	StatComponent = CreateDefaultSubobject<UStatComponent>(TEXT("StatComponent"));
+
+	Tags.Add(FName("Radar"));
 }
 
 void AUnitBase::BeginPlay()

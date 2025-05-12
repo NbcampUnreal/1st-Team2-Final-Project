@@ -2,6 +2,8 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
+
+#include "Interactable/Item/Component/ADInteractableComponent.h"
 #include "IADInteractable.generated.h"
 
 // This class does not need to be modified.
@@ -20,7 +22,7 @@ public:
 	UFUNCTION(BlueprintNativeEvent)
 	void Interact(AActor* InstigatorActor);
 	virtual void Interact_Implementation(AActor* InstigatorActor);
-	// È¦µå ÇßÀ» ¶§ È£ÃâÇÒ ÇÔ¼ö
+	// È¦ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ È£ï¿½ï¿½ï¿½ï¿½ ï¿½Ô¼ï¿½
 	UFUNCTION(BlueprintNativeEvent)
 	void InteractHold(AActor* InstigatorActor);
 	virtual void InteractHold_Implementation(AActor* InstigatorActor);
