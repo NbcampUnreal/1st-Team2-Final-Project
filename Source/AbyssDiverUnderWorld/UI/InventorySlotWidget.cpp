@@ -91,6 +91,5 @@ void UInventorySlotWidget::SetItemData(FItemData ItemInfo, int32 Index, UADInven
 
 void UInventorySlotWidget::HandleDragCancelled(UDragDropOperation* Operation)
 {
-	int8 ItemQuantity = InventoryComponent->GetInventoryList().Items[SlotIndex].Quantity;
-	InventoryComponent->RemoveInventoryItem(SlotIndex, ItemQuantity, true);
+	InventoryComponent->RemoveInventoryItem(SlotIndex, -1, true);
 }
