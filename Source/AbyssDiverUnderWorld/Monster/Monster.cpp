@@ -3,6 +3,7 @@
 
 #include "Monster/Monster.h"
 #include "Components/SplineComponent.h"
+#include "AbyssDiverUnderWorld.h"
 
 AMonster::AMonster()
 {
@@ -26,7 +27,10 @@ FVector AMonster::GetPatrolLocation(int32 Index) const
 
 int32 AMonster::GetNextPatrolIndex(int32 CurrentIndex) const
 {
-	return (CurrentIndex + 1) % PatrolSpline->GetNumberOfSplinePoints(); // Cycle
+	CurrentIndex = (CurrentIndex + 1) % PatrolSpline->GetNumberOfSplinePoints();// Cycle
+	LOG(TEXT("PatrolIndex increment : %d"), CurrentIndex);
+
+	return CurrentIndex;
 }
 
 USplineComponent* AMonster::GetSplineComp() const
