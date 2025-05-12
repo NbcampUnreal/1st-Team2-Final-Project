@@ -6,6 +6,9 @@
 #include "UI/AllInventoryWidget.h"
 #include <Net/UnrealNetwork.h>
 #include "AbyssDiverUnderWorld.h"
+#include "ADInventoryComponent.h"
+#include <Kismet/KismetMathLibrary.h>
+#include "DrawDebugHelpers.h"
 
 UADInventoryComponent::UADInventoryComponent() :
 	ItemDataTable(nullptr),
@@ -20,6 +23,8 @@ UADInventoryComponent::UADInventoryComponent() :
 	SetIsReplicatedByDefault(true);
 
 	InventorySizeByType = { 3, 2, 9, 1, 3 };
+
+	//ConstructorHelpers::FClassFinder<UAllInventoryWidget> AllInventoryWidget(TEXT("");)
 
 	for (int32 i = 0; i < static_cast<int32>(EItemType::Max); ++i)
 	{
@@ -74,18 +79,18 @@ void UADInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	DOREPLIFETIME(UADInventoryComponent, InventoryList);
 }
 
-void UADInventoryComponent::S_AddInventoryItem_Implementation(FItemData ItemData)
+void UADInventoryComponent::S_DropItem_Implementation(FItemData ItemData)
 {
-	AddInventoryItem(ItemData);
+	for (int8 i = 0; i < ItemData.Quantity; ++i)
+	{
+		FFADItemDataRow* FoundRow = ItemDataTable->FindRow<FFADItemDataRow>(ItemData.Name, TEXT("LookupItem")); //*데이터 테이블 위치 확정되면 수정
+		if(FoundRow->SpawnActor)
+			GetWorld()->SpawnActor<AActor>(FoundRow->SpawnActor, GetDropLocation(), FRotator::ZeroRotator);
+	}
 }
 
 void UADInventoryComponent::AddInventoryItem(FItemData ItemData)
 {
-	if (!GetOwner()->HasAuthority())
-	{
-		S_AddInventoryItem(ItemData);
-		return;
-	}
 	if (TotalWeight + ItemData.Mass <= WeightMax)
 	{
 		FFADItemDataRow* FoundRow = ItemDataTable->FindRow<FFADItemDataRow>(ItemData.Name, TEXT("LookupItem")); //*데이터 테이블 위치 확정되면 수정
@@ -128,14 +133,18 @@ void UADInventoryComponent::AddInventoryItem(FItemData ItemData)
 	}
 }
 
-bool UADInventoryComponent::RemoveInventoryItem(uint8 InventoryIndex, uint8 Count, bool bIsDropAction)
+bool UADInventoryComponent::RemoveInventoryItem(uint8 InventoryIndex, int8 Count, bool bIsDropAction)
 {
 	if (InventoryList.Items.IsValidIndex(InventoryIndex))
 	{
 		FItemData& Item = InventoryList.Items[InventoryIndex];
-		if (Item.Quantity < Count) return false;
-		else if (Item.Quantity == Count)
+		if (Count != -1 && Item.Quantity < Count) return false;
+		if (Count == -1)
 		{
+			if (bIsDropAction)
+			{
+				S_DropItem(Item);
+			}
 			Item.Quantity = 0;
 			if(Item.ItemType == EItemType::Exchangable)
 			{
@@ -160,11 +169,6 @@ bool UADInventoryComponent::RemoveInventoryItem(uint8 InventoryIndex, uint8 Coun
 		}
 		InventoryUIUpdate();
 		
-		if (bIsDropAction)
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Drop Items")));
-		}
-
 		return true;
 	}
 	else
@@ -215,6 +219,13 @@ void UADInventoryComponent::InventoryUIUpdate()
 	}
 }
 
+FVector UADInventoryComponent::GetDropLocation()
+{
+	APawn* OwnerPawn = Cast<APlayerController>(GetOwner())->GetPawn();
+	FVector CameraForward = Cast<APlayerController>(GetOwner())->PlayerCameraManager->GetCameraRotation().Vector();
+	FVector DropLocation = OwnerPawn->GetActorLocation() + UKismetMathLibrary::RandomUnitVectorInConeInDegrees(CameraForward, 30) * 350.0;
+	return DropLocation;
+}
 
 void UADInventoryComponent::ToggleInventoryShowed()
 {
@@ -250,7 +261,6 @@ void UADInventoryComponent::ToggleInventoryShowed()
 		}
 	}
 }
-
 
 int8 UADInventoryComponent::GetTypeInventoryEmptyIndex(EItemType ItemType)
 {
