@@ -6,6 +6,7 @@
 #include "Character/UnderwaterCharacter.h"
 #include "Engine/DamageEvents.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/PhysicsVolume.h"
 #include "Kismet/GameplayStatics.h"
 
 const FName ABoss::BossStateKey = "BossState";
@@ -40,6 +41,9 @@ void ABoss::BeginPlay()
 float ABoss::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator,
 	AActor* DamageCauser)
 {
+	// 사망 상태면 얼리 리턴
+	if (BlackboardComponent->GetValueAsEnum(BossStateKey) == static_cast<uint8>(EBossState::Death)) return 0.0f;
+
 	const float Damage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
 	// 부위 타격 정보
@@ -175,6 +179,21 @@ void ABoss::OnMeshOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* Othe
 	// 해당 플레이어에게 데미지 적용
 	UGameplayStatics::ApplyDamage(Player, StatComponent->AttackPower, GetController(), this, UDamageType::StaticClass());
 
+	// 플레이어를 밀치는 로직
+	const FVector PushDirection = (Player->GetActorLocation() - GetActorLocation()).GetSafeNormal();
+	const float PushStrength = 1000.0f; // 밀치는 힘의 크기 -> 변수화 필요할 것 같은데 일단 고민
+	const FVector PushForce = PushDirection * PushStrength;
+	
+	// 물리 시뮬레이션이 아닌 경우 LaunchCharacter 사용
+	Player->LaunchCharacter(PushForce, false, false);
+
+	// 0.5초 후 캐릭터의 원래 움직임 복구
+	FTimerHandle TimerHandle;
+	GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this, Player]()
+	{
+		Player->GetCharacterMovement()->SetMovementMode(MOVE_Swimming);
+	}, 0.5f, false);
+	
 	LOG(TEXT("[Attack] %s"), *Player->GetName());
 }
 
