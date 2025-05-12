@@ -28,6 +28,11 @@ protected:
 protected:
 	void LoadSightDataFromTable();
 	void InitializePatrolPoint();
+	void HandleForgetPlayer();
+
+	UFUNCTION()
+	void OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus); // Perception Callback Method
+
 #pragma endregion
 
 #pragma region Variable
@@ -53,6 +58,17 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "AI|SightData")
 	FName MonsterID;
 
+private:
+	UPROPERTY(EditDefaultsOnly, Category = "AI", meta = (AllowPrivateAccess = "true"))
+	float ForgetDuration = 5.0f;
+
+	FTimerHandle ForgetPlayerTimerHandle;
 #pragma endregion
 
+#pragma region Getter, Setter
+public:
+	float GetForgetDuration();
+	void SetForgetDuration(float Duration);
+
+#pragma endregion
 };
