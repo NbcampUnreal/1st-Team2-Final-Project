@@ -4,9 +4,10 @@
 
 const FName UAnimNotify_ChangeBossState::BossStateKey = "BossState";
 
-void UAnimNotify_ChangeBossState::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation)
+void UAnimNotify_ChangeBossState::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation,
+									const FAnimNotifyEventReference& EventReference)
 {
-	Super::Notify(MeshComp, Animation);
+	Super::Notify(MeshComp, Animation, EventReference);
 
 	ACharacter* Character = Cast<ACharacter>(MeshComp->GetOwner());
 	if (!IsValid(Character)) return;
