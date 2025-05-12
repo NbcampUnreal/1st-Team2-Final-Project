@@ -51,7 +51,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Money")
 	int32 AccumulatedMoney = 0;
 	UPROPERTY(ReplicatedUsing = OnRep_IsActive, EditAnywhere, BlueprintReadWrite)
-	bool bIsActive = false;
+	uint8 bIsActive : 1;
 	UPROPERTY()
 	AADDroneSeller* SellerRef = nullptr;
 	UPROPERTY(EditAnywhere)

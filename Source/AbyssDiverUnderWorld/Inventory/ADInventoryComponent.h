@@ -45,6 +45,8 @@ public:
 	void ToggleInventoryShowed(); //추후 나침반이나 서브미션 UI 추가되었을 때 고려 대상
 	UFUNCTION(BlueprintCallable)
 	void InventoryInitialize();
+	UFUNCTION()
+	void OnRep_InventoryList();
 
 	FInventoryUpdateDelegate InventoryUpdateDelegate;
 	FInventoryInfoUpdateDelegate InventoryInfoUpdateDelegate;
@@ -57,6 +59,7 @@ private:
 	void InventoryUIUpdate();
 	FVector GetDropLocation();
 	void PrintLogInventoryData();
+	void RebuildIndexMap();
 
 #pragma endregion
 	
@@ -67,12 +70,13 @@ public:
 	TSubclassOf<UAllInventoryWidget> InventoryWidgetClass;
 	
 private:
-	UPROPERTY(Replicated)
+	UPROPERTY(ReplicatedUsing = OnRep_InventoryList)
 	FInventoryList InventoryList;
-
-	int16 TotalWeight;
-	int16 TotalPrice;
-	int16 WeightMax;
+	UPROPERTY(Replicated)
+	int32 TotalWeight;
+	UPROPERTY(Replicated)
+	int32 TotalPrice;
+	int32 WeightMax;
 
 	uint8 bInventoryWidgetShowed : 1;
 
