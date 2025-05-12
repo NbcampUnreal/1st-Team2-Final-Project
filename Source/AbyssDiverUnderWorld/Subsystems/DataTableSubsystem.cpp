@@ -18,12 +18,20 @@ void UDataTableSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	{
 		ItemDataTable->GetAllRows<FFADItemDataRow>(TEXT("ItemDataTable"), ItemDataTableArray);
 	}
+	else
+	{
+		LOGV(Error, TEXT("ItemDataTable is null"));
+	}
 	
 	ParseUpgradeDataTable(GI);
 	
 	if (UDataTable* OreDropTable = GI->OreDropTable)
 	{
 		OreDropTable->GetAllRows<FDropEntry>(TEXT("OreDropDataTable"), OreDropEntryTableArray);
+	}
+	else
+	{
+		LOGV(Error, TEXT("OreDropTable is null"));
 	}
 
 	Algo::Sort(ItemDataTableArray, [](const FFADItemDataRow* A, const FFADItemDataRow* B)
@@ -57,7 +65,7 @@ void UDataTableSubsystem::ParseUpgradeDataTable(UADTestGameInstance* GameInstanc
 {
 	if (GameInstance == nullptr || GameInstance->UpgradeDataTable == nullptr)
 	{
-		UE_LOG(AbyssDiver, Error, TEXT("GameInstance or UpgradeDataTable is null"));
+		LOGV(Error, TEXT("GameInstance or UpgradeDataTable is null"));
 		return;
 	}
 
