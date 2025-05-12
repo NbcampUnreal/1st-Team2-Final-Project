@@ -54,6 +54,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Collision")
 	TObjectPtr<UCapsuleComponent> WieldAttackCollision;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Collision")
+	TObjectPtr<UCapsuleComponent> PickAttackCollision;
+
 private:
 	uint8 CurrentPatrolPointIndex = 0;
 #pragma endregion
