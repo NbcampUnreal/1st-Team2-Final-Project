@@ -40,7 +40,7 @@ public:
 	
 protected:
 	UPROPERTY(ReplicatedUsing = OnRep_IsActive)
-	bool bIsActive = true;
+	uint8 bIsActive : 1;
 	UPROPERTY(ReplicatedUsing = OnRep_CurrentMoney)
 	int32 CurrentMoney = 0;
 	UPROPERTY(EditAnywhere)
