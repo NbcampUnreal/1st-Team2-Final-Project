@@ -41,17 +41,13 @@ void UCreateTeamWidget::OnPrivateClicked()
 void UCreateTeamWidget::OnBackClicked()
 {
     RemoveFromParent();
+    
+    OnBackClickedDelegate.ExecuteIfBound();
+
 }
 
 void UCreateTeamWidget::OnConfirmClicked()
 {
-    FString ServerName = TextBox_ServerName ? TextBox_ServerName->GetText().ToString() : TEXT("");
-
-    if (UADGameInstance* GI = Cast<UADGameInstance>(GetGameInstance()))
-    {
-        GI->CreateAdvancedSession(ServerName, bIsPrivate);
-    }
-
     RemoveFromParent();
 }
 

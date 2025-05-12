@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "OnlineSessionSettings.h"
+#include "SessionListWidget.h"
 #include "SessionEntryWidget.generated.h"
 
 class UTextBlock;
@@ -13,24 +13,10 @@ class ABYSSDIVERUNDERWORLD_API USessionEntryWidget : public UUserWidget
 {
 	GENERATED_BODY()
 
-public:
-	void Setup(const FOnlineSessionSearchResult& InResult);
+protected:
 
 protected:
-	virtual void NativeConstruct() override;
-	
-	UFUNCTION()
-	void OnJoinClicked();
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+	TObjectPtr<UTextBlock> Text_SessionName;
 
-protected:
-	UPROPERTY(meta = (BindWidget))
-	UTextBlock* Text_SessionName;
-
-	UPROPERTY(meta = (BindWidget))
-	UTextBlock* Text_PlayerCount;
-
-	UPROPERTY(meta = (BindWidget))
-	UButton* Button_Join;
-
-	FOnlineSessionSearchResult SearchResult;
 };

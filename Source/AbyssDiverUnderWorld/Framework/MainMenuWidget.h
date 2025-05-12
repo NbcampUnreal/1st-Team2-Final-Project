@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "CreateTeamWidget.h"
 #include "MainMenuWidget.generated.h"
 
 class UButton;
@@ -31,32 +32,29 @@ protected:
 	UFUNCTION()
 	void OnQuitClicked();
 
+	void OnCreateTeamWidgetClosed();
+
 protected:
 	UPROPERTY(meta = (BindWidget))
-	UButton* Button_Create;
+	TObjectPtr<UButton> Button_Create;
 
 	UPROPERTY(meta = (BindWidget))
-	UButton* Button_Join;
+	TObjectPtr<UButton> Button_Join;
 
 	UPROPERTY(meta = (BindWidget))
-	UButton* Button_Options;
+	TObjectPtr<UButton> Button_Options;
 
 	UPROPERTY(meta = (BindWidget))
-	UButton* Button_Credits;
+	TObjectPtr<UButton> Button_Credits;
 
 	UPROPERTY(meta = (BindWidget))
-	UButton* Button_Quit;
+	TObjectPtr<UButton> Button_Quit;
 
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
-	TSubclassOf<UUserWidget> CreateTeamWidgetClass;
+	TSubclassOf<UCreateTeamWidget> CreateTeamWidgetClass;
 
 	UPROPERTY()
-	UUserWidget* CreateTeamWidgetInstance;
+	TObjectPtr<UCreateTeamWidget> CreateTeamWidgetInstance;
 	
-	UPROPERTY(EditDefaultsOnly, Category = "UI")
-	TSubclassOf<UUserWidget> SessionListWidgetClass;
-
-	UPROPERTY()
-	UUserWidget* SessionListWidgetInstance;
 
 };

@@ -8,6 +8,8 @@ class UButton;
 class UEditableTextBox;
 class UTextBlock;
 
+DECLARE_DELEGATE(FOnBackClickedDelegate);
+
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API UCreateTeamWidget : public UUserWidget
 {
@@ -16,7 +18,7 @@ class ABYSSDIVERUNDERWORLD_API UCreateTeamWidget : public UUserWidget
 public:
 	virtual void NativeConstruct() override;
 
-
+	FOnBackClickedDelegate OnBackClickedDelegate;
 protected:
 	UFUNCTION()
 	void OnPublicClicked();
@@ -31,21 +33,22 @@ protected:
 	void OnConfirmClicked();
 
 	void UpdateSelection();
+
 protected:
-	UPROPERTY(meta = (BindWidget))
-	UEditableTextBox* TextBox_ServerName;
 
 	UPROPERTY(meta = (BindWidget))
-	UButton* Button_Public;
+	TObjectPtr<UButton> Button_Public;
 
 	UPROPERTY(meta = (BindWidget))
-	UButton* Button_Private;
+	TObjectPtr<UButton> Button_Private;
 	
 	UPROPERTY(meta = (BindWidget))
-	UButton* Button_Back;
+	TObjectPtr<UButton> Button_Back;
 
 	UPROPERTY(meta = (BindWidget))
-	UButton* Button_Confirm;
+	TObjectPtr<UButton> Button_Confirm;
 
+
+	UPROPERTY(BlueprintReadOnly)
 	uint8 bIsPrivate : 1 = 0;
 };

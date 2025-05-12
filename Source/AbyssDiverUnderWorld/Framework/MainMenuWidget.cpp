@@ -1,7 +1,9 @@
 #include "Framework/MainMenuWidget.h"
 #include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetSystemLibrary.h"
 #include "Blueprint/UserWidget.h"
 #include "Framework/ADGameInstance.h"
+#include "Blueprint/WidgetTree.h"
 
 #include "Components/Button.h"
 
@@ -28,21 +30,30 @@ void UMainMenuWidget::OnCreateClicked()
 {
 	if (!CreateTeamWidgetInstance && CreateTeamWidgetClass)
 	{
-		CreateTeamWidgetInstance = CreateWidget<UUserWidget>(GetWorld(), CreateTeamWidgetClass);
+		CreateTeamWidgetInstance = CreateWidget<UCreateTeamWidget>(GetWorld(), CreateTeamWidgetClass);
+		CreateTeamWidgetInstance->OnBackClickedDelegate.BindUObject(this, &UMainMenuWidget::OnCreateTeamWidgetClosed);
 	}
 
 	if (CreateTeamWidgetInstance && !CreateTeamWidgetInstance->IsInViewport())
 	{
 		CreateTeamWidgetInstance->AddToViewport();
+
+		TArray<UWidget*> Widgets;
+		WidgetTree->GetAllWidgets(Widgets);
+
+		for (UWidget* Widget : Widgets)
+		{
+			if (Widget)
+			{
+				Widget->SetIsEnabled(false);
+			}
+		}
 	}
 }
 
 void UMainMenuWidget::OnJoinClicked()
 {
-	if (UADGameInstance* GI = Cast<UADGameInstance>(GetGameInstance()))
-	{
-		GI->FindSessions(); 
-	}
+	//replace blueprint 
 }
 
 void UMainMenuWidget::OnOptionsClicked()
@@ -55,4 +66,24 @@ void UMainMenuWidget::OnCreditsClicked()
 
 void UMainMenuWidget::OnQuitClicked()
 {
+	APlayerController* PlayerController = GetWorld()->GetFirstPlayerController();
+
+	if (PlayerController)
+	{
+		UKismetSystemLibrary::QuitGame(GetWorld(), PlayerController, EQuitPreference::Quit, true);
+	}
+}
+
+void UMainMenuWidget::OnCreateTeamWidgetClosed()
+{
+	TArray<UWidget*> Widgets;
+	WidgetTree->GetAllWidgets(Widgets);
+
+	for (UWidget* Widget : Widgets)
+	{
+		if (Widget)
+		{
+			Widget->SetIsEnabled(true);
+		}
+	}
 }

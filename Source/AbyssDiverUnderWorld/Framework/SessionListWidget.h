@@ -8,33 +8,23 @@ class UScrollBox;
 class UButton;
 class USessionEntryWidget;
 
+
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API USessionListWidget : public UUserWidget
 {
 	GENERATED_BODY()
-	
-public:
-	void PopulateSessionList(const TArray<FOnlineSessionSearchResult>& SessionResults);
 
 protected:
 	virtual void NativeConstruct() override;
 
 	UFUNCTION()
-	void OnRefreshClicked();
-
-	UFUNCTION()
 	void OnBackClicked();
 
 protected:
-	UPROPERTY(meta = (BindWidget))
-	UScrollBox* Scroll_SessionList;
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
+	TObjectPtr<UScrollBox> Scroll_SessionList;
 
 	UPROPERTY(meta = (BindWidget))
-	UButton* Button_Refresh;
+	TObjectPtr<UButton> Button_Back;
 
-	UPROPERTY(meta = (BindWidget))
-	UButton* Button_Back;
-
-	UPROPERTY(editDefaultsOnly, Category = "Session")
-	TSubclassOf<USessionEntryWidget> SessionEntryWidgetClass;
 };
