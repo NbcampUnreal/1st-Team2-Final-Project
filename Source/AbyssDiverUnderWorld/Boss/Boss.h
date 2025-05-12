@@ -17,6 +17,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaSeconds) override;
 
 #pragma region Method
 public:
@@ -74,7 +75,7 @@ public:
 	TObjectPtr<UAnimInstance> AnimInstance;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Target")
-	TObjectPtr<APawn> TargetPlayer;
+	TObjectPtr<AUnderwaterCharacter> TargetPlayer;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Target")
 	FVector LastDetectedLocation;
@@ -118,7 +119,7 @@ private:
 #pragma region Getter, Setter
 public:
 	APawn* GetTarget();
-	void SetTarget(APawn* Target);
+	void SetTarget(AUnderwaterCharacter* Target);
 	
 	void SetLastDetectedLocation(const FVector& InLastDetectedLocation);
 

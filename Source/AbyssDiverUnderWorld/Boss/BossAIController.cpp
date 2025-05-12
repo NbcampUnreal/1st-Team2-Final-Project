@@ -4,6 +4,7 @@
 #include "EBossState.h"
 #include "BehaviorTree/BehaviorTree.h"
 #include "BehaviorTree/BlackboardComponent.h"
+#include "Character/UnderwaterCharacter.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Sight.h"
 
@@ -106,7 +107,7 @@ void ABossAIController::M_AddDetectedPlayer_Implementation(AActor* Target)
 	ABoss* Boss = Cast<ABoss>(GetCharacter());
 	if (!IsValid(Boss)) return;
 
-	APawn* Player = Cast<APawn>(Target);
+	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Target);
 	if (IsValid(Player))
 	{
 		LOG(TEXT(" [AI] Target Perception Updated: %s"), *Player->GetName());
