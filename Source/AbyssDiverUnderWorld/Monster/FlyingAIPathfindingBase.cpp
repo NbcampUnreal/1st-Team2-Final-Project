@@ -15,7 +15,7 @@ void UFlyingAIPathfindingBase::BeginPlay()
 	Super::BeginPlay();
 }
 
-void UFlyingAIPathfindingBase::Server_MoveTo_Implementation(FVector TargetLocation)
+void UFlyingAIPathfindingBase::S_MoveTo_Implementation(FVector TargetLocation)
 {
 	MoveTo(TargetLocation);
 }
@@ -23,6 +23,11 @@ void UFlyingAIPathfindingBase::Server_MoveTo_Implementation(FVector TargetLocati
 void UFlyingAIPathfindingBase::MoveTo_Implementation(FVector TargetLocation)
 {
 	LOG(TEXT("C++ MoveTo_Implementation called. It's BP fallback Method"));
+}
+
+void UFlyingAIPathfindingBase::TriggerMoveFinished()
+{
+	OnFinishedMoving.Broadcast();
 }
 
 
