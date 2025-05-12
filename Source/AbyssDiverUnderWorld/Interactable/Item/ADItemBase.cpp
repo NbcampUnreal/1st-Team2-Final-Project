@@ -2,6 +2,9 @@
 #include "AbyssDiverUnderWorld.h"
 #include "Net/UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"
+#include "Interactable/Item/Component/ADInteractableComponent.h"
+#include "Inventory/ADInventoryComponent.h"
+#include "Framework/ADPlayerState.h"
 
 // Sets default values
 AADItemBase::AADItemBase()
@@ -10,6 +13,9 @@ AADItemBase::AADItemBase()
 	PrimaryActorTick.bCanEverTick = false;
 	bReplicates = true;
 
+
+	// InteractableComponent ÏÉùÏÑ±
+	InteractableComp = CreateDefaultSubobject<UADInteractableComponent>(TEXT("InteractableComp"));
 }
 
 void AADItemBase::BeginPlay()
@@ -17,7 +23,7 @@ void AADItemBase::BeginPlay()
 	Super::BeginPlay();
 }
 
-void AADItemBase::Interact(AActor* InstigatorActor)
+void AADItemBase::Interact_Implementation(AActor* InstigatorActor)
 {
 	if (HasAuthority())
 	{
@@ -28,23 +34,45 @@ void AADItemBase::Interact(AActor* InstigatorActor)
 void AADItemBase::HandlePickup(APawn* InstigatorPawn)
 {
 	if (!HasAuthority() || !InstigatorPawn) return;
+	APlayerController* PC = Cast<APlayerController>(InstigatorPawn->GetController());
+	AADPlayerState* PS = Cast<AADPlayerState>(PC->PlayerState);
 
 	LOG(TEXT("Add to Inventory"));
-	// TODO ¿Œ∫•≈‰∏Æ √ﬂ∞° ∑Œ¡˜∞˙ »πµÊ »ø∞˙ √ﬂ∞°
-
+	// TODO Ïù∏Î≤§ÌÜ†Î¶¨ Ï∂îÍ∞Ä Î°úÏßÅÍ≥º ÌöçÎìù Ìö®Í≥º Ï∂îÍ∞Ä
+	if (UADInventoryComponent* Inventory = PS->GetInventory())
+	{
+		LOG(TEXT("Find Inventory"));
+		Inventory->AddInventoryItem(ItemData);
+	}
 
 	Destroy();
 }
 
 void AADItemBase::OnRep_ItemData()
 {
-	// TODO UI æ˜µ•¿Ã∆Æ
+	// TODO UI ÏóÖÎç∞Ïù¥Ìä∏
 }
 
 void AADItemBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AADItemBase, ItemData);
+}
+
+void AADItemBase::SetItemMass(int32 InMass)
+{
+	ItemData.Mass = InMass;
+	ItemData.Quantity = 1;
+}
+
+void AADItemBase::SetPrice(int32 InPrice)
+{
+	ItemData.Price = InPrice;
+}
+
+UADInteractableComponent* AADItemBase::GetInteractableComponent() const
+{
+	return InteractableComp;
 }
 
 

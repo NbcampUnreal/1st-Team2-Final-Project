@@ -10,7 +10,9 @@
 			"LoadingPhase": "Default",
 			"AdditionalDependencies": [
 				"Engine",
-				"AIModule"
+				"AIModule",
+				"UMG",
+				"CoreUObject"
 			]
 		}
 	],
@@ -21,6 +23,11 @@
 			"TargetAllowList": [
 				"Editor"
 			]
+		},
+		{
+			"Name": "FlyingNavSystem",
+			"Enabled": true,
+			"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/product/65b9b3247c5c458dbb6de81c79cdc8f0"
 		}
 	]
 }

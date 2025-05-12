@@ -1,5 +1,7 @@
 #include "RadarReturnComponent.h"
 
+#include "AbyssDiverUnderWorld.h"
+
 URadarReturnComponent::URadarReturnComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
@@ -59,7 +61,21 @@ void URadarReturnComponent::BeginPlay()
 void URadarReturnComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+}
 
+void URadarReturnComponent::ChangeFriendlyReturnSize(float NewSize)
+{
+	FriendlyMeshScale = NewSize;
+}
+
+void URadarReturnComponent::ChangeHostileReturnSize(float NewSize)
+{
+	HostileMeshScale = NewSize;
+}
+
+void URadarReturnComponent::ChangeNeutralReturnSize(float NewSize)
+{
+	NeutralMeshScale = NewSize;
 }
 
 UStaticMesh* URadarReturnComponent::GetFriendlyMesh() const
