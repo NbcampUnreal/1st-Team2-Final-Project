@@ -34,11 +34,16 @@ void UDataTableSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 		LOGV(Error, TEXT("OreDropTable is null"));
 	}
 
-	Algo::Sort(ItemDataTableArray, [](const FFADItemDataRow* A, const FFADItemDataRow* B)
-		{
-			return A->Id < B->Id;
-		});
+	//Algo::Sort(ItemDataTableArray, [](const FFADItemDataRow* A, const FFADItemDataRow* B)
+	//	{
+	//		return A->Id < B->Id;
+	//	});
 
+}
+
+int8 UDataTableSubsystem::GetItemDataTableArrayNum() const
+{
+	return ItemDataTableArray.Num();
 }
 
 FFADItemDataRow* UDataTableSubsystem::GetItemData(int32 ItemId) const

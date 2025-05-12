@@ -18,12 +18,15 @@ class ABYSSDIVERUNDERWORLD_API UDataTableSubsystem : public UGameInstanceSubsyst
 {
 	GENERATED_BODY()
 
+protected:
+
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 
 #pragma region Method
 	
 public:
 
+	int8 GetItemDataTableArrayNum() const ;
 	FFADItemDataRow* GetItemData(int32 ItemId) const;
 	FUpgradeDataRow* GetUpgradeDataTableArray(int32 Index) const;
 	FDropEntry* GetOreDropEntryTableArray(int32 Id) const;

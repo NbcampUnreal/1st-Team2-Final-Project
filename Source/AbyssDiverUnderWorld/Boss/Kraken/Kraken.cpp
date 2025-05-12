@@ -24,6 +24,13 @@ AKraken::AKraken()
 	WieldAttackCollision->SetCapsuleRadius(80.0f);
 	WieldAttackCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	WieldAttackCollision->ComponentTags.Add(TEXT("Wield Attack Collision"));
+
+	PickAttackCollision = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Pick Attack Collision"));
+	PickAttackCollision->SetupAttachment(GetMesh(), TEXT("PickSocket"));
+	PickAttackCollision->SetCapsuleHalfHeight(80.0f);
+	PickAttackCollision->SetCapsuleRadius(80.0f);
+	PickAttackCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	PickAttackCollision->ComponentTags.Add(TEXT("Pick Attack Collision"));
 }
 
 void AKraken::BeginPlay()
@@ -33,7 +40,7 @@ void AKraken::BeginPlay()
 	BiteAttackCollision->OnComponentBeginOverlap.AddDynamic(this, &ABoss::OnMeshOverlapBegin);
 	TakeDownAttackCollision->OnComponentBeginOverlap.AddDynamic(this, &ABoss::OnMeshOverlapBegin);
 	WieldAttackCollision->OnComponentBeginOverlap.AddDynamic(this, &ABoss::OnMeshOverlapBegin);
-	
+	PickAttackCollision->OnComponentBeginOverlap.AddDynamic(this, &ABoss::OnMeshOverlapBegin);
 }
 
 void AKraken::OnDeath()

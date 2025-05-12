@@ -1,8 +1,9 @@
-#include "Interactable/OtherActors/ADDrone.h"
+﻿#include "Interactable/OtherActors/ADDrone.h"
 #include "Interactable/Item/Component/ADInteractableComponent.h"
 #include "Inventory/ADInventoryComponent.h"
 #include "FrameWork/TestGameState.h"
 #include "ADDroneSeller.h"
+#include "Net/UnrealNetwork.h"
 
 // Sets default values
 AADDrone::AADDrone()
@@ -12,6 +13,7 @@ AADDrone::AADDrone()
 	PrimaryActorTick.bStartWithTickEnabled = false;
 	InteractableComp = CreateDefaultSubobject<UADInteractableComponent>(TEXT("InteractableComp"));
 	bReplicates = true;
+	SetReplicateMovement(true); // 위치 상승하는 것 보이도록
 }
 
 // Called when the game starts or when spawned
@@ -46,7 +48,7 @@ void AADDrone::Interact_Implementation(AActor* InstigatorActor)
 {
 	if (!HasAuthority() || !bIsActive || !SellerRef ||!IsValid(SellerRef)) return;
 
-	// ���� ���
+	// 차액 계산
 	int32 Diff = SellerRef->GetCurrentMoney() - SellerRef->GetTargetMoney();
 	if (Diff > 0)
 	{
@@ -65,6 +67,12 @@ void AADDrone::Activate(AADDroneSeller* Seller)
 	if (!HasAuthority() || bIsActive || !Seller) return;
 	bIsActive = true;
 	SellerRef = Seller;
+	OnRep_IsActive(); // 서버에서는 직접 호출해저야함
+}
+
+void AADDrone::OnRep_IsActive()
+{
+	// TODO : UI
 }
 
 void AADDrone::StartRising()
@@ -86,6 +94,12 @@ void AADDrone::OnDestroyTimer()
 		SellerRef->Destroy();
 	}
 	Destroy();
+}
+
+void AADDrone::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(AADDrone, bIsActive);
 }
 
 UADInteractableComponent* AADDrone::GetInteractableComponent() const

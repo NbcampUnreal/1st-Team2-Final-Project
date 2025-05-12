@@ -51,6 +51,7 @@ void AADOreRock::HandleMineRequest(APawn* InstigatorPawn)
 	// 25는 나중에 레이저 발사기가 생기면 변경해야 합니다..
 	CurrentMiningGauge = FMath::Max(0, CurrentMiningGauge - 25);
 	OnRep_CurrentMiningGauge();
+	PlayMiningFX();
 
 	// 채광 이펙트
 	if (CurrentMiningGauge > 0 && PickAxeImpactFX)
@@ -63,17 +64,7 @@ void AADOreRock::HandleMineRequest(APawn* InstigatorPawn)
 	// 게이지 소진 시 파괴 이펙트 & 드롭
 	if (CurrentMiningGauge <= 0)
 	{
-		if (RockFragmentsFX)
-		{
-			UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-				GetWorld(), RockFragmentsFX, GetActorLocation(), FRotator::ZeroRotator
-			);
-		}
-		if (FractureSound)
-		{
-			UGameplayStatics::PlaySoundAtLocation(this, FractureSound, GetActorLocation());
-		}
-
+		PlayFractureFX();
 		SpawnDrops();
 		//Destroy();
 	}
@@ -135,6 +126,24 @@ void AADOreRock::OnAssetLoaded(FDropEntry* Entry, int32 Mass)
 	Destroy();
 }
 
+void AADOreRock::PlayMiningFX()
+{
+	if (PickAxeImpactFX)
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			GetWorld(), PickAxeImpactFX, GetActorLocation());
+}
+
+void AADOreRock::PlayFractureFX()
+{
+	if (RockFragmentsFX)
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			GetWorld(), RockFragmentsFX, GetActorLocation());
+
+	if (FractureSound)
+		UGameplayStatics::PlaySoundAtLocation(
+			this, FractureSound, GetActorLocation());
+}
+
 int32 AADOreRock::SampleDropMass(int32 MinMass, int32 MaxMass) const
 {
 	// 균등 난수 생성
@@ -152,6 +161,10 @@ int32 AADOreRock::SampleDropMass(int32 MinMass, int32 MaxMass) const
 void AADOreRock::OnRep_CurrentMiningGauge()
 {
 	// TODO: UI update
+	PlayMiningFX();
+
+	if (CurrentMiningGauge == 0)
+		PlayFractureFX();
 }
 
 void AADOreRock::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
