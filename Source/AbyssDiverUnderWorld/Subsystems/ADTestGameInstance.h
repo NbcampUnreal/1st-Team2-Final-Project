@@ -22,10 +22,10 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "ADTestGameInstance", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.FADItemDataRow"))
 	TObjectPtr<UDataTable> ItemDataTable;
 
-	UPROPERTY(EditDefaultsOnly, Category = "ADTestGameInstance", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.FDropEntry"))
+	UPROPERTY(EditDefaultsOnly, Category = "ADTestGameInstance", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.DropEntry"))
 	TObjectPtr<UDataTable> OreDropTable;
 
-	UPROPERTY(EditDefaultsOnly, Category = "ADTestGameInstance", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.FADUpgradeDataRow"))
+	UPROPERTY(EditDefaultsOnly, Category = "ADTestGameInstance", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.ADUpgradeDataRow"))
 	TObjectPtr<UDataTable> UpgradeDataTable;
 
 #pragma endregion
