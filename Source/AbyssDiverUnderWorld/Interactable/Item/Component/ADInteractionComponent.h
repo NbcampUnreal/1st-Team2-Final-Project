@@ -50,13 +50,17 @@ public:
 
     // 실제 Focus 검사 함수
     void PerformFocusCheck();
+    bool ComputeViewTrace(FVector& OutStart, FVector& OutEnd) const;
+    UADInteractableComponent* PerformLineTrace(const FVector& Start, const FVector& End) const;
+    void UpdateFocus(UADInteractableComponent* NewFocus);
+    void ClearFocus();
 
     void OnInteractPressed();
     void OnInteractReleased();
     // Player가 E 키를 홀드했을 때 호출할 함수
     void OnHoldComplete();
 
-    bool ShouldHighlight(UADInteractableComponent* ADIC) const;
+    bool ShouldHighlight(const UADInteractableComponent* ADIC) const;
 
 protected:
 

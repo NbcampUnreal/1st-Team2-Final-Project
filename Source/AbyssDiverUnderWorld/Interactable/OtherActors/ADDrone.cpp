@@ -33,7 +33,7 @@ void AADDrone::Tick(float DeltaSeconds)
 		Loc.Z += DeltaZ;
 		SetActorLocation(Loc);
 
-		if (SellerRef && !SellerRef->IsPendingKillPending())
+		if (SellerRef && IsValid(SellerRef))
 		{
 			FVector SellerLoc = SellerRef->GetActorLocation();
 			SellerLoc.Z += DeltaZ;
@@ -44,7 +44,7 @@ void AADDrone::Tick(float DeltaSeconds)
 
 void AADDrone::Interact_Implementation(AActor* InstigatorActor)
 {
-	if (!HasAuthority() || !bIsActive || !SellerRef) return;
+	if (!HasAuthority() || !bIsActive || !SellerRef ||!IsValid(SellerRef)) return;
 
 	// 차액 계산
 	int32 Diff = SellerRef->GetCurrentMoney() - SellerRef->GetTargetMoney();
@@ -80,11 +80,11 @@ void AADDrone::StartRising()
 
 void AADDrone::OnDestroyTimer()
 {
-	Destroy();
 	if (SellerRef && IsValid(SellerRef))
 	{
 		UE_LOG(LogTemp, Log, TEXT("[%s] Destroying linked seller %s"), *GetName(), *SellerRef->GetName());
 		SellerRef->Destroy();
 	}
+	Destroy();
 }
 

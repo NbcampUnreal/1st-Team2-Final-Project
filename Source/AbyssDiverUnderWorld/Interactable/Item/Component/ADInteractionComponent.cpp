@@ -51,7 +51,7 @@ void UADInteractionComponent::TickComponent(float DeltaTime, ELevelTick TickType
 
 void UADInteractionComponent::S_RequestInteract_Implementation(AActor* TargetActor)
 {
-	if (!TargetActor || TargetActor->HasAuthority()) return;
+	if (!TargetActor) return;
 
 	if (UADInteractableComponent* ADIC = TargetActor->FindComponentByClass<UADInteractableComponent>())
 	{
@@ -63,7 +63,7 @@ void UADInteractionComponent::S_RequestInteract_Implementation(AActor* TargetAct
 
 void UADInteractionComponent::S_RequestInteractHold_Implementation(AActor* TargetActor)
 {
-	if (!TargetActor || TargetActor->HasAuthority()) return;
+	if (!TargetActor) return;
 
 	IIADInteractable::Execute_InteractHold(TargetActor, GetOwner());
 }
@@ -114,11 +114,13 @@ void UADInteractionComponent::TryInteract()
 	{
 		if (Pawn->HasAuthority())
 		{
+			LOG(TEXT("Server"));
 			// 호스트 모드라면 바로 호출
 			FocusedInteractable->Interact(Pawn);
 		}
 		else
 		{
+			LOG(TEXT("Client"));
 			S_RequestInteract(Pawn);
 		}
 	}
@@ -128,78 +130,74 @@ void UADInteractionComponent::PerformFocusCheck()
 {
 	if (NearbyInteractables.Num() == 0) return;
 
-	APawn* Pawn = Cast<APawn>(GetOwner());
-	if (!Pawn) return;
-	APlayerController* PC = Cast<APlayerController>(Pawn->GetController());
-	if (!PC) return;
-
 	FVector CamLocation;
-	FRotator CamRotation;
-	PC->GetPlayerViewPoint(CamLocation, CamRotation);
+	FVector TraceEnd;
+	if (!ComputeViewTrace(CamLocation, TraceEnd))
+	{
+		ClearFocus();
+		return;
+	}
 
-	const float TraceDist = RangeSphere->GetScaledSphereRadius();
-	FVector End = CamLocation + CamRotation.Vector() * TraceDist;
+	UADInteractableComponent* HitInteractable = PerformLineTrace(CamLocation, TraceEnd);
+	if (HitInteractable && NearbyInteractables.Contains(HitInteractable))
+	{
+		UpdateFocus(HitInteractable);
+	}
+	else
+	{
+		ClearFocus();
+	}
+}
 
+bool UADInteractionComponent::ComputeViewTrace(FVector& OutStart, FVector& OutEnd) const
+{
+	APawn* Pawn = Cast<APawn>(GetOwner());
+	if (!Pawn) return false;
+	APlayerController* PC = Cast<APlayerController>(Pawn->GetController());	
+	if (!PC) return false;
+
+	FVector CamLoc;
+	FRotator CamRot;
+	PC->GetPlayerViewPoint(CamLoc, CamRot);
+
+	OutStart = CamLoc;
+	OutEnd = CamLoc + CamRot.Vector() * RangeSphere->GetScaledSphereRadius();
+	return true;
+}
+
+UADInteractableComponent* UADInteractionComponent::PerformLineTrace(const FVector& Start, const FVector& End) const
+{
+	FHitResult Hit;
 	FCollisionQueryParams Params;
 	Params.AddIgnoredActor(GetOwner());
 
-
-	FHitResult Hit;
-	bool bHit = GetWorld()->LineTraceSingleByChannel(
-		Hit, CamLocation, End, ECC_Visibility, Params
-	);
-
-
-	/*FColor LineColor = bHit ? FColor::Blue : FColor::Red;
-
-
-	DrawDebugLine(
-		GetWorld(),
-		CamLocation,
-		End,
-		LineColor,
-		false,  
-		2.0f,   
-		0,
-		1.5f   
-	);*/
-
-	if (bHit)
+	if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params))
 	{
-//		LOG(TEXT("Hit!!"));
-		if (UADInteractableComponent* ADIC = Hit.GetActor()->FindComponentByClass<UADInteractableComponent>()) // -> GetInteractionComponent()
-		{
-//			LOG(TEXT("Is ADInteractable"));
-			if (NearbyInteractables.Contains(ADIC))
-			{
-//				LOG(TEXT("Contain ADIC"));
-				if (ADIC != FocusedInteractable)
-				{
-//					LOG(TEXT("ADIC is not FocusInteractable"));
-					// 새 대상으로 교체 전 highlight 여부 결정
-					if (ShouldHighlight(ADIC))
-					{
-						// 이전 해제
-						if (FocusedInteractable)
-							FocusedInteractable->SetHighLight(false);
-
-						// 새 대상
-						FocusedInteractable = ADIC;
-						FocusedInteractable->SetHighLight(true);
-					}
-					else
-					{
-						// 비활성화 대상이라면 해제만
-						if (FocusedInteractable)
-							FocusedInteractable->SetHighLight(false);
-						FocusedInteractable = nullptr;
-					}
-				}
-				return;
-			}
-		}
+		return Hit.GetActor()->FindComponentByClass<UADInteractableComponent>();
 	}
+	return nullptr;
+}
 
+void UADInteractionComponent::UpdateFocus(UADInteractableComponent* NewFocus)
+{
+	if (NewFocus == FocusedInteractable) return;
+
+	if (FocusedInteractable)
+		FocusedInteractable->SetHighLight(false);
+
+	if (ShouldHighlight(NewFocus))
+	{
+		FocusedInteractable = NewFocus;
+		FocusedInteractable->SetHighLight(true);
+	}
+	else
+	{
+		FocusedInteractable = nullptr;
+	}
+}
+
+void UADInteractionComponent::ClearFocus()
+{
 	if (FocusedInteractable)
 	{
 		FocusedInteractable->SetHighLight(false);
@@ -260,7 +258,7 @@ void UADInteractionComponent::OnHoldComplete()
 	}
 }
 
-bool UADInteractionComponent::ShouldHighlight(UADInteractableComponent* ADIC) const
+bool UADInteractionComponent::ShouldHighlight(const UADInteractableComponent* ADIC) const
 {
 	if (!ADIC) return false;
 	AActor* TargetActor = ADIC->GetOwner();

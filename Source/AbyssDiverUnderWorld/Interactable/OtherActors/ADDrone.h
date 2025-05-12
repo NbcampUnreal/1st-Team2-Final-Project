@@ -25,10 +25,10 @@ protected:
 public:
 	UFUNCTION(BlueprintNativeEvent, Category = "Interaction")
 	void Interact(AActor* InstigatorActor);
-	virtual void Interact_Implementation(AActor* InstigatorActor);
+	virtual void Interact_Implementation(AActor* InstigatorActor) override;
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interaction")
 	bool CanHighlight() const;
-	virtual bool CanHighlight_Implementation() const { return true; }
+	virtual bool CanHighlight_Implementation() const override { return true; }
 	UFUNCTION()
 	void Activate(class AADDroneSeller* Seller);
 	void StartRising();

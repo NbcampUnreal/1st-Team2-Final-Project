@@ -21,16 +21,15 @@ protected:
 public:
 	UFUNCTION(BlueprintNativeEvent)
 	void Interact(AActor* InstigatorActor);
-	virtual void Interact_Implementation(AActor* InstigatorActor);
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interaction")
+	virtual void Interact_Implementation(AActor* InstigatorActor) override;
+	UFUNCTION(BlueprintNativeEvent, Category = "Interaction")
 	bool CanHighlight() const;
-	virtual bool CanHighlight_Implementation() const { return true; }
+	virtual bool CanHighlight_Implementation() const override { return true; }
 	UFUNCTION()
 	void DisableSelling();
 
 protected:
 	int32 SellAllExchangeableItems(AActor* InstigatorActor);
-
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 private:
 #pragma endregion
