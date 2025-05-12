@@ -3,8 +3,10 @@
 #include "EBossState.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Character/StatComponent.h"
+#include "Character/UnderwaterCharacter.h"
 #include "Engine/DamageEvents.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 const FName ABoss::BossStateKey = "BossState";
 
@@ -62,6 +64,11 @@ float ABoss::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
 		{
 			FName RegionName = *HitResult.PhysicsObjectOwner->GetName();
 			LOG(TEXT("%s"), *RegionName.ToString());			
+		}
+
+		if (HitResult.ImpactPoint != FVector::ZeroVector)
+		{
+			LOG(TEXT("Damage Location: %s"), *HitResult.ImpactPoint.ToString());
 		}
 	}
 	
@@ -142,9 +149,33 @@ void ABoss::Attack()
 	}
 }
 
+void ABoss::OnAttackEnded()
+{
+	AttackedPlayers.Empty();
+}
+
 void ABoss::M_PlayAnimation_Implementation(class UAnimMontage* AnimMontage, float InPlayRate, FName StartSectionName)
 {
 	PlayAnimMontage(AnimMontage, InPlayRate, StartSectionName);
+}
+
+void ABoss::OnMeshOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
+	int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	// 공격 대상이 플레이어가 아닌 경우 얼리 리턴
+	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(OtherActor);
+	if (!IsValid(Player)) return;
+
+	// 해당 플레이어가 이미 공격받은 상태인 경우 얼리 리턴
+	if (AttackedPlayers.Contains(Player)) return;
+
+	// 공격받은 대상 리스트에 플레이어 추가
+	AttackedPlayers.Add(Player);
+
+	// 해당 플레이어에게 데미지 적용
+	UGameplayStatics::ApplyDamage(Player, StatComponent->AttackPower, GetController(), this, UDamageType::StaticClass());
+
+	LOG(TEXT("[Attack] %s"), *Player->GetName());
 }
 
 APawn* ABoss::GetTarget()
