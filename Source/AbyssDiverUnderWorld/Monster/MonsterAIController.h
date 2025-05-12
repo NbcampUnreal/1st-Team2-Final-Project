@@ -27,7 +27,7 @@ protected:
 #pragma region Method
 protected:
 	void LoadSightDataFromTable();
-
+	void InitializePatrolPoint();
 #pragma endregion
 
 #pragma region Variable

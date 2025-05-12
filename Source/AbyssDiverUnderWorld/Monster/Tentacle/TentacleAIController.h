@@ -12,6 +12,7 @@ enum class ESearchState : uint8
 	Idle = 0,
 	Patrol = 1,
 	Chasing = 2,
+	Attack = 3
 };
 
 UCLASS()

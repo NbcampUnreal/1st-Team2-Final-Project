@@ -16,16 +16,16 @@ struct FMonsterSightData : public FTableRowBase
 public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sight")
-	float SightRadius; // 탐지 범위
+	float SightRadius; // Detection Range
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sight")
-	float LoseSightRadius; // 어그로 해제 시작 범위
+	float LoseSightRadius; // Lose Interest Range
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sight")
-	float PeripheralVisionAngleDegrees; // 시야 각도
+	float PeripheralVisionAngleDegrees; // VisionAngle Degrees
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sight")
-	float SenseInterval; // 지각 정보 유효 시간
+	float SenseInterval; // Perception info validiation Time
 
 #pragma endregion
 };
