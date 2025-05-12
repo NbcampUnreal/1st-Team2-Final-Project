@@ -33,7 +33,7 @@ public:
 
 private:
 
-	void ShowOrNotToolTip(bool bShouldShow);
+	void UpdateToolTipVisibility(bool bShouldShow);
 
 #pragma endregion
 
@@ -50,6 +50,7 @@ private:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<class URichTextBlock> ToolTipTextBlock;
 
+	// 시간 측정 필요할까
 	FTimerHandle ToolTipTimerHandle;
 
 	int32 SlotIndex;
