@@ -12,6 +12,7 @@ AADDroneSeller::AADDroneSeller()
 	PrimaryActorTick.bCanEverTick = false;
 	InteractableComp = CreateDefaultSubobject<UADInteractableComponent>(TEXT("InteractableComp"));
 	bReplicates = true;
+	SetReplicateMovement(true); // 위치 상승하는 것 보이도록
 }
 
 // Called when the game starts or when spawned
@@ -49,6 +50,16 @@ void AADDroneSeller::DisableSelling()
 	bIsActive = false;
 }
 
+void AADDroneSeller::OnRep_IsActive()
+{
+	//TODO : UI 업데이트
+}
+
+void AADDroneSeller::OnRep_CurrentMoney()
+{
+	//TODO : UI 업데이트
+}
+
 int32 AADDroneSeller::SellAllExchangeableItems(AActor* InstigatorActor)
 {
 	if (!InstigatorActor) return 0;
@@ -61,6 +72,14 @@ int32 AADDroneSeller::SellAllExchangeableItems(AActor* InstigatorActor)
 			{
 				int32 Price = Inv->GetTotalPrice();
 				// TODO : 인벤토리 비우는 함수 구현 필요
+				/*TArray<int8> TypeArray = Inv->GetInventoryIndexesByType(EItemType::Exchangable);
+				for (int8 sale : TypeArray)
+				{
+					if (sale > -1)
+					{
+						Inv->RemoveInventoryItem(sale, -1, false);
+					}
+				}*/
 				return Price;
 			}
 		}

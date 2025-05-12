@@ -19,14 +19,14 @@ class ABYSSDIVERUNDERWORLD_API IIADInteractable
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
-	UFUNCTION(BlueprintNativeEvent)
+	UFUNCTION(BlueprintNativeEvent, Category = "Interaction")
 	void Interact(AActor* InstigatorActor);
 	virtual void Interact_Implementation(AActor* InstigatorActor);
 	// Ȧ�� ���� �� ȣ���� �Լ�
-	UFUNCTION(BlueprintNativeEvent)
+	UFUNCTION(BlueprintNativeEvent, Category = "Interaction")
 	void InteractHold(AActor* InstigatorActor);
 	virtual void InteractHold_Implementation(AActor* InstigatorActor);
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interaction")
+	UFUNCTION(BlueprintNativeEvent, Category = "Interaction")
 	bool CanHighlight() const;
 	virtual bool CanHighlight_Implementation() const { return true; }
 

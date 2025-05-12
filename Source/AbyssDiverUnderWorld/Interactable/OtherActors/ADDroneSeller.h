@@ -21,9 +21,13 @@ protected:
 public:
 
 	virtual void Interact_Implementation(AActor* InstigatorActor) override;
-	virtual bool CanHighlight_Implementation() const override { return true; }
+	virtual bool CanHighlight_Implementation() const override { return bIsActive; }
 	UFUNCTION()
 	void DisableSelling();
+	UFUNCTION()
+	void OnRep_IsActive();
+	UFUNCTION()
+	void OnRep_CurrentMoney();
 
 protected:
 	int32 SellAllExchangeableItems(AActor* InstigatorActor);
@@ -35,9 +39,9 @@ private:
 public:
 	
 protected:
-	UPROPERTY(Replicated)
+	UPROPERTY(ReplicatedUsing = OnRep_IsActive)
 	bool bIsActive = true;
-	UPROPERTY(Replicated)
+	UPROPERTY(ReplicatedUsing = OnRep_CurrentMoney)
 	int32 CurrentMoney = 0;
 	UPROPERTY(EditAnywhere)
 	int32 TargetMoney = 1000;
