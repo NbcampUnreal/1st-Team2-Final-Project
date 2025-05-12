@@ -14,6 +14,7 @@ AADDrone::AADDrone()
 	InteractableComp = CreateDefaultSubobject<UADInteractableComponent>(TEXT("InteractableComp"));
 	bReplicates = true;
 	SetReplicateMovement(true); // 위치 상승하는 것 보이도록
+	bIsActive = false;
 }
 
 // Called when the game starts or when spawned

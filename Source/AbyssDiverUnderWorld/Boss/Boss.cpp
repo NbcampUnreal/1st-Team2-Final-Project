@@ -13,7 +13,7 @@ const FName ABoss::BossStateKey = "BossState";
 
 ABoss::ABoss()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 	
 	BlackboardComponent = nullptr;
 	AIController = nullptr;
@@ -27,6 +27,8 @@ ABoss::ABoss()
 void ABoss::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	TargetPlayer = Cast<AUnderwaterCharacter>(UGameplayStatics::GetPlayerPawn(GetWorld(), 0));
 
 	AnimInstance = GetMesh()->GetAnimInstance();
 
@@ -38,8 +40,15 @@ void ABoss::BeginPlay()
 	}
 }
 
+void ABoss::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	RotationToTarget();
+}
+
 float ABoss::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator,
-	AActor* DamageCauser)
+                        AActor* DamageCauser)
 {
 	// 사망 상태면 얼리 리턴
 	if (BlackboardComponent->GetValueAsEnum(BossStateKey) == static_cast<uint8>(EBossState::Death)) return 0.0f;
@@ -207,7 +216,7 @@ APawn* ABoss::GetTarget()
 	return nullptr;
 }
 
-void ABoss::SetTarget(APawn* Target)
+void ABoss::SetTarget(AUnderwaterCharacter* Target)
 {
 	if (IsValid(Target))
 	{

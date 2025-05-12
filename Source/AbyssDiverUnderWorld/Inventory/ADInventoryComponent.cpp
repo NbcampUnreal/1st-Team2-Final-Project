@@ -62,6 +62,8 @@ void UADInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(UADInventoryComponent, InventoryList);
+	DOREPLIFETIME(UADInventoryComponent, TotalPrice);
+	DOREPLIFETIME(UADInventoryComponent, TotalWeight);
 }
 
 void UADInventoryComponent::S_DropItem_Implementation(FItemData ItemData)
@@ -294,6 +296,12 @@ void UADInventoryComponent::InventoryInitialize()
 	}
 }
 
+void UADInventoryComponent::OnRep_InventoryList()
+{
+	RebuildIndexMap();
+	InventoryUIUpdate();
+}
+
 int8 UADInventoryComponent::GetTypeInventoryEmptyIndex(EItemType ItemType)
 {
 	for (int i = 0; i < InventoryIndexMapByType[ItemType].Num(); ++i)
@@ -335,6 +343,28 @@ void UADInventoryComponent::PrintLogInventoryData()
 			}
 			else
 				UE_LOG(LogTemp, Warning, TEXT("NoItems"));
+		}
+	}
+}
+
+void UADInventoryComponent::RebuildIndexMap()
+{
+	// 모든 값을 -1로 초기화
+	for (auto& Pair : InventoryIndexMapByType)
+	{
+		for (int8& Idx : Pair.Value)
+			Idx = -1;
+	}
+
+	// InventoryList를 돌면서 채우기
+	for (int16 ItemIdx = 0; ItemIdx < InventoryList.Items.Num(); ++ItemIdx)
+	{
+		const FItemData& Item = InventoryList.Items[ItemIdx];
+		if (Item.Quantity > 0 && InventoryIndexMapByType.Contains(Item.ItemType))
+		{
+			int8 Empty = GetTypeInventoryEmptyIndex(Item.ItemType);
+			if (Empty != -1)
+				InventoryIndexMapByType[Item.ItemType][Empty] = ItemIdx;
 		}
 	}
 }

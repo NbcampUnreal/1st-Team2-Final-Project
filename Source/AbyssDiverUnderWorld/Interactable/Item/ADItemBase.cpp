@@ -39,7 +39,7 @@ void AADItemBase::HandlePickup(APawn* InstigatorPawn)
 
 	LOG(TEXT("Add to Inventory"));
 	// TODO 인벤토리 추가 로직과 획득 효과 추가
-	if (UADInventoryComponent* Inventory = PS->FindComponentByClass<UADInventoryComponent>())
+	if (UADInventoryComponent* Inventory = PS->GetInventory())
 	{
 		LOG(TEXT("Find Inventory"));
 		Inventory->AddInventoryItem(ItemData);
