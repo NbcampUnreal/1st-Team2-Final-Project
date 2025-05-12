@@ -1,0 +1,74 @@
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "Components/ActorComponent.h"
+#include "DataRow/UpgradeDataRow.h"
+#include "UpgradeComponent.generated.h"
+
+// Network 연동은 현재 고려하지 않는다.
+// 이는 Shop에서 어떻게 처리하는지에 따라 달라지기 때문이다.
+// Shop에서 Upgrade RPC를 이용해서 처리하고 Shop의 정보가 갱신이 된다고 해도
+// Client에서는 Upgrade 정보가 Replicate되는데 시간이 걸린다.
+// 이 사이의 시간에서는 Server, Client 분단이 발생하게 되며 이 부분을 해결하는 구조를 선택해야 한다.
+// 즉, 단순한 Replicate 로는 동기화 이슈를 해결할 수 없다.
+
+UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
+class ABYSSDIVERUNDERWORLD_API UUpgradeComponent : public UActorComponent
+{
+	GENERATED_BODY()
+
+public:
+	// Sets default values for this component's properties
+	UUpgradeComponent();
+
+protected:
+	// Called when the game starts
+	virtual void BeginPlay() override;
+	virtual void PostInitProperties() override;
+
+#pragma region Method
+	
+#pragma endregion
+	
+#pragma region Variable
+	
+public:
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnUpgradePerformed, EUpgradeType, UpgradeType, uint8, Grade);
+	/** Upgrade가 되었을 경우 호출되는 Delegate */
+	UPROPERTY(BlueprintAssignable)
+	FOnUpgradePerformed OnUpgradePerformed;
+	
+private:
+	/** Data Table Subsystem Weak Pointer */
+	TWeakObjectPtr<class UDataTableSubsystem> DataTableSubsystem;
+	/** 현재 Upgrade 정보를 저장한다. Type 별로 Grade를 저장하며 1이 기본값이다. */
+	TMap<EUpgradeType, uint8> UpgradeGradeMap;
+
+#pragma endregion
+
+#pragma region Getter Setter
+
+public:
+	
+	/** Upgrade Type에 해당하는 Grade를 반환, Grade는 1부터 시작하며 잘못된 입력을 할 경우 0을 반환 */
+	uint8 GetCurrentGrade(EUpgradeType UpgradeType) const;
+
+	/** Upgrade Type에 해당하는 Grade를 1 증가, 최대 레벨일 경우 false를 반환 */
+	bool Upgrade(EUpgradeType UpgradeType);
+	
+	/** Upgrade Type의 Grade를 지정, 최대 레벨을 벗어날 경우 false를 반환 */
+	bool SetCurrentGrade(EUpgradeType UpgradeType, uint8 Grade);
+
+	/** 현재 Type을 Upgrade하기 위한 비용을 반환, 최대 레벨일 경우 음수를 반환 */
+	int32 GetUpgradeCost(EUpgradeType UpgradeType) const;
+
+	/** Upgrade Type이 최대 레벨인지 확인, 다음 Grade가 없으면 Max Level이다. */
+	bool IsMaxGrade(EUpgradeType UpgradeType) const;
+
+protected:
+	
+#pragma  endregion
+	
+};
