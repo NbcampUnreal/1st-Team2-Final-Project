@@ -46,9 +46,8 @@ protected:
 
 #pragma region Method
 public:
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
-	void Interact(AActor* InstigatorActor);
-	virtual void Interact_Implementation(AActor* InstigatorActor);
+
+	virtual void Interact_Implementation(AActor* InstigatorActor) override;
 	
 	void HandleMineRequest(APawn* InstigatorPawn);
 

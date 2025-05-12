@@ -172,9 +172,6 @@ protected:
 #pragma region Methods
 
 public:
-
-	UFUNCTION(BlueprintNativeEvent, Category = "Interaction")
-	void Interact(AActor* InstigatorActor);
 	virtual void Interact_Implementation(AActor* InstigatorActor) override;
 
 	void OpenShop(AUnderwaterCharacter* Requester);
