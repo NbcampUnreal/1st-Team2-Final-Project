@@ -61,6 +61,7 @@ void AMonsterAIController::LoadSightDataFromTable()
 		return;
 	}
 
+	LOG(TEXT("Loading sight data for MonsterID = %s"), *MonsterID.ToString());
 	// Setting up visual information data import from a data table
 	const FMonsterSightData* SightRow = SightDataTable->FindRow<FMonsterSightData>(MonsterID, TEXT("MonsterSight"));
 	if (SightRow && SightConfig)
