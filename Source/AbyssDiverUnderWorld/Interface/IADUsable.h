@@ -16,6 +16,5 @@ class IUsable
     GENERATED_BODY()
 
 public:
-    UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
-    void Use(AActor* Target);
+    virtual void Use(AActor* Target) = 0;
 };

@@ -14,6 +14,6 @@ class ABYSSDIVERUNDERWORLD_API UToggleEquipUseFunction : public UObject, public 
 	GENERATED_BODY()
 
 public:
-	virtual void Use_Implementation(AActor* Target) override;
+	virtual void Use(AActor* Target) override;
 	
 };

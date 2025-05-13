@@ -14,5 +14,5 @@ class ABYSSDIVERUNDERWORLD_API URecoveryOxygen : public UObject, public IUsable
 	GENERATED_BODY()
 	
 public:
-	virtual void Use_Implementation(AActor* Target) override;
+	virtual void Use(AActor* Target) override;
 };

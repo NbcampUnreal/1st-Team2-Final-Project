@@ -4,7 +4,7 @@
 #include "ToggleEquipUseFunction.h"
 #include "AbyssDiverUnderWorld.h"
 
-void UToggleEquipUseFunction::Use_Implementation(AActor* Target)
+void UToggleEquipUseFunction::Use(AActor* Target)
 {
 	LOG(TEXT("ToggleEquipment"));
 }

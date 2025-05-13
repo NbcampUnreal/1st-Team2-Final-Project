@@ -4,7 +4,7 @@
 #include "Interactable/Item/UseFunction/RecoveryOxygen.h"
 #include "AbyssDiverUnderWorld.h"
 
-void URecoveryOxygen::Use_Implementation(AActor* Target)
+void URecoveryOxygen::Use(AActor* Target)
 {
 	LOG(TEXT("RecoveryOxygen"));
 }
