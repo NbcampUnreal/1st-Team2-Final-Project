@@ -13,6 +13,7 @@
 // Client에서는 Upgrade 정보가 Replicate되는데 시간이 걸린다.
 // 이 사이의 시간에서는 Server, Client 분단이 발생하게 되며 이 부분을 해결하는 구조를 선택해야 한다.
 // 즉, 단순한 Replicate 로는 동기화 이슈를 해결할 수 없다.
+// 문의한 결과 그러한 불일치성은 단기간에 발생하며 Server에서 검증하기 떄문에 허용 가능하는 것으로 결정되었다.
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class ABYSSDIVERUNDERWORLD_API UUpgradeComponent : public UActorComponent
@@ -27,13 +28,15 @@ protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
 	virtual void PostInitProperties() override;
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 
 #pragma region Method
 
 protected:
+	
 	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "OnUpgradePerformed"))
 	void K2_OnUpgradePerformed(EUpgradeType UpgradeType, uint8 Grade);
-	
+
 #pragma endregion
 	
 #pragma region Variable
@@ -47,9 +50,11 @@ public:
 private:
 	/** Data Table Subsystem Weak Pointer */
 	TWeakObjectPtr<class UDataTableSubsystem> DataTableSubsystem;
+	
 	/** 현재 Upgrade 정보를 저장한다. Type 별로 Grade를 저장하며 1이 기본값이다. */
-	TMap<EUpgradeType, uint8> UpgradeGradeMap;
-
+	UPROPERTY(VisibleInstanceOnly, Replicated)
+	TArray<uint8> UpgradeGradeMap;
+	
 #pragma endregion
 
 #pragma region Getter Setter

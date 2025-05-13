@@ -6,6 +6,8 @@
 #include "AbyssDiverUnderWorld.h"
 #include "EnhancedInputComponent.h"
 #include "OxygenComponent.h"
+#include "StaminaComponent.h"
+#include "StatComponent.h"
 #include "AbyssDiverUnderWorld/Interactable/Item/Component/ADInteractionComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -20,14 +22,16 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	FirstPersonCameraComponent->SetupAttachment(GetCapsuleComponent());
 	FirstPersonCameraComponent->SetRelativeLocation(FVector(-10.f, 0.f, 60.f)); // Position the camera
 	FirstPersonCameraComponent->bUsePawnControlRotation = true;
-	
+
+	StatComponent->MoveSpeed = 400.0f;
 	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
 	{
 		Movement->SetMovementMode(MOVE_Swimming);
-		Movement->MaxSwimSpeed = 400.0f;
+		Movement->MaxSwimSpeed = StatComponent->MoveSpeed;
 		Movement->BrakingDecelerationSwimming = 500.0f;
 		Movement->GravityScale = 0.0f;
 	}
+	SprintSpeed = StatComponent->MoveSpeed * 1.5f;
 
 	// To-Do
 	// 외부에 보여지는 Mesh와 1인칭 Mesh를 다르게 구현
@@ -46,6 +50,7 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	ThirdPersonCameraComponent->SetActive(false);
 
 	OxygenComponent = CreateDefaultSubobject<UOxygenComponent>(TEXT("OxygenComponent"));
+	StaminaComponent = CreateDefaultSubobject<UStaminaComponent>(TEXT("StaminaComponent"));
 
 	InteractionComponent = CreateDefaultSubobject<UADInteractionComponent>(TEXT("InteractionComponent"));
 	ShopInteractionComponent = CreateDefaultSubobject<UShopInteractionComponent>(TEXT("ShopInteractionComponent"));
@@ -60,6 +65,8 @@ void AUnderwaterCharacter::BeginPlay()
 	SetCharacterState(CharacterState);
 
 	SetDebugCameraMode(bUseDebugCamera);
+
+	StaminaComponent->OnSprintStateChanged.AddDynamic(this, &AUnderwaterCharacter::OnSprintStateChanged);
 }
 
 void AUnderwaterCharacter::SetCharacterState(ECharacterState State)
@@ -102,15 +109,31 @@ void AUnderwaterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 		{
 			EnhancedInput->BindAction(
 				MoveAction, 
-				ETriggerEvent::Triggered, 
+				ETriggerEvent::Started, 
 				this, 
 				&AUnderwaterCharacter::Move
 			);
 			EnhancedInput->BindAction(
 				MoveAction, 
-				ETriggerEvent::Started, 
+				ETriggerEvent::Triggered, 
 				this, 
 				&AUnderwaterCharacter::Move
+			);
+		}
+
+		if (SprintAction)
+		{
+			EnhancedInput->BindAction(
+				SprintAction,
+				ETriggerEvent::Started,
+				this,
+				&AUnderwaterCharacter::StartSprint
+			);
+			EnhancedInput->BindAction(
+				SprintAction,
+				ETriggerEvent::Completed,
+				this,
+				&AUnderwaterCharacter::StopSprint
 			);
 		}
 
@@ -238,6 +261,30 @@ void AUnderwaterCharacter::MoveGround(FVector MoveInput)
 	}
 }
 
+void AUnderwaterCharacter::StartSprint(const FInputActionValue& InputActionValue)
+{
+	StaminaComponent->RequestStartSprint();
+}
+
+void AUnderwaterCharacter::StopSprint(const FInputActionValue& InputActionValue)
+{
+	StaminaComponent->RequestStopSprint();
+}
+
+void AUnderwaterCharacter::OnSprintStateChanged(bool bNewSprinting)
+{
+	if (bNewSprinting)
+	{
+		GetCharacterMovement()->MaxSwimSpeed = SprintSpeed;
+		GetCharacterMovement()->MaxWalkSpeed = SprintSpeed;
+	}
+	else
+	{
+		GetCharacterMovement()->MaxSwimSpeed = StatComponent->MoveSpeed;
+		GetCharacterMovement()->MaxWalkSpeed = StatComponent->MoveSpeed;
+	}
+}
+
 void AUnderwaterCharacter::Look(const FInputActionValue& InputActionValue)
 {
 	FVector2d LookInput = InputActionValue.Get<FVector2d>();
@@ -289,4 +336,9 @@ void AUnderwaterCharacter::ToggleDebugCameraMode()
 {
 	bUseDebugCamera = !bUseDebugCamera;
 	SetDebugCameraMode(bUseDebugCamera);
+}
+
+bool AUnderwaterCharacter::IsSprinting() const
+{
+	return StaminaComponent->IsSprinting();
 }

@@ -5,6 +5,7 @@
 
 #include "AbyssDiverUnderWorld.h"
 #include "Kismet/GameplayStatics.h"
+#include "Net/UnrealNetwork.h"
 #include "Subsystems/DataTableSubsystem.h"
 
 // Sets default values for this component's properties
@@ -32,10 +33,7 @@ void UUpgradeComponent::BeginPlay()
 	// 2. Copy Properties 정보가 들어오는 시점을 확인해서 처리할 것
 	if (UpgradeGradeMap.IsEmpty())
 	{
-		for (int32 i = 0; i < static_cast<int32>(EUpgradeType::Max); ++i)
-		{
-			UpgradeGradeMap.Add(static_cast<EUpgradeType>(i), DefaultGrade);
-		}
+		UpgradeGradeMap.Init(DefaultGrade, static_cast<int>(EUpgradeType::Max));
 	}
 }
 
@@ -44,9 +42,17 @@ void UUpgradeComponent::PostInitProperties()
 	Super::PostInitProperties();
 }
 
+void UUpgradeComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(UUpgradeComponent, UpgradeGradeMap);
+}
+
 uint8 UUpgradeComponent::GetCurrentGrade(EUpgradeType UpgradeType) const
 {
-	return UpgradeGradeMap.FindRef(UpgradeType);
+	const int32 Index = static_cast<int32>(UpgradeType);
+	return UpgradeGradeMap.IsValidIndex(Index) ? UpgradeGradeMap[Index] : -1;
 }
 
 bool UUpgradeComponent::Upgrade(EUpgradeType UpgradeType)
@@ -61,10 +67,11 @@ bool UUpgradeComponent::Upgrade(EUpgradeType UpgradeType)
 		return false;
 	}
 
-	if (uint8* CurrentGrade = UpgradeGradeMap.Find(UpgradeType))
+	int32 Index = static_cast<int32>(UpgradeType);
+	if (UpgradeGradeMap.IsValidIndex(Index))
 	{
-		(*CurrentGrade)++;
-		OnUpgradePerformed.Broadcast(UpgradeType, *CurrentGrade);
+		UpgradeGradeMap[Index]++;
+		OnUpgradePerformed.Broadcast(UpgradeType, UpgradeGradeMap[Index]);
 	}
 	else
 	{
@@ -85,7 +92,9 @@ bool UUpgradeComponent::SetCurrentGrade(EUpgradeType UpgradeType, uint8 Grade)
 		return false;
 	}
 
-	UpgradeGradeMap.Add(UpgradeType, Grade);
+	int32 Index = static_cast<int32>(UpgradeType);
+	UpgradeGradeMap[Index] = Grade;
+	
 	return true;
 }
 
@@ -97,7 +106,13 @@ int32 UUpgradeComponent::GetUpgradeCost(EUpgradeType UpgradeType) const
 		return -1;
 	}
 
-	const int CurrentGrade = UpgradeGradeMap.FindRef(UpgradeType);
+	int32 Index = static_cast<int32>(UpgradeType);
+	if (!UpgradeGradeMap.IsValidIndex(Index))
+	{
+		LOGV(Error, TEXT("UpgradeType is not valid"));
+		return -1;
+	}
+	const int CurrentGrade = UpgradeGradeMap[Index];
 	const FUpgradeDataRow* UpgradeData = DataTableSubsystem->GetUpgradeData(UpgradeType, CurrentGrade);
 	return UpgradeData ? UpgradeData->Price : -1;
 }
@@ -110,7 +125,13 @@ bool UUpgradeComponent::IsMaxGrade(EUpgradeType UpgradeType) const
 		return false;
 	}
 
-	const uint8 NextGrade = UpgradeGradeMap.FindRef(UpgradeType) + 1;
+	int32 Index = static_cast<int32>(UpgradeType);
+	if (!UpgradeGradeMap.IsValidIndex(Index))
+	{
+		LOGV(Error, TEXT("UpgradeType is not valid"));
+		return false;
+	}
+	const uint8 NextGrade = UpgradeGradeMap[Index] + 1;
 	return DataTableSubsystem->GetUpgradeData(UpgradeType, NextGrade) == nullptr;
 }
 
