@@ -91,7 +91,7 @@ void AMonsterAIController::HandleForgetPlayer()
 		BlackboardComponent->ClearValue("TargetActor");
 		BlackboardComponent->SetValueAsName("CurrentState", "Patrol");
 
-		LOG(TEXT("[AI] State Trans: Chase ¡æ Patrol"));
+		LOG(TEXT("[AI] State Trans: Chase -> Patrol"));
 	}
 }
 

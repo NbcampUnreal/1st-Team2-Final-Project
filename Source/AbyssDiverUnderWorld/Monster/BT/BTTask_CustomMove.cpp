@@ -16,7 +16,7 @@ UBTTask_CustomMove::UBTTask_CustomMove()
 
 EBTNodeResult::Type UBTTask_CustomMove::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
-	CashedOwnerComp = &OwnerComp;
+	CachedOwnerComp = &OwnerComp;
 
 	AAIController* AIController = OwnerComp.GetAIOwner();
 	if (!AIController) return EBTNodeResult::Failed;
@@ -24,8 +24,8 @@ EBTNodeResult::Type UBTTask_CustomMove::ExecuteTask(UBehaviorTreeComponent& Owne
 	APawn* AIPawn = AIController->GetPawn();
 	if (!AIPawn) return EBTNodeResult::Failed;
 
-	CashedPathComp = AIPawn->FindComponentByClass<UFlyingAIPathfindingBase>();
-	if (!CashedPathComp) return EBTNodeResult::Failed;
+	CachedPathComp = AIPawn->FindComponentByClass<UFlyingAIPathfindingBase>();
+	if (!CachedPathComp) return EBTNodeResult::Failed;
 
 	UBlackboardComponent* BlackboardComp = OwnerComp.GetBlackboardComponent();
 	if (!BlackboardComp) return EBTNodeResult::Failed;
@@ -33,10 +33,10 @@ EBTNodeResult::Type UBTTask_CustomMove::ExecuteTask(UBehaviorTreeComponent& Owne
 	FVector TargetLocation = BlackboardComp->GetValueAsVector("TargetLocation");
 
 	// Arrived Event Binding
-	CashedPathComp->OnFinishedMoving.AddDynamic(this, &UBTTask_CustomMove::HandleMoveFinishied);
+	CachedPathComp->OnFinishedMoving.AddDynamic(this, &UBTTask_CustomMove::HandleMoveFinishied);
 	if (AIPawn->HasAuthority())
 	{
-		CashedPathComp->S_MoveTo(TargetLocation);
+		CachedPathComp->S_MoveTo(TargetLocation);
 	}
 	else
 	{
@@ -47,16 +47,16 @@ EBTNodeResult::Type UBTTask_CustomMove::ExecuteTask(UBehaviorTreeComponent& Owne
 }
 void UBTTask_CustomMove::OnTaskFinished(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, EBTNodeResult::Type TaskResult)
 {
-	if (CashedPathComp)
+	if (CachedPathComp)
 	{
-		CashedPathComp->OnFinishedMoving.RemoveDynamic(this, &UBTTask_CustomMove::HandleMoveFinishied);
+		CachedPathComp->OnFinishedMoving.RemoveDynamic(this, &UBTTask_CustomMove::HandleMoveFinishied);
 	}
 }
 void UBTTask_CustomMove::HandleMoveFinishied()
 {
-	if (CashedOwnerComp)
+	if (CachedOwnerComp)
 	{
-		FinishLatentTask(*CashedOwnerComp, EBTNodeResult::Succeeded);
+		FinishLatentTask(*CachedOwnerComp, EBTNodeResult::Succeeded);
 	}
 }
 
