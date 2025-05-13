@@ -35,7 +35,6 @@ void AADPlayerController::BeginPlay()
 		}
 	}
 
-	Cast<AADPlayerState>(PlayerState)->GetInventory()->InventoryInitialize();
 }
 
 void AADPlayerController::SetupInputComponent()
