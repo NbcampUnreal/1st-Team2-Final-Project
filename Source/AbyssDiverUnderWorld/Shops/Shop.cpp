@@ -143,6 +143,8 @@ AShop::AShop()
 	ItemMeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	InteractableComp = CreateDefaultSubobject<UADInteractableComponent>(TEXT("InteractableComp"));
+
+	bIsOpened = false;
 }
 
 void AShop::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -163,7 +165,6 @@ void AShop::BeginPlay()
 
 void AShop::Interact_Implementation(AActor* InstigatorActor)
 {
-	LOGV(Error, TEXT("Interaction Start"));
 	if (HasAuthority() == false)
 	{
 		return;
@@ -183,6 +184,7 @@ void AShop::Interact_Implementation(AActor* InstigatorActor)
 		return;
 	}
 
+	ShopInteractionComp->SetCurrentInteractingShop(this);
 	ShopInteractionComp->C_OpenShop(this);
 }
 
@@ -193,11 +195,17 @@ void AShop::OpenShop(AUnderwaterCharacter* Requester)
 		return;
 	}
 
+	if (bIsOpened)
+	{
+		return;
+	}
+
 	ShopWidget->AddToViewport();
 
 	APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
 	PC->SetInputMode(FInputModeGameAndUI());
 	PC->SetShowMouseCursor(true);
+	bIsOpened = true;
 }
 
 void AShop::CloseShop(AUnderwaterCharacter* Requester)
@@ -207,11 +215,17 @@ void AShop::CloseShop(AUnderwaterCharacter* Requester)
 		return;
 	}
 
+	if (bIsOpened == false)
+	{
+		return;
+	}
+
 	ShopWidget->RemoveFromParent();
 
 	APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
 	PC->SetInputMode(FInputModeGameOnly());
 	PC->SetShowMouseCursor(false);
+	bIsOpened = false;
 }
 
 EBuyResult AShop::BuyItem(uint8 ItemId, AUnderwaterCharacter* Buyer)
@@ -260,7 +274,7 @@ EBuyResult AShop::BuyItem(uint8 ItemId, AUnderwaterCharacter* Buyer)
 
 	// 돈 차감 로직
 	// 인벤토리에 아이템 넣기
-	LOGV(Error, TEXT("Buying Item Succeeded : %s"), *ItemDataRow->Name.ToString());
+	LOGV(Log, TEXT("Buying Item Succeeded : %s"), *ItemDataRow->Name.ToString());
 	return EBuyResult::Succeeded;
 }
 
@@ -421,12 +435,13 @@ void AShop::InitShopWidget()
 	ShopEquipmentItemIdList.IdList.Empty();
 	ShopEquipmentItemIdList.OnShopItemListChangedDelegate.AddUObject(this, &AShop::OnShopItemListChanged);
 	ShopEquipmentItemIdList.ShopOwner = this;
-	ShopConsumableItemIdList.TabType = EShopCategoryTab::Consumable;
+	ShopEquipmentItemIdList.TabType = EShopCategoryTab::Equipment;
 
 	ShopWidget = CreateWidget<UShopWidget>(GetWorld(), ShopWidgetClass, FName(TEXT("ShopWidget")));
 	check(ShopWidget);
 
 	ShopWidget->SetCurrentActivatedTab(EShopCategoryTab::Consumable);
+	ShopWidget->OnShopCloseButtonClickedDelegate.AddUObject(this, &AShop::OnCloseButtonClicked);
 
 	UShopElementInfoWidget* InfoWidget = ShopWidget->GetInfoWidget();
 	check(InfoWidget);
@@ -482,16 +497,9 @@ void AShop::OnShopItemListChanged(const FShopItemListChangeInfo& Info)
 		EntryData = NewObject<UShopItemEntryData>();
 		EntryData->Init(Info.ShopIndex, ItemDataRow->Thumbnail, ItemDataRow->Description); // 임시
 		EntryData->OnEntryUpdatedFromDataDelegate.AddUObject(this, &AShop::OnSlotEntryWidgetUpdated);
-
-		if (ItemDataRow->ItemType == EItemType::Consumable)
-		{
-			ShopWidget->AddItem(EntryData, EShopCategoryTab::Consumable);
-		}
-		else if (ItemDataRow->ItemType == EItemType::Equipment)
-		{
-			ShopWidget->AddItem(EntryData, EShopCategoryTab::Equipment);
-		}
-
+		
+		ShopWidget->AddItem(EntryData, Info.ShopTab);
+		LOGVN(Log, TEXT("Add Data End, Category : %d"), ItemDataRow->ItemType);
 		break;
 	case EShopItemChangeType::Removed:
 		ShopWidget->RemoveItem(Info.ShopIndex, Info.ShopTab);
@@ -574,8 +582,7 @@ void AShop::OnBuyButtonClicked()
 		return;
 	}
 
-	// 캐릭터로부터 컴포넌트 Get, 나중에 Getter로 가져옴
-	UShopInteractionComponent* ShopInteractionComp = BuyingCharacter->FindComponentByClass<UShopInteractionComponent>();
+	UShopInteractionComponent* ShopInteractionComp = BuyingCharacter->GetShopInteractionComponent();
 	if (ShopInteractionComp == nullptr)
 	{
 		LOGV(Warning, TEXT("ShopInteractionComp == nullptr"));
@@ -585,12 +592,29 @@ void AShop::OnBuyButtonClicked()
 	ShopInteractionComp->S_RequestBuyItem(CurrentSelectedItemId);
 }
 
+void AShop::OnCloseButtonClicked()
+{
+	AUnderwaterCharacter* Requester = Cast<AUnderwaterCharacter>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetPawn());
+	if (Requester == nullptr)
+	{
+		LOGVN(Error, TEXT("Requester == nullptr"));
+		return;
+	}
+
+	CloseShop(Requester);
+}
+
 bool AShop::HasItem(int32 ItemId)
 {
 	bool bHasItem = (ShopConsumableItemIdList.Contains(ItemId) != INDEX_NONE);
 	bHasItem = bHasItem || (ShopEquipmentItemIdList.Contains(ItemId) != INDEX_NONE);
 
 	return bHasItem;
+}
+
+bool AShop::IsOpened() const
+{
+	return bIsOpened;
 }
 
 UADInteractableComponent* AShop::GetInteractableComponent() const

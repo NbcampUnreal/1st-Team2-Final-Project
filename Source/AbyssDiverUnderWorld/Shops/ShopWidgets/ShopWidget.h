@@ -10,6 +10,8 @@ class UShopCategoryTabWidget;
 class UShopItemEntryData;
 class UShopElementInfoWidget;
 
+DECLARE_MULTICAST_DELEGATE(FOnShopCloseButtonClickedDelegate);
+
 /**
  * 
  */
@@ -37,17 +39,21 @@ public:
 
 	void ShowItemInfos(UStaticMesh* NewItemMesh, const FString& NewDescription, const FString& NewInfoText);
 
+	FOnShopCloseButtonClickedDelegate OnShopCloseButtonClickedDelegate;
+
 private:
 
 	UFUNCTION()
 	void OnCategoryTabClicked(EShopCategoryTab CategoryTab);
+
+	UFUNCTION()
+	void OnCloseButtonClicked();
 	
 #pragma endregion
 
 #pragma region Variables
 
 private:
-
 
 	UPROPERTY(EditDefaultsOnly, meta = (BindWidget), meta = (AllowPrivateAccess), Category = "ShopWidget")
 	TObjectPtr<UShopCategoryTabWidget> ConsumableTab;
@@ -60,6 +66,9 @@ private:
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UShopElementInfoWidget> InfoWidget;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<class UButton> CloseButton;
 
 	UPROPERTY()
 	TArray<TObjectPtr<UShopItemEntryData>> ConsumableTabEntryDataList;
