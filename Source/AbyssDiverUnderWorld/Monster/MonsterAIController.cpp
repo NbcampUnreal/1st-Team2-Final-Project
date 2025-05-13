@@ -42,8 +42,11 @@ void AMonsterAIController::OnPossess(APawn* InPawn)
 	{
 		UseBlackboard(BehaviorTree->BlackboardAsset, (UBlackboardComponent*&)BlackboardComponent);
 		RunBehaviorTree(BehaviorTree);
-
 		LOG(TEXT("AIController Possess"));
+
+		// Initialize BlackboardKey (CurrnetState, TargetActor)
+		BlackboardComponent->SetValueAsName("CurrentState", "Patrol");
+		BlackboardComponent->ClearValue("TargetActor");
 	}
 
 	FTimerHandle TimerHandle;

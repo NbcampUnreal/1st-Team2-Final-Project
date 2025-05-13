@@ -22,7 +22,7 @@ class ABYSSDIVERUNDERWORLD_API ATentacleAIController : public AMonsterAIControll
 	
 public:
 	
-
+	ATentacleAIController();
 protected:
 
 
