@@ -12,6 +12,8 @@
 #include "Framework/ADGameInstance.h"
 #include "Subsystems/DataTableSubsystem.h"
 #include "Framework/ADPlayerState.h"
+#include "Interactable/Item/ADUseItem.h"
+#include "Interface/IADUsable.h"
 
 UADInventoryComponent::UADInventoryComponent() :
 	InventoryWidgetClass(nullptr),
@@ -70,9 +72,8 @@ void UADInventoryComponent::S_DropItem_Implementation(FItemData ItemData)
 {
 	for (int8 i = 0; i < ItemData.Quantity; ++i)
 	{
-		FFADItemDataRow* FoundRow = TestItemDataTable->FindRow<FFADItemDataRow>(ItemData.Name, TEXT("Lookup Item"))/*ItemDataTableSubsystem->GetItemData(ItemData.Id)*/;
-		if(FoundRow->SpawnActor)
-			GetWorld()->SpawnActor<AActor>(FoundRow->SpawnActor, GetDropLocation(), FRotator::ZeroRotator);
+		AADUseItem* SpawnItem = GetWorld()->SpawnActor<AADUseItem>(AADUseItem::StaticClass(), GetDropLocation(), FRotator::ZeroRotator);
+		SpawnItem->SetItemInfo(ItemData);
 	}
 }
 
@@ -163,6 +164,23 @@ bool UADInventoryComponent::RemoveInventoryItem(uint8 InventoryIndex, int8 Count
 		LOG(TEXT("Invalid Inventory Index"));
 		return false;
 	}
+}
+
+void UADInventoryComponent::UseInventoryItem(EItemType ItemType, int32 InventoryIndex)
+{
+	/*
+	if (InventoryIndex > InventoryIndexMapByType[ItemType].Num() && InventoryIndexMapByType[ItemType][InventoryIndex - 1] == -1 ) return;
+	FItemData& Item = InventoryList.Items[InventoryIndexMapByType[ItemType][InventoryIndex - 1]];
+	FFADItemDataRow* FoundRow = TestItemDataTable->FindRow<FFADItemDataRow>(Item.Name, TEXT("Lookup Item"));
+	if (!FoundRow->UseFunction) return;
+
+	if (FoundRow->UseFunction->ImplementsInterface(UUsable::StaticClass()))
+	{
+		UObject* Strategy = NewObject<UObject>(this, FoundRow->UseFunction);
+
+		IUsable::Execute_Use(Strategy, GetOwner());
+	}
+	*/
 }
 
 void UADInventoryComponent::TransferSlots(uint8 FromIndex, uint8 ToIndex)

@@ -5,6 +5,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
+#include "GameplayTagContainer.h"
 #include "FADItemDataRow.generated.h"
 
 UENUM(BlueprintType)
@@ -42,9 +43,15 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	EItemType ItemType;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FGameplayTag LeftTag;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FGameplayTag RKeyTag;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TObjectPtr<UTexture2D> Thumbnail;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TObjectPtr<UStaticMesh> Mesh;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TSubclassOf<AActor> SpawnActor;
+	TObjectPtr<USkeletalMesh> SkeletalMesh;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TSubclassOf<UObject> UseFunction;
 };
