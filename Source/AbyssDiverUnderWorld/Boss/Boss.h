@@ -5,6 +5,7 @@
 #include "Character/UnitBase.h"
 #include "Boss.generated.h"
 
+class ATargetPoint;
 class AUnderwaterCharacter;
 
 UCLASS()
@@ -17,10 +18,12 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
-	virtual void Tick(float DeltaSeconds) override;
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 
 #pragma region Method
 public:
+	void SetBossState(EBossState State);
+	
 	/** 데미지를 받을 때 호출하는 함수 */
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 	
@@ -28,19 +31,8 @@ public:
 	virtual void OnDeath();
 	
 	/** 보스를 타겟 방향으로 회전시키는 함수 */
-	virtual void RotationToTarget();
-	
-	/** 보스를 움직이게 하고 Move Animation 재생 */
-	virtual void Move();
-
-	/** 보스의 움직임을 정지하고 Idle Animation 재생 */
-	virtual void MoveStop();
-
-	/** 보스가 감지한 타겟을 추적하는 함수 */
-	virtual void MoveToTarget();
-
-	/** 보스가 마지막으로 감지한 타겟의 위치를 추적하는 함수 */
-	virtual void MoveToLastDetectedLocation();
+	virtual void RotationToTarget(AActor* Target);
+	virtual void RotationToTarget(const FVector& TargetLocation);
 
 	/** 보스의 공격 시 애니메이션 재생*/
 	virtual void Attack();
@@ -50,6 +42,9 @@ public:
 	 * AnimNotify_BossAttack 호출 후 일정 시간 후 호출
 	 */
 	virtual void OnAttackEnded();
+	
+	/** 다음 순찰 지점으로 변환 */ 
+	void AddPatrolPoint();
 
 	/** 보스의 이동속도를 설정하는 함수 */
 	UFUNCTION(BlueprintImplementableEvent)
@@ -63,6 +58,17 @@ public:
 	void OnMeshOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, 
 							UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, 
 							bool bFromSweep, const FHitResult& SweepResult);
+							
+	UFUNCTION()
+	void OnAttackCollisionOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, 
+							UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, 
+							bool bFromSweep, const FHitResult& SweepResult);
+
+	UFUNCTION()
+	void OnAttackCollisionOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
+							UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+
 	
 protected:
 private:
@@ -71,6 +77,9 @@ private:
 
 #pragma region Variable
 public:
+	UPROPERTY()
+	uint8 bIsAttackCollisionOverlappedPlayer : 1;
+	
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UAnimInstance> AnimInstance;
 	
@@ -91,8 +100,14 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Animation")
 	TArray<TObjectPtr<UAnimMontage>> SpecialAttackAnimations;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Collision")
+	TObjectPtr<UCapsuleComponent> AttackCollision;
 	
 protected:
+	UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Boss|PatrolPoints")
+	TArray<TObjectPtr<ATargetPoint>> PatrolPoints;
+	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|Blackboard")
 	TObjectPtr<UBlackboardComponent> BlackboardComponent;
 
@@ -111,8 +126,12 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Attack")
 	TArray<TObjectPtr<AUnderwaterCharacter>> AttackedPlayers;
 
+	UPROPERTY(Replicated, BlueprintReadWrite)
+	EBossState BossState;
+
 private:
 	static const FName BossStateKey;
+	uint8 CurrentPatrolPointIndex = 0;
 	
 #pragma endregion
 
@@ -120,8 +139,14 @@ private:
 public:
 	APawn* GetTarget();
 	void SetTarget(AUnderwaterCharacter* Target);
+	void InitTarget();
 	
 	void SetLastDetectedLocation(const FVector& InLastDetectedLocation);
+
+	AActor* GetTargetPoint();
+	FVector GetTargetPointLocation();
+
+	bool GetIsAttackCollisionOverlappedPlayer();
 
 #pragma endregion
 	
