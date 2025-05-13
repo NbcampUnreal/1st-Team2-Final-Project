@@ -40,7 +40,7 @@ void UStaminaComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 
 void UStaminaComponent::RequestStartSprint()
 {
-	if (GetOwnerRole() == ROLE_AutonomousProxy)
+	if (GetOwnerRole() != ROLE_Authority)
 	{
 		S_StartSprint();
 	}
@@ -52,7 +52,7 @@ void UStaminaComponent::RequestStartSprint()
 
 void UStaminaComponent::RequestStopSprint()
 {
-	if (GetOwnerRole() == ROLE_AutonomousProxy)
+	if (GetOwnerRole() != ROLE_Authority)
 	{
 		S_StopSprint();
 	}
@@ -159,7 +159,7 @@ void UStaminaComponent::StartRegenerateStamina()
 
 void UStaminaComponent::InitStamina(float MaxStamina, float Stamina)
 {
-	if (GetOwnerRole() == ROLE_AutonomousProxy)
+	if (GetOwnerRole() != ROLE_Authority)
 	{
 		return;
 	}
@@ -170,7 +170,7 @@ void UStaminaComponent::InitStamina(float MaxStamina, float Stamina)
 
 void UStaminaComponent::SetMaxStamina(const float NewMaxStamina)
 {
-	if (GetOwnerRole() == ROLE_AutonomousProxy || NewMaxStamina <= 0)
+	if (GetOwnerRole() != ROLE_Authority || NewMaxStamina <= 0)
 	{
 		return;
 	}
