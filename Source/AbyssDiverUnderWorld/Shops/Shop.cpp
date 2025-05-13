@@ -9,6 +9,9 @@
 #include "AbyssDiverUnderWorld.h"
 #include "Character/UnderwaterCharacter.h"
 #include "ShopInteractionComponent.h"
+#include "Framework/ADPlayerState.h"
+#include "Inventory/ADInventoryComponent.h"
+#include "Subsystems/DataTableSubsystem.h"
 
 #include "DataRow/FADItemDataRow.h"
 #include "Net/UnrealNetwork.h"
@@ -138,6 +141,8 @@ AShop::AShop()
 	ItemMeshComponent->SetVisibleInSceneCaptureOnly(true);
 	ItemMeshComponent->SetIsReplicated(false);
 	ItemMeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	InteractableComp = CreateDefaultSubobject<UADInteractableComponent>(TEXT("InteractableComp"));
 }
 
 void AShop::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -158,12 +163,13 @@ void AShop::BeginPlay()
 
 void AShop::Interact_Implementation(AActor* InstigatorActor)
 {
+	LOGV(Error, TEXT("Interaction Start"));
 	if (HasAuthority() == false)
 	{
 		return;
 	}
 
-	AUnderwaterCharacter* InteractingCharacter = Cast<AUnderwaterCharacter>(InstigatorActor);
+	ACharacter* InteractingCharacter = Cast<ACharacter>(InstigatorActor);
 	if (InteractingCharacter == nullptr)
 	{
 		return;
@@ -190,7 +196,7 @@ void AShop::OpenShop(AUnderwaterCharacter* Requester)
 	ShopWidget->AddToViewport();
 
 	APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
-	PC->SetInputMode(FInputModeUIOnly());
+	PC->SetInputMode(FInputModeGameAndUI());
 	PC->SetShowMouseCursor(true);
 }
 
@@ -208,7 +214,7 @@ void AShop::CloseShop(AUnderwaterCharacter* Requester)
 	PC->SetShowMouseCursor(false);
 }
 
-EBuyResult AShop::BuyItem(uint8 ItemId)
+EBuyResult AShop::BuyItem(uint8 ItemId, AUnderwaterCharacter* Buyer)
 {
 	if (HasAuthority() == false)
 	{
@@ -225,14 +231,40 @@ EBuyResult AShop::BuyItem(uint8 ItemId)
 	{
 		return EBuyResult::NotExistItem;
 	}
+	
+	AADPlayerState* PS = Cast<AADPlayerState>(Buyer->GetPlayerState());
+	if (PS == nullptr)
+	{
+		LOGV(Error, TEXT("PS == nullptr"));
+		return EBuyResult::FailedFromOtherReason;
+	}
+
+	FFADItemDataRow* ItemDataRow = GetGameInstance()->GetSubsystem<UDataTableSubsystem>()->GetItemData(ItemId);
+	if (ItemDataRow == nullptr)
+	{
+		LOGV(Error, TEXT("ItemData == nullptr"));
+		return EBuyResult::FailedFromOtherReason;
+	}
+
+	FItemData ItemData;
+	ItemData.Amount = ItemDataRow->Amount;
+	ItemData.Id = ItemDataRow->Id;
+	ItemData.ItemType = ItemDataRow->ItemType;
+	ItemData.Mass = ItemDataRow->Weight;
+	ItemData.Name = ItemDataRow->Name;
+	ItemData.Price = ItemDataRow->Price;
+	ItemData.Quantity = ItemDataRow->Quantity;
+	ItemData.Thumbnail = ItemDataRow->Thumbnail;
+
+	PS->GetInventory()->AddInventoryItem(ItemData);
 
 	// 돈 차감 로직
 	// 인벤토리에 아이템 넣기
-	LOGV(Error, TEXT("Buying Item Succeeded : %s"), *DataTableArray[ItemId]->Name.ToString());
+	LOGV(Error, TEXT("Buying Item Succeeded : %s"), *ItemDataRow->Name.ToString());
 	return EBuyResult::Succeeded;
 }
 
-ESellResult AShop::SellItem(uint8 ItemId, class AUnitBase* Seller)
+ESellResult AShop::SellItem(uint8 ItemId, AUnderwaterCharacter* Seller)
 {
 	if (HasAuthority() == false)
 	{
@@ -307,10 +339,15 @@ void AShop::AddItemToList(uint8 ItemId, EShopCategoryTab TabType)
 		return;
 	}
 
-	FFADItemDataRow*& Data = DataTableArray[ItemId];
+	FFADItemDataRow* ItemDataRow = GetGameInstance()->GetSubsystem<UDataTableSubsystem>()->GetItemData(ItemId);
+	if (ItemDataRow == nullptr)
+	{
+		LOGV(Error, TEXT("ItemData == nullptr"));
+		return;
+	}
 
 	UShopItemEntryData* EntryData = NewObject<UShopItemEntryData>();
-	EntryData->Init(SlotIndex, Data->Thumbnail, Data->Description); // 임시
+	EntryData->Init(SlotIndex, ItemDataRow->Thumbnail, ItemDataRow->Description); // 임시
 	EntryData->OnEntryUpdatedFromDataDelegate.AddUObject(this, &AShop::OnSlotEntryWidgetUpdated);
 
 	ShopWidget->AddItem(EntryData, TabType);
@@ -371,7 +408,7 @@ void AShop::RemoveItemToList(uint8 ItemId, EShopCategoryTab TabType)
 
 void AShop::Interact_Test(AActor* InstigatorActor)
 {
-	Interact(InstigatorActor);
+	InteractableComp->Interact(InstigatorActor);
 }
 
 void AShop::InitShopWidget()
@@ -400,22 +437,6 @@ void AShop::InitShopWidget()
 
 void AShop::InitData()
 {
-	// 아이템 데이터 테이블로부터 아이템 Id 리스트를 통해 데이터 가져와야 함.
-	// 현재 임시 테이블 사용
-	ItemDataTable->GetAllRows<FFADItemDataRow>(TEXT("TestShopItemData"), DataTableArray);
-
-	Algo::Sort(DataTableArray, [](const FFADItemDataRow* A, const FFADItemDataRow* B)
-		{
-			return A->Id < B->Id;
-		});
-
-	ItemMeshDataTable->GetAllRows<FItemMeshDataRow>(TEXT("TestMeshItemData"), MeshDataTableArray);
-
-	Algo::Sort(MeshDataTableArray, [](const FItemMeshDataRow* A, const FItemMeshDataRow* B)
-		{
-			return A->ItemId < B->ItemId;
-		});
-
 	if (HasAuthority() == false)
 	{
 		return;
@@ -447,21 +468,26 @@ void AShop::OnShopItemListChanged(const FShopItemListChangeInfo& Info)
 	}
 
 	UShopItemEntryData* EntryData = nullptr;
-	FFADItemDataRow*& Data = DataTableArray[Info.ItemIdAfter];
+	FFADItemDataRow* ItemDataRow = GetGameInstance()->GetSubsystem<UDataTableSubsystem>()->GetItemData(Info.ItemIdAfter);
+	if (ItemDataRow == nullptr)
+	{
+		LOGV(Error, TEXT("ItemData == nullptr"));
+		return;
+	}
 
 	switch (Info.ChangeType)
 	{
 	case EShopItemChangeType::Added:
 
 		EntryData = NewObject<UShopItemEntryData>();
-		EntryData->Init(Info.ShopIndex, Data->Thumbnail, Data->Description); // 임시
+		EntryData->Init(Info.ShopIndex, ItemDataRow->Thumbnail, ItemDataRow->Description); // 임시
 		EntryData->OnEntryUpdatedFromDataDelegate.AddUObject(this, &AShop::OnSlotEntryWidgetUpdated);
 
-		if (Data->ItemType == EItemType::Consumable)
+		if (ItemDataRow->ItemType == EItemType::Consumable)
 		{
 			ShopWidget->AddItem(EntryData, EShopCategoryTab::Consumable);
 		}
-		else if (Data->ItemType == EItemType::Equipment)
+		else if (ItemDataRow->ItemType == EItemType::Equipment)
 		{
 			ShopWidget->AddItem(EntryData, EShopCategoryTab::Equipment);
 		}
@@ -471,7 +497,7 @@ void AShop::OnShopItemListChanged(const FShopItemListChangeInfo& Info)
 		ShopWidget->RemoveItem(Info.ShopIndex, Info.ShopTab);
 		break;
 	case EShopItemChangeType::Modified:
-		ShopWidget->ModifyItem(Info.ShopIndex, Data->Thumbnail, Data->Description, Info.ShopTab);
+		ShopWidget->ModifyItem(Info.ShopIndex, ItemDataRow->Thumbnail, ItemDataRow->Description, Info.ShopTab);
 		break;
 	case EShopItemChangeType::Max:
 		check(false);
@@ -521,9 +547,16 @@ void AShop::OnSlotEntryClicked(int32 ClickedSlotIndex)
 		return;
 	}
 
-	UStaticMesh* ItemMesh = MeshDataTableArray[ItemId]->ItemMesh;
+	FFADItemDataRow* ItemDataRow = GetGameInstance()->GetSubsystem<UDataTableSubsystem>()->GetItemData(ItemId);
+	if (ItemDataRow == nullptr)
+	{
+		LOGV(Error, TEXT("ItemData == nullptr"));
+		return;
+	}
 
-	ShopWidget->ShowItemInfos(ItemMesh, DataTableArray[ItemId]->Description, DataTableArray[ItemId]->Description);
+	UStaticMesh* ItemMesh = ItemDataRow->Mesh;
+
+	ShopWidget->ShowItemInfos(ItemMesh, ItemDataRow->Description, ItemDataRow->Description);
 	LOG(TEXT("Showing Item Infos..., id : %d"), ItemId);
 	CurrentSelectedItemId = ItemId;
 }
@@ -558,11 +591,6 @@ bool AShop::HasItem(int32 ItemId)
 	bHasItem = bHasItem || (ShopEquipmentItemIdList.Contains(ItemId) != INDEX_NONE);
 
 	return bHasItem;
-}
-
-bool AShop::IsItemMeshCached(int32 ItemId)
-{
-	return CachedMeshList.Contains(ItemId);
 }
 
 UADInteractableComponent* AShop::GetInteractableComponent() const
