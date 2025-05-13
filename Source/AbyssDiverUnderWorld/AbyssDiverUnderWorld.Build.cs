@@ -8,7 +8,25 @@ public class AbyssDiverUnderWorld : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "AIModule", "UMG", "Slate", "SlateCore", "NetCore", "Niagara", "AnimGraphRuntime" });
+		PublicDependencyModuleNames.AddRange(new string[] { 
+            "Core"
+            , "CoreUObject"
+            , "Engine"
+            , "InputCore"
+            , "EnhancedInput"
+            , "AIModule"
+            , "UMG"
+            , "OnlineSubsystem"
+            , "OnlineSubsystemUtils"
+            , "OnlineSubsystemSteam"
+            , "AdvancedSessions"
+            , "AdvancedSteamSessions"
+            , "Slate"
+            , "SlateCore"
+            , "NetCore"
+            , "Niagara"
+            , "AnimGraphRuntime"
+        });
 		
         PublicIncludePaths.AddRange(new string[] { "AbyssDiverUnderWorld" });
 
