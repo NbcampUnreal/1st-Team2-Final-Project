@@ -16,6 +16,11 @@ class ABYSSDIVERUNDERWORLD_API AADPlayerState : public APlayerState
 public:
 	AADPlayerState();
 
+protected:
+
+	virtual void BeginPlay() override;
+	virtual void PostNetInit() override;
+
 #pragma region Variable
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
