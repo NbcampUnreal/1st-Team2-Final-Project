@@ -1,4 +1,4 @@
-#include "Framework/CreateTeamWidget.h"
+﻿#include "Framework/CreateTeamWidget.h"
 #include "Kismet/GameplayStatics.h"
 #include "ADGameInstance.h"
 
@@ -40,10 +40,7 @@ void UCreateTeamWidget::OnPrivateClicked()
 
 void UCreateTeamWidget::OnBackClicked()
 {
-    RemoveFromParent();
-    
     OnBackClickedDelegate.ExecuteIfBound();
-
 }
 
 void UCreateTeamWidget::OnConfirmClicked()

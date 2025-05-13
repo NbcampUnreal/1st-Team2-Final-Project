@@ -1,4 +1,4 @@
-#include "Framework/MainMenuWidget.h"
+﻿#include "Framework/MainMenuWidget.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Blueprint/UserWidget.h"
@@ -32,6 +32,11 @@ void UMainMenuWidget::OnCreateClicked()
 	{
 		CreateTeamWidgetInstance = CreateWidget<UCreateTeamWidget>(GetWorld(), CreateTeamWidgetClass);
 		CreateTeamWidgetInstance->OnBackClickedDelegate.BindUObject(this, &UMainMenuWidget::OnCreateTeamWidgetClosed);
+	}
+	else if (CreateTeamWidgetInstance)
+	{
+		CreateTeamWidgetInstance->RemoveFromParent();
+		CreateTeamWidgetInstance = nullptr;
 	}
 
 	if (CreateTeamWidgetInstance && !CreateTeamWidgetInstance->IsInViewport())
@@ -76,6 +81,13 @@ void UMainMenuWidget::OnQuitClicked()
 
 void UMainMenuWidget::OnCreateTeamWidgetClosed()
 {
+
+	if (CreateTeamWidgetInstance)
+	{
+		CreateTeamWidgetInstance->RemoveFromParent();
+		CreateTeamWidgetInstance = nullptr; 
+	}
+
 	TArray<UWidget*> Widgets;
 	WidgetTree->GetAllWidgets(Widgets);
 
