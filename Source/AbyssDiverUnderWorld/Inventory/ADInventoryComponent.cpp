@@ -203,7 +203,7 @@ void UADInventoryComponent::InventoryUIUpdate()
 	{
 		InventoryUpdateDelegate.Broadcast();
 	}
-	PrintLogInventoryData();
+	//PrintLogInventoryData();
 }
 
 FVector UADInventoryComponent::GetDropLocation()
