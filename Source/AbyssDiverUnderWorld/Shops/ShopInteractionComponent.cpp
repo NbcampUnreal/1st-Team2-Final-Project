@@ -37,7 +37,7 @@ void UShopInteractionComponent::S_RequestBuyItem_Implementation(uint8 ItemId)
 		return;
 	}
 
-	CurrentInteractingShop->BuyItem(ItemId);
+	CurrentInteractingShop->BuyItem(ItemId, Cast<AUnderwaterCharacter>(GetOwner()));
 }
 
 AShop* UShopInteractionComponent::GetCurrentInteractingShop() const

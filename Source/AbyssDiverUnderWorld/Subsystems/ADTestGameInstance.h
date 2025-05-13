@@ -25,7 +25,7 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "ADTestGameInstance", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.DropEntry"))
 	TObjectPtr<UDataTable> OreDropTable;
 
-	UPROPERTY(EditDefaultsOnly, Category = "ADTestGameInstance", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.ADUpgradeDataRow"))
+	UPROPERTY(EditDefaultsOnly, Category = "ADTestGameInstance", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.UpgradeDataRow"))
 	TObjectPtr<UDataTable> UpgradeDataTable;
 
 #pragma endregion
