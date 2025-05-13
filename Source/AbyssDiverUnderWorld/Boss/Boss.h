@@ -5,6 +5,7 @@
 #include "Character/UnitBase.h"
 #include "Boss.generated.h"
 
+class UCameraControllerComponent;
 class ATargetPoint;
 class AUnderwaterCharacter;
 
@@ -105,6 +106,9 @@ public:
 	TObjectPtr<UCapsuleComponent> AttackCollision;
 	
 protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Camera")
+	TObjectPtr<UCameraControllerComponent> CameraControllerComponent;
+	
 	UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Boss|PatrolPoints")
 	TArray<TObjectPtr<ATargetPoint>> PatrolPoints;
 	
@@ -147,6 +151,8 @@ public:
 	FVector GetTargetPointLocation();
 
 	bool GetIsAttackCollisionOverlappedPlayer();
+
+	UCameraControllerComponent* GetCameraControllerComponent() const;
 
 #pragma endregion
 	
