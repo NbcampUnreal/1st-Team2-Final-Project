@@ -1,7 +1,7 @@
 #include "Subsystems/DataTableSubsystem.h"
 
 #include "AbyssDiverUnderWorld.h"
-#include "Subsystems/ADTestGameInstance.h"
+#include "Framework/ADGameInstance.h"
 #include "DataRow/UpgradeDataRow.h"
 #include "DataRow/FADItemDataRow.h"
 #include "Interactable/Item/ADOreRock.h"
@@ -12,7 +12,7 @@ void UDataTableSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 
-	UADTestGameInstance* GI = CastChecked<UADTestGameInstance>(GetGameInstance());
+	UADGameInstance* GI = CastChecked<UADGameInstance>(GetGameInstance());
 	//ItemDataTable->GetAllRows<FFADItemDataRow>(TEXT("TestShopItemData"), DataTableArray);
 	if (UDataTable* ItemDataTable = GI->ItemDataTable)
 	{
@@ -66,7 +66,7 @@ FUpgradeDataRow* UDataTableSubsystem::GetUpgradeData(EUpgradeType UpgradeType, u
 	return UpgradeTableMap.FindRef(TPair<EUpgradeType, uint8>(UpgradeType, Grade));
 }
 
-void UDataTableSubsystem::ParseUpgradeDataTable(UADTestGameInstance* GameInstance)
+void UDataTableSubsystem::ParseUpgradeDataTable(UADGameInstance* GameInstance)
 {
 	if (GameInstance == nullptr || GameInstance->UpgradeDataTable == nullptr)
 	{
