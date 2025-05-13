@@ -9,7 +9,7 @@
 #include "ADInventoryComponent.h"
 #include <Kismet/KismetMathLibrary.h>
 #include "DrawDebugHelpers.h"
-#include "Subsystems/ADTestGameInstance.h"
+#include "Framework/ADGameInstance.h"
 #include "Subsystems/DataTableSubsystem.h"
 #include "Framework/ADPlayerState.h"
 
@@ -37,7 +37,7 @@ UADInventoryComponent::UADInventoryComponent() :
 	ConstructorHelpers::FObjectFinder<UDataTable> ItemDataTable(TEXT("/Game/_AbyssDiver/DataTable/DT_Items.DT_Items"));
 	TestItemDataTable = ItemDataTable.Object;
 
-	//if (UADTestGameInstance* GI = Cast<UADTestGameInstance>(GetWorld()->GetGameInstance()))
+	//if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
 	//{
 	//	ItemDataTableSubsystem = GI->GetSubsystem<UDataTableSubsystem>();
 	//}
