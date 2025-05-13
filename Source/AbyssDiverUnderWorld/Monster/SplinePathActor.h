@@ -26,7 +26,7 @@ protected:
 #pragma region Getter, Setter
 public:
 	UFUNCTION(BlueprintCallable)
-	USplineComponent* GetSplineComponent() const { return SplineComponent; }
+	FORCEINLINE USplineComponent* GetSplineComponent() const { return SplineComponent; }
 
 #pragma endregion
 };

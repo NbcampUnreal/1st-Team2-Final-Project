@@ -5,6 +5,7 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Character/UnderwaterCharacter.h"
 #include "AbyssDiverUnderWorld.h"
+#include "GenericTeamAgentInterface.h"
 
 AMonsterAIController::AMonsterAIController()
 {
@@ -17,9 +18,11 @@ AMonsterAIController::AMonsterAIController()
 	SightConfig->DetectionByAffiliation.bDetectEnemies = true;
 	SightConfig->DetectionByAffiliation.bDetectFriendlies = false;
 	SightConfig->DetectionByAffiliation.bDetectNeutrals = false;
+	SetGenericTeamId(FGenericTeamId(1)); // Team 1 = Monster, Team 2 = Player
 
 	AIPerceptionComponent->ConfigureSense(*SightConfig);
 	AIPerceptionComponent->SetDominantSense(SightConfig->GetSenseImplementation());
+	
 }
 
 void AMonsterAIController::BeginPlay()
@@ -101,7 +104,8 @@ void AMonsterAIController::HandleForgetPlayer()
 
 void AMonsterAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
-	if (Actor->IsA(AUnderwaterCharacter::StaticClass()))
+	LOG(TEXT("OnTargetPerceptionUpdated is Triggerd"));
+	if (Actor->IsA(ACharacter::StaticClass()))
 	{
 		BlackboardComponent = GetBlackboardComponent();
 

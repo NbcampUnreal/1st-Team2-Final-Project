@@ -38,5 +38,4 @@ protected:
 	TObjectPtr<ASplinePathActor> AssignedSplineActor;
 
 #pragma endregion
-
 };

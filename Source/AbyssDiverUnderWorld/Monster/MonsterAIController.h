@@ -67,8 +67,8 @@ private:
 
 #pragma region Getter, Setter
 public:
-	float GetForgetDuration();
-	void SetForgetDuration(float Duration);
+	FORCEINLINE float GetForgetDuration();
+	FORCEINLINE void SetForgetDuration(float Duration);
 
 #pragma endregion
 };
