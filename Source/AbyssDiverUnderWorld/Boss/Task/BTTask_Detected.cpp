@@ -23,6 +23,7 @@ EBTNodeResult::Type UBTTask_Detected::ExecuteTask(UBehaviorTreeComponent& OwnerC
 
 	// 보스의 움직임을 멈춘 후 Detected 애니메이션 재생
 	AIController->StopMovement();
+	AIController->SetVisionAngle(AIController->ChasingVisionAngle);
 	Boss->M_PlayAnimation(Boss->DetectedAnimation);
 
 	// TickTask로 전이
