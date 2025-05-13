@@ -5,6 +5,7 @@
 #include "Character/StatComponent.h"
 #include "Character/UnderwaterCharacter.h"
 #include "Components/CapsuleComponent.h"
+#include "Effect/CameraControllerComponent.h"
 #include "Engine/DamageEvents.h"
 #include "Engine/TargetPoint.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -33,6 +34,8 @@ ABoss::ABoss()
 	AttackCollision->SetCapsuleRadius(80.0f);
 	AttackCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	AttackCollision->ComponentTags.Add(TEXT("Attack Collision"));
+
+	CameraControllerComponent = CreateDefaultSubobject<UCameraControllerComponent>("Camera Controller Component");
 	
 	bReplicates = true;
 }
@@ -40,8 +43,6 @@ ABoss::ABoss()
 void ABoss::BeginPlay()
 {
 	Super::BeginPlay();
-
-	LOGN(TEXT("[Boss] %s"), *GetName());
 	
 	AnimInstance = GetMesh()->GetAnimInstance();
 
@@ -203,6 +204,9 @@ void ABoss::OnMeshOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* Othe
 	// 해당 플레이어에게 데미지 적용
 	UGameplayStatics::ApplyDamage(Player, StatComponent->AttackPower, GetController(), this, UDamageType::StaticClass());
 
+	// 피격당한 플레이어의 카메라 Shake
+	CameraControllerComponent->ShakePlayerCamera(Player);
+	
 	// 플레이어를 밀치는 로직
 	const FVector PushDirection = (Player->GetActorLocation() - GetActorLocation()).GetSafeNormal();
 	const float PushStrength = 1000.0f; // 밀치는 힘의 크기 -> 변수화 필요할 것 같은데 일단 고민
@@ -243,7 +247,7 @@ void ABoss::OnAttackCollisionOverlapEnd(UPrimitiveComponent* OverlappedComp, AAc
 	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(OtherActor);
 	if (!IsValid(Player)) return;
 
-	LOG(TEXT("[Attack Collision End] %s"), *Player->GetName());
+	//LOG(TEXT("[Attack Collision End] %s"), *Player->GetName());
 	
 	bIsAttackCollisionOverlappedPlayer = false;
 }
@@ -283,6 +287,11 @@ FVector ABoss::GetTargetPointLocation()
 bool ABoss::GetIsAttackCollisionOverlappedPlayer()
 {
 	return bIsAttackCollisionOverlappedPlayer;
+}
+
+UCameraControllerComponent* ABoss::GetCameraControllerComponent() const
+{
+	return CameraControllerComponent;
 }
 
 AActor* ABoss::GetTargetPoint()
