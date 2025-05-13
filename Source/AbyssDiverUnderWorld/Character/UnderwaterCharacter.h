@@ -34,6 +34,9 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
+	/** IA를 Enhanced Input Component에 연결 */
+	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
+
 #pragma region Method
 
 public:
@@ -44,9 +47,6 @@ public:
 	
 protected:
 	
-	/** IA를 Enhanced Input Component에 연결 */
-	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
-
 	/** 이동 함수. 지상, 수중 상태에 따라 이동한다. */
 	void Move(const FInputActionValue& InputActionValue);
 
@@ -56,6 +56,15 @@ protected:
 	/** 지상 이동 함수 */
 	void MoveGround(FVector MoveInput);
 
+	/** 스프린트 시작 함수. Stamina가 감소하기 시작한다. */
+	void StartSprint(const FInputActionValue& InputActionValue);
+
+	/** 스프린트 종료 함수. Stamina 회복이 시작된다. */
+	void StopSprint(const FInputActionValue& InputActionValue);
+
+	UFUNCTION()
+	void OnSprintStateChanged(bool bNewSprinting);
+	
 	/** 회전 함수. 현재 버전은 Pitch가 제한되어 있다. */
 	void Look(const FInputActionValue& InputActionValue);
 
@@ -92,33 +101,39 @@ private:
 	/** 캐릭터의 현재 상태. 지상 혹은 수중 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	ECharacterState CharacterState;
-		
+
+	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	float SprintSpeed;
+	
 	/** 이동 입력, 3차원 입력을 받는다. 캐릭터의 XYZ 축대로 맵핑을 한다. Forward : X, Right : Y, Up : Z */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> MoveAction;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> SprintAction;
+
 	/** 마우스 회전 입력, 2차원 입력을 받는다. 기본적으로 Y축을 반전해서 들어온다. Right : X, Up : -Y */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> LookAction;
 
 	/** 발사 입력 */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> FireAction;
 
 	/** 조준 입력 */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> AimAction;
 
 	/** 상호작용 입력 */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> InteractionAction;
 
 	/** 라이트 입력 */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> LightAction;
 
 	/** 레이더 입력 */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> RadarAction;
 
 	/** 게임에 사용될 1인칭 Camera Component */
@@ -137,6 +152,9 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UOxygenComponent> OxygenComponent;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UStaminaComponent> StaminaComponent;
+	
 	/** 상호작용 실행하게 하는 Component */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UADInteractionComponent> InteractionComponent;
@@ -144,7 +162,7 @@ private:
 	/** Shop의 Interaction을 실행할 Component */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UShopInteractionComponent> ShopInteractionComponent;
-	
+
 #pragma endregion
 
 #pragma region Getter Setter
@@ -158,6 +176,7 @@ public:
 
 	/** 캐릭터의 상태를 반환 */
 	FORCEINLINE ECharacterState GetCharacterState() const { return CharacterState; }
-	
+
+	FORCEINLINE bool IsSprinting() const;
 #pragma endregion
 };
