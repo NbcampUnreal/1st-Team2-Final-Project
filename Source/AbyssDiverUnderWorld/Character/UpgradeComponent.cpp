@@ -7,6 +7,10 @@
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 #include "Subsystems/DataTableSubsystem.h"
+#include "Framework/ADPlayerState.h"
+#include "Character/UnderwaterCharacter.h"
+#include "Shops/ShopInteractionComponent.h"
+#include "Shops/Shop.h"
 
 // Sets default values for this component's properties
 UUpgradeComponent::UUpgradeComponent()
@@ -49,10 +53,57 @@ void UUpgradeComponent::GetLifetimeReplicatedProps(TArray<class FLifetimePropert
 	DOREPLIFETIME(UUpgradeComponent, UpgradeGradeMap);
 }
 
+void UUpgradeComponent::S_RequestUpgrade_Implementation(EUpgradeType UpgradeType)
+{
+	bool bIsSucceeded = Upgrade(UpgradeType);
+	if (bIsSucceeded)
+	{
+		OnRep_UpgradeGradeMap();
+	}
+}
+
+void UUpgradeComponent::OnRep_UpgradeGradeMap()
+{
+	AADPlayerState* PS = Cast<AADPlayerState>(GetOwner());
+	if (PS == nullptr)
+	{
+		LOGV(Error, TEXT("PS == nullptr"));
+		return;
+	}
+
+	if (PS->GetPlayerController()->IsLocalController() == false)
+	{
+		return;
+	}
+
+	AUnderwaterCharacter* PlayerCharacter = Cast<AUnderwaterCharacter>(PS->GetPlayerController()->GetPawn());
+	if (PlayerCharacter == nullptr)
+	{
+		LOGV(Error, TEXT("PlayerCharacter == nullptr"));
+		return;
+	}
+
+	UShopInteractionComponent* ShopInteractionComp = PlayerCharacter->GetShopInteractionComponent();
+	if (ShopInteractionComp == nullptr)
+	{
+		LOGV(Error, TEXT("ShopInteractionComp == nullptr"));
+		return;
+	}
+
+	AShop* Shop = ShopInteractionComp->GetCurrentInteractingShop();
+	if (Shop == nullptr)
+	{
+		LOGV(Error, TEXT("Shop == nullptr"));
+		return;
+	}
+
+	Shop->InitUpgradeView();
+}
+
 uint8 UUpgradeComponent::GetCurrentGrade(EUpgradeType UpgradeType) const
 {
 	const int32 Index = static_cast<int32>(UpgradeType);
-	return UpgradeGradeMap.IsValidIndex(Index) ? UpgradeGradeMap[Index] : -1;
+	return UpgradeGradeMap.IsValidIndex(Index) ? UpgradeGradeMap[Index] : 0;
 }
 
 bool UUpgradeComponent::Upgrade(EUpgradeType UpgradeType)
