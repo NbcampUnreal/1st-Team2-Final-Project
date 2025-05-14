@@ -6,7 +6,7 @@
 UAnimNotify_BossAttack::UAnimNotify_BossAttack()
 {
 	AttackInterval = 0.2f;
-	IsMeshCollision = false;
+	bIsMeshCollision = false;
 }
 
 void UAnimNotify_BossAttack::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation,
@@ -18,7 +18,7 @@ void UAnimNotify_BossAttack::Notify(USkeletalMeshComponent* MeshComp, UAnimSeque
 	if (!IsValid(Boss)) return;
 
 	// 메시 콜리전 가져오기
-	if (IsMeshCollision)
+	if (bIsMeshCollision)
 	{
 		Boss->GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 
