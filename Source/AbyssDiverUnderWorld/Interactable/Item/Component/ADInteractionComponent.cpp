@@ -20,6 +20,19 @@ void UADInteractionComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (APawn* Pawn = Cast<APawn>(GetOwner()))
+	{
+		if (APlayerController* PC = Cast<APlayerController>(Pawn->GetController()))
+		{
+			/** 로컬 플레이어가 아니면 하이라이트 계산 자체를 끈다 */
+			if (!PC->IsLocalController())
+			{
+				PrimaryComponentTick.SetTickFunctionEnable(false);
+				return;                     // 밑의 스피어도 만들 필요 없음
+			}
+		}
+	}
+
 	// 런타임 전용으로 생성
 	RangeSphere = NewObject<USphereComponent>(GetOwner(), TEXT("InteractionRange"));
 	RangeSphere->AttachToComponent(
@@ -134,6 +147,7 @@ void UADInteractionComponent::TryInteract()
 
 void UADInteractionComponent::PerformFocusCheck()
 {
+	if (!IsLocallyControlled()) return;
 	if (NearbyInteractables.Num() == 0) return;
 
 	FVector CamLocation;
@@ -186,6 +200,7 @@ UADInteractableComponent* UADInteractionComponent::PerformLineTrace(const FVecto
 
 void UADInteractionComponent::UpdateFocus(UADInteractableComponent* NewFocus)
 {
+	if (!IsLocallyControlled()) return;
 	if (NewFocus == FocusedInteractable) return;
 
 	if (FocusedInteractable)
@@ -204,6 +219,7 @@ void UADInteractionComponent::UpdateFocus(UADInteractableComponent* NewFocus)
 
 void UADInteractionComponent::ClearFocus()
 {
+	if (!IsLocallyControlled()) return;
 	if (FocusedInteractable)
 	{
 		FocusedInteractable->SetHighLight(false);
@@ -269,5 +285,13 @@ bool UADInteractionComponent::ShouldHighlight(const UADInteractableComponent* AD
 	if (!ADIC) return false;
 	AActor* TargetActor = ADIC->GetOwner();
 	return IIADInteractable::Execute_CanHighlight(TargetActor);
+}
+
+bool UADInteractionComponent::IsLocallyControlled() const
+{
+	if (const APawn* P = Cast<APawn>(GetOwner()))
+		if (const AController* C = P->GetController())
+			return C->IsLocalController();
+	return false;
 }
 
