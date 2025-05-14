@@ -4,6 +4,7 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Boss/Boss.h"
 #include "Boss/EBossState.h"
+#include "Character/UnderwaterCharacter.h"
 #include "Navigation/PathFollowingComponent.h"
 
 const FName UBTTask_BossChasing::BossStateKey = "BossState";
