@@ -10,18 +10,6 @@
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnShopItemListChangedDelegate, const FShopItemListChangeInfo&);
 
-USTRUCT()
-struct FItemMeshDataRow : public FTableRowBase
-{
-	GENERATED_BODY()
-
-	UPROPERTY(EditDefaultsOnly)
-	uint8 ItemId;
-
-	UPROPERTY(EditDefaultsOnly)
-	TObjectPtr<UStaticMesh> ItemMesh;
-};
-
 #pragma region Enums
 
 enum class EBuyResult
@@ -94,7 +82,7 @@ struct FShopItemId : public FFastArraySerializerItem
 	GENERATED_BODY()
 
 	UPROPERTY()
-	uint8 Id;
+	uint8 Id = 0;
 
 	void PostReplicatedAdd(const FShopItemIdList& InArraySerializer);
 
@@ -209,7 +197,7 @@ private:
 	UFUNCTION()
 	void OnBuyButtonClicked();
 
-	bool HasItem(int32 ItemId);
+	void OnCloseButtonClicked();
 
 #pragma endregion
 
@@ -221,7 +209,7 @@ protected:
 	TObjectPtr<UStaticMeshComponent> ShopMeshComponent;
 
 	UPROPERTY(VisibleAnywhere, Category = "Shop")
-	TObjectPtr<UStaticMeshComponent> ItemMeshComponent;
+	TObjectPtr<USkeletalMeshComponent> ItemMeshComponent;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Shop");
 	TArray<uint8> DefaultConsumableItemIdList; // 블루프린트 노출용
@@ -247,12 +235,15 @@ protected:
 private:
 
 	int32 CurrentSelectedItemId = INDEX_NONE;
+	uint8 bIsOpened : 1;
 
 #pragma endregion
 
 #pragma region Getters, Setters
 
 	virtual UADInteractableComponent* GetInteractableComponent() const override;
+	bool HasItem(int32 ItemId);
+	bool IsOpened() const;
 
 #pragma endregion
 

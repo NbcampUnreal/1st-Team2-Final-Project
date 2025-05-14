@@ -34,7 +34,7 @@ public:
 	FUpgradeDataRow* GetUpgradeData(EUpgradeType UpgradeType, uint8 Grade) const;
 	
 private:
-	void ParseUpgradeDataTable(class UADTestGameInstance* GameInstance);
+	void ParseUpgradeDataTable(class UADGameInstance* GameInstance);
 	
 #pragma endregion
 

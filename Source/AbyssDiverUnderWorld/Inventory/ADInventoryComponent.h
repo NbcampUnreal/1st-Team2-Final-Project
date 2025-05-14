@@ -38,9 +38,11 @@ public:
 	bool RemoveInventoryItem(uint8 InventoryIndex, int8 Count, bool bIsDropAction);
 
 	UFUNCTION(BlueprintCallable)
+	void UseInventoryItem(EItemType ItemType = EItemType::Equipment, int32 InventoryIndex = 0);
+
+	UFUNCTION(BlueprintCallable)
 	void TransferSlots(uint8 FromIndex, uint8 ToIndex);
 
-	//*Remove 테스트 후 넣어야 함
 	UFUNCTION(BlueprintCallable)
 	void ToggleInventoryShowed(); //추후 나침반이나 서브미션 UI 추가되었을 때 고려 대상
 	UFUNCTION(BlueprintCallable)
@@ -71,7 +73,7 @@ public:
 	
 private:
 	UPROPERTY(ReplicatedUsing = OnRep_InventoryList)
-	FInventoryList InventoryList;
+	FInventoryList InventoryList; // 실제 아이템 데이터 저장
 	UPROPERTY(Replicated)
 	int32 TotalWeight;
 	UPROPERTY(Replicated)

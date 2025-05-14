@@ -80,7 +80,7 @@ void UInventorySlotWidget::SetItemData(FItemData ItemInfo, int32 Index, UADInven
 	if (!QuantityText && !Image)
 		return;
 	QuantityText->SetText(FText::FromString(FString::Printf(TEXT("%d"), ItemInfo.Quantity)));
-	if (ItemInfo.Quantity == 0)
+	if (ItemInfo.Quantity == 0 || ItemInfo.ItemType == EItemType::Equipment)
 	{
 		QuantityText->SetVisibility(ESlateVisibility::Collapsed);
 	}
