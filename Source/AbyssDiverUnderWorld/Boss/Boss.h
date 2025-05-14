@@ -24,6 +24,7 @@ protected:
 #pragma region Method
 public:
 	void SetBossState(EBossState State);
+	void LaunchPlayer(AUnderwaterCharacter* Player);
 	
 	/** 데미지를 받을 때 호출하는 함수 */
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
@@ -52,11 +53,16 @@ public:
 	void SetMoveSpeed(float Speed);
 	
 	UFUNCTION(NetMulticast, Reliable)
-	void M_PlayAnimation(UAnimMontage* AnimMontage, float InPlayRate = 1, FName StartSectionName = NAME_None);
-	void M_PlayAnimation_Implementation(UAnimMontage* AnimMontage, float InPlayRate = 1, FName StartSectionName = NAME_None);
+	virtual void M_PlayAnimation(UAnimMontage* AnimMontage, float InPlayRate = 1, FName StartSectionName = NAME_None);
+	virtual void M_PlayAnimation_Implementation(UAnimMontage* AnimMontage, float InPlayRate = 1, FName StartSectionName = NAME_None);
 
 	UFUNCTION()
 	void OnMeshOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, 
+							UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, 
+							bool bFromSweep, const FHitResult& SweepResult);
+
+	UFUNCTION()
+	void OnBiteCollisionOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, 
 							UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, 
 							bool bFromSweep, const FHitResult& SweepResult);
 							
@@ -136,12 +142,13 @@ protected:
 private:
 	static const FName BossStateKey;
 	uint8 CurrentPatrolPointIndex = 0;
+	uint8 bIsBiteAttackSuccess : 1;
 	
 #pragma endregion
 
 #pragma region Getter, Setter
 public:
-	APawn* GetTarget();
+	AUnderwaterCharacter* GetTarget();
 	void SetTarget(AUnderwaterCharacter* Target);
 	void InitTarget();
 	
@@ -153,6 +160,9 @@ public:
 	bool GetIsAttackCollisionOverlappedPlayer();
 
 	UCameraControllerComponent* GetCameraControllerComponent() const;
+
+	FORCEINLINE bool GetIsBiteAttackSuccess() const { return bIsBiteAttackSuccess; }
+	FORCEINLINE void SetIsBiteAttackFalse() { bIsBiteAttackSuccess = false; }
 
 #pragma endregion
 	

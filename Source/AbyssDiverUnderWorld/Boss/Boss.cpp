@@ -17,8 +17,6 @@ const FName ABoss::BossStateKey = "BossState";
 
 ABoss::ABoss()
 {
-	PrimaryActorTick.bCanEverTick = true;
-
 	bIsAttackCollisionOverlappedPlayer = false;
 	BlackboardComponent = nullptr;
 	AIController = nullptr;
@@ -38,6 +36,8 @@ ABoss::ABoss()
 	CameraControllerComponent = CreateDefaultSubobject<UCameraControllerComponent>("Camera Controller Component");
 	
 	bReplicates = true;
+
+	bIsBiteAttackSuccess = false;
 }
 
 void ABoss::BeginPlay()
@@ -70,6 +70,27 @@ void ABoss::SetBossState(EBossState State)
 
 	BossState = State;
 	BlackboardComponent->SetValueAsEnum(BossStateKey, static_cast<uint8>(BossState));
+}
+
+void ABoss::LaunchPlayer(AUnderwaterCharacter* Player)
+{
+	// 플레이어를 밀치는 로직
+	const FVector PushDirection = (Player->GetActorLocation() - GetActorLocation()).GetSafeNormal();
+	const float PushStrength = 1000.0f; // 밀치는 힘의 크기 -> 변수화 필요할 것 같은데 일단 고민
+	const FVector PushForce = PushDirection * PushStrength;
+	
+	// 물리 시뮬레이션이 아닌 경우 LaunchCharacter 사용
+	Player->LaunchCharacter(PushForce, false, false);
+
+	// 0.5초 후 캐릭터의 원래 움직임 복구
+	FTimerHandle TimerHandle;
+	GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this, Player]()
+	{
+		if (IsValid(Player))
+		{
+			Player->GetCharacterMovement()->SetMovementMode(MOVE_Swimming);	
+		}
+	}, 0.5f, false);
 }
 
 float ABoss::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator,
@@ -185,6 +206,7 @@ void ABoss::AddPatrolPoint()
 
 void ABoss::M_PlayAnimation_Implementation(class UAnimMontage* AnimMontage, float InPlayRate, FName StartSectionName)
 {
+	LOGN(TEXT("Begin"));
 	PlayAnimMontage(AnimMontage, InPlayRate, StartSectionName);
 }
 
@@ -206,30 +228,37 @@ void ABoss::OnMeshOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* Othe
 
 	// 피격당한 플레이어의 카메라 Shake
 	CameraControllerComponent->ShakePlayerCamera(Player);
-	
-	// 플레이어를 밀치는 로직
-	const FVector PushDirection = (Player->GetActorLocation() - GetActorLocation()).GetSafeNormal();
-	const float PushStrength = 1000.0f; // 밀치는 힘의 크기 -> 변수화 필요할 것 같은데 일단 고민
-	const FVector PushForce = PushDirection * PushStrength;
-	
-	// 물리 시뮬레이션이 아닌 경우 LaunchCharacter 사용
-	Player->LaunchCharacter(PushForce, false, false);
 
-	// 0.5초 후 캐릭터의 원래 움직임 복구
-	FTimerHandle TimerHandle;
-	GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this, Player]()
-	{
-		if (IsValid(Player))
-		{
-			Player->GetCharacterMovement()->SetMovementMode(MOVE_Swimming);	
-		}
-	}, 0.5f, false);
+	// 캐릭터 넉백
+	LaunchPlayer(Player);
 	
 	//LOGN(TEXT("[Attack] %s"), *Player->GetName());
 }
 
-void ABoss::OnAttackCollisionOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
+void ABoss::OnBiteCollisionOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	// 이미 Bite 한 대상이 있는 경우 얼리 리턴
+	if (bIsBiteAttackSuccess) return;
+	
+	// 공격 대상이 플레이어가 아닌 경우 얼리 리턴
+	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(OtherActor);
+	if (!IsValid(Player)) return;
+
+	// Bite 상태 변수 활성화 
+	bIsBiteAttackSuccess = true;
+
+	// 타겟 설정
+	SetTarget(Player);
+	Player->StartCaptureState();
+	
+	LOGN(TEXT("[Bite Success] %s"), *Player->GetName());
+
+	//@TODO: 캐릭터를 비활성화 하는 함수 호출
+}
+
+void ABoss::OnAttackCollisionOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
+                                          UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	// 공격 대상이 플레이어가 아닌 경우 얼리 리턴
 	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(OtherActor);
@@ -253,7 +282,7 @@ void ABoss::OnAttackCollisionOverlapEnd(UPrimitiveComponent* OverlappedComp, AAc
 }
 
 #pragma region Getter, Setter
-APawn* ABoss::GetTarget()
+AUnderwaterCharacter* ABoss::GetTarget()
 {
 	if (!IsValid(TargetPlayer)) return nullptr;
 	
