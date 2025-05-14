@@ -15,6 +15,13 @@ public:
 public:
 	virtual void BeginPlay() override;
 
+public:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Animation")
+	TObjectPtr<UAnimMontage> AppearAnimation;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Animation")
+	TObjectPtr<UAnimMontage> DisappearAnimation;
+	
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Mesh")
 	TObjectPtr<USkeletalMeshComponent> LowerBodyMesh;
