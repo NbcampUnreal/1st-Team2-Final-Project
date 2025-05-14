@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
@@ -35,7 +35,7 @@ protected:
 
 #pragma region Method
 public:
-	// ¼­¹ö RPC
+	// ì„œë²„ RPC
 	UFUNCTION(Server, Reliable)
 	void S_LeftClick();
 	void S_LeftClick_Implementation();
@@ -45,7 +45,7 @@ public:
 	UFUNCTION()
 	void OnRep_Amount();
 
-	// ³»ºÎ ½ÇÇà ÇÔ¼ö
+	// ë‚´ë¶€ ì‹¤í–‰ í•¨ìˆ˜
 	UFUNCTION(BlueprintCallable)
 	void FireHarpoon();
 	void ToggleBoost();

@@ -11,6 +11,7 @@ UADInteractionComponent::UADInteractionComponent()
 	SetIsReplicatedByDefault(true);
 	PrimaryComponentTick.bCanEverTick = true;
 	PrimaryComponentTick.bStartWithTickEnabled = false;
+	bHoldTriggered = false;
 }
 
 

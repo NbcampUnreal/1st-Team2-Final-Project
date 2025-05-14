@@ -82,7 +82,7 @@ public:
     UPROPERTY(EditAnywhere)
     float HoldThreshold = 3.f;
     FTimerHandle HoldTimerHandle;
-    bool bHoldTriggered = false;
+    uint8 bHoldTriggered : 1;
     TWeakObjectPtr<AActor> HoldInstigator;
 
 

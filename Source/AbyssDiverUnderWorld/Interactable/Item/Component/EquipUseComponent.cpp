@@ -1,4 +1,4 @@
-#include "Interactable/Item/Component/EquipUseComponent.h"
+ï»¿#include "Interactable/Item/Component/EquipUseComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "GameFrameWork/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -21,7 +21,7 @@ UEquipUseComponent::UEquipUseComponent()
 	DrainPerSecond = 50.f;
 	bBoostActive = false;
 
-	// Å×½ºÆ®¿ë
+	// í…ŒìŠ¤íŠ¸ìš©
 	if (ACharacter* Char = Cast<ACharacter>(GetOwner()))
 	{
 		OwningCharacter = Char;
@@ -54,7 +54,7 @@ void UEquipUseComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAc
 		Amount = FMath::Max(0, Amount - FMath::RoundToInt(DrainPerSecond * DeltaTime));
 		if (Amount == 0)
 		{
-			ToggleBoost(); // º£ÅÍ¸® °í°¥ -> ÀÚµ¿ ÇØÁ¦
+			ToggleBoost(); // ë² í„°ë¦¬ ê³ ê°ˆ -> ìë™ í•´ì œ
 		}
 	}
 }
@@ -71,7 +71,7 @@ void UEquipUseComponent::S_RKey_Implementation()
 
 void UEquipUseComponent::OnRep_Amount()
 {
-	// HUD ¾÷µ¥ÀÌÆ® ºê·ÎµåÄ³½ºÆ®
+	// HUD ì—…ë°ì´íŠ¸ ë¸Œë¡œë“œìºìŠ¤íŠ¸
 }
 
 void UEquipUseComponent::Initialize(const FFADItemDataRow& InItemMeta)
@@ -134,13 +134,12 @@ void UEquipUseComponent::FireHarpoon()
 	if (Amount <= 0 || !ProjectileClass || !OwningCharacter.IsValid())
 		return;
 
-	/* 1. Ä«¸Ş¶ó À§Ä¡¡¤È¸Àü(Á¶ÁØ ¹æÇâ) */
 	FVector   CamLoc = FVector::ZeroVector;;
 	FRotator  CamRot = FRotator::ZeroRotator;;
 	if (AController* PC = OwningCharacter->GetController())
 	{
 		LOG(TEXT("Is PlayerController"));
-		PC->GetPlayerViewPoint(CamLoc, CamRot);       // FPS Ä«¸Ş¶ó ½ÃÁ¡
+		PC->GetPlayerViewPoint(CamLoc, CamRot);     
 	}
 	else { return; }
 
@@ -155,9 +154,9 @@ void UEquipUseComponent::FireHarpoon()
 		}
 	}
 	const FRotator SpawnRot = CamRot;
-	const FVector LaunchDir = SpawnRot.Vector();        // Ä«¸Ş¶ó Á¤¸é ´ÜÀ§º¤ÅÍ
+	const FVector LaunchDir = SpawnRot.Vector();       
 
-	/* 4. ¹ß»çÃ¼ ½ºÆù */
+
 	FActorSpawnParameters Params;
 	Params.Owner = GetOwner();
 	Params.Instigator = OwningCharacter.Get();
@@ -174,11 +173,11 @@ void UEquipUseComponent::FireHarpoon()
 			? ProjectileMovementComp->InitialSpeed
 			: 3000.f;
 
-		ProjectileMovementComp->Velocity = LaunchDir * Speed;      // ¡ç ÇÙ½É
+		ProjectileMovementComp->Velocity = LaunchDir * Speed;      
 		ProjectileMovementComp->Activate(true);
 
 		--Amount;
-		OnRep_Amount();          // HUD µ¿±âÈ­
+		OnRep_Amount(); 
 	}
 }
 
@@ -203,7 +202,7 @@ void UEquipUseComponent::ToggleBoost()
 
 void UEquipUseComponent::ToggleNightVision()
 {
-	// TODO : Æ÷½ºÆ® ÇÁ·Î¼¼½º ¸ÅÅÂ¸®¾ó ÆÄ¶ó¹ÌÅÍ Åä±ÛÇØ¼­ ±¸Çö??
+	// TODO : í¬ìŠ¤íŠ¸ í”„ë¡œì„¸ìŠ¤ ë§¤íƒœë¦¬ì–¼ íŒŒë¼ë¯¸í„° í† ê¸€í•´ì„œ êµ¬í˜„??
 	bNightVisionOn = !bNightVisionOn;
 }
 
@@ -215,7 +214,7 @@ void UEquipUseComponent::StartReload()
 
 void UEquipUseComponent::OpenChargeWidget()
 {
-	//TODO ÇÇÀÚÇü UI »ı¼ºÇÏ°í ¸¸µé±â
+	//TODO í”¼ìí˜• UI ìƒì„±í•˜ê³  ë§Œë“¤ê¸°
 
 }
 
