@@ -25,7 +25,7 @@ protected:
 	float AttackInterval;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	uint8 IsMeshCollision : 1;
+	uint8 bIsMeshCollision : 1;
 
 private:
 	FTimerHandle AttackTimer;
