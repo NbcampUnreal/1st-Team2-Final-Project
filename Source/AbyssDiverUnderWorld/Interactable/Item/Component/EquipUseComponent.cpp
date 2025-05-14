@@ -50,14 +50,14 @@ void UEquipUseComponent::BeginPlay()
 	// Night Vision
 	if (UMaterialInterface* Base = NVGMaterial.LoadSynchronous())
 	{
-		NVGMID = UMaterialInstanceDynamic::Create(Base, this);
-		NVGMID->SetScalarParameterValue("NightBlend", 0.f);
+		NightVisionMaterialInstance = UMaterialInstanceDynamic::Create(Base, this);
+		NightVisionMaterialInstance->SetScalarParameterValue("NightBlend", 0.f);
 	}
 	
 
 	CameraComp = OwningCharacter->FindComponentByClass<UCameraComponent>();
 	if (!CameraComp) return;
-	CameraComp->PostProcessSettings.WeightedBlendables.Array.Add(FWeightedBlendable(1.f, NVGMID));
+	CameraComp->PostProcessSettings.WeightedBlendables.Array.Add(FWeightedBlendable(1.f, NightVisionMaterialInstance));
 	OriginalPPSettings = CameraComp->PostProcessSettings;
 }
 
@@ -101,7 +101,7 @@ void UEquipUseComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAc
 			if (bNightVisionOn)
 			{
 				bNightVisionOn = false;
-				NVGMID->SetScalarParameterValue(TEXT("NightBlend"), 0.f);
+				NightVisionMaterialInstance->SetScalarParameterValue(TEXT("NightBlend"), 0.f);
 			}
 		}
 	}
@@ -263,12 +263,12 @@ void UEquipUseComponent::ToggleBoost()
 
 void UEquipUseComponent::ToggleNightVision()
 {
-	if (!NVGMID || !CameraComp) return;
+	if (!NightVisionMaterialInstance || !CameraComp) return;
 	if (Amount <= 0 || bBoostActive) return;
 	
 	bNightVisionOn = !bNightVisionOn;
 	const float Target = bNightVisionOn ? 1.f : 0.f;
-	NVGMID->SetScalarParameterValue("NightBlend", Target);
+	NightVisionMaterialInstance->SetScalarParameterValue("NightBlend", Target);
 
 	const bool bStillNeed = bBoostActive || bNightVisionOn || IsInterpolating();
 	SetComponentTickEnabled(bStillNeed);

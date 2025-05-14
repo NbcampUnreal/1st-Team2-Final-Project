@@ -94,7 +94,7 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "NightVision")
 	float ExposureBias = 1.5f;
 	UPROPERTY()
-	TObjectPtr<UMaterialInstanceDynamic> NVGMID = nullptr;
+	TObjectPtr<UMaterialInstanceDynamic> NightVisionMaterialInstance = nullptr;
 	UPROPERTY()
 	TObjectPtr<UUserWidget> ChargeWidget = nullptr;
 	UPROPERTY(EditAnywhere, Category = "Projectile")
