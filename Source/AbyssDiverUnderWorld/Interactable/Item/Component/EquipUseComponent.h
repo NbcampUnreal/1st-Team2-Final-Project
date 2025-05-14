@@ -48,6 +48,7 @@ public:
 	// 내부 실행 함수
 	UFUNCTION(BlueprintCallable)
 	void FireHarpoon();
+	UFUNCTION(BlueprintCallable)
 	void ToggleBoost();
 	void ToggleNightVision();
 	void StartReload();
@@ -65,17 +66,23 @@ protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 private:
+	// 보간 완료 확인 함수
+	bool IsInterpolating() const;
 #pragma endregion
 
 #pragma region Variable
 public:
 	UPROPERTY(ReplicatedUsing = OnRep_Amount, EditAnywhere, BlueprintReadWrite)
 	int32 Amount = 0;
+	UPROPERTY(EditDefaultsOnly, Category = "Boost")
+	float BoostMultiplier = 4.f;
+	UPROPERTY(EditDefaultsOnly, Category = "Boost")
+	float InterpSpeed = 3.f;
 	
 	
 protected:
 	UPROPERTY(EditAnywhere)
-	float DrainPerSecond = 50.f;
+	float DrainPerSecond = 5.f;
 	UPROPERTY()
 	TObjectPtr<UUserWidget> ChargetWidget = nullptr;
 	UPROPERTY(EditAnywhere, Category = "Equip|Projectile")
@@ -91,7 +98,9 @@ protected:
 	EAction RKeyAction;
 
 private:
-
+	float CurrentMultiplier = 1.f;
+	float TargetMultiplier = 1.f;
+	float DrainAcc = 0.f;
 #pragma endregion
 
 #pragma region Getter, Setteer

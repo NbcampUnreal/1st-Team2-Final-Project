@@ -15,10 +15,13 @@
 UEquipUseComponent::UEquipUseComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
+	SetComponentTickEnabled(false);
+
 	SetIsReplicatedByDefault(true);
 
 	Amount = 0;
-	DrainPerSecond = 50.f;
+	DrainPerSecond = 5.f;
+	DrainAcc = 0.f;
 	bBoostActive = false;
 
 	// 테스트용
@@ -35,6 +38,9 @@ void UEquipUseComponent::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	CurrentMultiplier = 1.f;
+	TargetMultiplier = 1.f;
+	DefaultSpeed = OwningCharacter->GetCharacterMovement()->MaxWalkSpeed;
 }
 
 void UEquipUseComponent::EndPlay(const EEndPlayReason::Type Reason)
@@ -48,15 +54,44 @@ void UEquipUseComponent::EndPlay(const EEndPlayReason::Type Reason)
 void UEquipUseComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
 	if (bBoostActive && Amount > 0)
 	{
-		Amount = FMath::Max(0, Amount - FMath::RoundToInt(DrainPerSecond * DeltaTime));
-		if (Amount == 0)
+		DrainAcc += DrainPerSecond * DeltaTime;
+
+		const int32 WholeUnits = FMath::FloorToInt(DrainAcc);
+		if (WholeUnits > 0)
 		{
-			ToggleBoost(); // 베터리 고갈 -> 자동 해제
+			Amount = FMath::Max(0, Amount - WholeUnits);
+			DrainAcc -= WholeUnits;
+			OnRep_Amount();
+
+			if (Amount == 0)
+			{
+				TargetMultiplier = 1.f; 
+				bBoostActive = false;
+			}
 		}
 	}
+	if (IsInterpolating())
+	{
+		// 속도 보간
+		CurrentMultiplier = FMath::FInterpTo(CurrentMultiplier,
+			TargetMultiplier,
+			DeltaTime,
+			InterpSpeed);
+
+		// 속도 적용
+		if (OwningCharacter.IsValid())
+		{
+			UCharacterMovementComponent* Move = OwningCharacter->GetCharacterMovement();
+			Move->MaxWalkSpeed = DefaultSpeed * CurrentMultiplier;
+		}
+	}
+	if (!bBoostActive && !IsInterpolating())
+	{
+		SetComponentTickEnabled(false);
+	}
+		
 }
 
 void UEquipUseComponent::S_LeftClick_Implementation()
@@ -89,11 +124,11 @@ void UEquipUseComponent::Initialize(const FFADItemDataRow& InItemMeta)
 
 EAction UEquipUseComponent::TagToAction(const FGameplayTag& Tag)
 {
-	if (Tag.MatchesTagExact(TAG_EquipUse_Fire))       return EAction::WeaponFire;
-	else if (Tag.MatchesTagExact(TAG_EquipUse_Reload))     return EAction::WeaponReload;
+	if (Tag.MatchesTagExact(TAG_EquipUse_Fire))                 return EAction::WeaponFire;
+	else if (Tag.MatchesTagExact(TAG_EquipUse_Reload))          return EAction::WeaponReload;
 	else if (Tag.MatchesTagExact(TAG_EquipUse_DPVToggle))       return EAction::ToggleBoost;
-	else if (Tag.MatchesTagExact(TAG_EquipUse_NVToggle))   return EAction::ToggleNVGToggle;
-	else if (Tag.MatchesTagExact(TAG_EquipUse_ApplyChargeUI))    return EAction::ApplyChargeUI;
+	else if (Tag.MatchesTagExact(TAG_EquipUse_NVToggle))        return EAction::ToggleNVGToggle;
+	else if (Tag.MatchesTagExact(TAG_EquipUse_ApplyChargeUI))   return EAction::ApplyChargeUI;
 	return EAction::None;
 }
 
@@ -107,7 +142,7 @@ void UEquipUseComponent::HandleLeftClick()
 
 	switch (LeftAction)
 	{
-	case EAction::WeaponFire:     FireHarpoon();       break;
+	case EAction::WeaponFire:      FireHarpoon();       break;
 	case EAction::ToggleBoost:     ToggleBoost();       break;
 	case EAction::ToggleNVGToggle: ToggleNightVision(); break;
 	default:                      break;
@@ -185,19 +220,12 @@ void UEquipUseComponent::ToggleBoost()
 {
 	if (!OwningCharacter.IsValid()) return;
 
-	UCharacterMovementComponent* Move = OwningCharacter->GetCharacterMovement();
-	if (!Move) return;
-
-	if (!bBoostActive)
-	{
-		Move->MaxWalkSpeed *= 2.0f;
-		bBoostActive = true;
-	}
-	else
-	{
-		Move->MaxWalkSpeed = DefaultSpeed;
-		bBoostActive = false;
-	}
+	bBoostActive = !bBoostActive;
+	TargetMultiplier = bBoostActive ? BoostMultiplier : 1.f; // 가속 : 감속
+	
+	// Tick 활성 : 비활성
+	const bool bNeedTick = bBoostActive || IsInterpolating();
+	SetComponentTickEnabled(bNeedTick);
 }
 
 void UEquipUseComponent::ToggleNightVision()
@@ -222,5 +250,10 @@ void UEquipUseComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(UEquipUseComponent, Amount);
+}
+
+bool UEquipUseComponent::IsInterpolating() const
+{
+	return !FMath::IsNearlyEqual(CurrentMultiplier, TargetMultiplier, 0.001f);
 }
 

@@ -200,7 +200,7 @@ UADInteractableComponent* UADInteractionComponent::PerformLineTrace(const FVecto
 
 void UADInteractionComponent::UpdateFocus(UADInteractableComponent* NewFocus)
 {
-	if (!IsLocallyControlled()) return;
+//	if (!IsLocallyControlled()) return;
 	if (NewFocus == FocusedInteractable) return;
 
 	if (FocusedInteractable)
@@ -219,7 +219,7 @@ void UADInteractionComponent::UpdateFocus(UADInteractableComponent* NewFocus)
 
 void UADInteractionComponent::ClearFocus()
 {
-	if (!IsLocallyControlled()) return;
+//	if (!IsLocallyControlled()) return;
 	if (FocusedInteractable)
 	{
 		FocusedInteractable->SetHighLight(false);
