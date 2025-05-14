@@ -71,12 +71,18 @@ void UUpgradeComponent::OnRep_UpgradeGradeMap()
 		return;
 	}
 
-	if (PS->GetPlayerController()->IsLocalController() == false)
+	APlayerController* PC = PS->GetPlayerController();
+	if (PC == nullptr)
 	{
 		return;
 	}
 
-	AUnderwaterCharacter* PlayerCharacter = Cast<AUnderwaterCharacter>(PS->GetPlayerController()->GetPawn());
+	if (PC->IsLocalController() == false)
+	{
+		return;
+	}
+
+	AUnderwaterCharacter* PlayerCharacter = Cast<AUnderwaterCharacter>(PC->GetPawn());
 	if (PlayerCharacter == nullptr)
 	{
 		LOGV(Error, TEXT("PlayerCharacter == nullptr"));
