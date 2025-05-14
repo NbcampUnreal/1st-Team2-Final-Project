@@ -170,7 +170,7 @@ void UShopWidget::RefreshItemView()
 	}
 }
 
-void UShopWidget::ShowItemInfos(UStaticMesh* NewItemMesh, const FString& NewDescription, const FString& NewInfoText)
+void UShopWidget::ShowItemInfos(USkeletalMesh* NewItemMesh, const FString& NewDescription, const FString& NewInfoText)
 {
 	InfoWidget->ShowItemInfos(NewItemMesh, NewDescription, NewInfoText);
 }

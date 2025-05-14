@@ -37,7 +37,7 @@ public:
 	void ShowItemViewForTab(EShopCategoryTab TabType);
 	void RefreshItemView();
 
-	void ShowItemInfos(UStaticMesh* NewItemMesh, const FString& NewDescription, const FString& NewInfoText);
+	void ShowItemInfos(USkeletalMesh* NewItemMesh, const FString& NewDescription, const FString& NewInfoText);
 
 	FOnShopCloseButtonClickedDelegate OnShopCloseButtonClickedDelegate;
 
