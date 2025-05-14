@@ -1,4 +1,4 @@
-#include "Boss/Task/BTTask_BossInvestigate.h"
+#include "Boss/Task/Boss/BTTask_BossInvestigate.h"
 #include "AbyssDiverUnderWorld.h"
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"

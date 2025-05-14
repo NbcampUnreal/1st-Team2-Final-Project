@@ -1,4 +1,4 @@
-#include "Boss/Task/BTTask_ChangeBossState.h"
+#include "Boss/Task/Boss/BTTask_ChangeBossState.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Boss/Boss.h"
 #include "Boss/BossAIController.h"
