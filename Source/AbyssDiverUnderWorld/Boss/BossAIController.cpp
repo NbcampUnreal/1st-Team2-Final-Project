@@ -39,13 +39,16 @@ ABossAIController::ABossAIController()
 	bIsDetectedStatePossible = true;
 	AccumulatedTime = 0.0f;
 	DetectedStateInterval = 20.0f;
+
+	// 시야 감지 가능한 상태로 설정
+	bIsSightDetectionPossible = true;
 }
 
 void ABossAIController::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (IsValid(AIPerceptionComponent))
+	if (IsValid(AIPerceptionComponent) && bIsSightDetectionPossible)
 	{
 		AIPerceptionComponent->OnTargetPerceptionUpdated.AddDynamic(this, &ABossAIController::OnTargetPerceptionUpdated);
 	}

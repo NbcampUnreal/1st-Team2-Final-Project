@@ -1,4 +1,4 @@
-#include "Boss/Task/BTTask_Detected.h"
+#include "Boss/Task/Boss/BTTask_Detected.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Boss/Boss.h"
 #include "Boss/EBossState.h"

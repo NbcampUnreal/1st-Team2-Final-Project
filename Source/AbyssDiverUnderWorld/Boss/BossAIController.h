@@ -80,6 +80,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Radius")
 	float MoveToLocationAcceptanceRadius;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AI|Perception")
+	uint8 bIsSightDetectionPossible : 1;
+
 private:
 	static const FName BossStateKey;
 	uint8 bIsDetectedStatePossible : 1;
