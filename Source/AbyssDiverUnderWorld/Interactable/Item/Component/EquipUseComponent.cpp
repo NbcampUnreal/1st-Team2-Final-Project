@@ -4,6 +4,12 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Projectile/ADProjectileBase.h"
+#include "GameplayTagContainer.h"
+#include "GameplayTags/EquipNativeTags.h"
+#include "AbyssDiverUnderWorld.h"
+#include "GameFramework/ProjectileMovementComponent.h"
+#include "Components/SphereComponent.h"
+#include "Interactable/Item/Component/ADInteractionComponent.h"
 
 // Sets default values for this component's properties
 UEquipUseComponent::UEquipUseComponent()
@@ -14,6 +20,13 @@ UEquipUseComponent::UEquipUseComponent()
 	Amount = 0;
 	DrainPerSecond = 50.f;
 	bBoostActive = false;
+
+	// 테스트용
+	if (ACharacter* Char = Cast<ACharacter>(GetOwner()))
+	{
+		OwningCharacter = Char;
+		DefaultSpeed = Char->GetCharacterMovement()->MaxWalkSpeed;
+	}
 }
 
 
@@ -64,8 +77,8 @@ void UEquipUseComponent::OnRep_Amount()
 void UEquipUseComponent::Initialize(const FFADItemDataRow& InItemMeta)
 {
 	Amount = InItemMeta.Amount;
-	//LeftAction = TagToAction(InItemMeta.LeftClickTag);
-	//RKeyAction = TagToAction(InItemMeta.RKeyTag);
+	LeftAction = TagToAction(InItemMeta.LeftTag);
+	RKeyAction = TagToAction(InItemMeta.RKeyTag);
 
 	if (ACharacter* Char = Cast<ACharacter>(GetOwner()))
 	{
@@ -76,11 +89,11 @@ void UEquipUseComponent::Initialize(const FFADItemDataRow& InItemMeta)
 
 EAction UEquipUseComponent::TagToAction(const FGameplayTag& Tag)
 {
-	//if (Tag.MatchesTagExact(TAG_Weapon_Fire))       return EAction::WeaponFire;
-	//else if (Tag.MatchesTagExact(TAG_Weapon_Reload))     return EAction::WeaponReload;
-	//else if (Tag.MatchesTagExact(TAG_Equip_Boost))       return EAction::ToggleBoost;
-	//else if (Tag.MatchesTagExact(TAG_Equip_NVGToggle))   return EAction::ToggleNVGToggle;
-	//else if (Tag.MatchesTagExact(TAG_Equip_ChargeUI))    return EAction::ApplyChargeUI;
+	if (Tag.MatchesTagExact(TAG_EquipUse_Fire))       return EAction::WeaponFire;
+	else if (Tag.MatchesTagExact(TAG_EquipUse_Reload))     return EAction::WeaponReload;
+	else if (Tag.MatchesTagExact(TAG_EquipUse_DPVToggle))       return EAction::ToggleBoost;
+	else if (Tag.MatchesTagExact(TAG_EquipUse_NVToggle))   return EAction::ToggleNVGToggle;
+	else if (Tag.MatchesTagExact(TAG_EquipUse_ApplyChargeUI))    return EAction::ApplyChargeUI;
 	return EAction::None;
 }
 
@@ -118,31 +131,55 @@ void UEquipUseComponent::HandleRKey()
 
 void UEquipUseComponent::FireHarpoon()
 {
-	if (Amount <= 0 || !ProjectileClass) return;
+	if (Amount <= 0 || !ProjectileClass || !OwningCharacter.IsValid())
+		return;
+
+	/* 1. 카메라 위치·회전(조준 방향) */
+	FVector   CamLoc = FVector::ZeroVector;;
+	FRotator  CamRot = FRotator::ZeroRotator;;
+	if (AController* PC = OwningCharacter->GetController())
+	{
+		LOG(TEXT("Is PlayerController"));
+		PC->GetPlayerViewPoint(CamLoc, CamRot);       // FPS 카메라 시점
+	}
+	else { return; }
 
 	const FName SocketName(TEXT("FireLocationSocket"));
-	FVector Loc;
-	FRotator Rot;
-
-	if (const USkeletalMeshComponent* MeshComp = OwningCharacter->GetMesh())
+	FVector MuzzleLoc = CamLoc + CamRot.Vector() * 30.f;;
+	if (const USkeletalMeshComponent* Mesh = OwningCharacter->GetMesh())
 	{
-		Loc = MeshComp->GetSocketLocation(SocketName);
-		Rot = MeshComp->GetSocketRotation(SocketName);
+		if (Mesh->DoesSocketExist(SocketName))
+		{
+			LOG(TEXT("Is Socket"));
+			MuzzleLoc = Mesh->GetSocketLocation(SocketName);
+		}
 	}
-	else
-	{
-		Loc = GetOwner()->GetActorLocation() + GetOwner()->GetActorForwardVector() * 100.f;
-		Rot = GetOwner()->GetActorRotation();
-	}
+	const FRotator SpawnRot = CamRot;
+	const FVector LaunchDir = SpawnRot.Vector();        // 카메라 정면 단위벡터
 
+	/* 4. 발사체 스폰 */
 	FActorSpawnParameters Params;
-	Params.Instigator = OwningCharacter.Get();
 	Params.Owner = GetOwner();
+	Params.Instigator = OwningCharacter.Get();
+	Params.SpawnCollisionHandlingOverride =
+		ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
-	GetWorld()->SpawnActor<AADProjectileBase>(ProjectileClass, Loc, Rot, Params);
+	AADProjectileBase* Proj = GetWorld()->SpawnActor<AADProjectileBase>(
+		ProjectileClass, MuzzleLoc, SpawnRot, Params);
 
-	Amount--;
-	OnRep_Amount(); //서버에서도 반영
+	UProjectileMovementComponent* ProjectileMovementComp = Proj->GetProjectileMovementComp();
+	if (Proj && ProjectileMovementComp)
+	{
+		const float Speed = ProjectileMovementComp->InitialSpeed > 0
+			? ProjectileMovementComp->InitialSpeed
+			: 3000.f;
+
+		ProjectileMovementComp->Velocity = LaunchDir * Speed;      // ← 핵심
+		ProjectileMovementComp->Activate(true);
+
+		--Amount;
+		OnRep_Amount();          // HUD 동기화
+	}
 }
 
 void UEquipUseComponent::ToggleBoost()
@@ -167,7 +204,7 @@ void UEquipUseComponent::ToggleBoost()
 void UEquipUseComponent::ToggleNightVision()
 {
 	// TODO : 포스트 프로세스 매태리얼 파라미터 토글해서 구현??
-	bNightVisionOn = ~bNightVisionOn;
+	bNightVisionOn = !bNightVisionOn;
 }
 
 void UEquipUseComponent::StartReload()

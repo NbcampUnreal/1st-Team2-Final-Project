@@ -27,8 +27,9 @@ void UADInteractionComponent::BeginPlay()
 	);
 
 	RangeSphere->InitSphereRadius(400.f);
-	RangeSphere->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
+	RangeSphere->SetCollisionProfileName(TEXT("Interaction"));
 	RangeSphere->SetGenerateOverlapEvents(true);
+
 
 	RangeSphere->OnComponentBeginOverlap.AddDynamic(this, &UADInteractionComponent::HandleBeginOverlap);
 	RangeSphere->OnComponentEndOverlap.AddDynamic(this, &UADInteractionComponent::HandleEndOverlap);

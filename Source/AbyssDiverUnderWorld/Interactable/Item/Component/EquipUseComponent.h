@@ -69,7 +69,7 @@ private:
 
 #pragma region Variable
 public:
-	UPROPERTY(ReplicatedUsing = OnRep_Amount, BlueprintReadOnly)
+	UPROPERTY(ReplicatedUsing = OnRep_Amount, EditAnywhere, BlueprintReadWrite)
 	int32 Amount = 0;
 	
 	
