@@ -75,6 +75,11 @@ void ABossAIController::SetVisionAngle(float& Angle)
 	AIPerceptionComponent->ConfigureSense(*SightConfigInstance);
 }
 
+bool ABossAIController::IsStateSame(EBossState State)
+{
+	return (GetBlackboardComponent()->GetValueAsEnum(BossStateKey) == static_cast<uint8>(State));
+}
+
 void ABossAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
 	// 감지한 대상이 플레이어가 아닌 경우 얼리 리턴
