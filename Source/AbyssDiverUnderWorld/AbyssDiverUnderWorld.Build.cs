@@ -26,6 +26,7 @@ public class AbyssDiverUnderWorld : ModuleRules
             , "NetCore"
             , "Niagara"
             , "AnimGraphRuntime"
+            , "GameplayTags"
         });
 		
         PublicIncludePaths.AddRange(new string[] { "AbyssDiverUnderWorld" });
