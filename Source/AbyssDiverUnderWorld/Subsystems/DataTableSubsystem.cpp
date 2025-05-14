@@ -51,6 +51,17 @@ FFADItemDataRow* UDataTableSubsystem::GetItemData(int32 ItemId) const
 	return ItemDataTableArray[ItemId];
 }
 
+FFADItemDataRow* UDataTableSubsystem::GetItemDataByName(FName ItemName) const
+{
+	UADGameInstance* GI = CastChecked<UADGameInstance>(GetGameInstance());
+	if (UDataTable* ItemDataTable = GI->ItemDataTable)
+	{
+		return ItemDataTable->FindRow<FFADItemDataRow>(ItemName, TEXT("Lookup Item"));
+	}
+
+	return nullptr;
+}
+
 FUpgradeDataRow* UDataTableSubsystem::GetUpgradeDataTableArray(int32 Index) const
 {
 	return UpgradeTableArray[Index];
