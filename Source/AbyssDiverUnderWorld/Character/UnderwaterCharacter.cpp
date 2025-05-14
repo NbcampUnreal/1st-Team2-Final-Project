@@ -113,6 +113,9 @@ void AUnderwaterCharacter::StartCaptureState()
 
 void AUnderwaterCharacter::StopCaptureState()
 {
+	// 사망 처리 시에도 StopCaptureState가 호출된다.
+	// 즉, 사망이 확정되는 시점이 다르게 작동할 수 있다.
+	
 	if (!bIsCaptured || !HasAuthority())
 	{
 		return;
