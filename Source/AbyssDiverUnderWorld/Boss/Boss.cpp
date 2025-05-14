@@ -23,7 +23,9 @@ ABoss::ABoss()
 	TargetPlayer = nullptr;
 	LastDetectedLocation = FVector::ZeroVector;
 	AttackRadius = 500.0f;
-
+	LaunchPower = 1000.0f;
+	bIsBiteAttackSuccess = false;
+	
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 
 	AttackCollision = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Attack Collision"));
@@ -36,8 +38,6 @@ ABoss::ABoss()
 	CameraControllerComponent = CreateDefaultSubobject<UCameraControllerComponent>("Camera Controller Component");
 	
 	bReplicates = true;
-
-	bIsBiteAttackSuccess = false;
 }
 
 void ABoss::BeginPlay()
@@ -76,7 +76,7 @@ void ABoss::LaunchPlayer(AUnderwaterCharacter* Player)
 {
 	// 플레이어를 밀치는 로직
 	const FVector PushDirection = (Player->GetActorLocation() - GetActorLocation()).GetSafeNormal();
-	const float PushStrength = 1000.0f; // 밀치는 힘의 크기 -> 변수화 필요할 것 같은데 일단 고민
+	const float PushStrength = LaunchPower; // 밀치는 힘의 크기 -> 변수화 필요할 것 같은데 일단 고민
 	const FVector PushForce = PushDirection * PushStrength;
 	
 	// 물리 시뮬레이션이 아닌 경우 LaunchCharacter 사용
@@ -206,7 +206,6 @@ void ABoss::AddPatrolPoint()
 
 void ABoss::M_PlayAnimation_Implementation(class UAnimMontage* AnimMontage, float InPlayRate, FName StartSectionName)
 {
-	LOGN(TEXT("Begin"));
 	PlayAnimMontage(AnimMontage, InPlayRate, StartSectionName);
 }
 
@@ -231,8 +230,6 @@ void ABoss::OnMeshOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* Othe
 
 	// 캐릭터 넉백
 	LaunchPlayer(Player);
-	
-	//LOGN(TEXT("[Attack] %s"), *Player->GetName());
 }
 
 void ABoss::OnBiteCollisionOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
@@ -251,10 +248,6 @@ void ABoss::OnBiteCollisionOverlapBegin(UPrimitiveComponent* OverlappedComp, AAc
 	// 타겟 설정
 	SetTarget(Player);
 	Player->StartCaptureState();
-	
-	LOGN(TEXT("[Bite Success] %s"), *Player->GetName());
-
-	//@TODO: 캐릭터를 비활성화 하는 함수 호출
 }
 
 void ABoss::OnAttackCollisionOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
@@ -263,9 +256,7 @@ void ABoss::OnAttackCollisionOverlapBegin(UPrimitiveComponent* OverlappedComp, A
 	// 공격 대상이 플레이어가 아닌 경우 얼리 리턴
 	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(OtherActor);
 	if (!IsValid(Player)) return;
-
-	//LOGN(TEXT("[Attack Collision] %s"), *Player->GetName());
-
+	
 	bIsAttackCollisionOverlappedPlayer = true;
 }
 
@@ -275,8 +266,6 @@ void ABoss::OnAttackCollisionOverlapEnd(UPrimitiveComponent* OverlappedComp, AAc
 	// 공격 대상이 플레이어가 아닌 경우 얼리 리턴
 	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(OtherActor);
 	if (!IsValid(Player)) return;
-
-	//LOG(TEXT("[Attack Collision End] %s"), *Player->GetName());
 	
 	bIsAttackCollisionOverlappedPlayer = false;
 }

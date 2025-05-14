@@ -86,6 +86,9 @@ private:
 public:
 	UPROPERTY()
 	uint8 bIsAttackCollisionOverlappedPlayer : 1;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
+	float LaunchPower;
 	
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UAnimInstance> AnimInstance;
