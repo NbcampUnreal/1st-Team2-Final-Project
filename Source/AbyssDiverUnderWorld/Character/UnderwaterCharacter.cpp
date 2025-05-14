@@ -130,7 +130,7 @@ void AUnderwaterCharacter::StopCaptureState()
 void AUnderwaterCharacter::M_StartCaptureState_Implementation()
 {
 	SetActorHiddenInGame(true);
-	SetActorEnableCollision(true);
+	SetActorEnableCollision(false);
 	if (IsLocallyControlled())
 	{
 		if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
@@ -155,7 +155,7 @@ void AUnderwaterCharacter::M_StartCaptureState_Implementation()
 void AUnderwaterCharacter::M_StopCaptureState_Implementation()
 {
 	SetActorHiddenInGame(false);
-	SetActorEnableCollision(false);
+	SetActorEnableCollision(true);
 	if (IsLocallyControlled())
 	{
 		if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
