@@ -181,6 +181,9 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UCameraComponent> ThirdPersonCameraComponent;
 
+	UPROPERTY(VisibleAnywhere, Category = Mesh , meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class USkeletalMeshComponent> Mesh1P;
+
 	/** 캐릭터의 산소 상태를 관리하는 Component */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UOxygenComponent> OxygenComponent;

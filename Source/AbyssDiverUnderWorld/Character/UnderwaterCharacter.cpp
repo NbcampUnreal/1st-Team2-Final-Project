@@ -52,6 +52,17 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	bUseDebugCamera = false;
 	ThirdPersonCameraComponent->SetActive(false);
 
+	// To-Do
+	// 외부에 보여지는 Mesh와 1인칭 Mesh를 다르게 구현
+	GetMesh()->SetOwnerNoSee(true);
+	GetMesh()->bCastHiddenShadow = true;
+	
+	Mesh1P = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Mesh1P"));
+	Mesh1P->SetOnlyOwnerSee(true);
+	Mesh1P->SetupAttachment(FirstPersonCameraComponent);
+	Mesh1P->CastShadow = false;
+	Mesh1P->bCastDynamicShadow = false;
+	
 	OxygenComponent = CreateDefaultSubobject<UOxygenComponent>(TEXT("OxygenComponent"));
 	StaminaComponent = CreateDefaultSubobject<UStaminaComponent>(TEXT("StaminaComponent"));
 
