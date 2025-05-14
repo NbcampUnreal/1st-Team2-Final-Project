@@ -30,9 +30,6 @@ protected:
 #pragma region Variable
 private:
 	UPROPERTY()
-	UFlyingAIPathfindingBase* CachedPathComp; // For disabling on arrival. raw point : because depended by pawn. Don'y worry about GC
-
-	UPROPERTY()
 	TObjectPtr<UBehaviorTreeComponent> CachedOwnerComp; // For FinishLatentTask
 
 	UPROPERTY()
