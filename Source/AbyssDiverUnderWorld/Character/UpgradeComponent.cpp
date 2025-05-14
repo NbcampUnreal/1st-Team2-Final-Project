@@ -71,7 +71,7 @@ void UUpgradeComponent::OnRep_UpgradeGradeMap()
 		return;
 	}
 
-	if (PS->GetPlayerController() != UGameplayStatics::GetPlayerController(GetWorld(), 0))
+	if (PS->GetPlayerController()->IsLocalController())
 	{
 		return;
 	}
