@@ -23,7 +23,7 @@ public:
 	void BindWidget(APawn* PlayerPawn);
 	
 	UFUNCTION(BlueprintCallable)
-	void UpdateHealthText(float CurrentHealth, float MaxHealth);
+	void UpdateHealthText(int32 CurrentHealth, int32 MaxHealth);
 
 	/** 산소 택스트를 갱신 */
 	UFUNCTION(BlueprintCallable)

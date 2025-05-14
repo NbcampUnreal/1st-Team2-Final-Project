@@ -23,6 +23,8 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	FirstPersonCameraComponent->SetRelativeLocation(FVector(-10.f, 0.f, 60.f)); // Position the camera
 	FirstPersonCameraComponent->bUsePawnControlRotation = true;
 
+	StatComponent->Initialize(1000, 1000, 400.0f, 10);
+	
 	bIsCaptured = false;
 	StatComponent->MoveSpeed = 400.0f;
 	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
@@ -32,7 +34,7 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 		Movement->BrakingDecelerationSwimming = 500.0f;
 		Movement->GravityScale = 0.0f;
 	}
-	SprintSpeed = StatComponent->MoveSpeed * 1.5f;
+	SprintSpeed = StatComponent->MoveSpeed * 1.75f;
 
 	// To-Do
 	// 외부에 보여지는 Mesh와 1인칭 Mesh를 다르게 구현
