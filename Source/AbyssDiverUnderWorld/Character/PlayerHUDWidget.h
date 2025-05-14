@@ -25,9 +25,11 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void UpdateHealthText(float CurrentHealth, float MaxHealth);
 
+	/** 산소 택스트를 갱신 */
 	UFUNCTION(BlueprintCallable)
 	void UpdateOxygenText(float CurrentOxygen, float MaxOxygen);
 
+	/** 스태미나 택스트를 갱신 */
 	UFUNCTION(BlueprintCallable)
 	void UpdateStaminaText(float CurrentStamina, float MaxStamina);
 
@@ -36,13 +38,16 @@ public:
 #pragma region Variable
 
 private:
-	
+
+	/** 체력 택스트, 임시용이고 디버깅용으로 수정 예정 */
 	UPROPERTY(meta = (BindWidget))
 	class URichTextBlock* HealthTextBlock;
 
+	/** 산소 택스트, 임시용이고 디버깅용으로 수정 예정 */
 	UPROPERTY(meta = (BindWidget))
 	class URichTextBlock* OxygenTextBlock;
 
+	/** 스태미나 택스트, 임시용이고 디버깅용으로 수정 예정 */
 	UPROPERTY(meta = (BindWidget))
 	class URichTextBlock* StaminaTextBlock;
 	
