@@ -22,6 +22,7 @@ UADInventoryComponent::UADInventoryComponent() :
 	TotalPrice(0),
 	WeightMax(100),
 	bInventoryWidgetShowed(false), 
+	bCanUseItem(true),
 	CurrentEquipmentIndex(-1),
 	CurrentEquipmentInstance(nullptr),
 	InventoryWidgetInstance(nullptr),
@@ -81,8 +82,10 @@ void UADInventoryComponent::S_DropItem_Implementation(FItemData ItemData)
 	}
 }
 
-void UADInventoryComponent::S_Equip_Implementation(FItemData ItemData, int8 Index)
+void UADInventoryComponent::Equip(FItemData ItemData, int8 Index)
 {
+	if (ItemData.ItemType != EItemType::Equipment || ItemData.Quantity == 0) return;
+
 	APlayerState* PS = Cast<APlayerState>(GetOwner());
 	APlayerController* PC = Cast<APlayerController>(PS->GetOwningController());
 	if (!PC) return;
@@ -111,12 +114,17 @@ void UADInventoryComponent::S_Equip_Implementation(FItemData ItemData, int8 Inde
 
 }
 
-void UADInventoryComponent::S_UnEquip_Implementation()
+void UADInventoryComponent::UnEquip()
 {
 	if(CurrentEquipmentInstance)
 		CurrentEquipmentInstance->Destroy();
 	SetEquipInfo(-1, nullptr);
 	LOG(TEXT("UnEquipItem"));
+}
+
+void UADInventoryComponent::OnUseCoolTimeEnd()
+{
+	bCanUseItem = true;
 }
 
 void UADInventoryComponent::SetEquipInfo(int8 TypeInventoryIndex, AADUseItem* SpawnItem)
@@ -214,7 +222,7 @@ bool UADInventoryComponent::RemoveInventoryItem(uint8 InventoryIndex, int8 Count
 	}
 }
 
-void UADInventoryComponent::UseInventoryItem(EItemType ItemType, int32 InventoryIndex)
+void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType, int32 InventoryIndex)
 {
 	if (ItemType == EItemType::Equipment)
 	{
@@ -225,22 +233,30 @@ void UADInventoryComponent::UseInventoryItem(EItemType ItemType, int32 Inventory
 		if (InventoryList.Items[InventoryIndex].Quantity == 0 || InventoryList.Items.Num() < InventoryIndex) return;
 	}
 
+	if (!bCanUseItem) return;
+
+	bCanUseItem = false;
+
+	FTimerHandle UseCoolTimeHandle;
+	GetWorld()->GetTimerManager().SetTimer(UseCoolTimeHandle, this, &UADInventoryComponent::OnUseCoolTimeEnd, 1.0f, false);
+
+
 	FItemData& Item = ItemType == EItemType::Consumable ? InventoryList.Items[InventoryIndex] : InventoryList.Items[InventoryIndexMapByType[ItemType][InventoryIndex - 1]];
 	LOG(TEXT("%d %d"), CurrentEquipmentIndex, InventoryIndex);
 	if (ItemType == EItemType::Equipment)
 	{
 		if (CurrentEquipmentIndex == InventoryIndex-1)
 		{
-			S_UnEquip();
+			UnEquip();
 		}
 		else
 		{
 			if (CurrentEquipmentIndex != -1)
 			{
-				S_UnEquip();
+				UnEquip();
 				LOG(TEXT("ChangeEquipment"));
 			}
-			S_Equip(Item, InventoryIndex-1);
+			Equip(Item, InventoryIndex-1);
 		}
 	}
 	else if (ItemType == EItemType::Consumable)
@@ -417,6 +433,12 @@ int16 UADInventoryComponent::FindItemIndexById(FName ItemID)
 		}
 	}
 	return -1;
+}
+
+FItemData UADInventoryComponent::CurrentEquipmentItemData()
+{
+	int8 Index = InventoryIndexMapByType[EItemType::Equipment][CurrentEquipmentIndex];
+	return InventoryList.Items[Index];
 }
 
 void UADInventoryComponent::PrintLogInventoryData()

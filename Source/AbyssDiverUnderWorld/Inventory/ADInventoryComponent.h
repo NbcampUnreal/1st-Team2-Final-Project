@@ -43,22 +43,15 @@ public:
 	void S_DropItem(FItemData ItemData);
 	void S_DropItem_Implementation(FItemData ItemData);
 
-	UFUNCTION(Server, Reliable)
-	void S_Equip(FItemData ItemData, int8 Index);
-	void S_Equip_Implementation(FItemData ItemData, int8 Index);
-
-	UFUNCTION(Server, Reliable)
-	void S_UnEquip();
-	void S_UnEquip_Implementation();
-
 	void SetEquipInfo(int8 TypeInventoryIndex, AADUseItem* SpawnItem);
 
 	UFUNCTION(BlueprintCallable)
 	void AddInventoryItem(FItemData ItemData);
 	bool RemoveInventoryItem(uint8 InventoryIndex, int8 Count, bool bIsDropAction);
 
-	UFUNCTION(BlueprintCallable)
-	void UseInventoryItem(EItemType ItemType = EItemType::Equipment, int32 InventoryIndex = 0);
+	UFUNCTION(Server, Reliable, BlueprintCallable)
+	void S_UseInventoryItem(EItemType ItemType = EItemType::Equipment, int32 InventoryIndex = 0);
+	void S_UseInventoryItem_Implementation(EItemType ItemType = EItemType::Equipment, int32 InventoryIndex = 0);
 
 	UFUNCTION(BlueprintCallable)
 	void TransferSlots(uint8 FromIndex, uint8 ToIndex);
@@ -76,12 +69,15 @@ public:
 private:
 	int8 GetTypeInventoryEmptyIndex(EItemType ItemType);
 	int16 FindItemIndexById(FName ItemID);
-	void OnInventoryInfoUpdate(int32 MassInfo, int32 PriceInfo);
-
-	void InventoryUIUpdate();
+	FItemData CurrentEquipmentItemData();
 	FVector GetDropLocation();
+	void OnInventoryInfoUpdate(int32 MassInfo, int32 PriceInfo);
+	void InventoryUIUpdate();
 	void PrintLogInventoryData();
 	void RebuildIndexMap();
+	void Equip(FItemData ItemData, int8 Index);
+	void UnEquip();
+	void OnUseCoolTimeEnd();
 
 #pragma endregion
 	
@@ -101,6 +97,7 @@ private:
 	int32 WeightMax;
 
 	uint8 bInventoryWidgetShowed : 1;
+	uint8 bCanUseItem : 1;
 
 	TMap<EItemType, TArray<int8>> InventoryIndexMapByType;
 	UPROPERTY(Replicated)
