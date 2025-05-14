@@ -75,14 +75,14 @@ public:
     UPROPERTY()
     TSet<TObjectPtr<UADInteractableComponent>> NearbyInteractables;
     UPROPERTY()
-    TObjectPtr<USphereComponent> RangeSphere;
+    TObjectPtr<USphereComponent> RangeSphere = nullptr;
     UPROPERTY()
     TObjectPtr<UADInteractableComponent> FocusedInteractable = nullptr;
 
     UPROPERTY(EditAnywhere)
     float HoldThreshold = 3.f;
     FTimerHandle HoldTimerHandle;
-    bool bHoldTriggered = false;
+    uint8 bHoldTriggered : 1;
     TWeakObjectPtr<AActor> HoldInstigator;
 
 
@@ -100,5 +100,7 @@ public:
     {
         return FocusedInteractable;
     }
+    USphereComponent* GetRangeSphere() const { return RangeSphere; }
+
 #pragma endregion
 };
