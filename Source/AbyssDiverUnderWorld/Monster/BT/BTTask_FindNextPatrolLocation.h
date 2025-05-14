@@ -17,6 +17,7 @@ class ABYSSDIVERUNDERWORLD_API UBTTask_FindNextPatrolLocation : public UBTTask_B
 public:
 	UBTTask_FindNextPatrolLocation();
 
+protected:
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory);
 
 #pragma region Variable

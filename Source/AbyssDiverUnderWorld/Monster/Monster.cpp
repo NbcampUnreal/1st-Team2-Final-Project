@@ -3,11 +3,12 @@
 
 #include "Monster/Monster.h"
 #include "Components/SplineComponent.h"
+#include "Monster/SplinePathActor.h"
+#include "AbyssDiverUnderWorld.h"
 
 AMonster::AMonster()
 {
-	PatrolSpline = CreateDefaultSubobject<USplineComponent>(TEXT("PatrolSpline"));
-	PatrolSpline->SetupAttachment(RootComponent);
+
 }
 
 void AMonster::BeginPlay()
@@ -17,20 +18,38 @@ void AMonster::BeginPlay()
 
 FVector AMonster::GetPatrolLocation(int32 Index) const
 {
-	if (!PatrolSpline || PatrolSpline->GetNumberOfSplinePoints() == 0) return GetActorLocation();
+	if (AssignedSplineActor)
+	{
+		USplineComponent* PatrolSpline = AssignedSplineActor->GetSplineComponent();
+		if (!PatrolSpline || PatrolSpline->GetNumberOfSplinePoints() == 0) return GetActorLocation();
 
-	// Get SplinePoint to World Location
-	FVector Location = PatrolSpline->GetLocationAtSplinePoint(Index, ESplineCoordinateSpace::World);
-	return Location;
+		// Get SplinePoint to World Location
+		FVector Location = PatrolSpline->GetLocationAtSplinePoint(Index, ESplineCoordinateSpace::World);
+		return Location;
+	}
+	else
+	{
+		LOG(TEXT("SplineActor is not Assigned."));
+		return FVector::ZeroVector;
+	}
+
 }
 
 int32 AMonster::GetNextPatrolIndex(int32 CurrentIndex) const
 {
-	return (CurrentIndex + 1) % PatrolSpline->GetNumberOfSplinePoints(); // Cycle
+	if (AssignedSplineActor)
+	{
+		USplineComponent* PatrolSpline = AssignedSplineActor->GetSplineComponent();
+		CurrentIndex = (CurrentIndex + 1) % PatrolSpline->GetNumberOfSplinePoints(); // Cycle
+		LOG(TEXT("PatrolIndex increment : %d"), CurrentIndex);
+
+		return CurrentIndex;
+	}
+	else
+	{
+		LOG(TEXT("SplineActor is not Assigned."));
+		return -1;
+	}
 }
 
-USplineComponent* AMonster::GetSplineComp() const
-{
-	return PatrolSpline.Get();
-}
 

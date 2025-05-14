@@ -8,7 +8,7 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Monster.generated.h"
 
-class USplineComponent;
+class ASplinePathActor;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AMonster : public AUnitBase
@@ -34,14 +34,8 @@ public:
 
 #pragma region Variable
 protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI|Patrol")
-	TObjectPtr<USplineComponent> PatrolSpline;
+	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "AI|Patrol")
+	TObjectPtr<ASplinePathActor> AssignedSplineActor;
 
-#pragma endregion
-
-#pragma region Getter, Setter
-public:
-	UFUNCTION(BlueprintCallable)
-	USplineComponent* GetSplineComp() const;
 #pragma endregion
 };
