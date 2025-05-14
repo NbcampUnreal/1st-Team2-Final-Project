@@ -5,8 +5,8 @@
 
 #include "AbyssDiverUnderWorld.h"
 #include "EnhancedInputComponent.h"
-#include "OxygenComponent.h"
-#include "StaminaComponent.h"
+#include "PlayerComponent/OxygenComponent.h"
+#include "PlayerComponent/StaminaComponent.h"
 #include "StatComponent.h"
 #include "AbyssDiverUnderWorld/Interactable/Item/Component/ADInteractionComponent.h"
 #include "Camera/CameraComponent.h"

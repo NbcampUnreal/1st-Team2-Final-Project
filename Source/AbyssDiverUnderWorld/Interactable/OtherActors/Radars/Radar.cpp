@@ -128,30 +128,6 @@ void ARadar::Tick(float DeltaTime)
 	UpdateGridVisibility();
 	RotateRadarGrid();
 	FindRadarReturnTransformFromGrid();
-
-	if (FoundReturnsCount == 0)
-	{
-		return;
-	}
-
-	if (bAreRadarReturnsReletiveToGrid == false)
-	{
-		ConvertCurrentTransformToRelative();
-	}
-
-	FindTransformForPillarsOrPings();
-
-	if (ReturnsMeshes.IsValidIndex(CurrentIndexCached))
-	{
-
-		if (::IsValid(ReturnsMeshes[CurrentIndexCached]))
-		{
-			UpdateExistingReturnMesh();
-			return;
-		}
-	}
-
-	AddNewReturnMesh();
 }
 
 void ARadar::UpdateRadarSourceComponent(USceneComponent* NewRadarSourceLocation, USceneComponent* NewRadarSourceRotation)
@@ -329,7 +305,7 @@ void ARadar::FindIfReturnIsValidResponseForRader(AActor* RadarActor)
 				continue;
 			}
 
-			CurrentRadarReturn = RadarReturn;
+			CurrentRadarReturnSearched = RadarReturn;
 			bIsCurrentRadarPrimaryReturn = true;
 			InitializeRadarReturnIfActive();
 
@@ -358,7 +334,7 @@ void ARadar::FindIfReturnIsValidResponseForRader(AActor* RadarActor)
 			return;
 		}
 
-		CurrentRadarReturn = CurrentRadarReturns[0];
+		CurrentRadarReturnSearched = CurrentRadarReturns[0];
 		bIsCurrentRadarPrimaryReturn = false;
 		InitializeRadarReturnIfActive();
 	}
@@ -367,19 +343,19 @@ void ARadar::FindIfReturnIsValidResponseForRader(AActor* RadarActor)
 
 void ARadar::InitializeRadarReturnIfActive()
 {
-	if (CurrentRadarReturn == nullptr)
+	if (CurrentRadarReturnSearched == nullptr)
 	{
 		return;
 	}
 
-	if (CurrentRadarReturn->IsActivated() == false)
+	if (CurrentRadarReturnSearched->IsActivated() == false)
 	{
-		RemoveReturn(CurrentRadarReturn, 0);
+		RemoveReturn(CurrentRadarReturnSearched, 0);
 		return;
 	}
 
-	CurrentFactionTags = CurrentRadarReturn->GetFactionTags();
-	CurrentUnitsTypeTags = CurrentRadarReturn->GetUnitsTypeTags();
+	CurrentFactionTags = CurrentRadarReturnSearched->GetFactionTags();
+	CurrentUnitsTypeTags = CurrentRadarReturnSearched->GetUnitsTypeTags();
 
 	bIsViableReturn = false;
 	CurrentRangeMultiplier = 0.0f;
@@ -393,11 +369,14 @@ void ARadar::InitializeRadarReturnIfActive()
 
 	if (bShouldShowNonFactionAllignedReturns)
 	{
-		CheckIfUnitTypeIsVisible();
+		//CheckIfUnitTypeIsVisible();
+		// Fixed.. -> 수정 전엔 가장 최근의 Faction을 반영하도록 되어있었는듯?
+		// 암튼 태그가 없으면 바로 Neutral로 판별하도록 Determine 함수 호출하도록 변경
+		DetermineAndStoreAffiliation();
 	}
 	else
 	{
-		RemoveReturn(CurrentRadarReturn, 0);
+		RemoveReturn(CurrentRadarReturnSearched, 0);
 	}
 }
 
@@ -462,7 +441,7 @@ void ARadar::DetermineAndStoreAffiliation()
 	}
 	else
 	{
-		RemoveReturn(CurrentRadarReturn, 0);
+		RemoveReturn(CurrentRadarReturnSearched, 0);
 	}
 }
 
@@ -494,18 +473,18 @@ void ARadar::CheckIfUnitTypeIsVisible()
 		}
 		else
 		{
-			AddReturn(CurrentRadarReturn, CurrentFOFStatus);
+			AddReturn(CurrentRadarReturnSearched, CurrentFOFStatus);
 		}
 	}
 	else
 	{
-		RemoveReturn(CurrentRadarReturn, 0);
+		RemoveReturn(CurrentRadarReturnSearched, 0);
 	}
 }
 
 void ARadar::FindIfReturnsInVisibleRange()
 {
-	if (CurrentRadarReturn == nullptr)
+	if (CurrentRadarReturnSearched == nullptr)
 	{
 		return;
 	}
@@ -513,13 +492,13 @@ void ARadar::FindIfReturnsInVisibleRange()
 	switch (CurrentFOFStatus)
 	{
 	case EFriendOrFoe::Friendly:
-		CurrentRangeMultiplier = CurrentRadarReturn->GetVisibleRangeMultiplier() * CurrentRadarReturn->GetFriendlyVisibleRangeMultiplier();
+		CurrentRangeMultiplier = CurrentRadarReturnSearched->GetVisibleRangeMultiplier() * CurrentRadarReturnSearched->GetFriendlyVisibleRangeMultiplier();
 		break;
 	case EFriendOrFoe::Hostile:
-		CurrentRangeMultiplier = CurrentRadarReturn->GetVisibleRangeMultiplier() * CurrentRadarReturn->GetHostileVisibleRangeMultiplier();
+		CurrentRangeMultiplier = CurrentRadarReturnSearched->GetVisibleRangeMultiplier() * CurrentRadarReturnSearched->GetHostileVisibleRangeMultiplier();
 		break;
 	case EFriendOrFoe::Neutral:
-		CurrentRangeMultiplier = CurrentRadarReturn->GetVisibleRangeMultiplier() * CurrentRadarReturn->GetNeutralVisibleRangeMultiplier();
+		CurrentRangeMultiplier = CurrentRadarReturnSearched->GetVisibleRangeMultiplier() * CurrentRadarReturnSearched->GetNeutralVisibleRangeMultiplier();
 		break;
 	default:
 		return;;
@@ -545,7 +524,7 @@ void ARadar::FindIfReturnsInVisibleRange()
 		CurrentRangeMultiplier *= UnitTypeRangeMulitpliers[TempUnitTypeTag];
 	}
 
-	FVector AppliesToComponentLocation = CurrentRadarReturn->GetAppliesToComponent()->GetComponentLocation();
+	FVector AppliesToComponentLocation = CurrentRadarReturnSearched->GetAppliesToComponent()->GetComponentLocation();
 	FVector RadarSourceLocation = RadarSourceLocationComponent->GetComponentLocation();
 	FVector VectorToRadarSourceLocation = AppliesToComponentLocation - RadarSourceLocation;
 
@@ -562,7 +541,7 @@ void ARadar::FindIfReturnsInVisibleRange()
 			VisibleRange >= RadarCullingRadius &&
 			VisibleRange <= RadarOuterDimensionLimitRadius) == false)
 		{
-			RemoveReturn(CurrentRadarReturn, 0);
+			RemoveReturn(CurrentRadarReturnSearched, 0);
 			return;
 		}
 	}
@@ -570,7 +549,7 @@ void ARadar::FindIfReturnsInVisibleRange()
 	{
 		FVector RadarSourceLocationScale = RadarSourceLocationComponent->GetComponentScale();
 		FRotator RadarSourceRotation = RadarSourceRotationComponent->GetComponentRotation();
-		FTransform RadarReturnTransform = CurrentRadarReturn->GetAppliesToComponent()->GetComponentTransform();
+		FTransform RadarReturnTransform = CurrentRadarReturnSearched->GetAppliesToComponent()->GetComponentTransform();
 
 		FTransform NewTransform(RadarSourceRotation, RadarSourceLocation, RadarSourceLocationScale);
 		NewTransform = UKismetMathLibrary::MakeRelativeTransform(RadarReturnTransform, NewTransform);
@@ -595,7 +574,7 @@ void ARadar::FindIfReturnsInVisibleRange()
 
 		if ((bIsRadarOuterDimensionsInRange && bIsRadarCullingDimensionsNotInRange && bIsRadarOuterDimensionsLimitInRange) == false)
 		{
-			RemoveReturn(CurrentRadarReturn, 0);
+			RemoveReturn(CurrentRadarReturnSearched, 0);
 			return;
 		}
 	}
@@ -611,11 +590,11 @@ void ARadar::FindIfReturnsInVisibleRange()
 	float HalfDegree = 180.0f;
 	if (RadarSearchAngle < HalfDegree && AngleToTargetDegree > RadarSearchAngle)
 	{
-		RemoveReturn(CurrentRadarReturn, 0);
+		RemoveReturn(CurrentRadarReturnSearched, 0);
 		return;
 	}
 
-	AddReturn(CurrentRadarReturn, CurrentFOFStatus);
+	AddReturn(CurrentRadarReturnSearched, CurrentFOFStatus);
 
 	if (bIsCurrentRadarPrimaryReturn)
 	{
@@ -626,12 +605,12 @@ void ARadar::FindIfReturnsInVisibleRange()
 
 void ARadar::AllowNonPrimaryReturnsWithoutRangeCheck()
 {
-	if (CurrentRadarReturn == nullptr)
+	if (CurrentRadarReturnSearched == nullptr)
 	{
 		return;
 	}
 
-	LastPrimaryReturn = CurrentRadarReturn;
+	LastPrimaryReturn = CurrentRadarReturnSearched;
 	bIsPrimaryValid = true;
 
 	for (const auto& RadarReturn : CurrentRadarReturns)
@@ -641,7 +620,7 @@ void ARadar::AllowNonPrimaryReturnsWithoutRangeCheck()
 			continue;
 		}
 
-		CurrentRadarReturn = RadarReturn;
+		CurrentRadarReturnSearched = RadarReturn;
 		bIsCurrentRadarPrimaryReturn = false;
 		bIsIgnoreRange = true;
 		InitializeRadarReturnIfActive();
@@ -883,6 +862,30 @@ void ARadar::FindRadarReturnTransformFromGrid()
 		}
 
 		CurrentMeshTransform = FTransform(NewRotation, NewLocation, NewScale);
+
+		if (FoundReturnsCount == 0)
+		{
+			return;
+		}
+
+		if (bAreRadarReturnsReletiveToGrid == false)
+		{
+			ConvertCurrentTransformToRelative();
+		}
+
+		FindTransformForPillarsOrPings();
+
+		if (ReturnsMeshes.IsValidIndex(CurrentIndexCached))
+		{
+
+			if (::IsValid(ReturnsMeshes[CurrentIndexCached]))
+			{
+				UpdateExistingReturnMesh();
+				continue;
+			}
+		}
+
+		AddNewReturnMesh();
 	}
 }
 

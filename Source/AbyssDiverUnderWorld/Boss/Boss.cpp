@@ -4,17 +4,22 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Character/StatComponent.h"
 #include "Character/UnderwaterCharacter.h"
+#include "Components/CapsuleComponent.h"
+#include "Effect/CameraControllerComponent.h"
 #include "Engine/DamageEvents.h"
+#include "Engine/TargetPoint.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "GameFramework/PhysicsVolume.h"
 #include "Kismet/GameplayStatics.h"
+#include "Navigation/PathFollowingComponent.h"
+#include "Net/UnrealNetwork.h"
 
 const FName ABoss::BossStateKey = "BossState";
 
 ABoss::ABoss()
 {
 	PrimaryActorTick.bCanEverTick = true;
-	
+
+	bIsAttackCollisionOverlappedPlayer = false;
 	BlackboardComponent = nullptr;
 	AIController = nullptr;
 	TargetPlayer = nullptr;
@@ -22,14 +27,23 @@ ABoss::ABoss()
 	AttackRadius = 500.0f;
 
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
+
+	AttackCollision = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Attack Collision"));
+	AttackCollision->SetupAttachment(GetMesh(), TEXT("AttackSocket"));
+	AttackCollision->SetCapsuleHalfHeight(80.0f);
+	AttackCollision->SetCapsuleRadius(80.0f);
+	AttackCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	AttackCollision->ComponentTags.Add(TEXT("Attack Collision"));
+
+	CameraControllerComponent = CreateDefaultSubobject<UCameraControllerComponent>("Camera Controller Component");
+	
+	bReplicates = true;
 }
 
 void ABoss::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	TargetPlayer = Cast<AUnderwaterCharacter>(UGameplayStatics::GetPlayerPawn(GetWorld(), 0));
-
 	AnimInstance = GetMesh()->GetAnimInstance();
 
 	AIController = Cast<ABossAIController>(GetController());
@@ -38,13 +52,24 @@ void ABoss::BeginPlay()
 	{
 		BlackboardComponent = AIController->GetBlackboardComponent();
 	}
+
+	AttackCollision->OnComponentBeginOverlap.AddDynamic(this, &ABoss::OnAttackCollisionOverlapBegin);
+	AttackCollision->OnComponentEndOverlap.AddDynamic(this, &ABoss::OnAttackCollisionOverlapEnd);
 }
 
-void ABoss::Tick(float DeltaSeconds)
+void ABoss::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
 {
-	Super::Tick(DeltaSeconds);
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	RotationToTarget();
+	DOREPLIFETIME(ABoss, BossState);
+}
+
+void ABoss::SetBossState(EBossState State)
+{
+	if (!HasAuthority()) return;
+
+	BossState = State;
+	BlackboardComponent->SetValueAsEnum(BossStateKey, static_cast<uint8>(BossState));
 }
 
 float ABoss::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator,
@@ -101,55 +126,34 @@ void ABoss::OnDeath()
 	GetCharacterMovement()->GravityScale = 0.1f;
 
 	// 이동을 멈추고 모든 애니메이션 출력 정지
-	MoveStop();
+	AIController->StopMovement();
 	AnimInstance->StopAllMontages(0.5f);
 
 	// 사망 상태로 전이
-	BlackboardComponent->SetValueAsEnum(BossStateKey, static_cast<uint8>(EBossState::Death));
+	SetBossState(EBossState::Death);
 
 	// AIController 작동 중지
 	AIController->UnPossess();
 }
 
-void ABoss::RotationToTarget()
+void ABoss::RotationToTarget(AActor* Target)
 {
-	if (!IsValid(TargetPlayer)) return;
+	if (!IsValid(Target)) return;
 
 	const FRotator CurrentRotation = GetActorRotation();
-	const FRotator TargetRotation = (TargetPlayer->GetActorLocation() - GetActorLocation()).Rotation();
+	const FRotator TargetRotation = (Target->GetActorLocation() - GetActorLocation()).Rotation();
 	const FRotator NewRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, GetWorld()->GetDeltaSeconds(), 2.0f);
 	
 	SetActorRotation(NewRotation);
 }
 
-void ABoss::Move()
+void ABoss::RotationToTarget(const FVector& TargetLocation)
 {
-	//M_PlayAnimation(MoveAnimation);
-}
-
-void ABoss::MoveStop()
-{
-	//M_PlayAnimation(IdleAnimation);
-}
-
-void ABoss::MoveToTarget()
-{
-	if (!IsValid(TargetPlayer)) return;
-
-	const FVector TargetLocation = TargetPlayer->GetActorLocation();
-	const FVector CurrentLocation = GetActorLocation();
-	const float Distance = FVector::Distance(CurrentLocation, TargetLocation);
-
-	// 타겟이 공격 반경 내에 있다면 Attack 상태로 전이
-	if (Distance <= AttackRadius)
-	{
-		BlackboardComponent->SetValueAsEnum(BossStateKey, static_cast<uint8>(EBossState::Attack));
-	}
-}
-
-void ABoss::MoveToLastDetectedLocation()
-{
-
+	const FRotator CurrentRotation = GetActorRotation();
+	const FRotator TargetRotation = (TargetLocation - GetActorLocation()).Rotation();
+	const FRotator NewRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, GetWorld()->GetDeltaSeconds(), 2.0f);
+	
+	SetActorRotation(NewRotation);
 }
 
 void ABoss::Attack()
@@ -165,6 +169,18 @@ void ABoss::Attack()
 void ABoss::OnAttackEnded()
 {
 	AttackedPlayers.Empty();
+}
+
+void ABoss::AddPatrolPoint()
+{
+	if (CurrentPatrolPointIndex >= PatrolPoints.Num())
+	{
+		CurrentPatrolPointIndex = 0;
+	}
+	else
+	{
+		++CurrentPatrolPointIndex;
+	}
 }
 
 void ABoss::M_PlayAnimation_Implementation(class UAnimMontage* AnimMontage, float InPlayRate, FName StartSectionName)
@@ -188,6 +204,9 @@ void ABoss::OnMeshOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* Othe
 	// 해당 플레이어에게 데미지 적용
 	UGameplayStatics::ApplyDamage(Player, StatComponent->AttackPower, GetController(), this, UDamageType::StaticClass());
 
+	// 피격당한 플레이어의 카메라 Shake
+	CameraControllerComponent->ShakePlayerCamera(Player);
+	
 	// 플레이어를 밀치는 로직
 	const FVector PushDirection = (Player->GetActorLocation() - GetActorLocation()).GetSafeNormal();
 	const float PushStrength = 1000.0f; // 밀치는 힘의 크기 -> 변수화 필요할 것 같은데 일단 고민
@@ -200,31 +219,85 @@ void ABoss::OnMeshOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* Othe
 	FTimerHandle TimerHandle;
 	GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this, Player]()
 	{
-		Player->GetCharacterMovement()->SetMovementMode(MOVE_Swimming);
+		if (IsValid(Player))
+		{
+			Player->GetCharacterMovement()->SetMovementMode(MOVE_Swimming);	
+		}
 	}, 0.5f, false);
 	
-	LOG(TEXT("[Attack] %s"), *Player->GetName());
+	//LOGN(TEXT("[Attack] %s"), *Player->GetName());
 }
 
+void ABoss::OnAttackCollisionOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	// 공격 대상이 플레이어가 아닌 경우 얼리 리턴
+	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(OtherActor);
+	if (!IsValid(Player)) return;
+
+	//LOGN(TEXT("[Attack Collision] %s"), *Player->GetName());
+
+	bIsAttackCollisionOverlappedPlayer = true;
+}
+
+void ABoss::OnAttackCollisionOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
+							UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	// 공격 대상이 플레이어가 아닌 경우 얼리 리턴
+	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(OtherActor);
+	if (!IsValid(Player)) return;
+
+	//LOG(TEXT("[Attack Collision End] %s"), *Player->GetName());
+	
+	bIsAttackCollisionOverlappedPlayer = false;
+}
+
+#pragma region Getter, Setter
 APawn* ABoss::GetTarget()
 {
-	if (IsValid(TargetPlayer)) 
-	{
-		return TargetPlayer;
-	}
+	if (!IsValid(TargetPlayer)) return nullptr;
 	
-	return nullptr;
+	return TargetPlayer;
 }
 
 void ABoss::SetTarget(AUnderwaterCharacter* Target)
 {
-	if (IsValid(Target))
-	{
-		TargetPlayer = Target;
-	}
+	if (!IsValid(Target)) return;
+	
+	TargetPlayer = Target;
+}
+
+void ABoss::InitTarget()
+{
+	TargetPlayer = nullptr;
 }
 
 void ABoss::SetLastDetectedLocation(const FVector& InLastDetectedLocation)
 {
 	LastDetectedLocation = InLastDetectedLocation;
 }
+
+FVector ABoss::GetTargetPointLocation()
+{
+	if (!PatrolPoints.IsValidIndex(CurrentPatrolPointIndex)) return FVector::ZeroVector;
+	
+	return PatrolPoints[CurrentPatrolPointIndex]->GetActorLocation();
+}
+
+bool ABoss::GetIsAttackCollisionOverlappedPlayer()
+{
+	return bIsAttackCollisionOverlappedPlayer;
+}
+
+UCameraControllerComponent* ABoss::GetCameraControllerComponent() const
+{
+	return CameraControllerComponent;
+}
+
+AActor* ABoss::GetTargetPoint()
+{
+	if (!PatrolPoints.IsValidIndex(CurrentPatrolPointIndex)) return nullptr;
+	
+	return PatrolPoints[CurrentPatrolPointIndex];
+}
+#pragma endregion

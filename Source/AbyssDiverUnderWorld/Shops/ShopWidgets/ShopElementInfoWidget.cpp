@@ -8,12 +8,12 @@ void UShopElementInfoWidget::NativeConstruct()
 	BuyButton->OnClicked.AddDynamic(this, &UShopElementInfoWidget::OnBuyButtonClicked);
 }
 
-void UShopElementInfoWidget::Init(UStaticMeshComponent* NewItemMeshComp)
+void UShopElementInfoWidget::Init(USkeletalMeshComponent* NewItemMeshComp)
 {
 	ItemMeshComponent = NewItemMeshComp;
 }
 
-void UShopElementInfoWidget::ShowItemInfos(UStaticMesh* NewItemMesh, const FString& NewDescription, const FString& NewInfoText)
+void UShopElementInfoWidget::ShowItemInfos(USkeletalMesh* NewItemMesh, const FString& NewDescription, const FString& NewInfoText)
 {
 	SetItemMeshActive(true);
 	SetDescriptionActive(true);
@@ -35,11 +35,11 @@ void UShopElementInfoWidget::ChangeInfoText(const FString& NewInfoText)
 	InfoText->SetText(FText::FromString(NewInfoText));
 }
 
-void UShopElementInfoWidget::ChangeItemMesh(UStaticMesh* NewMesh)
+void UShopElementInfoWidget::ChangeItemMesh(USkeletalMesh* NewMesh)
 {
 	check(ItemMeshComponent);
 
-	ItemMeshComponent->SetStaticMesh(NewMesh);
+	ItemMeshComponent->SetSkeletalMesh(NewMesh);
 }
 
 void UShopElementInfoWidget::SetDescriptionActive(bool bShouldActivate)

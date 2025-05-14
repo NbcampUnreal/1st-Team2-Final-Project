@@ -5,6 +5,7 @@
 #include "ShopTileView.h"
 #include "Shops/ShopItemEntryData.h"
 #include "Shops/ShopWidgets/ShopElementInfoWidget.h"
+#include "Components/Button.h"
 
 void UShopWidget::NativeConstruct()
 {
@@ -14,6 +15,7 @@ void UShopWidget::NativeConstruct()
 
 	ConsumableTab->OnShopCategoryTabClickedDelegate.AddUObject(this, &UShopWidget::OnCategoryTabClicked);
 	EquipmentTab->OnShopCategoryTabClickedDelegate.AddUObject(this, &UShopWidget::OnCategoryTabClicked);
+	CloseButton->OnClicked.AddDynamic(this, &UShopWidget::OnCloseButtonClicked);
 }
 
 void UShopWidget::SetAllItems(const TArray<UShopItemEntryData*>& EntryDataList, EShopCategoryTab Tab)
@@ -168,7 +170,7 @@ void UShopWidget::RefreshItemView()
 	}
 }
 
-void UShopWidget::ShowItemInfos(UStaticMesh* NewItemMesh, const FString& NewDescription, const FString& NewInfoText)
+void UShopWidget::ShowItemInfos(USkeletalMesh* NewItemMesh, const FString& NewDescription, const FString& NewInfoText)
 {
 	InfoWidget->ShowItemInfos(NewItemMesh, NewDescription, NewInfoText);
 }
@@ -182,6 +184,11 @@ void UShopWidget::OnCategoryTabClicked(EShopCategoryTab CategoryTab)
 	}
 
 	ShowItemViewForTab(CategoryTab);
+}
+
+void UShopWidget::OnCloseButtonClicked()
+{
+	OnShopCloseButtonClickedDelegate.Broadcast();
 }
 
 EShopCategoryTab UShopWidget::GetCurrentActivatedTab() const
