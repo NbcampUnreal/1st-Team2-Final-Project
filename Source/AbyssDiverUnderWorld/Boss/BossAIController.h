@@ -29,6 +29,7 @@ protected:
 #pragma region Method
 public:
 	void SetVisionAngle(float& Angle);
+	bool IsStateSame(EBossState State);
 	EPathFollowingRequestResult::Type MoveToActorWithRadius();
 	EPathFollowingRequestResult::Type MoveToLocationWithRadius(const FVector& Location);
 	
