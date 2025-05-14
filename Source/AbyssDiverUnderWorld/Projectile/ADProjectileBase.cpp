@@ -19,8 +19,8 @@ AADProjectileBase::AADProjectileBase()
    
 
     ProjectileMovementComp = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));
-    ProjectileMovementComp->InitialSpeed = 3000.0f;
-    ProjectileMovementComp->MaxSpeed = 1000.0f;
+    ProjectileMovementComp->InitialSpeed = 4000.0f;
+    ProjectileMovementComp->MaxSpeed = 4000.0f;
     ProjectileMovementComp->bRotationFollowsVelocity = true;
 
     CollisionComponent->OnComponentBeginOverlap.AddDynamic(this, &AADProjectileBase::OnOverlapBegin);

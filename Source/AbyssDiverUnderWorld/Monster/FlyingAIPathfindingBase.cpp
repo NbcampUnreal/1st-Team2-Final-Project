@@ -28,6 +28,7 @@ void UFlyingAIPathfindingBase::MoveTo_Implementation(FVector TargetLocation)
 void UFlyingAIPathfindingBase::TriggerMoveFinished()
 {
 	OnFinishedMoving.Broadcast();
+	LOG(TEXT("Arrived, TriggerMoveFinished Node is Triggerd. Delegate Broadcasing"))
 }
 
 

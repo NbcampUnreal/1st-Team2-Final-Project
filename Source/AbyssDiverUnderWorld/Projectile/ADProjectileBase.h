@@ -41,4 +41,12 @@ protected:
 
 
 #pragma endregion
+
+#pragma region Getter, Setter
+public:
+	UProjectileMovementComponent* GetProjectileMovementComp() const { return ProjectileMovementComp; }
+
+
+
+#pragma endregion
 };
