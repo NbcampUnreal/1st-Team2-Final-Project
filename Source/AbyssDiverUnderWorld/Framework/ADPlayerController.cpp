@@ -8,6 +8,7 @@
 #include "InputMappingContext.h"
 #include "ADPlayerState.h"
 #include "EnhancedInputComponent.h"
+#include "Character/PlayerComponent/PlayerHUDComponent.h"
 #include "Inventory/ADInventoryComponent.h"
 
 AADPlayerController::AADPlayerController()
@@ -21,6 +22,8 @@ AADPlayerController::AADPlayerController()
 	{
 		UE_LOG(AbyssDiver, Warning, TEXT("Failed to load InputMappingContext"));
 	}
+
+	PlayerHUDComponent = CreateDefaultSubobject<UPlayerHUDComponent>(TEXT("PlayerHUDComponent"));
 }
 
 void AADPlayerController::BeginPlay()
