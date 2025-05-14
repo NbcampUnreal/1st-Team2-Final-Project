@@ -1,5 +1,5 @@
 #include "Boss/Task/Serpmare/BTTask_SerpmareIdle.h"
-
+#include "AbyssDiverUnderWorld.h"
 #include "Boss/EBossState.h"
 #include "Boss/Serpmare/Serpmare.h"
 
@@ -7,6 +7,7 @@ UBTTask_SerpmareIdle::UBTTask_SerpmareIdle()
 {
 	NodeName = TEXT("Serpmare Idle");
 	bNotifyTick = true;
+	bIsBigSerpmare = false;
 }
 
 EBTNodeResult::Type UBTTask_SerpmareIdle::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
@@ -32,7 +33,16 @@ void UBTTask_SerpmareIdle::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* No
 	// 공격 범위 내에 플레이어가 들어온 경우
 	if (Serpmare->GetIsAttackCollisionOverlappedPlayer())
 	{
-		Serpmare->SetBossState(EBossState::Detected);
-		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
+		if (bIsBigSerpmare)
+		{
+			LOG(TEXT("Begin"));
+			Serpmare->M_PlayAnimation(Serpmare->AppearAnimation);
+			FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
+		}
+		else
+		{
+			Serpmare->SetBossState(EBossState::Detected);
+			FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);	
+		}
 	}
 }

@@ -13,6 +13,8 @@ UBTTask_SerpmareDetected::UBTTask_SerpmareDetected()
 
 	DetectInterval = 2.0f;
 	AccumulatedDetectTime = 0.0f;
+
+	bIsBigSerpmare = false;
 }
 
 EBTNodeResult::Type UBTTask_SerpmareDetected::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
@@ -48,9 +50,17 @@ void UBTTask_SerpmareDetected::TickTask(UBehaviorTreeComponent& OwnerComp, uint8
 	{
 		if (AccumulatedDetectTime >= DetectInterval)
 		{
-			Serpmare->SetBossState(EBossState::Idle);
-			AccumulatedDetectTime = 0.0f;
-			FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
+			if (bIsBigSerpmare)
+			{
+				Serpmare->M_PlayAnimation(Serpmare->DisappearAnimation);
+				FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
+			}
+			else
+			{
+				Serpmare->SetBossState(EBossState::Idle);
+				AccumulatedDetectTime = 0.0f;
+				FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);	
+			}
 		}
 		else
 		{
