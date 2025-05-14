@@ -13,7 +13,7 @@ void UShopItemSlotWidget::NativeOnListItemObjectSet(UObject* ListItemObject)
     UShopItemEntryData* EntryData = Cast<UShopItemEntryData>(ListItemObject);
     if (EntryData == nullptr)
     {
-        LOG(TEXT("EntryData == nullptr"));
+        LOGV(Error, TEXT("EntryData == nullptr"));
         return;
     }
 
@@ -22,14 +22,14 @@ void UShopItemSlotWidget::NativeOnListItemObjectSet(UObject* ListItemObject)
     SlotIndex = EntryData->GetSlotIndex();
 
     EntryData->OnEntryUpdatedFromDataDelegate.Broadcast(this);
-    LOG(TEXT("%s - EntryUpdated, Index : %d"), *GetName(), SlotIndex);
+    LOGV(Log, TEXT("%s - EntryUpdated, Index : %d"), *GetName(), SlotIndex);
 }
 
 FReply UShopItemSlotWidget::NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
 {
     FReply Replay =  Super::NativeOnMouseButtonUp(InGeometry, InMouseEvent);
 
-    LOG(TEXT("ShopItemSlotWidgetClicked, Index : %d"), SlotIndex);
+    LOGV(Warning, TEXT("ShopItemSlotWidgetClicked, Index : %d"), SlotIndex);
     OnShopItemSlotWidgetClickedDelegate.ExecuteIfBound(SlotIndex);
 
     return Replay;
@@ -72,7 +72,7 @@ void UShopItemSlotWidget::SetSlotImage(UTexture2D* NewTexture)
 {
     if (NewTexture == nullptr)
     {
-        LOG(TEXT("NewTexture == nullptr"));
+        LOGV(Warning, TEXT("NewTexture == nullptr"));
         return;
     }
 

@@ -50,6 +50,7 @@ struct FFADItemDataRow;
 struct FShopItemIdList;
 
 enum class EShopCategoryTab : uint8;
+enum class EUpgradeType : uint8;
 
 #pragma region FastArraySerializer
 
@@ -174,6 +175,8 @@ public:
 	void AddItemToList(uint8 ItemId, EShopCategoryTab TabType);
 	void RemoveItemToList(uint8 ItemId, EShopCategoryTab TabType);
 
+	void InitUpgradeView();
+
 	// 테스트용, 캐릭터의 Interact를 대신함.
 	UFUNCTION(BlueprintCallable, Category = "Shop", CallInEditor)
 	void Interact_Test(AActor* InstigatorActor);
@@ -198,6 +201,7 @@ private:
 	void OnBuyButtonClicked();
 
 	void OnCloseButtonClicked();
+	void OnUpgradeSlotEntryClicked(int32 ClickedSlotIndex);
 
 #pragma endregion
 
@@ -234,7 +238,11 @@ protected:
 
 private:
 
+	UPROPERTY()
+	TArray<uint8> CachedUpgradeGradeMap;
+
 	int32 CurrentSelectedItemId = INDEX_NONE;
+	EUpgradeType CurrentSelectedUpgradeType;
 	uint8 bIsOpened : 1;
 
 #pragma endregion

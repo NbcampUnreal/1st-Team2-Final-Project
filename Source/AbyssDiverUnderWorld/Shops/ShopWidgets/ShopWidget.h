@@ -9,6 +9,7 @@ enum class EShopCategoryTab : uint8;
 class UShopCategoryTabWidget;
 class UShopItemEntryData;
 class UShopElementInfoWidget;
+class UShopTileView;
 
 DECLARE_MULTICAST_DELEGATE(FOnShopCloseButtonClickedDelegate);
 
@@ -38,6 +39,7 @@ public:
 	void RefreshItemView();
 
 	void ShowItemInfos(USkeletalMesh* NewItemMesh, const FString& NewDescription, const FString& NewInfoText);
+	void ShowUpgradeInfos(USkeletalMesh* NewUpgradeItemMesh, int32 CurrentUpgradeLevel, bool bIsMaxLevel, int32 CurrentUpgradeCost, const FString& ExtraInfoText);
 
 	FOnShopCloseButtonClickedDelegate OnShopCloseButtonClickedDelegate;
 
@@ -61,8 +63,14 @@ private:
 	UPROPERTY(EditDefaultsOnly, meta = (BindWidget), meta = (AllowPrivateAccess), Category = "ShopWidget")
 	TObjectPtr<UShopCategoryTabWidget> EquipmentTab;
 
+	UPROPERTY(EditDefaultsOnly, meta = (BindWidget), meta = (AllowPrivateAccess), Category = "ShopWidget")
+	TObjectPtr<UShopCategoryTabWidget> UpgradeTab;
+
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<class UShopTileView> ItemTileView;
+	TObjectPtr<UShopTileView> ItemTileView;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UShopTileView> UpgradeTileView;
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UShopElementInfoWidget> InfoWidget;
@@ -75,6 +83,9 @@ private:
 
 	UPROPERTY()
 	TArray<TObjectPtr<UShopItemEntryData>> EquipmentTabEntryDataList;
+
+	UPROPERTY()
+	TArray<TObjectPtr<UShopItemEntryData>> UpgradeTabEntryDataList;
 
 	EShopCategoryTab CurrentActivatedTab;
 
@@ -89,10 +100,11 @@ public:
 	EShopCategoryTab GetCurrentActivatedTab() const;
 	void SetCurrentActivatedTab(EShopCategoryTab Tab);
 
-
 	UShopCategoryTabWidget* GetCategoryTab(EShopCategoryTab CategoryTab) const;
 
 	UShopElementInfoWidget* GetInfoWidget() const;
+
+	TArray<TObjectPtr<UShopItemEntryData>>& GetUpgradeTabEntryDataList();
 	
 #pragma endregion
 	
