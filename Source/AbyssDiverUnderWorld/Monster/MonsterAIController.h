@@ -67,7 +67,10 @@ private:
 
 #pragma region Getter, Setter
 public:
-	float GetForgetDuration() const;
+	float GetForgetDuration() const
+	{
+		return ForgetDuration;
+	}
 	void SetForgetDuration(float Duration);
 
 #pragma endregion

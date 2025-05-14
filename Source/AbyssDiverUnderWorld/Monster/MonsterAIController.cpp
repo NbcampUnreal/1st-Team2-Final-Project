@@ -4,6 +4,7 @@
 #include "Monster/MonsterAIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Character/UnderwaterCharacter.h"
+#include "Monster/TestPlayerCharacter.h"
 #include "AbyssDiverUnderWorld.h"
 #include "GenericTeamAgentInterface.h"
 
@@ -105,7 +106,7 @@ void AMonsterAIController::HandleForgetPlayer()
 void AMonsterAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
 	LOG(TEXT("OnTargetPerceptionUpdated is Triggerd"));
-	if (Actor->IsA(ACharacter::StaticClass()))
+	if (Actor->IsA(ATestPlayerCharacter::StaticClass()))
 	{
 		BlackboardComponent = GetBlackboardComponent();
 
@@ -132,11 +133,6 @@ void AMonsterAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus 
 	}
 }
 
-
-float AMonsterAIController::GetForgetDuration() const
-{
-	return ForgetDuration;
-}
 
 void AMonsterAIController::SetForgetDuration(float Duration)
 {
