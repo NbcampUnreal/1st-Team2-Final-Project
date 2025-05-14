@@ -66,7 +66,7 @@ void AMonsterAIController::OnPossess(APawn* InPawn)
 		LOG(TEXT("AIController Possess"));
 
 		// Initialize BlackboardKey (CurrnetState, TargetActor)
-		BlackboardComponent->SetValueAsName("CurrentState", "Patrol");
+		BlackboardComponent->SetValueAsEnum("MonsterState", static_cast<uint8>(EMonsterState::Patrol));
 		BlackboardComponent->ClearValue("TargetActor");
 	}
 

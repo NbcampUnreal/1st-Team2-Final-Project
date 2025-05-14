@@ -18,20 +18,11 @@ public:
 
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
 	virtual void TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;
-	virtual void OnTaskFinished(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, EBTNodeResult::Type TaskResult) override;
-
-#pragma region Method
-protected:
-	UFUNCTION()
-	void HandleMoveFinishied(); // ArrivedEvent
-
-#pragma endregion
 
 #pragma region Variable
 private:
 	UPROPERTY()
 	TObjectPtr<UBehaviorTreeComponent> CachedOwnerComp; // For FinishLatentTask
-
 	UPROPERTY()
 	TObjectPtr<AActor> CachedTargetActor;
 
