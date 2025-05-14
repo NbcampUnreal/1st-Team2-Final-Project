@@ -3,12 +3,13 @@
 
 #include "StatComponent.h"
 
+#include "Net/UnrealNetwork.h"
+
 
 UStatComponent::UStatComponent()
 {
-	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
-	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = false;
+	SetIsReplicatedByDefault(true);
 
 	MaxHealth = 100;
 	CurrentHealth = MaxHealth;
@@ -21,8 +22,16 @@ void UStatComponent::BeginPlay()
 	Super::BeginPlay();
 }
 
+void UStatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(UStatComponent, MaxHealth);
+	DOREPLIFETIME(UStatComponent, CurrentHealth);
+}
+
 void UStatComponent::Initialize(int32 InitMaxHealth, int32 InitCurrentHealth, float InitMoveSpeed,
-	int32 InitAttackPower)
+                                int32 InitAttackPower)
 {
 	MaxHealth = InitMaxHealth;
 	CurrentHealth = InitCurrentHealth;
@@ -34,5 +43,17 @@ void UStatComponent::TakeDamage(const float DamageAmount)
 {
 	CurrentHealth -= DamageAmount;
 	CurrentHealth = FMath::Clamp(CurrentHealth, 0, MaxHealth);
+
+	OnHealthChanged.Broadcast(MaxHealth, CurrentHealth);
+}
+
+void UStatComponent::OnRep_MaxHealth()
+{
+	OnHealthChanged.Broadcast(MaxHealth, CurrentHealth);
+}
+
+void UStatComponent::OnRep_CurrentHealth()
+{
+	OnHealthChanged.Broadcast(MaxHealth, CurrentHealth);
 }
 

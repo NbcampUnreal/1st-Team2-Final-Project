@@ -17,6 +17,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 #pragma region Method
 
@@ -26,17 +27,30 @@ public:
 
 	/** 데미지를 계산 */
 	void TakeDamage(const float DamageAmount);
+
+protected:
+	UFUNCTION()
+	void OnRep_MaxHealth();
+	
+	UFUNCTION()
+	void OnRep_CurrentHealth();
 	
 #pragma endregion 
 	
 #pragma region Variable
 
+public:
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHealthChanged, int32, MaxHealth, int32, CurrentHealth);
+	UPROPERTY(BlueprintAssignable, Category="Stat")
+	FOnHealthChanged OnHealthChanged;
+
 	/** 최대 체력 */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Stat")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, ReplicatedUsing = OnRep_MaxHealth, Category="Stat")
 	int32 MaxHealth;
 
 	/** 현재 체력 */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Stat")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, ReplicatedUsing = OnRep_CurrentHealth, Category="Stat")
 	int32 CurrentHealth;
 
 	/** 기본 이동 속도 */
