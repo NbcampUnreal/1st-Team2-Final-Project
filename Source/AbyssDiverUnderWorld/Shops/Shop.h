@@ -209,7 +209,7 @@ protected:
 	TObjectPtr<UStaticMeshComponent> ShopMeshComponent;
 
 	UPROPERTY(VisibleAnywhere, Category = "Shop")
-	TObjectPtr<UStaticMeshComponent> ItemMeshComponent;
+	TObjectPtr<USkeletalMeshComponent> ItemMeshComponent;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Shop");
 	TArray<uint8> DefaultConsumableItemIdList; // 블루프린트 노출용
