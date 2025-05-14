@@ -50,7 +50,10 @@ public:
 	void FireHarpoon();
 	UFUNCTION(BlueprintCallable)
 	void ToggleBoost();
+	UFUNCTION(BlueprintCallable)
 	void ToggleNightVision();
+	void ApplyManualExposure(FPostProcessSettings& PPS, float Bias);
+	void RestoreOriginalExposure(FPostProcessSettings& PPS);
 	void StartReload();
 	void OpenChargeWidget();
 
@@ -68,6 +71,7 @@ protected:
 private:
 	// 보간 완료 확인 함수
 	bool IsInterpolating() const;
+	
 #pragma endregion
 
 #pragma region Variable
@@ -83,10 +87,19 @@ public:
 protected:
 	UPROPERTY(EditAnywhere)
 	float DrainPerSecond = 5.f;
+	UPROPERTY(EditDefaultsOnly, Category = "NightVision")
+	float NightVisionDrainPerSecond = 2.f;
+	UPROPERTY(EditDefaultsOnly, Category = "NightVision")
+	TSoftObjectPtr<UMaterialInterface> NVGMaterial;
+	UPROPERTY(EditAnywhere, Category = "NightVision")
+	float ExposureBias = 1.5f;
 	UPROPERTY()
-	TObjectPtr<UUserWidget> ChargetWidget = nullptr;
-	UPROPERTY(EditAnywhere, Category = "Equip|Projectile")
+	TObjectPtr<UMaterialInstanceDynamic> NVGMID = nullptr;
+	UPROPERTY()
+	TObjectPtr<UUserWidget> ChargeWidget = nullptr;
+	UPROPERTY(EditAnywhere, Category = "Projectile")
 	TSubclassOf<AADProjectileBase> ProjectileClass = nullptr;
+	
 	
 	uint8 bBoostActive : 1;
 	uint8 bNightVisionOn : 1;
@@ -101,6 +114,11 @@ private:
 	float CurrentMultiplier = 1.f;
 	float TargetMultiplier = 1.f;
 	float DrainAcc = 0.f;
+	// NVG 설정 변수
+	TObjectPtr<class UCameraComponent> CameraComp = nullptr;
+	FPostProcessSettings OriginalPPSettings;
+	uint8 bOriginalExposureCached : 1;
+
 #pragma endregion
 
 #pragma region Getter, Setteer

@@ -9,6 +9,7 @@
 #include "AbyssDiverUnderWorld.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Components/SphereComponent.h"
+#include "Camera/CameraComponent.h"
 #include "Interactable/Item/Component/ADInteractionComponent.h"
 
 // Sets default values for this component's properties
@@ -21,8 +22,10 @@ UEquipUseComponent::UEquipUseComponent()
 
 	Amount = 0;
 	DrainPerSecond = 5.f;
+	NightVisionDrainPerSecond = 2.f;
 	DrainAcc = 0.f;
 	bBoostActive = false;
+	bOriginalExposureCached = false;
 
 	// 테스트용
 	if (ACharacter* Char = Cast<ACharacter>(GetOwner()))
@@ -37,10 +40,25 @@ UEquipUseComponent::UEquipUseComponent()
 void UEquipUseComponent::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
+	// DPV
 	CurrentMultiplier = 1.f;
 	TargetMultiplier = 1.f;
 	DefaultSpeed = OwningCharacter->GetCharacterMovement()->MaxWalkSpeed;
+
+
+	// Night Vision
+	if (UMaterialInterface* Base = NVGMaterial.LoadSynchronous())
+	{
+		NVGMID = UMaterialInstanceDynamic::Create(Base, this);
+		NVGMID->SetScalarParameterValue("NightBlend", 0.f);
+	}
+	
+
+	CameraComp = OwningCharacter->FindComponentByClass<UCameraComponent>();
+	if (!CameraComp) return;
+	CameraComp->PostProcessSettings.WeightedBlendables.Array.Add(FWeightedBlendable(1.f, NVGMID));
+	OriginalPPSettings = CameraComp->PostProcessSettings;
 }
 
 void UEquipUseComponent::EndPlay(const EEndPlayReason::Type Reason)
@@ -50,47 +68,61 @@ void UEquipUseComponent::EndPlay(const EEndPlayReason::Type Reason)
 }
 
 
-// Called every frame
 void UEquipUseComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+	// DPV 소모
 	if (bBoostActive && Amount > 0)
 	{
 		DrainAcc += DrainPerSecond * DeltaTime;
+	}
 
-		const int32 WholeUnits = FMath::FloorToInt(DrainAcc);
-		if (WholeUnits > 0)
+	// NVG 소모
+	if (bNightVisionOn && Amount > 0)
+	{
+		DrainAcc += NightVisionDrainPerSecond * DeltaTime;
+	}
+
+	// DrainAcc 처리
+	const int32 Decrease = FMath::FloorToInt(DrainAcc);
+	if (Decrease > 0)
+	{
+		Amount = FMath::Max(0, Amount - Decrease);
+		DrainAcc -= Decrease;
+		OnRep_Amount();
+
+		if (Amount == 0)
 		{
-			Amount = FMath::Max(0, Amount - WholeUnits);
-			DrainAcc -= WholeUnits;
-			OnRep_Amount();
-
-			if (Amount == 0)
+			if (bBoostActive)
 			{
-				TargetMultiplier = 1.f; 
 				bBoostActive = false;
+				TargetMultiplier = 1.f;
+			}
+			if (bNightVisionOn)
+			{
+				bNightVisionOn = false;
+				NVGMID->SetScalarParameterValue(TEXT("NightBlend"), 0.f);
 			}
 		}
 	}
+
+	// 부스트 속도 보간
 	if (IsInterpolating())
 	{
-		// 속도 보간
 		CurrentMultiplier = FMath::FInterpTo(CurrentMultiplier,
 			TargetMultiplier,
 			DeltaTime,
 			InterpSpeed);
-
-		// 속도 적용
-		if (OwningCharacter.IsValid())
+		if (UCharacterMovementComponent* Move = OwningCharacter->GetCharacterMovement())
 		{
-			UCharacterMovementComponent* Move = OwningCharacter->GetCharacterMovement();
 			Move->MaxWalkSpeed = DefaultSpeed * CurrentMultiplier;
-		}
+		}	
 	}
-	if (!bBoostActive && !IsInterpolating())
-	{
+
+	// Tick 끄기
+	const bool bStillNeed = bBoostActive || bNightVisionOn || IsInterpolating();
+	if (!bStillNeed)
 		SetComponentTickEnabled(false);
-	}
 		
 }
 
@@ -219,19 +251,27 @@ void UEquipUseComponent::FireHarpoon()
 void UEquipUseComponent::ToggleBoost()
 {
 	if (!OwningCharacter.IsValid()) return;
+	if (Amount <= 0 || bNightVisionOn) return;
 
 	bBoostActive = !bBoostActive;
 	TargetMultiplier = bBoostActive ? BoostMultiplier : 1.f; // 가속 : 감속
 	
 	// Tick 활성 : 비활성
-	const bool bNeedTick = bBoostActive || IsInterpolating();
-	SetComponentTickEnabled(bNeedTick);
+	const bool bStillNeed = bBoostActive || bNightVisionOn || IsInterpolating();
+	SetComponentTickEnabled(bStillNeed);
 }
 
 void UEquipUseComponent::ToggleNightVision()
 {
-	// TODO : 포스트 프로세스 매태리얼 파라미터 토글해서 구현??
+	if (!NVGMID || !CameraComp) return;
+	if (Amount <= 0 || bBoostActive) return;
+	
 	bNightVisionOn = !bNightVisionOn;
+	const float Target = bNightVisionOn ? 1.f : 0.f;
+	NVGMID->SetScalarParameterValue("NightBlend", Target);
+
+	const bool bStillNeed = bBoostActive || bNightVisionOn || IsInterpolating();
+	SetComponentTickEnabled(bStillNeed);
 }
 
 void UEquipUseComponent::StartReload()
