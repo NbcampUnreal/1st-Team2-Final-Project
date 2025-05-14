@@ -132,7 +132,8 @@ void AMonsterAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus 
 	}
 }
 
-float AMonsterAIController::GetForgetDuration()
+
+float AMonsterAIController::GetForgetDuration() const
 {
 	return ForgetDuration;
 }
