@@ -71,7 +71,7 @@ void UUpgradeComponent::OnRep_UpgradeGradeMap()
 		return;
 	}
 
-	if (PS->GetPlayerController()->IsLocalController())
+	if (PS->GetPlayerController()->IsLocalController() == false)
 	{
 		return;
 	}
