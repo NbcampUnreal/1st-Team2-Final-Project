@@ -23,6 +23,8 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	FirstPersonCameraComponent->SetRelativeLocation(FVector(-10.f, 0.f, 60.f)); // Position the camera
 	FirstPersonCameraComponent->bUsePawnControlRotation = true;
 
+	StatComponent->Initialize(1000, 1000, 400.0f, 10);
+	
 	bIsCaptured = false;
 	StatComponent->MoveSpeed = 400.0f;
 	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
@@ -32,7 +34,7 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 		Movement->BrakingDecelerationSwimming = 500.0f;
 		Movement->GravityScale = 0.0f;
 	}
-	SprintSpeed = StatComponent->MoveSpeed * 1.5f;
+	SprintSpeed = StatComponent->MoveSpeed * 1.75f;
 
 	// To-Do
 	// 외부에 보여지는 Mesh와 1인칭 Mesh를 다르게 구현
@@ -113,6 +115,9 @@ void AUnderwaterCharacter::StartCaptureState()
 
 void AUnderwaterCharacter::StopCaptureState()
 {
+	// 사망 처리 시에도 StopCaptureState가 호출된다.
+	// 즉, 사망이 확정되는 시점이 다르게 작동할 수 있다.
+	
 	if (!bIsCaptured || !HasAuthority())
 	{
 		return;
@@ -125,7 +130,7 @@ void AUnderwaterCharacter::StopCaptureState()
 void AUnderwaterCharacter::M_StartCaptureState_Implementation()
 {
 	SetActorHiddenInGame(true);
-	SetActorEnableCollision(true);
+	SetActorEnableCollision(false);
 	if (IsLocallyControlled())
 	{
 		if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
@@ -150,7 +155,7 @@ void AUnderwaterCharacter::M_StartCaptureState_Implementation()
 void AUnderwaterCharacter::M_StopCaptureState_Implementation()
 {
 	SetActorHiddenInGame(false);
-	SetActorEnableCollision(false);
+	SetActorEnableCollision(true);
 	if (IsLocallyControlled())
 	{
 		if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
