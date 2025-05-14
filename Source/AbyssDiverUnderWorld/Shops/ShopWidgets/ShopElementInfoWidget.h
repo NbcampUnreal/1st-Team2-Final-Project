@@ -24,13 +24,13 @@ protected:
 
 public:
 
-	void Init(UStaticMeshComponent* NewItemMeshComp);
+	void Init(USkeletalMeshComponent* NewItemMeshComp);
 
-	void ShowItemInfos(UStaticMesh* NewItemMesh, const FString& NewDescription, const FString& NewInfoText);
+	void ShowItemInfos(USkeletalMesh* NewItemMesh, const FString& NewDescription, const FString& NewInfoText);
 
 	void ChangeItemDescription(const FString& NewDescription);
 	void ChangeInfoText(const FString& NewInfoText);
-	void ChangeItemMesh(UStaticMesh* NewMesh);
+	void ChangeItemMesh(USkeletalMesh* NewMesh);
 
 	void SetDescriptionActive(bool bShouldActivate);
 	void SetInfoTextActive(bool bShouldActivate);
@@ -50,7 +50,7 @@ private:
 protected:
 
 	UPROPERTY()
-	TObjectPtr<UStaticMeshComponent> ItemMeshComponent;
+	TObjectPtr<USkeletalMeshComponent> ItemMeshComponent;
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<class UImage> ItemMeshImage;

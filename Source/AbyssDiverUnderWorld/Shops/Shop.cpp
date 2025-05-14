@@ -136,7 +136,7 @@ AShop::AShop()
 	ShopMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ShopMesh"));
 	SetRootComponent(ShopMeshComponent);
 
-	ItemMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ItemMesh"));
+	ItemMeshComponent = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("ItemMesh"));
 	ItemMeshComponent->SetupAttachment(RootComponent);
 	ItemMeshComponent->SetVisibleInSceneCaptureOnly(true);
 	ItemMeshComponent->SetIsReplicated(false);
@@ -562,7 +562,7 @@ void AShop::OnSlotEntryClicked(int32 ClickedSlotIndex)
 		return;
 	}
 
-	UStaticMesh* ItemMesh = ItemDataRow->Mesh;
+	USkeletalMesh* ItemMesh = ItemDataRow->SkeletalMesh;
 
 	ShopWidget->ShowItemInfos(ItemMesh, ItemDataRow->Description, ItemDataRow->Description);
 	LOG(TEXT("Showing Item Infos..., id : %d"), ItemId);

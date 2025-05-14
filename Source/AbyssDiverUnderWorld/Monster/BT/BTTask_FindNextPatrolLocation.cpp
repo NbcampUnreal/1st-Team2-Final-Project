@@ -5,6 +5,7 @@
 #include "AIController.h"
 #include "Monster/FlyingAIPathfindingBase.h"
 #include "Monster/Monster.h"
+#include "AbyssDiverUnderWorld.h"
 
 UBTTask_FindNextPatrolLocation::UBTTask_FindNextPatrolLocation()
 {
@@ -34,6 +35,7 @@ EBTNodeResult::Type UBTTask_FindNextPatrolLocation::ExecuteTask(UBehaviorTreeCom
 
 	BlackboardComp->SetValueAsVector(TargetLocationKey.SelectedKeyName, TargetLocation);
 	BlackboardComp->SetValueAsInt(PatrolIndexKey.SelectedKeyName, Monster->GetNextPatrolIndex(Index));
+	LOG(TEXT("TargetLocation : %s"), *TargetLocation.ToString())
 
 	return EBTNodeResult::Succeeded;
 }
