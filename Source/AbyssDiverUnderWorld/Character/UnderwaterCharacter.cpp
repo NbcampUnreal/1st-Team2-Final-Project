@@ -23,6 +23,7 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	FirstPersonCameraComponent->SetRelativeLocation(FVector(-10.f, 0.f, 60.f)); // Position the camera
 	FirstPersonCameraComponent->bUsePawnControlRotation = true;
 
+	bIsCaptured = false;
 	StatComponent->MoveSpeed = 400.0f;
 	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
 	{
@@ -96,6 +97,78 @@ void AUnderwaterCharacter::SetCharacterState(ECharacterState State)
 	default:
 		UE_LOG(AbyssDiver, Error, TEXT("Invalid Character State"));
 		break;
+	}
+}
+
+void AUnderwaterCharacter::StartCaptureState()
+{
+	if(bIsCaptured || !HasAuthority())
+	{
+		return;
+	}
+
+	bIsCaptured = true;
+	M_StartCaptureState();
+}
+
+void AUnderwaterCharacter::StopCaptureState()
+{
+	if (!bIsCaptured || !HasAuthority())
+	{
+		return;
+	}
+
+	bIsCaptured = false;
+	M_StopCaptureState();
+}
+
+void AUnderwaterCharacter::M_StartCaptureState_Implementation()
+{
+	SetActorHiddenInGame(true);
+	SetActorEnableCollision(true);
+	if (IsLocallyControlled())
+	{
+		if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
+		{
+			PlayerController->SetIgnoreLookInput(true);
+			PlayerController->SetIgnoreMoveInput(true);
+
+			PlayerController->PlayerCameraManager->StartCameraFade(
+				0.0f,
+				1.0f,
+				0.5f,
+				FLinearColor::Black,
+				false,
+				true
+			);
+		}
+		
+		// Play SFX
+	}
+}
+
+void AUnderwaterCharacter::M_StopCaptureState_Implementation()
+{
+	SetActorHiddenInGame(false);
+	SetActorEnableCollision(false);
+	if (IsLocallyControlled())
+	{
+		if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
+		{
+			PlayerController->ResetIgnoreLookInput();
+			PlayerController->ResetIgnoreMoveInput();
+
+			PlayerController->PlayerCameraManager->StartCameraFade(
+				1.0f,
+				0.0f,
+				0.5f,
+				FLinearColor::Black,
+				false,
+				true
+			);
+		}
+		
+		// Play SFX
 	}
 }
 

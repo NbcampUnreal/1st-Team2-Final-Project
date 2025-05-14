@@ -40,12 +40,41 @@ protected:
 #pragma region Method
 
 public:
-
 	/** 현재 캐릭터의 상태를 전환. 수중, 지상 */
 	UFUNCTION(BlueprintCallable)
 	void SetCharacterState(ECharacterState State);
+
+	/** 빠른 구현을 위해 Captrue를 현재 Multicast로 구현한다.
+	 * 이후 변경 모델
+	 * 1. Replicate 모델 사용 : Replicate 모델은 변수를 기반으로 작동하기 때문에 중도 참여자도 현재 상태를 판단할 수 있다.
+	 * 혹은 2개가 결합된 방식을 사용할 수 있다.
+	 * 2. State Pattern 사용 : 상태가 많아질 경우 해당 State Pattern을 사용해서 상태를 관리한다.
+	 */
 	
+	/** 캐릭터 Capture 상태 실행 */
+	UFUNCTION(BlueprintCallable)
+	void StartCaptureState();
+
+	/** 캐릭터 Capture 상태 종료 */
+	UFUNCTION(BlueprintCallable)
+	void StopCaptureState();
+
 protected:
+	/** Capture State Multicast
+	 * Owner : 암전 효과, 입력 처리
+	 * All : Mesh 비활성화
+	 */
+	UFUNCTION(NetMulticast, Reliable)
+	void M_StartCaptureState();
+	void M_StartCaptureState_Implementation();
+
+	/** Capture State Multicast
+	 * Owner : 암전 효과, 입력 처리
+	 * All : Mesh 활성화
+	 */
+	UFUNCTION(NetMulticast, Reliable)
+	void M_StopCaptureState();
+	void M_StopCaptureState_Implementation();
 	
 	/** 이동 함수. 지상, 수중 상태에 따라 이동한다. */
 	void Move(const FInputActionValue& InputActionValue);
@@ -64,7 +93,7 @@ protected:
 
 	UFUNCTION()
 	void OnSprintStateChanged(bool bNewSprinting);
-	
+
 	/** 회전 함수. 현재 버전은 Pitch가 제한되어 있다. */
 	void Look(const FInputActionValue& InputActionValue);
 
@@ -89,11 +118,11 @@ protected:
 	/** 디버그 카메라 모드 토글. 1인칭, 3인칭을 전환한다. */
 	UFUNCTION(CallInEditor)
 	void ToggleDebugCameraMode();
-	
+
 #pragma endregion
-	
+
 #pragma region Variable
-	
+
 private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Debug, meta = (AllowPrivateAccess = "true"))
 	uint8 bUseDebugCamera : 1;
@@ -102,9 +131,13 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	ECharacterState CharacterState;
 
+	/** Capture 상태 여부. 추후 상태가 많아지면 상태 패턴 이용을 고려 */
+	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	uint8 bIsCaptured : 1;
+	
 	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float SprintSpeed;
-	
+
 	/** 이동 입력, 3차원 입력을 받는다. 캐릭터의 XYZ 축대로 맵핑을 한다. Forward : X, Right : Y, Up : Z */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> MoveAction;
@@ -154,7 +187,7 @@ private:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UStaminaComponent> StaminaComponent;
-	
+
 	/** 상호작용 실행하게 하는 Component */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UADInteractionComponent> InteractionComponent;
@@ -166,7 +199,7 @@ private:
 #pragma endregion
 
 #pragma region Getter Setter
-	
+
 public:
 	/** Interaction Component를 반환 */
 	FORCEINLINE UADInteractionComponent* GetInteractionComponent() const { return InteractionComponent; }
