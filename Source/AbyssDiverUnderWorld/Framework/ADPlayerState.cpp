@@ -12,26 +12,23 @@ AADPlayerState::AADPlayerState()
 void AADPlayerState::BeginPlay()
 {
 	Super::BeginPlay();
-
 	APlayerController* PC = GetPlayerController();
 	if (PC && PC->IsLocalController() && HasAuthority())
 	{
 
-		InventoryComp->InventoryInitialize();
-		LOGVN(Log, TEXT("Inventory Initializded"));
+		InventoryComp->ClientRequestInventoryInitialize();
+		LOGVN(Error, TEXT("Inventory Initializded"));
 	}
 
 }
 
 void AADPlayerState::PostNetInit()
 {
-	Super::PostNetInit();
-
 	APlayerController* PC = GetPlayerController();
 	if (PC && PC->IsLocalController())
 	{
 
-		InventoryComp->InventoryInitialize();
+		InventoryComp->ClientRequestInventoryInitialize();
 		LOGVN(Error, TEXT("Inventory Initializded"));
 	}
 }

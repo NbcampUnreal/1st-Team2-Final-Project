@@ -6,8 +6,9 @@
 #include "ShopElementInfoWidget.generated.h"
 
 DECLARE_MULTICAST_DELEGATE(FOnBuyButtonClickedDelegate);
-class URichTextBlock;
 
+class URichTextBlock;
+class UShopItemMeshPanel;
 /**
  * 상점에서 아이템, 장비, 업글에 대한 정보를 띄우는 위젯
  */
@@ -73,7 +74,15 @@ protected:
 	TObjectPtr<class UButton> BuyButton;
 
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<class UShopItemMeshPanel> ItemMeshPanel;
+	TObjectPtr<UShopItemMeshPanel> ItemMeshPanel;
 
 #pragma endregion
+
+#pragma region Getter / Setter
+
+public:
+	UShopItemMeshPanel* GetItemMeshPanel() const;
+
+#pragma endregion
+
 };

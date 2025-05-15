@@ -16,8 +16,6 @@ class ABYSSDIVERUNDERWORLD_API UShopItemMeshPanel : public UUserWidget
 protected:
 
 	virtual FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
-	virtual FReply NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
-	virtual FReply NativeOnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 
 #pragma region Methods
 
@@ -27,6 +25,9 @@ public:
 	void ChangeItemMesh(USkeletalMesh* NewMesh);
 
 	void SetItemMeshActive(bool bShouldActivate);
+
+	void AddMeshRotationYaw(float Yaw);
+	void SetMeshRotation(const FRotator& NewRotator);
 
 #pragma endregion
 
@@ -40,6 +41,23 @@ private:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<class UImage> ItemMeshImage;
 
+	uint8 bIsMouseDown : 1;
+	
+	float CurrentMousePositionX = 0;
+
 #pragma endregion
+
+#pragma region Getters / Setters
+
+public:
+
+	bool GetMouseDown() const;
+	void SetMouseDown(bool bNewMouseDown);
+
+	float GetCurrentMousePositionY() const;
+	void SetCurrentMousePositionX(float NewPositionX);
+
+#pragma endregion
+
 
 };

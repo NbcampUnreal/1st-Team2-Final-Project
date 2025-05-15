@@ -32,9 +32,9 @@ FReply UInventorySlotWidget::NativeOnMouseButtonUp(const FGeometry& InGeometry, 
 		{
 			if (InMouseEvent.GetEffectingButton() == EKeys::LeftMouseButton)
 			{
-				InventoryComponent->UseInventoryItem(EItemType::Consumable, SlotIndex);
+				InventoryComponent->S_UseInventoryItem(EItemType::Consumable, SlotIndex);
 				return FReply::Handled();
-			}
+			} 
 		}
 
 	}

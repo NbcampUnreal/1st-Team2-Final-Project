@@ -157,3 +157,8 @@ void UShopElementInfoWidget::OnBuyButtonClicked()
 {
 	OnBuyButtonClickedDelegate.Broadcast();
 }
+
+UShopItemMeshPanel* UShopElementInfoWidget::GetItemMeshPanel() const
+{
+	return ItemMeshPanel;
+}
