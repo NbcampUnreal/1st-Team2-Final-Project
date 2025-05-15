@@ -11,13 +11,14 @@
 #include "Components/SphereComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Interactable/Item/Component/ADInteractionComponent.h"
+#include "Subsystems/GameInstanceSubsystem.h"
+#include "Subsystems/DataTableSubsystem.h"
 
 // Sets default values for this component's properties
 UEquipUseComponent::UEquipUseComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
 	SetComponentTickEnabled(false);
-
 	SetIsReplicatedByDefault(true);
 
 	Amount = 0;
@@ -26,6 +27,8 @@ UEquipUseComponent::UEquipUseComponent()
 	DrainAcc = 0.f;
 	bBoostActive = false;
 	bOriginalExposureCached = false;
+	bCanFire = true;
+	bIsWeapon = true;
 
 	// 테스트용
 	if (ACharacter* Char = Cast<ACharacter>(GetOwner()))
@@ -55,7 +58,7 @@ void UEquipUseComponent::BeginPlay()
 	}
 	
 
-	CameraComp = OwningCharacter->FindComponentByClass<UCameraComponent>();
+	CameraComp = OwningCharacter->FindComponentByClass<UCameraComponent>(); // Getter를 사용하는 것이 좋아 보임
 	if (!CameraComp) return;
 	CameraComp->PostProcessSettings.WeightedBlendables.Array.Add(FWeightedBlendable(1.f, NightVisionMaterialInstance));
 	OriginalPPSettings = CameraComp->PostProcessSettings;
@@ -128,12 +131,23 @@ void UEquipUseComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAc
 
 void UEquipUseComponent::S_LeftClick_Implementation()
 {
-	HandleLeftClick();
+	switch (LeftAction)
+	{
+	case EAction::WeaponFire:      FireHarpoon();       break;
+	case EAction::ToggleBoost:     ToggleBoost();       break;
+	case EAction::ToggleNVGToggle: ToggleNightVision(); break;
+	default:                      break;
+	}
 }
 
 void UEquipUseComponent::S_RKey_Implementation()
 {
-	HandleRKey();
+	switch (RKeyAction)
+	{
+	case EAction::WeaponReload:   StartReload();     break;
+	case EAction::ApplyChargeUI:  OpenChargeWidget();break;
+	default:                      break;
+	}
 }
 
 void UEquipUseComponent::OnRep_Amount()
@@ -141,17 +155,91 @@ void UEquipUseComponent::OnRep_Amount()
 	// HUD 업데이트 브로드캐스트
 }
 
-void UEquipUseComponent::Initialize(const FFADItemDataRow& InItemMeta)
+void UEquipUseComponent::OnRep_CurrentAmmoInMag()
 {
-	Amount = InItemMeta.Amount;
-	LeftAction = TagToAction(InItemMeta.LeftTag);
-	RKeyAction = TagToAction(InItemMeta.RKeyTag);
+	// HUD와 UI에 탄알 수 갱신
+}
+
+void UEquipUseComponent::OnRep_ReserveAmmo()
+{
+	// HUD와 UI에 탄알 수 갱신
+}
+
+void UEquipUseComponent::OnRep_NightVisionOn()
+{
+	const float Target = bNightVisionOn ? 1.f : 0.f;
+	NightVisionMaterialInstance->SetScalarParameterValue(TEXT("NightBlend"), Target);
+	SetComponentTickEnabled(bNightVisionOn || bBoostActive);
+}
+
+void UEquipUseComponent::Initialize(uint8 ItemId)
+{
+	LOG(TEXT("UEquipUseComponent::Initialize START – ItemId=%d"), ItemId);
+
+	UGameInstance* GI = GetWorld()->GetGameInstance();
+	if (!GI)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Initialize: No valid GameInstance"));
+		return;
+	}
+	UDataTableSubsystem* DataTableSubsystem = GI->GetSubsystem<UDataTableSubsystem>();
+	FFADItemDataRow* InItemMeta = DataTableSubsystem ? DataTableSubsystem->GetItemData(ItemId) : nullptr;
+	if (!InItemMeta)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("EquipUseComponent::Initialize – Invalid ItemId %d"), ItemId);
+		return;
+	}
+	const FName RowName = InItemMeta->Name;
+
+	// 해제 전에 상태 저장
+	if (!CurrentRowName.IsNone())
+	{
+		int32 PrevTotal = bIsWeapon
+			? (CurrentAmmoInMag + ReserveAmmo)
+			: Amount;
+		AmountMap.FindOrAdd(CurrentRowName) = PrevTotal;
+	}
+
+	// 새 장착 아이템
+	CurrentRowName = RowName;
+	
+	// Action Type 결정
+	LeftAction = TagToAction(InItemMeta->LeftTag);
+	RKeyAction = TagToAction(InItemMeta->RKeyTag);
+	bIsWeapon = (LeftAction == EAction::WeaponFire || RKeyAction == EAction::WeaponFire);
+	LOG(TEXT("Initialize: LeftAction=%d, RKeyAction=%d, bIsWeapon=%s"),
+		(int32)LeftAction, (int32)RKeyAction, bIsWeapon ? TEXT("true") : TEXT("false"));
+
+	// 저장된 총량 가져오기
+	int32 SavedTotal = AmountMap.FindOrAdd(RowName, InItemMeta->Amount);
+
+	// 무기와 무기가 아닌 것 구분
+	if (bIsWeapon)
+	{
+		CurrentAmmoInMag = FMath::Min(SavedTotal, MagazineSize);
+		ReserveAmmo = SavedTotal - CurrentAmmoInMag;
+		LOG(TEXT("Initialize: Weapon – InMag=%d, Reserve=%d"),
+			CurrentAmmoInMag, ReserveAmmo);
+	}
+	else
+	{
+		Amount = SavedTotal;
+		CurrentAmmoInMag = 0;
+		ReserveAmmo = 0;
+	}
+	LOG(TEXT("Initialize: bIsWeapon=%s, Total=%d, InMag=%d, Reserve=%d"),
+		bIsWeapon ? TEXT("true") : TEXT("false"),
+		Amount, CurrentAmmoInMag, ReserveAmmo);
 
 	if (ACharacter* Char = Cast<ACharacter>(GetOwner()))
 	{
 		OwningCharacter = Char;
 		DefaultSpeed = Char->GetCharacterMovement()->MaxWalkSpeed;
 	}
+
+	// 서버에서 HUD 동기화
+	OnRep_CurrentAmmoInMag();
+	OnRep_ReserveAmmo();
 }
 
 EAction UEquipUseComponent::TagToAction(const FGameplayTag& Tag)
@@ -166,39 +254,17 @@ EAction UEquipUseComponent::TagToAction(const FGameplayTag& Tag)
 
 void UEquipUseComponent::HandleLeftClick()
 {
-	if (!GetOwner()->HasAuthority())
-	{
-		S_LeftClick();
-		return;
-	}
-
-	switch (LeftAction)
-	{
-	case EAction::WeaponFire:      FireHarpoon();       break;
-	case EAction::ToggleBoost:     ToggleBoost();       break;
-	case EAction::ToggleNVGToggle: ToggleNightVision(); break;
-	default:                      break;
-	}
+	S_LeftClick();
 }
 
 void UEquipUseComponent::HandleRKey()
 {
-	if (!GetOwner()->HasAuthority())
-	{
-		S_RKey();
-		return;
-	}
-	switch (RKeyAction)
-	{
-	case EAction::WeaponReload:   StartReload();     break;
-	case EAction::ApplyChargeUI:  OpenChargeWidget();break;
-	default:                      break;
-	}
+	S_RKey();
 }
 
 void UEquipUseComponent::FireHarpoon()
 {
-	if (Amount <= 0 || !ProjectileClass || !OwningCharacter.IsValid())
+	if (!bCanFire || CurrentAmmoInMag <= 0  || !ProjectileClass || !OwningCharacter.IsValid())
 		return;
 
 	FVector   CamLoc = FVector::ZeroVector;;
@@ -243,8 +309,16 @@ void UEquipUseComponent::FireHarpoon()
 		ProjectileMovementComp->Velocity = LaunchDir * Speed;      
 		ProjectileMovementComp->Activate(true);
 
-		--Amount;
+		--CurrentAmmoInMag;
 		OnRep_Amount(); 
+
+		bCanFire = false;
+		const float RefireDelay = 1.0f / RateOfFire;
+		GetWorld()->GetTimerManager().SetTimer(
+			TimerHandle_HandleRefire,
+			[this]() { bCanFire = true; },
+			RefireDelay, false
+		);
 	}
 }
 
@@ -270,14 +344,23 @@ void UEquipUseComponent::ToggleNightVision()
 	const float Target = bNightVisionOn ? 1.f : 0.f;
 	NightVisionMaterialInstance->SetScalarParameterValue("NightBlend", Target);
 
-	const bool bStillNeed = bBoostActive || bNightVisionOn || IsInterpolating();
+	const bool bStillNeed = bBoostActive || bNightVisionOn;
 	SetComponentTickEnabled(bStillNeed);
 }
 
 void UEquipUseComponent::StartReload()
 {
-	Amount = MaxMagazine;
-	OnRep_Amount();
+	if (!bIsWeapon || ReserveAmmo <= 0 || CurrentAmmoInMag == MagazineSize)
+		return;
+	bCanFire = false;
+	GetWorld()->GetTimerManager().ClearTimer(TimerHandle_HandleRefire);
+	
+	GetWorld()->GetTimerManager().SetTimer(
+		TimerHandle_HandleReload,
+		this, &UEquipUseComponent::FinishReload,
+		ReloadDuration, false
+	);
+
 }
 
 void UEquipUseComponent::OpenChargeWidget()
@@ -286,14 +369,27 @@ void UEquipUseComponent::OpenChargeWidget()
 
 }
 
+void UEquipUseComponent::FinishReload()
+{
+	const int32 Needed = MagazineSize - CurrentAmmoInMag;
+	const int32 ToReload = FMath::Min(Needed, ReserveAmmo);
+	
+	CurrentAmmoInMag += ToReload;
+	ReserveAmmo -= ToReload;
+	bCanFire = true;
+}
+
 void UEquipUseComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(UEquipUseComponent, Amount);
+	DOREPLIFETIME(UEquipUseComponent, CurrentAmmoInMag);
+	DOREPLIFETIME(UEquipUseComponent, ReserveAmmo);
+	DOREPLIFETIME(UEquipUseComponent, bBoostActive);
+	DOREPLIFETIME(UEquipUseComponent, bNightVisionOn);
 }
 
 bool UEquipUseComponent::IsInterpolating() const
 {
 	return !FMath::IsNearlyEqual(CurrentMultiplier, TargetMultiplier, 0.001f);
 }
-

@@ -168,7 +168,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Shop")
 	void CloseShop(AUnderwaterCharacter* Requester);
 
-	EBuyResult BuyItem(uint8 ItemId, AUnderwaterCharacter* Buyer);
+	EBuyResult BuyItem(uint8 ItemId, uint8 Quantity, AUnderwaterCharacter* Buyer);
 	ESellResult SellItem(uint8 ItemId, AUnderwaterCharacter* Seller);
 
 	void AddItems(const TArray<uint8>& Ids, EShopCategoryTab TabType);
@@ -198,7 +198,7 @@ private:
 	void OnSlotEntryClicked(int32 ClickedSlotIndex);
 
 	UFUNCTION()
-	void OnBuyButtonClicked();
+	void OnBuyButtonClicked(int32 Quantity);
 
 	void OnCloseButtonClicked();
 	void OnUpgradeSlotEntryClicked(int32 ClickedSlotIndex);

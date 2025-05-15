@@ -24,6 +24,7 @@ ABoss::ABoss()
 	LastDetectedLocation = FVector::ZeroVector;
 	AttackRadius = 500.0f;
 	LaunchPower = 1000.0f;
+	AttackedCameraShakeScale = 1.0f;
 	bIsBiteAttackSuccess = false;
 	
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
@@ -72,11 +73,11 @@ void ABoss::SetBossState(EBossState State)
 	BlackboardComponent->SetValueAsEnum(BossStateKey, static_cast<uint8>(BossState));
 }
 
-void ABoss::LaunchPlayer(AUnderwaterCharacter* Player)
+void ABoss::LaunchPlayer(AUnderwaterCharacter* Player, float& Power)
 {
 	// 플레이어를 밀치는 로직
 	const FVector PushDirection = (Player->GetActorLocation() - GetActorLocation()).GetSafeNormal();
-	const float PushStrength = LaunchPower; // 밀치는 힘의 크기 -> 변수화 필요할 것 같은데 일단 고민
+	const float PushStrength = Power; // 밀치는 힘의 크기 -> 변수화 필요할 것 같은데 일단 고민
 	const FVector PushForce = PushDirection * PushStrength;
 	
 	// 물리 시뮬레이션이 아닌 경우 LaunchCharacter 사용
@@ -226,10 +227,10 @@ void ABoss::OnMeshOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* Othe
 	UGameplayStatics::ApplyDamage(Player, StatComponent->AttackPower, GetController(), this, UDamageType::StaticClass());
 
 	// 피격당한 플레이어의 카메라 Shake
-	CameraControllerComponent->ShakePlayerCamera(Player);
+	CameraControllerComponent->ShakePlayerCamera(Player, AttackedCameraShakeScale);
 
 	// 캐릭터 넉백
-	LaunchPlayer(Player);
+	LaunchPlayer(Player, LaunchPower);
 }
 
 void ABoss::OnBiteCollisionOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,

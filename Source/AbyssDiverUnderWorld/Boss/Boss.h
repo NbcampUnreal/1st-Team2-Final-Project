@@ -24,7 +24,7 @@ protected:
 #pragma region Method
 public:
 	void SetBossState(EBossState State);
-	void LaunchPlayer(AUnderwaterCharacter* Player);
+	void LaunchPlayer(AUnderwaterCharacter* Player, float& Power);
 	
 	/** 데미지를 받을 때 호출하는 함수 */
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
@@ -89,6 +89,9 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
 	float LaunchPower;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
+	float AttackedCameraShakeScale;
 	
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UAnimInstance> AnimInstance;

@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -7,9 +5,6 @@
 #include "GameFramework/PlayerController.h"
 #include "ADPlayerController.generated.h"
 
-/**
- * 
- */
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADPlayerController : public APlayerController
 {
@@ -21,6 +16,10 @@ protected:
 	virtual void BeginPlay() override;
 
 #pragma region Method
+	UFUNCTION(Server, Reliable)
+	void S_SetPlayerInfo(const FUniqueNetIdRepl& Id, const FString& Nickname);
+	void S_SetPlayerInfo_Implementation(const FUniqueNetIdRepl& Id, const FString& Nickname);
+
 
 	virtual void SetupInputComponent() override;
 	void ToggleInventoryShowed(const FInputActionValue& InputActionValue);
