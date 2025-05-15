@@ -26,6 +26,7 @@ UEquipUseComponent::UEquipUseComponent()
 	DrainAcc = 0.f;
 	bBoostActive = false;
 	bOriginalExposureCached = false;
+	bCanFire = true;
 
 	// 테스트용
 	if (ACharacter* Char = Cast<ACharacter>(GetOwner()))
@@ -141,9 +142,27 @@ void UEquipUseComponent::OnRep_Amount()
 	// HUD 업데이트 브로드캐스트
 }
 
-void UEquipUseComponent::Initialize(const FFADItemDataRow& InItemMeta)
+void UEquipUseComponent::Initialize(const FFADItemDataRow& InItemMeta, FName RowName)
 {
-	Amount = InItemMeta.Amount;
+	// 해제 전에 상태 저장
+	if (!CurrentRowName.IsNone())
+	{
+		AmountMap[CurrentRowName] = Amount;
+	}
+
+	// 새 장착 아이템
+	CurrentRowName = RowName;
+	// 첫 장착이 아닐 때
+	if (AmountMap.Contains(RowName))
+	{
+		Amount = AmountMap[RowName];
+	}
+	// 첫 장착일 때
+	else
+	{
+		Amount = InItemMeta.Amount;
+		AmountMap.FindOrAdd(RowName, Amount);
+	}
 	LeftAction = TagToAction(InItemMeta.LeftTag);
 	RKeyAction = TagToAction(InItemMeta.RKeyTag);
 
@@ -198,7 +217,7 @@ void UEquipUseComponent::HandleRKey()
 
 void UEquipUseComponent::FireHarpoon()
 {
-	if (Amount <= 0 || !ProjectileClass || !OwningCharacter.IsValid())
+	if (!bCanFire || CurrentAmmoInMag <= 0  || !ProjectileClass || !OwningCharacter.IsValid())
 		return;
 
 	FVector   CamLoc = FVector::ZeroVector;;
@@ -243,8 +262,16 @@ void UEquipUseComponent::FireHarpoon()
 		ProjectileMovementComp->Velocity = LaunchDir * Speed;      
 		ProjectileMovementComp->Activate(true);
 
-		--Amount;
+		--CurrentAmmoInMag;
 		OnRep_Amount(); 
+
+		bCanFire = false;
+		const float RefireDelay = 1.0f / RateOfFire;
+		GetWorld()->GetTimerManager().SetTimer(
+			TimerHandle_HandleRefire,
+			[this]() { bCanFire = true; },
+			RefireDelay, false
+		);
 	}
 }
 
