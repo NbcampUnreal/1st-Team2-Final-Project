@@ -38,6 +38,20 @@ protected:
 	UPROPERTY(Replicated, ReplicatedUsing = OnRep_Nickname)
 	FString PlayerNickname;
 
+	UPROPERTY(Replicated)
+	int32 TotalPeronalCredit;
+
+
+	UPROPERTY(Replicated)
+	int32 DeathCount;
+
+	UPROPERTY(Replicated)
+	int32 SafeReturnCount;
+
+	UPROPERTY(Replicated)
+	int32 MonsterKillCount;
+
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TObjectPtr<UADInventoryComponent> InventoryComp;
 
@@ -45,7 +59,7 @@ protected:
 	TObjectPtr<UUpgradeComponent> UpgradeComp;
 
 #pragma endregion
-	
+
 #pragma region Getter/Setter
 public:
 

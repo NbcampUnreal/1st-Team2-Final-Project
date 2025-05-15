@@ -26,6 +26,8 @@ void AADPlayerState::BeginPlay()
 
 void AADPlayerState::PostNetInit()
 {
+	Super::PostNetInit();
+
 	APlayerController* PC = GetPlayerController();
 	if (PC && PC->IsLocalController())
 	{
@@ -41,6 +43,10 @@ void AADPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 
 	DOREPLIFETIME(AADPlayerState, ADPlayerID);
 	DOREPLIFETIME(AADPlayerState, PlayerNickname);
+	DOREPLIFETIME(AADPlayerState, TotalPeronalCredit);
+	DOREPLIFETIME(AADPlayerState, DeathCount);
+	DOREPLIFETIME(AADPlayerState, SafeReturnCount);
+	DOREPLIFETIME(AADPlayerState, MonsterKillCount);
 }
 
 void AADPlayerState::SetPlayerInfo(const FUniqueNetIdRepl& InId, const FString& InNickname)
