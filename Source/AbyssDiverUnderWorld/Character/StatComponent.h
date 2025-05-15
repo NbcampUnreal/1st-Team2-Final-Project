@@ -29,17 +29,22 @@ public:
 	void TakeDamage(const float DamageAmount);
 
 protected:
+	/** 최대 체력 레플리케이트 함수 */
 	UFUNCTION()
 	void OnRep_MaxHealth();
-	
+
+	/** CurrentHealth 레플리케이트 함수 */
 	UFUNCTION()
 	void OnRep_CurrentHealth();
 
+	/** Timer에서 체력 회복 함수 */
 	virtual void RegenHealth();
 
 private:
+	/** 체력 회복을 정지한다. */
 	void StopHealthRegen();
 
+	/** 체력 회복이 동작 중인지 확인 */
 	bool IsHealthRegenActive() const;
 	
 #pragma endregion 
@@ -48,6 +53,7 @@ private:
 
 public:
 
+	/** 체력 변경 시 호출되는 델리게이트 */
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHealthChanged, int32, MaxHealth, int32, CurrentHealth);
 	UPROPERTY(BlueprintAssignable, Category="Stat")
 	FOnHealthChanged OnHealthChanged;

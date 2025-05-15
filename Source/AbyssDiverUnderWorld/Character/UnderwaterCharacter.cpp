@@ -31,7 +31,7 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	bIsCaptured = false;
 	CaptureFadeTime = 0.5f;
 
-	BloodEmitNoiseRadius = 1.0f;
+	BloodEmitPower = 1.0f;
 
 	OverloadWeight = 40.0f;
 	OverloadSpeedFactor = 0.4f;
@@ -171,7 +171,7 @@ void AUnderwaterCharacter::EmitBloodNoise()
 {
 	if (NoiseEmitterComponent)
 	{
-		NoiseEmitterComponent->MakeNoise(this, BloodEmitNoiseRadius, GetActorLocation());
+		NoiseEmitterComponent->MakeNoise(this, BloodEmitPower, GetActorLocation());
 	}
 }
 
