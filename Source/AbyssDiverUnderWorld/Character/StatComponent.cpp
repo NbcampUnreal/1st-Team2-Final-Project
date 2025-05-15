@@ -106,12 +106,18 @@ void UStatComponent::StopHealthRegen()
 
 bool UStatComponent::IsHealthRegenActive() const
 {
-	// 혹은 Timer 활성화 여부로 판단할 수도 있다.
-	return !FMath::IsNearlyZero(HealthRegenRate);
+	return GetWorld()->GetTimerManager().IsTimerActive(HealthRegenTimerHandle);
 }
 
 void UStatComponent::SetHealthRegenRate(float NewHealthRegenRate)
 {
+	if (GetOwnerRole() != ROLE_Authority)
+	{
+		return;
+	}
+
+	HealthRegenRate = NewHealthRegenRate;
+
 	if (FMath::IsNearlyZero(NewHealthRegenRate))
 	{
 		StopHealthRegen();
