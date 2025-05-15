@@ -57,7 +57,7 @@ public:
 	void StartReload();
 	void OpenChargeWidget();
 
-	void Initialize(const FFADItemDataRow& InItemMeta);
+	void Initialize(const FFADItemDataRow& InItemMeta, FName RowName);
 	EAction TagToAction(const FGameplayTag& Tag);
 	void HandleLeftClick();
 	void HandleRKey();
@@ -76,6 +76,29 @@ private:
 
 #pragma region Variable
 public:
+	// ====== Fire =========
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Weapon")
+	int32 MagazineSize = 5;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon")
+	int32 CurrentAmmoInMag = 5;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon")
+	int32 ReserveAmmo = 20;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Weapon")
+	float RateOfFire = 2.f; 
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Weapon")
+	float ReloadDuration = 3.f;
+
+	uint8 bCanFire : 1;
+
+	FTimerHandle TimerHandle_HandleRefire;
+	FTimerHandle TimerHandle_HandleReload;
+	// ======================
+
+
 	UPROPERTY(ReplicatedUsing = OnRep_Amount, EditAnywhere, BlueprintReadWrite)
 	int32 Amount = 0;
 	UPROPERTY(EditDefaultsOnly, Category = "Boost")
@@ -99,7 +122,10 @@ protected:
 	TObjectPtr<UUserWidget> ChargeWidget = nullptr;
 	UPROPERTY(EditAnywhere, Category = "Projectile")
 	TSubclassOf<AADProjectileBase> ProjectileClass = nullptr;
-	
+	UPROPERTY()
+	TMap<FName, int32> AmountMap;
+	UPROPERTY()
+	FName CurrentRowName;
 	
 	uint8 bBoostActive : 1;
 	uint8 bNightVisionOn : 1;
@@ -123,7 +149,7 @@ private:
 
 #pragma region Getter, Setteer
 public:
-
+	TMap<FName, int32> GetAmountMap() const { return AmountMap; }
 #pragma endregion
 
 		
