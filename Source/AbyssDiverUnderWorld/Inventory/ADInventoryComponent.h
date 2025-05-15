@@ -43,25 +43,32 @@ public:
 	void S_DropItem(FItemData ItemData);
 	void S_DropItem_Implementation(FItemData ItemData);
 
-	void SetEquipInfo(int8 TypeInventoryIndex, AADUseItem* SpawnItem);
-
-	UFUNCTION(BlueprintCallable)
-	void AddInventoryItem(FItemData ItemData);
-	bool RemoveInventoryItem(uint8 InventoryIndex, int8 Count, bool bIsDropAction);
-
 	UFUNCTION(Server, Reliable, BlueprintCallable)
 	void S_UseInventoryItem(EItemType ItemType = EItemType::Equipment, int32 InventoryIndex = 0);
 	void S_UseInventoryItem_Implementation(EItemType ItemType = EItemType::Equipment, int32 InventoryIndex = 0);
+
+	UFUNCTION(Server, Reliable, BlueprintCallable)
+	void S_InventoryInitialize();
+	void S_InventoryInitialize_Implementation();
+
+	UFUNCTION(BlueprintCallable)
+	void InventoryInitialize();
+
+	UFUNCTION(BlueprintCallable)
+	void AddInventoryItem(FItemData ItemData);
 
 	UFUNCTION(BlueprintCallable)
 	void TransferSlots(uint8 FromIndex, uint8 ToIndex);
 
 	UFUNCTION(BlueprintCallable)
 	void ToggleInventoryShowed(); //추후 나침반이나 서브미션 UI 추가되었을 때 고려 대상
-	UFUNCTION(BlueprintCallable)
-	void InventoryInitialize();
+
 	UFUNCTION()
 	void OnRep_InventoryList();
+
+	bool RemoveInventoryItem(uint8 InventoryIndex, int8 Count, bool bIsDropAction);
+	void ClientRequestInventoryInitialize();
+	void InventoryUIUpdate();
 
 	FInventoryUpdateDelegate InventoryUpdateDelegate;
 	FInventoryInfoUpdateDelegate InventoryInfoUpdateDelegate;
@@ -69,15 +76,18 @@ public:
 private:
 	int8 GetTypeInventoryEmptyIndex(EItemType ItemType);
 	int16 FindItemIndexById(FName ItemID);
-	FItemData CurrentEquipmentItemData();
 	FVector GetDropLocation();
-	void OnInventoryInfoUpdate(int32 MassInfo, int32 PriceInfo);
-	void InventoryUIUpdate();
-	void PrintLogInventoryData();
-	void RebuildIndexMap();
+
+	FItemData CurrentEquipmentItemData(); // 현재 장착한 무기 아이템 데이터
+	void SetEquipInfo(int8 TypeInventoryIndex, AADUseItem* SpawnItem);
 	void Equip(FItemData ItemData, int8 Index);
 	void UnEquip();
+
+	void OnInventoryInfoUpdate(int32 MassInfo, int32 PriceInfo);
+	void RebuildIndexMap();
 	void OnUseCoolTimeEnd();
+	void ServerSideInventoryInitialize();
+	void PrintLogInventoryData();
 
 #pragma endregion
 	
@@ -117,9 +127,12 @@ private:
 public:
 	int16 GetTotalWeight() const { return TotalWeight; }
 	int16 GetTotalPrice() const { return TotalPrice; }
+
 	const FItemData& GetItemData(FName ItemNameToFind) { return InventoryList.Items[FindItemIndexById(ItemNameToFind)]; };
 	const FItemData& GetEquipmentItemDataByIndex(int8 KeyNum) { return InventoryList.Items[InventoryIndexMapByType[EItemType::Equipment][KeyNum]]; };
+
 	const FInventoryList& GetInventoryList() { return InventoryList; }
+
 	const TArray<int8>& GetInventoryIndexesByType(EItemType ItemType) const { return InventoryIndexMapByType[ItemType]; }
 	const TArray<int8>& GetInventorySizeByType() const { return InventorySizeByType; }
 
