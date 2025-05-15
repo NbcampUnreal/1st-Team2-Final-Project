@@ -155,8 +155,6 @@ void AUnderwaterCharacter::EmitBloodNoise()
 
 void AUnderwaterCharacter::M_StartCaptureState_Implementation()
 {
-	SetActorHiddenInGame(true);
-	SetActorEnableCollision(false);
 	if (IsLocallyControlled())
 	{
 		if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
@@ -173,15 +171,15 @@ void AUnderwaterCharacter::M_StartCaptureState_Implementation()
 				true
 			);
 		}
-		
 		// Play SFX
 	}
+
+	SetActorHiddenInGame(true);
+	SetActorEnableCollision(false);
 }
 
 void AUnderwaterCharacter::M_StopCaptureState_Implementation()
 {
-	SetActorHiddenInGame(false);
-	SetActorEnableCollision(true);
 	if (IsLocallyControlled())
 	{
 		if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
@@ -198,9 +196,11 @@ void AUnderwaterCharacter::M_StopCaptureState_Implementation()
 				true
 			);
 		}
-		
-		// Play SFX
 	}
+	// Play SFX
+
+	SetActorHiddenInGame(false);
+	SetActorEnableCollision(true);
 }
 
 void AUnderwaterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
