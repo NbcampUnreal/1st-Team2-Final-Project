@@ -72,15 +72,6 @@ void UADInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	DOREPLIFETIME(UADInventoryComponent, CurrentEquipmentInstance);
 }
 
-void UADInventoryComponent::S_DropItem_Implementation(FItemData ItemData)
-{
-	for (int8 i = 0; i < ItemData.Quantity; ++i)
-	{
-		AADUseItem* SpawnItem = GetWorld()->SpawnActor<AADUseItem>(AADUseItem::StaticClass(), GetDropLocation(), FRotator::ZeroRotator);
-		SpawnItem->SetItemInfo(ItemData);
-	}
-}
-
 void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType, int32 InventoryIndex)
 {
 	if (ItemType == EItemType::Equipment)
@@ -140,6 +131,28 @@ void UADInventoryComponent::S_InventoryInitialize_Implementation()
 	ServerSideInventoryInitialize();
 }
 
+void UADInventoryComponent::S_TransferSlots_Implementation(uint8 FromIndex, uint8 ToIndex)
+{
+	if (InventoryList.Items.IsValidIndex(FromIndex) && InventoryList.Items.IsValidIndex(ToIndex))
+	{
+		int8 TempSlotIndex = InventoryList.Items[ToIndex].SlotIndex;
+		InventoryList.Items[ToIndex].SlotIndex = InventoryList.Items[FromIndex].SlotIndex;
+		InventoryList.Items[FromIndex].SlotIndex = TempSlotIndex;
+		InventoryList.MarkItemDirty(InventoryList.Items[FromIndex]);
+		InventoryList.MarkItemDirty(InventoryList.Items[ToIndex]);
+		InventoryUIUpdate();
+	}
+	else
+	{
+		LOG(TEXT("Invalid Inventory Index"));
+	}
+}
+
+void UADInventoryComponent::S_RequestRemove_Implementation(uint8 InventoryIndex, int8 Count, bool bIsDropAction)
+{
+	RemoveInventoryItem(InventoryIndex, Count, bIsDropAction);
+}
+
 void UADInventoryComponent::InventoryInitialize()
 {
 	if (GetOwnerRole() == ROLE_Authority)
@@ -169,7 +182,7 @@ void UADInventoryComponent::AddInventoryItem(FItemData ItemData)
 		FFADItemDataRow* FoundRow = TestItemDataTable->FindRow<FFADItemDataRow>(ItemData.Name, TEXT("Lookup Item"))/*ItemDataTableSubsystem->GetItemData(ItemData.Id)*/;
 		if (FoundRow)
 		{
-			int16 ItemIndex = FindItemIndexById(ItemData.Name);
+			int16 ItemIndex = FindItemIndexByName(ItemData.Name);
 			if (ItemIndex > -1)
 			{
 				FItemData& Item = InventoryList.Items[ItemIndex];
@@ -208,23 +221,6 @@ void UADInventoryComponent::AddInventoryItem(FItemData ItemData)
 	
 }
 
-void UADInventoryComponent::TransferSlots(uint8 FromIndex, uint8 ToIndex)
-{
-	if (InventoryList.Items.IsValidIndex(FromIndex) && InventoryList.Items.IsValidIndex(ToIndex))
-	{
-		int8 TempSlotIndex = InventoryList.Items[ToIndex].SlotIndex;
-		InventoryList.Items[ToIndex].SlotIndex = InventoryList.Items[FromIndex].SlotIndex;
-		InventoryList.Items[FromIndex].SlotIndex = TempSlotIndex;
-		InventoryList.MarkItemDirty(InventoryList.Items[FromIndex]);
-		InventoryList.MarkItemDirty(InventoryList.Items[ToIndex]);
-		InventoryUIUpdate();
-	}
-	else
-	{
-		LOG(TEXT("Invalid Inventory Index"));
-	}
-}
-
 void UADInventoryComponent::ToggleInventoryShowed()
 {
 	APlayerController* PC = Cast<APlayerController>(Cast<AADPlayerState>(GetOwner())->GetPlayerController());
@@ -252,6 +248,7 @@ void UADInventoryComponent::ToggleInventoryShowed()
 
 			FInputModeGameAndUI InputMode;
 			InputMode.SetWidgetToFocus(InventoryWidgetInstance->TakeWidget());
+
 			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 			InputMode.SetHideCursorDuringCapture(false);
 			PC->SetIgnoreLookInput(true);
@@ -265,29 +262,41 @@ void UADInventoryComponent::OnRep_InventoryList()
 	InventoryUIUpdate();
 }
 
-bool UADInventoryComponent::RemoveInventoryItem(uint8 InventoryIndex, int8 Count, bool bIsDropAction)
+int16 UADInventoryComponent::FindItemIndexByName(FName ItemID) //빈슬롯이 없으면 -1 반환
+{
+	for (int i = 0; i < InventoryList.Items.Num(); ++i)
+	{
+		if (InventoryList.Items[i].Name == ItemID)
+		{
+			return i;
+		}
+	}
+	return -1;
+}
+
+void UADInventoryComponent::RemoveInventoryItem(uint8 InventoryIndex, int8 Count, bool bIsDropAction)
 {
 	if (InventoryList.Items.IsValidIndex(InventoryIndex))
 	{
 		FItemData& Item = InventoryList.Items[InventoryIndex];
-		if (Count != -1 && Item.Quantity < Count) return false;
+		if (Count != -1 && Item.Quantity < Count) return;
 		if (Count == -1)
 		{
 			if (bIsDropAction)
 			{
-				S_DropItem(Item);
+				DropItem(Item);
 			}
 			Item.Quantity = 0;
-			if(Item.ItemType == EItemType::Exchangable)
+			if (Item.ItemType == EItemType::Exchangable)
 			{
 				OnInventoryInfoUpdate(-Item.Mass, -Item.Price);
 				Item.Mass = 0;
 				Item.Price = 0;
 			}
 		}
-		else 
+		else
 		{
-			if(Item.ItemType != EItemType::Exchangable)
+			if (Item.ItemType != EItemType::Exchangable)
 				Item.Quantity -= Count;
 		}
 		if (Item.Quantity <= 0)
@@ -301,19 +310,18 @@ bool UADInventoryComponent::RemoveInventoryItem(uint8 InventoryIndex, int8 Count
 		}
 		InventoryList.MarkItemDirty(Item);
 		InventoryUIUpdate();
-		
-		return true;
 	}
 	else
 	{
 		LOG(TEXT("Invalid Inventory Index"));
-		return false;
 	}
 }
 
+
 void UADInventoryComponent::ClientRequestInventoryInitialize()
 {
-	if (GetOwnerRole() < ROLE_Authority)
+	const bool bIsClient = (GetOwnerRole() < ROLE_Authority);
+	if (bIsClient)
 	{
 		S_InventoryInitialize(); // 서버에 RPC 요청
 	}
@@ -344,26 +352,14 @@ int8 UADInventoryComponent::GetTypeInventoryEmptyIndex(EItemType ItemType)
 			return i;
 	}
 	return -1;
-}
-
-int16 UADInventoryComponent::FindItemIndexById(FName ItemID)
-{
-	for (int i = 0; i < InventoryList.Items.Num(); ++i)
-	{
-		if (InventoryList.Items[i].Name == ItemID)
-		{
-			return i;
-		}
-	}
-	return -1;
-}
+} 
 
 FVector UADInventoryComponent::GetDropLocation()
 {
 	APlayerController* PC = Cast<APlayerController>(Cast<AADPlayerState>(GetOwner())->GetPlayerController());
 	APawn* OwnerPawn = PC->GetPawn();
 	FVector CameraForward = PC->PlayerCameraManager->GetCameraRotation().Vector();
-	FVector DropLocation = OwnerPawn->GetActorLocation() +FVector(0, 0, 200) + UKismetMathLibrary::RandomUnitVectorInConeInDegrees(CameraForward, 30) * 350.0;
+	FVector DropLocation = OwnerPawn->GetActorLocation() +FVector(0, 0, 100) + UKismetMathLibrary::RandomUnitVectorInConeInDegrees(CameraForward, 30) * 350.0;
 	return DropLocation;
 }
 
@@ -413,7 +409,6 @@ void UADInventoryComponent::Equip(FItemData ItemData, int8 Index)
 			}
 		}
 	}
-
 }
 
 void UADInventoryComponent::UnEquip()
@@ -422,6 +417,15 @@ void UADInventoryComponent::UnEquip()
 		CurrentEquipmentInstance->Destroy();
 	SetEquipInfo(-1, nullptr);
 	LOG(TEXT("UnEquipItem"));
+}
+
+void UADInventoryComponent::DropItem(FItemData ItemData)
+{
+	for (int8 i = 0; i < ItemData.Quantity; ++i)
+	{
+		AADUseItem* SpawnItem = GetWorld()->SpawnActor<AADUseItem>(AADUseItem::StaticClass(), GetDropLocation(), FRotator::ZeroRotator);
+		SpawnItem->SetItemInfo(ItemData);
+	}
 }
 
 void UADInventoryComponent::OnInventoryInfoUpdate(int32 MassInfo, int32 PriceInfo)
