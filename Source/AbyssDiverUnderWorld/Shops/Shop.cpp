@@ -211,7 +211,7 @@ void AShop::OpenShop(AUnderwaterCharacter* Requester)
 	ShopWidget->AddToViewport();
 
 	APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
-	PC->SetInputMode(FInputModeGameAndUI());
+	PC->SetInputMode(FInputModeUIOnly());
 	PC->SetShowMouseCursor(true);
 	bIsOpened = true;
 }
@@ -491,10 +491,10 @@ void AShop::InitUpgradeView()
 
 		if (CachedUpgradeGradeMap[i] == Grade)
 		{
-			LOGV(Error, TEXT("UpgradeState : UpgradeType(%d) - Grade(%d)"), UpgradeType, Grade);
+			LOGV(Log, TEXT("UpgradeState : UpgradeType(%d) - Grade(%d)"), UpgradeType, Grade);
 			continue;
 		}
-		LOGV(Error, TEXT("UpgradeState(Renewed) : UpgradeType(%d) - Grade(%d)"), UpgradeType, Grade);
+		LOGV(Log, TEXT("UpgradeState(Renewed) : UpgradeType(%d) - Grade(%d)"), UpgradeType, Grade);
 		CachedUpgradeGradeMap[i] = Grade;
 
 		FUpgradeDataRow* UpgradeDataRow = DataTableSubsystem->GetUpgradeData(UpgradeType, Grade);
@@ -772,9 +772,10 @@ void AShop::OnUpgradeSlotEntryClicked(int32 ClickedSlotIndex)
 	bool bIsMaxGrade = UpgradeComp->IsMaxGrade(UpgradeType);
 
 	FUpgradeDataRow* UpgradeDataRow = DataTableSubSystem->GetUpgradeData(UpgradeType, CurrentGrade);
-	ShopWidget->ShowUpgradeInfos(nullptr, CurrentGrade, bIsMaxGrade, UpgradeDataRow->Price, TEXT("임시 텍스트"));
+	int32 Price = bIsMaxGrade ? 0 : DataTableSubSystem->GetUpgradeData(UpgradeType, CurrentGrade + 1)->Price;
+	ShopWidget->ShowUpgradeInfos(nullptr, CurrentGrade, bIsMaxGrade, Price, TEXT("임시 텍스트"));
 	CurrentSelectedUpgradeType = UpgradeType;
-	//UpgradeComp->S_RequestUpgrade(UpgradeType);
+
 	LOGV(Log, TEXT("UpgradeViewSlotClicked, Index : %d"), ClickedSlotIndex);
 }
 

@@ -26,6 +26,9 @@ protected:
 
 	virtual void NativeConstruct() override;
 
+	virtual FReply NativeOnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
+	virtual FReply NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
+
 #pragma region Methods
 
 public:
@@ -90,6 +93,7 @@ private:
 	EShopCategoryTab CurrentActivatedTab;
 
 	const int8 MAX_TAB_COUNT = 3;
+	const float MESH_ROTATION_SPEED = 0.5f;
 
 #pragma endregion
 

@@ -5,6 +5,7 @@
 #include "ShopTileView.h"
 #include "Shops/ShopItemEntryData.h"
 #include "Shops/ShopWidgets/ShopElementInfoWidget.h"
+#include "Shops/ShopWidgets/ShopItemMeshPanel.h"
 
 #include "Character/UnderwaterCharacter.h"
 #include "Character/UpgradeComponent.h"
@@ -28,6 +29,33 @@ void UShopWidget::NativeConstruct()
 	{
 		CloseButton->OnClicked.AddDynamic(this, &UShopWidget::OnCloseButtonClicked);
 	}
+}
+
+FReply UShopWidget::NativeOnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
+{
+	UShopItemMeshPanel* MeshPanel = InfoWidget->GetItemMeshPanel();
+
+	if (MeshPanel->GetMouseDown())
+	{
+		float CurrentMouseX = InMouseEvent.GetScreenSpacePosition().X;
+		float MouseX = MeshPanel->GetCurrentMousePositionY();
+		float DeltaX = (MouseX - CurrentMouseX) * MESH_ROTATION_SPEED;
+
+		MeshPanel->SetCurrentMousePositionX(CurrentMouseX);
+		MeshPanel->AddMeshRotationYaw(DeltaX);
+	}
+	
+	return Super::NativeOnMouseMove(InGeometry, InMouseEvent);
+}
+
+FReply UShopWidget::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
+{
+	/*if (InKeyEvent.GetKey() == EKeys::Escape)
+	{
+	나중에 사용할수도?
+	}*/
+
+	return Super::NativeOnKeyDown(InGeometry, InKeyEvent);
 }
 
 void UShopWidget::SetAllItems(const TArray<UShopItemEntryData*>& EntryDataList, EShopCategoryTab Tab)
@@ -194,11 +222,13 @@ void UShopWidget::RefreshItemView()
 void UShopWidget::ShowItemInfos(USkeletalMesh* NewItemMesh, const FString& NewDescription, const FString& NewInfoText)
 {
 	InfoWidget->ShowItemInfos(NewItemMesh, NewDescription, NewInfoText);
+	InfoWidget->GetItemMeshPanel()->SetMeshRotation(FRotator::ZeroRotator);
 }
 
 void UShopWidget::ShowUpgradeInfos(USkeletalMesh* NewUpgradeItemMesh, int32 CurrentUpgradeLevel, bool bIsMaxLevel, int32 CurrentUpgradeCost, const FString& ExtraInfoText)
 {
 	InfoWidget->ShowUpgradeInfos(NewUpgradeItemMesh, CurrentUpgradeLevel, bIsMaxLevel, CurrentUpgradeCost, ExtraInfoText);
+	InfoWidget->GetItemMeshPanel()->SetMeshRotation(FRotator::ZeroRotator);
 }
 
 void UShopWidget::OnCategoryTabClicked(EShopCategoryTab CategoryTab)
