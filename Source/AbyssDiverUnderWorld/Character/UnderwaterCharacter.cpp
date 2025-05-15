@@ -357,6 +357,10 @@ void AUnderwaterCharacter::MoveUnderwater(const FVector MoveInput)
 	{
 		AddMovementInput(RightVector, MoveInput.Y);
 	}
+	if (!FMath::IsNearlyZero(MoveInput.Z))
+	{
+		AddMovementInput(FVector::UpVector, MoveInput.Z);
+	}
 }
 
 void AUnderwaterCharacter::MoveGround(FVector MoveInput)
