@@ -79,7 +79,10 @@ protected:
 	UFUNCTION(NetMulticast, Reliable)
 	void M_StopCaptureState();
 	void M_StopCaptureState_Implementation();
-	
+
+	UFUNCTION()
+	void AdjustSpeed();
+
 	/** 이동 함수. 지상, 수중 상태에 따라 이동한다. */
 	void Move(const FInputActionValue& InputActionValue);
 
@@ -144,6 +147,17 @@ private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float BloodEmitNoiseRadius;
+
+	/** 초과 적재 기준 무게. 초과할 경우 속도를 감소시킨다. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	float OverloadWeight;
+
+	/** 초과 적재 시의 속도 감소 비율. [0, 1]의 범위로 속도를 감소시킨다. 0.4일 경우 40% 감소해서 60%의 속도이다. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true", ClampMin = "0.0", ClampMax = "1.0"))
+	float OverloadSpeedFactor;
+
+	UPROPERTY(Transient, BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	float EffectiveSpeed;
 	
 	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float SprintSpeed;
@@ -198,9 +212,11 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UOxygenComponent> OxygenComponent;
 
+	/** 캐릭터의 스태미너 상태를 관리하는 Component */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UStaminaComponent> StaminaComponent;
 
+	/** 캐릭터 출혈 시를 시뮬레이션을 하는 Noise Emitter Component */
 	UPROPERTY()
 	TObjectPtr<class UPawnNoiseEmitterComponent> NoiseEmitterComponent;
 	
@@ -212,6 +228,8 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UShopInteractionComponent> ShopInteractionComponent;
 
+	TWeakObjectPtr<class UADInventoryComponent> InventoryComponent;
+	
 #pragma endregion
 
 #pragma region Getter Setter
@@ -227,5 +245,9 @@ public:
 	FORCEINLINE ECharacterState GetCharacterState() const { return CharacterState; }
 
 	FORCEINLINE bool IsSprinting() const;
+
+	UFUNCTION(BlueprintCallable)
+	bool IsOverloaded() const;
+	
 #pragma endregion
 };
