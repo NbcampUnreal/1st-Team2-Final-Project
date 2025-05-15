@@ -28,6 +28,7 @@ void AADUseItem::SetItemInfo(FItemData& ItemInfo)
 			ItemData = ItemInfo;
 			ItemData.Quantity = 1;
 			ItemData.Amount = ItemRow->Amount; //추후 사용한 양에 대한 적용 필요
+			ItemData.Id = ItemRow->Id;
 			M_SetSkeletalMesh(ItemRow->SkeletalMesh);
 		}
 	}
