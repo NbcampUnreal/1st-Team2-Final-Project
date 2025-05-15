@@ -5,10 +5,12 @@
 
 #include "ShopElementInfoWidget.generated.h"
 
-DECLARE_MULTICAST_DELEGATE(FOnBuyButtonClickedDelegate);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnBuyButtonClickedDelegate, int32/*Buy Quantity*/);
 
 class URichTextBlock;
 class UShopItemMeshPanel;
+class UButton;
+
 /**
  * 상점에서 아이템, 장비, 업글에 대한 정보를 띄우는 위젯
  */
@@ -31,19 +33,24 @@ public:
 	void ShowUpgradeInfos(USkeletalMesh* NewUpgradeItemMesh, int32 CurrentUpgradeLevel, bool bIsMaxLevel, int32 CurrentUpgradeCost, const FString& ExtraInfoText);
 
 	void ChangeItemDescription(const FString& NewDescription);
-	void ChangeInfoText(const FString& NewInfoText);
+	void ChangeNameInfoText(const FString& NewInfoText);
 	void ChangeItemMesh(USkeletalMesh* NewMesh);
 
 	void ChangeUpgradeLevelInfo(int32 CurrentLevel, bool bIsMaxLevel);
-	void ChangeUpgradeCostInfo(int32 CurrentUpgradeCost);
+	void ChangeCostInfo(int32 CurrentCost, bool bIsUpgradeCost);
+
+	void ChangeCurrentQuantityNumber(int32 NewNumber);
+	void ChangeRemainingMoneyAfterPurchaseText(int32 MoneyAmount);
 
 	void SetDescriptionActive(bool bShouldActivate);
-	void SetInfoTextActive(bool bShouldActivate);
+	void SetNameInfoTextActive(bool bShouldActivate);
 	void SetItemMeshActive(bool bShouldActivate);
 	void SetBuyButtonActive(bool bShouldActivate);
 
 	void SetUpgradeLevelInfoActive(bool bShouldActivate);
-	void SetUpgradeCostInfo(bool bShouldActivate);
+	void SetCostInfoActive(bool bShouldActivate);
+
+	void SetQuantityOverlayActive(bool bShouldActivate);
 
 	FOnBuyButtonClickedDelegate OnBuyButtonClickedDelegate;
 
@@ -52,6 +59,12 @@ private:
 	UFUNCTION()
 	void OnBuyButtonClicked();
 
+	UFUNCTION()
+	void OnIncreaseButtonClicked();
+
+	UFUNCTION()
+	void OnDecreaseButtonClicked();
+
 #pragma endregion
 
 #pragma region Variables
@@ -59,22 +72,43 @@ private:
 protected:
 
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<URichTextBlock> DescriptionText;
+	TObjectPtr<URichTextBlock> NameInfoText;
 
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<URichTextBlock> InfoText;
+	TObjectPtr<URichTextBlock> DescriptionText;
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<URichTextBlock> UpgradeLevelInfoText;
 
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<URichTextBlock> UpgradeCostInfoText;
+	TObjectPtr<URichTextBlock> CostInfoText;
 
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<class UButton> BuyButton;
+	TObjectPtr<UButton> BuyButton;
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UShopItemMeshPanel> ItemMeshPanel;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UButton> IncreaseButton;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UButton> DecreaseButton;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<URichTextBlock> CurrentQuantityNumberText;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<class UOverlay> QuantityOverlay;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<URichTextBlock> RemainingMoneyAfterPurchaseText;
+
+private:
+
+	int32 CurrentQuantityNumber = 0;
+
+	const int32 MAX_ITEM_COUNT = 99;
 
 #pragma endregion
 

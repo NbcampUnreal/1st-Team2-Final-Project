@@ -27,8 +27,8 @@ public:
 	void C_OpenShop_Implementation(AShop* InteractingShop);
 
 	UFUNCTION(Server, Reliable)
-	void S_RequestBuyItem(uint8 ItemId);
-	void S_RequestBuyItem_Implementation(uint8 ItemId);
+	void S_RequestBuyItem(uint8 ItemId, uint8 Quantity);
+	void S_RequestBuyItem_Implementation(uint8 ItemId, uint8 Quantity);
 
 #pragma endregion
 

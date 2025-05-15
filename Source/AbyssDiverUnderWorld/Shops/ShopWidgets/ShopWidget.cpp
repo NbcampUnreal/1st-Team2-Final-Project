@@ -1,4 +1,4 @@
-#include "ShopWidget.h"
+ï»¿#include "ShopWidget.h"
 
 #include "ShopCategoryTabWidget.h"
 #include "AbyssDiverUnderWorld.h"
@@ -13,6 +13,7 @@
 #include "Subsystems/DataTableSubsystem.h"
 
 #include "Components/Button.h"
+#include "Components/RichTextBlock.h"
 #include "Kismet/GameplayStatics.h"
 
 void UShopWidget::NativeConstruct()
@@ -29,6 +30,14 @@ void UShopWidget::NativeConstruct()
 	{
 		CloseButton->OnClicked.AddDynamic(this, &UShopWidget::OnCloseButtonClicked);
 	}
+}
+
+FReply UShopWidget::NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
+{
+	UShopItemMeshPanel* MeshPanel = InfoWidget->GetItemMeshPanel();
+	MeshPanel->SetMouseDown(false);
+
+	return Super::NativeOnMouseButtonUp(InGeometry, InMouseEvent);
 }
 
 FReply UShopWidget::NativeOnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
@@ -52,7 +61,7 @@ FReply UShopWidget::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent
 {
 	/*if (InKeyEvent.GetKey() == EKeys::Escape)
 	{
-	³ªÁß¿¡ »ç¿ëÇÒ¼öµµ?
+	ë‚˜ì¤‘ì— ì‚¬ìš©í• ìˆ˜ë„?
 	}*/
 
 	return Super::NativeOnKeyDown(InGeometry, InKeyEvent);
@@ -229,6 +238,15 @@ void UShopWidget::ShowUpgradeInfos(USkeletalMesh* NewUpgradeItemMesh, int32 Curr
 {
 	InfoWidget->ShowUpgradeInfos(NewUpgradeItemMesh, CurrentUpgradeLevel, bIsMaxLevel, CurrentUpgradeCost, ExtraInfoText);
 	InfoWidget->GetItemMeshPanel()->SetMeshRotation(FRotator::ZeroRotator);
+}
+
+void UShopWidget::SetTeamMoneyText(int32 NewTeamMoney)
+{
+	FString NewTeamMoneyText = TEXT("ê³µí†µ ìžê¸ˆ : ");
+	NewTeamMoneyText += FString::FromInt(NewTeamMoney);
+	NewTeamMoneyText += TEXT(" Cr");
+
+	TeamMoneyText->SetText(FText::FromString(NewTeamMoneyText));
 }
 
 void UShopWidget::OnCategoryTabClicked(EShopCategoryTab CategoryTab)
