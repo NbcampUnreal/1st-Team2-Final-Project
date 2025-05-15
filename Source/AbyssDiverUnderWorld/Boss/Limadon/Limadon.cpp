@@ -80,7 +80,7 @@ void ALimadon::Spit()
 	GetTarget()->StopCaptureState();
 
 	// 캐릭터 넉백
-	LaunchPlayer(GetTarget());
+	LaunchPlayer(GetTarget(), LaunchPower);
 
 	// 변수 초기화
 	BiteVariableInitialize();
