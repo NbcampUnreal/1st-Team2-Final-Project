@@ -11,6 +11,7 @@
 #include "AbyssDiverUnderWorld/Interactable/Item/Component/ADInteractionComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/PawnNoiseEmitterComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PhysicsVolume.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -26,6 +27,9 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	StatComponent->Initialize(1000, 1000, 400.0f, 10);
 	
 	bIsCaptured = false;
+
+	BloodEmitNoiseRadius = 1.0f;
+	
 	StatComponent->MoveSpeed = 400.0f;
 	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
 	{
@@ -81,6 +85,9 @@ void AUnderwaterCharacter::BeginPlay()
 	SetDebugCameraMode(bUseDebugCamera);
 
 	StaminaComponent->OnSprintStateChanged.AddDynamic(this, &AUnderwaterCharacter::OnSprintStateChanged);
+
+	NoiseEmitterComponent = NewObject<UPawnNoiseEmitterComponent>(this);
+	NoiseEmitterComponent->RegisterComponent();
 }
 
 void AUnderwaterCharacter::SetCharacterState(ECharacterState State)
@@ -136,6 +143,14 @@ void AUnderwaterCharacter::StopCaptureState()
 
 	bIsCaptured = false;
 	M_StopCaptureState();
+}
+
+void AUnderwaterCharacter::EmitBloodNoise()
+{
+	if (NoiseEmitterComponent)
+	{
+		NoiseEmitterComponent->MakeNoise(this, BloodEmitNoiseRadius, GetActorLocation());
+	}
 }
 
 void AUnderwaterCharacter::M_StartCaptureState_Implementation()
@@ -290,6 +305,19 @@ void AUnderwaterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 	{
 		UE_LOG(AbyssDiver, Error, TEXT("Failed to find an Enhanced Input Component."))
 	}
+}
+
+float AUnderwaterCharacter::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent,
+	class AController* EventInstigator, AActor* DamageCauser)
+{
+	float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+	if (ActualDamage > 0.0f)
+	{
+		EmitBloodNoise();
+	}
+
+	return ActualDamage;
 }
 
 void AUnderwaterCharacter::Move(const FInputActionValue& InputActionValue)
