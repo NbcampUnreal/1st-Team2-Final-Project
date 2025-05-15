@@ -27,6 +27,7 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	StatComponent->Initialize(1000, 1000, 400.0f, 10);
 	
 	bIsCaptured = false;
+	CaptureFadeTime = 0.5f;
 
 	BloodEmitNoiseRadius = 1.0f;
 	
@@ -165,7 +166,7 @@ void AUnderwaterCharacter::M_StartCaptureState_Implementation()
 			PlayerController->PlayerCameraManager->StartCameraFade(
 				0.0f,
 				1.0f,
-				0.5f,
+				CaptureFadeTime,
 				FLinearColor::Black,
 				false,
 				true
@@ -190,7 +191,7 @@ void AUnderwaterCharacter::M_StopCaptureState_Implementation()
 			PlayerController->PlayerCameraManager->StartCameraFade(
 				1.0f,
 				0.0f,
-				0.5f,
+				CaptureFadeTime,
 				FLinearColor::Black,
 				false,
 				true

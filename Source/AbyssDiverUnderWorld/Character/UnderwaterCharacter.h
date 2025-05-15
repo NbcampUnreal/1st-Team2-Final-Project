@@ -139,6 +139,9 @@ private:
 	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	uint8 bIsCaptured : 1;
 
+	UPROPERTY(EditAnywhere, Category = Character, meta = (AllowPrivateAccess = "true"))
+	float CaptureFadeTime;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float BloodEmitNoiseRadius;
 	
