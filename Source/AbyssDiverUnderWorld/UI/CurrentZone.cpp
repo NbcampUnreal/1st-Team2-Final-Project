@@ -10,11 +10,11 @@ ACurrentZone::ACurrentZone()
     RootComponent = TriggerZone;
 
     // 충돌 설정
-    //TriggerZone->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-    //TriggerZone->SetCollisionObjectType(ECC_WorldStatic);
-    //TriggerZone->SetCollisionResponseToAllChannels(ECR_Ignore);
-    //TriggerZone->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
-    //TriggerZone->SetGenerateOverlapEvents(true);
+    TriggerZone->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+    TriggerZone->SetCollisionObjectType(ECC_WorldStatic);
+    TriggerZone->SetCollisionResponseToAllChannels(ECR_Ignore);
+    TriggerZone->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+    TriggerZone->SetGenerateOverlapEvents(true);
 
     // 오버랩 이벤트 바인딩
     TriggerZone->OnComponentBeginOverlap.AddDynamic(this, &ACurrentZone::OnOverlapBegin);
@@ -48,7 +48,6 @@ void ACurrentZone::Tick(float DeltaTime)
                 // Z축 속도만 Clamp
                 Movement->Velocity.Z = FMath::Clamp(Movement->Velocity.Z, MaxDownwardSpeed, 0.f);
 
-                UE_LOG(LogTemp, Warning, TEXT("💨 이동 시도 중: %s | Z속도: %.2f"), *Character->GetName(), Movement->Velocity.Z);
             }
         }
     }
@@ -62,7 +61,6 @@ void ACurrentZone::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* O
 {
     if (AUnderwaterCharacter* Character = Cast<AUnderwaterCharacter>(OtherActor))
     {
-        UE_LOG(LogTemp, Warning, TEXT("✅ 급류 진입: %s"), *Character->GetName());
         AffectedCharacters.Add(Character);
 
         // 속도 제한 해제
@@ -93,7 +91,6 @@ void ACurrentZone::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* Oth
             Movement->MaxAcceleration = 2048.f;
         }
 
-        UE_LOG(LogTemp, Warning, TEXT("⛔ 급류 종료: %s → 완전 정지 처리됨"), *Character->GetName());
     }
 }
 
