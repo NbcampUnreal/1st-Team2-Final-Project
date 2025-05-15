@@ -11,6 +11,7 @@
 #include "AbyssDiverUnderWorld/Interactable/Item/Component/ADInteractionComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/PawnNoiseEmitterComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PhysicsVolume.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -26,6 +27,10 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	StatComponent->Initialize(1000, 1000, 400.0f, 10);
 	
 	bIsCaptured = false;
+	CaptureFadeTime = 0.5f;
+
+	BloodEmitNoiseRadius = 1.0f;
+	
 	StatComponent->MoveSpeed = 400.0f;
 	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
 	{
@@ -52,6 +57,17 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	bUseDebugCamera = false;
 	ThirdPersonCameraComponent->SetActive(false);
 
+	// To-Do
+	// 외부에 보여지는 Mesh와 1인칭 Mesh를 다르게 구현
+	GetMesh()->SetOwnerNoSee(true);
+	GetMesh()->bCastHiddenShadow = true;
+	
+	Mesh1P = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Mesh1P"));
+	Mesh1P->SetOnlyOwnerSee(true);
+	Mesh1P->SetupAttachment(FirstPersonCameraComponent);
+	Mesh1P->CastShadow = false;
+	Mesh1P->bCastDynamicShadow = false;
+	
 	OxygenComponent = CreateDefaultSubobject<UOxygenComponent>(TEXT("OxygenComponent"));
 	StaminaComponent = CreateDefaultSubobject<UStaminaComponent>(TEXT("StaminaComponent"));
 
@@ -70,6 +86,9 @@ void AUnderwaterCharacter::BeginPlay()
 	SetDebugCameraMode(bUseDebugCamera);
 
 	StaminaComponent->OnSprintStateChanged.AddDynamic(this, &AUnderwaterCharacter::OnSprintStateChanged);
+
+	NoiseEmitterComponent = NewObject<UPawnNoiseEmitterComponent>(this);
+	NoiseEmitterComponent->RegisterComponent();
 }
 
 void AUnderwaterCharacter::SetCharacterState(ECharacterState State)
@@ -127,10 +146,16 @@ void AUnderwaterCharacter::StopCaptureState()
 	M_StopCaptureState();
 }
 
+void AUnderwaterCharacter::EmitBloodNoise()
+{
+	if (NoiseEmitterComponent)
+	{
+		NoiseEmitterComponent->MakeNoise(this, BloodEmitNoiseRadius, GetActorLocation());
+	}
+}
+
 void AUnderwaterCharacter::M_StartCaptureState_Implementation()
 {
-	SetActorHiddenInGame(true);
-	SetActorEnableCollision(false);
 	if (IsLocallyControlled())
 	{
 		if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
@@ -141,21 +166,21 @@ void AUnderwaterCharacter::M_StartCaptureState_Implementation()
 			PlayerController->PlayerCameraManager->StartCameraFade(
 				0.0f,
 				1.0f,
-				0.5f,
+				CaptureFadeTime,
 				FLinearColor::Black,
 				false,
 				true
 			);
 		}
-		
 		// Play SFX
 	}
+
+	SetActorHiddenInGame(true);
+	SetActorEnableCollision(false);
 }
 
 void AUnderwaterCharacter::M_StopCaptureState_Implementation()
 {
-	SetActorHiddenInGame(false);
-	SetActorEnableCollision(true);
 	if (IsLocallyControlled())
 	{
 		if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
@@ -166,15 +191,17 @@ void AUnderwaterCharacter::M_StopCaptureState_Implementation()
 			PlayerController->PlayerCameraManager->StartCameraFade(
 				1.0f,
 				0.0f,
-				0.5f,
+				CaptureFadeTime,
 				FLinearColor::Black,
 				false,
 				true
 			);
 		}
-		
-		// Play SFX
 	}
+	// Play SFX
+
+	SetActorHiddenInGame(false);
+	SetActorEnableCollision(true);
 }
 
 void AUnderwaterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -281,6 +308,19 @@ void AUnderwaterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 	}
 }
 
+float AUnderwaterCharacter::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent,
+	class AController* EventInstigator, AActor* DamageCauser)
+{
+	float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+	if (ActualDamage > 0.0f)
+	{
+		EmitBloodNoise();
+	}
+
+	return ActualDamage;
+}
+
 void AUnderwaterCharacter::Move(const FInputActionValue& InputActionValue)
 {
 	// To-Do
@@ -316,6 +356,10 @@ void AUnderwaterCharacter::MoveUnderwater(const FVector MoveInput)
 	if (!FMath::IsNearlyZero(MoveInput.Y))
 	{
 		AddMovementInput(RightVector, MoveInput.Y);
+	}
+	if (!FMath::IsNearlyZero(MoveInput.Z))
+	{
+		AddMovementInput(FVector::UpVector, MoveInput.Z);
 	}
 }
 

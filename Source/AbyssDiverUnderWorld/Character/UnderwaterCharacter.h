@@ -36,6 +36,7 @@ protected:
 
 	/** IA를 Enhanced Input Component에 연결 */
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
+	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 
 #pragma region Method
 
@@ -59,6 +60,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void StopCaptureState();
 
+	UFUNCTION(BlueprintCallable)
+	void EmitBloodNoise();
+	
 protected:
 	/** Capture State Multicast
 	 * Owner : 암전 효과, 입력 처리
@@ -134,6 +138,12 @@ private:
 	/** Capture 상태 여부. 추후 상태가 많아지면 상태 패턴 이용을 고려 */
 	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	uint8 bIsCaptured : 1;
+
+	UPROPERTY(EditAnywhere, Category = Character, meta = (AllowPrivateAccess = "true"))
+	float CaptureFadeTime;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	float BloodEmitNoiseRadius;
 	
 	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float SprintSpeed;
@@ -181,6 +191,9 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UCameraComponent> ThirdPersonCameraComponent;
 
+	UPROPERTY(VisibleAnywhere, Category = Mesh , meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class USkeletalMeshComponent> Mesh1P;
+
 	/** 캐릭터의 산소 상태를 관리하는 Component */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UOxygenComponent> OxygenComponent;
@@ -188,6 +201,9 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UStaminaComponent> StaminaComponent;
 
+	UPROPERTY()
+	TObjectPtr<class UPawnNoiseEmitterComponent> NoiseEmitterComponent;
+	
 	/** 상호작용 실행하게 하는 Component */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UADInteractionComponent> InteractionComponent;
