@@ -165,12 +165,6 @@ void UEquipUseComponent::OnRep_ReserveAmmo()
 	// HUD와 UI에 탄알 수 갱신
 }
 
-void UEquipUseComponent::OnRep_BoostActive()
-{
-	/*TargetMultiplier = bBoostActive ? BoostMultiplier : 1.f;
-	LOG(TEXT("BoostActive? : %s, TargetMultiplier : %f"), bBoostActive ? TEXT("True") : TEXT("False"), TargetMultiplier);*/
-}
-
 void UEquipUseComponent::OnRep_NightVisionOn()
 {
 	const float Target = bNightVisionOn ? 1.f : 0.f;

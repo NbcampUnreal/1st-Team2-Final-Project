@@ -49,8 +49,6 @@ public:
 	UFUNCTION()
 	void OnRep_ReserveAmmo();
 	UFUNCTION()
-	void OnRep_BoostActive();
-	UFUNCTION()
 	void OnRep_NightVisionOn();
 
 	// 내부 실행 함수
@@ -108,7 +106,7 @@ public:
 	// ======================
 	UPROPERTY(ReplicatedUsing = OnRep_Amount, EditAnywhere, BlueprintReadWrite)
 	int32 Amount = 0;
-	UPROPERTY(ReplicatedUsing = OnRep_BoostActive)
+	UPROPERTY(Replicated)
 	uint8 bBoostActive : 1;
 	UPROPERTY(ReplicatedUsing = OnRep_NightVisionOn)
 	uint8 bNightVisionOn : 1;
