@@ -18,7 +18,7 @@ class ABYSSDIVERUNDERWORLD_API UShopItemEntryData : public UObject
 
 public:
 
-	void Init(int32 NewlotIndex, UTexture2D* NewItemImage, const FString& NewToolTipText);
+	void Init(int32 NewSlotIndex, UTexture2D* NewItemImage, const FString& NewToolTipText);
 
 	FOnEntryUpdatedFromDataDelegate OnEntryUpdatedFromDataDelegate;
 

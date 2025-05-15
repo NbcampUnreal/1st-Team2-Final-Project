@@ -61,6 +61,7 @@ public:
     void OnHoldComplete();
 
     bool ShouldHighlight(const UADInteractableComponent* ADIC) const;
+    bool IsLocallyControlled() const;
 
 protected:
 

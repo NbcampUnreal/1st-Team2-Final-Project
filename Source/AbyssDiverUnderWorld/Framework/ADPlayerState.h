@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -8,6 +6,7 @@
 #include "ADPlayerState.generated.h"
 
 class UADInventoryComponent;
+class UUpgradeComponent;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADPlayerState : public APlayerState
@@ -41,13 +40,22 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TObjectPtr<UADInventoryComponent> InventoryComp;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	TObjectPtr<UUpgradeComponent> UpgradeComp;
+
 #pragma endregion
 	
 #pragma region Getter/Setter
 public:
+
 	UADInventoryComponent* GetInventory() { return InventoryComp; };
 
 	const FString& GetNickname() const { return PlayerNickname; }
-	const FUniqueNetIdRepl& GetPlayerId() const { return ADPlayerID; }
+
+	FORCEINLINE UADInventoryComponent* GetInventory() const { return InventoryComp; };
+	FORCEINLINE UUpgradeComponent* GetUpgradeComp() const { return UpgradeComp; };
+
+
 #pragma endregion
 };

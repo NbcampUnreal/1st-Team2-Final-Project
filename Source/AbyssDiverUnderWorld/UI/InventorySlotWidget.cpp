@@ -24,6 +24,23 @@ FReply UInventorySlotWidget::NativeOnMouseButtonDown(const FGeometry& InGeometry
 	return Super::NativeOnMouseButtonDown(InGeometry, InMouseEvent);
 }
 
+FReply UInventorySlotWidget::NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
+{
+	if (SlotIndex != -1)
+	{
+		if (SlotType == EItemType::Consumable)
+		{
+			if (InMouseEvent.GetEffectingButton() == EKeys::LeftMouseButton)
+			{
+				InventoryComponent->S_UseInventoryItem(EItemType::Consumable, SlotIndex);
+				return FReply::Handled();
+			} 
+		}
+
+	}
+	return Super::NativeOnMouseButtonUp(InGeometry, InMouseEvent);
+}
+
 void UInventorySlotWidget::NativeOnDragDetected(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent, UDragDropOperation*& Operation)
 {
 	Super::NativeOnDragDetected(InGeometry, InMouseEvent, Operation);

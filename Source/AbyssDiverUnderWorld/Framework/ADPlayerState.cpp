@@ -1,25 +1,24 @@
-
 #include "Framework/ADPlayerState.h"
 #include "Inventory/ADInventoryComponent.h"
 #include "AbyssDiverUnderWorld.h"
 #include "Net/UnrealNetwork.h"
+#include "Character/UpgradeComponent.h"
+
 
 AADPlayerState::AADPlayerState()
 {
 	InventoryComp = CreateDefaultSubobject<UADInventoryComponent>(TEXT("InventoryComp"));
+	UpgradeComp = CreateDefaultSubobject<UUpgradeComponent>(TEXT("UpgradeComp"));
 }
-
-
 
 void AADPlayerState::BeginPlay()
 {
 	Super::BeginPlay();
-
 	APlayerController* PC = GetPlayerController();
 	if (PC && PC->IsLocalController() && HasAuthority())
 	{
 
-		InventoryComp->InventoryInitialize();
+		InventoryComp->ClientRequestInventoryInitialize();
 		LOGVN(Error, TEXT("Inventory Initializded"));
 	}
 
@@ -27,13 +26,11 @@ void AADPlayerState::BeginPlay()
 
 void AADPlayerState::PostNetInit()
 {
-	Super::PostNetInit();
-
 	APlayerController* PC = GetPlayerController();
 	if (PC && PC->IsLocalController())
 	{
 
-		InventoryComp->InventoryInitialize();
+		InventoryComp->ClientRequestInventoryInitialize();
 		LOGVN(Error, TEXT("Inventory Initializded"));
 	}
 }

@@ -31,4 +31,7 @@ protected:
 	TObjectPtr<class UStatComponent> StatComponent;
 
 #pragma endregion
+
+public:
+	FORCEINLINE UStatComponent* GetStatComponent() const { return StatComponent; }
 };

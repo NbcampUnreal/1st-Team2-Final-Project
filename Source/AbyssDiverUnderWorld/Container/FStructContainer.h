@@ -5,6 +5,8 @@
 #include "DataRow/FADItemDataRow.h"
 #include "FStructContainer.generated.h"
 
+class UADInventoryComponent;
+
 USTRUCT(BlueprintType)
 struct FItemData : public FFastArraySerializerItem
 {
@@ -18,6 +20,9 @@ struct FItemData : public FFastArraySerializerItem
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	uint8 Quantity;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	uint8 SlotIndex;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 Amount;
@@ -36,18 +41,18 @@ struct FItemData : public FFastArraySerializerItem
 
 
 	FItemData()
-		: Name(NAME_None), Id(0), Quantity(0), Amount(0), Mass(0), Price(0), ItemType(EItemType::Max), Thumbnail(nullptr)
+		: Name(NAME_None), Id(0), Quantity(0), SlotIndex(99), Amount(0), Mass(0), Price(0), ItemType(EItemType::Max), Thumbnail(nullptr)
 	{
 	}
-	FItemData(FName InName, uint8 InId, uint8 InQuantity, int32 InAmount, int32 InMass, int32 InPrice, EItemType InType, UTexture2D* InThumbnail)
-		: Name(InName), Id(InId), Quantity(InQuantity), Amount(InAmount), Mass(InMass), Price(InPrice), ItemType(InType), Thumbnail(InThumbnail)
+	FItemData(FName InName, uint8 InId, uint8 InQuantity, uint8 InSlotIndex, int32 InAmount, int32 InMass, int32 InPrice, EItemType InType, UTexture2D* InThumbnail)
+		: Name(InName), Id(InId), Quantity(InQuantity), SlotIndex(InSlotIndex), Amount(InAmount), Mass(InMass), Price(InPrice), ItemType(InType), Thumbnail(InThumbnail)
 	{
 	}
 
 	// 이 값이 바뀌면 Replication에 포함됨
 	bool operator==(const FItemData& Other) const
 	{
-		return Name == Other.Name && Quantity == Other.Quantity && ItemType == Other.ItemType && Thumbnail == Other.Thumbnail && Amount == Other.Amount;
+		return Name == Other.Name && Quantity == Other.Quantity && SlotIndex == Other.SlotIndex && ItemType == Other.ItemType && Thumbnail == Other.Thumbnail && Amount == Other.Amount;
 	}
 };
 
@@ -58,6 +63,15 @@ struct FInventoryList : public FFastArraySerializer
 
 	UPROPERTY()
 	TArray<FItemData> Items;
+
+	UADInventoryComponent* OwnerComponent = nullptr;
+
+	UADInventoryComponent* GetOwnerComponent() const { return OwnerComponent; }
+
+	void SetOwningComponent(UADInventoryComponent* InComp)
+	{
+		OwnerComponent = InComp;
+	}
 
 	//Replication을 위한 필수 함수
 	bool NetDeltaSerialize(FNetDeltaSerializeInfo& DeltaParms)

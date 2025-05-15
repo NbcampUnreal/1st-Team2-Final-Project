@@ -11,6 +11,7 @@
 #include "AbyssDiverUnderWorld/Interactable/Item/Component/ADInteractionComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/PawnNoiseEmitterComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PhysicsVolume.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -23,6 +24,13 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	FirstPersonCameraComponent->SetRelativeLocation(FVector(-10.f, 0.f, 60.f)); // Position the camera
 	FirstPersonCameraComponent->bUsePawnControlRotation = true;
 
+	StatComponent->Initialize(1000, 1000, 400.0f, 10);
+	
+	bIsCaptured = false;
+	CaptureFadeTime = 0.5f;
+
+	BloodEmitNoiseRadius = 1.0f;
+	
 	StatComponent->MoveSpeed = 400.0f;
 	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
 	{
@@ -31,7 +39,7 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 		Movement->BrakingDecelerationSwimming = 500.0f;
 		Movement->GravityScale = 0.0f;
 	}
-	SprintSpeed = StatComponent->MoveSpeed * 1.5f;
+	SprintSpeed = StatComponent->MoveSpeed * 1.75f;
 
 	// To-Do
 	// 외부에 보여지는 Mesh와 1인칭 Mesh를 다르게 구현
@@ -49,6 +57,17 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	bUseDebugCamera = false;
 	ThirdPersonCameraComponent->SetActive(false);
 
+	// To-Do
+	// 외부에 보여지는 Mesh와 1인칭 Mesh를 다르게 구현
+	GetMesh()->SetOwnerNoSee(true);
+	GetMesh()->bCastHiddenShadow = true;
+	
+	Mesh1P = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Mesh1P"));
+	Mesh1P->SetOnlyOwnerSee(true);
+	Mesh1P->SetupAttachment(FirstPersonCameraComponent);
+	Mesh1P->CastShadow = false;
+	Mesh1P->bCastDynamicShadow = false;
+	
 	OxygenComponent = CreateDefaultSubobject<UOxygenComponent>(TEXT("OxygenComponent"));
 	StaminaComponent = CreateDefaultSubobject<UStaminaComponent>(TEXT("StaminaComponent"));
 
@@ -67,6 +86,9 @@ void AUnderwaterCharacter::BeginPlay()
 	SetDebugCameraMode(bUseDebugCamera);
 
 	StaminaComponent->OnSprintStateChanged.AddDynamic(this, &AUnderwaterCharacter::OnSprintStateChanged);
+
+	NoiseEmitterComponent = NewObject<UPawnNoiseEmitterComponent>(this);
+	NoiseEmitterComponent->RegisterComponent();
 }
 
 void AUnderwaterCharacter::SetCharacterState(ECharacterState State)
@@ -97,6 +119,89 @@ void AUnderwaterCharacter::SetCharacterState(ECharacterState State)
 		UE_LOG(AbyssDiver, Error, TEXT("Invalid Character State"));
 		break;
 	}
+}
+
+void AUnderwaterCharacter::StartCaptureState()
+{
+	if(bIsCaptured || !HasAuthority())
+	{
+		return;
+	}
+
+	bIsCaptured = true;
+	M_StartCaptureState();
+}
+
+void AUnderwaterCharacter::StopCaptureState()
+{
+	// 사망 처리 시에도 StopCaptureState가 호출된다.
+	// 즉, 사망이 확정되는 시점이 다르게 작동할 수 있다.
+	
+	if (!bIsCaptured || !HasAuthority())
+	{
+		return;
+	}
+
+	bIsCaptured = false;
+	M_StopCaptureState();
+}
+
+void AUnderwaterCharacter::EmitBloodNoise()
+{
+	if (NoiseEmitterComponent)
+	{
+		NoiseEmitterComponent->MakeNoise(this, BloodEmitNoiseRadius, GetActorLocation());
+	}
+}
+
+void AUnderwaterCharacter::M_StartCaptureState_Implementation()
+{
+	if (IsLocallyControlled())
+	{
+		if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
+		{
+			PlayerController->SetIgnoreLookInput(true);
+			PlayerController->SetIgnoreMoveInput(true);
+
+			PlayerController->PlayerCameraManager->StartCameraFade(
+				0.0f,
+				1.0f,
+				CaptureFadeTime,
+				FLinearColor::Black,
+				false,
+				true
+			);
+		}
+		// Play SFX
+	}
+
+	SetActorHiddenInGame(true);
+	SetActorEnableCollision(false);
+}
+
+void AUnderwaterCharacter::M_StopCaptureState_Implementation()
+{
+	if (IsLocallyControlled())
+	{
+		if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
+		{
+			PlayerController->ResetIgnoreLookInput();
+			PlayerController->ResetIgnoreMoveInput();
+
+			PlayerController->PlayerCameraManager->StartCameraFade(
+				1.0f,
+				0.0f,
+				CaptureFadeTime,
+				FLinearColor::Black,
+				false,
+				true
+			);
+		}
+	}
+	// Play SFX
+
+	SetActorHiddenInGame(false);
+	SetActorEnableCollision(true);
 }
 
 void AUnderwaterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -203,6 +308,19 @@ void AUnderwaterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 	}
 }
 
+float AUnderwaterCharacter::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent,
+	class AController* EventInstigator, AActor* DamageCauser)
+{
+	float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+	if (ActualDamage > 0.0f)
+	{
+		EmitBloodNoise();
+	}
+
+	return ActualDamage;
+}
+
 void AUnderwaterCharacter::Move(const FInputActionValue& InputActionValue)
 {
 	// To-Do
@@ -238,6 +356,10 @@ void AUnderwaterCharacter::MoveUnderwater(const FVector MoveInput)
 	if (!FMath::IsNearlyZero(MoveInput.Y))
 	{
 		AddMovementInput(RightVector, MoveInput.Y);
+	}
+	if (!FMath::IsNearlyZero(MoveInput.Z))
+	{
+		AddMovementInput(FVector::UpVector, MoveInput.Z);
 	}
 }
 

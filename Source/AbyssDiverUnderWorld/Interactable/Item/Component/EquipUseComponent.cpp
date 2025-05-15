@@ -9,17 +9,23 @@
 #include "AbyssDiverUnderWorld.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Components/SphereComponent.h"
+#include "Camera/CameraComponent.h"
 #include "Interactable/Item/Component/ADInteractionComponent.h"
 
 // Sets default values for this component's properties
 UEquipUseComponent::UEquipUseComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
+	SetComponentTickEnabled(false);
+
 	SetIsReplicatedByDefault(true);
 
 	Amount = 0;
-	DrainPerSecond = 50.f;
+	DrainPerSecond = 5.f;
+	NightVisionDrainPerSecond = 2.f;
+	DrainAcc = 0.f;
 	bBoostActive = false;
+	bOriginalExposureCached = false;
 
 	// 테스트용
 	if (ACharacter* Char = Cast<ACharacter>(GetOwner()))
@@ -34,7 +40,25 @@ UEquipUseComponent::UEquipUseComponent()
 void UEquipUseComponent::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// DPV
+	CurrentMultiplier = 1.f;
+	TargetMultiplier = 1.f;
+	DefaultSpeed = OwningCharacter->GetCharacterMovement()->MaxWalkSpeed;
+
+
+	// Night Vision
+	if (UMaterialInterface* Base = NVGMaterial.LoadSynchronous())
+	{
+		NightVisionMaterialInstance = UMaterialInstanceDynamic::Create(Base, this);
+		NightVisionMaterialInstance->SetScalarParameterValue("NightBlend", 0.f);
+	}
 	
+
+	CameraComp = OwningCharacter->FindComponentByClass<UCameraComponent>();
+	if (!CameraComp) return;
+	CameraComp->PostProcessSettings.WeightedBlendables.Array.Add(FWeightedBlendable(1.f, NightVisionMaterialInstance));
+	OriginalPPSettings = CameraComp->PostProcessSettings;
 }
 
 void UEquipUseComponent::EndPlay(const EEndPlayReason::Type Reason)
@@ -44,19 +68,62 @@ void UEquipUseComponent::EndPlay(const EEndPlayReason::Type Reason)
 }
 
 
-// Called every frame
 void UEquipUseComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
+	// DPV 소모
 	if (bBoostActive && Amount > 0)
 	{
-		Amount = FMath::Max(0, Amount - FMath::RoundToInt(DrainPerSecond * DeltaTime));
+		DrainAcc += DrainPerSecond * DeltaTime;
+	}
+
+	// NVG 소모
+	if (bNightVisionOn && Amount > 0)
+	{
+		DrainAcc += NightVisionDrainPerSecond * DeltaTime;
+	}
+
+	// DrainAcc 처리
+	const int32 Decrease = FMath::FloorToInt(DrainAcc);
+	if (Decrease > 0)
+	{
+		Amount = FMath::Max(0, Amount - Decrease);
+		DrainAcc -= Decrease;
+		OnRep_Amount();
+
 		if (Amount == 0)
 		{
-			ToggleBoost(); // 베터리 고갈 -> 자동 해제
+			if (bBoostActive)
+			{
+				bBoostActive = false;
+				TargetMultiplier = 1.f;
+			}
+			if (bNightVisionOn)
+			{
+				bNightVisionOn = false;
+				NightVisionMaterialInstance->SetScalarParameterValue(TEXT("NightBlend"), 0.f);
+			}
 		}
 	}
+
+	// 부스트 속도 보간
+	if (IsInterpolating())
+	{
+		CurrentMultiplier = FMath::FInterpTo(CurrentMultiplier,
+			TargetMultiplier,
+			DeltaTime,
+			InterpSpeed);
+		if (UCharacterMovementComponent* Move = OwningCharacter->GetCharacterMovement())
+		{
+			Move->MaxWalkSpeed = DefaultSpeed * CurrentMultiplier;
+		}	
+	}
+
+	// Tick 끄기
+	const bool bStillNeed = bBoostActive || bNightVisionOn || IsInterpolating();
+	if (!bStillNeed)
+		SetComponentTickEnabled(false);
+		
 }
 
 void UEquipUseComponent::S_LeftClick_Implementation()
@@ -89,11 +156,11 @@ void UEquipUseComponent::Initialize(const FFADItemDataRow& InItemMeta)
 
 EAction UEquipUseComponent::TagToAction(const FGameplayTag& Tag)
 {
-	if (Tag.MatchesTagExact(TAG_EquipUse_Fire))       return EAction::WeaponFire;
-	else if (Tag.MatchesTagExact(TAG_EquipUse_Reload))     return EAction::WeaponReload;
+	if (Tag.MatchesTagExact(TAG_EquipUse_Fire))                 return EAction::WeaponFire;
+	else if (Tag.MatchesTagExact(TAG_EquipUse_Reload))          return EAction::WeaponReload;
 	else if (Tag.MatchesTagExact(TAG_EquipUse_DPVToggle))       return EAction::ToggleBoost;
-	else if (Tag.MatchesTagExact(TAG_EquipUse_NVToggle))   return EAction::ToggleNVGToggle;
-	else if (Tag.MatchesTagExact(TAG_EquipUse_ApplyChargeUI))    return EAction::ApplyChargeUI;
+	else if (Tag.MatchesTagExact(TAG_EquipUse_NVToggle))        return EAction::ToggleNVGToggle;
+	else if (Tag.MatchesTagExact(TAG_EquipUse_ApplyChargeUI))   return EAction::ApplyChargeUI;
 	return EAction::None;
 }
 
@@ -107,7 +174,7 @@ void UEquipUseComponent::HandleLeftClick()
 
 	switch (LeftAction)
 	{
-	case EAction::WeaponFire:     FireHarpoon();       break;
+	case EAction::WeaponFire:      FireHarpoon();       break;
 	case EAction::ToggleBoost:     ToggleBoost();       break;
 	case EAction::ToggleNVGToggle: ToggleNightVision(); break;
 	default:                      break;
@@ -184,26 +251,27 @@ void UEquipUseComponent::FireHarpoon()
 void UEquipUseComponent::ToggleBoost()
 {
 	if (!OwningCharacter.IsValid()) return;
+	if (Amount <= 0 || bNightVisionOn) return;
 
-	UCharacterMovementComponent* Move = OwningCharacter->GetCharacterMovement();
-	if (!Move) return;
-
-	if (!bBoostActive)
-	{
-		Move->MaxWalkSpeed *= 2.0f;
-		bBoostActive = true;
-	}
-	else
-	{
-		Move->MaxWalkSpeed = DefaultSpeed;
-		bBoostActive = false;
-	}
+	bBoostActive = !bBoostActive;
+	TargetMultiplier = bBoostActive ? BoostMultiplier : 1.f; // 가속 : 감속
+	
+	// Tick 활성 : 비활성
+	const bool bStillNeed = bBoostActive || bNightVisionOn || IsInterpolating();
+	SetComponentTickEnabled(bStillNeed);
 }
 
 void UEquipUseComponent::ToggleNightVision()
 {
-	// TODO : 포스트 프로세스 매태리얼 파라미터 토글해서 구현??
+	if (!NightVisionMaterialInstance || !CameraComp) return;
+	if (Amount <= 0 || bBoostActive) return;
+	
 	bNightVisionOn = !bNightVisionOn;
+	const float Target = bNightVisionOn ? 1.f : 0.f;
+	NightVisionMaterialInstance->SetScalarParameterValue("NightBlend", Target);
+
+	const bool bStillNeed = bBoostActive || bNightVisionOn || IsInterpolating();
+	SetComponentTickEnabled(bStillNeed);
 }
 
 void UEquipUseComponent::StartReload()
@@ -222,5 +290,10 @@ void UEquipUseComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(UEquipUseComponent, Amount);
+}
+
+bool UEquipUseComponent::IsInterpolating() const
+{
+	return !FMath::IsNearlyEqual(CurrentMultiplier, TargetMultiplier, 0.001f);
 }
 

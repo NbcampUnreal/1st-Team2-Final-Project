@@ -48,8 +48,12 @@ public:
 	// 내부 실행 함수
 	UFUNCTION(BlueprintCallable)
 	void FireHarpoon();
+	UFUNCTION(BlueprintCallable)
 	void ToggleBoost();
+	UFUNCTION(BlueprintCallable)
 	void ToggleNightVision();
+	void ApplyManualExposure(FPostProcessSettings& PPS, float Bias);
+	void RestoreOriginalExposure(FPostProcessSettings& PPS);
 	void StartReload();
 	void OpenChargeWidget();
 
@@ -65,21 +69,37 @@ protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 private:
+	// 보간 완료 확인 함수
+	bool IsInterpolating() const;
+	
 #pragma endregion
 
 #pragma region Variable
 public:
 	UPROPERTY(ReplicatedUsing = OnRep_Amount, EditAnywhere, BlueprintReadWrite)
 	int32 Amount = 0;
+	UPROPERTY(EditDefaultsOnly, Category = "Boost")
+	float BoostMultiplier = 4.f;
+	UPROPERTY(EditDefaultsOnly, Category = "Boost")
+	float InterpSpeed = 3.f;
 	
 	
 protected:
 	UPROPERTY(EditAnywhere)
-	float DrainPerSecond = 50.f;
+	float DrainPerSecond = 5.f;
+	UPROPERTY(EditDefaultsOnly, Category = "NightVision")
+	float NightVisionDrainPerSecond = 2.f;
+	UPROPERTY(EditDefaultsOnly, Category = "NightVision")
+	TSoftObjectPtr<UMaterialInterface> NVGMaterial;
+	UPROPERTY(EditAnywhere, Category = "NightVision")
+	float ExposureBias = 1.5f;
 	UPROPERTY()
-	TObjectPtr<UUserWidget> ChargetWidget = nullptr;
-	UPROPERTY(EditAnywhere, Category = "Equip|Projectile")
+	TObjectPtr<UMaterialInstanceDynamic> NightVisionMaterialInstance = nullptr;
+	UPROPERTY()
+	TObjectPtr<UUserWidget> ChargeWidget = nullptr;
+	UPROPERTY(EditAnywhere, Category = "Projectile")
 	TSubclassOf<AADProjectileBase> ProjectileClass = nullptr;
+	
 	
 	uint8 bBoostActive : 1;
 	uint8 bNightVisionOn : 1;
@@ -91,6 +111,13 @@ protected:
 	EAction RKeyAction;
 
 private:
+	float CurrentMultiplier = 1.f;
+	float TargetMultiplier = 1.f;
+	float DrainAcc = 0.f;
+	// NVG 설정 변수
+	TObjectPtr<class UCameraComponent> CameraComp = nullptr;
+	FPostProcessSettings OriginalPPSettings;
+	uint8 bOriginalExposureCached : 1;
 
 #pragma endregion
 
