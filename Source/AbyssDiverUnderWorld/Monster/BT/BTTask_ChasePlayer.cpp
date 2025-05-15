@@ -33,7 +33,7 @@ EBTNodeResult::Type UBTTask_ChasePlayer::ExecuteTask(UBehaviorTreeComponent& Own
 	// MoveRequest
 	FAIMoveRequest MoveRequest;
 	MoveRequest.SetGoalActor(TargetActor);
-	MoveRequest.SetAcceptanceRadius(150.0f);
+	MoveRequest.SetAcceptanceRadius(250.0f);
 	MoveRequest.SetCanStrafe(false);
 
 	FNavPathSharedPtr NavPath; // Variable to receive the navigation path the AI will actually follow

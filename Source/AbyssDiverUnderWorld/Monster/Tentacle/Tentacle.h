@@ -12,4 +12,19 @@ class ABYSSDIVERUNDERWORLD_API ATentacle : public AMonster
 {
 	GENERATED_BODY()
 	
+public:
+	ATentacle();
+
+#pragma region Variable
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI|Attack")
+	TObjectPtr<USphereComponent> TentacleHitSphere;
+
+#pragma endregion
+
+#pragma region Getter, Setter
+public:
+	virtual USphereComponent* GetAttackHitComponent() const override { return TentacleHitSphere; }
+
+#pragma endregion
 };
