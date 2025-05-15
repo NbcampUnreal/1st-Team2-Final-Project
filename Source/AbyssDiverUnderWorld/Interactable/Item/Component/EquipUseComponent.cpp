@@ -191,6 +191,12 @@ void UEquipUseComponent::Initialize(uint8 ItemId)
 	}
 	const FName RowName = InItemMeta->Name;
 
+	// 기존 장비의 효과 해제
+	if (bBoostActive || bNightVisionOn || CurrentMultiplier != 1.f)
+	{
+		ResetEquipState();
+	}
+
 	// 해제 전에 상태 저장
 	if (!CurrentRowName.IsNone())
 	{
@@ -392,4 +398,27 @@ void UEquipUseComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 bool UEquipUseComponent::IsInterpolating() const
 {
 	return !FMath::IsNearlyEqual(CurrentMultiplier, TargetMultiplier, 0.001f);
+}
+
+void UEquipUseComponent::ResetEquipState()
+{
+	bBoostActive = false;
+	bNightVisionOn = false;
+
+	CurrentMultiplier = TargetMultiplier = 1.f;
+	if (OwningCharacter.IsValid())
+	{
+		OwningCharacter->GetCharacterMovement()->MaxWalkSpeed = DefaultSpeed;
+	}
+
+	if (NightVisionMaterialInstance)
+	{
+		NightVisionMaterialInstance->SetScalarParameterValue(TEXT("NightBlend"), 0.f);
+	}
+	if (CameraComp)
+	{
+		CameraComp->PostProcessSettings = OriginalPPSettings;
+	}
+
+	SetComponentTickEnabled(false);
 }

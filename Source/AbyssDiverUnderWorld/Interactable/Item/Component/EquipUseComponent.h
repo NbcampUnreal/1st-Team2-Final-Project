@@ -60,13 +60,21 @@ public:
 	void ToggleNightVision();
 	UFUNCTION(BlueprintCallable)
 	void StartReload();
+	UFUNCTION(BlueprintCallable)
 	void OpenChargeWidget();
+	UFUNCTION(BlueprintCallable)
+	void HandleLeftClick();
+	UFUNCTION(BlueprintCallable)
+	void HandleRKey();
+	
 	void FinishReload();
+
+
 
 	void Initialize(uint8 ItemId);
 	EAction TagToAction(const FGameplayTag& Tag);
-	void HandleLeftClick();
-	void HandleRKey();
+
+
 
 	
 	
@@ -77,6 +85,8 @@ protected:
 private:
 	// 보간 완료 확인 함수
 	bool IsInterpolating() const;
+	// 상태 초기화 함수
+	void ResetEquipState();
 	
 #pragma endregion
 
