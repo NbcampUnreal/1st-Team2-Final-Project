@@ -14,6 +14,10 @@ AADUseItem::AADUseItem()
 	SkeletalMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SkeletalMesh"));
 	SkeletalMesh->SetupAttachment(Scene);
 
+	SkeletalMesh->SetCollisionProfileName("BlockAllDynamic");
+	SkeletalMesh->SetGenerateOverlapEvents(true);
+	SkeletalMesh->SetSimulatePhysics(true);
+
 	bReplicates = true;
 }
 
@@ -38,3 +42,4 @@ void AADUseItem::M_SetSkeletalMesh_Implementation(USkeletalMesh* NewMesh)
 {
 	SkeletalMesh->SetSkeletalMesh(NewMesh);
 }
+

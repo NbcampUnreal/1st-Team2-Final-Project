@@ -6,9 +6,6 @@
 #include "Interactable/Item/ADItemBase.h"
 #include "ADUseItem.generated.h"
 
-/**
- * 
- */
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADUseItem : public AADItemBase
 {
@@ -29,8 +26,9 @@ public:
 
 #pragma region Variable
 protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	TObjectPtr<USceneComponent> Scene;
-
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TObjectPtr<USkeletalMeshComponent> SkeletalMesh;
 #pragma endregion
 	
