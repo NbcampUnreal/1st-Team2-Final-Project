@@ -34,6 +34,8 @@ public:
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TSubclassOf<UDragPreviewWidget> DragPreviewWidgetClass;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TObjectPtr<UTexture2D> EmptySlotTexture;
 private:
 	int8 SlotIndex;
 	EItemType SlotType;
