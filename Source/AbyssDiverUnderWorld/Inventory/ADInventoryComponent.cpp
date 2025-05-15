@@ -15,6 +15,7 @@
 #include "Interactable/Item/UseFunction/UseStrategy.h"
 #include <Actions/PawnActionsComponent.h>
 #include "GameFramework/Character.h"
+#include "Interactable/Item/Component/EquipUseComponent.h"
 
 UADInventoryComponent::UADInventoryComponent() :
 	InventoryWidgetClass(nullptr),
@@ -405,6 +406,11 @@ void UADInventoryComponent::Equip(FItemData ItemData, int8 Index)
 			LOG(TEXT("EquipItem"));
 			CurrentEquipmentInstance = SpawnedItem;
 			SetEquipInfo(Index, SpawnedItem);
+
+			if (UEquipUseComponent* EquipComp = Pawn->FindComponentByClass<UEquipUseComponent>()) // 나중에 Getter로 바꿔야 함
+			{
+				EquipComp->Initialize(SpawnedItem->ItemData.Id);
+			}
 		}
 	}
 
