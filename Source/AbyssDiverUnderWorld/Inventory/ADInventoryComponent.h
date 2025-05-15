@@ -11,6 +11,16 @@
 enum class EItemType : uint8;
 class UAllInventoryWidget;
 class UDataTableSubsystem;
+class AADUseItem;
+
+UENUM(BlueprintType)
+enum class EItemEquipState : uint8
+{
+	Idle = 0,
+	Equip = 1,
+	Use = 2,
+	Max = 3 UMETA(Hidden)
+};
 
 DECLARE_MULTICAST_DELEGATE(FInventoryUpdateDelegate);
 DECLARE_MULTICAST_DELEGATE_TwoParams(FInventoryInfoUpdateDelegate, int32, int32);
@@ -32,6 +42,16 @@ public:
 	UFUNCTION(Server, Reliable)
 	void S_DropItem(FItemData ItemData);
 	void S_DropItem_Implementation(FItemData ItemData);
+
+	UFUNCTION(Server, Reliable)
+	void S_Equip(FItemData ItemData, int8 Index);
+	void S_Equip_Implementation(FItemData ItemData, int8 Index);
+
+	UFUNCTION(Server, Reliable)
+	void S_UnEquip();
+	void S_UnEquip_Implementation();
+
+	void SetEquipInfo(int8 TypeInventoryIndex, AADUseItem* SpawnItem);
 
 	UFUNCTION(BlueprintCallable)
 	void AddInventoryItem(FItemData ItemData);
@@ -83,6 +103,11 @@ private:
 	uint8 bInventoryWidgetShowed : 1;
 
 	TMap<EItemType, TArray<int8>> InventoryIndexMapByType;
+	UPROPERTY(Replicated)
+	int8 CurrentEquipmentIndex;
+	UPROPERTY(Replicated)
+	TObjectPtr<AADUseItem> CurrentEquipmentInstance;
+	UPROPERTY(Replicated)
 	TArray<int8> InventorySizeByType;
 
 	TObjectPtr<UAllInventoryWidget> InventoryWidgetInstance;
@@ -100,5 +125,6 @@ public:
 	const FInventoryList& GetInventoryList() { return InventoryList; }
 	const TArray<int8>& GetInventoryIndexesByType(EItemType ItemType) const { return InventoryIndexMapByType[ItemType]; }
 	const TArray<int8>& GetInventorySizeByType() const { return InventorySizeByType; }
+
 #pragma endregion
 };

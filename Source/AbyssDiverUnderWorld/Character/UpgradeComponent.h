@@ -32,10 +32,21 @@ protected:
 
 #pragma region Method
 
+public:
+
+	UFUNCTION(Server, Unreliable)
+	void S_RequestUpgrade(EUpgradeType UpgradeType);
+	void S_RequestUpgrade_Implementation(EUpgradeType UpgradeType);
+
 protected:
 	
 	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "OnUpgradePerformed"))
 	void K2_OnUpgradePerformed(EUpgradeType UpgradeType, uint8 Grade);
+
+private:
+
+	UFUNCTION()
+	void OnRep_UpgradeGradeMap();
 
 #pragma endregion
 	
@@ -52,7 +63,7 @@ private:
 	TWeakObjectPtr<class UDataTableSubsystem> DataTableSubsystem;
 	
 	/** 현재 Upgrade 정보를 저장한다. Type 별로 Grade를 저장하며 1이 기본값이다. */
-	UPROPERTY(VisibleInstanceOnly, Replicated)
+	UPROPERTY(VisibleInstanceOnly, ReplicatedUsing = OnRep_UpgradeGradeMap)
 	TArray<uint8> UpgradeGradeMap;
 	
 #pragma endregion

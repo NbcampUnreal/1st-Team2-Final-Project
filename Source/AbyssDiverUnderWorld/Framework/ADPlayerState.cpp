@@ -1,16 +1,13 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "Framework/ADPlayerState.h"
 #include "Inventory/ADInventoryComponent.h"
 #include "AbyssDiverUnderWorld.h"
+#include "Character/UpgradeComponent.h"
 
 AADPlayerState::AADPlayerState()
 {
 	InventoryComp = CreateDefaultSubobject<UADInventoryComponent>(TEXT("InventoryComp"));
+	UpgradeComp = CreateDefaultSubobject<UUpgradeComponent>(TEXT("UpgradeComp"));
 }
-
-
 
 void AADPlayerState::BeginPlay()
 {
@@ -21,7 +18,7 @@ void AADPlayerState::BeginPlay()
 	{
 
 		InventoryComp->InventoryInitialize();
-		LOGVN(Error, TEXT("Inventory Initializded"));
+		LOGVN(Log, TEXT("Inventory Initializded"));
 	}
 
 }

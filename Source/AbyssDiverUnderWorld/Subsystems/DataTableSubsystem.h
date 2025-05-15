@@ -28,6 +28,7 @@ public:
 
 	int8 GetItemDataTableArrayNum() const ;
 	FFADItemDataRow* GetItemData(int32 ItemId) const;
+	FFADItemDataRow* GetItemDataByName(FName ItemName) const;
 	FUpgradeDataRow* GetUpgradeDataTableArray(int32 Index) const;
 	FDropEntry* GetOreDropEntryTableArray(int32 Id) const;
 

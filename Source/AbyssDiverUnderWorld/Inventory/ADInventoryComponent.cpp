@@ -6,14 +6,15 @@
 #include "UI/AllInventoryWidget.h"
 #include <Net/UnrealNetwork.h>
 #include "AbyssDiverUnderWorld.h"
-#include "ADInventoryComponent.h"
 #include <Kismet/KismetMathLibrary.h>
 #include "DrawDebugHelpers.h"
 #include "Framework/ADGameInstance.h"
 #include "Subsystems/DataTableSubsystem.h"
 #include "Framework/ADPlayerState.h"
 #include "Interactable/Item/ADUseItem.h"
-#include "Interface/IADUsable.h"
+#include "Interactable/Item/UseFunction/UseStrategy.h"
+#include <Actions/PawnActionsComponent.h>
+#include "GameFramework/Character.h"
 
 UADInventoryComponent::UADInventoryComponent() :
 	InventoryWidgetClass(nullptr),
@@ -21,6 +22,8 @@ UADInventoryComponent::UADInventoryComponent() :
 	TotalPrice(0),
 	WeightMax(100),
 	bInventoryWidgetShowed(false), 
+	CurrentEquipmentIndex(-1),
+	CurrentEquipmentInstance(nullptr),
 	InventoryWidgetInstance(nullptr),
 	ItemDataTableSubsystem(nullptr)
 {
@@ -49,7 +52,6 @@ UADInventoryComponent::UADInventoryComponent() :
 		InventoryIndexMapByType.FindOrAdd(static_cast<EItemType>(i));
 		InventoryIndexMapByType[static_cast<EItemType>(i)].Init(-1, InventorySizeByType[i]);
 	}
-
 }
 
 void UADInventoryComponent::BeginPlay()
@@ -66,6 +68,8 @@ void UADInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	DOREPLIFETIME(UADInventoryComponent, InventoryList);
 	DOREPLIFETIME(UADInventoryComponent, TotalPrice);
 	DOREPLIFETIME(UADInventoryComponent, TotalWeight);
+	DOREPLIFETIME(UADInventoryComponent, CurrentEquipmentIndex);
+	DOREPLIFETIME(UADInventoryComponent, CurrentEquipmentInstance);
 }
 
 void UADInventoryComponent::S_DropItem_Implementation(FItemData ItemData)
@@ -75,6 +79,50 @@ void UADInventoryComponent::S_DropItem_Implementation(FItemData ItemData)
 		AADUseItem* SpawnItem = GetWorld()->SpawnActor<AADUseItem>(AADUseItem::StaticClass(), GetDropLocation(), FRotator::ZeroRotator);
 		SpawnItem->SetItemInfo(ItemData);
 	}
+}
+
+void UADInventoryComponent::S_Equip_Implementation(FItemData ItemData, int8 Index)
+{
+	APlayerState* PS = Cast<APlayerState>(GetOwner());
+	APlayerController* PC = Cast<APlayerController>(PS->GetOwningController());
+	if (!PC) return;
+	APawn* Pawn = Cast<APawn>(PC->GetPawn());
+	if (!Pawn) return;
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Instigator = Pawn;
+	SpawnParams.Owner = Pawn;
+
+	AADUseItem* SpawnedItem = GetWorld()->SpawnActor<AADUseItem>(AADUseItem::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+	LOG(TEXT("SpawnItem"));
+	if (SpawnedItem)
+	{
+		ACharacter* Character = Cast<ACharacter>(Pawn);
+		USkeletalMeshComponent* MeshComp = Character->GetMesh();
+		if (MeshComp)
+		{
+			SpawnedItem->AttachToComponent(MeshComp, FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("Hand_R"));
+			SpawnedItem->SetItemInfo(ItemData);
+			LOG(TEXT("EquipItem"));
+			CurrentEquipmentInstance = SpawnedItem;
+			SetEquipInfo(Index, SpawnedItem);
+		}
+	}
+
+}
+
+void UADInventoryComponent::S_UnEquip_Implementation()
+{
+	if(CurrentEquipmentInstance)
+		CurrentEquipmentInstance->Destroy();
+	SetEquipInfo(-1, nullptr);
+	LOG(TEXT("UnEquipItem"));
+}
+
+void UADInventoryComponent::SetEquipInfo(int8 TypeInventoryIndex, AADUseItem* SpawnItem)
+{
+	CurrentEquipmentIndex = TypeInventoryIndex;
+	CurrentEquipmentInstance = SpawnItem;
 }
 
 void UADInventoryComponent::AddInventoryItem(FItemData ItemData)
@@ -94,7 +142,7 @@ void UADInventoryComponent::AddInventoryItem(FItemData ItemData)
 				}
 				if (FoundRow->Stackable)
 				{
-					Item.Quantity += ItemData.Quantity;
+						Item.Quantity += ItemData.Quantity;
 					if (Item.ItemType == EItemType::Exchangable)
 					{
 						Item.Mass += ItemData.Mass;
@@ -168,19 +216,48 @@ bool UADInventoryComponent::RemoveInventoryItem(uint8 InventoryIndex, int8 Count
 
 void UADInventoryComponent::UseInventoryItem(EItemType ItemType, int32 InventoryIndex)
 {
-	/*
-	if (InventoryIndex > InventoryIndexMapByType[ItemType].Num() && InventoryIndexMapByType[ItemType][InventoryIndex - 1] == -1 ) return;
-	FItemData& Item = InventoryList.Items[InventoryIndexMapByType[ItemType][InventoryIndex - 1]];
-	FFADItemDataRow* FoundRow = TestItemDataTable->FindRow<FFADItemDataRow>(Item.Name, TEXT("Lookup Item"));
-	if (!FoundRow->UseFunction) return;
-
-	if (FoundRow->UseFunction->ImplementsInterface(UUsable::StaticClass()))
+	if (ItemType == EItemType::Equipment)
 	{
-		UObject* Strategy = NewObject<UObject>(this, FoundRow->UseFunction);
-
-		IUsable::Execute_Use(Strategy, GetOwner());
+		if (InventoryIndex > InventoryIndexMapByType[ItemType].Num() || InventoryIndexMapByType[ItemType][InventoryIndex - 1] == -1 ) return;
 	}
-	*/
+	else if (ItemType == EItemType::Consumable)
+	{
+		if (InventoryList.Items[InventoryIndex].Quantity == 0 || InventoryList.Items.Num() < InventoryIndex) return;
+	}
+
+	FItemData& Item = ItemType == EItemType::Consumable ? InventoryList.Items[InventoryIndex] : InventoryList.Items[InventoryIndexMapByType[ItemType][InventoryIndex - 1]];
+	LOG(TEXT("%d %d"), CurrentEquipmentIndex, InventoryIndex);
+	if (ItemType == EItemType::Equipment)
+	{
+		if (CurrentEquipmentIndex == InventoryIndex-1)
+		{
+			S_UnEquip();
+		}
+		else
+		{
+			if (CurrentEquipmentIndex != -1)
+			{
+				S_UnEquip();
+				LOG(TEXT("ChangeEquipment"));
+			}
+			S_Equip(Item, InventoryIndex-1);
+		}
+	}
+	else if (ItemType == EItemType::Consumable)
+	{
+		FFADItemDataRow* FoundRow = TestItemDataTable->FindRow<FFADItemDataRow>(Item.Name, TEXT("Lookup Item"));
+		if (!FoundRow->UseFunction) return;
+
+		if (FoundRow && FoundRow->UseFunction)
+		{
+			UUseStrategy* Strategy = Cast<UUseStrategy>(NewObject<UObject>(this, FoundRow->UseFunction));
+			if (Strategy)
+			{
+				Strategy->Use(GetOwner());
+			}
+		}
+		RemoveInventoryItem(InventoryIndex, 1, false);
+	}
 }
 
 void UADInventoryComponent::TransferSlots(uint8 FromIndex, uint8 ToIndex)
@@ -229,7 +306,7 @@ FVector UADInventoryComponent::GetDropLocation()
 	APlayerController* PC = Cast<APlayerController>(Cast<AADPlayerState>(GetOwner())->GetPlayerController());
 	APawn* OwnerPawn = PC->GetPawn();
 	FVector CameraForward = PC->PlayerCameraManager->GetCameraRotation().Vector();
-	FVector DropLocation = OwnerPawn->GetActorLocation() + UKismetMathLibrary::RandomUnitVectorInConeInDegrees(CameraForward, 30) * 350.0;
+	FVector DropLocation = OwnerPawn->GetActorLocation() +FVector(0, 0, 200) + UKismetMathLibrary::RandomUnitVectorInConeInDegrees(CameraForward, 30) * 350.0;
 	return DropLocation;
 }
 
