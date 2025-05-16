@@ -76,17 +76,10 @@ void UBTTask_ChasePlayer::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* Nod
 		FinishLatentTask(*CachedOwnerComp, EBTNodeResult::Failed);
 
 		// MonsterAIController handles this processing, but explicitly writes
-		// BlackboardComp->SetValueAsEnum("MonsterState", static_cast<uint8>(EMonsterState::Patrol));
-		// BlackboardComp->ClearValue("TargetActor");
+		BlackboardComp->SetValueAsEnum("MonsterState", static_cast<uint8>(EMonsterState::Patrol));
+		BlackboardComp->ClearValue("TargetActor");
 		return;
 	}
-
-	// const FVector Distance = AIPawn->GetActorLocation() - CachedTargetActor->GetActorLocation();
-	// if (Distance.Size() <= AcceptanceRadius)
-	// {
-	// 	BlackboardComp->SetValueAsEnum("MonsterState", static_cast<uint8>(EMonsterState::Attack));
-	// 	FinishLatentTask(*CachedOwnerComp, EBTNodeResult::Succeeded);
-	// }
 
 	if (AIController->GetMoveStatus() == EPathFollowingStatus::Idle)
 	{

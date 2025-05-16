@@ -8,6 +8,7 @@
 #include "AbyssDiverUnderWorld.h"
 #include "Monster/EMonsterState.h"
 #include "GenericTeamAgentInterface.h"
+#include "AbyssDiverUnderWorld.h"
 
 AMonsterAIController::AMonsterAIController()
 {
@@ -52,6 +53,7 @@ void AMonsterAIController::Tick(float DeltaSeconds)
 		BlackboardComponent->ClearValue("TargetActor");
 		BlackboardComponent->SetValueAsEnum("MonsterState", static_cast<uint8>(EMonsterState::Patrol));
 		bIsLosingTarget = false;
+		LOG(TEXT("TargetActor Clear, Monster State : Patrol"));
 	}
 }
 
@@ -119,6 +121,7 @@ void AMonsterAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus 
 
 			Blackboard->SetValueAsObject("TargetActor", Actor);
 			Blackboard->SetValueAsEnum("MonsterState", static_cast<uint8>(EMonsterState::Chase));
+			bIsLosingTarget = false;
 		}
 		else
 		{
