@@ -95,6 +95,8 @@ public:
     float HoldThreshold = 3.f;
     FTimerHandle HoldTimerHandle;
     uint8 bHoldTriggered : 1;
+    uint8 bIsFocusing : 1;
+    uint8 bIsInteractingStart : 1;
     TWeakObjectPtr<AActor> HoldInstigator;
 
 
