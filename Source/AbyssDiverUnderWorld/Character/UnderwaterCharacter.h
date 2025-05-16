@@ -33,6 +33,8 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void PossessedBy(AController* NewController) override;
+	virtual void OnRep_PlayerState() override;
 
 	/** IA를 Enhanced Input Component에 연결 */
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
@@ -65,6 +67,10 @@ public:
 	void EmitBloodNoise();
 	
 protected:
+
+	/** Player State 정보를 초기화 */
+	void InitFromPlayerState(class AADPlayerState* ADPlayerState);
+	
 	/** Capture State Multicast
 	 * Owner : 암전 효과, 입력 처리
 	 * All : Mesh 비활성화

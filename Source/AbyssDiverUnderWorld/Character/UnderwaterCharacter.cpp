@@ -91,25 +91,59 @@ void AUnderwaterCharacter::BeginPlay()
 	SetDebugCameraMode(bUseDebugCamera);
 
 	StaminaComponent->OnSprintStateChanged.AddDynamic(this, &AUnderwaterCharacter::OnSprintStateChanged);
-	if (AADPlayerState* ADPlayerState = GetPlayerState<AADPlayerState>())
-	{
-		if (UADInventoryComponent* Inventory = ADPlayerState->GetInventory())
-		{
-			InventoryComponent = Inventory;
-			// 인벤토리가 변경될 떄 OnRep에서도 호출되기 때문에 여기서 바인딩하면 Server, Client 양쪽에서 바인딩 가능하다.
-			Inventory->InventoryUpdateDelegate.AddUObject(this, &AUnderwaterCharacter::AdjustSpeed);
-		}
-		else
-		{
-			LOGVN(Error, TEXT("Inventory Component Init failed"));
-		}
-	}
 	
-	// 리스폰 시에도 현재 무게에 따라 속도를 조정한다.
-	AdjustSpeed();
-
 	NoiseEmitterComponent = NewObject<UPawnNoiseEmitterComponent>(this);
 	NoiseEmitterComponent->RegisterComponent();
+}
+
+void AUnderwaterCharacter::InitFromPlayerState(AADPlayerState* ADPlayerState)
+{
+	if (ADPlayerState == nullptr)
+	{
+		return;
+	}
+	
+	if (UADInventoryComponent* Inventory = ADPlayerState->GetInventory())
+	{
+		InventoryComponent = Inventory;
+		// 인벤토리가 변경될 떄 OnRep에서도 호출되기 때문에 여기서 바인딩하면 Server, Client 양쪽에서 바인딩 가능하다.
+		Inventory->InventoryUpdateDelegate.AddUObject(this, &AUnderwaterCharacter::AdjustSpeed);
+	}
+	else
+	{
+		LOGVN(Error, TEXT("Inventory Component Init failed : %d"), GetUniqueID());
+	}
+
+	// 리스폰 시에도 현재 무게에 따라 속도를 조정한다.
+	AdjustSpeed();
+}
+
+void AUnderwaterCharacter::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+
+	if (AADPlayerState* ADPlayerState = GetPlayerState<AADPlayerState>())
+	{
+		InitFromPlayerState(ADPlayerState);
+	}
+	else
+	{
+		LOGVN(Error, TEXT("Player State Init failed : %d"), GetUniqueID());
+	}
+}
+
+void AUnderwaterCharacter::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+
+	if (AADPlayerState* ADPlayerState = GetPlayerState<AADPlayerState>())
+	{
+		InitFromPlayerState(ADPlayerState);
+	}
+	else
+	{
+		LOGVN(Error, TEXT("Player State Init failed : %d"), GetUniqueID());
+	}
 }
 
 void AUnderwaterCharacter::SetCharacterState(ECharacterState State)
@@ -228,11 +262,15 @@ void AUnderwaterCharacter::M_StopCaptureState_Implementation()
 void AUnderwaterCharacter::AdjustSpeed()
 {
 	const float BaseSpeed = StaminaComponent->IsSprinting() ? SprintSpeed : StatComponent->MoveSpeed;
+
+	// 추후 Multiplier 종류가 늘어나면 Multiplier를 합산하도록 한다.
 	float Multiplier = 1.0f;
 	if (IsOverloaded())
 	{
-		Multiplier = OverloadSpeedFactor;
+		Multiplier = 1 - OverloadSpeedFactor;
 	}
+	Multiplier = FMath::Clamp(Multiplier, 0.0f, 1.0f);
+	
 
 	EffectiveSpeed = BaseSpeed * Multiplier;
 	if (CharacterState == ECharacterState::Underwater)
@@ -242,6 +280,10 @@ void AUnderwaterCharacter::AdjustSpeed()
 	else if (CharacterState == ECharacterState::Ground)
 	{
 		GetCharacterMovement()->MaxWalkSpeed = EffectiveSpeed;
+	}
+	else
+	{
+		LOGVN(Error, TEXT("Invalid Character State"));
 	}
 }
 
