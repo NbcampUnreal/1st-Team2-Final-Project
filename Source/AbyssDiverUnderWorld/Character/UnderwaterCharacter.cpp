@@ -541,5 +541,5 @@ bool AUnderwaterCharacter::IsSprinting() const
 
 bool AUnderwaterCharacter::IsOverloaded() const
 {
-	return InventoryComponent.IsValid() && InventoryComponent->GetTotalWeight() >= OverloadWeight;
+	return IsValid(InventoryComponent) && InventoryComponent->GetTotalWeight() >= OverloadWeight;
 }

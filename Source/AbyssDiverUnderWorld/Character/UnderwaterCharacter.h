@@ -87,7 +87,7 @@ protected:
 	void M_StopCaptureState();
 	void M_StopCaptureState_Implementation();
 
-	/** 무게에 따라 현재 속도를 갱신한다. */
+	/** 현재 상태 속도 갱신.(무게, Sprint) */
 	UFUNCTION()
 	void AdjustSpeed();
 
@@ -232,7 +232,7 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UStaminaComponent> StaminaComponent;
 
-	/** 캐릭터 출혈 시를 시뮬레이션을 하는 Noise Emitter Component */
+	/** 캐릭터 출혈을 시뮬레이션을 하는 Noise Emitter Component */
 	UPROPERTY()
 	TObjectPtr<class UPawnNoiseEmitterComponent> NoiseEmitterComponent;
 	
@@ -244,7 +244,8 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UShopInteractionComponent> ShopInteractionComponent;
 
-	TWeakObjectPtr<class UADInventoryComponent> InventoryComponent;
+	UPROPERTY()
+	TObjectPtr<class UADInventoryComponent> InventoryComponent;
 	
 #pragma endregion
 

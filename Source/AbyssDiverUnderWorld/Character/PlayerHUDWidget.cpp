@@ -48,7 +48,7 @@ void UPlayerHUDWidget::UpdateHealthText(int32 MaxHealth, int32 Health)
 {
 	if (HealthTextBlock)
 	{
-		FText HealthText = FText::Format(FText::FromString(TEXT("{0} / {1}")), FText::AsNumber(Health), FText::AsNumber(MaxHealth));
+		FText HealthText = FText::Format(FText::FromString(TEXT("Health : {0} / {1}")), FText::AsNumber(Health), FText::AsNumber(MaxHealth));
 		HealthTextBlock->SetText(HealthText);
 	}
 	else
