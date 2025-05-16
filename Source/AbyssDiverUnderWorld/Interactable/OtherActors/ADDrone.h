@@ -6,6 +6,7 @@
 #include "ADDrone.generated.h"
 
 class UADInteractableComponent;
+class AADDroneSeller;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADDrone : public AActor,  public IIADInteractable
@@ -28,7 +29,7 @@ public:
 
 	virtual bool CanHighlight_Implementation() const override { return bIsActive; }
 	UFUNCTION()
-	void Activate(class AADDroneSeller* Seller);
+	void Activate();
 	UFUNCTION()
 	void OnRep_IsActive();
 	void StartRising();
@@ -52,8 +53,10 @@ public:
 	int32 AccumulatedMoney = 0;
 	UPROPERTY(ReplicatedUsing = OnRep_IsActive, EditAnywhere, BlueprintReadWrite)
 	uint8 bIsActive : 1;
-	UPROPERTY()
-	AADDroneSeller* SellerRef = nullptr;
+	UPROPERTY(EditAnywhere)
+	TObjectPtr<AADDroneSeller> CurrentSeller = nullptr;
+	UPROPERTY(EditAnywhere)
+	TObjectPtr<AADDroneSeller> NextSeller = nullptr;
 	UPROPERTY(EditAnywhere)
 	float RaiseSpeed = 200.f;
 	UPROPERTY(EditAnywhere)
