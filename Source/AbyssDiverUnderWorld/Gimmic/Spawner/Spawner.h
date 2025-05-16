@@ -23,6 +23,8 @@ public:
 
 protected:
 	ASpawnPoint* GetPossibleSpawnPoint();
+	void RemoveAllSpawnPoints();
+	void GetSpawnPoint(TSubclassOf<ASpawnPoint> SpawnPointClass);
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawner|Stat")
