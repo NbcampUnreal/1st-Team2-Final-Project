@@ -118,5 +118,5 @@ void UInventorySlotWidget::SetItemData(FItemData ItemInfo, int32 Index, UADInven
 
 void UInventorySlotWidget::HandleDragCancelled(UDragDropOperation* Operation)
 {
-	InventoryComponent->S_RequestRemove(SlotIndex, -1, true);
+	InventoryComponent->S_RequestRemove(SlotIndex, 1, true);
 }
