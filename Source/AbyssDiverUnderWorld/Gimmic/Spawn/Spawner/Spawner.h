@@ -4,6 +4,7 @@
 #include "GameFramework/Actor.h"
 #include "Spawner.generated.h"
 
+class UBoxComponent;
 class ASpawnPoint;
 
 UCLASS(Abstract)
@@ -27,6 +28,11 @@ protected:
 	void GetSpawnPoint(TSubclassOf<ASpawnPoint> SpawnPointClass);
 
 protected:
+	/** 스폰 포인트를 포함할 영역 범위 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawner|Stat")
+	TObjectPtr<UBoxComponent> LocationRange;
+	
+ 	/** 최대로 시도할 루프 카운트 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawner|Stat")
 	int32 MaxTries;
 	
