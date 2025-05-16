@@ -11,14 +11,6 @@ ASpawner::ASpawner()
 void ASpawner::BeginPlay()
 {
 	Super::BeginPlay();
-
-	for (ASpawnPoint* SpawnPoint : TActorRange<ASpawnPoint>(GetWorld()))
-	{
-		if (IsValid(SpawnPoint))
-		{
-			TotalSpawnPoints.Add(SpawnPoint);
-		}
-	}
 }
 
 ASpawnPoint* ASpawner::GetPossibleSpawnPoint()
@@ -55,5 +47,33 @@ ASpawnPoint* ASpawner::GetPossibleSpawnPoint()
 	RemoveTotalSpawnPoint(FallbackPoint);
 	AddSpawnSuccessPoint(FallbackPoint);
 	return FallbackPoint;
+}
+
+void ASpawner::RemoveAllSpawnPoints()
+{
+	for (ASpawnPoint* SpawnPoint : TotalSpawnPoints)
+	{
+		if (IsValid(SpawnPoint))
+		{
+			SpawnPoint->Destroy();
+		}
+	}
+
+	TotalSpawnPoints.Empty();
+	SpawnSuccessPoints.Empty();
+}
+
+void ASpawner::GetSpawnPoint(TSubclassOf<ASpawnPoint> SpawnPointClass)
+{
+	if (!SpawnPointClass) return;
+
+	for (TActorIterator<ASpawnPoint> It(GetWorld(), SpawnPointClass); It; ++It)
+	{
+		ASpawnPoint* Found = *It;
+		if (IsValid(Found))
+		{
+			TotalSpawnPoints.Add(Found);
+		}
+	}
 }
 
