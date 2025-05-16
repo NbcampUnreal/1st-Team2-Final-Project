@@ -91,6 +91,14 @@ protected:
 	UFUNCTION()
 	void AdjustSpeed();
 
+	/** 산소가 소진되었을 때 호출될 함수 */
+	UFUNCTION()
+	void OnOxygenDepleted();
+	
+	/** 산소가 회복되었을 때 호출될 함수 */
+	UFUNCTION()
+	void OnOxygenRestored();
+	
 	/** 이동 함수. 지상, 수중 상태에 따라 이동한다. */
 	void Move(const FInputActionValue& InputActionValue);
 
@@ -187,6 +195,10 @@ private:
 	/** Sprint 속도 */
 	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float SprintSpeed;
+
+	/** 산소 고갈 시에 1초 당 소모되는 산소 비율. [0.0, 1.0] */
+	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true", ClampMin = "0.0", ClampMax = "1.0"))
+	float DepleteHealthLossRate;
 
 	/** 이동 입력, 3차원 입력을 받는다. 캐릭터의 XYZ 축대로 맵핑을 한다. Forward : X, Right : Y, Up : Z */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))

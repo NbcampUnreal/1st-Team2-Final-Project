@@ -93,6 +93,8 @@ void AUnderwaterCharacter::BeginPlay()
 	SetDebugCameraMode(bUseDebugCamera);
 
 	StaminaComponent->OnSprintStateChanged.AddDynamic(this, &AUnderwaterCharacter::OnSprintStateChanged);
+	OxygenComponent->OnOxygenDepleted.AddDynamic(this, &AUnderwaterCharacter::OnOxygenDepleted);
+	OxygenComponent->OnOxygenRestored.AddDynamic(this, &AUnderwaterCharacter::OnOxygenRestored);
 	
 	NoiseEmitterComponent = NewObject<UPawnNoiseEmitterComponent>(this);
 	NoiseEmitterComponent->RegisterComponent();
@@ -287,6 +289,21 @@ void AUnderwaterCharacter::AdjustSpeed()
 	{
 		LOGVN(Error, TEXT("Invalid Character State"));
 	}
+}
+
+
+void AUnderwaterCharacter::OnOxygenDepleted()
+{
+	// 비율로 깎는 함수를 만들어 두지 않아서 일단은 여기서 계산하기로 한다.
+	
+	const float DepletionHealthLoss = StatComponent->MaxHealth * 0.1f;
+	StatComponent->AddHealthRegenRate(-DepletionHealthLoss);
+}
+
+void AUnderwaterCharacter::OnOxygenRestored()
+{
+	const float RestorationHealthGain = StatComponent->MaxHealth * 0.1f;
+	StatComponent->AddHealthRegenRate(RestorationHealthGain);
 }
 
 void AUnderwaterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
