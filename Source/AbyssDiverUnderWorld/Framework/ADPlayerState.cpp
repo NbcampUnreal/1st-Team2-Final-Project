@@ -6,7 +6,19 @@
 
 
 AADPlayerState::AADPlayerState()
+	: PlayerNickname(TEXT("Player"))
+	, TotalPersonalCredit(0)
+	, TotalMonsterKillCount(0)
+	, TotalOreMinedCount(0)
+	, SafeReturnCount(0)
+	, PersonalCredit(0)
+	, MonsterKillCount(0)
+	, OreMinedCount(0)
+	, bIsSafeReturn(false)
 {
+	bReplicates = true;
+
+
 	InventoryComp = CreateDefaultSubobject<UADInventoryComponent>(TEXT("InventoryComp"));
 	UpgradeComp = CreateDefaultSubobject<UUpgradeComponent>(TEXT("UpgradeComp"));
 }
@@ -20,10 +32,12 @@ void AADPlayerState::BeginPlay()
 
 		InventoryComp->ClientRequestInventoryInitialize();
 		LOGVN(Error, TEXT("Inventory Initializded"));
-	}
 
+	}
 }
 
+
+//Client
 void AADPlayerState::PostNetInit()
 {
 	Super::PostNetInit();
@@ -41,34 +55,48 @@ void AADPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(AADPlayerState, ADPlayerID);
 	DOREPLIFETIME(AADPlayerState, PlayerNickname);
-	DOREPLIFETIME(AADPlayerState, TotalPeronalCredit);
-	DOREPLIFETIME(AADPlayerState, DeathCount);
+	DOREPLIFETIME(AADPlayerState, TotalPersonalCredit);
+	DOREPLIFETIME(AADPlayerState, TotalMonsterKillCount);
+	DOREPLIFETIME(AADPlayerState, TotalOreMinedCount);
 	DOREPLIFETIME(AADPlayerState, SafeReturnCount);
+	DOREPLIFETIME(AADPlayerState, PersonalCredit);
 	DOREPLIFETIME(AADPlayerState, MonsterKillCount);
+	DOREPLIFETIME(AADPlayerState, OreMinedCount);
+	DOREPLIFETIME(AADPlayerState, bIsSafeReturn);
 }
 
-void AADPlayerState::SetPlayerInfo(const FUniqueNetIdRepl& InId, const FString& InNickname)
+void AADPlayerState::SetPlayerInfo( const FString& InNickname)
 {
 	if (HasAuthority())
 	{
-		ADPlayerID = InId;
 		PlayerNickname = InNickname;
 
-		if (ADPlayerID.IsValid())
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Set PlayerInfo: ID = %s, Nickname = %s"),
-				*ADPlayerID->ToString(), *PlayerNickname);
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Set PlayerInfo: Invalid ID, Nickname = %s"),
-				*PlayerNickname);
-		}
-
-
 		OnRep_Nickname();
+	}
+}
+
+void AADPlayerState::ApplyLevelResultsToTotal()
+{
+	if (HasAuthority())
+	{
+		TotalPersonalCredit += PersonalCredit;
+		TotalMonsterKillCount += MonsterKillCount;
+		TotalOreMinedCount += OreMinedCount;
+		SafeReturnCount += bIsSafeReturn ? 1 : 0;
+	}
+
+	ResetLevelResults();
+}
+
+void AADPlayerState::ResetLevelResults()
+{
+	if (HasAuthority())
+	{
+		PersonalCredit = 0;
+		MonsterKillCount = 0;
+		OreMinedCount = 0;
+		bIsSafeReturn = false;
 	}
 }
 

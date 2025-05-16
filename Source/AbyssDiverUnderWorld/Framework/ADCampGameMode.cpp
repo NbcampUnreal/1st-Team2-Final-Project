@@ -3,10 +3,19 @@
 #include "Framework/ADPlayerState.h"
 #include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
+#include "DataRow/PhaseGoalRow.h"
 
 void AADCampGameMode::ADCampGameMode()
 {
 	bUseSeamlessTravel = true;
+}
+
+void AADCampGameMode::SetSelectedLevel(const EMapName InLevelName)
+{
+	if (AADInGameState* ADGameState = GetGameState<AADInGameState>())
+	{
+		ADGameState->SetSelectedLevel(InLevelName);
+	}
 }
 
 void AADCampGameMode::PostLogin(APlayerController* NewPlayer)
@@ -15,7 +24,7 @@ void AADCampGameMode::PostLogin(APlayerController* NewPlayer)
 
 	if (AADPlayerState* ADPlayerState = NewPlayer->GetPlayerState<AADPlayerState>())
 	{
-		
+		ADPlayerState->ResetLevelResults();
 	}
 }
 
@@ -25,22 +34,22 @@ void AADCampGameMode::Logout(AController* Exiting)
 
 void AADCampGameMode::TryStartGame()
 {
-	if (AADInGameState* ADGameState = GetGameState<AADInGameState>())
+	TravelToInGameLevel();
+}
+
+void AADCampGameMode::TravelToInGameLevel()
+{
+	if (AADInGameState* ADInGameState = GetGameState<AADInGameState>())
 	{
-		FString LevelLoad = ADGameState->GetSelectedLevel().ToString();
-		if (LevelLoad.IsEmpty())
+		FString LevelLoad = ADInGameState->GetMapDisplayName();
+		if (LevelLoad == "invalid")
 		{
 			UE_LOG(LogTemp, Error, TEXT("LevelLoad is empty"));
 			LevelLoad = TEXT("DefaultInGameLevel");
 			return;
 		}
 		//input spot level name
-		/*FString TravelURL = FString::Printf(TEXT("/Game/Maps/%s?listen"), *LevelLoad);*/
-		FString TravelURL = FString::Printf(TEXT("/Game/Maps/%s?listen"), *LevelLoad);
+		FString TravelURL = FString::Printf(TEXT("/Game/_AbyssDiver/Maps/Prototypes_Test/KY/%s?listen"), *LevelLoad);
 		GetWorld()->ServerTravel(TravelURL);
 	}
-}
-
-void AADCampGameMode::TravelToInGameLevel()
-{
 }

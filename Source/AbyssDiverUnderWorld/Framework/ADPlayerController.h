@@ -5,6 +5,8 @@
 #include "GameFramework/PlayerController.h"
 #include "ADPlayerController.generated.h"
 
+enum class EMapName : uint8;
+
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADPlayerController : public APlayerController
 {
@@ -19,6 +21,15 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void S_SetPlayerInfo(const FUniqueNetIdRepl& Id, const FString& Nickname);
 	void S_SetPlayerInfo_Implementation(const FUniqueNetIdRepl& Id, const FString& Nickname);
+
+	UFUNCTION(Server, Reliable)
+	void S_RequestSelectLevel(const EMapName InLevelName);
+	void S_RequestSelectLevel_Implementation(const EMapName InLevelName);
+
+	UFUNCTION(Server, Reliable)
+	void S_RequestStartGame();
+	void S_RequestStartGame_Implementation();
+
 
 
 	virtual void SetupInputComponent() override;
