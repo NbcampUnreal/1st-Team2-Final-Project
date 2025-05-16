@@ -50,7 +50,8 @@ protected:
 public:
 
 	virtual void Interact_Implementation(AActor* InstigatorActor) override;
-	
+	virtual void InteractHold_Implementation(AActor* InstigatorActor);
+
 	void HandleMineRequest(APawn* InstigatorPawn);
 
 	void SpawnDrops();
@@ -76,9 +77,13 @@ private:
 
 #pragma region Variable
 public:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction")
+	uint8 bIsHold : 1;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interaction")
+	float HoldDuration = 3.f;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mining")
 	int32 MaxMiningGauge = 100;           // 최대 게이지
-
 	UPROPERTY(ReplicatedUsing = OnRep_CurrentMiningGauge, BlueprintReadOnly, Category = "Mining")
 	uint8 CurrentMiningGauge = 100;       // 현재 게이지
 	UPROPERTY(EditDefaultsOnly, Category = "Drops")
@@ -114,6 +119,8 @@ private:
 #pragma region Getter, Setteer
 public:
 	virtual UADInteractableComponent* GetInteractableComponent() const override;
+	virtual bool IsHoldMode() const;
+	virtual float GetHoldDuration_Implementation() const override;
 
 #pragma endregion
 };

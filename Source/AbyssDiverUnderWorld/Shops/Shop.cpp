@@ -152,6 +152,7 @@ AShop::AShop()
 
 	bIsOpened = false;
 	CurrentSelectedUpgradeType = EUpgradeType::Max;
+	bIsHold = false;
 }
 
 void AShop::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -797,4 +798,9 @@ bool AShop::IsOpened() const
 UADInteractableComponent* AShop::GetInteractableComponent() const
 {
 	return InteractableComp;
+}
+
+bool AShop::IsHoldMode() const
+{
+	return bIsHold;
 }

@@ -84,7 +84,11 @@ void UADInteractionComponent::S_RequestInteractHold_Implementation(AActor* Targe
 {
 	if (!TargetActor) return;
 
-	IIADInteractable::Execute_InteractHold(TargetActor, GetOwner());
+	if (GetOwner()->GetClass()->ImplementsInterface(UIADInteractable::StaticClass()))
+	{
+		IIADInteractable::Execute_InteractHold(TargetActor, GetOwner());
+	}
+	
 }
 
 
@@ -231,38 +235,48 @@ void UADInteractionComponent::OnInteractPressed()
 {
 	PerformFocusCheck();
 	if (!FocusedInteractable) return;
+	if (AActor* Owner = FocusedInteractable->GetOwner())
+	{
+		if (IIADInteractable* InteractableOwner = Cast<IIADInteractable>(Owner))
+		{
 
-	bHoldTriggered = false;
-	HoldInstigator = Cast<APawn>(GetOwner());
+			const bool bIsHoldMode = InteractableOwner->IsHoldMode();
+			if (!bIsHoldMode)
+			{
+				TryInteract();   // 즉시 수행
+				return;
+			}	
+		}
+		if (Owner->GetClass()->ImplementsInterface(UIADInteractable::StaticClass()))
+		{
 
-	GetWorld()->GetTimerManager().SetTimer(
-		HoldTimerHandle,
-		this,
-		&UADInteractionComponent::OnHoldComplete,
-		HoldThreshold,
-		false
-	);
+			OnHoldStart.Broadcast(FocusedInteractable->GetOwner(), HoldThreshold);
+
+			// == Hold 모드 ==
+			HoldThreshold = IIADInteractable::Execute_GetHoldDuration(Owner);
+			bHoldTriggered = false;
+			HoldInstigator = Cast<APawn>(GetOwner());
+
+			LOG(TEXT("Start Hold!"));
+			GetWorld()->GetTimerManager().SetTimer(
+				HoldTimerHandle, this,
+				&UADInteractionComponent::OnHoldComplete,
+				HoldThreshold, false);
+		}
+	}
 }
 
 void UADInteractionComponent::OnInteractReleased()
 {
-	if (!bHoldTriggered && FocusedInteractable)
+	// Hold 오브젝트지만 시간 100% 못 채우고 놓은 경우: 취소
+	if (!bHoldTriggered)
 	{
 		GetWorld()->GetTimerManager().ClearTimer(HoldTimerHandle);
-
-		if (GetOwner()->HasAuthority())
-		{
-			FocusedInteractable->Interact(Cast<APawn>(GetOwner()));
-		}
-		else
-		{
-			// 클라이언트 → 서버 RPC
-			S_RequestInteract(FocusedInteractable->GetOwner());
-		}
+		OnHoldCancel.Broadcast(FocusedInteractable->GetOwner());
+		LOG(TEXT("Fail Hold!"));
+		HoldInstigator = nullptr;
 	}
-	HoldInstigator = nullptr;
 }
-
 
 void UADInteractionComponent::OnHoldComplete()
 {
@@ -272,6 +286,7 @@ void UADInteractionComponent::OnHoldComplete()
 
 	if (GetOwner()->HasAuthority())
 	{
+		LOG(TEXT("End Hold!"));
 		IIADInteractable::Execute_InteractHold(FocusedInteractable->GetOwner(), Instigator);
 	}
 	else
