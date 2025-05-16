@@ -17,7 +17,7 @@ public:
 
 #pragma region Variable
 protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI|Attack")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI|Attack", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USphereComponent> TentacleHitSphere;
 
 #pragma endregion

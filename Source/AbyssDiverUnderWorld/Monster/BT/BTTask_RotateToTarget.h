@@ -4,28 +4,29 @@
 
 #include "CoreMinimal.h"
 #include "BehaviorTree/Tasks/BTTask_BlackboardBase.h"
-#include "BTTask_ChasePlayer.generated.h"
+#include "BTTask_RotateToTarget.generated.h"
 
-class UFlyingAIPathfindingBase;
 
 UCLASS()
-class ABYSSDIVERUNDERWORLD_API UBTTask_ChasePlayer : public UBTTask_BlackboardBase
+class ABYSSDIVERUNDERWORLD_API UBTTask_RotateToTarget : public UBTTask_BlackboardBase
 {
 	GENERATED_BODY()
 	
-public:
-	UBTTask_ChasePlayer();
 
+public:
+	UBTTask_RotateToTarget();
+
+protected:
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
 	virtual void TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;
 
+
 #pragma region Variable
-private:
+protected:
 	UPROPERTY()
-	TObjectPtr<UBehaviorTreeComponent> CachedOwnerComp; // For FinishLatentTask
+	TObjectPtr<UBehaviorTreeComponent> CachedOwnerComp;
 	UPROPERTY()
 	TObjectPtr<AActor> CachedTargetActor;
-
-	float AcceptanceRadius;
 #pragma endregion
 };
+
