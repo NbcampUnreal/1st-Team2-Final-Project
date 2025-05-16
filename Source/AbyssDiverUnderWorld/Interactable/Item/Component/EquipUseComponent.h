@@ -19,6 +19,28 @@ enum class EAction : uint8
 	ApplyChargeUI
 };
 
+USTRUCT(BlueprintType)
+struct FEquipState
+{
+	GENERATED_BODY()
+
+	// 비무기용 배터리/소모 상태
+	UPROPERTY()
+	int32 Amount = 0;
+
+	// 무기용 탄창 상태
+	UPROPERTY()
+	int32 InMag = 0;
+	UPROPERTY()
+	int32 Reserve = 0;
+
+	FEquipState() {}
+	FEquipState(int32 InAmount) : Amount(InAmount), InMag(0), Reserve(0) {}
+	FEquipState(int32 InInMag, int32 InReserve)
+		: Amount(0), InMag(InInMag), Reserve(InReserve) {
+	}
+};
+
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class ABYSSDIVERUNDERWORLD_API UEquipUseComponent : public UActorComponent
 {
@@ -72,8 +94,11 @@ public:
 
 
 	void Initialize(uint8 ItemId);
+	// 상태 초기화 함수
+	void DeinitializeEquip();
 	EAction TagToAction(const FGameplayTag& Tag);
-
+	
+	//void ResetEquipState();
 
 
 	
@@ -85,8 +110,7 @@ protected:
 private:
 	// 보간 완료 확인 함수
 	bool IsInterpolating() const;
-	// 상태 초기화 함수
-	void ResetEquipState();
+	
 	
 #pragma endregion
 
@@ -142,7 +166,7 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Projectile")
 	TSubclassOf<AADProjectileBase> ProjectileClass = nullptr;
 	UPROPERTY()
-	TMap<FName, int32> AmountMap;
+	TMap<FName, FEquipState> AmountMap;
 	UPROPERTY()
 	FName CurrentRowName;
 	
@@ -167,7 +191,8 @@ private:
 
 #pragma region Getter, Setteer
 public:
-	TMap<FName, int32> GetAmountMap() const { return AmountMap; }
+	TMap<FName, FEquipState> GetAmountMap() const { return AmountMap; }
 	uint8 IsBoost() const { return bBoostActive; }
+	void SetCurrentRowName(FName InName) { CurrentRowName = InName; }
 #pragma endregion		
 };

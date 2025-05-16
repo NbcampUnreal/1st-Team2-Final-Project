@@ -330,8 +330,8 @@ void UADInventoryComponent::ClientRequestInventoryInitialize()
 
 void UADInventoryComponent::InventoryUIUpdate()
 {
-	if (InventoryWidgetInstance == nullptr) return;
 	RebuildIndexMap();
+	if (InventoryWidgetInstance == nullptr) return;
 	if (InventoryUpdateDelegate.IsBound())
 	{
 		InventoryInfoUpdateDelegate.Broadcast(TotalWeight, TotalPrice);
@@ -413,6 +413,20 @@ void UADInventoryComponent::Equip(FItemData ItemData, int8 Index)
 
 void UADInventoryComponent::UnEquip()
 {
+	// EquipComp의 장비 현재값 초기화
+	if (APlayerState* PS = Cast<APlayerState>(GetOwner()))
+	{
+		// GetPawn() returns the pawn possessed by this PlayerState
+		if (APawn* Pawn = PS->GetPawn())
+		{
+			// Now find your EquipUseComponent on the pawn
+			if (UEquipUseComponent* EquipComp = Pawn->FindComponentByClass<UEquipUseComponent>())
+			{
+				EquipComp->DeinitializeEquip();
+			}
+		}
+	}
+
 	if(CurrentEquipmentInstance)
 		CurrentEquipmentInstance->Destroy();
 	SetEquipInfo(-1, nullptr);
@@ -421,6 +435,19 @@ void UADInventoryComponent::UnEquip()
 
 void UADInventoryComponent::DropItem(FItemData ItemData)
 {
+	// EquipComp의 장비 현재값 초기화
+	if (APlayerState* PS = Cast<APlayerState>(GetOwner()))
+	{
+		// GetPawn() returns the pawn possessed by this PlayerState
+		if (APawn* Pawn = PS->GetPawn())
+		{
+			// Now find your EquipUseComponent on the pawn
+			if (UEquipUseComponent* EquipComp = Pawn->FindComponentByClass<UEquipUseComponent>())
+			{
+				EquipComp->DeinitializeEquip();
+			}
+		}
+	}
 	for (int8 i = 0; i < ItemData.Quantity; ++i)
 	{
 		AADUseItem* SpawnItem = GetWorld()->SpawnActor<AADUseItem>(AADUseItem::StaticClass(), GetDropLocation(), FRotator::ZeroRotator);
