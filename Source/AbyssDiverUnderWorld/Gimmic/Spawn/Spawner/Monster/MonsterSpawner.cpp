@@ -16,7 +16,6 @@ void AMonsterSpawner::BeginPlay()
 
 	GetSpawnPoint(AMonsterSpawnPoint::StaticClass());
 	RemoveInValidMonsterClass();
-	Spawn();
 }
 
 void AMonsterSpawner::Spawn()

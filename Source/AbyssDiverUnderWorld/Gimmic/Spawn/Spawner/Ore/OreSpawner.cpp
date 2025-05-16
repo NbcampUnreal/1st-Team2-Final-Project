@@ -14,7 +14,6 @@ void AOreSpawner::BeginPlay()
 	Super::BeginPlay();
 
 	GetSpawnPoint(AOreSpawnPoint::StaticClass());
-	Spawn();
 }
 
 void AOreSpawner::Spawn()
