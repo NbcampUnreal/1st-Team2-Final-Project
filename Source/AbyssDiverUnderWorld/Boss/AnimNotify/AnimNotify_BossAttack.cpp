@@ -6,6 +6,7 @@
 UAnimNotify_BossAttack::UAnimNotify_BossAttack()
 {
 	AttackInterval = 0.2f;
+	bIsMeshCollision = false;
 }
 
 void UAnimNotify_BossAttack::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation,
@@ -16,25 +17,46 @@ void UAnimNotify_BossAttack::Notify(USkeletalMeshComponent* MeshComp, UAnimSeque
 	ABoss* Boss = Cast<ABoss>(MeshComp->GetOwner());
 	if (!IsValid(Boss)) return;
 
-	// 태그로 콜리전 가져오기
-	UCapsuleComponent* AttackCollision = Boss->FindComponentByTag<UCapsuleComponent>(CollisionTag);
-	if (!IsValid(AttackCollision)) return;
-
-	// 오버랩 판정 시작
-	AttackCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-	
-	// AttackInterval 후 콜리전 비활성화
-	Boss->GetWorldTimerManager().SetTimer(AttackTimer, FTimerDelegate::CreateLambda([=]
+	// 메시 콜리전 가져오기
+	if (bIsMeshCollision)
 	{
-		if (IsValid(AttackCollision))
-		{
-			AttackCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		}
+		Boss->GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 
-		if (IsValid(Boss))
+		// AttackInterval 후 콜리전 비활성화
+		Boss->GetWorldTimerManager().SetTimer(AttackTimer, FTimerDelegate::CreateLambda([=]
 		{
-			Boss->OnAttackEnded();
-		}
-	}),AttackInterval, false);
+			if (IsValid(Boss->GetMesh()))
+			{
+				Boss->GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			}
 
+			if (IsValid(Boss))
+			{
+				Boss->OnAttackEnded();
+			}
+		}),AttackInterval, false);	
+	}
+	// 태그로 콜리전 가져오기
+	else
+	{
+		UCapsuleComponent* AttackCollision = Boss->FindComponentByTag<UCapsuleComponent>(CollisionTag);
+		if (!IsValid(AttackCollision)) return;
+		
+		// 오버랩 판정 시작
+		AttackCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	
+		// AttackInterval 후 콜리전 비활성화
+		Boss->GetWorldTimerManager().SetTimer(AttackTimer, FTimerDelegate::CreateLambda([=]
+		{
+			if (IsValid(AttackCollision))
+			{
+				AttackCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			}
+
+			if (IsValid(Boss))
+			{
+				Boss->OnAttackEnded();
+			}
+		}),AttackInterval, false);	
+	}
 }

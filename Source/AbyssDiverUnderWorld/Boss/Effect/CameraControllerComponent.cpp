@@ -28,12 +28,12 @@ void UCameraControllerComponent::ShakeWorldCamera(TSubclassOf<UCameraShakeBase> 
 		CustomInnerRadius, CustomOuterRadius, 1.0f, true);
 }
 
-void UCameraControllerComponent::ShakePlayerCamera(AUnderwaterCharacter* PlayerCharacter)
+void UCameraControllerComponent::ShakePlayerCamera(AUnderwaterCharacter* PlayerCharacter, float& Scale)
 {
 	if (!IsValid(PlayerCharacter)) return;
 
 	APlayerController* Controller = Cast<APlayerController>(PlayerCharacter->GetController());
 	if (!IsValid(Controller)) return;
 
-	Controller->ClientStartCameraShake(DamagedCameraShakeClass, 1.0f);
+	Controller->ClientStartCameraShake(DamagedCameraShakeClass, Scale);
 }

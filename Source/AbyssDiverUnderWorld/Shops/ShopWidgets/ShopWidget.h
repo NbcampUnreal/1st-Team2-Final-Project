@@ -9,6 +9,7 @@ enum class EShopCategoryTab : uint8;
 class UShopCategoryTabWidget;
 class UShopItemEntryData;
 class UShopElementInfoWidget;
+class UShopTileView;
 
 DECLARE_MULTICAST_DELEGATE(FOnShopCloseButtonClickedDelegate);
 
@@ -25,6 +26,10 @@ protected:
 
 	virtual void NativeConstruct() override;
 
+	virtual FReply NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
+	virtual FReply NativeOnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
+	virtual FReply NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
+
 #pragma region Methods
 
 public:
@@ -38,6 +43,9 @@ public:
 	void RefreshItemView();
 
 	void ShowItemInfos(USkeletalMesh* NewItemMesh, const FString& NewDescription, const FString& NewInfoText);
+	void ShowUpgradeInfos(USkeletalMesh* NewUpgradeItemMesh, int32 CurrentUpgradeLevel, bool bIsMaxLevel, int32 CurrentUpgradeCost, const FString& ExtraInfoText);
+
+	void SetTeamMoneyText(int32 NewTeamMoney);
 
 	FOnShopCloseButtonClickedDelegate OnShopCloseButtonClickedDelegate;
 
@@ -61,8 +69,14 @@ private:
 	UPROPERTY(EditDefaultsOnly, meta = (BindWidget), meta = (AllowPrivateAccess), Category = "ShopWidget")
 	TObjectPtr<UShopCategoryTabWidget> EquipmentTab;
 
+	UPROPERTY(EditDefaultsOnly, meta = (BindWidget), meta = (AllowPrivateAccess), Category = "ShopWidget")
+	TObjectPtr<UShopCategoryTabWidget> UpgradeTab;
+
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<class UShopTileView> ItemTileView;
+	TObjectPtr<UShopTileView> ItemTileView;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UShopTileView> UpgradeTileView;
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UShopElementInfoWidget> InfoWidget;
@@ -70,15 +84,22 @@ private:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<class UButton> CloseButton;
 
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<class URichTextBlock> TeamMoneyText;
+
 	UPROPERTY()
 	TArray<TObjectPtr<UShopItemEntryData>> ConsumableTabEntryDataList;
 
 	UPROPERTY()
 	TArray<TObjectPtr<UShopItemEntryData>> EquipmentTabEntryDataList;
 
+	UPROPERTY()
+	TArray<TObjectPtr<UShopItemEntryData>> UpgradeTabEntryDataList;
+
 	EShopCategoryTab CurrentActivatedTab;
 
 	const int8 MAX_TAB_COUNT = 3;
+	const float MESH_ROTATION_SPEED = 0.5f;
 
 #pragma endregion
 
@@ -89,10 +110,11 @@ public:
 	EShopCategoryTab GetCurrentActivatedTab() const;
 	void SetCurrentActivatedTab(EShopCategoryTab Tab);
 
-
 	UShopCategoryTabWidget* GetCategoryTab(EShopCategoryTab CategoryTab) const;
 
 	UShopElementInfoWidget* GetInfoWidget() const;
+
+	TArray<TObjectPtr<UShopItemEntryData>>& GetUpgradeTabEntryDataList();
 	
 #pragma endregion
 	

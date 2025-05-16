@@ -1,11 +1,20 @@
-#include "ShopWidget.h"
+﻿#include "ShopWidget.h"
 
 #include "ShopCategoryTabWidget.h"
 #include "AbyssDiverUnderWorld.h"
 #include "ShopTileView.h"
 #include "Shops/ShopItemEntryData.h"
 #include "Shops/ShopWidgets/ShopElementInfoWidget.h"
+#include "Shops/ShopWidgets/ShopItemMeshPanel.h"
+
+#include "Character/UnderwaterCharacter.h"
+#include "Character/UpgradeComponent.h"
+#include "DataRow/UpgradeDataRow.h"
+#include "Subsystems/DataTableSubsystem.h"
+
 #include "Components/Button.h"
+#include "Components/RichTextBlock.h"
+#include "Kismet/GameplayStatics.h"
 
 void UShopWidget::NativeConstruct()
 {
@@ -15,7 +24,47 @@ void UShopWidget::NativeConstruct()
 
 	ConsumableTab->OnShopCategoryTabClickedDelegate.AddUObject(this, &UShopWidget::OnCategoryTabClicked);
 	EquipmentTab->OnShopCategoryTabClickedDelegate.AddUObject(this, &UShopWidget::OnCategoryTabClicked);
-	CloseButton->OnClicked.AddDynamic(this, &UShopWidget::OnCloseButtonClicked);
+	UpgradeTab->OnShopCategoryTabClickedDelegate.AddUObject(this, &UShopWidget::OnCategoryTabClicked);
+
+	if (CloseButton->OnClicked.IsBound() == false)
+	{
+		CloseButton->OnClicked.AddDynamic(this, &UShopWidget::OnCloseButtonClicked);
+	}
+}
+
+FReply UShopWidget::NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
+{
+	UShopItemMeshPanel* MeshPanel = InfoWidget->GetItemMeshPanel();
+	MeshPanel->SetMouseDown(false);
+
+	return Super::NativeOnMouseButtonUp(InGeometry, InMouseEvent);
+}
+
+FReply UShopWidget::NativeOnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
+{
+	UShopItemMeshPanel* MeshPanel = InfoWidget->GetItemMeshPanel();
+
+	if (MeshPanel->GetMouseDown())
+	{
+		float CurrentMouseX = InMouseEvent.GetScreenSpacePosition().X;
+		float MouseX = MeshPanel->GetCurrentMousePositionY();
+		float DeltaX = (MouseX - CurrentMouseX) * MESH_ROTATION_SPEED;
+
+		MeshPanel->SetCurrentMousePositionX(CurrentMouseX);
+		MeshPanel->AddMeshRotationYaw(DeltaX);
+	}
+	
+	return Super::NativeOnMouseMove(InGeometry, InMouseEvent);
+}
+
+FReply UShopWidget::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
+{
+	/*if (InKeyEvent.GetKey() == EKeys::Escape)
+	{
+	나중에 사용할수도?
+	}*/
+
+	return Super::NativeOnKeyDown(InGeometry, InKeyEvent);
 }
 
 void UShopWidget::SetAllItems(const TArray<UShopItemEntryData*>& EntryDataList, EShopCategoryTab Tab)
@@ -35,7 +84,7 @@ void UShopWidget::SetAllItems(const TArray<UShopItemEntryData*>& EntryDataList, 
 		EquipmentTabEntryDataList = EntryDataList;
 		break;
 	case EShopCategoryTab::Upgrade:
-		LOGV(Error, TEXT("Upgrade Tab is not Supported Currently"));
+		UpgradeTabEntryDataList = EntryDataList;
 		return;
 	case EShopCategoryTab::Max:
 		check(false);
@@ -63,7 +112,7 @@ void UShopWidget::AddItem(UShopItemEntryData* EntryData, EShopCategoryTab Tab)
 		EquipmentTabEntryDataList.Add(EntryData);
 		break;
 	case EShopCategoryTab::Upgrade:
-		LOGV(Error, TEXT("Upgrade Tab is not Supported Currently"));
+		UpgradeTabEntryDataList.Add(EntryData);
 		return;
 	case EShopCategoryTab::Max:
 		check(false);
@@ -91,7 +140,7 @@ void UShopWidget::RemoveItem(int32 Index, EShopCategoryTab Tab)
 		EquipmentTabEntryDataList.RemoveAt(Index);
 		break;
 	case EShopCategoryTab::Upgrade:
-		LOGV(Error, TEXT("Upgrade Tab is not Supported Currently"));
+		UpgradeTabEntryDataList.RemoveAt(Index);
 		return;
 	case EShopCategoryTab::Max:
 		check(false);
@@ -119,7 +168,7 @@ void UShopWidget::ModifyItem(int32 Index, UTexture2D* NewItemImage, const FStrin
 		EquipmentTabEntryDataList[Index]->Init(Index, NewItemImage, NewToolTipText);
 		break;
 	case EShopCategoryTab::Upgrade:
-		LOGV(Error, TEXT("Upgrade Tab is not Supported Currently"));
+		UpgradeTabEntryDataList[Index]->Init(Index, NewItemImage, NewToolTipText);
 		return;
 	case EShopCategoryTab::Max:
 		check(false);
@@ -154,12 +203,21 @@ void UShopWidget::RefreshItemView()
 	{
 	case EShopCategoryTab::Consumable:
 		ItemTileView->SetAllElements(ConsumableTabEntryDataList);
+		ItemTileView->SetVisibility(ESlateVisibility::Visible);
+		UpgradeTileView->SetVisibility(ESlateVisibility::Hidden);
+
 		break;
 	case EShopCategoryTab::Equipment:
 		ItemTileView->SetAllElements(EquipmentTabEntryDataList);
+		ItemTileView->SetVisibility(ESlateVisibility::Visible);
+		UpgradeTileView->SetVisibility(ESlateVisibility::Hidden);
+
 		break;
 	case EShopCategoryTab::Upgrade:
-		LOGV(Error, TEXT("Upgrade Tab is not Supported Currently"));
+		UpgradeTileView->SetAllElements(UpgradeTabEntryDataList);
+		UpgradeTileView->SetVisibility(ESlateVisibility::Visible);
+		ItemTileView->SetVisibility(ESlateVisibility::Hidden);
+
 		return;
 	case EShopCategoryTab::Max:
 		check(false);
@@ -173,6 +231,22 @@ void UShopWidget::RefreshItemView()
 void UShopWidget::ShowItemInfos(USkeletalMesh* NewItemMesh, const FString& NewDescription, const FString& NewInfoText)
 {
 	InfoWidget->ShowItemInfos(NewItemMesh, NewDescription, NewInfoText);
+	InfoWidget->GetItemMeshPanel()->SetMeshRotation(FRotator::ZeroRotator);
+}
+
+void UShopWidget::ShowUpgradeInfos(USkeletalMesh* NewUpgradeItemMesh, int32 CurrentUpgradeLevel, bool bIsMaxLevel, int32 CurrentUpgradeCost, const FString& ExtraInfoText)
+{
+	InfoWidget->ShowUpgradeInfos(NewUpgradeItemMesh, CurrentUpgradeLevel, bIsMaxLevel, CurrentUpgradeCost, ExtraInfoText);
+	InfoWidget->GetItemMeshPanel()->SetMeshRotation(FRotator::ZeroRotator);
+}
+
+void UShopWidget::SetTeamMoneyText(int32 NewTeamMoney)
+{
+	FString NewTeamMoneyText = TEXT("공통 자금 : ");
+	NewTeamMoneyText += FString::FromInt(NewTeamMoney);
+	NewTeamMoneyText += TEXT(" Cr");
+
+	TeamMoneyText->SetText(FText::FromString(NewTeamMoneyText));
 }
 
 void UShopWidget::OnCategoryTabClicked(EShopCategoryTab CategoryTab)
@@ -243,4 +317,9 @@ UShopElementInfoWidget* UShopWidget::GetInfoWidget() const
 {
 	check(InfoWidget);
 	return InfoWidget;
+}
+
+TArray<TObjectPtr<UShopItemEntryData>>& UShopWidget::GetUpgradeTabEntryDataList()
+{
+	return UpgradeTabEntryDataList;
 }
