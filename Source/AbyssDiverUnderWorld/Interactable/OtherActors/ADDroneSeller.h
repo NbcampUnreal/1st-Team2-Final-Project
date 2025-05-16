@@ -24,6 +24,8 @@ public:
 	virtual bool CanHighlight_Implementation() const override { return bIsActive; }
 	UFUNCTION()
 	void DisableSelling();
+
+	void Activate();
 	UFUNCTION()
 	void OnRep_IsActive();
 	UFUNCTION()
@@ -39,7 +41,7 @@ private:
 public:
 	
 protected:
-	UPROPERTY(ReplicatedUsing = OnRep_IsActive)
+	UPROPERTY(ReplicatedUsing = OnRep_IsActive, EditAnywhere)
 	uint8 bIsActive : 1;
 	UPROPERTY(ReplicatedUsing = OnRep_CurrentMoney)
 	int32 CurrentMoney = 0;
@@ -47,7 +49,7 @@ protected:
 	int32 TargetMoney = 1000;
 
 	UPROPERTY(EditAnywhere)
-	TObjectPtr<class AADDrone> LinkedDrone = nullptr;
+	TObjectPtr<class AADDrone> CurrentDrone = nullptr;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction")
 	TObjectPtr<class UADInteractableComponent> InteractableComp;
 	
