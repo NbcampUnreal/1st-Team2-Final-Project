@@ -6,7 +6,6 @@
 #include "AbyssDiverUnderWorld.h"
 #include "StatComponent.h"
 #include "Components/RichTextBlock.h"
-#include "Components/TextBlock.h"
 #include "PlayerComponent/OxygenComponent.h"
 #include "PlayerComponent/StaminaComponent.h"
 
@@ -66,7 +65,7 @@ void UPlayerHUDWidget::UpdateOxygenText(float Oxygen, float MaxOxygen)
 		FormatOptions.MaximumFractionalDigits = 2;
 		
 		FText OxygenText = FText::Format(
-			FText::FromString(TEXT("Stamina : {0} / {1}")),
+			FText::FromString(TEXT("Oxygen : {0} / {1}")),
 			FText::AsNumber(Oxygen, &FormatOptions),
 			FText::AsNumber(MaxOxygen, &FormatOptions))
 		;
