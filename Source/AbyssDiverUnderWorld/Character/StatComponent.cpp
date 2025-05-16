@@ -15,6 +15,10 @@ UStatComponent::UStatComponent()
 	CurrentHealth = MaxHealth;
 	MoveSpeed = 400.0f;
 	AttackPower = 10;
+
+	HealthUpdateInterval = 0.05f;
+	HealthRegenRate = 0.0f;
+	HealthAccumulator = 0.0f;
 }
 
 void UStatComponent::BeginPlay()
@@ -41,6 +45,11 @@ void UStatComponent::Initialize(int32 InitMaxHealth, int32 InitCurrentHealth, fl
 
 void UStatComponent::TakeDamage(const float DamageAmount)
 {
+	if (GetOwnerRole() != ROLE_Authority)
+	{
+		return;
+	}
+	
 	CurrentHealth -= DamageAmount;
 	CurrentHealth = FMath::Clamp(CurrentHealth, 0, MaxHealth);
 
@@ -55,5 +64,80 @@ void UStatComponent::OnRep_MaxHealth()
 void UStatComponent::OnRep_CurrentHealth()
 {
 	OnHealthChanged.Broadcast(MaxHealth, CurrentHealth);
+}
+
+void UStatComponent::RegenHealth()
+{
+	float RegenAmount = HealthRegenRate * HealthUpdateInterval;
+	HealthAccumulator += RegenAmount;
+	int32 HealthToAdd = FMath::FloorToInt(HealthAccumulator);
+
+	// 양수일 경우
+	// HealthAccumulator == 1 + 0.5라 가정하면
+	// HealthToAdd == 1
+	// HealthAccumulator -= HealthToAdd => HealthAccumulator : 0.5
+	// CurrentHealth == 100 + 1 = 101
+
+	// 음수일 경우
+	// HealthAccumulator == -1 - 0.5라 가정하면
+	// HealthToAdd == -1
+	// HealthAccumulator -= HealthToAdd => HealthAccumulator : -0.5
+	// CurrentHealth == 100 - 1 = 99
+	
+	if (HealthToAdd != 0)
+	{
+		HealthAccumulator -= HealthToAdd;
+		float OldHealth = CurrentHealth;
+		float NewHealth = FMath::Clamp(CurrentHealth + HealthToAdd, 0, MaxHealth);
+		if (OldHealth != NewHealth)
+		{
+			CurrentHealth = NewHealth;
+			OnHealthChanged.Broadcast(MaxHealth, CurrentHealth);
+		}
+	}
+}
+
+void UStatComponent::StopHealthRegen()
+{
+	HealthRegenRate = 0.0f;
+	HealthAccumulator = 0.0f;
+	GetWorld()->GetTimerManager().ClearTimer(HealthRegenTimerHandle);
+}
+
+bool UStatComponent::IsHealthRegenActive() const
+{
+	return GetWorld()->GetTimerManager().IsTimerActive(HealthRegenTimerHandle);
+}
+
+void UStatComponent::SetHealthRegenRate(float NewHealthRegenRate)
+{
+	if (GetOwnerRole() != ROLE_Authority)
+	{
+		return;
+	}
+
+	HealthRegenRate = NewHealthRegenRate;
+
+	if (FMath::IsNearlyZero(NewHealthRegenRate))
+	{
+		StopHealthRegen();
+		return;
+	}
+
+	if (!IsHealthRegenActive())
+	{
+		GetWorld()->GetTimerManager().SetTimer(
+			HealthRegenTimerHandle,
+			this,
+			&UStatComponent::RegenHealth,
+			HealthUpdateInterval,
+			true
+		);
+	}
+}
+
+void UStatComponent::AddHealthRegenRate(const float AddHealthRegenRate)
+{
+	SetHealthRegenRate(HealthRegenRate + AddHealthRegenRate);
 }
 

@@ -12,9 +12,11 @@
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/PawnNoiseEmitterComponent.h"
+#include "Framework/ADPlayerState.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PhysicsVolume.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Inventory/ADInventoryComponent.h"
 #include "Shops/ShopInteractionComponent.h"
 
 AUnderwaterCharacter::AUnderwaterCharacter()
@@ -29,7 +31,10 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	bIsCaptured = false;
 	CaptureFadeTime = 0.5f;
 
-	BloodEmitNoiseRadius = 1.0f;
+	BloodEmitPower = 1.0f;
+
+	OverloadWeight = 40.0f;
+	OverloadSpeedFactor = 0.4f;
 	
 	StatComponent->MoveSpeed = 400.0f;
 	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
@@ -86,9 +91,59 @@ void AUnderwaterCharacter::BeginPlay()
 	SetDebugCameraMode(bUseDebugCamera);
 
 	StaminaComponent->OnSprintStateChanged.AddDynamic(this, &AUnderwaterCharacter::OnSprintStateChanged);
-
+	
 	NoiseEmitterComponent = NewObject<UPawnNoiseEmitterComponent>(this);
 	NoiseEmitterComponent->RegisterComponent();
+}
+
+void AUnderwaterCharacter::InitFromPlayerState(AADPlayerState* ADPlayerState)
+{
+	if (ADPlayerState == nullptr)
+	{
+		return;
+	}
+	
+	if (UADInventoryComponent* Inventory = ADPlayerState->GetInventory())
+	{
+		InventoryComponent = Inventory;
+		// 인벤토리가 변경될 떄 OnRep에서도 호출되기 때문에 여기서 바인딩하면 Server, Client 양쪽에서 바인딩 가능하다.
+		Inventory->InventoryUpdateDelegate.AddUObject(this, &AUnderwaterCharacter::AdjustSpeed);
+	}
+	else
+	{
+		LOGVN(Error, TEXT("Inventory Component Init failed : %d"), GetUniqueID());
+	}
+
+	// 리스폰 시에도 현재 무게에 따라 속도를 조정한다.
+	AdjustSpeed();
+}
+
+void AUnderwaterCharacter::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+
+	if (AADPlayerState* ADPlayerState = GetPlayerState<AADPlayerState>())
+	{
+		InitFromPlayerState(ADPlayerState);
+	}
+	else
+	{
+		LOGVN(Error, TEXT("Player State Init failed : %d"), GetUniqueID());
+	}
+}
+
+void AUnderwaterCharacter::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+
+	if (AADPlayerState* ADPlayerState = GetPlayerState<AADPlayerState>())
+	{
+		InitFromPlayerState(ADPlayerState);
+	}
+	else
+	{
+		LOGVN(Error, TEXT("Player State Init failed : %d"), GetUniqueID());
+	}
 }
 
 void AUnderwaterCharacter::SetCharacterState(ECharacterState State)
@@ -150,7 +205,7 @@ void AUnderwaterCharacter::EmitBloodNoise()
 {
 	if (NoiseEmitterComponent)
 	{
-		NoiseEmitterComponent->MakeNoise(this, BloodEmitNoiseRadius, GetActorLocation());
+		NoiseEmitterComponent->MakeNoise(this, BloodEmitPower, GetActorLocation());
 	}
 }
 
@@ -202,6 +257,34 @@ void AUnderwaterCharacter::M_StopCaptureState_Implementation()
 
 	SetActorHiddenInGame(false);
 	SetActorEnableCollision(true);
+}
+
+void AUnderwaterCharacter::AdjustSpeed()
+{
+	const float BaseSpeed = StaminaComponent->IsSprinting() ? SprintSpeed : StatComponent->MoveSpeed;
+
+	// 추후 Multiplier 종류가 늘어나면 Multiplier를 합산하도록 한다.
+	float Multiplier = 1.0f;
+	if (IsOverloaded())
+	{
+		Multiplier = 1 - OverloadSpeedFactor;
+	}
+	Multiplier = FMath::Clamp(Multiplier, 0.0f, 1.0f);
+	
+
+	EffectiveSpeed = BaseSpeed * Multiplier;
+	if (CharacterState == ECharacterState::Underwater)
+	{
+		GetCharacterMovement()->MaxSwimSpeed = EffectiveSpeed;
+	}
+	else if (CharacterState == ECharacterState::Ground)
+	{
+		GetCharacterMovement()->MaxWalkSpeed = EffectiveSpeed;
+	}
+	else
+	{
+		LOGVN(Error, TEXT("Invalid Character State"));
+	}
 }
 
 void AUnderwaterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -395,16 +478,7 @@ void AUnderwaterCharacter::StopSprint(const FInputActionValue& InputActionValue)
 
 void AUnderwaterCharacter::OnSprintStateChanged(bool bNewSprinting)
 {
-	if (bNewSprinting)
-	{
-		GetCharacterMovement()->MaxSwimSpeed = SprintSpeed;
-		GetCharacterMovement()->MaxWalkSpeed = SprintSpeed;
-	}
-	else
-	{
-		GetCharacterMovement()->MaxSwimSpeed = StatComponent->MoveSpeed;
-		GetCharacterMovement()->MaxWalkSpeed = StatComponent->MoveSpeed;
-	}
+	AdjustSpeed();
 }
 
 void AUnderwaterCharacter::Look(const FInputActionValue& InputActionValue)
@@ -463,4 +537,9 @@ void AUnderwaterCharacter::ToggleDebugCameraMode()
 bool AUnderwaterCharacter::IsSprinting() const
 {
 	return StaminaComponent->IsSprinting();
+}
+
+bool AUnderwaterCharacter::IsOverloaded() const
+{
+	return InventoryComponent.IsValid() && InventoryComponent->GetTotalWeight() >= OverloadWeight;
 }
