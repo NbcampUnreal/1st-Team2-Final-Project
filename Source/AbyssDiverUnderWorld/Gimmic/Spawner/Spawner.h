@@ -29,7 +29,7 @@ protected:
 	int32 MaxTries;
 	
 	/** 맵에 배치된 모든 스폰 포인트 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawner|Points")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Spawner|Points")
 	TSet<TObjectPtr<ASpawnPoint>> TotalSpawnPoints;
 	
 	/** 스폰되는 개체 간의 최소 거리 */
