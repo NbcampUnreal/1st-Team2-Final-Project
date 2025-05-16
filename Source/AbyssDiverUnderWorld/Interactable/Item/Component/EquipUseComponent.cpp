@@ -34,7 +34,7 @@ UEquipUseComponent::UEquipUseComponent()
 	if (ACharacter* Char = Cast<ACharacter>(GetOwner()))
 	{
 		OwningCharacter = Char;
-		DefaultSpeed = Char->GetCharacterMovement()->MaxWalkSpeed;
+		DefaultSpeed = Char->GetCharacterMovement()->MaxSwimSpeed;
 	}
 }
 
@@ -47,7 +47,7 @@ void UEquipUseComponent::BeginPlay()
 	// DPV
 	CurrentMultiplier = 1.f;
 	TargetMultiplier = 1.f;
-	DefaultSpeed = OwningCharacter->GetCharacterMovement()->MaxWalkSpeed;
+	DefaultSpeed = OwningCharacter->GetCharacterMovement()->MaxSwimSpeed;
 
 
 	// Night Vision
@@ -118,7 +118,7 @@ void UEquipUseComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAc
 			InterpSpeed);
 		if (UCharacterMovementComponent* Move = OwningCharacter->GetCharacterMovement())
 		{
-			Move->MaxWalkSpeed = DefaultSpeed * CurrentMultiplier;
+			Move->MaxSwimSpeed = DefaultSpeed * CurrentMultiplier;
 		}	
 	}
 
@@ -253,7 +253,7 @@ void UEquipUseComponent::Initialize(uint8 ItemId)
 	if (ACharacter* Char = Cast<ACharacter>(GetOwner()))
 	{
 		OwningCharacter = Char;
-		DefaultSpeed = Char->GetCharacterMovement()->MaxWalkSpeed;
+		DefaultSpeed = Char->GetCharacterMovement()->MaxSwimSpeed;
 	}
 
 	// 서버에서 HUD 동기화
@@ -310,7 +310,7 @@ void UEquipUseComponent::DeinitializeEquip()
 	// 속도 복구
 	if (OwningCharacter.IsValid())
 	{
-		OwningCharacter->GetCharacterMovement()->MaxWalkSpeed = DefaultSpeed;
+		OwningCharacter->GetCharacterMovement()->MaxSwimSpeed = DefaultSpeed;
 	}
 
 	// 머터리얼 파라미터·포스트프로세스 복원
@@ -493,7 +493,7 @@ bool UEquipUseComponent::IsInterpolating() const
 //	CurrentMultiplier = TargetMultiplier = 1.f;
 //	if (OwningCharacter.IsValid())
 //	{
-//		OwningCharacter->GetCharacterMovement()->MaxWalkSpeed = DefaultSpeed;
+//		OwningCharacter->GetCharacterMovement()->MaxSwimSpeed = DefaultSpeed;
 //	}
 //
 //	if (NightVisionMaterialInstance)

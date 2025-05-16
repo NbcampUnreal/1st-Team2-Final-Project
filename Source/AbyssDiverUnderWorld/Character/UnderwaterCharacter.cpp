@@ -16,6 +16,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PhysicsVolume.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Interactable/Item/Component/EquipUseComponent.h"
 #include "Inventory/ADInventoryComponent.h"
 #include "Shops/ShopInteractionComponent.h"
 
@@ -78,6 +79,7 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 
 	InteractionComponent = CreateDefaultSubobject<UADInteractionComponent>(TEXT("InteractionComponent"));
 	ShopInteractionComponent = CreateDefaultSubobject<UShopInteractionComponent>(TEXT("ShopInteractionComponent"));
+	EquipUseComponent = CreateDefaultSubobject<UEquipUseComponent>(TEXT("EquipUseComponent"));
 
 	CharacterState = ECharacterState::Underwater;
 }
@@ -384,6 +386,46 @@ void AUnderwaterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 				&AUnderwaterCharacter::Radar
 			);
 		}
+
+		if (ReloadAction)
+		{
+			EnhancedInput->BindAction(
+				ReloadAction,
+				ETriggerEvent::Started,
+				this,
+				&AUnderwaterCharacter::Reload
+			);
+		}
+
+		if (EquipSlot1Action)
+		{
+			EnhancedInput->BindAction(
+				EquipSlot1Action,
+				ETriggerEvent::Started,
+				this,
+				&AUnderwaterCharacter::EquipSlot1
+			);
+		}
+
+		if (EquipSlot2Action)
+		{
+			EnhancedInput->BindAction(
+				EquipSlot2Action,
+				ETriggerEvent::Started,
+				this,
+				&AUnderwaterCharacter::EquipSlot2
+			);
+		}
+
+		if (EquipSlot3Action)
+		{
+			EnhancedInput->BindAction(
+				EquipSlot3Action,
+				ETriggerEvent::Started,
+				this,
+				&AUnderwaterCharacter::EquipSlot3
+			);
+		}
 	}
 	else
 	{
@@ -492,6 +534,12 @@ void AUnderwaterCharacter::Look(const FInputActionValue& InputActionValue)
 
 void AUnderwaterCharacter::Fire(const FInputActionValue& InputActionValue)
 {
+	EquipUseComponent->HandleLeftClick();
+}
+
+void AUnderwaterCharacter::Reload(const FInputActionValue& InputActionValue)
+{
+	EquipUseComponent->HandleRKey();
 }
 
 void AUnderwaterCharacter::Aim(const FInputActionValue& InputActionValue)
@@ -509,6 +557,21 @@ void AUnderwaterCharacter::Light(const FInputActionValue& InputActionValue)
 
 void AUnderwaterCharacter::Radar(const FInputActionValue& InputActionValue)
 {
+}
+
+void AUnderwaterCharacter::EquipSlot1(const FInputActionValue& InputActionValue)
+{
+	InventoryComponent->S_UseInventoryItem(EItemType::Equipment, 1);
+}
+
+void AUnderwaterCharacter::EquipSlot2(const FInputActionValue& InputActionValue)
+{
+	InventoryComponent->S_UseInventoryItem(EItemType::Equipment, 2);
+}
+
+void AUnderwaterCharacter::EquipSlot3(const FInputActionValue& InputActionValue)
+{
+	InventoryComponent->S_UseInventoryItem(EItemType::Equipment, 3);
 }
 
 void AUnderwaterCharacter::SetDebugCameraMode(bool bDebugCameraEnable)
