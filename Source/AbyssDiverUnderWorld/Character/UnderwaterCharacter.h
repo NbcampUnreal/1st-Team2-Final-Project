@@ -122,6 +122,8 @@ protected:
 	/** 상호작용 함수. Interaction의 Focus Interactable과 상호작용을 실행한다. 현재는 Start를 기점으로 작동 */
 	void Interaction(const FInputActionValue& InputActionValue);
 
+	void CompleteInteraction(const FInputActionValue& InputActionValue);
+
 	/** 라이트 함수. 미구현*/
 	void Light(const FInputActionValue& InputActionValue);
 
@@ -278,6 +280,12 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<class UADInventoryComponent> InventoryComponent;
+
+	UPROPERTY(EditAnywhere, Category = "UI", meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<class UHoldInteractionWidget> HoldWidgetClass;
+
+	UPROPERTY(EditAnywhere, Category = "UI", meta = (AllowPrivateAccess = "true"))
+	class UHoldInteractionWidget* HoldWidgetInstance;
 	
 #pragma endregion
 

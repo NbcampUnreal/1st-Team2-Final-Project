@@ -272,7 +272,7 @@ void UADInteractionComponent::OnInteractReleased()
 	if (!bHoldTriggered)
 	{
 		GetWorld()->GetTimerManager().ClearTimer(HoldTimerHandle);
-		OnHoldCancel.Broadcast(FocusedInteractable->GetOwner());
+		OnHoldCancel.Broadcast();
 		LOG(TEXT("Fail Hold!"));
 		HoldInstigator = nullptr;
 	}

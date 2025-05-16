@@ -19,7 +19,7 @@ public:
 	void HandleHoldStart(AActor* Target, float Duration);
 	// 홀드 실패 시 호출할 함수
 	UFUNCTION()
-	void HandleHoldCancel(AActor* Target);
+	void HandleHoldCancel();
 
 private:
 	void UpdateProgress(float Duration);
