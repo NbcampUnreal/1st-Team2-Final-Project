@@ -23,15 +23,15 @@ public:
 	void BindWidget(APawn* PlayerPawn);
 	
 	UFUNCTION(BlueprintCallable)
-	void UpdateHealthText(int32 CurrentHealth, int32 MaxHealth);
+	void UpdateHealthText(int32 Health, int32 MaxHealth);
 
 	/** 산소 택스트를 갱신 */
 	UFUNCTION(BlueprintCallable)
-	void UpdateOxygenText(float CurrentOxygen, float MaxOxygen);
+	void UpdateOxygenText(float Oxygen, float MaxOxygen);
 
 	/** 스태미나 택스트를 갱신 */
 	UFUNCTION(BlueprintCallable)
-	void UpdateStaminaText(float CurrentStamina, float MaxStamina);
+	void UpdateStaminaText(float Stamina, float MaxStamina);
 
 #pragma endregion
 

@@ -54,7 +54,7 @@ private:
 public:
 
 	/** 체력 변경 시 호출되는 델리게이트 */
-	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHealthChanged, int32, MaxHealth, int32, CurrentHealth);
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHealthChanged, int32, CurrentHealth, int32, MaxHealth);
 	UPROPERTY(BlueprintAssignable, Category="Stat")
 	FOnHealthChanged OnHealthChanged;
 

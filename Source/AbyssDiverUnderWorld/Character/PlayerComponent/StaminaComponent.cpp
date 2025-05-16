@@ -105,8 +105,8 @@ void UStaminaComponent::StopSprint()
 
 void UStaminaComponent::OnRep_StaminaStatusChanged()
 {
-	OnStaminaChanged.Broadcast(StaminaStatus.MaxStamina, StaminaStatus.Stamina);
-	K2_OnStaminaChanged(StaminaStatus.MaxStamina, StaminaStatus.Stamina);
+	OnStaminaChanged.Broadcast(StaminaStatus.Stamina, StaminaStatus.MaxStamina);
+	K2_OnStaminaChanged(StaminaStatus.Stamina, StaminaStatus.MaxStamina);
 }
 
 void UStaminaComponent::OnRep_IsSprintingChanged()
@@ -182,15 +182,15 @@ void UStaminaComponent::SetMaxStamina(const float NewMaxStamina)
 	}
 	else
 	{
-		OnStaminaChanged.Broadcast(StaminaStatus.MaxStamina, StaminaStatus.Stamina);
-		K2_OnStaminaChanged(StaminaStatus.MaxStamina, StaminaStatus.Stamina);
+		OnStaminaChanged.Broadcast(StaminaStatus.Stamina, StaminaStatus.MaxStamina);
+		K2_OnStaminaChanged(StaminaStatus.Stamina, StaminaStatus.MaxStamina);
 	}
 }
 
 void UStaminaComponent::SetStamina(const float NewStamina)
 {
 	StaminaStatus.Stamina = FMath::Clamp(NewStamina, 0.0f, StaminaStatus.MaxStamina);
-	OnStaminaChanged.Broadcast(StaminaStatus.MaxStamina, StaminaStatus.Stamina);
-	K2_OnStaminaChanged(StaminaStatus.MaxStamina, StaminaStatus.Stamina);
+	OnStaminaChanged.Broadcast(StaminaStatus.Stamina, StaminaStatus.MaxStamina);
+	K2_OnStaminaChanged(StaminaStatus.Stamina, StaminaStatus.MaxStamina);
 }
 

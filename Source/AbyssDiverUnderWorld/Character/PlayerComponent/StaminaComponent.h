@@ -99,7 +99,7 @@ private:
 
 public:
 	
-	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnStaminaChanged, float, MaxStamina, float, Stamina);
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnStaminaChanged, float, Stamina, float, MaxStamina);
 	/** Stamina의 현재 값이 변경되었을 떄 호출되는 델리게이트 */
 	UPROPERTY(BlueprintAssignable, Category = "Stat")
 	FOnStaminaChanged OnStaminaChanged;
