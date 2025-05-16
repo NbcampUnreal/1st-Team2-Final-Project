@@ -1,7 +1,7 @@
 ﻿#include "Interactable/OtherActors/ADDrone.h"
 #include "Interactable/Item/Component/ADInteractableComponent.h"
 #include "Inventory/ADInventoryComponent.h"
-#include "FrameWork/TestGameState.h"
+#include "FrameWork/ADInGameState.h"
 #include "ADDroneSeller.h"
 #include "Net/UnrealNetwork.h"
 
@@ -53,11 +53,13 @@ void AADDrone::Interact_Implementation(AActor* InstigatorActor)
 
 	// 차액 계산
 	int32 Diff = CurrentSeller->GetCurrentMoney() - CurrentSeller->GetTargetMoney();
+
+
 	if (Diff > 0)
 	{
-		if (ATestGameState* GS = GetWorld()->GetGameState<ATestGameState>())
+		if (AADInGameState* GS = GetWorld()->GetGameState<AADInGameState>())
 		{
-			GS->AddMoney(Diff);
+			GS->AddTeamCredit(Diff);
 			GS->IncrementPhase();
 			if (NextSeller)
 			{
