@@ -83,7 +83,7 @@ private:
 	void SetEquipInfo(int8 TypeInventoryIndex, AADUseItem* SpawnItem);
 	void Equip(FItemData ItemData, int8 Index);
 	void UnEquip();
-	void DropItem(FItemData ItemData);
+	void DropItem(FItemData& ItemData);
 
 	void OnInventoryInfoUpdate(int32 MassInfo, int32 PriceInfo);
 	void RebuildIndexMap();
