@@ -12,6 +12,8 @@ UADInteractionComponent::UADInteractionComponent()
 	PrimaryComponentTick.bCanEverTick = true;
 	PrimaryComponentTick.bStartWithTickEnabled = false;
 	bHoldTriggered = false;
+	bIsFocusing = false;
+	bIsInteractingStart = false;
 }
 
 
@@ -55,7 +57,10 @@ void UADInteractionComponent::TickComponent(float DeltaTime, ELevelTick TickType
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 	PerformFocusCheck();
-
+	if (!bIsFocusing && bIsInteractingStart)
+	{
+		OnInteractReleased();
+	}
 	DrawDebugSphere(
 		GetWorld(),
 		GetOwner()->GetActorLocation(),
@@ -165,10 +170,12 @@ void UADInteractionComponent::PerformFocusCheck()
 	UADInteractableComponent* HitInteractable = PerformLineTrace(CamLocation, TraceEnd);
 	if (HitInteractable && NearbyInteractables.Contains(HitInteractable))
 	{
+		bIsFocusing = true;
 		UpdateFocus(HitInteractable);
 	}
 	else
 	{
+		bIsFocusing = false;
 		ClearFocus();
 	}
 }
@@ -197,6 +204,7 @@ UADInteractableComponent* UADInteractionComponent::PerformLineTrace(const FVecto
 
 	if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params))
 	{
+		
 		return Hit.GetActor()->FindComponentByClass<UADInteractableComponent>();
 	}
 	return nullptr;
@@ -233,6 +241,7 @@ void UADInteractionComponent::ClearFocus()
 
 void UADInteractionComponent::OnInteractPressed()
 {
+	bIsInteractingStart = true;
 	PerformFocusCheck();
 	if (!FocusedInteractable) return;
 	if (AActor* Owner = FocusedInteractable->GetOwner())
@@ -271,6 +280,7 @@ void UADInteractionComponent::OnInteractReleased()
 	// Hold 오브젝트지만 시간 100% 못 채우고 놓은 경우: 취소
 	if (!bHoldTriggered)
 	{
+		bIsInteractingStart = false;
 		GetWorld()->GetTimerManager().ClearTimer(HoldTimerHandle);
 		OnHoldCancel.Broadcast();
 		LOG(TEXT("Fail Hold!"));
@@ -293,6 +303,7 @@ void UADInteractionComponent::OnHoldComplete()
 	{
 		S_RequestInteractHold(FocusedInteractable->GetOwner());
 	}
+	bIsInteractingStart = false;
 }
 
 bool UADInteractionComponent::ShouldHighlight(const UADInteractableComponent* ADIC) const
