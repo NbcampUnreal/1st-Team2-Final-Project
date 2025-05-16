@@ -191,14 +191,24 @@ void UEquipUseComponent::Initialize(uint8 ItemId)
 	}
 	const FName RowName = InItemMeta->Name;
 
-	// 해제 전에 상태 저장
-	if (!CurrentRowName.IsNone())
+	// 기존 장비의 효과 해제
+	if (bBoostActive || bNightVisionOn || CurrentMultiplier != 1.f)
 	{
-		int32 PrevTotal = bIsWeapon
-			? (CurrentAmmoInMag + ReserveAmmo)
-			: Amount;
-		AmountMap.FindOrAdd(CurrentRowName) = PrevTotal;
+		DeinitializeEquip();
 	}
+
+	//// 해제 전에 상태 저장
+	//if (!CurrentRowName.IsNone())
+	//{
+	//	if (bIsWeapon)
+	//	{
+	//		AmountMap.FindOrAdd(CurrentRowName) = FEquipState(CurrentAmmoInMag, ReserveAmmo);
+	//	}
+	//	else
+	//	{
+	//		AmountMap.FindOrAdd(CurrentRowName) = FEquipState(Amount);
+	//	}
+	//}
 
 	// 새 장착 아이템
 	CurrentRowName = RowName;
@@ -211,21 +221,30 @@ void UEquipUseComponent::Initialize(uint8 ItemId)
 		(int32)LeftAction, (int32)RKeyAction, bIsWeapon ? TEXT("true") : TEXT("false"));
 
 	// 저장된 총량 가져오기
-	int32 SavedTotal = AmountMap.FindOrAdd(RowName, InItemMeta->Amount);
-
-	// 무기와 무기가 아닌 것 구분
-	if (bIsWeapon)
+	if (const FEquipState* Saved = AmountMap.Find(CurrentRowName))
 	{
-		CurrentAmmoInMag = FMath::Min(SavedTotal, MagazineSize);
-		ReserveAmmo = SavedTotal - CurrentAmmoInMag;
-		LOG(TEXT("Initialize: Weapon – InMag=%d, Reserve=%d"),
-			CurrentAmmoInMag, ReserveAmmo);
+		if (bIsWeapon)
+		{
+			CurrentAmmoInMag = Saved->InMag;
+			ReserveAmmo = Saved->Reserve;
+		}
+		else
+		{
+			Amount = Saved->Amount;
+		}
 	}
 	else
 	{
-		Amount = SavedTotal;
-		CurrentAmmoInMag = 0;
-		ReserveAmmo = 0;
+		// 첫 장착 시 기본값
+		if (bIsWeapon)
+		{
+			CurrentAmmoInMag = FMath::Min(InItemMeta->Amount, MagazineSize);
+			ReserveAmmo = InItemMeta->Amount - CurrentAmmoInMag;
+		}
+		else
+		{
+			Amount = InItemMeta->Amount;
+		}
 	}
 	LOG(TEXT("Initialize: bIsWeapon=%s, Total=%d, InMag=%d, Reserve=%d"),
 		bIsWeapon ? TEXT("true") : TEXT("false"),
@@ -238,8 +257,80 @@ void UEquipUseComponent::Initialize(uint8 ItemId)
 	}
 
 	// 서버에서 HUD 동기화
-	OnRep_CurrentAmmoInMag();
-	OnRep_ReserveAmmo();
+	if (bIsWeapon)
+	{
+		OnRep_CurrentAmmoInMag();
+		OnRep_ReserveAmmo();
+	}
+	else
+	{
+		OnRep_Amount();
+	}
+}
+
+void UEquipUseComponent::DeinitializeEquip()
+{
+	if (!CurrentRowName.IsNone())
+	{
+		if (bIsWeapon)
+		{
+			AmountMap.FindOrAdd(CurrentRowName) = FEquipState(CurrentAmmoInMag, ReserveAmmo);
+		}
+		else
+		{
+			AmountMap.FindOrAdd(CurrentRowName) = FEquipState(Amount);
+		}
+	}
+
+
+	if (GetWorld())
+	{
+		GetWorld()->GetTimerManager().ClearTimer(TimerHandle_HandleRefire);
+		GetWorld()->GetTimerManager().ClearTimer(TimerHandle_HandleReload);
+	}
+
+	// 입력·액션 상태 초기화
+	bCanFire = true;
+	bIsWeapon = false;
+	LeftAction = EAction::None;
+	RKeyAction = EAction::None;
+
+	// 탄약/배터리 현재값 초기화
+	CurrentAmmoInMag = 0;
+	ReserveAmmo = 0;
+	Amount = 0;
+
+	// 현재 장착 아이템 키 제거
+	CurrentRowName = NAME_None;
+
+	// 부스트·야간투시 효과 끄기
+	bBoostActive = false;
+	bNightVisionOn = false;
+
+	// 속도 복구
+	if (OwningCharacter.IsValid())
+	{
+		OwningCharacter->GetCharacterMovement()->MaxWalkSpeed = DefaultSpeed;
+	}
+
+	// 머터리얼 파라미터·포스트프로세스 복원
+	if (NightVisionMaterialInstance)
+	{
+		NightVisionMaterialInstance->SetScalarParameterValue(TEXT("NightBlend"), 0.f);
+	}
+	if (CameraComp)
+	{
+		CameraComp->PostProcessSettings = OriginalPPSettings;
+	}
+
+	
+	if (ChargeWidget)
+	{
+		// ChargeWidget 구현 후 TODO : ChargeWidget 닫기
+	}
+
+	// 틱 끄기
+	SetComponentTickEnabled(false);
 }
 
 EAction UEquipUseComponent::TagToAction(const FGameplayTag& Tag)
@@ -393,3 +484,26 @@ bool UEquipUseComponent::IsInterpolating() const
 {
 	return !FMath::IsNearlyEqual(CurrentMultiplier, TargetMultiplier, 0.001f);
 }
+
+//void UEquipUseComponent::ResetEquipState()
+//{
+//	bBoostActive = false;
+//	bNightVisionOn = false;
+//
+//	CurrentMultiplier = TargetMultiplier = 1.f;
+//	if (OwningCharacter.IsValid())
+//	{
+//		OwningCharacter->GetCharacterMovement()->MaxWalkSpeed = DefaultSpeed;
+//	}
+//
+//	if (NightVisionMaterialInstance)
+//	{
+//		NightVisionMaterialInstance->SetScalarParameterValue(TEXT("NightBlend"), 0.f);
+//	}
+//	if (CameraComp)
+//	{
+//		CameraComp->PostProcessSettings = OriginalPPSettings;
+//	}
+//
+//	SetComponentTickEnabled(false);
+//}
