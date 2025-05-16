@@ -23,12 +23,13 @@ EBTNodeResult::Type UBTTask_DefaultAttack::ExecuteTask(UBehaviorTreeComponent& O
 	AMonster* Monster = Cast<AMonster>(AIPawn);
 	if (!Monster || !Monster->GetAttackMontage()) return EBTNodeResult::Failed;
 
+	UAnimMontage* AttackMontage = Monster->GetAttackMontage();
 	// In Server
 	AIController->StopMovement();
-	if (Monster->HasAuthority())
+	if (Monster->HasAuthority() && AttackMontage)
 	{
 		// Sync to Client
-		Monster->M_PlayAttackMontage();
+		Monster->M_PlayAttackMontage(AttackMontage);
 
 		// Detect end of montage ¡æ End BTTask
 		if (UAnimInstance* AnimInst = AIPawn->GetMesh()->GetAnimInstance())

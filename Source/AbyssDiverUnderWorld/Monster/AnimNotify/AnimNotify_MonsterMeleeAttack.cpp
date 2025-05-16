@@ -8,7 +8,7 @@
 #include "Character/StatComponent.h"
 #include "Components/SphereComponent.h"
 
-void UAnimNotify_MonsterMeleeAttack::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation)
+void UAnimNotify_MonsterMeleeAttack::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, const FAnimNotifyEventReference& EventReference)
 {
 	AActor* OwnerActor = MeshComp->GetOwner();
 	if (!OwnerActor || !OwnerActor->HasAuthority()) return;

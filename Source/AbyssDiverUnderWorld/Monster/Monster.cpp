@@ -59,15 +59,13 @@ int32 AMonster::GetNextPatrolIndex(int32 CurrentIndex) const
 	}
 }
 
-void AMonster::M_PlayAttackMontage_Implementation()
+void AMonster::M_PlayAttackMontage_Implementation(UAnimMontage* AnimMontage, float InPlayRate, FName StartSectionName)
 {
 	if (AttackMontage)
 	{
-		if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
-		{
-			AnimInstance->Montage_Play(AttackMontage);
-		}
+		PlayAnimMontage(AttackMontage);
 	}
 }
+
 
 

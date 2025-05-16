@@ -31,8 +31,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 	int32 GetNextPatrolIndex(int32 CurrentIndex) const;
 	UFUNCTION(NetMulticast, Reliable)
-	void M_PlayAttackMontage();
-	void M_PlayAttackMontage_Implementation();
+	void M_PlayAttackMontage(UAnimMontage* AnimMontage, float InPlayRate = 1, FName StartSectionName = NAME_None);
+	void M_PlayAttackMontage_Implementation(UAnimMontage* AnimMontage, float InPlayRate = 1, FName StartSectionName = NAME_None);
 
 
 #pragma endregion
