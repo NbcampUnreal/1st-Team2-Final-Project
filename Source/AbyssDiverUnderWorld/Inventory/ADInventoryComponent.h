@@ -120,8 +120,7 @@ private:
 	TArray<int8> InventorySizeByType;
 
 	TObjectPtr<UAllInventoryWidget> InventoryWidgetInstance;
-	TObjectPtr<UDataTableSubsystem> ItemDataTableSubsystem; 
-	TObjectPtr<UDataTable> TestItemDataTable;
+	TObjectPtr<UDataTableSubsystem> DataTableSubsystem; 
 #pragma endregion
 
 
