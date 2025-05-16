@@ -214,6 +214,7 @@ void AShop::OpenShop(AUnderwaterCharacter* Requester)
 	PC->SetInputMode(FInputModeUIOnly());
 	PC->SetShowMouseCursor(true);
 	bIsOpened = true;
+	PC->SetIgnoreMoveInput(true);
 }
 
 void AShop::CloseShop(AUnderwaterCharacter* Requester)
@@ -234,6 +235,7 @@ void AShop::CloseShop(AUnderwaterCharacter* Requester)
 	PC->SetInputMode(FInputModeGameOnly());
 	PC->SetShowMouseCursor(false);
 	bIsOpened = false;
+	PC->SetIgnoreMoveInput(false);
 }
 
 EBuyResult AShop::BuyItem(uint8 ItemId, uint8 Quantity, AUnderwaterCharacter* Buyer)
