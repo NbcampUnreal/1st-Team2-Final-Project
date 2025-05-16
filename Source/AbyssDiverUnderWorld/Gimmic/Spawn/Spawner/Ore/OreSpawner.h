@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Gimmic/Spawner/Spawner.h"
+#include "Gimmic/Spawn/Spawner/Spawner.h"
 #include "OreSpawner.generated.h"
 
 class AADOreRock;

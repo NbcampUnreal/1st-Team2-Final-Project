@@ -1,6 +1,6 @@
-#include "Gimmic/Spawner/Ore/OreSpawner.h"
-#include "Gimmic/SpawnPoint/SpawnPoint.h"
-#include "Gimmic/SpawnPoint/Ore/OreSpawnPoint.h"
+#include "Gimmic/Spawn/Spawner/Ore/OreSpawner.h"
+#include "Gimmic/Spawn/SpawnPoint/SpawnPoint.h"
+#include "Gimmic/Spawn/SpawnPoint/Ore/OreSpawnPoint.h"
 #include "Interactable/Item/ADOreRock.h"
 
 AOreSpawner::AOreSpawner()

@@ -1,5 +1,5 @@
-#include "Gimmic/Spawner/Spawner.h"
-#include "Gimmic/SpawnPoint/SpawnPoint.h"
+#include "Gimmic/Spawn/Spawner/Spawner.h"
+#include "Gimmic/Spawn/SpawnPoint/SpawnPoint.h"
 #include "EngineUtils.h"
 
 ASpawner::ASpawner()
