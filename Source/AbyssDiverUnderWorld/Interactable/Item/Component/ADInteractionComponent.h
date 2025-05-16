@@ -47,6 +47,13 @@ public:
     // 테스트 동안 OnInteractPressed 대신 사용할 함수
     UFUNCTION(BlueprintCallable, Category = "Interaction")
     void TryInteract();
+    UFUNCTION(BlueprintCallable, Category = "Interaction")
+    void OnInteractPressed();
+    UFUNCTION(BlueprintCallable, Category = "Interaction")
+    void OnInteractReleased();
+    // Player가 E 키를 홀드 성공했을 때 호출할 함수
+    UFUNCTION(BlueprintCallable, Category = "Interaction")
+    void OnHoldComplete();
 
     // 실제 Focus 검사 함수
     void PerformFocusCheck();
@@ -55,10 +62,7 @@ public:
     void UpdateFocus(UADInteractableComponent* NewFocus);
     void ClearFocus();
 
-    void OnInteractPressed();
-    void OnInteractReleased();
-    // Player가 E 키를 홀드했을 때 호출할 함수
-    void OnHoldComplete();
+    
 
     bool ShouldHighlight(const UADInteractableComponent* ADIC) const;
     bool IsLocallyControlled() const;
@@ -73,6 +77,13 @@ private:
 
 #pragma region Variable
 public:
+    DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHoldStart, AActor*, Target, float, Duration);
+    UPROPERTY(BlueprintAssignable)
+    FOnHoldStart OnHoldStart;
+    DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnHoldCancelSignature, AActor*, Target);
+    UPROPERTY(BlueprintAssignable) 
+    FOnHoldCancelSignature OnHoldCancel;
+
     UPROPERTY()
     TSet<TObjectPtr<UADInteractableComponent>> NearbyInteractables;
     UPROPERTY()

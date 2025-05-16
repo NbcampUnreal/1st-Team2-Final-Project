@@ -16,6 +16,7 @@ AADDroneSeller::AADDroneSeller()
 	SetReplicateMovement(true); // 위치 상승하는 것 보이도록
 
 	bIsActive = true;
+	bIsHold = false;
 }
 
 // Called when the game starts or when spawned
@@ -40,10 +41,10 @@ void AADDroneSeller::Interact_Implementation(AActor* InstigatorActor)
 
 	CurrentMoney += Gained;
 	UE_LOG(LogTemp, Log, TEXT("→ 누적 금액: %d / %d"), CurrentMoney, TargetMoney);
-	if (CurrentMoney >= TargetMoney && LinkedDrone && LinkedDrone && IsValid(LinkedDrone))
+	if (CurrentMoney >= TargetMoney && IsValid(CurrentDrone))
 	{
 		UE_LOG(LogTemp, Log, TEXT("목표 달성! Drone 활성화 호출"));
-		LinkedDrone->Activate(this);
+		CurrentDrone->Activate();
 	}
 	
 }
@@ -52,6 +53,15 @@ void AADDroneSeller::DisableSelling()
 {
 	bIsActive = false;
 }
+
+void AADDroneSeller::Activate()
+{
+	if (bIsActive) return;
+
+	bIsActive = true;
+	OnRep_IsActive(); // 서버에서는 직접 호출해저야함
+}
+
 
 void AADDroneSeller::OnRep_IsActive()
 {
@@ -105,3 +115,7 @@ UADInteractableComponent* AADDroneSeller::GetInteractableComponent() const
 	return InteractableComp;
 }
 
+bool AADDroneSeller::IsHoldMode() const
+{
+	return bIsHold;
+}

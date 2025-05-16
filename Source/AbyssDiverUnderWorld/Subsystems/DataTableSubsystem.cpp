@@ -35,34 +35,19 @@ void UDataTableSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 		LOGV(Error, TEXT("OreDropTable is null"));
 	}
 
-	//Algo::Sort(ItemDataTableArray, [](const FFADItemDataRow* A, const FFADItemDataRow* B)
-	//	{
-	//		return A->Id < B->Id;
-	//	});
+	Algo::Sort(ItemDataTableArray, [](const FFADItemDataRow* A, const FFADItemDataRow* B)
+		{
+			return A->Id < B->Id;
+		});
 
 	ParsePhseGoalDataTable(GI);
 
 }
 
-int8 UDataTableSubsystem::GetItemDataTableArrayNum() const
-{
-	return ItemDataTableArray.Num();
-}
 
 FFADItemDataRow* UDataTableSubsystem::GetItemData(int32 ItemId) const
 {
 	return ItemDataTableArray[ItemId];
-}
-
-FFADItemDataRow* UDataTableSubsystem::GetItemDataByName(FName ItemName) const
-{
-	UADGameInstance* GI = CastChecked<UADGameInstance>(GetGameInstance());
-	if (UDataTable* ItemDataTable = GI->ItemDataTable)
-	{
-		return ItemDataTable->FindRow<FFADItemDataRow>(ItemName, TEXT("Lookup Item"));
-	}
-
-	return nullptr;
 }
 
 FUpgradeDataRow* UDataTableSubsystem::GetUpgradeDataTableArray(int32 Index) const

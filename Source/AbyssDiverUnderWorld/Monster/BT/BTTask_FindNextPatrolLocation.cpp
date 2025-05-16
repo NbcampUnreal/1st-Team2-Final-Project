@@ -24,9 +24,6 @@ EBTNodeResult::Type UBTTask_FindNextPatrolLocation::ExecuteTask(UBehaviorTreeCom
 	AMonster* Monster = Cast<AMonster>(AIPawn);
 	if (!Monster) return EBTNodeResult::Failed;
 
-	UFlyingAIPathfindingBase* Pathfinding = AIPawn->FindComponentByClass<UFlyingAIPathfindingBase>();
-	if (!Pathfinding) return EBTNodeResult::Failed;
-
 	UBlackboardComponent* BlackboardComp = OwnerComp.GetBlackboardComponent();
 	if (!BlackboardComp) return EBTNodeResult::Failed;
 

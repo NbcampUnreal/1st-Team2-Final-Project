@@ -29,7 +29,7 @@ void UShopInteractionComponent::C_OpenShop_Implementation(AShop* InteractingShop
 	InteractingShop->OpenShop(OwningCharacter);
 }
 
-void UShopInteractionComponent::S_RequestBuyItem_Implementation(uint8 ItemId)
+void UShopInteractionComponent::S_RequestBuyItem_Implementation(uint8 ItemId, uint8 Quantity)
 {
 	if (CurrentInteractingShop == nullptr)
 	{
@@ -37,7 +37,7 @@ void UShopInteractionComponent::S_RequestBuyItem_Implementation(uint8 ItemId)
 		return;
 	}
 
-	CurrentInteractingShop->BuyItem(ItemId, Cast<AUnderwaterCharacter>(GetOwner()));
+	CurrentInteractingShop->BuyItem(ItemId, Quantity, Cast<AUnderwaterCharacter>(GetOwner()));
 }
 
 AShop* UShopInteractionComponent::GetCurrentInteractingShop() const

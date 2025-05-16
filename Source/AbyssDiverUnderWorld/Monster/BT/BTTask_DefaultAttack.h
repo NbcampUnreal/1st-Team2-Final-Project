@@ -16,4 +16,19 @@ public:
 	UBTTask_DefaultAttack();
 
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
+	virtual void OnTaskFinished(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, EBTNodeResult::Type TaskResult) override;
+
+#pragma region Method
+protected:
+	UFUNCTION()
+	void HandleAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+
+#pragma endregion
+
+#pragma region Variable
+private:
+	UPROPERTY()
+	TObjectPtr<UBehaviorTreeComponent> CachedOwnerComp;
+#pragma endregion
+	
 };

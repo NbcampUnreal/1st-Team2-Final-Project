@@ -1,6 +1,7 @@
 #include "Boss/Task/Boss/BTTask_Detected.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Boss/Boss.h"
+#include "Character/UnderwaterCharacter.h"
 #include "Boss/EBossState.h"
 
 const FName UBTTask_Detected::BossStateKey = "BossState";

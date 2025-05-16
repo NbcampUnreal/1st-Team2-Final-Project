@@ -12,7 +12,7 @@ AADItemBase::AADItemBase()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
 	bReplicates = true;
-
+	bIsHold = false;
 
 	// InteractableComponent 생성
 	InteractableComp = CreateDefaultSubobject<UADInteractableComponent>(TEXT("InteractableComp"));
@@ -75,4 +75,7 @@ UADInteractableComponent* AADItemBase::GetInteractableComponent() const
 	return InteractableComp;
 }
 
-
+bool AADItemBase::IsHoldMode() const
+{
+	return bIsHold;
+}

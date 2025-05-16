@@ -62,6 +62,14 @@ void UBTTask_BossChasing::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* Nod
 		return;
 	}
 
+	// 타겟 앞으로 도착했을 때에도 **공격 상태**로 전이
+	if (AIController->GetPathFollowingComponent()->GetStatus() == EPathFollowingStatus::Idle)
+	{
+		Boss->SetBossState(EBossState::Attack);
+		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
+		return;
+	}
+
 	// 추적 상태가 끝났다면 성공 반환
 	if (AIController->GetBlackboardComponent()->GetValueAsEnum(BossStateKey) != static_cast<uint8>(EBossState::Chase))
 	{

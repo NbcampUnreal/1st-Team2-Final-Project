@@ -26,6 +26,7 @@ protected:
 
 	virtual void NativeConstruct() override;
 
+	virtual FReply NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 	virtual FReply NativeOnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 	virtual FReply NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
 
@@ -43,6 +44,8 @@ public:
 
 	void ShowItemInfos(USkeletalMesh* NewItemMesh, const FString& NewDescription, const FString& NewInfoText);
 	void ShowUpgradeInfos(USkeletalMesh* NewUpgradeItemMesh, int32 CurrentUpgradeLevel, bool bIsMaxLevel, int32 CurrentUpgradeCost, const FString& ExtraInfoText);
+
+	void SetTeamMoneyText(int32 NewTeamMoney);
 
 	FOnShopCloseButtonClickedDelegate OnShopCloseButtonClickedDelegate;
 
@@ -80,6 +83,9 @@ private:
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<class UButton> CloseButton;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<class URichTextBlock> TeamMoneyText;
 
 	UPROPERTY()
 	TArray<TObjectPtr<UShopItemEntryData>> ConsumableTabEntryDataList;

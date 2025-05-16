@@ -152,6 +152,7 @@ AShop::AShop()
 
 	bIsOpened = false;
 	CurrentSelectedUpgradeType = EUpgradeType::Max;
+	bIsHold = false;
 }
 
 void AShop::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -214,6 +215,7 @@ void AShop::OpenShop(AUnderwaterCharacter* Requester)
 	PC->SetInputMode(FInputModeUIOnly());
 	PC->SetShowMouseCursor(true);
 	bIsOpened = true;
+	PC->SetIgnoreMoveInput(true);
 }
 
 void AShop::CloseShop(AUnderwaterCharacter* Requester)
@@ -234,9 +236,10 @@ void AShop::CloseShop(AUnderwaterCharacter* Requester)
 	PC->SetInputMode(FInputModeGameOnly());
 	PC->SetShowMouseCursor(false);
 	bIsOpened = false;
+	PC->SetIgnoreMoveInput(false);
 }
 
-EBuyResult AShop::BuyItem(uint8 ItemId, AUnderwaterCharacter* Buyer)
+EBuyResult AShop::BuyItem(uint8 ItemId, uint8 Quantity, AUnderwaterCharacter* Buyer)
 {
 	if (HasAuthority() == false)
 	{
@@ -275,7 +278,7 @@ EBuyResult AShop::BuyItem(uint8 ItemId, AUnderwaterCharacter* Buyer)
 	ItemData.Mass = ItemDataRow->Weight;
 	ItemData.Name = ItemDataRow->Name;
 	ItemData.Price = ItemDataRow->Price;
-	ItemData.Quantity = ItemDataRow->Quantity;
+	ItemData.Quantity = Quantity;
 	ItemData.Thumbnail = ItemDataRow->Thumbnail;
 
 	PS->GetInventory()->AddInventoryItem(ItemData);
@@ -675,7 +678,7 @@ void AShop::OnSlotEntryClicked(int32 ClickedSlotIndex)
 	CurrentSelectedItemId = ItemId;
 }
 
-void AShop::OnBuyButtonClicked()
+void AShop::OnBuyButtonClicked(int32 Quantity)
 {
 	EShopCategoryTab CurrentTab = ShopWidget->GetCurrentActivatedTab();
 
@@ -721,7 +724,7 @@ void AShop::OnBuyButtonClicked()
 		return;
 	}
 
-	ShopInteractionComp->S_RequestBuyItem(CurrentSelectedItemId);
+	ShopInteractionComp->S_RequestBuyItem(CurrentSelectedItemId, Quantity);
 }
 
 void AShop::OnCloseButtonClicked()
@@ -795,4 +798,9 @@ bool AShop::IsOpened() const
 UADInteractableComponent* AShop::GetInteractableComponent() const
 {
 	return InteractableComp;
+}
+
+bool AShop::IsHoldMode() const
+{
+	return bIsHold;
 }
