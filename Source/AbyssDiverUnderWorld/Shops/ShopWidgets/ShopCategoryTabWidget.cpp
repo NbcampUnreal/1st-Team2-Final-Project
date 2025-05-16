@@ -6,7 +6,10 @@
 
 void UShopCategoryTabWidget::NativeConstruct()
 {
-	TabButton->OnClicked.AddDynamic(this, &UShopCategoryTabWidget::OnCategoryButtonClicked);
+	if (TabButton->OnClicked.IsBound() == false)
+	{
+		TabButton->OnClicked.AddDynamic(this, &UShopCategoryTabWidget::OnCategoryButtonClicked);
+	}
 }
 
 void UShopCategoryTabWidget::OnCategoryButtonClicked()

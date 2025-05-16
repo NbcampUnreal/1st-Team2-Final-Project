@@ -292,6 +292,7 @@ protected:
 
 	EFriendOrFoe CurrentFOFStatus;
 	TObjectPtr<URadarReturnComponent> CurrentRadarReturn;
+	TObjectPtr<URadarReturnComponent> CurrentRadarReturnSearched;
 
 	TObjectPtr<URadarReturnComponent> LastPrimaryReturn;
 

@@ -24,6 +24,23 @@ FReply UInventorySlotWidget::NativeOnMouseButtonDown(const FGeometry& InGeometry
 	return Super::NativeOnMouseButtonDown(InGeometry, InMouseEvent);
 }
 
+FReply UInventorySlotWidget::NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
+{
+	if (SlotIndex != -1)
+	{
+		if (SlotType == EItemType::Consumable)
+		{
+			if (InMouseEvent.GetEffectingButton() == EKeys::LeftMouseButton)
+			{
+				InventoryComponent->S_UseInventoryItem(EItemType::Consumable, SlotIndex);
+				return FReply::Handled();
+			} 
+		}
+
+	}
+	return Super::NativeOnMouseButtonUp(InGeometry, InMouseEvent);
+}
+
 void UInventorySlotWidget::NativeOnDragDetected(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent, UDragDropOperation*& Operation)
 {
 	Super::NativeOnDragDetected(InGeometry, InMouseEvent, Operation);
@@ -61,7 +78,7 @@ bool UInventorySlotWidget::NativeOnDrop(const FGeometry& InGeometry, const FDrag
 		{
 			if (DragDropOp->Index != SlotIndex && DragDropOp->Type == SlotType)
 			{
-				InventoryComponent->TransferSlots(DragDropOp->Index, SlotIndex);
+				InventoryComponent->S_TransferSlots(DragDropOp->Index, SlotIndex);
 				return true;
 			}
 			else
@@ -79,17 +96,27 @@ void UInventorySlotWidget::SetItemData(FItemData ItemInfo, int32 Index, UADInven
 	SlotType = ItemInfo.ItemType;
 	if (!QuantityText && !Image)
 		return;
+
+	if (ItemInfo.ItemType == EItemType::Equipment)
+		QuantityText->SetVisibility(ESlateVisibility::Collapsed);
+
 	QuantityText->SetText(FText::FromString(FString::Printf(TEXT("%d"), ItemInfo.Quantity)));
-	if (ItemInfo.Quantity == 0 || ItemInfo.ItemType == EItemType::Equipment)
+
+	if (ItemInfo.Quantity == 0)
 	{
 		QuantityText->SetVisibility(ESlateVisibility::Collapsed);
+		Image->SetBrushFromTexture(EmptySlotTexture);
 	}
-	Image->SetBrushFromTexture(ItemInfo.Thumbnail);
+	else
+	{
+		QuantityText->SetVisibility(ESlateVisibility::Visible);
+		Image->SetBrushFromTexture(ItemInfo.Thumbnail);
+	}
 
 	SlotIndex = Index;
 }
 
 void UInventorySlotWidget::HandleDragCancelled(UDragDropOperation* Operation)
 {
-	InventoryComponent->RemoveInventoryItem(SlotIndex, -1, true);
+	InventoryComponent->S_RequestRemove(SlotIndex, -1, true);
 }

@@ -11,6 +11,16 @@
 enum class EItemType : uint8;
 class UAllInventoryWidget;
 class UDataTableSubsystem;
+class AADUseItem;
+
+UENUM(BlueprintType)
+enum class EItemEquipState : uint8
+{
+	Idle = 0,
+	Equip = 1,
+	Use = 2,
+	Max = 3 UMETA(Hidden)
+};
 
 DECLARE_MULTICAST_DELEGATE(FInventoryUpdateDelegate);
 DECLARE_MULTICAST_DELEGATE_TwoParams(FInventoryInfoUpdateDelegate, int32, int32);
@@ -29,39 +39,57 @@ protected:
 public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override; 
 
+	UFUNCTION(Server, Reliable, BlueprintCallable)
+	void S_UseInventoryItem(EItemType ItemType = EItemType::Equipment, int32 InventoryIndex = 0);
+	void S_UseInventoryItem_Implementation(EItemType ItemType = EItemType::Equipment, int32 InventoryIndex = 0);
+
+	UFUNCTION(Server, Reliable, BlueprintCallable)
+	void S_InventoryInitialize();
+	void S_InventoryInitialize_Implementation();
+
 	UFUNCTION(Server, Reliable)
-	void S_DropItem(FItemData ItemData);
-	void S_DropItem_Implementation(FItemData ItemData);
+	void S_TransferSlots(uint8 FromIndex, uint8 ToIndex);
+	void S_TransferSlots_Implementation(uint8 FromIndex, uint8 ToIndex);
+
+	UFUNCTION(Server, Reliable)
+	void S_RequestRemove(uint8 InventoryIndex, int8 Count, bool bIsDropAction);
+	void S_RequestRemove_Implementation(uint8 InventoryIndex, int8 Count, bool bIsDropAction);
+
+	UFUNCTION(BlueprintCallable)
+	void InventoryInitialize();
 
 	UFUNCTION(BlueprintCallable)
 	void AddInventoryItem(FItemData ItemData);
-	bool RemoveInventoryItem(uint8 InventoryIndex, int8 Count, bool bIsDropAction);
-
-	UFUNCTION(BlueprintCallable)
-	void UseInventoryItem(EItemType ItemType = EItemType::Equipment, int32 InventoryIndex = 0);
-
-	UFUNCTION(BlueprintCallable)
-	void TransferSlots(uint8 FromIndex, uint8 ToIndex);
 
 	UFUNCTION(BlueprintCallable)
 	void ToggleInventoryShowed(); //추후 나침반이나 서브미션 UI 추가되었을 때 고려 대상
-	UFUNCTION(BlueprintCallable)
-	void InventoryInitialize();
+
 	UFUNCTION()
 	void OnRep_InventoryList();
+
+	int16 FindItemIndexByName(FName ItemID); //아이템 이름으로 InventoryList 인덱스 반환 (빈슬롯이 없으면 -1 반환)
+	void RemoveInventoryItem(uint8 InventoryIndex, int8 Count, bool bIsDropAction);
+	void ClientRequestInventoryInitialize();
+	void InventoryUIUpdate();
 
 	FInventoryUpdateDelegate InventoryUpdateDelegate;
 	FInventoryInfoUpdateDelegate InventoryInfoUpdateDelegate;
 
 private:
-	int8 GetTypeInventoryEmptyIndex(EItemType ItemType);
-	int16 FindItemIndexById(FName ItemID);
-	void OnInventoryInfoUpdate(int32 MassInfo, int32 PriceInfo);
-
-	void InventoryUIUpdate();
+	int8 GetTypeInventoryEmptyIndex(EItemType ItemType); //빈슬롯이 없으면 -1 반환
 	FVector GetDropLocation();
-	void PrintLogInventoryData();
+
+	FItemData CurrentEquipmentItemData(); // 현재 장착한 무기 아이템 데이터
+	void SetEquipInfo(int8 TypeInventoryIndex, AADUseItem* SpawnItem);
+	void Equip(FItemData ItemData, int8 Index);
+	void UnEquip();
+	void DropItem(FItemData ItemData);
+
+	void OnInventoryInfoUpdate(int32 MassInfo, int32 PriceInfo);
 	void RebuildIndexMap();
+	void OnUseCoolTimeEnd(); //아이템 사용 지연
+	void ServerSideInventoryInitialize();
+	void PrintLogInventoryData();
 
 #pragma endregion
 	
@@ -81,8 +109,14 @@ private:
 	int32 WeightMax;
 
 	uint8 bInventoryWidgetShowed : 1;
+	uint8 bCanUseItem : 1;
 
 	TMap<EItemType, TArray<int8>> InventoryIndexMapByType;
+	UPROPERTY(Replicated)
+	int8 CurrentEquipmentIndex;
+	UPROPERTY(Replicated)
+	TObjectPtr<AADUseItem> CurrentEquipmentInstance;
+	UPROPERTY(Replicated)
 	TArray<int8> InventorySizeByType;
 
 	TObjectPtr<UAllInventoryWidget> InventoryWidgetInstance;
@@ -95,10 +129,14 @@ private:
 public:
 	int16 GetTotalWeight() const { return TotalWeight; }
 	int16 GetTotalPrice() const { return TotalPrice; }
-	const FItemData& GetItemData(FName ItemNameToFind) { return InventoryList.Items[FindItemIndexById(ItemNameToFind)]; };
-	const FItemData& GetEquipmentItemDataByIndex(int8 KeyNum) { return InventoryList.Items[InventoryIndexMapByType[EItemType::Equipment][KeyNum]]; };
-	const FInventoryList& GetInventoryList() { return InventoryList; }
-	const TArray<int8>& GetInventoryIndexesByType(EItemType ItemType) const { return InventoryIndexMapByType[ItemType]; }
-	const TArray<int8>& GetInventorySizeByType() const { return InventorySizeByType; }
+
+	const FItemData& GetItemData(FName ItemNameToFind) { return InventoryList.Items[FindItemIndexByName(ItemNameToFind)]; }; //이름으로 아이템 데이터 반환
+	const FItemData& GetEquipmentItemDataByIndex(int8 KeyNum) { return InventoryList.Items[InventoryIndexMapByType[EItemType::Equipment][KeyNum]]; }; //타입별 인벤토리 슬롯 값으로 아이템 데이터 반환
+
+	const FInventoryList& GetInventoryList() { return InventoryList; } 
+
+	const TArray<int8>& GetInventoryIndexesByType(EItemType ItemType) const { return InventoryIndexMapByType[ItemType]; } //타입별 인벤토리에 저장된 InventoryList 인벤토리 인덱스 배열 반환
+	const TArray<int8>& GetInventorySizeByType() const { return InventorySizeByType; } //인벤토리 사이즈 배열 반환
+
 #pragma endregion
 };
