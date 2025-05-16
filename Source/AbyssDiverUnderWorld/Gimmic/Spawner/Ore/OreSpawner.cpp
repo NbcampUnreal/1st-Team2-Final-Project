@@ -1,5 +1,6 @@
 #include "Gimmic/Spawner/Ore/OreSpawner.h"
 #include "Gimmic/SpawnPoint/SpawnPoint.h"
+#include "Gimmic/SpawnPoint/Ore/OreSpawnPoint.h"
 #include "Interactable/Item/ADOreRock.h"
 
 AOreSpawner::AOreSpawner()
@@ -12,6 +13,7 @@ void AOreSpawner::BeginPlay()
 {
 	Super::BeginPlay();
 
+	GetSpawnPoint(AOreSpawnPoint::StaticClass());
 	Spawn();
 }
 
@@ -32,6 +34,7 @@ void AOreSpawner::Spawn()
 		if (!IsValid(SpawnPoint)) continue;
 		
 		GetWorld()->SpawnActor<AADOreRock>(OreRockClass, SpawnPoint->GetActorLocation(), SpawnPoint->GetActorRotation());
-		SpawnPoint->Destroy();
 	}
+
+	RemoveAllSpawnPoints();
 }
