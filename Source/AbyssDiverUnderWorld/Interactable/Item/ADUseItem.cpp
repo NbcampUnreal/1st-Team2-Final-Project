@@ -52,7 +52,7 @@ void AADUseItem::SetItemInfo(FItemData& ItemInfo, bool bIsEquipMode)
 	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
 	{
 		UDataTableSubsystem* ItemDataTableSubsystem = GI->GetSubsystem<UDataTableSubsystem>();
-		FFADItemDataRow* ItemRow = ItemDataTableSubsystem->GetItemDataByName(ItemInfo.Name);
+		FFADItemDataRow* ItemRow = ItemDataTableSubsystem->GetItemData(ItemInfo.Id);
 		if (ItemRow && ItemRow->SkeletalMesh)
 		{
 			ItemData = ItemInfo;
