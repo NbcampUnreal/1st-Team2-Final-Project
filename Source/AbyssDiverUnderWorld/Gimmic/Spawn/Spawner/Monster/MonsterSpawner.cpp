@@ -1,8 +1,8 @@
-#include "Gimmic/Spawner/Monster/MonsterSpawner.h"
+#include "Gimmic/Spawn/Spawner/Monster/MonsterSpawner.h"
 #include "AbyssDiverUnderWorld.h"
 #include "Character/UnitBase.h"
-#include "Gimmic/SpawnPoint/SpawnPoint.h"
-#include "Gimmic/SpawnPoint/Monster/MonsterSpawnPoint.h"
+#include "Gimmic/Spawn/SpawnPoint/SpawnPoint.h"
+#include "Gimmic/Spawn/SpawnPoint/Monster/MonsterSpawnPoint.h"
 
 AMonsterSpawner::AMonsterSpawner()
 {
@@ -16,7 +16,6 @@ void AMonsterSpawner::BeginPlay()
 
 	GetSpawnPoint(AMonsterSpawnPoint::StaticClass());
 	RemoveInValidMonsterClass();
-	Spawn();
 }
 
 void AMonsterSpawner::Spawn()

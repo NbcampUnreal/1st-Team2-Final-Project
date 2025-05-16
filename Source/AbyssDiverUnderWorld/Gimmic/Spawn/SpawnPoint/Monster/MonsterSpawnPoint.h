@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Gimmic/SpawnPoint/SpawnPoint.h"
+#include "Gimmic/Spawn/SpawnPoint/SpawnPoint.h"
 #include "MonsterSpawnPoint.generated.h"
 
 UCLASS()
