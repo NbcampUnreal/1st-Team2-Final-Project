@@ -30,23 +30,24 @@ void ACurrentZone::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* O
 
         if (UCharacterMovementComponent* Movement = Character->GetCharacterMovement())
         {
-            // 기본값 저장
+            // 속도 정보 저장
             if (!OriginalSpeeds.Contains(Character))
             {
                 OriginalSpeeds.Add(Character, Movement->MaxWalkSpeed);
                 OriginalAccelerations.Add(Character, Movement->MaxAcceleration);
             }
 
-            // 강제 속도 변경 대신 가볍게 Launch 처리
+            // LaunchCharacter로 휘청이는 느낌 부여 (수영 모드 → Falling으로 변경됨)
             FVector LaunchVelocity = PushDirection.GetSafeNormal() * 1000.f;
             Character->LaunchCharacter(LaunchVelocity, true, false);
 
-            // 타이머 시작
+            // 반복 적용 타이머 시작
             if (!GetWorldTimerManager().IsTimerActive(CurrentForceTimer))
             {
                 GetWorldTimerManager().SetTimer(CurrentForceTimer, this, &ACurrentZone::ApplyCurrentForce, 0.05f, true);
             }
 
+            // 로그
             FVector Velocity = Character->GetVelocity();
             float Speed = Velocity.Size();
             float DirDot = !Velocity.IsNearlyZero() ? FVector::DotProduct(Velocity.GetSafeNormal(), PushDirection.GetSafeNormal()) : 0.f;
@@ -69,7 +70,7 @@ void ACurrentZone::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* Oth
             // 속도 정지
             Movement->StopMovementImmediately();
 
-            // 기본값 복원
+            // 기본값 복구
             if (OriginalSpeeds.Contains(Character))
             {
                 Movement->MaxWalkSpeed = OriginalSpeeds[Character];
@@ -81,6 +82,7 @@ void ACurrentZone::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* Oth
                 OriginalAccelerations.Remove(Character);
             }
 
+            // 로그
             FVector Velocity = Character->GetVelocity();
             float Speed = Velocity.Size();
             float DirDot = !Velocity.IsNearlyZero() ? FVector::DotProduct(Velocity.GetSafeNormal(), PushDirection.GetSafeNormal()) : 0.f;
@@ -89,11 +91,21 @@ void ACurrentZone::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* Oth
                 *Character->GetName(), Speed, DirDot);
         }
 
-        // 타이머 정지
         if (AffectedCharacters.Num() == 0)
         {
             GetWorldTimerManager().ClearTimer(CurrentForceTimer);
         }
+
+        // ✅ 0.5초 후 Swimming 모드로 복구
+        FTimerHandle RecoverMovementTimer;
+        GetWorld()->GetTimerManager().SetTimer(RecoverMovementTimer, [Character]()
+            {
+                if (Character && Character->GetCharacterMovement())
+                {
+                    Character->GetCharacterMovement()->SetMovementMode(MOVE_Swimming);
+                    UE_LOG(LogTemp, Log, TEXT("🏊‍♂️ 수영 모드 복구 [%s]"), *Character->GetName());
+                }
+            }, 0.5f, false);
     }
 }
 
@@ -101,23 +113,17 @@ void ACurrentZone::ApplyCurrentForce()
 {
     for (AUnderwaterCharacter* Character : AffectedCharacters)
     {
-        if (!Character || !Character->GetCharacterMovement()) continue;
+        if (!Character || !Character->GetCharacterMovement())
+            continue;
 
         FVector Direction = PushDirection.GetSafeNormal();
-
-
         FVector InputVector = Character->GetLastMovementInputVector().GetSafeNormal();
-        float Dot = FVector::DotProduct(InputVector, Direction);  
+        float Dot = FVector::DotProduct(InputVector, Direction);
 
-    
         if (Dot < -0.1f)
-        {
             continue;
-        }
 
-        float ForceScale = (Dot < 0.2f) ? 0.2f : 0.35f; // 기존 0.1 / 0.2 → 증가
+        float ForceScale = (Dot < 0.2f) ? 0.2f : 0.35f;
         Character->AddMovementInput(Direction, ForceScale);
-
     }
 }
-
