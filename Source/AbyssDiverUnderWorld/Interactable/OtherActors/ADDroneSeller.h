@@ -41,6 +41,9 @@ private:
 public:
 	
 protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction")
+	uint8 bIsHold : 1;
+	
 	UPROPERTY(ReplicatedUsing = OnRep_IsActive, EditAnywhere)
 	uint8 bIsActive : 1;
 	UPROPERTY(ReplicatedUsing = OnRep_CurrentMoney)
@@ -63,6 +66,7 @@ public:
 	int32 GetCurrentMoney() const { return CurrentMoney; }
 	int32 GetTargetMoney() const { return TargetMoney; }
 	virtual UADInteractableComponent* GetInteractableComponent() const override;
+	virtual bool IsHoldMode() const override;
 #pragma endregion
 
 };

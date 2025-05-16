@@ -236,6 +236,9 @@ protected:
 	UPROPERTY()
 	TObjectPtr<class UADInteractableComponent> InteractableComp;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction")
+	uint8 bIsHold : 1;
+
 private:
 
 	UPROPERTY()
@@ -250,6 +253,7 @@ private:
 #pragma region Getters, Setters
 
 	virtual UADInteractableComponent* GetInteractableComponent() const override;
+	virtual bool IsHoldMode() const;
 	bool HasItem(int32 ItemId);
 	bool IsOpened() const;
 

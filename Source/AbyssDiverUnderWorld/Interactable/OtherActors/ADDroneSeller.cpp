@@ -16,6 +16,7 @@ AADDroneSeller::AADDroneSeller()
 	SetReplicateMovement(true); // 위치 상승하는 것 보이도록
 
 	bIsActive = true;
+	bIsHold = false;
 }
 
 // Called when the game starts or when spawned
@@ -114,3 +115,7 @@ UADInteractableComponent* AADDroneSeller::GetInteractableComponent() const
 	return InteractableComp;
 }
 
+bool AADDroneSeller::IsHoldMode() const
+{
+	return bIsHold;
+}

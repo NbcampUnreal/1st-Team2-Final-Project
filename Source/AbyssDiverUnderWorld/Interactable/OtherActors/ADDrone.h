@@ -37,7 +37,6 @@ public:
 
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-
 private:
 	
 #pragma endregion
@@ -46,6 +45,9 @@ private:
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Component")
 	TObjectPtr<UADInteractableComponent> InteractableComp;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction")
+	uint8 bIsHold : 1;
+
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Money")
 	int32 TargetMoney = 1000;
@@ -73,6 +75,7 @@ private:
 #pragma region Getter, Setteer
 public:
 	virtual UADInteractableComponent* GetInteractableComponent() const override;
+	virtual bool IsHoldMode() const override;
 
 #pragma endregion
 

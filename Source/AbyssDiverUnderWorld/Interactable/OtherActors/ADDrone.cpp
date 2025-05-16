@@ -15,6 +15,8 @@ AADDrone::AADDrone()
 	bReplicates = true;
 	SetReplicateMovement(true); // 위치 상승하는 것 보이도록
 	bIsActive = false;
+
+	bIsHold = false;
 }
 
 // Called when the game starts or when spawned
@@ -111,3 +113,7 @@ UADInteractableComponent* AADDrone::GetInteractableComponent() const
 	return InteractableComp;
 }
 
+bool AADDrone::IsHoldMode() const
+{
+	return bIsHold;
+}
