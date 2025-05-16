@@ -119,7 +119,7 @@ void UDataTableSubsystem::ParsePhseGoalDataTable(UADGameInstance* GameInstance)
 		return;
 	}
 
-	UDataTable* PhaseGoalTable = GameInstance->UpgradeDataTable;
+	UDataTable* PhaseGoalTable = GameInstance->PhaseGoalTable;
 	PhaseGoalTable->GetAllRows<FPhaseGoalRow>(TEXT("PhaseGoalTable"), PhaseGoalTableArray);
 
 	PhaseGoalTableMap.Empty(PhaseGoalTableArray.Num());

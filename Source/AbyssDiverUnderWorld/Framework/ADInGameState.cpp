@@ -8,7 +8,7 @@
 AADInGameState::AADInGameState()
 	: SelectedLevelName(EMapName::Max)
 	, TeamCredits(0)
-	, CurrentPhase(0)
+	, CurrentPhase(1)
 	, MaxPhase(3)
 {
 	bReplicates = true;

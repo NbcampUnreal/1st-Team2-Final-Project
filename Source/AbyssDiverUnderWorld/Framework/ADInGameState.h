@@ -54,7 +54,7 @@ protected:
 	int32 TeamCredits;
 
 	UPROPERTY(Replicated, ReplicatedUsing = OnRep_Phase, BlueprintReadOnly)
-	uint8 CurrentPhase = 0;
+	uint8 CurrentPhase;
 
 	UPROPERTY(Replicated, ReplicatedUsing = OnRep_Phase, BlueprintReadOnly)
 	int32 CurrentPhaseGoal = 0;
