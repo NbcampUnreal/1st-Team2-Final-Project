@@ -30,25 +30,25 @@ void UPlayerHUDWidget::BindWidget(APawn* PlayerPawn)
 	if (UStatComponent* StatComponent = PlayerPawn->FindComponentByClass<UStatComponent>())
 	{
 		StatComponent->OnHealthChanged.AddDynamic(this, &UPlayerHUDWidget::UpdateHealthText);
-		UpdateHealthText(StatComponent->GetMaxHealth(), StatComponent->GetCurrentHealth());
+		UpdateHealthText(StatComponent->GetCurrentHealth(), StatComponent->GetMaxHealth());
 	}
 	if (UOxygenComponent* OxygenComponent = PlayerPawn->FindComponentByClass<UOxygenComponent>())
 	{
 		OxygenComponent->OnOxygenLevelChanged.AddDynamic(this, &UPlayerHUDWidget::UpdateOxygenText);
-		UpdateOxygenText(OxygenComponent->GetMaxOxygenLevel(), OxygenComponent->GetOxygenLevel());
+		UpdateOxygenText(OxygenComponent->GetOxygenLevel(), OxygenComponent->GetMaxOxygenLevel());
 	}
 	if (UStaminaComponent* StaminaComponent = PlayerPawn->FindComponentByClass<UStaminaComponent>())
 	{
 		StaminaComponent->OnStaminaChanged.AddDynamic(this, &UPlayerHUDWidget::UpdateStaminaText);
-		UpdateStaminaText(StaminaComponent->GetMaxStamina(), StaminaComponent->GetStamina());
+		UpdateStaminaText(StaminaComponent->GetStamina(), StaminaComponent->GetMaxStamina());
 	}
 }
 
-void UPlayerHUDWidget::UpdateHealthText(int32 MaxHealth, int32 Health)
+void UPlayerHUDWidget::UpdateHealthText(int32 Health, int32 MaxHealth)
 {
 	if (HealthTextBlock)
 	{
-		FText HealthText = FText::Format(FText::FromString(TEXT("{0} / {1}")), FText::AsNumber(Health), FText::AsNumber(MaxHealth));
+		FText HealthText = FText::Format(FText::FromString(TEXT("Health : {0} / {1}")), FText::AsNumber(Health), FText::AsNumber(MaxHealth));
 		HealthTextBlock->SetText(HealthText);
 	}
 	else
@@ -57,11 +57,19 @@ void UPlayerHUDWidget::UpdateHealthText(int32 MaxHealth, int32 Health)
 	}
 }
 
-void UPlayerHUDWidget::UpdateOxygenText(float MaxOxygen, float Oxygen)
+void UPlayerHUDWidget::UpdateOxygenText(float Oxygen, float MaxOxygen)
 {
 	if (OxygenTextBlock)
 	{
-		FText OxygenText = FText::Format(FText::FromString(TEXT("Oxygen : {0} / {1}")), FText::AsNumber(Oxygen), FText::AsNumber(MaxOxygen));
+		FNumberFormattingOptions FormatOptions;
+		FormatOptions.MinimumFractionalDigits = 2;
+		FormatOptions.MaximumFractionalDigits = 2;
+		
+		FText OxygenText = FText::Format(
+			FText::FromString(TEXT("Stamina : {0} / {1}")),
+			FText::AsNumber(Oxygen, &FormatOptions),
+			FText::AsNumber(MaxOxygen, &FormatOptions))
+		;
 		OxygenTextBlock->SetText(OxygenText);
 	}
 	else
@@ -70,11 +78,19 @@ void UPlayerHUDWidget::UpdateOxygenText(float MaxOxygen, float Oxygen)
 	}
 }
 
-void UPlayerHUDWidget::UpdateStaminaText(float MaxStamina, float Stamina)
+void UPlayerHUDWidget::UpdateStaminaText(float Stamina, float MaxStamina)
 {
 	if (StaminaTextBlock)
 	{
-		FText StaminaText = FText::Format(FText::FromString(TEXT("Stamina : {0} / {1}")), FText::AsNumber(Stamina), FText::AsNumber(MaxStamina));
+		FNumberFormattingOptions FormatOptions;
+		FormatOptions.MinimumFractionalDigits = 2;
+		FormatOptions.MaximumFractionalDigits = 2;
+		
+		FText StaminaText = FText::Format(
+			FText::FromString(TEXT("Stamina : {0} / {1}")),
+			FText::AsNumber(Stamina, &FormatOptions),
+			FText::AsNumber(MaxStamina, &FormatOptions))
+		;
 		StaminaTextBlock->SetText(StaminaText);
 	}
 	else

@@ -53,17 +53,17 @@ void UStatComponent::TakeDamage(const float DamageAmount)
 	CurrentHealth -= DamageAmount;
 	CurrentHealth = FMath::Clamp(CurrentHealth, 0, MaxHealth);
 
-	OnHealthChanged.Broadcast(MaxHealth, CurrentHealth);
+	OnHealthChanged.Broadcast(CurrentHealth, MaxHealth);
 }
 
 void UStatComponent::OnRep_MaxHealth()
 {
-	OnHealthChanged.Broadcast(MaxHealth, CurrentHealth);
+	OnHealthChanged.Broadcast(CurrentHealth, MaxHealth);
 }
 
 void UStatComponent::OnRep_CurrentHealth()
 {
-	OnHealthChanged.Broadcast(MaxHealth, CurrentHealth);
+	OnHealthChanged.Broadcast(CurrentHealth, MaxHealth);
 }
 
 void UStatComponent::RegenHealth()
@@ -92,7 +92,7 @@ void UStatComponent::RegenHealth()
 		if (OldHealth != NewHealth)
 		{
 			CurrentHealth = NewHealth;
-			OnHealthChanged.Broadcast(MaxHealth, CurrentHealth);
+			OnHealthChanged.Broadcast(CurrentHealth, MaxHealth);
 		}
 	}
 }

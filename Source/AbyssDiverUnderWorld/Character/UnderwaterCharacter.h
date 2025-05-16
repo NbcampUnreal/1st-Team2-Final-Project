@@ -87,7 +87,7 @@ protected:
 	void M_StopCaptureState();
 	void M_StopCaptureState_Implementation();
 
-	/** 무게에 따라 현재 속도를 갱신한다. */
+	/** 현재 상태 속도 갱신.(무게, Sprint) */
 	UFUNCTION()
 	void AdjustSpeed();
 
@@ -127,6 +127,18 @@ protected:
 
 	/** 레이더 함수. 미구현*/
 	void Radar(const FInputActionValue& InputActionValue);
+
+	/** 재장전 함수 */
+	void Reload(const FInputActionValue& InputActionValue);
+
+	/** 1번 슬롯 장착 함수 */
+	void EquipSlot1(const FInputActionValue& InputActionValue);
+
+	/** 2번 슬롯 장착 함수 */
+	void EquipSlot2(const FInputActionValue& InputActionValue);
+
+	/** 3번 슬롯 장착 함수 */
+	void EquipSlot3(const FInputActionValue& InputActionValue);
 
 	/** 3인칭 디버그 카메라 활성화 설정 */
 	void SetDebugCameraMode(bool bDebugCameraEnable);
@@ -208,6 +220,22 @@ private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> RadarAction;
 
+	/** 재장전 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> ReloadAction;
+
+	/** 1번 슬롯 장착 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> EquipSlot1Action;
+
+	/** 2번 슬롯 장착 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> EquipSlot2Action;
+
+	/** 3번 슬롯 장착 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> EquipSlot3Action;
+	
 	/** 게임에 사용될 1인칭 Camera Component */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UCameraComponent> FirstPersonCameraComponent;
@@ -232,7 +260,7 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UStaminaComponent> StaminaComponent;
 
-	/** 캐릭터 출혈 시를 시뮬레이션을 하는 Noise Emitter Component */
+	/** 캐릭터 출혈을 시뮬레이션을 하는 Noise Emitter Component */
 	UPROPERTY()
 	TObjectPtr<class UPawnNoiseEmitterComponent> NoiseEmitterComponent;
 	
@@ -244,7 +272,12 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UShopInteractionComponent> ShopInteractionComponent;
 
-	TWeakObjectPtr<class UADInventoryComponent> InventoryComponent;
+	/** 장착 아이템 효과 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UEquipUseComponent> EquipUseComponent;
+
+	UPROPERTY()
+	TObjectPtr<class UADInventoryComponent> InventoryComponent;
 	
 #pragma endregion
 
@@ -259,6 +292,9 @@ public:
 
 	/** 캐릭터의 상태를 반환 */
 	FORCEINLINE ECharacterState GetCharacterState() const { return CharacterState; }
+
+	/** 장착 아이템 컴포넌트 반환 */
+	FORCEINLINE UEquipUseComponent* GetEquipUseComponent() const { return EquipUseComponent; }
 
 	/** 현재 캐릭터가 달리기 상태인지를 반환 */
 	FORCEINLINE bool IsSprinting() const;
