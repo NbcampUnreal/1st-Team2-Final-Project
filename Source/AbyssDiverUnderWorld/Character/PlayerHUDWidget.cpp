@@ -29,7 +29,8 @@ void UPlayerHUDWidget::BindWidget(APawn* PlayerPawn)
 	// Bind 을 외부에서 하는 것을 고려할 것. UI와 Data Component의 의존성을 줄일 필요가 있어 보인다.
 	if (UStatComponent* StatComponent = PlayerPawn->FindComponentByClass<UStatComponent>())
 	{
-		// StatComponent->OnHealthChanged.AddDynamic(this, &UPlayerHUDWidget::UpdateHealthText);
+		StatComponent->OnHealthChanged.AddDynamic(this, &UPlayerHUDWidget::UpdateHealthText);
+		UpdateHealthText(StatComponent->GetMaxHealth(), StatComponent->GetCurrentHealth());
 	}
 	if (UOxygenComponent* OxygenComponent = PlayerPawn->FindComponentByClass<UOxygenComponent>())
 	{
@@ -43,7 +44,7 @@ void UPlayerHUDWidget::BindWidget(APawn* PlayerPawn)
 	}
 }
 
-void UPlayerHUDWidget::UpdateHealthText(float MaxHealth, float Health)
+void UPlayerHUDWidget::UpdateHealthText(int32 MaxHealth, int32 Health)
 {
 	if (HealthTextBlock)
 	{

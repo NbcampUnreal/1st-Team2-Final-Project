@@ -29,6 +29,7 @@ protected:
 #pragma region Method
 public:
 	void SetVisionAngle(float& Angle);
+	bool IsStateSame(EBossState State);
 	EPathFollowingRequestResult::Type MoveToActorWithRadius();
 	EPathFollowingRequestResult::Type MoveToLocationWithRadius(const FVector& Location);
 	
@@ -79,6 +80,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Radius")
 	float MoveToLocationAcceptanceRadius;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AI|Perception")
+	uint8 bIsSightDetectionPossible : 1;
 
 private:
 	static const FName BossStateKey;

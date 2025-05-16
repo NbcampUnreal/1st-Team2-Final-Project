@@ -50,6 +50,7 @@ struct FFADItemDataRow;
 struct FShopItemIdList;
 
 enum class EShopCategoryTab : uint8;
+enum class EUpgradeType : uint8;
 
 #pragma region FastArraySerializer
 
@@ -167,12 +168,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Shop")
 	void CloseShop(AUnderwaterCharacter* Requester);
 
-	EBuyResult BuyItem(uint8 ItemId, AUnderwaterCharacter* Buyer);
+	EBuyResult BuyItem(uint8 ItemId, uint8 Quantity, AUnderwaterCharacter* Buyer);
 	ESellResult SellItem(uint8 ItemId, AUnderwaterCharacter* Seller);
 
 	void AddItems(const TArray<uint8>& Ids, EShopCategoryTab TabType);
 	void AddItemToList(uint8 ItemId, EShopCategoryTab TabType);
 	void RemoveItemToList(uint8 ItemId, EShopCategoryTab TabType);
+
+	void InitUpgradeView();
 
 	// 테스트용, 캐릭터의 Interact를 대신함.
 	UFUNCTION(BlueprintCallable, Category = "Shop", CallInEditor)
@@ -195,9 +198,10 @@ private:
 	void OnSlotEntryClicked(int32 ClickedSlotIndex);
 
 	UFUNCTION()
-	void OnBuyButtonClicked();
+	void OnBuyButtonClicked(int32 Quantity);
 
 	void OnCloseButtonClicked();
+	void OnUpgradeSlotEntryClicked(int32 ClickedSlotIndex);
 
 #pragma endregion
 
@@ -234,7 +238,11 @@ protected:
 
 private:
 
+	UPROPERTY()
+	TArray<uint8> CachedUpgradeGradeMap;
+
 	int32 CurrentSelectedItemId = INDEX_NONE;
+	EUpgradeType CurrentSelectedUpgradeType;
 	uint8 bIsOpened : 1;
 
 #pragma endregion

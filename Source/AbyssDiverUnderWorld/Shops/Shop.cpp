@@ -1,19 +1,25 @@
-#include "Shops/Shop.h"
+Ôªø#include "Shops/Shop.h"
 
 #include "Character/UnitBase.h"
+#include "Character/UnderwaterCharacter.h"
+#include "Character/UpgradeComponent.h"
+
 #include "Shops/ShopWidgets/ShopCategoryTabWidget.h"
 #include "Shops/ShopWidgets/ShopWidget.h"
 #include "Shops/ShopItemEntryData.h"
 #include "Shops/ShopWidgets/ShopElementInfoWidget.h"
 #include "Shops/ShopWidgets/ShopItemSlotWidget.h"
-#include "AbyssDiverUnderWorld.h"
-#include "Character/UnderwaterCharacter.h"
 #include "ShopInteractionComponent.h"
+
+#include "AbyssDiverUnderWorld.h"
 #include "Framework/ADPlayerState.h"
 #include "Inventory/ADInventoryComponent.h"
 #include "Subsystems/DataTableSubsystem.h"
 
+#include "DataRow/UpgradeDataRow.h"
 #include "DataRow/FADItemDataRow.h"
+
+
 #include "Net/UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -145,6 +151,7 @@ AShop::AShop()
 	InteractableComp = CreateDefaultSubobject<UADInteractableComponent>(TEXT("InteractableComp"));
 
 	bIsOpened = false;
+	CurrentSelectedUpgradeType = EUpgradeType::Max;
 }
 
 void AShop::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -176,7 +183,7 @@ void AShop::Interact_Implementation(AActor* InstigatorActor)
 		return;
 	}
 
-	// ƒ≥∏Ø≈Õ∑Œ∫Œ≈Õ ƒƒ∆˜≥Õ∆Æ Get, ≥™¡ﬂø° Getter∑Œ ∞°¡Æø»
+	// Ï∫êÎ¶≠ÌÑ∞Î°úÎ∂ÄÌÑ∞ Ïª¥Ìè¨ÎÑåÌä∏ Get, ÎÇòÏ§ëÏóê GetterÎ°ú Í∞ÄÏ†∏Ïò¥
 	UShopInteractionComponent* ShopInteractionComp = InteractingCharacter->FindComponentByClass<UShopInteractionComponent>();
 	if (ShopInteractionComp == nullptr)
 	{
@@ -200,10 +207,11 @@ void AShop::OpenShop(AUnderwaterCharacter* Requester)
 		return;
 	}
 
+	InitUpgradeView();
 	ShopWidget->AddToViewport();
 
 	APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
-	PC->SetInputMode(FInputModeGameAndUI());
+	PC->SetInputMode(FInputModeUIOnly());
 	PC->SetShowMouseCursor(true);
 	bIsOpened = true;
 }
@@ -228,7 +236,7 @@ void AShop::CloseShop(AUnderwaterCharacter* Requester)
 	bIsOpened = false;
 }
 
-EBuyResult AShop::BuyItem(uint8 ItemId, AUnderwaterCharacter* Buyer)
+EBuyResult AShop::BuyItem(uint8 ItemId, uint8 Quantity, AUnderwaterCharacter* Buyer)
 {
 	if (HasAuthority() == false)
 	{
@@ -236,7 +244,7 @@ EBuyResult AShop::BuyItem(uint8 ItemId, AUnderwaterCharacter* Buyer)
 		return EBuyResult::HasNoAuthority;
 	}
 
-	/*if (µ∑¿Ã æ¯¿∏∏È)
+	/*if (ÎèàÏù¥ ÏóÜÏúºÎ©¥)
 	{
 		return EBuyResult::NotEnoughMoney;
 	}*/
@@ -267,13 +275,13 @@ EBuyResult AShop::BuyItem(uint8 ItemId, AUnderwaterCharacter* Buyer)
 	ItemData.Mass = ItemDataRow->Weight;
 	ItemData.Name = ItemDataRow->Name;
 	ItemData.Price = ItemDataRow->Price;
-	ItemData.Quantity = ItemDataRow->Quantity;
+	ItemData.Quantity = Quantity;
 	ItemData.Thumbnail = ItemDataRow->Thumbnail;
 
 	PS->GetInventory()->AddInventoryItem(ItemData);
 
-	// µ∑ ¬˜∞® ∑Œ¡˜
-	// ¿Œ∫•≈‰∏Æø° æ∆¿Ã≈€ ≥÷±‚
+	// Îèà Ï∞®Í∞ê Î°úÏßÅ
+	// Ïù∏Î≤§ÌÜ†Î¶¨Ïóê ÏïÑÏù¥ÌÖú ÎÑ£Í∏∞
 	LOGV(Log, TEXT("Buying Item Succeeded : %s"), *ItemDataRow->Name.ToString());
 	return EBuyResult::Succeeded;
 }
@@ -286,13 +294,13 @@ ESellResult AShop::SellItem(uint8 ItemId, AUnderwaterCharacter* Seller)
 		return ESellResult::HasNoAuthority;
 	}
 
-	/*if (æ∆¿Ã≈€ æ» ∞Æ∞Ì ¿÷¿∏∏È)
+	/*if (ÏïÑÏù¥ÌÖú Ïïà Í∞ñÍ≥† ÏûàÏúºÎ©¥)
 	{
 		return ESellResult::NotExistItem;
 	}*/
 
-	// µ∑ √ﬂ∞°
-	// ¿Œ∫•≈‰∏Æø°º≠ æ∆¿Ã≈€ ªË¡¶
+	// Îèà Ï∂îÍ∞Ä
+	// Ïù∏Î≤§ÌÜ†Î¶¨ÏóêÏÑú ÏïÑÏù¥ÌÖú ÏÇ≠Ï†ú
 
 	return ESellResult::Succeeded;
 }
@@ -338,7 +346,7 @@ void AShop::AddItemToList(uint8 ItemId, EShopCategoryTab TabType)
 		SlotIndex = ShopEquipmentItemIdList.IdList.Num() - 1;
 		break;
 	case EShopCategoryTab::Upgrade:
-		LOGV(Error, TEXT("Upgrade Tab is not Supported Currently"));
+		LOGV(Error, TEXT("Can't Add Item to Upgrade Tab"));
 		return;
 	case EShopCategoryTab::Max:
 		check(false);
@@ -361,18 +369,18 @@ void AShop::AddItemToList(uint8 ItemId, EShopCategoryTab TabType)
 	}
 
 	UShopItemEntryData* EntryData = NewObject<UShopItemEntryData>();
-	EntryData->Init(SlotIndex, ItemDataRow->Thumbnail, ItemDataRow->Description); // ¿”Ω√
+	EntryData->Init(SlotIndex, ItemDataRow->Thumbnail, ItemDataRow->Description); // ÏûÑÏãú
 	EntryData->OnEntryUpdatedFromDataDelegate.AddUObject(this, &AShop::OnSlotEntryWidgetUpdated);
 
 	ShopWidget->AddItem(EntryData, TabType);
 
 	if (TabType == EShopCategoryTab::Consumable)
 	{
-		LOGVN(Error, TEXT("ItemAdded to Consumable Tab, Index : %d"), SlotIndex);
+		LOGVN(Log, TEXT("ItemAdded to Consumable Tab, Index : %d"), SlotIndex);
 	}
 	else
 	{
-		LOGVN(Error, TEXT("ItemAdded to Equipment Tab, Index : %d"), SlotIndex);
+		LOGVN(Log, TEXT("ItemAdded to Equipment Tab, Index : %d"), SlotIndex);
 	}
 	
 }
@@ -402,7 +410,7 @@ void AShop::RemoveItemToList(uint8 ItemId, EShopCategoryTab TabType)
 		RemovedIndex = ShopEquipmentItemIdList.Remove(ItemId);
 		break;
 	case EShopCategoryTab::Upgrade:
-		LOGV(Error, TEXT("Upgrade Tab is not Supported Currently"));
+		LOGV(Error, TEXT("Can't Remove Item From Upgrade Tab"));
 		break;
 	case EShopCategoryTab::Max:
 		check(false);
@@ -418,6 +426,99 @@ void AShop::RemoveItemToList(uint8 ItemId, EShopCategoryTab TabType)
 	}
 
 	ShopWidget->RemoveItem(RemovedIndex, TabType);
+}
+
+void AShop::InitUpgradeView()
+{
+	APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+
+	AADPlayerState* PS = PC->GetPlayerState<AADPlayerState>();
+	if (PS == nullptr)
+	{
+		LOGV(Error, TEXT("PS == nullptr"));
+		return;
+	}
+
+	// ÎÇòÏ§ëÏóê GetÏúºÎ°ú ÎåÄÏ≤¥
+	UUpgradeComponent* UpgradeComp = PS->GetUpgradeComp();
+	if (UpgradeComp == nullptr)
+	{
+		LOGV(Error, TEXT("UpgradeComp == nullptr"));
+		return;
+	}
+
+	UEnum* UpgradeTypeEnum = StaticEnum<EUpgradeType>();
+	if (UpgradeTypeEnum == nullptr)
+	{
+		LOGV(Error, TEXT("Cant Find Enum"));
+		return;
+	}
+
+	UDataTableSubsystem* DataTableSubsystem = GetGameInstance()->GetSubsystem<UDataTableSubsystem>();
+	if (DataTableSubsystem == nullptr)
+	{
+		LOGV(Error, TEXT("DataTableSubsystem == nullptr"));
+		return;
+	}
+
+	// ÎßàÏßÄÎßâ Í∞íÏùÄ Ìï≠ÏÉÅ EUpgradeType_MAXÏù¥ ÏûêÎèôÏÉùÏÑ±ÎêúÎã§Í≥† Ìï®.(ÏÑ†Ïñ∏Ìïú MAXÎ•º ÎßêÌïòÎäîÍ≤å ÏïÑÎãò)
+	int32 EnumCount = UpgradeTypeEnum->NumEnums() - 1;
+
+	if (CachedUpgradeGradeMap.Num() != EnumCount)
+	{
+		CachedUpgradeGradeMap.Init(-1, EnumCount);
+	}
+
+	bool bHasChanged = false;
+
+	TArray<TObjectPtr<UShopItemEntryData>>& UpgradeTabEntryDataList = ShopWidget->GetUpgradeTabEntryDataList();
+	if (UpgradeTabEntryDataList.Num() <= EnumCount)
+	{
+		UpgradeTabEntryDataList.SetNum(EnumCount);
+	}
+
+	LOGV(Error, TEXT("Enumcount : %d"), EnumCount);
+	for (int32 i = 0; i < EnumCount - 1; ++i) // -1ÏùÄ MAX Ï†úÏô∏
+	{
+		EUpgradeType UpgradeType = EUpgradeType(i);
+		uint8 Grade = UpgradeComp->GetCurrentGrade(UpgradeType);
+
+		if (Grade == 0)
+		{
+			LOGVN(Error, TEXT("Weird Grade Detected, Type : %d"), UpgradeType);
+			return;
+		}
+
+		if (CachedUpgradeGradeMap[i] == Grade)
+		{
+			LOGV(Log, TEXT("UpgradeState : UpgradeType(%d) - Grade(%d)"), UpgradeType, Grade);
+			continue;
+		}
+		LOGV(Log, TEXT("UpgradeState(Renewed) : UpgradeType(%d) - Grade(%d)"), UpgradeType, Grade);
+		CachedUpgradeGradeMap[i] = Grade;
+
+		FUpgradeDataRow* UpgradeDataRow = DataTableSubsystem->GetUpgradeData(UpgradeType, Grade);
+
+		UShopItemEntryData* UpgradeEntryData = NewObject<UShopItemEntryData>();
+		UpgradeEntryData->Init(i, nullptr, FString(TEXT("Temp Tooltip")));
+		UpgradeEntryData->OnEntryUpdatedFromDataDelegate.AddUObject(this, &AShop::OnSlotEntryWidgetUpdated);
+		UpgradeTabEntryDataList[i] = UpgradeEntryData;
+
+		bHasChanged = true;
+	}
+
+	if (bHasChanged == false)
+	{
+		return;
+	}
+
+	if (ShopWidget->GetCurrentActivatedTab() != EShopCategoryTab::Upgrade)
+	{
+		return;
+	}
+
+	ShopWidget->RefreshItemView();
+	OnUpgradeSlotEntryClicked(int32(CurrentSelectedUpgradeType));
 }
 
 void AShop::Interact_Test(AActor* InstigatorActor)
@@ -482,6 +583,11 @@ void AShop::OnShopItemListChanged(const FShopItemListChangeInfo& Info)
 		return;
 	}
 
+	if (Info.ShopTab >= EShopCategoryTab::Upgrade)
+	{
+		return;
+	}
+
 	UShopItemEntryData* EntryData = nullptr;
 	FFADItemDataRow* ItemDataRow = GetGameInstance()->GetSubsystem<UDataTableSubsystem>()->GetItemData(Info.ItemIdAfter);
 	if (ItemDataRow == nullptr)
@@ -495,7 +601,7 @@ void AShop::OnShopItemListChanged(const FShopItemListChangeInfo& Info)
 	case EShopItemChangeType::Added:
 
 		EntryData = NewObject<UShopItemEntryData>();
-		EntryData->Init(Info.ShopIndex, ItemDataRow->Thumbnail, ItemDataRow->Description); // ¿”Ω√
+		EntryData->Init(Info.ShopIndex, ItemDataRow->Thumbnail, ItemDataRow->Description); // ÏûÑÏãú
 		EntryData->OnEntryUpdatedFromDataDelegate.AddUObject(this, &AShop::OnSlotEntryWidgetUpdated);
 		
 		ShopWidget->AddItem(EntryData, Info.ShopTab);
@@ -521,7 +627,6 @@ void AShop::OnShopItemListChanged(const FShopItemListChangeInfo& Info)
 void AShop::OnSlotEntryWidgetUpdated(UShopItemSlotWidget* SlotEntryWidget)
 {
 	SlotEntryWidget->OnShopItemSlotWidgetClickedDelegate.BindUObject(this, &AShop::OnSlotEntryClicked);
-	LOG(TEXT("%s bind Finc"), *SlotEntryWidget->GetName());
 }
 
 void AShop::OnSlotEntryClicked(int32 ClickedSlotIndex)
@@ -545,7 +650,8 @@ void AShop::OnSlotEntryClicked(int32 ClickedSlotIndex)
 		ItemId = ShopEquipmentItemIdList.IdList[ClickedSlotIndex].Id;
 		break;
 	case EShopCategoryTab::Upgrade:
-		LOGV(Error, TEXT("Upgrade is Not Supported Tab Type"));
+		LOGV(Error, TEXT("UpgradeSlot Click!, Index : %d"), ClickedSlotIndex);
+		OnUpgradeSlotEntryClicked(ClickedSlotIndex);
 		return;
 	case EShopCategoryTab::Max:
 		check(false);
@@ -565,15 +671,41 @@ void AShop::OnSlotEntryClicked(int32 ClickedSlotIndex)
 	USkeletalMesh* ItemMesh = ItemDataRow->SkeletalMesh;
 
 	ShopWidget->ShowItemInfos(ItemMesh, ItemDataRow->Description, ItemDataRow->Description);
-	LOG(TEXT("Showing Item Infos..., id : %d"), ItemId);
+	LOGV(Log, TEXT("Showing Item Infos..., id : %d"), ItemId);
 	CurrentSelectedItemId = ItemId;
 }
 
-void AShop::OnBuyButtonClicked()
+void AShop::OnBuyButtonClicked(int32 Quantity)
 {
-	// º≠πˆø° ±∏∏≈ ø‰√ª
-	// æ∆∏∂ «√∑π¿ÃæÓ ƒ≥∏Ø≈Õ≥™ ƒ¡∆Æ∑—∑Øø° ∞¸∑√ ƒƒ∆˜≥Õ∆Æ∏¶ ∏∏µÈ∞Ì Server RPC Ω˜º≠ ø‰√ª«ÿæﬂ «œ¡ˆ æ ¿ª±Ó
-	// ªÛ¡°¿ª ø≠∏È æ∆∏∂ ±◊¬  ƒƒ∆˜≥Õ∆Æø° ªÛ¡°¿ª ƒ≥ΩÃ«ÿµŒ∞Ì(º≠πˆø°º≠) Buy¥©∏£∏È RPC∞° ø¿¥œ±Ó ±◊∂ß ƒ≥ΩÃ«— ªÛ¡°ø°º≠ æ∆¿Ã≈€ ±∏∏≈ Ω√µµ 
+	EShopCategoryTab CurrentTab = ShopWidget->GetCurrentActivatedTab();
+
+	if (CurrentTab == EShopCategoryTab::Upgrade)
+	{
+		APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+		AADPlayerState* PS = PC->GetPlayerState<AADPlayerState>();
+		if (PS == nullptr)
+		{
+			LOGV(Error, TEXT("PS == nullptr"));
+			return;
+		}
+
+		UUpgradeComponent* UpgradeComp = PS->GetUpgradeComp();
+		if (UpgradeComp == nullptr)
+		{
+			LOGV(Error, TEXT("UpgradeComp == nullptr"));
+			return;
+		}
+
+		bool bIsMaxGrade = UpgradeComp->IsMaxGrade(CurrentSelectedUpgradeType);
+		if (bIsMaxGrade)
+		{
+			LOGV(Log, TEXT("This Upgrade Type Has Reached to Max Level"));
+			return;
+		}
+
+		UpgradeComp->S_RequestUpgrade(CurrentSelectedUpgradeType);
+		return;
+	}
 
 	AUnderwaterCharacter* BuyingCharacter = Cast<AUnderwaterCharacter>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetPawn());
 	if (BuyingCharacter == nullptr)
@@ -589,7 +721,7 @@ void AShop::OnBuyButtonClicked()
 		return;
 	}
 
-	ShopInteractionComp->S_RequestBuyItem(CurrentSelectedItemId);
+	ShopInteractionComp->S_RequestBuyItem(CurrentSelectedItemId, Quantity);
 }
 
 void AShop::OnCloseButtonClicked()
@@ -602,6 +734,49 @@ void AShop::OnCloseButtonClicked()
 	}
 
 	CloseShop(Requester);
+}
+
+void AShop::OnUpgradeSlotEntryClicked(int32 ClickedSlotIndex)
+{
+	APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+	AADPlayerState* PS = PC->GetPlayerState<AADPlayerState>();
+	if (PS == nullptr)
+	{
+		LOGV(Error, TEXT("PS == nullptr"));
+		return;
+	}
+
+	UUpgradeComponent* UpgradeComp = PS->GetUpgradeComp();
+	if (UpgradeComp == nullptr)
+	{
+		LOGV(Error, TEXT("UpgradeComp == nullptr"));
+		return;
+	}
+
+	EUpgradeType UpgradeType = EUpgradeType(ClickedSlotIndex);
+	
+	uint8 CurrentGrade = UpgradeComp->GetCurrentGrade(UpgradeType);
+	if (CurrentGrade == 0)
+	{
+		LOGV(Log, TEXT("Weird Upgrade Type Detected : %d"), UpgradeType);
+		return;
+	}
+
+	UDataTableSubsystem* DataTableSubSystem = GetGameInstance()->GetSubsystem<UDataTableSubsystem>();
+	if (DataTableSubSystem == nullptr)
+	{
+		LOGV(Error, TEXT("DataTableSubSystem == nullptr"));
+		return;
+	}
+
+	bool bIsMaxGrade = UpgradeComp->IsMaxGrade(UpgradeType);
+
+	FUpgradeDataRow* UpgradeDataRow = DataTableSubSystem->GetUpgradeData(UpgradeType, CurrentGrade);
+	int32 Price = bIsMaxGrade ? 0 : DataTableSubSystem->GetUpgradeData(UpgradeType, CurrentGrade + 1)->Price;
+	ShopWidget->ShowUpgradeInfos(nullptr, CurrentGrade, bIsMaxGrade, Price, TEXT("ÏûÑÏãú ÌÖçÏä§Ìä∏"));
+	CurrentSelectedUpgradeType = UpgradeType;
+
+	LOGV(Log, TEXT("UpgradeViewSlotClicked, Index : %d"), ClickedSlotIndex);
 }
 
 bool AShop::HasItem(int32 ItemId)

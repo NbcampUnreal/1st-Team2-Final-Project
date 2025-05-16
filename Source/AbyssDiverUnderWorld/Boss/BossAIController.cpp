@@ -39,13 +39,16 @@ ABossAIController::ABossAIController()
 	bIsDetectedStatePossible = true;
 	AccumulatedTime = 0.0f;
 	DetectedStateInterval = 20.0f;
+
+	// 시야 감지 가능한 상태로 설정
+	bIsSightDetectionPossible = true;
 }
 
 void ABossAIController::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (IsValid(AIPerceptionComponent))
+	if (IsValid(AIPerceptionComponent) && bIsSightDetectionPossible)
 	{
 		AIPerceptionComponent->OnTargetPerceptionUpdated.AddDynamic(this, &ABossAIController::OnTargetPerceptionUpdated);
 	}
@@ -70,6 +73,11 @@ void ABossAIController::SetVisionAngle(float& Angle)
 	UAISenseConfig_Sight* SightConfigInstance = Cast<UAISenseConfig_Sight>(AIPerceptionComponent->GetSenseConfig(UAISense::GetSenseID(UAISense_Sight::StaticClass())));
 	SightConfigInstance->PeripheralVisionAngleDegrees = Angle;
 	AIPerceptionComponent->ConfigureSense(*SightConfigInstance);
+}
+
+bool ABossAIController::IsStateSame(EBossState State)
+{
+	return (GetBlackboardComponent()->GetValueAsEnum(BossStateKey) == static_cast<uint8>(State));
 }
 
 void ABossAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)

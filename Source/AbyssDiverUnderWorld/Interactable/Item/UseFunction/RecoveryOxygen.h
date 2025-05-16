@@ -3,13 +3,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "UObject/NoExportTypes.h"
-#include "Interface/IADUsable.h"
+#include "UseStrategy.h"
 #include "RecoveryOxygen.generated.h"
 
 
 UCLASS()
-class ABYSSDIVERUNDERWORLD_API URecoveryOxygen : public UObject, public IUsable
+class ABYSSDIVERUNDERWORLD_API URecoveryOxygen : public UUseStrategy
 {
 	GENERATED_BODY()
 	

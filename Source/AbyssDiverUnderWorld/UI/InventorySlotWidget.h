@@ -21,6 +21,7 @@ class ABYSSDIVERUNDERWORLD_API UInventorySlotWidget : public UUserWidget
 #pragma region Method
 public:
 	virtual FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
+	virtual FReply NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 	virtual void NativeOnDragDetected(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent, UDragDropOperation*& Operation) override;
 	virtual bool NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation);
 	UFUNCTION(BlueprintCallable)
@@ -33,6 +34,8 @@ public:
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TSubclassOf<UDragPreviewWidget> DragPreviewWidgetClass;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TObjectPtr<UTexture2D> EmptySlotTexture;
 private:
 	int8 SlotIndex;
 	EItemType SlotType;

@@ -21,7 +21,7 @@ public:
 	void ShakeWorldCamera(TSubclassOf<UCameraShakeBase> CameraShakeClass);
 
 	/** 보스에게 공격당한 플레이어의 카메라만 Shaking 하는 함수 */
-	void ShakePlayerCamera(AUnderwaterCharacter* PlayerCharacter);
+	void ShakePlayerCamera(AUnderwaterCharacter* PlayerCharacter, float& Scale);
 
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Camera")
