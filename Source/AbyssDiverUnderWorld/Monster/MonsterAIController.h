@@ -22,13 +22,13 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaSeconds) override;
 	virtual void OnPossess(APawn* InPawn) override;
 
 #pragma region Method
 protected:
 	void LoadSightDataFromTable();
 	void InitializePatrolPoint();
-	void HandleForgetPlayer();
 
 	UFUNCTION()
 	void OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus); // Perception Callback Method
@@ -59,19 +59,9 @@ protected:
 	FName MonsterID;
 
 private:
-	UPROPERTY(EditDefaultsOnly, Category = "AI", meta = (AllowPrivateAccess = "true"))
-	float ForgetDuration = 5.0f;
-
-	FTimerHandle ForgetPlayerTimerHandle;
-#pragma endregion
-
-#pragma region Getter, Setter
-public:
-	float GetForgetDuration() const
-	{
-		return ForgetDuration;
-	}
-	void SetForgetDuration(float Duration);
+	uint8 bIsLosingTarget : 1;
+	float LostTargetTime;
 
 #pragma endregion
+
 };
