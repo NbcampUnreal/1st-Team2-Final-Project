@@ -16,6 +16,7 @@ public:
 
 #pragma region Method
 public:
+	virtual void PostInitializeComponents() override;
 	virtual void BeginPlay() override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
@@ -38,7 +39,6 @@ protected:
 
 	UFUNCTION()
 	void OnRep_PhaseGoal();
-	
 
 private:
 #pragma endregion
@@ -73,6 +73,11 @@ public:
 
 	void SetPhase(uint8 InPhase) { CurrentPhase = InPhase; }
 	uint8 GetPhase() const { return CurrentPhase; }
+
+	uint8 GetMaxPhase() const { return MaxPhase; }
+
+	void SetCurrentPhaseGoal(int32 NewPhaseGoal) { CurrentPhaseGoal = NewPhaseGoal; }
+	int32 GetCurrentPhaseGoal() const { return CurrentPhaseGoal; }
 
 	void SetSelectedLevel(EMapName LevelName) { SelectedLevelName = LevelName; }
 	EMapName GetSelectedLevel() const { return SelectedLevelName; }

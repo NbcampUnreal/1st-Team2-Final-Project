@@ -48,6 +48,7 @@ void AADCampGameMode::TravelToInGameLevel()
 			LevelLoad = TEXT("DefaultInGameLevel");
 			return;
 		}
+		ADInGameState->SendDataToGameInstance();
 		//input spot level name
 		FString TravelURL = FString::Printf(TEXT("/Game/_AbyssDiver/Maps/Prototypes_Test/KY/%s?listen"), *LevelLoad);
 		GetWorld()->ServerTravel(TravelURL);

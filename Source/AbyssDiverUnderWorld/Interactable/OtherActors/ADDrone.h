@@ -48,9 +48,6 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction")
 	uint8 bIsHold : 1;
 
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Money")
-	int32 TargetMoney = 1000;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Money")
 	int32 AccumulatedMoney = 0;
 	UPROPERTY(ReplicatedUsing = OnRep_IsActive, EditAnywhere, BlueprintReadWrite)
@@ -66,6 +63,9 @@ public:
 
 protected:
 
+	// 드론에 해당하는 Phase를 나타내는 숫자
+	UPROPERTY(EditAnywhere)
+	int32 DronePhaseNumber = 0;
 
 private:
 	FTimerHandle DestroyHandle;
@@ -76,6 +76,8 @@ private:
 public:
 	virtual UADInteractableComponent* GetInteractableComponent() const override;
 	virtual bool IsHoldMode() const override;
+
+	int32 GetDronePhaseNumber() const { return DronePhaseNumber; }
 
 #pragma endregion
 

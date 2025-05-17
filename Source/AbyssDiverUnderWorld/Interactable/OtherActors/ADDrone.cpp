@@ -54,7 +54,6 @@ void AADDrone::Interact_Implementation(AActor* InstigatorActor)
 	// 차액 계산
 	int32 Diff = CurrentSeller->GetCurrentMoney() - CurrentSeller->GetTargetMoney();
 
-
 	if (Diff > 0)
 	{
 		if (AADInGameState* GS = GetWorld()->GetGameState<AADInGameState>())

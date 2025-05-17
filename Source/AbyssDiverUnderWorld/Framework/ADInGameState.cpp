@@ -4,6 +4,9 @@
 #include "Net/UnrealNetwork.h"
 #include "AbyssDiverUnderWorld.h"
 #include "DataRow/PhaseGoalRow.h"
+#include "ADPlayerState.h"
+#include "Kismet/GameplayStatics.h"
+#include "Inventory/ADInventoryComponent.h"
 
 AADInGameState::AADInGameState()
 	: SelectedLevelName(EMapName::Max)
@@ -15,9 +18,9 @@ AADInGameState::AADInGameState()
 	
 }
 
-void AADInGameState::BeginPlay()
+void AADInGameState::PostInitializeComponents()
 {
-	Super::BeginPlay();
+	Super::PostInitializeComponents();
 
 	if (HasAuthority())
 	{
@@ -33,6 +36,11 @@ void AADInGameState::BeginPlay()
 
 		LOGVN(Error, TEXT("SelectedLevelName: %d / TeamCredits: %d / CurrentPhaseGoal : %d"), SelectedLevelName, TeamCredits, CurrentPhaseGoal);
 	}
+}
+
+void AADInGameState::BeginPlay()
+{
+	Super::BeginPlay();
 }
 
 void AADInGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
