@@ -494,13 +494,13 @@ void UADInventoryComponent::ServerSideInventoryInitialize()
 					if (InventoryIndexMapByType.Contains(FoundRow->ItemType) && GetTypeInventoryEmptyIndex(FoundRow->ItemType) != -1)
 					{
 						InventoryList.AddItem(NewItem);
-						LOG(TEXT("Id %d"), NewItem.Id);
+						//LOG(TEXT("Id %d"), NewItem.Id);
 
 					}
 				}
 			}
 		}
-		PrintLogInventoryData();
+		//PrintLogInventoryData();
 	}
 }
 
