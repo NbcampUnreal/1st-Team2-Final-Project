@@ -259,10 +259,11 @@ void UADInteractionComponent::OnInteractPressed()
 		if (Owner->GetClass()->ImplementsInterface(UIADInteractable::StaticClass()))
 		{
 
-			OnHoldStart.Broadcast(FocusedInteractable->GetOwner(), HoldThreshold);
+			
 
 			// == Hold 모드 ==
 			HoldThreshold = IIADInteractable::Execute_GetHoldDuration(Owner);
+			OnHoldStart.Broadcast(FocusedInteractable->GetOwner(), HoldThreshold);
 			bHoldTriggered = false;
 			HoldInstigator = Cast<APawn>(GetOwner());
 
