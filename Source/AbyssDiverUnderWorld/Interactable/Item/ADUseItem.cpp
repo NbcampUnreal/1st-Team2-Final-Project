@@ -59,7 +59,12 @@ void AADUseItem::SetItemInfo(FItemData& ItemInfo, bool bIsEquipMode)
 			ItemData.Quantity = 1;
 			ItemData.Amount = ItemRow->Amount; //추후 사용한 양에 대한 적용 필요
 			ItemData.Id = ItemRow->Id;
-			M_SetSkeletalMesh(ItemRow->SkeletalMesh);
+
+			bool bIsEquipNightVisionGoggle = ItemInfo.Name == "NightVisionGoggle" && bIsEquipMode;
+			if(!bIsEquipNightVisionGoggle) //나이트 비전 장착의 경우 메시 안 보이게
+			{
+				M_SetSkeletalMesh(ItemRow->SkeletalMesh);
+			}
 		}
 	}
 
