@@ -50,4 +50,13 @@ private:
 	TObjectPtr<class UPlayerHUDComponent> PlayerHUDComponent;
 	
 #pragma endregion 
+
+#pragma region Getters / Setters
+
+public:
+
+	UPlayerHUDComponent* GetPlayerHUDComponent() const { return PlayerHUDComponent; }
+
+#pragma endregion
+
 };

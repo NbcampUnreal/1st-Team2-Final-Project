@@ -6,6 +6,7 @@
 #include "AbyssDiverUnderWorld.h"
 #include "Character/PlayerHUDWidget.h"
 #include "Framework/CreateTeamWidget.h"
+#include "UI/ResultScreen.h"
 
 UPlayerHUDComponent::UPlayerHUDComponent()
 {
@@ -49,6 +50,24 @@ void UPlayerHUDComponent::BeginPlay()
 
 	// Pawn이 늦게 생성이 되거나 혹은, Respawn 상황에도 Binding을 수행해야 한다.
 	PlayerController->OnPossessedPawnChanged.AddDynamic(this, &UPlayerHUDComponent::OnPossessedPawnChanged);
+
+	//check(ResultScreenWidgetClass);
+	ResultScreenWidget = CreateWidget<UResultScreen>(PlayerController, ResultScreenWidgetClass);
+	//check(ResultScreenWidget);
+}
+
+void UPlayerHUDComponent::C_ShowResultScreen_Implementation()
+{
+	FResultScreenParams Params
+	(
+		TEXT("Test1"),
+		111,
+		333,
+		EAliveInfo::Dead
+	);
+
+	UpdateResultScreen(1, Params);
+	SetResultScreenVisible(true);
 }
 
 void UPlayerHUDComponent::SetVisibility(const bool NewVisible) const
@@ -57,6 +76,29 @@ void UPlayerHUDComponent::SetVisibility(const bool NewVisible) const
 	{
 		HudWidget->SetVisibility(NewVisible ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 	}
+}
+
+void UPlayerHUDComponent::SetResultScreenVisible(const bool bShouldVisible) const
+{
+	if (ResultScreenWidget == nullptr)
+	{
+		LOGV(Error, TEXT("ResultScreenWidget == nullptr"));
+		return;
+	}
+
+	if (bShouldVisible)
+	{
+		ResultScreenWidget->AddToViewport();
+	}
+	else
+	{
+		ResultScreenWidget->RemoveFromParent();
+	}
+}
+
+void UPlayerHUDComponent::UpdateResultScreen(int32 PlayerIndexBased_1, const FResultScreenParams& Params)
+{
+	ResultScreenWidget->Update(PlayerIndexBased_1, Params);
 }
 
 void UPlayerHUDComponent::OnPossessedPawnChanged(APawn* OldPawn, APawn* NewPawn)

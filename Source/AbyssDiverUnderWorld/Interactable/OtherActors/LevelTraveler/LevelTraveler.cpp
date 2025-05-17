@@ -40,7 +40,7 @@ void ALevelTraveler::Interact_Implementation(AActor* InstigatorActor)
 		return;
 	}
 
-	GM->TravelToCamp();
+	GM->ReadyForTravelToCamp();
 }
 
 bool ALevelTraveler::IsConditionMet()

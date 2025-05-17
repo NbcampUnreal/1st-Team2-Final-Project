@@ -10,6 +10,7 @@
 #include "AbyssDiverUnderWorld.h"
 #include "Container/FStructContainer.h"
 #include "Inventory/ADInventoryComponent.h"
+#include "Character/PlayerComponent/PlayerHUDComponent.h"
 
 #include "Kismet/GameplayStatics.h"
 #include "EngineUtils.h"
@@ -52,6 +53,20 @@ void AADInGameMode::PostLogin(APlayerController* NewPlayer)
 	Super::PostLogin(NewPlayer);
 
 	InitPlayer(NewPlayer);
+}
+
+void AADInGameMode::ReadyForTravelToCamp()
+{
+	LOGVN(Warning, TEXT("Ready For Traveling to Camp..."));
+
+	for (AADPlayerController* PC : TActorRange<AADPlayerController>(GetWorld()))
+	{
+		PC->GetPlayerHUDComponent()->C_ShowResultScreen();
+	}
+
+	FTimerHandle TimerHandle;
+	const float Interval = 5.0f;
+	GetWorldTimerManager().SetTimer(TimerHandle, this, &AADInGameMode::TravelToCamp, 1, false, Interval);
 }
 
 void AADInGameMode::TravelToCamp()

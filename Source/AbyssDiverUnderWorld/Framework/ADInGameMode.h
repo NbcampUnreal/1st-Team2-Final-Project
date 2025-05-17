@@ -20,6 +20,7 @@ public:
 
 public:
 
+	void ReadyForTravelToCamp();
 	void TravelToCamp();
 
 	bool IsAllPhaseCleared();
