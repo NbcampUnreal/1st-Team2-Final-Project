@@ -13,11 +13,11 @@ void UHoldInteractionWidget::HandleHoldStart(AActor* Target, float Duration)
             FTimerDelegate::CreateUObject(this, &UHoldInteractionWidget::UpdateProgress, Duration),
             0.01f, true);
 
-        SetVisibility(ESlateVisibility::Visible);
+        AddToViewport();
     }
 }
 
-void UHoldInteractionWidget::HandleHoldCancel(AActor* Target)
+void UHoldInteractionWidget::HandleHoldCancel()
 {
     GetWorld()->GetTimerManager().ClearTimer(TimerHandle);
     RemoveFromParent();
@@ -32,6 +32,6 @@ void UHoldInteractionWidget::UpdateProgress(float Duration)
     if (Percent >= 1.f)
     {
         // 완료 시 자동 취소
-        HandleHoldCancel(nullptr);
+        HandleHoldCancel();
     }
 }

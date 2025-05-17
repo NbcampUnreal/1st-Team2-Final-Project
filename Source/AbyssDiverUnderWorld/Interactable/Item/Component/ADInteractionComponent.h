@@ -80,7 +80,7 @@ public:
     DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHoldStart, AActor*, Target, float, Duration);
     UPROPERTY(BlueprintAssignable)
     FOnHoldStart OnHoldStart;
-    DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnHoldCancelSignature, AActor*, Target);
+    DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnHoldCancelSignature);
     UPROPERTY(BlueprintAssignable) 
     FOnHoldCancelSignature OnHoldCancel;
 
