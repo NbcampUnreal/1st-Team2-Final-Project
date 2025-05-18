@@ -51,6 +51,20 @@ FFADItemDataRow* UDataTableSubsystem::GetItemData(int32 ItemId) const
 	return ItemDataTableArray[ItemId];
 }
 
+FFADItemDataRow* UDataTableSubsystem::GetItemDataByName(FName ItemName) const
+{
+	UADGameInstance* GI = CastChecked<UADGameInstance>(GetGameInstance());
+	if (UDataTable* ItemDataTable = GI->ItemDataTable)
+	{
+		return ItemDataTable->FindRow<FFADItemDataRow>(ItemName, TEXT("LookupItem"));
+	}
+	else
+	{
+		LOGV(Error, TEXT("ProjectileRow is null"));
+	}
+	return nullptr;
+}
+
 FFADProjectileDataRow* UDataTableSubsystem::GetProjectileDataArrayByName(FName ProjectileName) const
 {
 	UADGameInstance* GI = CastChecked<UADGameInstance>(GetGameInstance());

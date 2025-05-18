@@ -27,6 +27,7 @@ protected:
 public:
 
 	FFADItemDataRow* GetItemData(int32 ItemId) const;
+	FFADItemDataRow* GetItemDataByName(FName ItemName) const;
 	FFADProjectileDataRow* GetProjectileDataArrayByName(FName ProjectileName) const;
 	FUpgradeDataRow* GetUpgradeDataTableArray(int32 Index) const;
 	FDropEntry* GetOreDropEntryTableArray(int32 Id) const;

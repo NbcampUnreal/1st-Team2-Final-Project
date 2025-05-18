@@ -47,6 +47,10 @@ public:
 	void S_RequestRemove(uint8 InventoryIndex, int8 Count, bool bIsDropAction);
 	void S_RequestRemove_Implementation(uint8 InventoryIndex, int8 Count, bool bIsDropAction);
 
+	UFUNCTION(Server, Reliable)
+	void S_RemoveByDragAndDrop(uint8 SlotIndex, EItemType ItemType);
+	void S_RemoveByDragAndDrop_Implementation(uint8 SlotIndex, EItemType ItemType);
+
 	UFUNCTION(BlueprintCallable)
 	void InventoryInitialize();
 
