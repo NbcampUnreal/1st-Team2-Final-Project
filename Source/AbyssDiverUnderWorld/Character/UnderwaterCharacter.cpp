@@ -19,6 +19,7 @@
 #include "Interactable/Item/Component/EquipUseComponent.h"
 #include "Inventory/ADInventoryComponent.h"
 #include "Shops/ShopInteractionComponent.h"
+#include "UI/HoldInteractionWidget.h"
 
 AUnderwaterCharacter::AUnderwaterCharacter()
 {
@@ -98,6 +99,18 @@ void AUnderwaterCharacter::BeginPlay()
 	
 	NoiseEmitterComponent = NewObject<UPawnNoiseEmitterComponent>(this);
 	NoiseEmitterComponent->RegisterComponent();
+
+	if (HoldWidgetClass)
+	{
+		APlayerController* PC = Cast<APlayerController>(GetController());
+		if (!PC) return;
+		// 인스턴스 생성 → 뷰포트에 붙이지 않음(필요 시 Remove/Attach)
+		HoldWidgetInstance = CreateWidget<UHoldInteractionWidget>(PC, HoldWidgetClass);
+	}
+
+	// 델리게이트 연결
+	InteractionComponent->OnHoldStart.AddDynamic(HoldWidgetInstance, &UHoldInteractionWidget::HandleHoldStart);
+	InteractionComponent->OnHoldCancel.AddDynamic(HoldWidgetInstance, &UHoldInteractionWidget::HandleHoldCancel);
 }
 
 void AUnderwaterCharacter::InitFromPlayerState(AADPlayerState* ADPlayerState)
@@ -382,7 +395,16 @@ void AUnderwaterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 				this,
 				&AUnderwaterCharacter::Interaction
 			);
+
+			EnhancedInput->BindAction(
+				InteractionAction,
+				ETriggerEvent::Completed,
+				this,
+				&AUnderwaterCharacter::CompleteInteraction
+			);
 		}
+
+
 
 		if (LightAction)
 		{
@@ -565,7 +587,12 @@ void AUnderwaterCharacter::Aim(const FInputActionValue& InputActionValue)
 
 void AUnderwaterCharacter::Interaction(const FInputActionValue& InputActionValue)
 {
-	InteractionComponent->TryInteract();
+	InteractionComponent->OnInteractPressed();
+}
+
+void AUnderwaterCharacter::CompleteInteraction(const FInputActionValue& InputActionValue)
+{
+	InteractionComponent->OnInteractReleased();
 }
 
 void AUnderwaterCharacter::Light(const FInputActionValue& InputActionValue)

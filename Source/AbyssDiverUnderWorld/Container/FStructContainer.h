@@ -83,6 +83,7 @@ struct FInventoryList : public FFastArraySerializer
 	{
 		FItemData NewItem;
 		NewItem.Name = Item.Name;
+		NewItem.Id = Item.Id;
 		NewItem.Quantity = Item.Quantity;
 		NewItem.ItemType = Item.ItemType;
 		NewItem.Thumbnail = Item.Thumbnail;

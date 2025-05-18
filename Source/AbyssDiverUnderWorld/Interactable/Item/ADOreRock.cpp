@@ -18,6 +18,8 @@ AADOreRock::AADOreRock()
 
 	// InteractableComponent 생성
 	InteractableComp = CreateDefaultSubobject<UADInteractableComponent>(TEXT("InteractableComp"));
+
+	bIsHold = true;
 }
 
 // Called when the game starts or when spawned
@@ -44,6 +46,14 @@ void AADOreRock::Interact_Implementation(AActor* InstigatorActor)
 
 	HandleMineRequest(Cast<APawn>(InstigatorActor));
 }
+
+void AADOreRock::InteractHold_Implementation(AActor* InstigatorActor)
+{
+	if (!HasAuthority()) return;
+
+	HandleMineRequest(Cast<APawn>(InstigatorActor));
+}
+
 void AADOreRock::HandleMineRequest(APawn* InstigatorPawn)
 {
 	if (!HasAuthority() || CurrentMiningGauge <= 0) return;
@@ -178,4 +188,13 @@ UADInteractableComponent* AADOreRock::GetInteractableComponent() const
 	return InteractableComp;
 }
 
+bool AADOreRock::IsHoldMode() const
+{
+	return bIsHold;
+}
+
+float AADOreRock::GetHoldDuration_Implementation() const
+{
+	return HoldDuration;
+}
 

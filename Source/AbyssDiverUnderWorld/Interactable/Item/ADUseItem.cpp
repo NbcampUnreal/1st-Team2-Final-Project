@@ -8,6 +8,7 @@
 
 AADUseItem::AADUseItem()
 {
+	PrimaryActorTick.bCanEverTick = true;
 	Scene = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 	RootComponent = Scene;
 
@@ -21,12 +22,37 @@ AADUseItem::AADUseItem()
 	bReplicates = true;
 }
 
-void AADUseItem::SetItemInfo(FItemData& ItemInfo)
+void AADUseItem::BeginPlay()
+{
+	Super::BeginPlay();
+	//TODO : 기포 이펙트 추가
+}
+
+void AADUseItem::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+	FVector Location = GetActorLocation();
+	float SubmersionDepth = WaterHeight - Location.Z;
+
+	if (SubmersionDepth > 0) // 물속에 있음
+	{
+		// 물 저항 적용
+		SkeletalMesh->SetLinearDamping(WaterLinearDamping); //2.0 ~ 5.0 사이
+		SkeletalMesh->SetAngularDamping(WaterAngularDamping); //5.0 이상
+	}
+}
+
+void AADUseItem::M_SetSkeletalMesh_Implementation(USkeletalMesh* NewMesh)
+{
+	SkeletalMesh->SetSkeletalMesh(NewMesh);
+}
+
+void AADUseItem::SetItemInfo(FItemData& ItemInfo, bool bIsEquipMode)
 {
 	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
 	{
 		UDataTableSubsystem* ItemDataTableSubsystem = GI->GetSubsystem<UDataTableSubsystem>();
-		FFADItemDataRow* ItemRow = ItemDataTableSubsystem->GetItemDataByName(ItemInfo.Name);
+		FFADItemDataRow* ItemRow = ItemDataTableSubsystem->GetItemData(ItemInfo.Id);
 		if (ItemRow && ItemRow->SkeletalMesh)
 		{
 			ItemData = ItemInfo;
@@ -36,10 +62,29 @@ void AADUseItem::SetItemInfo(FItemData& ItemInfo)
 			M_SetSkeletalMesh(ItemRow->SkeletalMesh);
 		}
 	}
+
+	if (bIsEquipMode)
+	{
+		EquipMode();
+	}
+	else
+	{
+		UnEquipMode();
+	}
 }
 
-void AADUseItem::M_SetSkeletalMesh_Implementation(USkeletalMesh* NewMesh)
+void AADUseItem::UnEquipMode()
 {
-	SkeletalMesh->SetSkeletalMesh(NewMesh);
+	SkeletalMesh->SetGenerateOverlapEvents(true);
+	SkeletalMesh->SetSimulatePhysics(true);
+	SkeletalMesh->SetCollisionProfileName("BlockAllDynamic");
+	SetActorTickEnabled(true);
 }
 
+void AADUseItem::EquipMode()
+{
+	SkeletalMesh->SetGenerateOverlapEvents(false);
+	SkeletalMesh->SetSimulatePhysics(false);
+	SkeletalMesh->SetCollisionProfileName("NoCollision");
+	SetActorTickEnabled(false);
+}

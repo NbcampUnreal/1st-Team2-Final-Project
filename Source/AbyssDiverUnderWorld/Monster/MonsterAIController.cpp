@@ -6,7 +6,9 @@
 #include "Character/UnderwaterCharacter.h"
 #include "Monster/TestPlayerCharacter.h"
 #include "AbyssDiverUnderWorld.h"
+#include "Monster/EMonsterState.h"
 #include "GenericTeamAgentInterface.h"
+#include "AbyssDiverUnderWorld.h"
 
 AMonsterAIController::AMonsterAIController()
 {
@@ -24,6 +26,7 @@ AMonsterAIController::AMonsterAIController()
 	AIPerceptionComponent->ConfigureSense(*SightConfig);
 	AIPerceptionComponent->SetDominantSense(SightConfig->GetSenseImplementation());
 	
+	bIsLosingTarget = false;
 }
 
 void AMonsterAIController::BeginPlay()
@@ -38,6 +41,22 @@ void AMonsterAIController::BeginPlay()
 	}
 }
 
+void AMonsterAIController::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	if (!bIsLosingTarget) return;
+
+	float Elapsed = GetWorld()->GetTimeSeconds() - LostTargetTime;
+	if (Elapsed > SightConfig->GetMaxAge())
+	{
+		BlackboardComponent->ClearValue("TargetActor");
+		BlackboardComponent->SetValueAsEnum("MonsterState", static_cast<uint8>(EMonsterState::Patrol));
+		bIsLosingTarget = false;
+		LOG(TEXT("TargetActor Clear, Monster State : Patrol"));
+	}
+}
+
 void AMonsterAIController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
@@ -49,7 +68,7 @@ void AMonsterAIController::OnPossess(APawn* InPawn)
 		LOG(TEXT("AIController Possess"));
 
 		// Initialize BlackboardKey (CurrnetState, TargetActor)
-		BlackboardComponent->SetValueAsName("CurrentState", "Patrol");
+		BlackboardComponent->SetValueAsEnum("MonsterState", static_cast<uint8>(EMonsterState::Patrol));
 		BlackboardComponent->ClearValue("TargetActor");
 	}
 
@@ -89,23 +108,9 @@ void AMonsterAIController::InitializePatrolPoint()
 	}
 }
 
-void AMonsterAIController::HandleForgetPlayer()
-{
-	if (BlackboardComponent)
-	{
-		UObject* LostTarget = Blackboard->GetValueAsObject("TargetActor");
-		FString TargetName = LostTarget ? LostTarget->GetName() : TEXT("None");
-
-		BlackboardComponent->ClearValue("TargetActor");
-		BlackboardComponent->SetValueAsName("CurrentState", "Patrol");
-
-		LOG(TEXT("[AI] State Trans: Chase -> Patrol"));
-	}
-}
 
 void AMonsterAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
-	LOG(TEXT("OnTargetPerceptionUpdated is Triggerd"));
 	if (Actor->IsA(ATestPlayerCharacter::StaticClass()))
 	{
 		BlackboardComponent = GetBlackboardComponent();
@@ -115,26 +120,16 @@ void AMonsterAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus 
 			LOG(TEXT("[Perception] : %s"), *Actor->GetName());
 
 			Blackboard->SetValueAsObject("TargetActor", Actor);
-			Blackboard->SetValueAsName("CurrentState", "Chase");
-
-			GetWorld()->GetTimerManager().ClearTimer(ForgetPlayerTimerHandle);
+			Blackboard->SetValueAsEnum("MonsterState", static_cast<uint8>(EMonsterState::Chase));
+			bIsLosingTarget = false;
 		}
 		else
 		{
-			// Out of sight but still remembered ¡æ 5-second timer starts
-			GetWorld()->GetTimerManager().SetTimer(
-				ForgetPlayerTimerHandle,
-				this,
-				&AMonsterAIController::HandleForgetPlayer,
-				ForgetDuration,
-				false
-			);
+			// Lost Perception. but Target Value still remains for MaxAge
+			bIsLosingTarget = true;
+			LostTargetTime = GetWorld()->GetTimeSeconds(); // Timer On.
 		}
 	}
 }
 
 
-void AMonsterAIController::SetForgetDuration(float Duration)
-{
-	ForgetDuration = Duration;
-}
