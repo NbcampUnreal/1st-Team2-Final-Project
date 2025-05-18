@@ -4,6 +4,7 @@
 #include "Framework/ADGameInstance.h"
 #include "DataRow/UpgradeDataRow.h"
 #include "DataRow/FADItemDataRow.h"
+#include "DataRow/PhaseGoalRow.h"
 #include "Interactable/Item/ADOreRock.h"
 #include "Logging/LogMacros.h"
 
@@ -39,6 +40,8 @@ void UDataTableSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 			return A->Id < B->Id;
 		});
 
+	ParsePhaseGoalDataTable(GI);
+
 }
 
 
@@ -62,6 +65,13 @@ FUpgradeDataRow* UDataTableSubsystem::GetUpgradeData(EUpgradeType UpgradeType, u
 	return UpgradeTableMap.FindRef(TPair<EUpgradeType, uint8>(UpgradeType, Grade));
 }
 
+FPhaseGoalRow* UDataTableSubsystem::GetPhaseGoalData(EMapName MapName, int32 Phase) const
+{
+	return PhaseGoalTableMap.FindRef(TPair<EMapName, int32>(MapName, Phase));
+}
+
+
+
 void UDataTableSubsystem::ParseUpgradeDataTable(UADGameInstance* GameInstance)
 {
 	if (GameInstance == nullptr || GameInstance->UpgradeDataTable == nullptr)
@@ -84,4 +94,29 @@ void UDataTableSubsystem::ParseUpgradeDataTable(UADGameInstance* GameInstance)
 		TPair<EUpgradeType, uint8> Key(Row->UpgradeType, Row->Grade);
 		UpgradeTableMap.Add(Key, Row);
 	}
+}
+
+void UDataTableSubsystem::ParsePhaseGoalDataTable(UADGameInstance* GameInstance)
+{
+	if (GameInstance == nullptr || GameInstance->PhaseGoalTable == nullptr)
+	{
+		LOGV(Error, TEXT("GameInstance or PhaseGoalDataTable is null"));
+		return;
+	}
+
+	UDataTable* PhaseGoalTable = GameInstance->PhaseGoalTable;
+	PhaseGoalTable->GetAllRows<FPhaseGoalRow>(TEXT("PhaseGoalTable"), PhaseGoalTableArray);
+
+	PhaseGoalTableMap.Empty(PhaseGoalTableArray.Num());
+	for (FPhaseGoalRow* Row : PhaseGoalTableArray)
+	{
+		if (Row == nullptr)
+		{
+			continue;
+		}
+		TPair<EMapName, int32> Key(Row->MapName, Row->Phase);
+		PhaseGoalTableMap.Add(Key, Row);
+	}
+
+	LOGV(Error, TEXT("PhaseGoalTableMap size: %d"), PhaseGoalTableMap.Num());
 }

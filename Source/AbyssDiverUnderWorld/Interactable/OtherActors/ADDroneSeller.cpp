@@ -1,6 +1,6 @@
 ﻿#include "Interactable/OtherActors/ADDroneSeller.h"
 #include "Inventory/ADInventoryComponent.h"
-#include "Framework/TestGameState.h"
+#include "Framework/ADInGameState.h"
 #include "ADDrone.h"
 #include "Net/UnrealNetwork.h"
 #include "Interactable/Item/Component/ADInteractableComponent.h"

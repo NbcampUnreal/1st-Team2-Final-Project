@@ -6,13 +6,12 @@
 #include "DataTableSubsystem.generated.h"
 
 enum class EUpgradeType : uint8;
+enum class EMapName : uint8;
 struct FFADItemDataRow;
 struct FUpgradeDataRow;
 struct FDropEntry;
+struct FPhaseGoalRow;
 
-/**
- * 
- */
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API UDataTableSubsystem : public UGameInstanceSubsystem
 {
@@ -31,9 +30,11 @@ public:
 	FDropEntry* GetOreDropEntryTableArray(int32 Id) const;
 
 	FUpgradeDataRow* GetUpgradeData(EUpgradeType UpgradeType, uint8 Grade) const;
-	
+
+	FPhaseGoalRow* GetPhaseGoalData(EMapName MapName, int32 Phase) const;
 private:
 	void ParseUpgradeDataTable(class UADGameInstance* GameInstance);
+	void ParsePhaseGoalDataTable(class UADGameInstance* GameInstance);
 	
 #pragma endregion
 
@@ -45,6 +46,8 @@ private:
 	TArray<struct FUpgradeDataRow*> UpgradeTableArray;
 	TMap<TPair<EUpgradeType, uint8>, FUpgradeDataRow*> UpgradeTableMap;
 	TArray<struct FDropEntry*> OreDropEntryTableArray;
+	TArray<struct FPhaseGoalRow*> PhaseGoalTableArray;
+	TMap<TPair<EMapName, int32>, FPhaseGoalRow*> PhaseGoalTableMap;
 
 #pragma endregion
 

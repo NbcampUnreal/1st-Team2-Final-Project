@@ -65,6 +65,7 @@ private:
 public:
 	int32 GetCurrentMoney() const { return CurrentMoney; }
 	int32 GetTargetMoney() const { return TargetMoney; }
+	void SetTargetMoney(int32 NewTargetMoney) { TargetMoney = NewTargetMoney; }
 	virtual UADInteractableComponent* GetInteractableComponent() const override;
 	virtual bool IsHoldMode() const override;
 #pragma endregion

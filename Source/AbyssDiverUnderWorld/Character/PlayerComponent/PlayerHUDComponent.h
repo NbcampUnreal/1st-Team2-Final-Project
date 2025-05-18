@@ -25,8 +25,15 @@ protected:
 
 public:
 
+	UFUNCTION(Client, Reliable)
+	void C_ShowResultScreen();
+	void C_ShowResultScreen_Implementation();
+
 	/** 현재 HUD 보이는 것 설정 */
 	void SetVisibility(bool NewVisible) const;
+
+	void SetResultScreenVisible(const bool bShouldVisible) const;
+	void UpdateResultScreen(int32 PlayerIndexBased_1, const struct FResultScreenParams& Params);
 
 private:
 
@@ -48,6 +55,12 @@ private:
 	UPROPERTY()
 	TObjectPtr<class UPlayerHUDWidget> HudWidget;
 
+	/** 게임 결과 위젯 */
+	UPROPERTY(EditDefaultsOnly, Category = UI, meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<class UResultScreen> ResultScreenWidgetClass;
+
+	UPROPERTY()
+	TObjectPtr<class UResultScreen> ResultScreenWidget;
 	
 #pragma endregion
 };
