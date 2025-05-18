@@ -28,6 +28,12 @@ UStaminaComponent::UStaminaComponent()
 void UStaminaComponent::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// Stamina가 최대값이 아닐 경우 회복을 시작한다.
+	if (StaminaStatus.Stamina < StaminaStatus.MaxStamina)
+	{
+		StartRegenerateStamina();
+	}
 }
 
 void UStaminaComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
