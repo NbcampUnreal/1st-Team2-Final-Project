@@ -8,6 +8,7 @@
 #include "PlayerComponent/OxygenComponent.h"
 #include "PlayerComponent/StaminaComponent.h"
 #include "StatComponent.h"
+#include "UpgradeComponent.h"
 #include "AbyssDiverUnderWorld/Interactable/Item/Component/ADInteractionComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -19,6 +20,7 @@
 #include "Interactable/Item/Component/EquipUseComponent.h"
 #include "Inventory/ADInventoryComponent.h"
 #include "Shops/ShopInteractionComponent.h"
+#include "Subsystems/DataTableSubsystem.h"
 #include "UI/HoldInteractionWidget.h"
 
 AUnderwaterCharacter::AUnderwaterCharacter()
@@ -29,6 +31,8 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	FirstPersonCameraComponent->bUsePawnControlRotation = true;
 
 	StatComponent->Initialize(1000, 1000, 400.0f, 10);
+
+	GatherMultiplier = 1.0f;
 	
 	bIsCaptured = false;
 	CaptureFadeTime = 0.5f;
@@ -94,6 +98,9 @@ void AUnderwaterCharacter::BeginPlay()
 	SetDebugCameraMode(bUseDebugCamera);
 
 	StaminaComponent->OnSprintStateChanged.AddDynamic(this, &AUnderwaterCharacter::OnSprintStateChanged);
+	OxygenComponent->OnOxygenLevelChanged.AddDynamic(this, &AUnderwaterCharacter::OnOxygenLevelChanged);
+	OxygenComponent->OnOxygenDepleted.AddDynamic(this, &AUnderwaterCharacter::OnOxygenDepleted);
+	OxygenComponent->OnOxygenRestored.AddDynamic(this, &AUnderwaterCharacter::OnOxygenRestored);
 	
 	NoiseEmitterComponent = NewObject<UPawnNoiseEmitterComponent>(this);
 	NoiseEmitterComponent->RegisterComponent();
@@ -129,8 +136,67 @@ void AUnderwaterCharacter::InitFromPlayerState(AADPlayerState* ADPlayerState)
 		LOGVN(Error, TEXT("Inventory Component Init failed : %d"), GetUniqueID());
 	}
 
+	if (UUpgradeComponent* Upgrade = ADPlayerState->GetUpgradeComp())
+	{
+		ApplyUpgradeFactor(Upgrade);
+	}
+	else
+	{
+		LOGVN(Error, TEXT("Upgrade Component Init failed : %d"), GetUniqueID());
+	}
+
 	// 리스폰 시에도 현재 무게에 따라 속도를 조정한다.
 	AdjustSpeed();
+}
+
+void AUnderwaterCharacter::ApplyUpgradeFactor(UUpgradeComponent* UpgradeComponent)
+{
+	if (!IsValid(UpgradeComponent))
+	{
+		return;
+	}
+
+	UDataTableSubsystem* DataTableSubsystem = GetGameInstance()->GetSubsystem<UDataTableSubsystem>();
+	if (DataTableSubsystem == nullptr)
+	{
+		LOGVN(Error, TEXT("DataTableSubsystem is not valid"));
+		return;
+	}
+	
+	for (uint8 i = 0; i < static_cast<uint8>(EUpgradeType::Max); ++i)
+	{
+	    const EUpgradeType Type = static_cast<EUpgradeType>(i);
+		
+		const uint8 Grade = UpgradeComponent->GetCurrentGrade(Type);
+		const FUpgradeDataRow* UpgradeData = DataTableSubsystem->GetUpgradeData(Type, Grade);
+		if (UpgradeData == nullptr)
+		{
+			LOGVN(Error, TEXT("UpgradeData is not valid"));
+			continue;
+		}
+		
+		// Stat Factor는 정수형으로 저장되어 있다.
+		const float StatFactor = UpgradeData->StatFactor;
+		
+	    switch (Type)
+	    {
+		    case EUpgradeType::Gather:
+			    GatherMultiplier = StatFactor / 100.0f;
+			    break;
+	    	case EUpgradeType::Oxygen:
+	    		OxygenComponent->InitOxygenSystem(StatFactor, StatFactor);
+			    break;
+	    	case EUpgradeType::Speed:
+	    		// 최종 속도는 나중에 AdjustSpeed를 통해서 계산된다. 현재는 BaseSpeed만 조정하면 된다.
+	    		StatComponent->MoveSpeed = StatFactor;
+	    		break;
+			case EUpgradeType::Light:
+	    		// @TODO Apply Light Component Upgrade 
+	    		break;
+		    default: ;
+	    		break;
+	    }
+	}
 }
 
 void AUnderwaterCharacter::PossessedBy(AController* NewController)
@@ -302,6 +368,33 @@ void AUnderwaterCharacter::AdjustSpeed()
 	}
 }
 
+void AUnderwaterCharacter::OnOxygenLevelChanged(float CurrentOxygenLevel, float MaxOxygenLevel)
+{
+	// 산소 상태에 따라서 최대 스테미나를 조정한다.
+	// 현재로서는 최대 산소량과 최대 스테미나량과 동일하고
+	// 스테미나 소모를 초당 100으로 설정하고 있다.
+	// 예를 들면 산소량 600이면 600초를 버틸 수 있고 최대 스테미나량이 600이 된다.
+	// 스테미나 소모량이 100이므로 6초를 버틸 수 있다.
+
+	// 헤더의 주석에 작성했지만 현재로는 간단하게 구현 위주로 작성한다.
+	StaminaComponent->SetMaxStamina(CurrentOxygenLevel);
+}
+
+
+void AUnderwaterCharacter::OnOxygenDepleted()
+{
+	// 비율로 깎는 함수를 만들어 두지 않아서 일단은 여기서 계산하기로 한다.
+	
+	const float DepletionHealthLoss = StatComponent->MaxHealth * 0.1f;
+	StatComponent->AddHealthRegenRate(-DepletionHealthLoss);
+}
+
+void AUnderwaterCharacter::OnOxygenRestored()
+{
+	const float RestorationHealthGain = StatComponent->MaxHealth * 0.1f;
+	StatComponent->AddHealthRegenRate(RestorationHealthGain);
+}
+
 void AUnderwaterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
@@ -386,8 +479,6 @@ void AUnderwaterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 				&AUnderwaterCharacter::CompleteInteraction
 			);
 		}
-
-
 
 		if (LightAction)
 		{

@@ -6,6 +6,7 @@
 #include "Components/ActorComponent.h"
 #include "StaminaComponent.generated.h"
 
+// @TODO : Stamina Refactoring
 // 러프하게 대략적인 스태미나 시스템을 구현한 컴포넌트입니다.
 // 추후 구현 사항으로 Prediction이나 Stamina의 정확한 소모량을 계산하도록 한다.
 

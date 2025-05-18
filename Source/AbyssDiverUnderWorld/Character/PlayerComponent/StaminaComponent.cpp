@@ -5,8 +5,6 @@
 
 #include "Net/UnrealNetwork.h"
 
-
-// Sets default values for this component's properties
 UStaminaComponent::UStaminaComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
@@ -28,6 +26,12 @@ UStaminaComponent::UStaminaComponent()
 void UStaminaComponent::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// Stamina가 최대값이 아닐 경우 회복을 시작한다.
+	if (StaminaStatus.Stamina < StaminaStatus.MaxStamina)
+	{
+		StartRegenerateStamina();
+	}
 }
 
 void UStaminaComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -170,7 +174,7 @@ void UStaminaComponent::InitStamina(float MaxStamina, float Stamina)
 
 void UStaminaComponent::SetMaxStamina(const float NewMaxStamina)
 {
-	if (GetOwnerRole() != ROLE_Authority || NewMaxStamina <= 0)
+	if (GetOwnerRole() != ROLE_Authority || NewMaxStamina <= 0 || NewMaxStamina == StaminaStatus.MaxStamina)
 	{
 		return;
 	}
