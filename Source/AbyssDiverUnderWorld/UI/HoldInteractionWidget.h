@@ -21,8 +21,9 @@ public:
 	UFUNCTION()
 	void HandleHoldCancel();
 
-private:
-	void UpdateProgress(float Duration);
+protected:
+	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
+
 #pragma endregion
 
 #pragma region Variable
@@ -32,6 +33,8 @@ public:
 private:
 	FTimerHandle TimerHandle;
 	float Elapsed = 0.f;
+	float TotalDuration = 0.f;
+	uint8 bIsHolding : 1;
 
 #pragma endregion
 
