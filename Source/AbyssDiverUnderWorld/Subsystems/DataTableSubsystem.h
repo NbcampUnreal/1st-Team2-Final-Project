@@ -34,7 +34,7 @@ public:
 	FPhaseGoalRow* GetPhaseGoalData(EMapName MapName, int32 Phase) const;
 private:
 	void ParseUpgradeDataTable(class UADGameInstance* GameInstance);
-	void ParsePhseGoalDataTable(class UADGameInstance* GameInstance);
+	void ParsePhaseGoalDataTable(class UADGameInstance* GameInstance);
 	
 #pragma endregion
 

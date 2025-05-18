@@ -40,7 +40,7 @@ void UDataTableSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 			return A->Id < B->Id;
 		});
 
-	ParsePhseGoalDataTable(GI);
+	ParsePhaseGoalDataTable(GI);
 
 }
 
@@ -96,7 +96,7 @@ void UDataTableSubsystem::ParseUpgradeDataTable(UADGameInstance* GameInstance)
 	}
 }
 
-void UDataTableSubsystem::ParsePhseGoalDataTable(UADGameInstance* GameInstance)
+void UDataTableSubsystem::ParsePhaseGoalDataTable(UADGameInstance* GameInstance)
 {
 	if (GameInstance == nullptr || GameInstance->PhaseGoalTable == nullptr)
 	{
