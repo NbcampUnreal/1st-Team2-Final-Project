@@ -45,6 +45,8 @@ UADInventoryComponent::UADInventoryComponent() :
 		InventoryIndexMapByType.FindOrAdd(static_cast<EItemType>(i));
 		InventoryIndexMapByType[static_cast<EItemType>(i)].Init(-1, InventorySizeByType[i]);
 	}
+
+	InventoryList.SetOwningComponent(this);
 }
 
 void UADInventoryComponent::BeginPlay()
@@ -179,42 +181,62 @@ void UADInventoryComponent::AddInventoryItem(FItemData ItemData)
 		FFADItemDataRow* FoundRow = DataTableSubsystem->GetItemData(ItemData.Id); 
 		if (FoundRow)
 		{
-			int16 ItemIndex = FindItemIndexByName(ItemData.Name);
-			if (ItemIndex > -1)
+			int8 ItemIndex = ItemData.ItemType == EItemType::Exchangable ? -1 : FindItemIndexByName(ItemData.Name);
+			if (ItemIndex > -1) 
 			{
-				FItemData& Item = InventoryList.Items[ItemIndex];
-				if (InventoryIndexMapByType.Contains(ItemData.ItemType) && GetTypeInventoryEmptyIndex(ItemData.ItemType) != -1 && Item.Quantity == 0)
-				{
-					Item.SlotIndex = GetTypeInventoryEmptyIndex(ItemData.ItemType);
-				}
+		//		FItemData& Item = InventoryList.Items[ItemIndex];
+		//		if (InventoryIndexMapByType.Contains(ItemData.ItemType) && GetTypeInventoryEmptyIndex(ItemData.ItemType) != -1 && Item.Quantity == 0)
+		//		{
+		//			Item.SlotIndex = GetTypeInventoryEmptyIndex(ItemData.ItemType);
+		//		}
 				if (FoundRow->Stackable)
 				{
-						Item.Quantity += ItemData.Quantity;
-					if (Item.ItemType == EItemType::Exchangable)
+					bool bIsUpdateSuccess = InventoryList.UpdateQuantity(ItemIndex, ItemData.Quantity);
+					if (bIsUpdateSuccess)
 					{
-						Item.Mass += ItemData.Mass;
-						Item.Price += ItemData.Price;
-						OnInventoryInfoUpdate(ItemData.Mass, ItemData.Price);
+						LOG(TEXT("Item Update, ItemName : %s, Id : %d"), *InventoryList.Items[ItemIndex].Name.ToString(), InventoryList.Items[ItemIndex].Id);
 					}
+					else
+						LOG(TEXT("Update fail"));
+		//				Item.Quantity += ItemData.Quantity;
+		//			if (Item.ItemType == EItemType::Exchangable)
+		//			{
+		//				Item.Mass += ItemData.Mass;
+		//				Item.Price += ItemData.Price;
+		//				OnInventoryInfoUpdate(ItemData.Mass, ItemData.Price);
+		//			}
 				}
-				else
-				{
-					if (Item.Quantity == 0)
-					{
-						++Item.Quantity;
-					}
-				}
-				InventoryList.MarkItemDirty(Item); //FastArray 관련 함수
-				UE_LOG(LogTemp, Warning, TEXT("Add Item, ItemName : %s, Id : %d"), *Item.Name.ToString(), Item.Id);
-				InventoryUIUpdate();
+		//		else
+		//		{
+		//			if (Item.Quantity == 0)
+		//			{
+		//				++Item.Quantity;
+		//			}
+		//		}
+		//		InventoryList.MarkItemDirty(Item); //FastArray 관련 함수
 			}
 			else
 			{
-				LOG(TEXT("It's not our game item."));
+				if (InventoryIndexMapByType.Contains(ItemData.ItemType) && GetTypeInventoryEmptyIndex(ItemData.ItemType) != -1)
+				{
+					uint8 SlotIndex = GetTypeInventoryEmptyIndex(ItemData.ItemType);
+				
+					FItemData NewItem = { FoundRow->Name, FoundRow->Id, ItemData.Quantity, SlotIndex, FoundRow->Amount, ItemData.Mass,ItemData.Price, FoundRow->ItemType, FoundRow->Thumbnail };
+					if (InventoryIndexMapByType.Contains(NewItem.ItemType) && GetTypeInventoryEmptyIndex(NewItem.ItemType) != -1)
+					{
+						InventoryList.AddItem(NewItem);
+						LOG(TEXT("Add New Item SlotIndex : %d"), SlotIndex);
+					}
+					OnInventoryInfoUpdate(NewItem.Mass, NewItem.Price);
+				}
+				else
+				{
+					LOG(TEXT("%s Inventory is full"), *StaticEnum<EItemType>()->GetNameStringByValue((int64)ItemData.ItemType));
+				}
 			}
 		}
 	}
-	
+	InventoryUIUpdate();
 }
 
 void UADInventoryComponent::ToggleInventoryShowed()
@@ -239,7 +261,7 @@ void UADInventoryComponent::ToggleInventoryShowed()
 		if (InventoryWidgetInstance)
 		{
 			InventoryWidgetInstance->SetVisibility(ESlateVisibility::Visible);
-			InventoryUIUpdate();
+			//InventoryUIUpdate();
 			PC->bShowMouseCursor = true;
 
 			FInputModeGameAndUI InputMode;
@@ -272,10 +294,10 @@ int16 UADInventoryComponent::FindItemIndexByName(FName ItemID) //빈슬롯이 �
 
 void UADInventoryComponent::RemoveInventoryItem(uint8 InventoryIndex, int8 Count, bool bIsDropAction)
 {
+	
 	if (InventoryList.Items.IsValidIndex(InventoryIndex))
 	{
 		FItemData& Item = InventoryList.Items[InventoryIndex];
-
 		if (Count != -1 && Item.Quantity < Count) return;
 		if (bIsDropAction)
 		{
@@ -285,30 +307,31 @@ void UADInventoryComponent::RemoveInventoryItem(uint8 InventoryIndex, int8 Count
 		}
 		if (Count == -1)
 		{
-			Item.Quantity = 0;
+			InventoryList.UpdateQuantity(InventoryIndex, -Item.Quantity);
 			if (Item.ItemType == EItemType::Exchangable)
 			{
 				OnInventoryInfoUpdate(-Item.Mass, -Item.Price);
-				Item.Mass = 0;
-				Item.Price = 0;
 			}
 		}
 		else
 		{
-			if (Item.ItemType != EItemType::Exchangable)
-				Item.Quantity -= Count;
+			InventoryList.UpdateQuantity(InventoryIndex, -Count);
+			//if (Item.ItemType != EItemType::Exchangable)
+			//	Item.Quantity -= Count;
 		}
+		LOG(TEXT("Remove Inventory Index %d: Item : %s"), InventoryIndex, *Item.Name.ToString());
 		if (Item.Quantity <= 0)
 		{
-			Item.SlotIndex = 99;
+			InventoryList.RemoveItem(InventoryIndex);
+			//Item.SlotIndex = 99;
 		}
-		InventoryList.MarkItemDirty(Item);
-		InventoryUIUpdate();
 	}
 	else
 	{
 		LOG(TEXT("Invalid Inventory Index"));
 	}
+
+	InventoryUIUpdate();
 }
 
 
@@ -325,7 +348,14 @@ void UADInventoryComponent::ClientRequestInventoryInitialize()
 void UADInventoryComponent::InventoryUIUpdate()
 {
 	RebuildIndexMap();
-	if (InventoryWidgetInstance == nullptr) return;
+	if (InventoryWidgetInstance)
+	{
+		LOG(TEXT("CLIENT"));
+	}
+	else
+	{
+		LOG(TEXT("NOT CLIENT"));
+	}
 	if (InventoryUpdateDelegate.IsBound())
 	{
 		InventoryInfoUpdateDelegate.Broadcast(TotalWeight, TotalPrice);
@@ -334,7 +364,7 @@ void UADInventoryComponent::InventoryUIUpdate()
 	{
 		InventoryUpdateDelegate.Broadcast();
 	}
-	//PrintLogInventoryData();
+	PrintLogInventoryData();
 }
 
 int8 UADInventoryComponent::GetTypeInventoryEmptyIndex(EItemType ItemType)
@@ -478,37 +508,37 @@ void UADInventoryComponent::OnUseCoolTimeEnd()
 
 void UADInventoryComponent::ServerSideInventoryInitialize()
 {
-	if (DataTableSubsystem)
-	{
-		TArray<FFADItemDataRow*> ItemAllRows = DataTableSubsystem->GetItemDataTableArray();
+	//if (DataTableSubsystem)
+	//{
+	//	TArray<FFADItemDataRow*> ItemAllRows = DataTableSubsystem->GetItemDataTableArray();
 
-		if (ItemAllRows.Num() > 0)
-		{
-			int8 ItemRowNum = ItemAllRows.Num();
-			for (int8 i = 0; i < ItemRowNum; ++i)
-			{
-				FFADItemDataRow* FoundRow = ItemAllRows[i];
-				if (FoundRow)
-				{
-					FItemData NewItem = { FoundRow->Name, FoundRow->Id, 0, 99, FoundRow->Amount, 0,0, FoundRow->ItemType, FoundRow->Thumbnail };
-					if (InventoryIndexMapByType.Contains(FoundRow->ItemType) && GetTypeInventoryEmptyIndex(FoundRow->ItemType) != -1)
-					{
-						InventoryList.AddItem(NewItem);
-						//LOG(TEXT("Id %d"), NewItem.Id);
+	//	if (ItemAllRows.Num() > 0)
+	//	{
+	//		int8 ItemRowNum = ItemAllRows.Num();
+	//		for (int8 i = 0; i < ItemRowNum; ++i)
+	//		{
+	//			FFADItemDataRow* FoundRow = ItemAllRows[i];
+	//			if (FoundRow)
+	//			{
+	//				FItemData NewItem = { FoundRow->Name, FoundRow->Id, 0, 99, FoundRow->Amount, 0,0, FoundRow->ItemType, FoundRow->Thumbnail };
+	//				if (InventoryIndexMapByType.Contains(FoundRow->ItemType) && GetTypeInventoryEmptyIndex(FoundRow->ItemType) != -1)
+	//				{
+	//					InventoryList.AddItem(NewItem);
+	//					//LOG(TEXT("Id %d"), NewItem.Id);
 
-					}
-				}
-			}
-		}
+	//				}
+	//			}
+	//		}
+	//	}
 		//PrintLogInventoryData();
-	}
+	//}
 }
 
 void UADInventoryComponent::PrintLogInventoryData()
 {
-	for (FItemData& Item : InventoryList.Items)
+	for (int i = 0; i<InventoryList.Items.Num(); ++i)
 	{
-		LOGVN(Warning, TEXT("Name : %s || Quntity : %d || SlotIndex : %d || Id : %d"), *Item.Name.ToString(), Item.Quantity, Item.SlotIndex, Item.Id);
+		LOGVN(Warning, TEXT("Name : %s || Quntity : %d || SlotIndex : %d || InventoryIndex : %d"), *InventoryList.Items[i].Name.ToString(), InventoryList.Items[i].Quantity, InventoryList.Items[i].SlotIndex, i);
 	}
 	UE_LOG(LogTemp, Warning, TEXT("InventoryWeight : %d-------------------------------------"), TotalWeight);
 
@@ -519,7 +549,7 @@ void UADInventoryComponent::PrintLogInventoryData()
 		{
 			if (Index >= 0)
 			{
-				LOGVN(Warning, TEXT("Index : %d, Item : %s"), Index, *InventoryList.Items[Index].Name.ToString());
+				LOGVN(Warning, TEXT("InventoryIndex : %d, Item : %s"), Index, *InventoryList.Items[Index].Name.ToString());
 			}
 			else
 				LOGVN(Warning, TEXT("NoItems"));

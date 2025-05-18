@@ -13,14 +13,6 @@ class UAllInventoryWidget;
 class UDataTableSubsystem;
 class AADUseItem;
 
-UENUM(BlueprintType)
-enum class EItemEquipState : uint8
-{
-	Idle = 0,
-	Equip = 1,
-	Use = 2,
-	Max = 3 UMETA(Hidden)
-};
 
 DECLARE_MULTICAST_DELEGATE(FInventoryUpdateDelegate);
 DECLARE_MULTICAST_DELEGATE_TwoParams(FInventoryInfoUpdateDelegate, int32, int32);

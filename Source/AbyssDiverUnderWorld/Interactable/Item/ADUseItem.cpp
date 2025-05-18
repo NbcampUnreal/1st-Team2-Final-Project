@@ -55,11 +55,13 @@ void AADUseItem::SetItemInfo(FItemData& ItemInfo, bool bIsEquipMode)
 		FFADItemDataRow* ItemRow = ItemDataTableSubsystem->GetItemData(ItemInfo.Id);
 		if (ItemRow && ItemRow->SkeletalMesh)
 		{
-			ItemData = ItemInfo;
 			ItemData.Quantity = 1;
-			ItemData.Amount = ItemRow->Amount; //추후 사용한 양에 대한 적용 필요
-			ItemData.Id = ItemRow->Id;
-
+			ItemData.Amount = ItemInfo.Amount; //추후 사용한 양에 대한 적용 필요
+			ItemData.Id = ItemInfo.Id;
+			ItemData.Mass = ItemInfo.Mass;
+			ItemData.Price = ItemInfo.Price;
+			ItemData.ItemType = ItemInfo.ItemType;
+			ItemData.Name = ItemInfo.Name;
 			bool bIsEquipNightVisionGoggle = ItemInfo.Name == "NightVisionGoggle" && bIsEquipMode;
 			if(!bIsEquipNightVisionGoggle) //나이트 비전 장착의 경우 메시 안 보이게
 			{
