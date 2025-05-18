@@ -7,6 +7,16 @@
 #include "UnitBase.h"
 #include "UnderwaterCharacter.generated.h"
 
+// @TODO : Character Status Replicate 문제
+// 1. 최대 Stamina는 최대 Oxygen에 비례하는데 값이 따로따로 Replicate될 수 있다. 이렇게 되면 항상 오차가 존재하게 된다.
+// 2. 매 프레임 변수가 Replicate 되는 상황이 발생한다. 4인 유저 체제일 경우 어느정도 대역폭을 소모하게 될 지 모른다.
+// 실제 게임 플레이 태스트와 프로파일링을 통해서 문제를 해결해야 한다.
+// 3. Stamina, Oxygen 컴포넌트가 분리되어서 더 복잡해지고 있는 상황일 수 있다. 추후 구현이 필요 이상으로 복잡해지면 합치는 것을 고려한다.
+
+// @TODO : 수중 캐릭터와 지상 캐릭터 분리
+// 만약에 레벨 전환이 있다고 가정하면 새로 캐릭터를 분리하는 것이 덜 복잡하게 된다.
+// 이 부분을 문의하고 확정된 스펙에 따라 결정한다.
+
 // 지상, 수중을 하나의 클래스로 구현하기로 결정
 // 하나의 클래스로 구현하는 이유는 수중, 지상을 이동할 수도 있는 기능을 지원해야 할 수도 있기 때문이다.
 // 새로 Respawn하면 되기는 하지만 그럴 경우 데이터를 누락할 수 있다.
@@ -32,6 +42,7 @@ public:
 	AUnderwaterCharacter();
 
 protected:
+	
 	virtual void BeginPlay() override;
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void OnRep_PlayerState() override;
@@ -91,11 +102,15 @@ protected:
 	UFUNCTION()
 	void AdjustSpeed();
 
-	/** 산소가 소진되었을 때 호출될 함수 */
+	/** 산소 상태가 변경될 떄 호출되는 함수 */
+	UFUNCTION()
+	void OnOxygenLevelChanged(float CurrentOxygenLevel, float MaxOxygenLevel);
+	
+	/** 산소가 소진되었을 때 호출되는 함수 */
 	UFUNCTION()
 	void OnOxygenDepleted();
 	
-	/** 산소가 회복되었을 때 호출될 함수 */
+	/** 산소가 회복되었을 때 호출되는 함수 */
 	UFUNCTION()
 	void OnOxygenRestored();
 	

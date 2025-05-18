@@ -5,8 +5,6 @@
 
 #include "Net/UnrealNetwork.h"
 
-
-// Sets default values for this component's properties
 UStaminaComponent::UStaminaComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
@@ -176,7 +174,7 @@ void UStaminaComponent::InitStamina(float MaxStamina, float Stamina)
 
 void UStaminaComponent::SetMaxStamina(const float NewMaxStamina)
 {
-	if (GetOwnerRole() != ROLE_Authority || NewMaxStamina <= 0)
+	if (GetOwnerRole() != ROLE_Authority || NewMaxStamina <= 0 || NewMaxStamina == StaminaStatus.MaxStamina)
 	{
 		return;
 	}

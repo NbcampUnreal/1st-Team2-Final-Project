@@ -94,6 +94,7 @@ void AUnderwaterCharacter::BeginPlay()
 	SetDebugCameraMode(bUseDebugCamera);
 
 	StaminaComponent->OnSprintStateChanged.AddDynamic(this, &AUnderwaterCharacter::OnSprintStateChanged);
+	OxygenComponent->OnOxygenLevelChanged.AddDynamic(this, &AUnderwaterCharacter::OnOxygenLevelChanged);
 	OxygenComponent->OnOxygenDepleted.AddDynamic(this, &AUnderwaterCharacter::OnOxygenDepleted);
 	OxygenComponent->OnOxygenRestored.AddDynamic(this, &AUnderwaterCharacter::OnOxygenRestored);
 	
@@ -304,6 +305,18 @@ void AUnderwaterCharacter::AdjustSpeed()
 	}
 }
 
+void AUnderwaterCharacter::OnOxygenLevelChanged(float CurrentOxygenLevel, float MaxOxygenLevel)
+{
+	// 산소 상태에 따라서 최대 스테미나를 조정한다.
+	// 현재로서는 최대 산소량과 최대 스테미나량과 동일하고
+	// 스테미나 소모를 초당 100으로 설정하고 있다.
+	// 예를 들면 산소량 600이면 600초를 버틸 수 있고 최대 스테미나량이 600이 된다.
+	// 스테미나 소모량이 100이므로 6초를 버틸 수 있다.
+
+	// 헤더의 주석에 작성했지만 현재로는 간단하게 구현 위주로 작성한다.
+	StaminaComponent->SetMaxStamina(CurrentOxygenLevel);
+}
+
 
 void AUnderwaterCharacter::OnOxygenDepleted()
 {
@@ -403,8 +416,6 @@ void AUnderwaterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 				&AUnderwaterCharacter::CompleteInteraction
 			);
 		}
-
-
 
 		if (LightAction)
 		{
