@@ -82,6 +82,9 @@ protected:
 	/** Player State 정보를 초기화 */
 	void InitFromPlayerState(class AADPlayerState* ADPlayerState);
 	
+	/** Upgrade Component의 정보를 바탕으로 초기화 */
+	void ApplyUpgradeFactor(class UUpgradeComponent* UpgradeComponent);
+	
 	/** Capture State Multicast
 	 * Owner : 암전 효과, 입력 처리
 	 * All : Mesh 비활성화
@@ -177,6 +180,13 @@ protected:
 #pragma region Variable
 
 private:
+
+	// Gather와 같은 정보는 추후 다른 곳으로 이동될 수 있지만 일단은 캐릭터에 구현한다.
+	
+	/** 채광 속도. 2.0일 경우 2배의 속도로 채광한다. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category= "Character|Stat", meta = (AllowPrivateAccess = "true"))
+	float GatherMultiplier;
+	
 	/** 디버그 카메라 활성화 여부 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Debug, meta = (AllowPrivateAccess = "true"))
 	uint8 bUseDebugCamera : 1;
@@ -319,6 +329,10 @@ private:
 #pragma region Getter Setter
 
 public:
+	
+	/** 캐릭터의 Oxygen Component를 반환 */
+	FORCEINLINE class UOxygenComponent* GetOxygenComponent() const { return OxygenComponent; }
+	
 	/** Interaction Component를 반환 */
 	FORCEINLINE UADInteractionComponent* GetInteractionComponent() const { return InteractionComponent; }
 
@@ -331,12 +345,18 @@ public:
 	/** 장착 아이템 컴포넌트 반환 */
 	FORCEINLINE UEquipUseComponent* GetEquipUseComponent() const { return EquipUseComponent; }
 
+	/** 현재 캐릭터의 최종 속도를 반환 */
+	FORCEINLINE float GetEffectiveSpeed() const { return EffectiveSpeed; }
+
 	/** 현재 캐릭터가 달리기 상태인지를 반환 */
 	FORCEINLINE bool IsSprinting() const;
 
 	/** 초과 무게 상태인지를 반환. 무게 >= 최대 무게일 때 True를 반환 */
 	UFUNCTION(BlueprintCallable)
 	bool IsOverloaded() const;
+
+	/** 채광 속도를 반환 2.0일 경우 2배로 빠르게 채광한다. */
+	FORCEINLINE float GetGatherMultiplier() const { return GatherMultiplier; }
 	
 #pragma endregion
 };

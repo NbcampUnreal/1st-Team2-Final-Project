@@ -8,6 +8,7 @@
 #include "PlayerComponent/OxygenComponent.h"
 #include "PlayerComponent/StaminaComponent.h"
 #include "StatComponent.h"
+#include "UpgradeComponent.h"
 #include "AbyssDiverUnderWorld/Interactable/Item/Component/ADInteractionComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -19,6 +20,7 @@
 #include "Interactable/Item/Component/EquipUseComponent.h"
 #include "Inventory/ADInventoryComponent.h"
 #include "Shops/ShopInteractionComponent.h"
+#include "Subsystems/DataTableSubsystem.h"
 #include "UI/HoldInteractionWidget.h"
 
 AUnderwaterCharacter::AUnderwaterCharacter()
@@ -29,6 +31,8 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	FirstPersonCameraComponent->bUsePawnControlRotation = true;
 
 	StatComponent->Initialize(1000, 1000, 400.0f, 10);
+
+	GatherMultiplier = 1.0f;
 	
 	bIsCaptured = false;
 	CaptureFadeTime = 0.5f;
@@ -132,8 +136,67 @@ void AUnderwaterCharacter::InitFromPlayerState(AADPlayerState* ADPlayerState)
 		LOGVN(Error, TEXT("Inventory Component Init failed : %d"), GetUniqueID());
 	}
 
+	if (UUpgradeComponent* Upgrade = ADPlayerState->GetUpgradeComp())
+	{
+		ApplyUpgradeFactor(Upgrade);
+	}
+	else
+	{
+		LOGVN(Error, TEXT("Upgrade Component Init failed : %d"), GetUniqueID());
+	}
+
 	// 리스폰 시에도 현재 무게에 따라 속도를 조정한다.
 	AdjustSpeed();
+}
+
+void AUnderwaterCharacter::ApplyUpgradeFactor(UUpgradeComponent* UpgradeComponent)
+{
+	if (!IsValid(UpgradeComponent))
+	{
+		return;
+	}
+
+	UDataTableSubsystem* DataTableSubsystem = GetGameInstance()->GetSubsystem<UDataTableSubsystem>();
+	if (DataTableSubsystem == nullptr)
+	{
+		LOGVN(Error, TEXT("DataTableSubsystem is not valid"));
+		return;
+	}
+	
+	for (uint8 i = 0; i < static_cast<uint8>(EUpgradeType::Max); ++i)
+	{
+	    const EUpgradeType Type = static_cast<EUpgradeType>(i);
+		
+		const uint8 Grade = UpgradeComponent->GetCurrentGrade(Type);
+		const FUpgradeDataRow* UpgradeData = DataTableSubsystem->GetUpgradeData(Type, Grade);
+		if (UpgradeData == nullptr)
+		{
+			LOGVN(Error, TEXT("UpgradeData is not valid"));
+			continue;
+		}
+		
+		// Stat Factor는 정수형으로 저장되어 있다.
+		const float StatFactor = UpgradeData->StatFactor;
+		
+	    switch (Type)
+	    {
+		    case EUpgradeType::Gather:
+			    GatherMultiplier = StatFactor / 100.0f;
+			    break;
+	    	case EUpgradeType::Oxygen:
+	    		OxygenComponent->InitOxygenSystem(StatFactor, StatFactor);
+			    break;
+	    	case EUpgradeType::Speed:
+	    		// 최종 속도는 나중에 AdjustSpeed를 통해서 계산된다. 현재는 BaseSpeed만 조정하면 된다.
+	    		StatComponent->MoveSpeed = StatFactor;
+	    		break;
+			case EUpgradeType::Light:
+	    		// @TODO Apply Light Component Upgrade 
+	    		break;
+		    default: ;
+	    		break;
+	    }
+	}
 }
 
 void AUnderwaterCharacter::PossessedBy(AController* NewController)
