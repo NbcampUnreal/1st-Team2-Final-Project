@@ -4,6 +4,7 @@
 #include "DrawDebugHelpers.h"
 #include "AbyssDiverUnderWorld.h"
 #include "Interface/IADInteractable.h"
+#include "Net/UnrealNetwork.h"
 
 // Sets default values for this component's properties
 UADInteractionComponent::UADInteractionComponent()
@@ -12,6 +13,8 @@ UADInteractionComponent::UADInteractionComponent()
 	PrimaryComponentTick.bCanEverTick = true;
 	PrimaryComponentTick.bStartWithTickEnabled = false;
 	bHoldTriggered = false;
+	bIsFocusing = false;
+	bIsInteractingStart = false;
 }
 
 
@@ -55,7 +58,13 @@ void UADInteractionComponent::TickComponent(float DeltaTime, ELevelTick TickType
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 	PerformFocusCheck();
-
+	if (!bIsFocusing && bIsInteractingStart)
+	{
+		if (IsLocallyControlled())
+		{
+			OnInteractReleased();
+		}
+	}
 	DrawDebugSphere(
 		GetWorld(),
 		GetOwner()->GetActorLocation(),
@@ -82,13 +91,22 @@ void UADInteractionComponent::S_RequestInteract_Implementation(AActor* TargetAct
 
 void UADInteractionComponent::S_RequestInteractHold_Implementation(AActor* TargetActor)
 {
-	if (!TargetActor) return;
-
-	if (GetOwner()->GetClass()->ImplementsInterface(UIADInteractable::StaticClass()))
+	bIsInteractingStart = true;
+	FocusedInteractable = TargetActor->FindComponentByClass<UADInteractableComponent>();
+	HoldThreshold = IIADInteractable::Execute_GetHoldDuration(TargetActor);
+	if (!FocusedInteractable)
 	{
-		IIADInteractable::Execute_InteractHold(TargetActor, GetOwner());
+		UE_LOG(LogTemp, Warning, TEXT("서버: FocusedInteractable이 없습니다!"));
+		return;
 	}
-	
+
+	if (!TargetActor) return;
+	HandleInteractPressed(TargetActor);
+}
+
+void UADInteractionComponent::S_RequestInteractRelease_Implementation()
+{
+	HandleInteractReleased();
 }
 
 
@@ -165,10 +183,12 @@ void UADInteractionComponent::PerformFocusCheck()
 	UADInteractableComponent* HitInteractable = PerformLineTrace(CamLocation, TraceEnd);
 	if (HitInteractable && NearbyInteractables.Contains(HitInteractable))
 	{
+		bIsFocusing = true;
 		UpdateFocus(HitInteractable);
 	}
 	else
 	{
+		bIsFocusing = false;
 		ClearFocus();
 	}
 }
@@ -197,6 +217,7 @@ UADInteractableComponent* UADInteractionComponent::PerformLineTrace(const FVecto
 
 	if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params))
 	{
+		
 		return Hit.GetActor()->FindComponentByClass<UADInteractableComponent>();
 	}
 	return nullptr;
@@ -233,10 +254,13 @@ void UADInteractionComponent::ClearFocus()
 
 void UADInteractionComponent::OnInteractPressed()
 {
-	PerformFocusCheck();
 	if (!FocusedInteractable) return;
+	bIsInteractingStart = true;
+	PerformFocusCheck();
 	if (AActor* Owner = FocusedInteractable->GetOwner())
 	{
+		HoldThreshold = IIADInteractable::Execute_GetHoldDuration(Owner);
+		OnHoldStart.Broadcast(Owner, HoldThreshold);
 		if (IIADInteractable* InteractableOwner = Cast<IIADInteractable>(Owner))
 		{
 
@@ -245,37 +269,42 @@ void UADInteractionComponent::OnInteractPressed()
 			{
 				TryInteract();   // 즉시 수행
 				return;
-			}	
+			}
+			// Hold Mode일 경우
+			if (GetOwner()->HasAuthority())
+			{
+				HandleInteractPressed(Owner);
+			}
+			else
+			{
+				// 클라이언트라면 RPC 호출
+				S_RequestInteractHold(Owner);
+			}
 		}
-		if (Owner->GetClass()->ImplementsInterface(UIADInteractable::StaticClass()))
-		{
-
-			OnHoldStart.Broadcast(FocusedInteractable->GetOwner(), HoldThreshold);
-
-			// == Hold 모드 ==
-			HoldThreshold = IIADInteractable::Execute_GetHoldDuration(Owner);
-			bHoldTriggered = false;
-			HoldInstigator = Cast<APawn>(GetOwner());
-
-			LOG(TEXT("Start Hold!"));
-			GetWorld()->GetTimerManager().SetTimer(
-				HoldTimerHandle, this,
-				&UADInteractionComponent::OnHoldComplete,
-				HoldThreshold, false);
-		}
+		
 	}
 }
 
 void UADInteractionComponent::OnInteractReleased()
 {
+	if (!bIsInteractingStart)
+		return;
+
+	bIsInteractingStart = false;
+
 	// Hold 오브젝트지만 시간 100% 못 채우고 놓은 경우: 취소
 	if (!bHoldTriggered)
 	{
-		GetWorld()->GetTimerManager().ClearTimer(HoldTimerHandle);
-		OnHoldCancel.Broadcast();
-		LOG(TEXT("Fail Hold!"));
-		HoldInstigator = nullptr;
+		if (GetOwner()->HasAuthority())
+		{
+			HandleInteractReleased();
+		}
+		else
+		{
+			S_RequestInteractRelease();
+		}
 	}
+	OnHoldCancel.Broadcast();
 }
 
 void UADInteractionComponent::OnHoldComplete()
@@ -284,15 +313,35 @@ void UADInteractionComponent::OnHoldComplete()
 	AActor* Instigator = HoldInstigator.Get();
 	if (!Instigator || !FocusedInteractable) return;
 
-	if (GetOwner()->HasAuthority())
+	LOG(TEXT("End Hold!"));
+	IIADInteractable::Execute_InteractHold(FocusedInteractable->GetOwner(), Instigator);
+
+	bIsInteractingStart = false;
+}
+
+void UADInteractionComponent::HandleInteractPressed(AActor* TargetActor)
+{
+
+	if (TargetActor->GetClass()->ImplementsInterface(UIADInteractable::StaticClass()))
 	{
-		LOG(TEXT("End Hold!"));
-		IIADInteractable::Execute_InteractHold(FocusedInteractable->GetOwner(), Instigator);
+		// == Hold 모드 ==
+		bHoldTriggered = false;
+		HoldInstigator = Cast<APawn>(GetOwner());
+
+		LOG(TEXT("Start Hold!"));
+		GetWorld()->GetTimerManager().SetTimer(
+			HoldTimerHandle, this,
+			&UADInteractionComponent::OnHoldComplete,
+			HoldThreshold, false);
 	}
-	else
-	{
-		S_RequestInteractHold(FocusedInteractable->GetOwner());
-	}
+}
+
+void UADInteractionComponent::HandleInteractReleased()
+{
+	bIsInteractingStart = false;
+	GetWorld()->GetTimerManager().ClearTimer(HoldTimerHandle);
+	LOG(TEXT("Fail Hold!"));
+	HoldInstigator = nullptr;
 }
 
 bool UADInteractionComponent::ShouldHighlight(const UADInteractableComponent* ADIC) const
@@ -308,5 +357,13 @@ bool UADInteractionComponent::IsLocallyControlled() const
 		if (const AController* C = P->GetController())
 			return C->IsLocalController();
 	return false;
+}
+
+void UADInteractionComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(UADInteractionComponent, bIsInteractingStart);
+	DOREPLIFETIME(UADInteractionComponent, bHoldTriggered);
+	DOREPLIFETIME(UADInteractionComponent, bIsFocusing);
 }
 
