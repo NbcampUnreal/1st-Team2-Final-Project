@@ -23,6 +23,7 @@ protected:
 
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void CopyProperties(APlayerState* PlayerState) override;
 public:
 	void SetPlayerInfo(const FString& InNickname);
 
@@ -65,6 +66,8 @@ protected:
 	UPROPERTY(Replicated)
 	uint8 bIsSafeReturn : 1;
 
+	UPROPERTY(Replicated)
+	int8 PlayerIndex = INDEX_NONE;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TObjectPtr<UADInventoryComponent> InventoryComp;
@@ -135,6 +138,9 @@ public:
 
 	FORCEINLINE UADInventoryComponent* GetInventory() const { return InventoryComp; };
 	FORCEINLINE UUpgradeComponent* GetUpgradeComp() const { return UpgradeComp; };
+
+	int8 GetPlayerIndex() const { return PlayerIndex; }
+	void SetPlayerIndex(int8 NewPlayerIndex) { PlayerIndex = NewPlayerIndex; }
 
 
 #pragma endregion

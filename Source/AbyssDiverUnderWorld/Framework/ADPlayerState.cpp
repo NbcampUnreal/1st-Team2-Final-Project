@@ -29,7 +29,7 @@ void AADPlayerState::BeginPlay()
 	APlayerController* PC = GetPlayerController();
 	if (PC && PC->IsLocalController() && HasAuthority())
 	{
-
+		LOGVN(Error, TEXT("Map Name : %s"), *GetWorld()->GetMapName());
 		InventoryComp->ClientRequestInventoryInitialize();
 		LOGVN(Error, TEXT("Inventory Initializded"));
 
@@ -64,6 +64,16 @@ void AADPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME(AADPlayerState, MonsterKillCount);
 	DOREPLIFETIME(AADPlayerState, OreMinedCount);
 	DOREPLIFETIME(AADPlayerState, bIsSafeReturn);
+	DOREPLIFETIME(AADPlayerState, PlayerIndex);
+}
+
+void AADPlayerState::CopyProperties(APlayerState* PlayerState)
+{
+	Super::CopyProperties(PlayerState);
+
+	AADPlayerState* NextPlayerState = CastChecked<AADPlayerState>(PlayerState);
+	LOGV(Warning, TEXT("Id Copied, Old : %d, New : %d, Net : %s"), PlayerIndex, NextPlayerState->GetPlayerIndex(), *NextPlayerState->GetUniqueId().GetUniqueNetId()->ToString());
+	NextPlayerState->SetPlayerIndex(PlayerIndex);
 }
 
 void AADPlayerState::SetPlayerInfo( const FString& InNickname)

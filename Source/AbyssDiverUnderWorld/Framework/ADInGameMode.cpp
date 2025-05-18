@@ -3,6 +3,7 @@
 #include "ADPlayerState.h"
 #include "ADPlayerController.h"
 #include "GameFramework/PlayerController.h"
+#include "Framework/ADGameInstance.h"
 #include "Interactable/OtherActors/ADDrone.h"
 #include "Interactable/OtherActors/ADDroneSeller.h"
 #include "Subsystems/DataTableSubsystem.h"
@@ -17,6 +18,7 @@
 
 AADInGameMode::AADInGameMode()
 {
+	bUseSeamlessTravel = true;
 }
 
 void AADInGameMode::BeginPlay()
@@ -53,6 +55,16 @@ void AADInGameMode::PostLogin(APlayerController* NewPlayer)
 	Super::PostLogin(NewPlayer);
 
 	InitPlayer(NewPlayer);
+}
+
+void AADInGameMode::Logout(AController* Exiting)
+{
+	Super::Logout(Exiting);
+
+	FString ExitingId = Exiting->GetPlayerState<AADPlayerState>()->GetUniqueId().GetUniqueNetId()->ToString();
+	UADGameInstance* GI = GetGameInstance<UADGameInstance>();
+	GI->RemovePlayerNetId(ExitingId);
+
 }
 
 void AADInGameMode::ReadyForTravelToCamp()

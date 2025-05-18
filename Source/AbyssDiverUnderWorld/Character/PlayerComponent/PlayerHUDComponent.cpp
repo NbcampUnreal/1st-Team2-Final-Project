@@ -1,12 +1,12 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
-
-
-#include "PlayerHUDComponent.h"
+﻿#include "PlayerHUDComponent.h"
 
 #include "AbyssDiverUnderWorld.h"
 #include "Character/PlayerHUDWidget.h"
 #include "Framework/CreateTeamWidget.h"
+#include "Framework/ADPlayerState.h"
 #include "UI/ResultScreen.h"
+
+#include "EngineUtils.h"
 
 UPlayerHUDComponent::UPlayerHUDComponent()
 {
@@ -58,15 +58,20 @@ void UPlayerHUDComponent::BeginPlay()
 
 void UPlayerHUDComponent::C_ShowResultScreen_Implementation()
 {
-	FResultScreenParams Params
-	(
-		TEXT("Test1"),
-		111,
-		333,
-		EAliveInfo::Dead
-	);
+	for (AADPlayerState* PS : TActorRange<AADPlayerState>(GetWorld()))
+	{
+		FResultScreenParams Params
+		(
+			PS->GetPlayerNickname(),
+			98,
+			PS->GetTotalOreMinedCount(),
+			EAliveInfo::Abandoned
+		);
 
-	UpdateResultScreen(1, Params);
+		UpdateResultScreen(PS->GetPlayerIndex(), Params);
+	}
+
+	
 	SetResultScreenVisible(true);
 }
 

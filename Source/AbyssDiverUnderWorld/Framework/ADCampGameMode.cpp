@@ -1,9 +1,11 @@
 #include "Framework/ADCampGameMode.h"
 #include "Framework/ADInGameState.h"
 #include "Framework/ADPlayerState.h"
+#include "Framework/ADGameInstance.h"
 #include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
 #include "DataRow/PhaseGoalRow.h"
+#include "AbyssDiverUnderWorld.h"
 
 void AADCampGameMode::ADCampGameMode()
 {
@@ -22,14 +24,35 @@ void AADCampGameMode::PostLogin(APlayerController* NewPlayer)
 {
 	Super::PostLogin(NewPlayer);
 
+	FString NewPlayerId = NewPlayer->GetPlayerState<AADPlayerState>()->GetUniqueId().GetUniqueNetId()->ToString();
+
+	LOGV(Warning, TEXT("%s Has Entered"), *NewPlayerId);
+	UADGameInstance* GI = GetGameInstance<UADGameInstance>();
+	check(GI);
+
 	if (AADPlayerState* ADPlayerState = NewPlayer->GetPlayerState<AADPlayerState>())
 	{
 		ADPlayerState->ResetLevelResults();
+		GI->AddPlayerNetId(NewPlayerId);
+
+		int32 NewPlayerIndex = INDEX_NONE;
+		if (GI->TryGetPlayerIndex(NewPlayerId, NewPlayerIndex) == false)
+		{
+			LOGV(Error, TEXT("Fail To Get Player Index"));
+			return;
+		}
+
+		ADPlayerState->SetPlayerIndex(NewPlayerIndex);
 	}
 }
 
 void AADCampGameMode::Logout(AController* Exiting)
 {
+	Super::Logout(Exiting);
+	
+	FString ExitingId = Exiting->GetPlayerState<AADPlayerState>()->GetUniqueId().GetUniqueNetId()->ToString();
+	UADGameInstance* GI = GetGameInstance<UADGameInstance>();
+	GI->RemovePlayerNetId(ExitingId);
 }
 
 void AADCampGameMode::TryStartGame()
