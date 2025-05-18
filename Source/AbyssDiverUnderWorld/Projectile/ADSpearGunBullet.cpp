@@ -8,6 +8,10 @@
 #include "Net/UnrealNetwork.h"
 #include "Engine/EngineTypes.h"  
 #include "GameFramework/ProjectileMovementComponent.h"
+#include "NiagaraComponent.h"
+#include "Framework/ADGameInstance.h"
+#include "Subsystems/DataTableSubsystem.h"
+#include "DataRow/FADProjectileDataRow.h"
 
 AADSpearGunBullet::AADSpearGunBullet() : BulletType(ESpearGunType::Basic), AdditionalDamage(0), PoisonDuration(0), bWasHit(false)
 {
@@ -15,31 +19,45 @@ AADSpearGunBullet::AADSpearGunBullet() : BulletType(ESpearGunType::Basic), Addit
     StaticMesh->SetupAttachment(RootComponent);
     StaticMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision); 
 
-    Damage = 10.0f; //추후 450.0f
+    TrailEffect = CreateDefaultSubobject<UNiagaraComponent>(TEXT("TrailEffect"));
+    TrailEffect->SetupAttachment(RootComponent);
+
+    TrailEffect->bAutoActivate = false;
+
+    Damage = 450.0f;
 }
 
 void AADSpearGunBullet::OnRep_BulletType()
 {
-    switch (BulletType)
-    {
-    case ESpearGunType::Basic:
-        break;
-    case ESpearGunType::Bomb:
-        AdditionalDamage = 20.0f;//200.0f;
-        break;
-    case ESpearGunType::Poison:
-        AdditionalDamage = 30.0f;//750.0f;
-        PoisonDuration = 4;
-        break;
-    default:
-        break;
-    }
+
 }
 
 void AADSpearGunBullet::BeginPlay()
 {
     Super::BeginPlay();
-    LOG(TEXT("UpdatedComponent is %s"),ProjectileMovementComp->UpdatedComponent ? *ProjectileMovementComp->UpdatedComponent->GetName() : TEXT("NULL"));
+    //3가지 타입의 Bullet BP를 만들거면 여기 하나의 BP만 만들고 속성을 바꿀 거면 OnRep
+    FString EnumName = StaticEnum<ESpearGunType>()->GetNameStringByValue((int64)ESpearGunType::Basic);
+    FString RowNameString = EnumName + "SpearGunBullet";
+    FName ProjectileName(*RowNameString);
+
+    if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+    {
+        DataTableSubsystem = GI->GetSubsystem<UDataTableSubsystem>();
+    }
+    if (DataTableSubsystem)
+    {
+        FFADProjectileDataRow* ProjectileInfo = DataTableSubsystem->GetProjectileDataArrayByName(ProjectileName);
+        if (ProjectileInfo)
+        {
+            AdditionalDamage = ProjectileInfo->AdditionalDamage;
+            // 로드되어 있으면 가져오고 안 되어 있으면 동기 로드
+            UNiagaraSystem* Effect = ProjectileInfo->TrailEffect.IsValid() ? ProjectileInfo->TrailEffect.Get() : ProjectileInfo->TrailEffect.LoadSynchronous();
+            TrailEffect->SetAsset(Effect);
+            TrailEffect->Activate(true);
+        }
+    }
+    //TODO : Shoot Sound
+    //TODO : Shoot Effect
 
 }
 
@@ -77,16 +95,15 @@ void AADSpearGunBullet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 void AADSpearGunBullet::ApplyAdditionalDamage()
 {
     FTimerHandle BurstTimerHandle;
+    //TODO : Hit Sound
     switch (BulletType)
     {
     case ESpearGunType::Basic:
         LOG(TEXT("BasicBullet"));
         break;
     case ESpearGunType::Bomb:
-        //TODO : 삐삐삐 소리
         LOG(TEXT("BombTimer"));
         GetWorld()->GetTimerManager().SetTimer(BurstTimerHandle, this, &AADSpearGunBullet::Burst, 2.5f, false);
-        
         break;
     case ESpearGunType::Poison:
         Addict();
@@ -98,7 +115,7 @@ void AADSpearGunBullet::ApplyAdditionalDamage()
 
 void AADSpearGunBullet::Burst()
 {
-    //TODO : 터지는 이펙트
+    //TODO : Hit Effect
     LOG(TEXT("BombBullet"));
 
     TArray<FHitResult> HitResults;
@@ -150,6 +167,7 @@ void AADSpearGunBullet::Burst()
 
 void AADSpearGunBullet::Addict()
 {
+    //TODO : Hit Effect
     //TODO : 디버프 컴포넌트 함수 호출
     LOG(TEXT("PoisonBullet"));
 }

@@ -6,6 +6,8 @@
 #include "Projectile/ADProjectileBase.h"
 #include "ADSpearGunBullet.generated.h"
 
+class UDataTableSubsystem;
+
 UENUM(BlueprintType)
 enum class ESpearGunType : uint8
 {
@@ -45,6 +47,10 @@ private:
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Component")
 	TObjectPtr<UStaticMeshComponent> StaticMesh;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Component")
+	TObjectPtr<UNiagaraComponent> TrailEffect;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Component")
+	TObjectPtr<UDataTableSubsystem> DataTableSubsystem;
 private:
 	UPROPERTY(ReplicatedUsing = OnRep_BulletType, EditAnywhere, Category = "Bullet")
 	ESpearGunType BulletType;
