@@ -4,6 +4,7 @@
 #include "Framework/ADGameInstance.h"
 #include "DataRow/UpgradeDataRow.h"
 #include "DataRow/FADItemDataRow.h"
+#include "DataRow/FADProjectileDataRow.h"
 #include "DataRow/PhaseGoalRow.h"
 #include "Interactable/Item/ADOreRock.h"
 #include "Logging/LogMacros.h"
@@ -48,6 +49,20 @@ void UDataTableSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 FFADItemDataRow* UDataTableSubsystem::GetItemData(int32 ItemId) const
 {
 	return ItemDataTableArray[ItemId];
+}
+
+FFADProjectileDataRow* UDataTableSubsystem::GetProjectileDataArrayByName(FName ProjectileName) const
+{
+	UADGameInstance* GI = CastChecked<UADGameInstance>(GetGameInstance());
+	if (UDataTable* ProjectileDataTable = GI->ProjectileDataTable)
+	{
+		return ProjectileDataTable->FindRow<FFADProjectileDataRow>(ProjectileName, TEXT("LookupItem"));
+	}
+	else
+	{
+		LOGV(Error, TEXT("ProjectileRow is null"));
+	}
+	return nullptr;
 }
 
 FUpgradeDataRow* UDataTableSubsystem::GetUpgradeDataTableArray(int32 Index) const
