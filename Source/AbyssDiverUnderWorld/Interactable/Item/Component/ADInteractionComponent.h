@@ -28,6 +28,9 @@ public:
     UFUNCTION(Server, Reliable)
     void S_RequestInteractHold(AActor* TargetActor);
     void S_RequestInteractHold_Implementation(AActor* TargetActor);
+    UFUNCTION(Server, Reliable)
+    void S_RequestInteractRelease();
+    void S_RequestInteractRelease_Implementation();
     
     // Overlap 콜백 바인딩용 함수
     UFUNCTION()
@@ -55,6 +58,9 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Interaction")
     void OnHoldComplete();
 
+    void HandleInteractPressed(AActor* TargetActor);
+    void HandleInteractReleased();
+
     // 실제 Focus 검사 함수
     void PerformFocusCheck();
     bool ComputeViewTrace(FVector& OutStart, FVector& OutEnd) const;
@@ -68,7 +74,7 @@ public:
     bool IsLocallyControlled() const;
 
 protected:
-
+    virtual void GetLifetimeReplicatedProps(TArray< FLifetimeProperty>& OutLifetimeProps) const override;
 
 private:
 
@@ -84,6 +90,14 @@ public:
     UPROPERTY(BlueprintAssignable) 
     FOnHoldCancelSignature OnHoldCancel;
 
+    UPROPERTY(Replicated)
+    uint8 bIsInteractingStart : 1;
+    UPROPERTY(Replicated)
+    uint8 bHoldTriggered : 1;
+    UPROPERTY(Replicated)
+    uint8 bIsFocusing : 1;
+    UPROPERTY(EditAnywhere)
+    float HoldThreshold = 3.f;
     UPROPERTY()
     TSet<TObjectPtr<UADInteractableComponent>> NearbyInteractables;
     UPROPERTY()
@@ -91,12 +105,10 @@ public:
     UPROPERTY()
     TObjectPtr<UADInteractableComponent> FocusedInteractable = nullptr;
 
-    UPROPERTY(EditAnywhere)
-    float HoldThreshold = 3.f;
+    
     FTimerHandle HoldTimerHandle;
-    uint8 bHoldTriggered : 1;
-    uint8 bIsFocusing : 1;
-    uint8 bIsInteractingStart : 1;
+    
+    
     TWeakObjectPtr<AActor> HoldInstigator;
 
 
