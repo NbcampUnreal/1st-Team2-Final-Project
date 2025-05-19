@@ -269,18 +269,66 @@ void UEquipUseComponent::Initialize(uint8 ItemId)
 	}
 }
 
+void UEquipUseComponent::Initialize(FItemData& ItemData)
+{
+	if (CurrentItemData)
+	{
+		DeinitializeEquip();
+	}
+
+
+	CurrentItemData = &ItemData;
+	CurrentAmmoInMag = CurrentItemData->CurrentAmmoInMag;
+	ReserveAmmo = CurrentItemData->ReserveAmmo;
+	Amount = CurrentItemData->Amount;
+
+	UGameInstance* GI = GetWorld()->GetGameInstance();
+	if (!GI)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Initialize: No valid GameInstance"));
+		return;
+	}
+	UDataTableSubsystem* DataTableSubsystem = GI->GetSubsystem<UDataTableSubsystem>();
+	FFADItemDataRow* InItemMeta = DataTableSubsystem ? DataTableSubsystem->GetItemData(CurrentItemData->Id) : nullptr;
+
+	if (InItemMeta)
+	{
+		LeftAction = TagToAction(InItemMeta->LeftTag);
+		RKeyAction = TagToAction(InItemMeta->RKeyTag);
+	}
+
+	bIsWeapon = (LeftAction == EAction::WeaponFire || RKeyAction == EAction::WeaponFire);
+
+	if (bIsWeapon)
+	{
+		OnRep_CurrentAmmoInMag();
+		OnRep_ReserveAmmo();
+	}
+	else
+	{
+		OnRep_Amount();
+	}
+
+	if (ACharacter* Char = Cast<ACharacter>(GetOwner()))
+	{
+		OwningCharacter = Char;
+		DefaultSpeed = Char->GetCharacterMovement()->MaxSwimSpeed;
+	}
+
+	UE_LOG(LogTemp, Log, TEXT(
+		"Initialize: Weapon=%s, Ammo=%d/%d, Amount=%d"),
+		bIsWeapon ? TEXT("true") : TEXT("false"),
+		CurrentAmmoInMag, ReserveAmmo, Amount);
+}
+
 void UEquipUseComponent::DeinitializeEquip()
 {
-	if (!CurrentRowName.IsNone())
+	if (CurrentItemData)
 	{
-		if (bIsWeapon)
-		{
-			AmountMap.FindOrAdd(CurrentRowName) = FEquipState(CurrentAmmoInMag, ReserveAmmo);
-		}
-		else
-		{
-			AmountMap.FindOrAdd(CurrentRowName) = FEquipState(Amount);
-		}
+		CurrentItemData->Amount = Amount;
+		CurrentItemData->CurrentAmmoInMag = CurrentAmmoInMag;
+		CurrentItemData->ReserveAmmo = ReserveAmmo;
+		LOG(TEXT("No Current Item"));
 	}
 
 

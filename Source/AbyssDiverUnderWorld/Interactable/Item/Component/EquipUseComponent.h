@@ -4,6 +4,7 @@
 #include "GameplayTagContainer.h"
 #include "Components/ActorComponent.h"
 #include "DataRow/FADItemDataRow.h"
+#include "Interactable/Item/ADUseItem.h"
 #include "EquipUseComponent.generated.h"
 
 class AADProjectileBase;
@@ -95,6 +96,7 @@ public:
 
 
 	void Initialize(uint8 ItemId);
+	void Initialize(FItemData& ItemData);
 	// 상태 초기화 함수
 	void DeinitializeEquip();
 	EAction TagToAction(const FGameplayTag& Tag);
@@ -149,6 +151,7 @@ public:
 	float BoostMultiplier = 4.f;
 	UPROPERTY(EditDefaultsOnly, Category = "Boost")
 	float InterpSpeed = 3.f;
+
 	
 	
 protected:
@@ -171,6 +174,7 @@ protected:
 	UPROPERTY(EditAnywhere)
 	FName CurrentRowName;
 	
+	FItemData* CurrentItemData = nullptr;
 
 	TWeakObjectPtr<class ACharacter> OwningCharacter;
 	float DefaultSpeed = 0.f;
