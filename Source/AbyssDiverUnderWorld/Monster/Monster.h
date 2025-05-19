@@ -33,11 +33,12 @@ public:
 	UFUNCTION(BlueprintCallable)
 	int32 GetNextPatrolIndex(int32 CurrentIndex) const;
 	UFUNCTION(NetMulticast, Reliable)
-	void M_PlayAttackMontage(UAnimMontage* AnimMontage, float InPlayRate = 1, FName StartSectionName = NAME_None);
-	void M_PlayAttackMontage_Implementation(UAnimMontage* AnimMontage, float InPlayRate = 1, FName StartSectionName = NAME_None);
+	void M_PlayMontage(UAnimMontage* AnimMontage, float InPlayRate = 1, FName StartSectionName = NAME_None);
+	void M_PlayMontage_Implementation(UAnimMontage* AnimMontage, float InPlayRate = 1, FName StartSectionName = NAME_None);
 
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 	virtual void OnDeath();
+	virtual void PlayAttackMontage();
 
 #pragma endregion
 
@@ -45,8 +46,6 @@ public:
 protected:
 	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "AI|Patrol")
 	TObjectPtr<ASplinePathActor> AssignedSplineActor;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Attack")
-	TObjectPtr<UAnimMontage> AttackMontage;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI|Blackboard")
 	TObjectPtr<UBlackboardComponent> BlackboardComponent;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI|AIController")
@@ -55,7 +54,8 @@ protected:
 	TObjectPtr<UAnimInstance> AnimInstance;
 	UPROPERTY(Replicated, BlueprintReadWrite)
 	EMonsterState MonsterState;
-	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AI|AttackAnimation")
+	TArray<TObjectPtr<UAnimMontage>> AttackAnimations;
 
 private:
 	static const FName MonsterStateKey;
@@ -63,7 +63,7 @@ private:
 
 #pragma region Getter. Setter
 public:
-	UAnimMontage* GetAttackMontage() { return AttackMontage; }
+	TArray<UAnimMontage*> GetAttackAnimations() { return AttackAnimations; }
 
 	// Virtual function to get collision components for attack range determination externally
 	virtual USphereComponent* GetAttackHitComponent() const { return nullptr; }

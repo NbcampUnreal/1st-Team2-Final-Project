@@ -78,12 +78,9 @@ int32 AMonster::GetNextPatrolIndex(int32 CurrentIndex) const
 	}
 }
 
-void AMonster::M_PlayAttackMontage_Implementation(UAnimMontage* AnimMontage, float InPlayRate, FName StartSectionName)
+void AMonster::M_PlayMontage_Implementation(UAnimMontage* AnimMontage, float InPlayRate, FName StartSectionName)
 {
-	if (AttackMontage)
-	{
-		PlayAnimMontage(AttackMontage);
-	}
+	PlayAnimMontage(AnimMontage, InPlayRate, StartSectionName);
 }
 
 float AMonster::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
@@ -108,6 +105,16 @@ void AMonster::OnDeath()
 	SetMonsterState(EMonsterState::Death);
 
 	AIController->UnPossess();
+}
+
+void AMonster::PlayAttackMontage()
+{
+	const uint8 AttackType = FMath::RandRange(0, AttackAnimations.Num() - 1);
+
+	if (IsValid(AttackAnimations[AttackType]))
+	{
+		M_PlayMontage(AttackAnimations[AttackType]);
+	}
 }
 
 void AMonster::SetMonsterState(EMonsterState State)
