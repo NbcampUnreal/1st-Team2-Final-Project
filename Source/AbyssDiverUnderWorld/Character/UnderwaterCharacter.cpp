@@ -19,7 +19,6 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Interactable/Item/Component/EquipUseComponent.h"
 #include "Inventory/ADInventoryComponent.h"
-#include "Net/UnrealNetwork.h"
 #include "Shops/ShopInteractionComponent.h"
 #include "Subsystems/DataTableSubsystem.h"
 #include "UI/HoldInteractionWidget.h"
@@ -318,6 +317,8 @@ void AUnderwaterCharacter::M_NotifyStateChange_Implementation(ECharacterState Ne
 	CharacterState = NewCharacterState;
 	
 	HandleEnterState(CharacterState);
+
+	OnCharacterStateChangedDelegate.Broadcast(NewCharacterState);
 }
 
 void AUnderwaterCharacter::HandleEnterState(ECharacterState HandleCharacterState)

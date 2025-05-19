@@ -33,6 +33,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void UpdateStaminaText(float Stamina, float MaxStamina);
 
+	UFUNCTION(BlueprintCallable)
+	void UpdateCharacterStateText(ECharacterState CharacterState);
+
 #pragma endregion
 
 #pragma region Variable
@@ -50,6 +53,9 @@ private:
 	/** 스태미나 택스트, 임시용이고 디버깅용으로 수정 예정 */
 	UPROPERTY(meta = (BindWidget))
 	class URichTextBlock* StaminaTextBlock;
+
+	UPROPERTY(meta = (BindWidget))
+	URichTextBlock* CharacterStateTextBlock;
 	
 #pragma endregion
 	

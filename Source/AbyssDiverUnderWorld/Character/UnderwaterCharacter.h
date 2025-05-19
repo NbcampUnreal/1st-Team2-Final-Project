@@ -28,9 +28,9 @@ enum class EEnvState : uint8
 UENUM(BlueprintType)
 enum class ECharacterState : uint8
 {
-	Normal,
-	Groggy,
-	Death,
+	Normal UMETA(DisplayName = "Normal"),
+	Groggy UMETA(DisplayName = "Groggy"),
+	Death UMETA(DisplayName = "Death"),
 };
 
 // FSM으로 구현했습니다. 추후에 State Pattern으로 변경 고려하겠습니다.
@@ -248,6 +248,11 @@ public:
 	/** 캐릭터가 그로기 상태에 진입했을 때 호출되는 델리게이트 */
 	UPROPERTY(BlueprintAssignable)
 	FOnGroggy OnGroggyDelegate;
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnCharacterStateChanged, ECharacterState, NewCharacterState);
+	/** 캐릭터 상태가 변경되었을 때 호출되는 델리게이트 */
+	UPROPERTY(BlueprintAssignable)
+	FOnCharacterStateChanged OnCharacterStateChangedDelegate;
 	
 private:
 

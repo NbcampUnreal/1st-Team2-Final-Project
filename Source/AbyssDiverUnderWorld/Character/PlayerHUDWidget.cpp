@@ -5,6 +5,7 @@
 
 #include "AbyssDiverUnderWorld.h"
 #include "StatComponent.h"
+#include "UnderwaterCharacter.h"
 #include "Components/RichTextBlock.h"
 #include "PlayerComponent/OxygenComponent.h"
 #include "PlayerComponent/StaminaComponent.h"
@@ -40,6 +41,11 @@ void UPlayerHUDWidget::BindWidget(APawn* PlayerPawn)
 	{
 		StaminaComponent->OnStaminaChanged.AddDynamic(this, &UPlayerHUDWidget::UpdateStaminaText);
 		UpdateStaminaText(StaminaComponent->GetStamina(), StaminaComponent->GetMaxStamina());
+	}
+	if (AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(PlayerPawn))
+	{
+		UnderwaterCharacter->OnCharacterStateChangedDelegate.AddDynamic(this, &UPlayerHUDWidget::UpdateCharacterStateText);
+		UpdateCharacterStateText(UnderwaterCharacter->GetCharacterState());
 	}
 }
 
@@ -95,5 +101,24 @@ void UPlayerHUDWidget::UpdateStaminaText(float Stamina, float MaxStamina)
 	else
 	{
 		LOGV(Warning, TEXT("StaminaTextBlock is nullptr"));
+	}
+}
+
+void UPlayerHUDWidget::UpdateCharacterStateText(ECharacterState CharacterState)
+{
+	if (CharacterStateTextBlock)
+	{
+		FString CharacterStateString = UEnum::GetDisplayValueAsText(CharacterState).ToString();
+		FText CharacterStateText = FText::Format(
+			FText::FromString(TEXT("Character State : {0}")),
+			FText::FromString(CharacterStateString)
+		);
+		
+		CharacterStateTextBlock->SetText(CharacterStateText);
+		LOGV(Warning, TEXT("Character State : %s"), *UEnum::GetDisplayValueAsText(CharacterState).ToString());
+	}
+	else
+	{
+		LOGV(Warning, TEXT("CharacterStateTextBlock is nullptr"));
 	}
 }
