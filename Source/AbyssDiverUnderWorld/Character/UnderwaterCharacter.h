@@ -249,11 +249,11 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FOnGroggy OnGroggyDelegate;
 
-	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnCharacterStateChanged, ECharacterState, NewCharacterState);
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnCharacterStateChanged, ECharacterState, OldCharacterState, ECharacterState, NewCharacterState);
 	/** 캐릭터 상태가 변경되었을 때 호출되는 델리게이트 */
 	UPROPERTY(BlueprintAssignable)
 	FOnCharacterStateChanged OnCharacterStateChangedDelegate;
-	
+
 private:
 
 	// Character State는 현재 State 종료 시에 따로 처리할 것이 없기 때문에 현재 상태 값만 Replicate하도록 한다.

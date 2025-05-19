@@ -15,11 +15,12 @@ class ABYSSDIVERUNDERWORLD_API UPlayerHUDWidget : public UUserWidget
 	GENERATED_BODY()
 
 	virtual void NativeConstruct() override;
+
+	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 	
 #pragma region Method
 
 public:
-
 	void BindWidget(APawn* PlayerPawn);
 	
 	UFUNCTION(BlueprintCallable)
@@ -33,9 +34,20 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void UpdateStaminaText(float Stamina, float MaxStamina);
 
+	/** Character State를 갱신 */
 	UFUNCTION(BlueprintCallable)
 	void UpdateCharacterStateText(ECharacterState CharacterState);
 
+	/** Groggy 시간을 갱신 */
+	UFUNCTION(BlueprintCallable)
+	void UpdateGroggyText(float GroggyTime, float MaxGroggyTime);
+	
+protected:
+
+	/** Character State 변화 처리 */
+	UFUNCTION()
+	void OnCharacterStateChanged(ECharacterState OldCharacterState, ECharacterState NewCharacterState);
+	
 #pragma endregion
 
 #pragma region Variable
@@ -54,8 +66,13 @@ private:
 	UPROPERTY(meta = (BindWidget))
 	class URichTextBlock* StaminaTextBlock;
 
+	/** 캐릭터 스테이트 택스트, 디버깅용으로 수정 예정 */
 	UPROPERTY(meta = (BindWidget))
 	URichTextBlock* CharacterStateTextBlock;
+
+	/** 그로기 시간 텍스트, 디버깅용으로 수정 예정 */
+	UPROPERTY(meta = (BindWidget))
+	URichTextBlock* GroggyTextBlock;
 	
 #pragma endregion
 	

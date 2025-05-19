@@ -313,12 +313,13 @@ void AUnderwaterCharacter::SetCharacterState(const ECharacterState NewCharacterS
 void AUnderwaterCharacter::M_NotifyStateChange_Implementation(ECharacterState NewCharacterState)
 {
 	HandleExitState(CharacterState);
-	
+
+	ECharacterState OldCharacterState = CharacterState;
 	CharacterState = NewCharacterState;
 	
 	HandleEnterState(CharacterState);
 
-	OnCharacterStateChangedDelegate.Broadcast(NewCharacterState);
+	OnCharacterStateChangedDelegate.Broadcast(OldCharacterState, NewCharacterState);
 }
 
 void AUnderwaterCharacter::HandleEnterState(ECharacterState HandleCharacterState)
@@ -424,8 +425,8 @@ void AUnderwaterCharacter::HandleEnterDeath()
 	{
 		if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
 		{
-			PlayerController->SetIgnoreLookInput(false);
-			PlayerController->SetIgnoreMoveInput(false);
+			PlayerController->SetIgnoreLookInput(true);
+			PlayerController->SetIgnoreMoveInput(true);
 		}
 	}
 
