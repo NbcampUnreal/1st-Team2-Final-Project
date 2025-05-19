@@ -390,8 +390,14 @@ void UEquipUseComponent::FireHarpoon()
 	AADProjectileBase* Proj = GetWorld()->SpawnActor<AADProjectileBase>(
 		ProjectileClass, MuzzleLoc, SpawnRot, Params);
 
+	if (!Proj)
+	{
+		LOG(TEXT("No Projectile"));
+		return;
+	}
+
 	UProjectileMovementComponent* ProjectileMovementComp = Proj->GetProjectileMovementComp();
-	if (Proj && ProjectileMovementComp)
+	if (ProjectileMovementComp)
 	{
 		const float Speed = ProjectileMovementComp->InitialSpeed > 0
 			? ProjectileMovementComp->InitialSpeed

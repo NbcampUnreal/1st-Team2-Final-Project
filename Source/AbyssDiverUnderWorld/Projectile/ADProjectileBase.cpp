@@ -6,6 +6,8 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "AbyssDiverUnderWorld.h"
+#include "Boss/Boss.h"
+#include "Monster/Monster.h"
 
 // Sets default values
 AADProjectileBase::AADProjectileBase() : Damage(100.0f)
@@ -37,22 +39,32 @@ void AADProjectileBase::BeginPlay()
 
 void AADProjectileBase::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-
+    
     LOG(TEXT("OnHitStart"));
     if (OtherActor && OtherActor != this && OtherComp)
     {
-        UGameplayStatics::ApplyPointDamage(
-            OtherActor,
-            Damage,
-            GetActorForwardVector(),
-            SweepResult,
-            GetInstigatorController(),
-            this,
-            UDamageType::StaticClass()
-        );
-        LOG(TEXT("Hit"));
+        ABoss* Boss = Cast<ABoss>(OtherActor);
+        AMonster* Monster = Cast<AMonster>(OtherActor);
+        if (Boss || Monster)
+        {
+            UGameplayStatics::ApplyPointDamage(
+                OtherActor,
+                Damage,
+                GetActorForwardVector(),
+                SweepResult,
+                GetInstigatorController(),
+                this,
+                UDamageType::StaticClass()
+            );
+            LOG(TEXT("Hit"));
+            LOG(TEXT("%s"), *OtherActor->GetName());
 
-        Destroy();
+            Destroy();
+        }
+        else
+        {
+            LOG(TEXT("Is not Monster Actor"));
+        }
     }
 }
 
