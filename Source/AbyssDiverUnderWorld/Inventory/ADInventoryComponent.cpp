@@ -226,11 +226,12 @@ void UADInventoryComponent::AddInventoryItem(FItemData ItemData)
 				{
 					uint8 SlotIndex = GetTypeInventoryEmptyIndex(ItemData.ItemType);
 				
-					FItemData NewItem = { FoundRow->Name, FoundRow->Id, ItemData.Quantity, SlotIndex, FoundRow->Amount, ItemData.Mass,ItemData.Price, FoundRow->ItemType, FoundRow->Thumbnail };
+					FItemData NewItem = { FoundRow->Name, FoundRow->Id, ItemData.Quantity, SlotIndex, ItemData.Amount, ItemData.Mass,ItemData.Price, FoundRow->ItemType, FoundRow->Thumbnail };
 					if (InventoryIndexMapByType.Contains(NewItem.ItemType) && GetTypeInventoryEmptyIndex(NewItem.ItemType) != -1)
 					{
 						InventoryList.AddItem(NewItem);
 						LOG(TEXT("Add New Item SlotIndex : %d"), SlotIndex);
+						LOG(TEXT("NewItem's Amount : %d"), NewItem.Amount);
 					}
 					if (ItemData.ItemType == EItemType::Exchangable)
 					{
@@ -429,7 +430,7 @@ FVector UADInventoryComponent::GetDropLocation()
 	return DropLocation;
 }
 
-FItemData UADInventoryComponent::CurrentEquipmentItemData()
+FItemData& UADInventoryComponent::CurrentEquipmentItemData()
 {
 	int8 Index = InventoryIndexMapByType[EItemType::Equipment][CurrentEquipmentIndex];
 	return InventoryList.Items[Index];
@@ -441,7 +442,7 @@ void UADInventoryComponent::SetEquipInfo(int8 TypeInventoryIndex, AADUseItem* Sp
 	CurrentEquipmentInstance = SpawnItem;
 }
 
-void UADInventoryComponent::Equip(FItemData ItemData, int8 Index)
+void UADInventoryComponent::Equip(FItemData& ItemData, int8 Index)
 {
 	if (ItemData.ItemType != EItemType::Equipment || ItemData.Quantity == 0) return;
 
@@ -471,7 +472,7 @@ void UADInventoryComponent::Equip(FItemData ItemData, int8 Index)
 
 			if (UEquipUseComponent* EquipComp = Pawn->FindComponentByClass<UEquipUseComponent>()) // 나중에 Getter로 바꿔야 함
 			{
-				EquipComp->Initialize(SpawnedItem->ItemData.Id);
+				EquipComp->Initialize(CurrentEquipmentItemData());
 			}
 		}
 	}
@@ -516,6 +517,7 @@ void UADInventoryComponent::DropItem(FItemData& ItemData)
 	}
 	AADUseItem* SpawnItem = GetWorld()->SpawnActor<AADUseItem>(AADUseItem::StaticClass(), GetDropLocation(), FRotator::ZeroRotator);
 	SpawnItem->SetItemInfo(ItemData, false);
+	LOG(TEXT("Item's Amount : %d"), SpawnItem->ItemData.Amount);
 	LOGN(TEXT("SpawnItem"));
 }
 
