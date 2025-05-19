@@ -49,10 +49,8 @@ void UBTTask_BossChasing::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* Nod
 		return;
 	}
 
-	// 추적하는 타겟 방향으로 보스 회전
-	Boss->RotationToTarget(Boss->GetTarget());
+	// 추적하는 타겟 방향으로 보스 이동
 	AIController->MoveToActorWithRadius();
-	
 
 	// 공격 가능한 범위가 들어온 경우 **공격 상태**로 전이
 	if (Boss->GetIsAttackCollisionOverlappedPlayer())

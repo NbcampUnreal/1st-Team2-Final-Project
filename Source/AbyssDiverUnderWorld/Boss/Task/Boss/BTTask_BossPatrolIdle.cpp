@@ -1,4 +1,4 @@
-#include "Boss/Task/AlienShark/BTTask_BossPatrolIdle.h"
+#include "Boss/Task/Boss/BTTask_BossPatrolIdle.h"
 #include "Boss/Boss.h"
 
 UBTTask_BossPatrolIdle::UBTTask_BossPatrolIdle()
@@ -17,9 +17,6 @@ EBTNodeResult::Type UBTTask_BossPatrolIdle::ExecuteTask(UBehaviorTreeComponent& 
 
 	// 움직임 정지
 	AIController->StopMovement();
-
-	// 다음 Patrol Point 세팅
-	Boss->AddPatrolPoint();
 	
 	return EBTNodeResult::Succeeded;
 }

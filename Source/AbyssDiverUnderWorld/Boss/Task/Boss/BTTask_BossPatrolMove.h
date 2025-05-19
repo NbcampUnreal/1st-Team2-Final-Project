@@ -2,20 +2,15 @@
 
 #include "CoreMinimal.h"
 #include "BehaviorTree/Tasks/BTTask_BlackboardBase.h"
-#include "BTTask_BossMove.generated.h"
-
-namespace EPathFollowingRequestResult
-{
-	enum Type : int;
-}
+#include "BTTask_BossPatrolMove.generated.h"
 
 UCLASS()
-class ABYSSDIVERUNDERWORLD_API UBTTask_BossMove : public UBTTask_BlackboardBase
+class ABYSSDIVERUNDERWORLD_API UBTTask_BossPatrolMove : public UBTTask_BlackboardBase
 {
 	GENERATED_BODY()
 
 public:
-	UBTTask_BossMove();
+	UBTTask_BossPatrolMove();
 
 private:
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
@@ -26,5 +21,6 @@ protected:
 	float MoveSpeedMultiplier = 1.0f;
 
 private:
-	static const FName BossStateKey;
+	FVector PatrolPoint;
+	
 };

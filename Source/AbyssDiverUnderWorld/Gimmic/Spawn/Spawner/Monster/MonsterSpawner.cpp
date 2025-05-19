@@ -41,6 +41,7 @@ void AMonsterSpawner::Spawn()
 		uint8 RandomMonsterIndex = FMath::RandRange(0, MonsterClass.Num() - 1);
 
 		LOG(TEXT("Spawn Success : %s"), *MonsterTypes[RandomMonsterIndex]->GetName());
+		LOG(TEXT("Remain MonsterClass Num : %d"), MonsterClass.Num());
 
 		// 랜덤 몬스터 스폰
 		GetWorld()->SpawnActor<AUnitBase>(
@@ -63,13 +64,8 @@ void AMonsterSpawner::Spawn()
 void AMonsterSpawner::SubtractMonsterClass(TSubclassOf<AUnitBase> Class)
 {
 	if (!MonsterClass.Contains(Class)) return;
-	
-	uint8& Count = MonsterClass[Class];
-	if (Count > 0)
-	{
-		--Count;
-	}
-	else
+
+	if (--MonsterClass[Class] <= 0)
 	{
 		MonsterClass.Remove(Class);
 	}

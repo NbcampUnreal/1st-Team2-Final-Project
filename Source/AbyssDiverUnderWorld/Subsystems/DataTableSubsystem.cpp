@@ -4,6 +4,7 @@
 #include "Framework/ADGameInstance.h"
 #include "DataRow/UpgradeDataRow.h"
 #include "DataRow/FADItemDataRow.h"
+#include "DataRow/FADProjectileDataRow.h"
 #include "DataRow/PhaseGoalRow.h"
 #include "Interactable/Item/ADOreRock.h"
 #include "Logging/LogMacros.h"
@@ -41,6 +42,7 @@ void UDataTableSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 		});
 
 	ParsePhaseGoalDataTable(GI);
+	ParseMapPathDataTable(GI);
 
 }
 
@@ -48,6 +50,34 @@ void UDataTableSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 FFADItemDataRow* UDataTableSubsystem::GetItemData(int32 ItemId) const
 {
 	return ItemDataTableArray[ItemId];
+}
+
+FFADItemDataRow* UDataTableSubsystem::GetItemDataByName(FName ItemName) const
+{
+	UADGameInstance* GI = CastChecked<UADGameInstance>(GetGameInstance());
+	if (UDataTable* ItemDataTable = GI->ItemDataTable)
+	{
+		return ItemDataTable->FindRow<FFADItemDataRow>(ItemName, TEXT("LookupItem"));
+	}
+	else
+	{
+		LOGV(Error, TEXT("ProjectileRow is null"));
+	}
+	return nullptr;
+}
+
+FFADProjectileDataRow* UDataTableSubsystem::GetProjectileDataArrayByName(FName ProjectileName) const
+{
+	UADGameInstance* GI = CastChecked<UADGameInstance>(GetGameInstance());
+	if (UDataTable* ProjectileDataTable = GI->ProjectileDataTable)
+	{
+		return ProjectileDataTable->FindRow<FFADProjectileDataRow>(ProjectileName, TEXT("LookupItem"));
+	}
+	else
+	{
+		LOGV(Error, TEXT("ProjectileRow is null"));
+	}
+	return nullptr;
 }
 
 FUpgradeDataRow* UDataTableSubsystem::GetUpgradeDataTableArray(int32 Index) const
@@ -70,7 +100,10 @@ FPhaseGoalRow* UDataTableSubsystem::GetPhaseGoalData(EMapName MapName, int32 Pha
 	return PhaseGoalTableMap.FindRef(TPair<EMapName, int32>(MapName, Phase));
 }
 
-
+FString UDataTableSubsystem::GetMapPath(EMapName MapName) const
+{
+	return MapPathDataTableMap[MapName];
+}
 
 void UDataTableSubsystem::ParseUpgradeDataTable(UADGameInstance* GameInstance)
 {
@@ -119,4 +152,29 @@ void UDataTableSubsystem::ParsePhaseGoalDataTable(UADGameInstance* GameInstance)
 	}
 
 	LOGV(Error, TEXT("PhaseGoalTableMap size: %d"), PhaseGoalTableMap.Num());
+}
+
+void UDataTableSubsystem::ParseMapPathDataTable(UADGameInstance* GameInstance)
+{
+	if (GameInstance == nullptr || GameInstance->MapPathDataTable == nullptr)
+	{
+		LOGV(Error, TEXT("GameInstance or MapPathDataTable is null"));
+		return;
+	}
+
+	UDataTable* MapPathTable = GameInstance->MapPathDataTable;
+	MapPathTable->GetAllRows<FMapPathDataRow>(TEXT("MapPathTable"), MapPathDataTableArray);
+
+	MapPathDataTableMap.Empty(MapPathDataTableArray.Num());
+	for (FMapPathDataRow* Row : MapPathDataTableArray)
+	{
+		if (Row == nullptr)
+		{
+			continue;
+		}
+
+		MapPathDataTableMap.Add(Row->MapName, Row->MapPath);
+	}
+
+	LOGV(Error, TEXT("PhaseGoalTableMap size: %d"), MapPathDataTableMap.Num());
 }

@@ -8,9 +8,11 @@
 enum class EUpgradeType : uint8;
 enum class EMapName : uint8;
 struct FFADItemDataRow;
+struct FFADProjectileDataRow;
 struct FUpgradeDataRow;
 struct FDropEntry;
 struct FPhaseGoalRow;
+struct FMapPathDataRow;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API UDataTableSubsystem : public UGameInstanceSubsystem
@@ -26,15 +28,21 @@ protected:
 public:
 
 	FFADItemDataRow* GetItemData(int32 ItemId) const;
+	FFADItemDataRow* GetItemDataByName(FName ItemName) const;
+	FFADProjectileDataRow* GetProjectileDataArrayByName(FName ProjectileName) const;
 	FUpgradeDataRow* GetUpgradeDataTableArray(int32 Index) const;
 	FDropEntry* GetOreDropEntryTableArray(int32 Id) const;
 
 	FUpgradeDataRow* GetUpgradeData(EUpgradeType UpgradeType, uint8 Grade) const;
 
 	FPhaseGoalRow* GetPhaseGoalData(EMapName MapName, int32 Phase) const;
+
+	FString GetMapPath(EMapName MapName) const;
+
 private:
 	void ParseUpgradeDataTable(class UADGameInstance* GameInstance);
 	void ParsePhaseGoalDataTable(class UADGameInstance* GameInstance);
+	void ParseMapPathDataTable(class UADGameInstance* GameInstance);
 	
 #pragma endregion
 
@@ -42,19 +50,25 @@ private:
 
 private:
 
-	TArray<struct FFADItemDataRow*> ItemDataTableArray;
-	TArray<struct FUpgradeDataRow*> UpgradeTableArray;
+	TArray<FFADItemDataRow*> ItemDataTableArray;
+	TArray<FFADProjectileDataRow*> ProjectileDataTableArray;
+	TArray<FUpgradeDataRow*> UpgradeTableArray;
 	TMap<TPair<EUpgradeType, uint8>, FUpgradeDataRow*> UpgradeTableMap;
-	TArray<struct FDropEntry*> OreDropEntryTableArray;
-	TArray<struct FPhaseGoalRow*> PhaseGoalTableArray;
+	TArray<FDropEntry*> OreDropEntryTableArray;
+
+	TArray<FPhaseGoalRow*> PhaseGoalTableArray;
 	TMap<TPair<EMapName, int32>, FPhaseGoalRow*> PhaseGoalTableMap;
+
+	TArray<FMapPathDataRow*> MapPathDataTableArray;
+	TMap<EMapName, FString> MapPathDataTableMap;
+
 
 #pragma endregion
 
 #pragma region Getter/Setter
 
 public:
-	const TArray<struct FFADItemDataRow*>& GetItemDataTableArray() { return ItemDataTableArray; };
+	const TArray<FFADItemDataRow*>& GetItemDataTableArray() { return ItemDataTableArray; };
 
 #pragma endregion
 };

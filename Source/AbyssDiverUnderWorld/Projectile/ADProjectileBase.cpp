@@ -6,9 +6,11 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "AbyssDiverUnderWorld.h"
+#include "Boss/Boss.h"
+#include "Monster/Monster.h"
 
 // Sets default values
-AADProjectileBase::AADProjectileBase()
+AADProjectileBase::AADProjectileBase() : Damage(100.0f)
 {
 	PrimaryActorTick.bCanEverTick = false;
 
@@ -22,6 +24,7 @@ AADProjectileBase::AADProjectileBase()
     ProjectileMovementComp->InitialSpeed = 2000.0f;
     ProjectileMovementComp->MaxSpeed = 2000.0f;
     ProjectileMovementComp->bRotationFollowsVelocity = true;
+    ProjectileMovementComp->bAutoActivate = true;
 
     CollisionComponent->OnComponentBeginOverlap.AddDynamic(this, &AADProjectileBase::OnOverlapBegin);
 
@@ -36,23 +39,39 @@ void AADProjectileBase::BeginPlay()
 
 void AADProjectileBase::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-
+    
     LOG(TEXT("OnHitStart"));
     if (OtherActor && OtherActor != this && OtherComp)
     {
-        UGameplayStatics::ApplyPointDamage(
-            OtherActor,
-            30.0f,
-            GetActorForwardVector(),
-            SweepResult,
-            GetInstigatorController(),
-            this,
-            UDamageType::StaticClass()
-        );
-        LOG(TEXT("Hit"));
+        ABoss* Boss = Cast<ABoss>(OtherActor);
+        AMonster* Monster = Cast<AMonster>(OtherActor);
+        if (Boss || Monster)
+        {
+            UGameplayStatics::ApplyPointDamage(
+                OtherActor,
+                Damage,
+                GetActorForwardVector(),
+                SweepResult,
+                GetInstigatorController(),
+                this,
+                UDamageType::StaticClass()
+            );
+            LOG(TEXT("Hit"));
+            LOG(TEXT("%s"), *OtherActor->GetName());
 
-        Destroy();
+            Destroy();
+        }
+        else
+        {
+            LOG(TEXT("Is not Monster Actor"));
+        }
     }
+}
+
+void AADProjectileBase::SetProjectileSpeed(float Speed)
+{
+    ProjectileMovementComp->InitialSpeed = Speed;
+    ProjectileMovementComp->MaxSpeed = Speed;
 }
 
 

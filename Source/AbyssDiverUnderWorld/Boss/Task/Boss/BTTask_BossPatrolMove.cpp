@@ -1,20 +1,15 @@
-#include "Boss/Task/Boss/BTTask_BossMove.h"
-#include "AbyssDiverUnderWorld.h"
-#include "AIController.h"
-#include "BehaviorTree/BlackboardComponent.h"
+#include "Boss/Task/Boss/BTTask_BossPatrolMove.h"
 #include "Boss/Boss.h"
 #include "Boss/EBossState.h"
-#include "Navigation/PathFollowingComponent.h"
 
-const FName UBTTask_BossMove::BossStateKey = "BossState";
-
-UBTTask_BossMove::UBTTask_BossMove()
+UBTTask_BossPatrolMove::UBTTask_BossPatrolMove()
 {
-	NodeName = TEXT("Boss Move");
+	NodeName = "Boss Patrol Move";
 	bNotifyTick = true;
+	MoveSpeedMultiplier = 1.0f;
 }
 
-EBTNodeResult::Type UBTTask_BossMove::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
+EBTNodeResult::Type UBTTask_BossPatrolMove::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
 	// 컨트롤러 캐스팅에 실패하면 얼리 리턴
 	ABossAIController* AIController = Cast<ABossAIController>(OwnerComp.GetAIOwner());
@@ -24,30 +19,27 @@ EBTNodeResult::Type UBTTask_BossMove::ExecuteTask(UBehaviorTreeComponent& OwnerC
 	ABoss* Boss = Cast<ABoss>(AIController->GetCharacter());
 	if (!IsValid(Boss)) return EBTNodeResult::Failed;
 
-	// 일반 이동속도로 현재 Patrol Point로 보스 이동
-	AIController->MoveToLocationWithRadius(Boss->GetTargetPointLocation());
-	Boss->SetMoveSpeed(MoveSpeedMultiplier);
+	// 다음 이동지점 할당
+	PatrolPoint = Boss->GetNextPatrolPoint();
 
-	// Tick Task로 전이
+	// 일반 이동속도로 현재 Patrol Point로 보스 이동
+	AIController->MoveToLocationWithRadius(PatrolPoint);
+	Boss->SetMoveSpeed(MoveSpeedMultiplier);
+	
 	return EBTNodeResult::InProgress;
 }
 
-void UBTTask_BossMove::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
+void UBTTask_BossPatrolMove::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
 {
 	Super::TickTask(OwnerComp, NodeMemory, DeltaSeconds);
 
 	// 캐스팅
 	ABossAIController* AIController = Cast<ABossAIController>(OwnerComp.GetAIOwner());
 	ABoss* Boss = Cast<ABoss>(AIController->GetCharacter());
-
-	// 현재 Patrol Point 방향으로 보스 회전
-	Boss->RotationToTarget(Boss->GetTargetPoint());
 	
-	// 현재 Patrol Point로 이동 완료한 경우
-	// 다음 Patrol Point로 세팅한 후 Idle 상태로 전이
+	// 현재 Patrol Point로 이동 완료한 경우 Idle 상태로 전이
 	if (AIController->GetPathFollowingComponent()->GetStatus() == EPathFollowingStatus::Idle)
 	{
-		Boss->AddPatrolPoint();
 		Boss->SetBossState(EBossState::Idle);
 		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 		return;

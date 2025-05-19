@@ -8,7 +8,7 @@
 UENUM(BlueprintType)
 enum class EMapName : uint8
 {
-	test1  UMETA(DisplayName = "level1"),
+	test1  UMETA(DisplayName = "Shallow_Test"),
 	test2  UMETA(DisplayName = "level2"),
 	Max UMETA(Hidden)
 };
@@ -27,4 +27,16 @@ struct FPhaseGoalRow : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 GoalCredit;
 
+};
+
+USTRUCT(BlueprintType)
+struct FMapPathDataRow : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	EMapName MapName;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	FString MapPath;
 };

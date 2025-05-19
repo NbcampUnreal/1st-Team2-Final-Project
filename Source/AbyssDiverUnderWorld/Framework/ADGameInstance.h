@@ -34,6 +34,8 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, Category = "ADGameInstance", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.FADItemDataRow"))
 	TObjectPtr<UDataTable> ItemDataTable;
+	UPROPERTY(EditDefaultsOnly, Category = "ADGameInstance", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.FFADProjectileDataRow"))
+	TObjectPtr<UDataTable> ProjectileDataTable;
 
 	UPROPERTY(EditDefaultsOnly, Category = "ADGameInstance", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.DropEntry"))
 	TObjectPtr<UDataTable> OreDropTable;
@@ -43,6 +45,9 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, Category = "ADGameInstance", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.PhaseGoalRow"))
 	TObjectPtr<UDataTable> PhaseGoalTable;
+
+	UPROPERTY(EditDefaultsOnly, Category = "ADGameInstance", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.MapPathDataRow"))
+	TObjectPtr<UDataTable> MapPathDataTable;
 
 
 private:
