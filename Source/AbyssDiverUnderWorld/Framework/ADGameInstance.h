@@ -46,6 +46,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "ADGameInstance", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.PhaseGoalRow"))
 	TObjectPtr<UDataTable> PhaseGoalTable;
 
+	UPROPERTY(EditDefaultsOnly, Category = "ADGameInstance", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.MapPathDataRow"))
+	TObjectPtr<UDataTable> MapPathDataTable;
+
 
 private:
 

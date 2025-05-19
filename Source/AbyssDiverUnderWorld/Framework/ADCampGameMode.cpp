@@ -6,6 +6,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "DataRow/PhaseGoalRow.h"
 #include "AbyssDiverUnderWorld.h"
+#include "Subsystems/DataTableSubsystem.h"
 
 void AADCampGameMode::ADCampGameMode()
 {
@@ -64,16 +65,19 @@ void AADCampGameMode::TravelToInGameLevel()
 {
 	if (AADInGameState* ADInGameState = GetGameState<AADInGameState>())
 	{
-		FString LevelLoad = ADInGameState->GetMapDisplayName();
+		EMapName MapName = ADInGameState->GetSelectedLevel();
+
+		FString LevelLoad = GetGameInstance()->GetSubsystem<UDataTableSubsystem>()->GetMapPath(MapName);
 		if (LevelLoad == "invalid")
 		{
 			UE_LOG(LogTemp, Error, TEXT("LevelLoad is empty"));
 			LevelLoad = TEXT("DefaultInGameLevel");
 			return;
 		}
+
 		ADInGameState->SendDataToGameInstance();
 		//input spot level name
-		FString TravelURL = FString::Printf(TEXT("/Game/_AbyssDiver/Maps/Prototypes_Test/KY/%s?listen"), *LevelLoad);
+		FString TravelURL = FString::Printf(TEXT("%s?listen"), *LevelLoad);
 		GetWorld()->ServerTravel(TravelURL);
 	}
 }

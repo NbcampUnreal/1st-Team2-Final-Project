@@ -28,3 +28,15 @@ struct FPhaseGoalRow : public FTableRowBase
 	int32 GoalCredit;
 
 };
+
+USTRUCT(BlueprintType)
+struct FMapPathDataRow : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	EMapName MapName;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	FString MapPath;
+};
