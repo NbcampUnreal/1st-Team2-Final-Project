@@ -12,7 +12,8 @@ enum class EItemType : uint8
 	Equipment = 0,
 	Consumable = 1,
 	Exchangable = 2,
-	Max = 3 UMETA(Hidden)
+	Bullet = 4,
+	Max = 5 UMETA(Hidden)
 };
 
 USTRUCT(BlueprintType)
