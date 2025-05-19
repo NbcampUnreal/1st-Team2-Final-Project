@@ -26,7 +26,7 @@ protected:
     virtual void NativeConstruct() override;
     void UpdateVisualState();
     void ApplyMissionData(); 
-    // 위젯 바인딩
+
     UPROPERTY(meta = (BindWidget))
     class UTextBlock* Text_MissionTitle;
 
