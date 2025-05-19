@@ -365,7 +365,10 @@ void UADInventoryComponent::RemoveBySlotIndex(uint8 SlotIndex, EItemType ItemTyp
 		LOGN(TEXT("Remove Inventory Index %d: Item : %s"), InventoryIndex, *Item.Name.ToString());
 		if (Item.Quantity <= 0)
 		{
-			OnInventoryInfoUpdate(-Item.Mass, -Item.Price);
+			if (Item.ItemType == EItemType::Exchangable)
+			{
+				OnInventoryInfoUpdate(-Item.Mass, -Item.Price);
+			}
 			InventoryList.RemoveItem(InventoryIndex);
 		}
 	}
