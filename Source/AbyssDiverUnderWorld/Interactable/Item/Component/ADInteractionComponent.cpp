@@ -76,32 +76,36 @@ void UADInteractionComponent::TickComponent(float DeltaTime, ELevelTick TickType
 void UADInteractionComponent::S_RequestInteract_Implementation(AActor* TargetActor)
 {
 	if (!TargetActor) return;
-
-	if (UADInteractableComponent* ADIC = TargetActor->FindComponentByClass<UADInteractableComponent>())
+	if (IIADInteractable* IADInteractable = Cast<IIADInteractable>(TargetActor))
 	{
-		APawn* Pawn = Cast<APawn>(GetOwner());
-		if (Pawn && Pawn->HasAuthority())
+		if (UADInteractableComponent* ADIC = IADInteractable->GetInteractableComponent())
 		{
-			ADIC->Interact(Pawn);
-			LOG(TEXT("Pawn HasAuthority"));
+			APawn* Pawn = Cast<APawn>(GetOwner());
+			if (Pawn && Pawn->HasAuthority())
+			{
+				ADIC->Interact(Pawn);
+				LOG(TEXT("Pawn HasAuthority"));
+			}
 		}
-			
 	}
+
 }
 
 void UADInteractionComponent::S_RequestInteractHold_Implementation(AActor* TargetActor)
 {
 	bIsInteractingStart = true;
-	FocusedInteractable = TargetActor->FindComponentByClass<UADInteractableComponent>();
-	HoldThreshold = IIADInteractable::Execute_GetHoldDuration(TargetActor);
-	if (!FocusedInteractable)
+	if (IIADInteractable* IADInteractable = Cast<IIADInteractable>(TargetActor))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("서버: FocusedInteractable이 없습니다!"));
-		return;
-	}
+		FocusedInteractable = IADInteractable->GetInteractableComponent();
+		HoldThreshold = IIADInteractable::Execute_GetHoldDuration(TargetActor);
+		if (!FocusedInteractable)
+		{
+			return;
+		}
 
-	if (!TargetActor) return;
-	HandleInteractPressed(TargetActor);
+		if (!TargetActor) return;
+		HandleInteractPressed(TargetActor);
+	}
 }
 
 void UADInteractionComponent::S_RequestInteractRelease_Implementation()
@@ -112,35 +116,41 @@ void UADInteractionComponent::S_RequestInteractRelease_Implementation()
 
 void UADInteractionComponent::HandleBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (UADInteractableComponent* ADIC = OtherActor->FindComponentByClass<UADInteractableComponent>())
+	if (IIADInteractable* IADInteractable = Cast<IIADInteractable>(OtherActor))
 	{
-		NearbyInteractables.Add(ADIC);
-		SetComponentTickEnabled(true);
-//		LOG(TEXT("Overlapped!"));
+		if (UADInteractableComponent* ADIC = IADInteractable->GetInteractableComponent())
+		{
+			NearbyInteractables.Add(ADIC);
+			SetComponentTickEnabled(true);
+			//		LOG(TEXT("Overlapped!"));
+		}
 	}
 }
 
 void UADInteractionComponent::HandleEndOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-	if (UADInteractableComponent* ADIC = OtherActor->FindComponentByClass<UADInteractableComponent>())
+	if (IIADInteractable* IADInteractable = Cast<IIADInteractable>(OtherActor))
 	{
-		NearbyInteractables.Remove(ADIC);
-		if (NearbyInteractables.Num() == 0)
+		if (UADInteractableComponent* ADIC = IADInteractable->GetInteractableComponent())
 		{
-			SetComponentTickEnabled(false);
-
-			if (FocusedInteractable)
+			NearbyInteractables.Remove(ADIC);
+			if (NearbyInteractables.Num() == 0)
 			{
-				// 외곽선 제거
-				FocusedInteractable->SetHighLight(false);
-				FocusedInteractable = nullptr;
-//				LOG(TEXT("Remove Border"));
-			}
-//			LOG(TEXT("No Interactable!!"));
+				SetComponentTickEnabled(false);
 
+				if (FocusedInteractable)
+				{
+					// 외곽선 제거
+					FocusedInteractable->SetHighLight(false);
+					FocusedInteractable = nullptr;
+					//				LOG(TEXT("Remove Border"));
+				}
+				//			LOG(TEXT("No Interactable!!"));
+
+			}
 		}
+		//	LOG(TEXT("Overlapp End!!"));
 	}
-//	LOG(TEXT("Overlapp End!!"));
 }
 
 void UADInteractionComponent::TryInteract()
@@ -217,8 +227,10 @@ UADInteractableComponent* UADInteractionComponent::PerformLineTrace(const FVecto
 
 	if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params))
 	{
-		
-		return Hit.GetActor()->FindComponentByClass<UADInteractableComponent>();
+		if (IIADInteractable * IADInteractable = Cast<IIADInteractable>(Hit.GetActor()))
+		{
+			return IADInteractable->GetInteractableComponent();
+		}
 	}
 	return nullptr;
 }
@@ -259,8 +271,7 @@ void UADInteractionComponent::OnInteractPressed()
 	PerformFocusCheck();
 	if (AActor* Owner = FocusedInteractable->GetOwner())
 	{
-		HoldThreshold = IIADInteractable::Execute_GetHoldDuration(Owner);
-		OnHoldStart.Broadcast(Owner, HoldThreshold);
+		
 		if (IIADInteractable* InteractableOwner = Cast<IIADInteractable>(Owner))
 		{
 
@@ -270,6 +281,8 @@ void UADInteractionComponent::OnInteractPressed()
 				TryInteract();   // 즉시 수행
 				return;
 			}
+			HoldThreshold = IIADInteractable::Execute_GetHoldDuration(Owner);
+			OnHoldStart.Broadcast(Owner, HoldThreshold);
 			// Hold Mode일 경우
 			if (GetOwner()->HasAuthority())
 			{
