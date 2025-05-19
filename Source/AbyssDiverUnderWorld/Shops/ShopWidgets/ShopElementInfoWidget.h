@@ -21,7 +21,7 @@ class ABYSSDIVERUNDERWORLD_API UShopElementInfoWidget : public UUserWidget
 
 protected:
 
-	virtual void NativeConstruct() override;
+	virtual void NativeOnInitialized() override;
 	
 #pragma region Methods, Delegates
 
@@ -29,7 +29,7 @@ public:
 
 	void Init(USkeletalMeshComponent* NewItemMeshComp);
 
-	void ShowItemInfos(USkeletalMesh* NewItemMesh, const FString& NewDescription, const FString& NewInfoText);
+	void ShowItemInfos(USkeletalMesh* NewItemMesh, const FString& NewDescription, const FString& NewNameInfoText, int32 ItemCost, bool bIsStackable);
 	void ShowUpgradeInfos(USkeletalMesh* NewUpgradeItemMesh, int32 CurrentUpgradeLevel, bool bIsMaxLevel, int32 CurrentUpgradeCost, const FString& ExtraInfoText);
 
 	void ChangeItemDescription(const FString& NewDescription);
@@ -37,9 +37,11 @@ public:
 	void ChangeItemMesh(USkeletalMesh* NewMesh);
 
 	void ChangeUpgradeLevelInfo(int32 CurrentLevel, bool bIsMaxLevel);
-	void ChangeCostInfo(int32 CurrentCost, bool bIsUpgradeCost);
+	void ChangeCostInfo(int32 Cost, bool bIsUpgradeCost);
 
 	void ChangeCurrentQuantityNumber(int32 NewNumber);
+
+	void ChangeRemainingMoneyAfterPurchaseTextFromCost(int32 Cost);
 	void ChangeRemainingMoneyAfterPurchaseText(int32 MoneyAmount);
 
 	void SetDescriptionActive(bool bShouldActivate);
@@ -51,6 +53,8 @@ public:
 	void SetCostInfoActive(bool bShouldActivate);
 
 	void SetQuantityOverlayActive(bool bShouldActivate);
+
+	void SetRemainingMoneyAfterPurchaseTextActive(bool bShouldActivate);
 
 	FOnBuyButtonClickedDelegate OnBuyButtonClickedDelegate;
 
@@ -64,6 +68,8 @@ private:
 
 	UFUNCTION()
 	void OnDecreaseButtonClicked();
+
+	void OnTeamCreditChanged(int32 ChangedValue);
 
 #pragma endregion
 
@@ -107,6 +113,9 @@ protected:
 private:
 
 	int32 CurrentQuantityNumber = 0;
+	int32 CurrentCost = INT_MAX;
+
+	uint8 bIsStackableItem : 1;
 
 	const int32 MAX_ITEM_COUNT = 99;
 
@@ -115,6 +124,7 @@ private:
 #pragma region Getter / Setter
 
 public:
+
 	UShopItemMeshPanel* GetItemMeshPanel() const;
 
 #pragma endregion

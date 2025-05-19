@@ -11,14 +11,15 @@
 #include "Shops/ShopWidgets/ShopItemSlotWidget.h"
 #include "ShopInteractionComponent.h"
 
-#include "AbyssDiverUnderWorld.h"
-#include "Framework/ADPlayerState.h"
+#include "AbyssDiverUnderWorld.h"	
 #include "Inventory/ADInventoryComponent.h"
 #include "Subsystems/DataTableSubsystem.h"
 
+#include "Framework/ADPlayerState.h"
+#include "Framework/ADInGameState.h"
+
 #include "DataRow/UpgradeDataRow.h"
 #include "DataRow/FADItemDataRow.h"
-
 
 #include "Net/UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"
@@ -247,11 +248,6 @@ EBuyResult AShop::BuyItem(uint8 ItemId, uint8 Quantity, AUnderwaterCharacter* Bu
 		return EBuyResult::HasNoAuthority;
 	}
 
-	/*if (돈이 없으면)
-	{
-		return EBuyResult::NotEnoughMoney;
-	}*/
-
 	if (HasItem(ItemId) == false)
 	{
 		return EBuyResult::NotExistItem;
@@ -271,6 +267,18 @@ EBuyResult AShop::BuyItem(uint8 ItemId, uint8 Quantity, AUnderwaterCharacter* Bu
 		return EBuyResult::FailedFromOtherReason;
 	}
 
+	AADInGameState* GS = Cast<AADInGameState>(UGameplayStatics::GetGameState(GetWorld()));
+	check(GS);
+
+	int32 TeamCredits = GS->GetTotalTeamCredit();
+	if (TeamCredits < ItemDataRow->Price * Quantity)
+	{
+		// 돈부족 효과 재생
+		return EBuyResult::NotEnoughMoney;
+	}
+
+	GS->SetTotalTeamCredit(TeamCredits - ItemDataRow->Price);
+
 	FItemData ItemData;
 	ItemData.Amount = ItemDataRow->Amount;
 	ItemData.Id = ItemDataRow->Id;
@@ -283,8 +291,6 @@ EBuyResult AShop::BuyItem(uint8 ItemId, uint8 Quantity, AUnderwaterCharacter* Bu
 
 	PS->GetInventory()->AddInventoryItem(ItemData);
 
-	// 돈 차감 로직
-	// 인벤토리에 아이템 넣기
 	LOGV(Log, TEXT("Buying Item Succeeded : %s"), *ItemDataRow->Name.ToString());
 	return EBuyResult::Succeeded;
 }
@@ -544,7 +550,7 @@ void AShop::InitShopWidget()
 	ShopWidget = CreateWidget<UShopWidget>(GetWorld(), ShopWidgetClass, FName(TEXT("ShopWidget")));
 	check(ShopWidget);
 
-	ShopWidget->SetCurrentActivatedTab(EShopCategoryTab::Consumable);
+	ShopWidget->SetCurrentActivatedTab(EShopCategoryTab::Equipment);
 	ShopWidget->OnShopCloseButtonClickedDelegate.AddUObject(this, &AShop::OnCloseButtonClicked);
 
 	UShopElementInfoWidget* InfoWidget = ShopWidget->GetInfoWidget();
@@ -552,6 +558,14 @@ void AShop::InitShopWidget()
 
 	InfoWidget->Init(ItemMeshComponent);
 	InfoWidget->OnBuyButtonClickedDelegate.AddUObject(this, &AShop::OnBuyButtonClicked);
+
+	AADInGameState* GS = Cast<AADInGameState>(UGameplayStatics::GetGameState(GetWorld()));
+	if (ensureMsgf(GS, TEXT("올바른 GS 타입이 아닌 듯. 게임모드의 GameState가 ADInGameState가 맞는지 확인 필요.")) == false)
+	{
+		return;
+	}
+
+	GS->TeamCreditsChangedDelegate.AddUObject(ShopWidget, &UShopWidget::SetTeamMoneyText);
 }
 
 void AShop::InitData()
@@ -568,14 +582,14 @@ void AShop::InitData()
 		AddItemToList(Id, EShopCategoryTab::Consumable);
 	}
 
-	ShopWidget->ShowItemViewForTab(EShopCategoryTab::Consumable);
-
 	ShopEquipmentItemIdList.MarkArrayDirty();
 
 	for (const auto& Id : DefaultEquipmentItemIdList)
 	{
 		AddItemToList(Id, EShopCategoryTab::Equipment);
 	}
+
+	ShopWidget->ShowItemViewForTab(EShopCategoryTab::Equipment);
 }
 
 void AShop::OnShopItemListChanged(const FShopItemListChangeInfo& Info)
@@ -673,13 +687,18 @@ void AShop::OnSlotEntryClicked(int32 ClickedSlotIndex)
 
 	USkeletalMesh* ItemMesh = ItemDataRow->SkeletalMesh;
 
-	ShopWidget->ShowItemInfos(ItemMesh, ItemDataRow->Description, ItemDataRow->Description);
+	ShopWidget->ShowItemInfos(ItemMesh, ItemDataRow->Description, ItemDataRow->Name.ToString(), ItemDataRow->Price, ItemDataRow->Stackable);
 	LOGV(Log, TEXT("Showing Item Infos..., id : %d"), ItemId);
 	CurrentSelectedItemId = ItemId;
 }
 
 void AShop::OnBuyButtonClicked(int32 Quantity)
 {
+	AADInGameState* GS = CastChecked<AADInGameState>(UGameplayStatics::GetGameState(GetWorld()));
+	UDataTableSubsystem* DataTableSubsystem = GetGameInstance()->GetSubsystem<UDataTableSubsystem>();
+
+	int32 TotalTeamCredit = GS->GetTotalTeamCredit();
+
 	EShopCategoryTab CurrentTab = ShopWidget->GetCurrentActivatedTab();
 
 	if (CurrentTab == EShopCategoryTab::Upgrade)
@@ -706,6 +725,17 @@ void AShop::OnBuyButtonClicked(int32 Quantity)
 			return;
 		}
 
+		int32 Grade = UpgradeComp->GetCurrentGrade(CurrentSelectedUpgradeType);
+		
+
+		FUpgradeDataRow* UpgradeData = DataTableSubsystem->GetUpgradeData(CurrentSelectedUpgradeType, Grade);
+
+		if (TotalTeamCredit < UpgradeData->Price)
+		{
+			LOGVN(Warning, TEXT("업그레이드 돈부족!! 남은 돈 : %d, 필요한 돈 : %d"), TotalTeamCredit, UpgradeData->Price);
+			return;
+		}
+		
 		UpgradeComp->S_RequestUpgrade(CurrentSelectedUpgradeType);
 		return;
 	}
@@ -721,6 +751,14 @@ void AShop::OnBuyButtonClicked(int32 Quantity)
 	if (ShopInteractionComp == nullptr)
 	{
 		LOGV(Warning, TEXT("ShopInteractionComp == nullptr"));
+		return;
+	}
+
+	FFADItemDataRow* ItemData = DataTableSubsystem->GetItemData(CurrentSelectedItemId);
+
+	if (TotalTeamCredit < ItemData->Price * Quantity)
+	{
+		LOGVN(Warning, TEXT("아이템 구매 돈부족!! 남은 돈 : %d, 필요한 돈 : %d"), TotalTeamCredit, ItemData->Price * Quantity);
 		return;
 	}
 

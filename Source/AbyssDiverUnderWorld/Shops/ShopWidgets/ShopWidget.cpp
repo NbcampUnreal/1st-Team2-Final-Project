@@ -16,11 +16,9 @@
 #include "Components/RichTextBlock.h"
 #include "Kismet/GameplayStatics.h"
 
-void UShopWidget::NativeConstruct()
+void UShopWidget::NativeOnInitialized()
 {
-	Super::NativeConstruct();
-
-	CurrentActivatedTab = EShopCategoryTab::Consumable;
+	Super::NativeOnInitialized();
 
 	ConsumableTab->OnShopCategoryTabClickedDelegate.AddUObject(this, &UShopWidget::OnCategoryTabClicked);
 	EquipmentTab->OnShopCategoryTabClickedDelegate.AddUObject(this, &UShopWidget::OnCategoryTabClicked);
@@ -30,6 +28,13 @@ void UShopWidget::NativeConstruct()
 	{
 		CloseButton->OnClicked.AddDynamic(this, &UShopWidget::OnCloseButtonClicked);
 	}
+}
+
+void UShopWidget::NativeConstruct()
+{
+	Super::NativeConstruct();
+
+	CurrentActivatedTab = EShopCategoryTab::Equipment;
 }
 
 FReply UShopWidget::NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
@@ -228,9 +233,9 @@ void UShopWidget::RefreshItemView()
 	}
 }
 
-void UShopWidget::ShowItemInfos(USkeletalMesh* NewItemMesh, const FString& NewDescription, const FString& NewInfoText)
+void UShopWidget::ShowItemInfos(USkeletalMesh* NewItemMesh, const FString& NewDescription, const FString& NewNameInfoText, int32 ItemCost, bool bIsStackable)
 {
-	InfoWidget->ShowItemInfos(NewItemMesh, NewDescription, NewInfoText);
+	InfoWidget->ShowItemInfos(NewItemMesh, NewDescription, NewNameInfoText, ItemCost, bIsStackable);
 	InfoWidget->GetItemMeshPanel()->SetMeshRotation(FRotator::ZeroRotator);
 }
 

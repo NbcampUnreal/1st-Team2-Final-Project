@@ -41,6 +41,16 @@ void AADInGameState::PostInitializeComponents()
 void AADInGameState::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (HasAuthority() == false)
+	{
+		return;
+	}
+
+	TeamCreditsChangedDelegate.Broadcast(TeamCredits);
+	CurrentPhaseChangedDelegate.Broadcast(CurrentPhase);
+	CurrentPhaseGoalChangedDelegate.Broadcast(CurrentPhaseGoal);
+
 }
 
 void AADInGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -50,6 +60,15 @@ void AADInGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME(AADInGameState, SelectedLevelName);
 	DOREPLIFETIME(AADInGameState, TeamCredits);
 	DOREPLIFETIME(AADInGameState, CurrentPhase);
+}
+
+void AADInGameState::PostNetInit()
+{
+	Super::PostNetInit();
+
+	TeamCreditsChangedDelegate.Broadcast(TeamCredits);
+	CurrentPhaseChangedDelegate.Broadcast(CurrentPhase);
+	CurrentPhaseGoalChangedDelegate.Broadcast(CurrentPhaseGoal);
 }
 
 void AADInGameState::AddTeamCredit(int32 Credit)
@@ -83,17 +102,20 @@ void AADInGameState::OnRep_Money()
 {
 	// UI 업데이트
 	UE_LOG(LogTemp, Log, TEXT("TotalTeamCredit updated: %d"), TeamCredits);
+	TeamCreditsChangedDelegate.Broadcast(TeamCredits);
 }
 
 void AADInGameState::OnRep_Phase()
 {
 	// UI 업데이트
 	UE_LOG(LogTemp, Log, TEXT("Phase updated: %d/%d"), CurrentPhase, MaxPhase);
+	CurrentPhaseChangedDelegate.Broadcast(CurrentPhase);
 }
 
 void AADInGameState::OnRep_PhaseGoal()
 {
 	LOGVN(Error, TEXT("PhaseGoal updated: %d"), CurrentPhaseGoal);
+	CurrentPhaseGoalChangedDelegate.Broadcast(CurrentPhaseGoal);
 }
 
 FString AADInGameState::GetMapDisplayName() const
