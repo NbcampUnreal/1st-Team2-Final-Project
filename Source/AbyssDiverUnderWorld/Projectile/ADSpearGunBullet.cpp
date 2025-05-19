@@ -13,7 +13,7 @@
 #include "Subsystems/DataTableSubsystem.h"
 #include "DataRow/FADProjectileDataRow.h"
 
-AADSpearGunBullet::AADSpearGunBullet() : BulletType(ESpearGunType::Basic), AdditionalDamage(0), PoisonDuration(0), bWasHit(false)
+AADSpearGunBullet::AADSpearGunBullet() : BulletType(ESpearGunType::MAX), AdditionalDamage(0), PoisonDuration(0), bWasHit(false)
 {
     StaticMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SkeletalMesh"));
     StaticMesh->SetupAttachment(RootComponent);
@@ -29,16 +29,11 @@ AADSpearGunBullet::AADSpearGunBullet() : BulletType(ESpearGunType::Basic), Addit
 
 void AADSpearGunBullet::OnRep_BulletType()
 {
-
-}
-
-void AADSpearGunBullet::BeginPlay()
-{
-    Super::BeginPlay();
     //3가지 타입의 Bullet BP를 만들거면 여기 하나의 BP만 만들고 속성을 바꿀 거면 OnRep
     FString EnumName = StaticEnum<ESpearGunType>()->GetNameStringByValue((int64)ESpearGunType::Basic);
     FString RowNameString = EnumName + "SpearGunBullet";
     FName ProjectileName(*RowNameString);
+    LOG(TEXT("%s"), *RowNameString);
 
     if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
     {
@@ -59,6 +54,11 @@ void AADSpearGunBullet::BeginPlay()
     //TODO : Shoot Sound
     //TODO : Shoot Effect
 
+}
+
+void AADSpearGunBullet::BeginPlay()
+{
+    Super::BeginPlay();
 }
 
 void AADSpearGunBullet::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)

@@ -13,7 +13,8 @@ enum class ESpearGunType : uint8
 {
 	Basic,
 	Bomb,
-	Poison
+	Poison,
+	MAX UMETA(Hidden)
 };
 
 UCLASS()
@@ -52,7 +53,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Component")
 	TObjectPtr<UDataTableSubsystem> DataTableSubsystem;
 private:
-	UPROPERTY(ReplicatedUsing = OnRep_BulletType, EditAnywhere, Category = "Bullet")
+	UPROPERTY(ReplicatedUsing = OnRep_BulletType, VisibleAnywhere, Category = "Bullet")
 	ESpearGunType BulletType;
 	UPROPERTY(VisibleAnywhere, Category = "Bullet")
 	int8 AdditionalDamage;
@@ -64,7 +65,7 @@ private:
 #pragma endregion
 
 #pragma region Getter/Setter
-private:
+public:
 	//프로젝타일 스폰 후 지정
 	UFUNCTION(BlueprintCallable)
 	void SetBulletType(ESpearGunType NewBulletType) { BulletType = NewBulletType; }; 
