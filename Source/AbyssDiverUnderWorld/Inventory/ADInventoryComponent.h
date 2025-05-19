@@ -48,8 +48,8 @@ public:
 	void S_RequestRemove_Implementation(uint8 InventoryIndex, int8 Count, bool bIsDropAction);
 
 	UFUNCTION(Server, Reliable)
-	void S_RemoveByDragAndDrop(uint8 SlotIndex, EItemType ItemType);
-	void S_RemoveByDragAndDrop_Implementation(uint8 SlotIndex, EItemType ItemType);
+	void S_RemoveBySlotIndex(uint8 SlotIndex, EItemType ItemType, bool bIsDropAction);
+	void S_RemoveBySlotIndex_Implementation(uint8 SlotIndex, EItemType ItemType, bool bIsDropAction);
 
 	UFUNCTION(BlueprintCallable)
 	void InventoryInitialize();
@@ -65,6 +65,7 @@ public:
 
 	int16 FindItemIndexByName(FName ItemID); //아이템 이름으로 InventoryList 인덱스 반환 (빈슬롯이 없으면 -1 반환)
 	void RemoveInventoryItem(uint8 InventoryIndex, int8 Count, bool bIsDropAction);
+	void RemoveBySlotIndex(uint8 SlotIndex, EItemType ItemType, bool bIsDropAction);
 	void ClientRequestInventoryInitialize();
 	void InventoryUIUpdate();
 

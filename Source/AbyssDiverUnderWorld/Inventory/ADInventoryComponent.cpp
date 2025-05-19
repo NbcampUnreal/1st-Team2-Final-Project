@@ -152,36 +152,9 @@ void UADInventoryComponent::S_RequestRemove_Implementation(uint8 InventoryIndex,
 	RemoveInventoryItem(InventoryIndex, Count, bIsDropAction);
 }
 
-void UADInventoryComponent::S_RemoveByDragAndDrop_Implementation(uint8 SlotIndex, EItemType ItemType)
+void UADInventoryComponent::S_RemoveBySlotIndex_Implementation(uint8 SlotIndex, EItemType ItemType, bool bIsDropAction)
 {
-	PrintLogInventoryData();
-	int8 InventoryIndex = -1;
-	for (int i = 0; i<InventoryList.Items.Num(); ++i)
-	{
-		if (InventoryList.Items[i].ItemType == ItemType && InventoryList.Items[i].SlotIndex == SlotIndex)
-			InventoryIndex = i;
-	}
-	if (InventoryList.Items.IsValidIndex(InventoryIndex))
-	{
-		FItemData& Item = InventoryList.Items[InventoryIndex];
-		if (Item.Quantity < 1) return;
-
-		DropItem(Item);
-		InventoryList.UpdateQuantity(InventoryIndex, -1);
-
-		LOGN(TEXT("Remove Inventory Index %d: Item : %s"), InventoryIndex, *Item.Name.ToString());
-		if (Item.Quantity <= 0)
-		{
-			OnInventoryInfoUpdate(-Item.Mass, -Item.Price);
-			InventoryList.RemoveItem(InventoryIndex);
-		}
-	}
-	else
-	{
-		LOG(TEXT("Invalid Inventory Index"));
-	}
-
-	InventoryUIUpdate();
+	RemoveBySlotIndex(SlotIndex, ItemType, bIsDropAction);
 }
 
 void UADInventoryComponent::InventoryInitialize()
@@ -259,7 +232,10 @@ void UADInventoryComponent::AddInventoryItem(FItemData ItemData)
 						InventoryList.AddItem(NewItem);
 						LOG(TEXT("Add New Item SlotIndex : %d"), SlotIndex);
 					}
-					OnInventoryInfoUpdate(NewItem.Mass, NewItem.Price);
+					if (ItemData.ItemType == EItemType::Exchangable)
+					{
+						OnInventoryInfoUpdate(NewItem.Mass, NewItem.Price);
+					}
 				}
 				else
 				{
@@ -356,6 +332,40 @@ void UADInventoryComponent::RemoveInventoryItem(uint8 InventoryIndex, int8 Count
 		{
 			InventoryList.RemoveItem(InventoryIndex);
 			//Item.SlotIndex = 99;
+		}
+	}
+	else
+	{
+		LOG(TEXT("Invalid Inventory Index"));
+	}
+
+	InventoryUIUpdate();
+}
+
+void UADInventoryComponent::RemoveBySlotIndex(uint8 SlotIndex, EItemType ItemType, bool bIsDropAction)
+{
+	int8 InventoryIndex = -1;
+	for (int i = 0; i < InventoryList.Items.Num(); ++i)
+	{
+		if (InventoryList.Items[i].ItemType == ItemType && InventoryList.Items[i].SlotIndex == SlotIndex)
+			InventoryIndex = i;
+	}
+	if (InventoryList.Items.IsValidIndex(InventoryIndex))
+	{
+		FItemData& Item = InventoryList.Items[InventoryIndex];
+		if (Item.Quantity < 1) return;
+
+		if (bIsDropAction)
+		{
+			DropItem(Item);
+		}
+		InventoryList.UpdateQuantity(InventoryIndex, -1);
+
+		LOGN(TEXT("Remove Inventory Index %d: Item : %s"), InventoryIndex, *Item.Name.ToString());
+		if (Item.Quantity <= 0)
+		{
+			OnInventoryInfoUpdate(-Item.Mass, -Item.Price);
+			InventoryList.RemoveItem(InventoryIndex);
 		}
 	}
 	else
