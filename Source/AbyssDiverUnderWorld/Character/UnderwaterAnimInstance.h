@@ -40,7 +40,7 @@ protected:
 	TWeakObjectPtr<class UCharacterMovementComponent> CharacterMovement;
 
 	UPROPERTY(BlueprintReadOnly)
-	ECharacterState CharacterState;
+	EEnvState CharacterState;
 	
 	/** 캐릭터 Should Move에서 Move를 가능하게 하는 임계값 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)

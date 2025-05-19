@@ -17,19 +17,33 @@
 // 만약에 레벨 전환이 있다고 가정하면 새로 캐릭터를 분리하는 것이 덜 복잡하게 된다.
 // 이 부분을 문의하고 확정된 스펙에 따라 결정한다.
 
-// 지상, 수중을 하나의 클래스로 구현하기로 결정
-// 하나의 클래스로 구현하는 이유는 수중, 지상을 이동할 수도 있는 기능을 지원해야 할 수도 있기 때문이다.
-// 새로 Respawn하면 되기는 하지만 그럴 경우 데이터를 누락할 수 있다.
-// 그러한 상황을 방지하고 중복 구현을 방지하기 위해 하나의 클래스로 구현한다.
-// 수중과 지상은 상태 머신으로 처리해야 할 정도로 복잡한 전이가 아니기 때문에 enum을 통해서 구현한다.
-
 /* 캐릭터의 지상, 수중을 결정, Move 로직, Animation이 변경되고 사용 가능 기능이 제한된다. */
 UENUM(BlueprintType)
-enum class ECharacterState : uint8
+enum class EEnvState : uint8
 {
 	Underwater,
 	Ground,
 };
+
+UENUM(BlueprintType)
+enum class ECharacterState : uint8
+{
+	Normal UMETA(DisplayName = "Normal"),
+	Groggy UMETA(DisplayName = "Groggy"),
+	Death UMETA(DisplayName = "Death"),
+};
+
+// FSM으로 구현했습니다. 추후에 State Pattern으로 변경 고려하겠습니다.
+// - Server Logic : HandleServer
+// - Client Logic : HandleClient
+// - Multicast Logic : M_NotifyStateChange
+// 공통 로직이 Multicast에서 설정이 되므로 Multicast에서 이벤트를 발생하겠습니다.
+
+// 1. Normal -> Groggy : Health == 0
+// 2. Normal -> Death : Oxygen == 0
+// 3. Groggy -> Death : Oxygen == 0
+// 4. Groggy -> Death : Groggy Time Out
+// 5. Groggy -> Normal : Revive
 
 class UInputAction;
 
@@ -54,9 +68,13 @@ protected:
 #pragma region Method
 
 public:
+	/** 그로기 상태 캐릭터를 부활시킨다. */
+	UFUNCTION(BlueprintCallable)
+	void RequestRevive();
+
 	/** 현재 캐릭터의 상태를 전환. 수중, 지상 */
 	UFUNCTION(BlueprintCallable)
-	void SetCharacterState(ECharacterState State);
+	void SetEnvState(EEnvState State);
 
 	/** 빠른 구현을 위해 Captrue를 현재 Multicast로 구현한다.
 	 * 이후 변경 모델
@@ -78,6 +96,47 @@ public:
 	void EmitBloodNoise();
 	
 protected:
+
+	/** 캐릭터 상태를 설정한다. Server에서만 실행 가능하다. */
+	void SetCharacterState(ECharacterState NewCharacterState);
+
+	/** Server에서 설정한 Multicast를 전파한다. 전파 중에 다시 상태를 전이하면 안 된다. */
+	UFUNCTION(NetMulticast, Reliable)
+	void M_NotifyStateChange(ECharacterState NewCharacterState);
+	void M_NotifyStateChange_Implementation(ECharacterState NewCharacterState);
+
+	/** State 바뀔 때 새로운 State Enter 적용 */
+	void HandleEnterState(ECharacterState HandleCharacterState);
+
+	/** State 바뀔 때 이전 State Exit 적용 */
+	void HandleExitState(ECharacterState HandleCharacterState);
+
+	/** Groggy 상태 진입. Groggy Time 동안 Groggy 시간에 진입하게 되고 Groggy 시간이 지나면 사망한다. */
+	void HandleEnterGroggy();
+
+	/** Groggy 상태 종료. */
+	void HandleExitGroggy();
+
+	/** Normal 상태 진입. 이동이 가능하고 Stamina, Oxygen 기능이 활성화 */
+	void HandleEnterNormal();
+
+	/** Stamina, Oxygen 기능이 비활성화 */
+	void HandleExitNormal();
+
+	/** Death 상태 진입. 사망 처리 */
+	void HandleEnterDeath();
+
+	/** 서버에서 부활 요청을 받았을 때 호출되는 함수 */
+	UFUNCTION(Server, Reliable)
+	void S_Revive();
+	void S_Revive_Implementation();
+
+	/** Groggy 상태에서 사망까지 걸리는 시간을 계산한다. 사망을 할 수록 기간이 길어진다. */
+	virtual float CalculateGroggyTime(float CurrentGroggyDuration, uint8 CalculateGroggyCount) const;
+	
+	/** 캐릭터 사망 시에 Blueprint에서 호출될 함수 */
+	UFUNCTION(BlueprintImplementableEvent)
+	void K2_OnDeath();
 
 	/** Player State 정보를 초기화 */
 	void InitFromPlayerState(class AADPlayerState* ADPlayerState);
@@ -112,10 +171,10 @@ protected:
 	/** 산소가 소진되었을 때 호출되는 함수 */
 	UFUNCTION()
 	void OnOxygenDepleted();
-	
-	/** 산소가 회복되었을 때 호출되는 함수 */
+
+	/** 체력 상태가 변경될 떄 호출되는 함수 */
 	UFUNCTION()
-	void OnOxygenRestored();
+	void OnHealthChanged(int32 CurrentHealth, int32 MaxHealth);
 	
 	/** 이동 함수. 지상, 수중 상태에 따라 이동한다. */
 	void Move(const FInputActionValue& InputActionValue);
@@ -179,8 +238,49 @@ protected:
 
 #pragma region Variable
 
+public:
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDeath);
+	/** 캐릭터가 사망했을 때 호출되는 델리게이트 */
+	UPROPERTY(BlueprintAssignable)
+	FOnDeath OnDeathDelegate;
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnGroggy);
+	/** 캐릭터가 그로기 상태에 진입했을 때 호출되는 델리게이트 */
+	UPROPERTY(BlueprintAssignable)
+	FOnGroggy OnGroggyDelegate;
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnCharacterStateChanged, ECharacterState, OldCharacterState, ECharacterState, NewCharacterState);
+	/** 캐릭터 상태가 변경되었을 때 호출되는 델리게이트 */
+	UPROPERTY(BlueprintAssignable)
+	FOnCharacterStateChanged OnCharacterStateChangedDelegate;
+
 private:
 
+	// Character State는 현재 State 종료 시에 따로 처리할 것이 없기 때문에 현재 상태 값만 Replicate하도록 한다.
+	
+	/* 현재 캐릭터 상태. Normal, Groggy, Death... */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	ECharacterState CharacterState;
+
+	/** 그로기 상태에서 사망까지 걸리는 시간. 그로기 상태에 진입할 떄마다 줄어든다. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true"))
+	float GroggyDuration;
+
+	/** 그로기 상태에 진입될 떄마다 감소하는 Groggy Duration 비율. [0, 1]의 범위로 설정한다. 0.3일 경우 0.7배로 감소한다. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true", ClampMin = "0.0", ClampMax = "1.0"))
+	float GroggyReductionRate;
+
+	/** 그로기 상태를 계산할 때 최소 그로기 상태 시간. GroggyDuration * GroggyReductionRate보다 작을 경우 이 값으로 설정한다. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true"))
+	float MinGroggyDuration;
+
+	/** 그로기 상태에 진입한 횟수. uint8이라서 오버플로우에 주의 */
+	UPROPERTY(BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true"))
+	uint8 GroggyCount;
+
+	/** 그로기에서 사망 전이 Timer */
+	FTimerHandle GroggyTimer;
+	
 	// Gather와 같은 정보는 추후 다른 곳으로 이동될 수 있지만 일단은 캐릭터에 구현한다.
 	
 	/** 채광 속도. 2.0일 경우 2배의 속도로 채광한다. */
@@ -193,7 +293,7 @@ private:
 
 	/** 캐릭터의 현재 상태. 지상 혹은 수중 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
-	ECharacterState CharacterState;
+	EEnvState EnvState;
 
 	/** Capture 상태 여부. 추후 상태가 많아지면 상태 패턴 이용을 고려 */
 	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
@@ -340,11 +440,18 @@ public:
 	FORCEINLINE UShopInteractionComponent* GetShopInteractionComponent() const { return ShopInteractionComponent; }
 
 	/** 캐릭터의 상태를 반환 */
-	FORCEINLINE ECharacterState GetCharacterState() const { return CharacterState; }
+	FORCEINLINE EEnvState GetEnvState() const { return EnvState; }
 
 	/** 장착 아이템 컴포넌트 반환 */
 	FORCEINLINE UEquipUseComponent* GetEquipUseComponent() const { return EquipUseComponent; }
 
+	/** 캐릭터의 현재 상태를 반환 */
+	FORCEINLINE ECharacterState GetCharacterState() const { return CharacterState; }
+
+	/** 캐릭터의 남은 그로기 시간을 반환 */
+	UFUNCTION(BlueprintCallable)
+	float GetRemainGroggyTime() const;
+	
 	/** 현재 캐릭터의 최종 속도를 반환 */
 	FORCEINLINE float GetEffectiveSpeed() const { return EffectiveSpeed; }
 
