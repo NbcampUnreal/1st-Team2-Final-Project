@@ -188,7 +188,7 @@ void AUnderwaterCharacter::ApplyUpgradeFactor(UUpgradeComponent* UpgradeComponen
 			    break;
 	    	case EUpgradeType::Speed:
 	    		// 최종 속도는 나중에 AdjustSpeed를 통해서 계산된다. 현재는 BaseSpeed만 조정하면 된다.
-	    		StatComponent->MoveSpeed = StatFactor;
+	    		StatComponent->MoveSpeed += StatFactor;
 	    		break;
 			case EUpgradeType::Light:
 	    		// @TODO Apply Light Component Upgrade 
