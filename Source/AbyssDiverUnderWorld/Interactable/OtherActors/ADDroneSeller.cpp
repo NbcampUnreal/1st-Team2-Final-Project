@@ -88,11 +88,11 @@ int32 AADDroneSeller::SellAllExchangeableItems(AActor* InstigatorActor)
 					int32 Price = Inv->GetTotalPrice();
 					// TODO : 인벤토리 비우는 함수 구현 필요
 					TArray<int8> TypeArray = Inv->GetInventoryIndexesByType(EItemType::Exchangable);
-					for (int8 sale : TypeArray)
+					for (int i = 0; i<TypeArray.Num(); ++i)
 					{
-						if (sale > -1)
+						if (TypeArray[i] > -1)
 						{
-							Inv->RemoveInventoryItem(sale, -1, false);
+							Inv->RemoveBySlotIndex(i, EItemType::Exchangable, false);
 						}
 					}
 					return Price;
