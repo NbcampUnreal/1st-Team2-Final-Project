@@ -99,8 +99,14 @@ void AADInGameState::OnRep_PhaseGoal()
 FString AADInGameState::GetMapDisplayName() const
 {
 	const UEnum* EnumPtr = StaticEnum<EMapName>();
-	
-	return EnumPtr ? EnumPtr->GetDisplayNameTextByValue(static_cast<int64>(SelectedLevelName)).ToString()
-		: TEXT("invalid");
+	if (EnumPtr == nullptr)
+	{
+		return TEXT("INVALID");
+	}
+
+	FString DisplayName = EnumPtr->GetDisplayNameTextByValue(static_cast<int64>(SelectedLevelName)).ToString();
+	LOGV(Warning, TEXT("Display Name : %s"), *DisplayName);
+
+	return DisplayName;
 
 }

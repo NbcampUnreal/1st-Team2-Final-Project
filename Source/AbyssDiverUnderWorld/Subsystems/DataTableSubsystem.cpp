@@ -42,6 +42,7 @@ void UDataTableSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 		});
 
 	ParsePhaseGoalDataTable(GI);
+	ParseMapPathDataTable(GI);
 
 }
 
@@ -99,7 +100,10 @@ FPhaseGoalRow* UDataTableSubsystem::GetPhaseGoalData(EMapName MapName, int32 Pha
 	return PhaseGoalTableMap.FindRef(TPair<EMapName, int32>(MapName, Phase));
 }
 
-
+FString UDataTableSubsystem::GetMapPath(EMapName MapName) const
+{
+	return MapPathDataTableMap[MapName];
+}
 
 void UDataTableSubsystem::ParseUpgradeDataTable(UADGameInstance* GameInstance)
 {
@@ -148,4 +152,29 @@ void UDataTableSubsystem::ParsePhaseGoalDataTable(UADGameInstance* GameInstance)
 	}
 
 	LOGV(Error, TEXT("PhaseGoalTableMap size: %d"), PhaseGoalTableMap.Num());
+}
+
+void UDataTableSubsystem::ParseMapPathDataTable(UADGameInstance* GameInstance)
+{
+	if (GameInstance == nullptr || GameInstance->MapPathDataTable == nullptr)
+	{
+		LOGV(Error, TEXT("GameInstance or MapPathDataTable is null"));
+		return;
+	}
+
+	UDataTable* MapPathTable = GameInstance->MapPathDataTable;
+	MapPathTable->GetAllRows<FMapPathDataRow>(TEXT("MapPathTable"), MapPathDataTableArray);
+
+	MapPathDataTableMap.Empty(MapPathDataTableArray.Num());
+	for (FMapPathDataRow* Row : MapPathDataTableArray)
+	{
+		if (Row == nullptr)
+		{
+			continue;
+		}
+
+		MapPathDataTableMap.Add(Row->MapName, Row->MapPath);
+	}
+
+	LOGV(Error, TEXT("PhaseGoalTableMap size: %d"), MapPathDataTableMap.Num());
 }

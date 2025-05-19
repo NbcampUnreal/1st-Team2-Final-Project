@@ -1,4 +1,4 @@
-#include "Framework/ADInGameMode.h"
+ï»¿#include "Framework/ADInGameMode.h"
 #include "ADInGameState.h"
 #include "ADPlayerState.h"
 #include "ADPlayerController.h"
@@ -36,11 +36,16 @@ void AADInGameMode::BeginPlay()
 			int32 DronePhaseNumber = Drone->GetDronePhaseNumber();
 			EMapName MapName = InGameState->GetSelectedLevel();
 			FPhaseGoalRow* PhaseGoalRow = DataTableSubsystem->GetPhaseGoalData(MapName, DronePhaseNumber);
-			check(PhaseGoalRow)
+			
+			if (ensureMsgf(PhaseGoalRow, TEXT("Map ì´ë¦„(%d) ë˜ëŠ” DronePhaseNumber(%d)ê°€ ìœ íš¨í•˜ì§€ ì•ŠìŠµë‹ˆë‹¤. ì œëŒ€ë¡œ ì„¤ì •ë˜ì–´ ìžˆëŠ”ì§€ í™•ì¸í•˜ì„¸ìš”."), MapName, DronePhaseNumber) == false)
+			{
+				return;
+			}
+
 			check(Drone->CurrentSeller);
 			Drone->CurrentSeller->SetTargetMoney(PhaseGoalRow->GoalCredit);
 
-			// ¸¶Áö¸· µå·ÐÀ» ±â¾ïÇØ¼­ ÀÌ µå·ÐÀÌ ¾øÀ¸¸é °ÔÀÓ Å¬¸®¾î Á¶°Ç ¸¸Á·À¸·Î »ç¿ëÇÏ·Á°í..
+			// ë§ˆì§€ë§‰ ë“œë¡ ì„ ê¸°ì–µí•´ì„œ ì´ ë“œë¡ ì´ ì—†ìœ¼ë©´ ê²Œìž„ í´ë¦¬ì–´ ì¡°ê±´ ë§Œì¡±ìœ¼ë¡œ ì‚¬ìš©í•˜ë ¤ê³ ..
 			if (LastDroneNumber < DronePhaseNumber)
 			{
 				LastDrone = Drone;
@@ -95,7 +100,7 @@ void AADInGameMode::TravelToCamp()
 
 		ADInGameState->SendDataToGameInstance();
 		//input spot level name
-		FString TravelURL = FString::Printf(TEXT("/Game/_AbyssDiver/Maps/Prototypes_Test/KY/%s?listen"), *LevelLoad);
+		FString TravelURL = FString::Printf(TEXT("%s?listen"), *LevelLoad);
 		GetWorld()->ServerTravel(TravelURL);
 	}
 }
@@ -109,7 +114,7 @@ bool AADInGameMode::IsAllPhaseCleared()
 		return false;
 	}
 
-	// ÇöÀç ÆÐÀÌÁî°¡ ÃÖ´ë¶û °°°í ¸¶Áö¸· µå·ÐÀÌ DestroyµÈ »óÅÂ¶ó¸é true
+	// í˜„ìž¬ íŒ¨ì´ì¦ˆê°€ ìµœëŒ€ëž‘ ê°™ê³  ë§ˆì§€ë§‰ ë“œë¡ ì´ Destroyëœ ìƒíƒœë¼ë©´ true
 	return GS->GetPhase() == GS->GetMaxPhase() && (::IsValid(LastDrone) == false);
 }
 
