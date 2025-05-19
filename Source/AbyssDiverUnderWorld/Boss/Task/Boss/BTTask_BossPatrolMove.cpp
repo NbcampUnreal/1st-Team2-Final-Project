@@ -36,9 +36,6 @@ void UBTTask_BossPatrolMove::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* 
 	// 캐스팅
 	ABossAIController* AIController = Cast<ABossAIController>(OwnerComp.GetAIOwner());
 	ABoss* Boss = Cast<ABoss>(AIController->GetCharacter());
-
-	// 현재 Patrol Point 방향으로 보스 회전
-	Boss->RotationToTarget(PatrolPoint);
 	
 	// 현재 Patrol Point로 이동 완료한 경우 Idle 상태로 전이
 	if (AIController->GetPathFollowingComponent()->GetStatus() == EPathFollowingStatus::Idle)
