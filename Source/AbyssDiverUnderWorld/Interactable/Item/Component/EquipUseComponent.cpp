@@ -412,8 +412,6 @@ void UEquipUseComponent::FireHarpoon()
 		Proj->SetBulletType(ESpearGunType::Poison);
 	}
 
-	Proj->SetBulletType(ESpearGunType::Basic);
-
 	UProjectileMovementComponent* ProjectileMovementComp = Proj->GetProjectileMovementComp();
 	if (ProjectileMovementComp)
 	{
