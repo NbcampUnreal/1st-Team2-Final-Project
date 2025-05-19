@@ -67,8 +67,6 @@ void ACurrentZone::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* Oth
 
         if (UCharacterMovementComponent* Movement = Character->GetCharacterMovement())
         {
-            // 속도 정지
-            Movement->StopMovementImmediately();
 
             // 기본값 복구
             if (OriginalSpeeds.Contains(Character))
@@ -105,7 +103,7 @@ void ACurrentZone::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* Oth
                     Character->GetCharacterMovement()->SetMovementMode(MOVE_Swimming);
                     UE_LOG(LogTemp, Log, TEXT("🏊‍♂️ 수영 모드 복구 [%s]"), *Character->GetName());
                 }
-            }, 0.5f, false);
+            }, 2.0f, false);
     }
 }
 

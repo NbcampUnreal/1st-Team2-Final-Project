@@ -163,6 +163,7 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UShopInteractionComponent> ShopInteractionComponent;
 
+	void ToggleInventoryUI();
 #pragma endregion
 
 #pragma region Getter Setter
@@ -178,5 +179,22 @@ public:
 	FORCEINLINE ECharacterState GetCharacterState() const { return CharacterState; }
 
 	FORCEINLINE bool IsSprinting() const;
+
+	UPROPERTY(EditAnywhere, Category = "UI")
+	TSubclassOf<class UAllInventoryWidget> AllInventoryWidgetClass;
+
+	UPROPERTY()
+	UAllInventoryWidget* InventoryWidgetInstance;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UADInventoryComponent> InventoryComponent;
+
+	UPROPERTY()
+	bool bIsInventoryOpen = false;
+
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> InventoryAction;
+
 #pragma endregion
 };
