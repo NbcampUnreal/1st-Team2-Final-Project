@@ -34,7 +34,7 @@ FReply UInventorySlotWidget::NativeOnMouseButtonUp(const FGeometry& InGeometry, 
 			{
 				InventoryComponent->S_UseInventoryItem(EItemType::Consumable, SlotIndex);
 				return FReply::Handled();
-			} 
+			}
 		}
 
 	}
@@ -61,7 +61,7 @@ void UInventorySlotWidget::NativeOnDragDetected(const FGeometry& InGeometry, con
 			DragDropOp->Index = SlotIndex;
 			DragDropOp->Type = SlotType;
 			DragDropOp->OnDragCancelled.AddDynamic(this, &UInventorySlotWidget::HandleDragCancelled);
-			
+
 			Operation = DragDropOp;
 		}
 	}
@@ -70,7 +70,7 @@ void UInventorySlotWidget::NativeOnDragDetected(const FGeometry& InGeometry, con
 bool UInventorySlotWidget::NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation)
 {
 	Super::NativeOnDrop(InGeometry, InDragDropEvent, InOperation);
-	
+
 	if (InOperation)
 	{
 		UInventoryDDO* DragDropOp = Cast<UInventoryDDO>(InOperation);
@@ -94,13 +94,10 @@ void UInventorySlotWidget::SetItemData(FItemData ItemInfo, int32 Index, UADInven
 {
 	InventoryComponent = InventoryComp;
 	SlotType = ItemInfo.ItemType;
+	SlotIndex = Index;
+
 	if (!QuantityText && !Image)
 		return;
-
-	if (ItemInfo.ItemType == EItemType::Equipment)
-		QuantityText->SetVisibility(ESlateVisibility::Collapsed);
-
-	QuantityText->SetText(FText::FromString(FString::Printf(TEXT("%d"), ItemInfo.Quantity)));
 
 	if (ItemInfo.Quantity == 0)
 	{
@@ -113,10 +110,21 @@ void UInventorySlotWidget::SetItemData(FItemData ItemInfo, int32 Index, UADInven
 		Image->SetBrushFromTexture(ItemInfo.Thumbnail);
 	}
 
-	SlotIndex = Index;
+	switch (SlotType)
+	{
+	case EItemType::Equipment:
+		QuantityText->SetVisibility(ESlateVisibility::Collapsed);
+		break;
+	case EItemType::Exchangable:
+		QuantityText->SetText(FText::FromString(FString::Printf(TEXT("%dkg"), ItemInfo.Mass)));
+		break;
+	default:
+		QuantityText->SetText(FText::FromString(FString::Printf(TEXT("%d"), ItemInfo.Quantity)));
+		break;
+	}
 }
 
 void UInventorySlotWidget::HandleDragCancelled(UDragDropOperation* Operation)
 {
-	InventoryComponent->S_RequestRemove(SlotIndex, 1, true);
+	InventoryComponent->S_RemoveByDragAndDrop(SlotIndex, SlotType);
 }

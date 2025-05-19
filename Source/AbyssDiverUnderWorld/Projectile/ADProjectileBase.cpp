@@ -8,7 +8,7 @@
 #include "AbyssDiverUnderWorld.h"
 
 // Sets default values
-AADProjectileBase::AADProjectileBase()
+AADProjectileBase::AADProjectileBase() : Damage(100.0f)
 {
 	PrimaryActorTick.bCanEverTick = false;
 
@@ -22,6 +22,7 @@ AADProjectileBase::AADProjectileBase()
     ProjectileMovementComp->InitialSpeed = 2000.0f;
     ProjectileMovementComp->MaxSpeed = 2000.0f;
     ProjectileMovementComp->bRotationFollowsVelocity = true;
+    ProjectileMovementComp->bAutoActivate = true;
 
     CollisionComponent->OnComponentBeginOverlap.AddDynamic(this, &AADProjectileBase::OnOverlapBegin);
 
@@ -42,7 +43,7 @@ void AADProjectileBase::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AAct
     {
         UGameplayStatics::ApplyPointDamage(
             OtherActor,
-            30.0f,
+            Damage,
             GetActorForwardVector(),
             SweepResult,
             GetInstigatorController(),
@@ -53,6 +54,12 @@ void AADProjectileBase::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AAct
 
         Destroy();
     }
+}
+
+void AADProjectileBase::SetProjectileSpeed(float Speed)
+{
+    ProjectileMovementComp->InitialSpeed = Speed;
+    ProjectileMovementComp->MaxSpeed = Speed;
 }
 
 

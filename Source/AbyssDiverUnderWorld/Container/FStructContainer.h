@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Net/Serialization/FastArraySerializer.h"
 #include "DataRow/FADItemDataRow.h"
+#include "AbyssDiverUnderWorld.h"
 #include "FStructContainer.generated.h"
 
 class UADInventoryComponent;
@@ -71,6 +72,7 @@ struct FInventoryList : public FFastArraySerializer
 	void SetOwningComponent(UADInventoryComponent* InComp)
 	{
 		OwnerComponent = InComp;
+		LOG(TEXT("Component Init"));
 	}
 
 	//Replication을 위한 필수 함수
@@ -85,12 +87,31 @@ struct FInventoryList : public FFastArraySerializer
 		NewItem.Name = Item.Name;
 		NewItem.Id = Item.Id;
 		NewItem.Quantity = Item.Quantity;
+		NewItem.SlotIndex = Item.SlotIndex;
+		NewItem.Amount = Item.Amount;
+		NewItem.Mass = Item.Mass;
+		NewItem.Price = Item.Price;
 		NewItem.ItemType = Item.ItemType;
 		NewItem.Thumbnail = Item.Thumbnail;
-		NewItem.Amount = Item.Amount;
-		NewItem.Price = Item.Price;
 		Items.Add(NewItem);
-		MarkArrayDirty();
+		MarkItemDirty(Items.Last());
+	}
+
+	bool UpdateQuantity(int8 ItemIndex, int8 Amount) //Update 성공 여부 반환
+	{
+		if (Items[ItemIndex].Quantity + Amount >= 0)
+		{
+			Items[ItemIndex].Quantity += Amount;
+			MarkItemDirty(Items[ItemIndex]);
+			return true;
+		}
+		else
+			return false;
+	}
+	void UpdateSlotIndex(int8 ItemIndex, int8 NewIndex)
+	{
+		Items[ItemIndex].SlotIndex = NewIndex;
+		MarkItemDirty(Items[ItemIndex]);
 	}
 
 	void RemoveItem(int8 Index)

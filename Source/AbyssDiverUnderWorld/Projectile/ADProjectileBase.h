@@ -8,6 +8,8 @@
 
 class USphereComponent;
 class UProjectileMovementComponent;
+class UNiagaraComponent;
+class UNiagaraSystem;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADProjectileBase : public AActor
@@ -21,8 +23,9 @@ protected:
 	virtual void BeginPlay() override;
 
 #pragma region Method
+protected:
 	UFUNCTION()
-	void OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
+	virtual void OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
 		bool bFromSweep, const FHitResult& SweepResult);
 	void InitializeStats();
@@ -30,23 +33,22 @@ protected:
 
 #pragma region Variable
 protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Component")
 	TObjectPtr<USphereComponent> CollisionComponent;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Component")
 	TObjectPtr<USceneComponent> Scene;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Component")
 	TObjectPtr<UProjectileMovementComponent> ProjectileMovementComp;
 
 	int16 Damage;
-
 
 #pragma endregion
 
 #pragma region Getter, Setter
 public:
 	UProjectileMovementComponent* GetProjectileMovementComp() const { return ProjectileMovementComp; }
-
-
+	void SetDamage(int8 DamageAmount) { Damage = DamageAmount; };
+	void SetProjectileSpeed(float Speed);
 
 #pragma endregion
 };

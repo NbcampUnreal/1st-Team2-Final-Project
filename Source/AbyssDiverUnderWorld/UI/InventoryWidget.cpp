@@ -18,7 +18,7 @@ void UInventoryWidget::RefreshInventoryWidget()
 			int8 InventoryItemIndexByType = InventoryComp->GetInventoryIndexesByType(InventoryItemType)[i];
 			if (InventoryItemIndexByType >= 0)
 			{
-				SlotWidget->SetItemData(InventoryComp->GetInventoryList().Items[InventoryItemIndexByType], InventoryItemIndexByType, InventoryComp);
+				SlotWidget->SetItemData(InventoryComp->GetInventoryList().Items[InventoryItemIndexByType], i, InventoryComp);
 				if (SlotWidget)
 				{
 					InventoryWrapBox->AddChild(SlotWidget);
