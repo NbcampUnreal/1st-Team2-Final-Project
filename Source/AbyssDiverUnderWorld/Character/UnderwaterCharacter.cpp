@@ -19,6 +19,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Interactable/Item/Component/EquipUseComponent.h"
 #include "Inventory/ADInventoryComponent.h"
+#include "Net/UnrealNetwork.h"
 #include "Shops/ShopInteractionComponent.h"
 #include "Subsystems/DataTableSubsystem.h"
 #include "UI/HoldInteractionWidget.h"
@@ -32,6 +33,11 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 
 	StatComponent->Initialize(1000, 1000, 400.0f, 10);
 
+	GroggyDuration = 60.0f;
+	GroggyReductionRate = 0.1f;
+	MinGroggyDuration = 10.0f;
+	GroggyCount = 0;
+	
 	GatherMultiplier = 1.0f;
 	
 	bIsCaptured = false;
@@ -86,21 +92,22 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	ShopInteractionComponent = CreateDefaultSubobject<UShopInteractionComponent>(TEXT("ShopInteractionComponent"));
 	EquipUseComponent = CreateDefaultSubobject<UEquipUseComponent>(TEXT("EquipUseComponent"));
 
-	CharacterState = ECharacterState::Underwater;
+	EnvState = EEnvState::Underwater;
 }
 
 void AUnderwaterCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
-	SetCharacterState(CharacterState);
+	SetEnvState(EnvState);
 
 	SetDebugCameraMode(bUseDebugCamera);
 
 	StaminaComponent->OnSprintStateChanged.AddDynamic(this, &AUnderwaterCharacter::OnSprintStateChanged);
 	OxygenComponent->OnOxygenLevelChanged.AddDynamic(this, &AUnderwaterCharacter::OnOxygenLevelChanged);
 	OxygenComponent->OnOxygenDepleted.AddDynamic(this, &AUnderwaterCharacter::OnOxygenDepleted);
-	OxygenComponent->OnOxygenRestored.AddDynamic(this, &AUnderwaterCharacter::OnOxygenRestored);
+
+	StatComponent->OnHealthChanged.AddDynamic(this, &AUnderwaterCharacter::OnHealthChanged);
 	
 	NoiseEmitterComponent = NewObject<UPawnNoiseEmitterComponent>(this);
 	NoiseEmitterComponent->RegisterComponent();
@@ -227,13 +234,13 @@ void AUnderwaterCharacter::OnRep_PlayerState()
 	}
 }
 
-void AUnderwaterCharacter::SetCharacterState(ECharacterState State)
+void AUnderwaterCharacter::SetEnvState(EEnvState State)
 {
-	CharacterState = State;
+	EnvState = State;
 
-	switch (CharacterState)
+	switch (EnvState)
 	{
-	case ECharacterState::Underwater:
+	case EEnvState::Underwater:
 		// 현재 Physics Volume을 Water로 설정한다.
 		// 현재 Physics Volume이 Water가 아닐 경우 World의 Default Volume을 반환한다.
 		// Default Volume을 Water를 설정해서 Swim Mode를 사용할 수 있도록 한다.
@@ -243,7 +250,7 @@ void AUnderwaterCharacter::SetCharacterState(ECharacterState State)
 		GetCharacterMovement()->GravityScale = 0.0f;
 		bUseControllerRotationYaw = true;
 		break;
-	case ECharacterState::Ground:
+	case EEnvState::Ground:
 		// 지상에서는 이동 방향으로 회전을 하게 한다.
 		GetCharacterMovement()->GetPhysicsVolume()->bWaterVolume = false;
 		GetCharacterMovement()->SetMovementMode(MOVE_Walking);
@@ -288,6 +295,160 @@ void AUnderwaterCharacter::EmitBloodNoise()
 	{
 		NoiseEmitterComponent->MakeNoise(this, BloodEmitPower, GetActorLocation());
 	}
+}
+
+void AUnderwaterCharacter::SetCharacterState(const ECharacterState NewCharacterState)
+{
+	if (!HasAuthority() || CharacterState == NewCharacterState)	
+	{
+		return;
+	}
+
+	LOGVN(Warning, TEXT("Character State Changed : %s"), *UEnum::GetDisplayValueAsText(NewCharacterState).ToString());
+
+	// 각 로직을 Multicast에서 처리하도록 한다.
+	// Listen Server Model 이므로 Multicast에서 Server 로직을 같이 처리할 수 있다.
+	M_NotifyStateChange(NewCharacterState);
+}
+
+void AUnderwaterCharacter::M_NotifyStateChange_Implementation(ECharacterState NewCharacterState)
+{
+	HandleExitState(CharacterState);
+	
+	CharacterState = NewCharacterState;
+	
+	HandleEnterState(CharacterState);
+}
+
+void AUnderwaterCharacter::HandleEnterState(ECharacterState HandleCharacterState)
+{
+	if (HandleCharacterState == ECharacterState::Groggy)
+	{
+		HandleEnterGroggy();
+	}
+	else if (HandleCharacterState == ECharacterState::Normal)
+	{
+		HandleEnterNormal();
+	}
+	else if (HandleCharacterState == ECharacterState::Death)
+	{
+		HandleEnterDeath();
+	}
+	else
+	{
+		LOGVN(Error, TEXT("Invalid Character State"));
+	}
+}
+
+void AUnderwaterCharacter::HandleExitState(ECharacterState HandleCharacterState)
+{
+	if (HandleCharacterState == ECharacterState::Groggy)
+	{
+		HandleExitGroggy();
+	}
+	else if (HandleCharacterState == ECharacterState::Normal)
+	{
+		HandleExitNormal();
+	}
+	else if (HandleCharacterState == ECharacterState::Death)
+	{
+		// Death 상황에서 전이되는 State는 없다.
+	}
+	else
+	{
+		LOGVN(Error, TEXT("Invalid Character State"));
+	}
+}
+
+void AUnderwaterCharacter::HandleEnterGroggy()
+{
+	// Client에서는 남은 시간을 측정하기 위해 Timer를 설정한다.
+	// 추후에 오차가 커질 경우 Timer를 사용하지 않고 시작 시간을 기점으로 계산하도록 한다.
+	// Transition 4
+
+	LOGN(TEXT("Groggy State Entered : Groggy Time : %f"), GroggyDuration);
+	GetWorldTimerManager().SetTimer(GroggyTimer, FTimerDelegate::CreateUObject(this, &AUnderwaterCharacter::SetCharacterState, ECharacterState::Death), GroggyDuration, false);
+	// 1. Interaction 기능을 활성화해서 구조 받을 수 있게 한다.
+	
+	if (IsLocallyControlled())
+	{
+		if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
+		{
+			PlayerController->SetIgnoreLookInput(false);
+			PlayerController->SetIgnoreMoveInput(true);
+		}
+
+		// @TODO Local Groggy
+		// 1. Groggy UI 출력(남은 시간을 출력)
+		// 2. 캐릭터 회전 적용(캐릭터가 회전해서는 안 된다)
+	}
+}
+
+void AUnderwaterCharacter::HandleExitGroggy()
+{
+	GetWorldTimerManager().ClearTimer(GroggyTimer);
+	// @TODO
+	// 1. Groggy UI 제거
+	// 2. Interaction 기능을 비활성화한다.
+}
+
+void AUnderwaterCharacter::HandleEnterNormal()
+{
+	if (IsLocallyControlled())
+	{
+		if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
+		{
+			PlayerController->SetIgnoreLookInput(false);
+			PlayerController->SetIgnoreMoveInput(false);
+		}
+	}
+}
+
+void AUnderwaterCharacter::HandleExitNormal()
+{
+	// Stamina는 Replicate 되므로 Server에서 한 번만 정지하면 된다.
+	if (HasAuthority())
+	{
+		StaminaComponent->RequestStopSprint();
+	}
+
+	// @TODO
+	// 1. Stamina 회복 정지
+	// 2. Character 체력 기능 활성화
+}
+
+void AUnderwaterCharacter::HandleEnterDeath()
+{
+	if (IsLocallyControlled())
+	{
+		if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
+		{
+			PlayerController->SetIgnoreLookInput(false);
+			PlayerController->SetIgnoreMoveInput(false);
+		}
+	}
+
+	// @TODO 사망 처리
+	// 1. Server의 경우 Game Mode에 Report
+	// 2. 사망 시의 UI 출력
+	// 3. 사망 시의 캐릭터 처리 : 충돌 처리라던가 삭제 등
+
+	K2_OnDeath();
+	OnDeathDelegate.Broadcast();
+}
+
+void AUnderwaterCharacter::S_Revive_Implementation()
+{
+	if (CharacterState != ECharacterState::Normal)
+	{
+		// Transition 5
+		SetCharacterState(ECharacterState::Normal);
+	}
+}
+
+float AUnderwaterCharacter::CalculateGroggyTime(float CurrentGroggyDuration, uint8 CalculateGroggyCount) const
+{
+	return FMath::Max(CurrentGroggyDuration * (1 - GroggyReductionRate), MinGroggyDuration);
 }
 
 void AUnderwaterCharacter::M_StartCaptureState_Implementation()
@@ -354,11 +515,11 @@ void AUnderwaterCharacter::AdjustSpeed()
 	
 
 	EffectiveSpeed = BaseSpeed * Multiplier;
-	if (CharacterState == ECharacterState::Underwater)
+	if (EnvState == EEnvState::Underwater)
 	{
 		GetCharacterMovement()->MaxSwimSpeed = EffectiveSpeed;
 	}
-	else if (CharacterState == ECharacterState::Ground)
+	else if (EnvState == EEnvState::Ground)
 	{
 		GetCharacterMovement()->MaxWalkSpeed = EffectiveSpeed;
 	}
@@ -383,16 +544,17 @@ void AUnderwaterCharacter::OnOxygenLevelChanged(float CurrentOxygenLevel, float 
 
 void AUnderwaterCharacter::OnOxygenDepleted()
 {
-	// 비율로 깎는 함수를 만들어 두지 않아서 일단은 여기서 계산하기로 한다.
-	
-	const float DepletionHealthLoss = StatComponent->MaxHealth * 0.1f;
-	StatComponent->AddHealthRegenRate(-DepletionHealthLoss);
+	// Transition 2, 3
+	SetCharacterState(ECharacterState::Death);
 }
 
-void AUnderwaterCharacter::OnOxygenRestored()
+void AUnderwaterCharacter::OnHealthChanged(int32 CurrentHealth, int32 MaxHealth)
 {
-	const float RestorationHealthGain = StatComponent->MaxHealth * 0.1f;
-	StatComponent->AddHealthRegenRate(RestorationHealthGain);
+	if (HasAuthority() && CurrentHealth <= 0)
+	{
+		// Transition 1
+		SetCharacterState(ECharacterState::Groggy);
+	}
 }
 
 void AUnderwaterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -559,6 +721,22 @@ float AUnderwaterCharacter::TakeDamage(float DamageAmount, struct FDamageEvent c
 	return ActualDamage;
 }
 
+void AUnderwaterCharacter::RequestRevive()
+{
+	if (HasAuthority())
+	{
+		// Transition 5
+		if (CharacterState != ECharacterState::Normal)
+		{
+			SetCharacterState(ECharacterState::Normal);
+		}
+	}
+	else
+	{
+		S_Revive();
+	}
+}
+
 void AUnderwaterCharacter::Move(const FInputActionValue& InputActionValue)
 {
 	// To-Do
@@ -567,11 +745,11 @@ void AUnderwaterCharacter::Move(const FInputActionValue& InputActionValue)
 	// 캐릭터의 XYZ 축을 기준으로 입력을 받는다.
 	const FVector MoveInput = InputActionValue.Get<FVector>();
 
-	if (CharacterState == ECharacterState::Ground)
+	if (EnvState == EEnvState::Ground)
 	{
 		MoveGround(MoveInput);
 	}
-	else if (CharacterState == ECharacterState::Underwater)
+	else if (EnvState == EEnvState::Underwater)
 	{
 		MoveUnderwater(MoveInput);
 	}
@@ -623,11 +801,19 @@ void AUnderwaterCharacter::MoveGround(FVector MoveInput)
 
 void AUnderwaterCharacter::StartSprint(const FInputActionValue& InputActionValue)
 {
+	if (CharacterState != ECharacterState::Normal)
+	{
+		return;
+	}
 	StaminaComponent->RequestStartSprint();
 }
 
 void AUnderwaterCharacter::StopSprint(const FInputActionValue& InputActionValue)
 {
+	if (CharacterState != ECharacterState::Normal)
+	{
+		return;
+	}
 	StaminaComponent->RequestStopSprint();
 }
 
@@ -647,11 +833,19 @@ void AUnderwaterCharacter::Look(const FInputActionValue& InputActionValue)
 
 void AUnderwaterCharacter::Fire(const FInputActionValue& InputActionValue)
 {
+	if (CharacterState != ECharacterState::Normal)
+	{
+		return;
+	}
 	EquipUseComponent->HandleLeftClick();
 }
 
 void AUnderwaterCharacter::Reload(const FInputActionValue& InputActionValue)
 {
+	if (CharacterState != ECharacterState::Normal)
+	{
+		return;
+	}
 	EquipUseComponent->HandleRKey();
 }
 
@@ -661,11 +855,19 @@ void AUnderwaterCharacter::Aim(const FInputActionValue& InputActionValue)
 
 void AUnderwaterCharacter::Interaction(const FInputActionValue& InputActionValue)
 {
+	if (CharacterState != ECharacterState::Normal)
+	{
+		return;
+	}
 	InteractionComponent->OnInteractPressed();
 }
 
 void AUnderwaterCharacter::CompleteInteraction(const FInputActionValue& InputActionValue)
 {
+	if (CharacterState != ECharacterState::Normal)
+	{
+		return;
+	}
 	InteractionComponent->OnInteractReleased();
 }
 
@@ -679,16 +881,28 @@ void AUnderwaterCharacter::Radar(const FInputActionValue& InputActionValue)
 
 void AUnderwaterCharacter::EquipSlot1(const FInputActionValue& InputActionValue)
 {
+	if (CharacterState != ECharacterState::Normal)
+	{
+		return;
+	}
 	InventoryComponent->S_UseInventoryItem(EItemType::Equipment, 1);
 }
 
 void AUnderwaterCharacter::EquipSlot2(const FInputActionValue& InputActionValue)
 {
+	if (CharacterState != ECharacterState::Normal)
+	{
+		return;
+	}
 	InventoryComponent->S_UseInventoryItem(EItemType::Equipment, 2);
 }
 
 void AUnderwaterCharacter::EquipSlot3(const FInputActionValue& InputActionValue)
 {
+	if (CharacterState != ECharacterState::Normal)
+	{
+		return;
+	}
 	InventoryComponent->S_UseInventoryItem(EItemType::Equipment, 3);
 }
 
@@ -713,6 +927,15 @@ void AUnderwaterCharacter::ToggleDebugCameraMode()
 {
 	bUseDebugCamera = !bUseDebugCamera;
 	SetDebugCameraMode(bUseDebugCamera);
+}
+
+float AUnderwaterCharacter::GetRemainGroggyTime() const
+{
+	if (GetWorldTimerManager().IsTimerActive(GroggyTimer))
+	{
+		return GetWorldTimerManager().GetTimerRemaining(GroggyTimer);
+	}
+	return 0.0f;
 }
 
 bool AUnderwaterCharacter::IsSprinting() const
