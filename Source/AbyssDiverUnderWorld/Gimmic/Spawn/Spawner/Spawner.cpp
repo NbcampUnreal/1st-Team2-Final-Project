@@ -6,6 +6,7 @@
 ASpawner::ASpawner()
 {
 	LocationRange = CreateDefaultSubobject<UBoxComponent>(TEXT("LocationRange"));
+	LocationRange->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	
 	MinDistance = 100.0f;
 	MaxTries = 100;
