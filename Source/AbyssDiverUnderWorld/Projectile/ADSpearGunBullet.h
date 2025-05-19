@@ -65,7 +65,7 @@ private:
 #pragma endregion
 
 #pragma region Getter/Setter
-private:
+public:
 	//프로젝타일 스폰 후 지정
 	UFUNCTION(BlueprintCallable)
 	void SetBulletType(ESpearGunType NewBulletType) { BulletType = NewBulletType; }; 
