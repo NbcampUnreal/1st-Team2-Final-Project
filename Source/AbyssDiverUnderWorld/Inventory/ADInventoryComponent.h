@@ -95,6 +95,8 @@ public:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TSubclassOf<UAllInventoryWidget> InventoryWidgetClass;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	TSubclassOf<UUserWidget> NightVisionWidgetClass;
 	
 private:
 	UPROPERTY(ReplicatedUsing = OnRep_InventoryList)
@@ -117,6 +119,7 @@ private:
 	TArray<int8> InventorySizeByType;
 
 	TObjectPtr<UAllInventoryWidget> InventoryWidgetInstance;
+	TObjectPtr<UUserWidget> NightVisionWidgetInstance;
 	TObjectPtr<UDataTableSubsystem> DataTableSubsystem; 
 #pragma endregion
 
