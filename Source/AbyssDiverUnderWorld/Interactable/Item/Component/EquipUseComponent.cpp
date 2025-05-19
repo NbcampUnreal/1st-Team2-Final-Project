@@ -4,6 +4,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Projectile/ADProjectileBase.h"
+#include "Projectile/ADSpearGunBullet.h"
 #include "GameplayTagContainer.h"
 #include "GameplayTags/EquipNativeTags.h"
 #include "AbyssDiverUnderWorld.h"
@@ -387,7 +388,9 @@ void UEquipUseComponent::FireHarpoon()
 	Params.SpawnCollisionHandlingOverride =
 		ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
-	AADProjectileBase* Proj = GetWorld()->SpawnActor<AADProjectileBase>(
+	//AADProjectileBase* Proj = GetWorld()->SpawnActor<AADProjectileBase>(
+	//	ProjectileClass, MuzzleLoc, SpawnRot, Params);
+	AADSpearGunBullet* Proj = GetWorld()->SpawnActor<AADSpearGunBullet>(
 		ProjectileClass, MuzzleLoc, SpawnRot, Params);
 
 	if (!Proj)
@@ -395,6 +398,21 @@ void UEquipUseComponent::FireHarpoon()
 		LOG(TEXT("No Projectile"));
 		return;
 	}
+	
+	if (CurrentRowName == "BasicSpearGun")
+	{
+		Proj->SetBulletType(ESpearGunType::Basic);
+	}
+	else if (CurrentRowName == "BombSpearGun")
+	{
+		Proj->SetBulletType(ESpearGunType::Bomb);
+	}
+	else if (CurrentRowName == "PoisonSpearGun")
+	{
+		Proj->SetBulletType(ESpearGunType::Poison);
+	}
+
+	Proj->SetBulletType(ESpearGunType::Basic);
 
 	UProjectileMovementComponent* ProjectileMovementComp = Proj->GetProjectileMovementComp();
 	if (ProjectileMovementComp)

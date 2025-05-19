@@ -8,6 +8,7 @@
 
 class AADProjectileBase;
 class UUserWidget;
+class AADSpearGunBullet;
 
 enum class EAction : uint8
 {
@@ -164,10 +165,10 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UUserWidget> ChargeWidget = nullptr;
 	UPROPERTY(EditAnywhere, Category = "Projectile")
-	TSubclassOf<AADProjectileBase> ProjectileClass = nullptr;
+	TSubclassOf<AADSpearGunBullet> ProjectileClass = nullptr;
 	UPROPERTY()
 	TMap<FName, FEquipState> AmountMap;
-	UPROPERTY()
+	UPROPERTY(EditAnywhere)
 	FName CurrentRowName;
 	
 
