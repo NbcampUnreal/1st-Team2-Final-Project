@@ -101,7 +101,7 @@ float ABoss::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
                         AActor* DamageCauser)
 {
 	// 사망 상태면 얼리 리턴
-	if (BlackboardComponent->GetValueAsEnum(BossStateKey) == static_cast<uint8>(EBossState::Death)) return 0.0f;
+	if (BossState == EBossState::Death) return 0.0f;
 
 	const float Damage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
@@ -150,12 +150,12 @@ void ABoss::OnDeath()
 	// 사망 시 가라앉는 연출
 	GetCharacterMovement()->GravityScale = 0.1f;
 
+	// 사망 상태로 전이
+	SetBossState(EBossState::Death);
+	
 	// 이동을 멈추고 모든 애니메이션 출력 정지
 	AIController->StopMovement();
 	AnimInstance->StopAllMontages(0.5f);
-
-	// 사망 상태로 전이
-	SetBossState(EBossState::Death);
 
 	// AIController 작동 중지
 	AIController->UnPossess();
