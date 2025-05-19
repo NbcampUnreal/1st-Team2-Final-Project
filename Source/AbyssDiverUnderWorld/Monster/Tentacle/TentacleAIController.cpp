@@ -8,14 +8,3 @@ ATentacleAIController::ATentacleAIController()
 	MonsterID = "Tentacle";
 }
 
-void ATentacleAIController::BeginPlay()
-{
-	Super::BeginPlay();
-
-	
-}
-
-void ATentacleAIController::OnPossess(APawn* InPawn)
-{
-	Super::OnPossess(InPawn);
-}
