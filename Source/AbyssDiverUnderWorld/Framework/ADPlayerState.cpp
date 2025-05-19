@@ -74,6 +74,10 @@ void AADPlayerState::CopyProperties(APlayerState* PlayerState)
 	AADPlayerState* NextPlayerState = CastChecked<AADPlayerState>(PlayerState);
 	LOGV(Warning, TEXT("Id Copied, Old : %d, New : %d, Net : %s"), PlayerIndex, NextPlayerState->GetPlayerIndex(), *NextPlayerState->GetUniqueId().GetUniqueNetId()->ToString());
 	NextPlayerState->SetPlayerIndex(PlayerIndex);
+	if (UUpgradeComponent* NextUpgradeComponent = NextPlayerState->GetUpgradeComp())
+	{
+		NextUpgradeComponent->CopyProperties(GetUpgradeComp());
+	}
 }
 
 void AADPlayerState::SetPlayerInfo( const FString& InNickname)

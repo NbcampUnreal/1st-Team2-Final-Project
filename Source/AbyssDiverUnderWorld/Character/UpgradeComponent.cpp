@@ -101,6 +101,18 @@ void UUpgradeComponent::OnRep_UpgradeGradeMap()
 	Shop->InitUpgradeView();
 }
 
+void UUpgradeComponent::CopyProperties(UUpgradeComponent* Other)
+{
+	if (Other == nullptr)
+	{
+		LOGV(Error, TEXT("Other == nullptr"));
+		return;
+	}
+
+	// UpgradeGradeMap을 복사한다.
+	UpgradeGradeMap = Other->UpgradeGradeMap;
+}
+
 uint8 UUpgradeComponent::GetCurrentGrade(EUpgradeType UpgradeType) const
 {
 	const int32 Index = static_cast<int32>(UpgradeType);
