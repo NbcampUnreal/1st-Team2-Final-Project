@@ -4,6 +4,9 @@
 #include "Blueprint/UserWidget.h"
 #include "SpearCountHudWidget.generated.h"
 
+class UTextBlock;
+class UProgressBar;
+
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API USpearCountHudWidget : public UUserWidget
 {
@@ -24,39 +27,37 @@ public:
 
     // 산소 게이지 세팅
     void SetOxygenPercent(float InPercent);
-
-protected:
-private:
 #pragma endregion
 
-#pragma region Variable
-public:
-    // 텍스트 바인딩
-    UPROPERTY(meta = (BindWidget))
-    class UTextBlock* SpearNum;
-
-    UPROPERTY(meta = (BindWidget))
-    class UTextBlock* TotalSpear;
-
-    // 산소 ProgressBar
-    UPROPERTY(meta = (BindWidget))
-    class UProgressBar* OxygenBar;
-
-protected:
-private:
-#pragma endregion
-
-#pragma region Getter, Setter
+#pragma region Getter/Setter
 public:
     FORCEINLINE int32 GetCurrentSpear() const { return CurrentSpear; }
     FORCEINLINE int32 GetTotalSpear() const { return TotalSpearCount; }
 
     void SetCurrentSpear(int32 InValue);
     void SetTotalSpear(int32 InValue);
+#pragma endregion
 
+#pragma region Variable
 protected:
-private:
+    // 현재 작살 수
+    UPROPERTY()
     int32 CurrentSpear = 0;
+
+    // 총 작살 수
+    UPROPERTY()
     int32 TotalSpearCount = 0;
+
+    // 작살 수 텍스트
+    UPROPERTY(meta = (BindWidget))
+    TObjectPtr<UTextBlock> SpearNum;
+
+    // 총 작살 수 텍스트
+    UPROPERTY(meta = (BindWidget))
+    TObjectPtr<UTextBlock> TotalSpear;
+
+    // 산소 게이지 바
+    UPROPERTY(meta = (BindWidget))
+    TObjectPtr<UProgressBar> OxygenBar;
 #pragma endregion
 };
