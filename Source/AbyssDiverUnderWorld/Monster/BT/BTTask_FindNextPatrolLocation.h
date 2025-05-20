@@ -6,9 +6,7 @@
 #include "BehaviorTree/Tasks/BTTask_BlackboardBase.h"
 #include "BTTask_FindNextPatrolLocation.generated.h"
 
-/**
- * 
- */
+
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API UBTTask_FindNextPatrolLocation : public UBTTask_BlackboardBase
 {
