@@ -16,7 +16,8 @@ public:
     ACurrentZone();
 
 protected:
-#pragma region Method
+    virtual void BeginPlay() override;
+
     UFUNCTION()
     void OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
         UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
@@ -26,16 +27,14 @@ protected:
     void OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
         UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
-    void ApplyCurrentForce(); // 💡 타이머에서 호출할 함수
-#pragma endregion
+    void ApplyCurrentForce();
 
-#pragma region Variable
 public:
     UPROPERTY(EditAnywhere, Category = "Current")
-    FVector PushDirection = FVector(0.f, -1.f, 0.f); // 기본 방향
+    FVector PushDirection = FVector(0.f, -1.f, 0.f);
 
     UPROPERTY(EditAnywhere, Category = "Current")
-    float PushForce = 100.f;
+    float PushForce = 0.35f;
 
 protected:
     UPROPERTY(VisibleAnywhere, Category = "Component")
@@ -46,6 +45,4 @@ private:
     FTimerHandle CurrentForceTimer;
     TMap<TObjectPtr<AUnderwaterCharacter>, float> OriginalSpeeds;
     TMap<TObjectPtr<AUnderwaterCharacter>, float> OriginalAccelerations;
-
-#pragma endregion
 };

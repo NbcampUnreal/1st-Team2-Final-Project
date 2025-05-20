@@ -20,6 +20,17 @@ ACurrentZone::ACurrentZone()
     TriggerZone->OnComponentEndOverlap.AddDynamic(this, &ACurrentZone::OnOverlapEnd);
 }
 
+void ACurrentZone::BeginPlay()
+{
+    Super::BeginPlay();
+
+    // PushDirection이 0일 경우 대비
+    if (PushDirection.IsNearlyZero())
+    {
+        PushDirection = FVector(1.f, 0.f, 0.f);
+    }
+}
+
 void ACurrentZone::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
     UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
     bool bFromSweep, const FHitResult& SweepResult)
@@ -30,24 +41,18 @@ void ACurrentZone::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* O
 
         if (UCharacterMovementComponent* Movement = Character->GetCharacterMovement())
         {
-            // 속도 정보 저장
             if (!OriginalSpeeds.Contains(Character))
             {
                 OriginalSpeeds.Add(Character, Movement->MaxWalkSpeed);
                 OriginalAccelerations.Add(Character, Movement->MaxAcceleration);
             }
 
-            // LaunchCharacter로 휘청이는 느낌 부여 (수영 모드 → Falling으로 변경됨)
             FVector LaunchVelocity = PushDirection.GetSafeNormal() * 1000.f;
             Character->LaunchCharacter(LaunchVelocity, true, false);
 
-            // 반복 적용 타이머 시작
-            if (!GetWorldTimerManager().IsTimerActive(CurrentForceTimer))
-            {
-                GetWorldTimerManager().SetTimer(CurrentForceTimer, this, &ACurrentZone::ApplyCurrentForce, 0.05f, true);
-            }
+            // 무조건 타이머 재시작 (중복 등록 방지용 IsTimerActive 제거)
+            GetWorldTimerManager().SetTimer(CurrentForceTimer, this, &ACurrentZone::ApplyCurrentForce, 0.05f, true);
 
-            // 로그
             FVector Velocity = Character->GetVelocity();
             float Speed = Velocity.Size();
             float DirDot = !Velocity.IsNearlyZero() ? FVector::DotProduct(Velocity.GetSafeNormal(), PushDirection.GetSafeNormal()) : 0.f;
@@ -67,8 +72,6 @@ void ACurrentZone::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* Oth
 
         if (UCharacterMovementComponent* Movement = Character->GetCharacterMovement())
         {
-
-            // 기본값 복구
             if (OriginalSpeeds.Contains(Character))
             {
                 Movement->MaxWalkSpeed = OriginalSpeeds[Character];
@@ -80,7 +83,6 @@ void ACurrentZone::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* Oth
                 OriginalAccelerations.Remove(Character);
             }
 
-            // 로그
             FVector Velocity = Character->GetVelocity();
             float Speed = Velocity.Size();
             float DirDot = !Velocity.IsNearlyZero() ? FVector::DotProduct(Velocity.GetSafeNormal(), PushDirection.GetSafeNormal()) : 0.f;
@@ -94,7 +96,6 @@ void ACurrentZone::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* Oth
             GetWorldTimerManager().ClearTimer(CurrentForceTimer);
         }
 
-        // ✅ 0.5초 후 Swimming 모드로 복구
         FTimerHandle RecoverMovementTimer;
         GetWorld()->GetTimerManager().SetTimer(RecoverMovementTimer, [Character]()
             {
@@ -114,14 +115,21 @@ void ACurrentZone::ApplyCurrentForce()
         if (!Character || !Character->GetCharacterMovement())
             continue;
 
-        FVector Direction = PushDirection.GetSafeNormal();
-        FVector InputVector = Character->GetLastMovementInputVector().GetSafeNormal();
-        float Dot = FVector::DotProduct(InputVector, Direction);
+        auto* Movement = Character->GetCharacterMovement();
 
-        if (Dot < -0.1f)
-            continue;
+        if (Movement->IsFalling() || Movement->MovementMode == MOVE_None)
+        {
+            Movement->SetMovementMode(MOVE_Swimming);
+        }
 
-        float ForceScale = (Dot < 0.2f) ? 0.2f : 0.35f;
-        Character->AddMovementInput(Direction, ForceScale);
+        // ✅ 직접 Velocity를 계속 덧붙여서 밀어주는 방식
+        FVector PushDir = PushDirection.GetSafeNormal();
+        FVector CurrentVelocity = Movement->Velocity;
+
+        // 상하좌우 입력은 그대로 유지되되, 흐름 방향으로 추가 속도 부여
+        float FlowStrength = 50.f; // ← 조절 가능: 물살 세기
+        FVector FlowForce = PushDir * FlowStrength * Movement->GetMaxAcceleration() * GetWorld()->DeltaTimeSeconds;
+
+        Movement->Velocity += FlowForce;
     }
 }
