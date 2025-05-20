@@ -14,6 +14,7 @@
 #include "Navigation/PathFollowingComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "NavigationSystem.h"
+#include "NiagaraFunctionLibrary.h"
 
 const FName ABoss::BossStateKey = "BossState";
 
@@ -42,7 +43,12 @@ ABoss::ABoss()
 	AttackCollision->ComponentTags.Add(TEXT("Attack Collision"));
 
 	CameraControllerComponent = CreateDefaultSubobject<UCameraControllerComponent>("Camera Controller Component");
-	
+
+	static ConstructorHelpers::FObjectFinder<UNiagaraSystem> BloodNiagara(TEXT("/Game/SurvivalFX/Particles/Hit/PS_Hit_Blood_Big"));
+	if (BloodNiagara.Succeeded())
+	{
+		BloodEffect = BloodNiagara.Object;
+	}
 	bReplicates = true;
 }
 
@@ -119,12 +125,6 @@ float ABoss::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
 			LOG(TEXT("Hit Bone: %s"), *HitResult.BoneName.ToString());
 		}
 
-		if (HitResult.PhysMaterial.IsValid())
-		{
-			FString CollisionName = HitResult.PhysMaterial->GetName();
-			LOG(TEXT("Hit Collision: %s"), *CollisionName);
-		}
-
 		if (HitResult.PhysicsObjectOwner.IsValid())
 		{
 			FName RegionName = *HitResult.PhysicsObjectOwner->GetName();
@@ -134,6 +134,11 @@ float ABoss::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
 		if (HitResult.ImpactPoint != FVector::ZeroVector)
 		{
 			LOG(TEXT("Damage Location: %s"), *HitResult.ImpactPoint.ToString());
+			if (IsValid(BloodEffect))
+			{
+				UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+				GetWorld(), BloodEffect,HitResult.ImpactPoint, FRotator::ZeroRotator, FVector(1), true, true );
+			}
 		}
 	}
 	
