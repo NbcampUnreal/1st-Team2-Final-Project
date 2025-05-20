@@ -1,0 +1,73 @@
+#pragma once
+
+#include "CoreMinimal.h"
+#include "GameFramework/Actor.h"
+#include "Interface/IADInteractable.h"
+#include "Interactable/Item/Component/ADInteractableComponent.h"
+#include "ADTablet.generated.h"
+
+class UWidgetComponent;
+class UCameraComponent;
+
+UCLASS()
+class ABYSSDIVERUNDERWORLD_API AADTablet : public AActor, public IIADInteractable
+{
+	GENERATED_BODY()
+	
+public:	
+	// Sets default values for this actor's properties
+	AADTablet();
+
+protected:
+	virtual void Tick(float DeltaSeconds) override;
+
+#pragma region Method
+public:
+	virtual void Interact_Implementation(AActor* InstigatorActor) override;
+	virtual bool CanHighlight_Implementation() const override { return !bIsHeld; }
+	void Pickup(AActor* InstigatorActor);
+	void PutDown();
+
+protected:
+
+
+private:
+#pragma endregion
+
+#pragma region Variable
+public:
+
+
+protected:
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<USceneComponent> SceneRoot;
+	
+	UPROPERTY(EditAnywhere)
+	TObjectPtr<UStaticMeshComponent> TabletMesh;
+
+	UPROPERTY(EditAnywhere)
+	TObjectPtr<UADInteractableComponent> InteractableComp;
+
+	UPROPERTY(EditAnywhere)
+	TObjectPtr<UWidgetComponent> ScreenWidget;
+
+private:
+	UPROPERTY(EditAnywhere)
+	FVector HoldOffsetLocation = FVector(50.f, 0.f, -20.f);
+	UPROPERTY(EditAnywhere)
+	FRotator HoldOffsetRotation = FRotator(-10.f, 0.f, 0.f);
+	UCameraComponent* OwnerCamera = nullptr;
+
+	uint8 bIsHeld : 1;
+	FTransform CachedWorldTransform;
+
+#pragma endregion
+
+#pragma region Getter, Setteer
+public:
+	virtual UADInteractableComponent* GetInteractableComponent() const override { return InteractableComp; }
+	virtual bool IsHoldMode() const override { return false; }
+#pragma endregion
+
+
+};
