@@ -201,16 +201,6 @@ void AUnderwaterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 				&AUnderwaterCharacter::Radar
 			);
 		}
-		if (InventoryAction)
-		{
-			EnhancedInput->BindAction(
-				InventoryAction,
-				ETriggerEvent::Started,
-				this,
-				&AUnderwaterCharacter::ToggleInventoryUI
-			);
-		}
-
 	}
 
 	else
@@ -359,30 +349,3 @@ bool AUnderwaterCharacter::IsSprinting() const
 	return StaminaComponent->IsSprinting();
 }
 
-void AUnderwaterCharacter::ToggleInventoryUI()
-{
-	if (!InventoryWidgetInstance && AllInventoryWidgetClass)
-	{
-		InventoryWidgetInstance = CreateWidget<UAllInventoryWidget>(GetWorld(), AllInventoryWidgetClass);
-
-		if (InventoryWidgetInstance)
-		{
-			InventoryWidgetInstance->RefreshMissionList(); // 생성만 해두기
-		}
-	}
-
-	if (InventoryWidgetInstance)
-	{
-		if (InventoryWidgetInstance->IsInViewport())
-		{
-			InventoryWidgetInstance->RemoveFromParent();
-			bIsInventoryOpen = false;
-		}
-		else
-		{
-			InventoryWidgetInstance->AddToViewport();        // 🔥 이게 핵심!
-			InventoryWidgetInstance->RefreshMissionList();   // 🔥 리스트 다시 새로고침
-			bIsInventoryOpen = true;
-		}
-	}
-}

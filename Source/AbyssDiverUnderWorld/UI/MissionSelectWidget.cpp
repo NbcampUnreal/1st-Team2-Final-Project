@@ -125,9 +125,8 @@ void UMissionSelectWidget::OnStartButtonClicked()
                     UE_LOG(LogTemp, Warning, TEXT("✅ [MissionSelectWidget] 인벤토리 위젯 생성 성공"));
 
                     // ❌ 바로 AddToViewport 하지 말기!
-                    // ❌ UWCharacter->InventoryWidgetInstance->AddToViewport();
+                    //UWCharacter->InventoryWidgetInstance->AddToViewport();
 
-                    UWCharacter->InventoryWidgetInstance->RefreshMissionList(); // ✅ 미리 세팅만
                 }
             }
             else

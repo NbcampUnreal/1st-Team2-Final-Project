@@ -1,4 +1,4 @@
-
+#pragma once
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "UI/MissionData.h"
@@ -18,7 +18,6 @@ class ABYSSDIVERUNDERWORLD_API UAllInventoryWidget : public UUserWidget
 public:
     void InitializeInventoriesInfo(UADInventoryComponent* InventoryComp);
     void RefreshExchangableInventoryInfo(int32 Mass, int32 Price);
-    void RefreshMissionList(); 
 
 
 protected:
@@ -32,9 +31,6 @@ protected:
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UInventoryWidget> ExchangableInventory;
 
-    UPROPERTY(EditDefaultsOnly, Category = "Mission")
-    TSubclassOf<UMissionEntryWidget> MissionEntryWidgetClass;
-
     // 무게, 크레딧 텍스트
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<URichTextBlock> MassText;
@@ -42,8 +38,7 @@ protected:
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<URichTextBlock> PriceText;
 
-    UPROPERTY(meta = (BindWidget))
-    TObjectPtr<UVerticalBox> VerticalBox_SelectedMissions;
+
 
 
 #pragma endregion

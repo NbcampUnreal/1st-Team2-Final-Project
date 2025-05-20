@@ -163,7 +163,6 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UShopInteractionComponent> ShopInteractionComponent;
 
-	void ToggleInventoryUI();
 #pragma endregion
 
 #pragma region Getter Setter
