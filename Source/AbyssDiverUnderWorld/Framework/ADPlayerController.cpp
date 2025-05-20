@@ -1,12 +1,15 @@
 #include "Framework/ADPlayerController.h"
-
+#include "ADCampGameMode.h"
+#include "ADInGameState.h"
+#include "ADPlayerState.h"
 #include "AbyssDiverUnderWorld.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputMappingContext.h"
-#include "ADPlayerState.h"
 #include "EnhancedInputComponent.h"
 #include "Character/PlayerComponent/PlayerHUDComponent.h"
 #include "Inventory/ADInventoryComponent.h"
+#include "DataRow/PhaseGoalRow.h"
+#include "Kismet/GameplayStatics.h"
 
 AADPlayerController::AADPlayerController()
 {
@@ -45,14 +48,35 @@ void AADPlayerController::BeginPlay()
 
 		S_SetPlayerInfo(Id, Nickname);
 	}
-
 }
 
 void AADPlayerController::S_SetPlayerInfo_Implementation(const FUniqueNetIdRepl& Id, const FString& Nickname)
 {
 	if (AADPlayerState* PS = GetPlayerState<AADPlayerState>())
 	{
-		PS->SetPlayerInfo(Id, Nickname);
+		PS->SetPlayerInfo(Nickname);
+	}
+}
+
+void AADPlayerController::S_RequestSelectLevel_Implementation(const EMapName InLevelName)
+{
+	if (HasAuthority())
+	{
+		if (AADCampGameMode* ADGameMode = Cast<AADCampGameMode>(UGameplayStatics::GetGameMode(this)))
+		{
+			ADGameMode->SetSelectedLevel(InLevelName);
+		}
+	}
+}
+
+void AADPlayerController::S_RequestStartGame_Implementation()
+{
+	if (HasAuthority())
+	{
+		if (AADCampGameMode* ADGameMode = Cast<AADCampGameMode>(UGameplayStatics::GetGameMode(this)))
+		{
+			ADGameMode->TryStartGame();
+		}
 	}
 }
 

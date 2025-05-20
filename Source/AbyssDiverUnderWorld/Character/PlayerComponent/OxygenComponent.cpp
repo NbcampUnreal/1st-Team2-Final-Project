@@ -91,6 +91,17 @@ void UOxygenComponent::SetShouldConsumeOxygen(const bool bNewShouldConsumeOxygen
 	bShouldConsumeOxygen = bNewShouldConsumeOxygen;
 }
 
+void UOxygenComponent::InitOxygenSystem(float NewOxygenLevel, float NewMaxOxygenLevel)
+{
+	if (GetOwnerRole() != ROLE_Authority)
+	{
+		return;
+	}
+
+	SetMaxOxygenLevel(NewMaxOxygenLevel);
+	SetOxygenLevel(NewOxygenLevel);
+}
+
 void UOxygenComponent::SetMaxOxygenLevel(float NewMaxOxygenLevel)
 {
 	if (GetOwnerRole() != ROLE_Authority || NewMaxOxygenLevel <= 0)

@@ -18,6 +18,8 @@ AADOreRock::AADOreRock()
 
 	// InteractableComponent 생성
 	InteractableComp = CreateDefaultSubobject<UADInteractableComponent>(TEXT("InteractableComp"));
+
+	bIsHold = true;
 }
 
 // Called when the game starts or when spawned
@@ -44,11 +46,19 @@ void AADOreRock::Interact_Implementation(AActor* InstigatorActor)
 
 	HandleMineRequest(Cast<APawn>(InstigatorActor));
 }
+
+void AADOreRock::InteractHold_Implementation(AActor* InstigatorActor)
+{
+	if (!HasAuthority()) return;
+
+	HandleMineRequest(Cast<APawn>(InstigatorActor));
+}
+
 void AADOreRock::HandleMineRequest(APawn* InstigatorPawn)
 {
 	if (!HasAuthority() || CurrentMiningGauge <= 0) return;
 
-	// 25는 나중에 레이저 발사기가 생기면 변경해야 합니다..
+	// 25는 나중에 레이저 발사기가 생기면 변경해야 합니다.. (InstigatorPawn에서 가져오면 됨)
 	CurrentMiningGauge = FMath::Max(0, CurrentMiningGauge - 25);
 	OnRep_CurrentMiningGauge();
 	PlayMiningFX();
@@ -178,4 +188,13 @@ UADInteractableComponent* AADOreRock::GetInteractableComponent() const
 	return InteractableComp;
 }
 
+bool AADOreRock::IsHoldMode() const
+{
+	return bIsHold;
+}
+
+float AADOreRock::GetHoldDuration_Implementation() const
+{
+	return HoldDuration;
+}
 

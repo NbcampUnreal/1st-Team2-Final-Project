@@ -26,6 +26,8 @@ public:
 
 	virtual void HandlePickup(APawn* InstigatorPawn);
 
+	
+
 protected:
 	UFUNCTION()
 	void OnRep_ItemData();
@@ -47,7 +49,8 @@ public:
 	// TODO : 인벤토리 컴포넌트 참조
 	// TODO : PickupSound 등 획득 시 효과 추가
 protected:
-	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction")
+	uint8 bIsHold : 1;
 
 private:
 
@@ -58,6 +61,7 @@ public:
 	void SetItemMass(int32 InMass);
 	void SetPrice(int32 InPrice);
 	virtual UADInteractableComponent* GetInteractableComponent() const override;
+	virtual bool IsHoldMode() const override;
 #pragma endregion
 
 };

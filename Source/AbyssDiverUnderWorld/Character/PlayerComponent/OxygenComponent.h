@@ -141,6 +141,10 @@ public:
 
 	/** 최대 산소량 */
 	FORCEINLINE float GetMaxOxygenLevel() const { return OxygenState.MaxOxygenLevel; }
+
+	/** 초기 산소값을 초기화 */
+	UFUNCTION(BlueprintCallable)
+	void InitOxygenSystem(float NewOxygenLevel, float NewMaxOxygenLevel);
 	
 	/** 최대 산소량을 설정한다. */
 	UFUNCTION(BlueprintCallable)

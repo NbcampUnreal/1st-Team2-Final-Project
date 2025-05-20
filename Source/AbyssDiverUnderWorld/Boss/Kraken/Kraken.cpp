@@ -1,5 +1,6 @@
 #include "Boss/Kraken/Kraken.h"
 #include "AbyssDiverUnderWorld.h"
+#include "Boss/EBossState.h"
 #include "Character/UnderwaterCharacter.h"
 #include "Components/CapsuleComponent.h"
 
@@ -46,7 +47,8 @@ void AKraken::BeginPlay()
 
 void AKraken::OnDeath()
 {
-	Super::OnDeath();
-
+	if (BossState == EBossState::Death) return;
 	SetEmissiveTransition();
+	
+	Super::OnDeath();
 }

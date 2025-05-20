@@ -23,6 +23,7 @@ protected:
 
 #pragma region Method
 public:
+	FVector GetNextPatrolPoint();
 	void SetBossState(EBossState State);
 	void LaunchPlayer(AUnderwaterCharacter* Player, float& Power);
 	
@@ -75,9 +76,8 @@ public:
 	void OnAttackCollisionOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
 							UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
-
-	
 protected:
+	
 private:
 	
 #pragma endregion
@@ -86,6 +86,12 @@ private:
 public:
 	UPROPERTY()
 	uint8 bIsAttackCollisionOverlappedPlayer : 1;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
+	float MinPatrolDistance;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
+	float MaxPatrolDistance;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
 	float LaunchPower;

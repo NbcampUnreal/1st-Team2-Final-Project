@@ -28,6 +28,8 @@ public class AbyssDiverUnderWorld : ModuleRules
             , "NavigationSystem"
             , "AnimGraphRuntime"
             , "GameplayTags"
+            , "Voice"
+            , "NavigationSystem"
         });
 		
         PublicIncludePaths.AddRange(new string[] { "AbyssDiverUnderWorld" });
