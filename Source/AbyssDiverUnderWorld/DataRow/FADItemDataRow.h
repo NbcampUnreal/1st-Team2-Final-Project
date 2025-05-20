@@ -30,8 +30,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	uint8 Id;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	uint8 Quantity;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 Amount;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 Weight;
@@ -45,8 +43,6 @@ public:
 	FGameplayTag RKeyTag;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TObjectPtr<UTexture2D> Thumbnail;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TObjectPtr<UStaticMesh> Mesh;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TObjectPtr<USkeletalMesh> SkeletalMesh;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)

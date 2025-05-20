@@ -9,6 +9,7 @@ class UInventoryWidget;
 class UADInventoryComponent;
 class URichTextBlock;
 class UVerticalBox;
+class USelectedMissionListWidget;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API UAllInventoryWidget : public UUserWidget
@@ -30,6 +31,8 @@ protected:
 
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UInventoryWidget> ExchangableInventory;
+    UPROPERTY(meta = (BindWidget))
+    TObjectPtr<USelectedMissionListWidget> SelectedMissionList;
 
     // 무게, 크레딧 텍스트
     UPROPERTY(meta = (BindWidget))
@@ -48,5 +51,6 @@ public:
 	UInventoryWidget* GetEquipmentInventory() const { return EquipmentInventory; }
 	UInventoryWidget* GetConsumableInventory() const { return ConsumableInventory; }
 	UInventoryWidget* GetExchangableInventory() const { return ExchangableInventory; }
+    USelectedMissionListWidget* GetSelectedMissionList() { return SelectedMissionList; }
 #pragma endregion
 };

@@ -1,5 +1,6 @@
 #include "Boss/Boss.h"
 #include "AbyssDiverUnderWorld.h"
+#include "EBossPhysicsType.h"
 #include "EBossState.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Character/StatComponent.h"
@@ -29,6 +30,7 @@ ABoss::ABoss()
 	MaxPatrolDistance = 1000.0f;
 	AttackedCameraShakeScale = 1.0f;
 	bIsBiteAttackSuccess = false;
+	BossPhysicsType = EBossPhysicsType::None;
 	
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 
@@ -147,19 +149,24 @@ float ABoss::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
 
 void ABoss::OnDeath()
 {
-	// 사망 시 가라앉는 연출
-	GetCharacterMovement()->GravityScale = 0.1f;
+	GetCharacterMovement()->StopMovementImmediately();
 
-	// 사망 상태로 전이
-	SetBossState(EBossState::Death);
-	
+	// 피직스 에셋 물리엔진 적용
+	FTimerHandle TimerHandle;
+	GetWorldTimerManager().SetTimer(TimerHandle, this, &ABoss::ApplyPhysicsSimulation, 0.5f, false);	
+
 	// 이동을 멈추고 모든 애니메이션 출력 정지
 	AIController->StopMovement();
 	AnimInstance->StopAllMontages(0.5f);
+	
+	// 사망 상태로 전이
+	SetBossState(EBossState::Death);
 
 	// AIController 작동 중지
 	AIController->UnPossess();
+	
 }
+
 
 void ABoss::RotationToTarget(AActor* Target)
 {
@@ -216,6 +223,9 @@ void ABoss::M_PlayAnimation_Implementation(class UAnimMontage* AnimMontage, floa
 void ABoss::OnMeshOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
 	int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
+	// 사망 상태면 얼리 리턴
+	if (BossState == EBossState::Death) return;
+	
 	// 공격 대상이 플레이어가 아닌 경우 얼리 리턴
 	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(OtherActor);
 	if (!IsValid(Player)) return;
@@ -272,6 +282,24 @@ void ABoss::OnAttackCollisionOverlapEnd(UPrimitiveComponent* OverlappedComp, AAc
 	if (!IsValid(Player)) return;
 	
 	bIsAttackCollisionOverlappedPlayer = false;
+}
+
+void ABoss::ApplyPhysicsSimulation()
+{
+	switch (BossPhysicsType)
+	{
+		// 물리엔진 비활성화
+		case EBossPhysicsType::None:
+			break;
+
+		// Simulate Physic 적용
+		case EBossPhysicsType::SimulatePhysics:
+			GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+			GetMesh()->SetEnableGravity(true);
+			GetMesh()->SetSimulatePhysics(true);	
+			break;
+	}
 }
 
 FVector ABoss::GetNextPatrolPoint()

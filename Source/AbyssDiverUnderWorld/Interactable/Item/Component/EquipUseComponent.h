@@ -10,6 +10,7 @@
 class AADProjectileBase;
 class UUserWidget;
 class AADSpearGunBullet;
+class UADNightVisionGoggle;
 
 enum class EAction : uint8
 {
@@ -74,6 +75,8 @@ public:
 	void OnRep_ReserveAmmo();
 	UFUNCTION()
 	void OnRep_NightVisionOn();
+	UFUNCTION()
+	void OnRep_NightVisionUIVisible();
 
 	// 내부 실행 함수
 	UFUNCTION(BlueprintCallable)
@@ -93,9 +96,6 @@ public:
 	
 	void FinishReload();
 
-
-
-	void Initialize(uint8 ItemId);
 	void Initialize(FItemData& ItemData);
 	// 상태 초기화 함수
 	void DeinitializeEquip();
@@ -151,6 +151,13 @@ public:
 	float BoostMultiplier = 4.f;
 	UPROPERTY(EditDefaultsOnly, Category = "Boost")
 	float InterpSpeed = 3.f;
+	UPROPERTY(EditAnywhere, Category = "NightVision")
+	TSubclassOf<UADNightVisionGoggle> NightVisionClass;
+	UPROPERTY(VisibleAnywhere, Category = "NightVision")
+	TObjectPtr<UADNightVisionGoggle> NightVisionInstance;
+
+	UPROPERTY(ReplicatedUsing = OnRep_NightVisionUIVisible)
+	uint8 bNVGWidgetVisible : 1;
 
 	
 	
