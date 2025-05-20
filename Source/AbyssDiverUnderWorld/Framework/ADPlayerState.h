@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerState.h"
+#include "UI/MissionData.h"
 #include "OnlineSubsystem.h"
 #include "ADPlayerState.generated.h"
 
@@ -11,15 +12,23 @@ class UUpgradeComponent;
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADPlayerState : public APlayerState
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
 public:
-	AADPlayerState();
+    // 생성자
+    AADPlayerState();
 
 protected:
+    // 생명주기 함수
+    virtual void BeginPlay() override;
+    virtual void PostNetInit() override;
 
-	virtual void BeginPlay() override;
-	virtual void PostNetInit() override;
+#pragma region Method
+public:
+    // 미션 관련 함수
+    const TArray<FMissionData>& GetSelectedMissions() const { return SelectedMissions; }
+    void SetSelectedMissions(const TArray<FMissionData>& NewMissions) { SelectedMissions = NewMissions; }
+#pragma endregion
 
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -37,6 +46,11 @@ public:
 
 #pragma region Variable
 protected:
+
+    // 선택된 미션 목록
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mission")
+    TArray<FMissionData> SelectedMissions;
+
 	// persistent Data
 	UPROPERTY(Replicated)
 	FString PlayerNickname;
@@ -132,9 +146,6 @@ public:
 	void SetIsSafeReturn(bool bValue) { bIsSafeReturn = bValue; }
 	UFUNCTION(BlueprintPure)
 	bool IsSafeReturn() const { return bIsSafeReturn; }
-	
-	UADInventoryComponent* GetInventory() { return InventoryComp; };
-
 
 	FORCEINLINE UADInventoryComponent* GetInventory() const { return InventoryComp; };
 	FORCEINLINE UUpgradeComponent* GetUpgradeComp() const { return UpgradeComp; };

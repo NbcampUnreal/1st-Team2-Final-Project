@@ -23,6 +23,7 @@ public:
 	void M_SetSkeletalMesh_Implementation(USkeletalMesh* NewMesh);
 
 	void SetItemInfo(FItemData& ItemInfo, bool bIsEquipMode);
+	void SetVariableValues(int32 InAmount, int32 InCurrentAmmo, int32 InReserveAmmo);
 	void UnEquipMode();
 	void EquipMode();
 
@@ -42,6 +43,7 @@ private:
 	// 유체 저항
 	float WaterLinearDamping = 4.0f;
 	float WaterAngularDamping = 7.0f;
+	uint8 bHasInitializedDynamic : 1;
 #pragma endregion
 	
 };

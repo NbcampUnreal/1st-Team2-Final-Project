@@ -25,6 +25,7 @@ public class AbyssDiverUnderWorld : ModuleRules
             , "SlateCore"
             , "NetCore"
             , "Niagara"
+            , "NavigationSystem"
             , "AnimGraphRuntime"
             , "GameplayTags"
             , "Voice"

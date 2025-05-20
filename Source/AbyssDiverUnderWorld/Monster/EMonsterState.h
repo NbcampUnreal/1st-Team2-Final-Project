@@ -12,5 +12,5 @@ enum class EMonsterState : uint8
 	Patrol = 1 UMETA(DisplayName = "Patrol"),
 	Chase = 2	UMETA(DisplayName = "Chase"),
 	Attack = 3 UMETA(DisplayName = "Attack"),
-	Dead = 4 UMETA(DisplayName = "Dead")
+	Death = 4 UMETA(DisplayName = "Death")
 };

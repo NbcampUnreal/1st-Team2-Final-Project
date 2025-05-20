@@ -24,7 +24,7 @@ UADInventoryComponent::UADInventoryComponent() :
 	WeightMax(100),
 	bInventoryWidgetShowed(false), 
 	bCanUseItem(true),
-	CurrentEquipmentIndex(-1),
+	CurrentEquipmentSlotIndex(-1),
 	CurrentEquipmentInstance(nullptr),
 	InventoryWidgetInstance(nullptr),
 	DataTableSubsystem(nullptr)
@@ -65,19 +65,15 @@ void UADInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	DOREPLIFETIME(UADInventoryComponent, InventoryList);
 	DOREPLIFETIME(UADInventoryComponent, TotalPrice);
 	DOREPLIFETIME(UADInventoryComponent, TotalWeight);
-	DOREPLIFETIME(UADInventoryComponent, CurrentEquipmentIndex);
+	DOREPLIFETIME(UADInventoryComponent, CurrentEquipmentSlotIndex);
 	DOREPLIFETIME(UADInventoryComponent, CurrentEquipmentInstance);
 }
 
-void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType, int32 InventoryIndex)
+void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType, int32 SlotIndex)
 {
 	if (ItemType == EItemType::Equipment)
 	{
-		if (InventoryIndex > InventoryIndexMapByType[ItemType].Num() || InventoryIndexMapByType[ItemType][InventoryIndex - 1] == -1 ) return;
-	}
-	else if (ItemType == EItemType::Consumable)
-	{
-		if (InventoryList.Items[InventoryIndex].Quantity == 0 || InventoryList.Items.Num() < InventoryIndex) return;
+		if (SlotIndex > InventoryIndexMapByType[ItemType].Num()-1 || InventoryIndexMapByType[ItemType][SlotIndex] == -1 ) return;
 	}
 
 	if (!bCanUseItem) return;
@@ -87,24 +83,25 @@ void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType
 	FTimerHandle UseCoolTimeHandle;
 	GetWorld()->GetTimerManager().SetTimer(UseCoolTimeHandle, this, &UADInventoryComponent::OnUseCoolTimeEnd, 0.3f, false);
 
-
-	FItemData& Item = ItemType == EItemType::Consumable ? InventoryList.Items[InventoryIndex] : InventoryList.Items[InventoryIndexMapByType[ItemType][InventoryIndex - 1]];
-	LOG(TEXT("%d %d"), CurrentEquipmentIndex, InventoryIndex);
+	int8 InventoryIndex = GetInventoryIndexByTypeAndSlotIndex(ItemType, SlotIndex);
+	if (InventoryIndex == -1) return;
+	FItemData& Item = InventoryList.Items[InventoryIndex];
+	LOG(TEXT("SlotIndex : %d"), SlotIndex);
 
 	if (ItemType == EItemType::Equipment)
 	{
-		if (CurrentEquipmentIndex == InventoryIndex-1)
+		if (CurrentEquipmentSlotIndex == SlotIndex)
 		{
 			UnEquip();
 		}
 		else
 		{
-			if (CurrentEquipmentIndex != -1)
+			if (CurrentEquipmentSlotIndex != -1)
 			{
 				UnEquip();
 				LOG(TEXT("ChangeEquipment"));
 			}
-			Equip(Item, InventoryIndex-1);
+			Equip(Item, SlotIndex);
 		}
 	}
 	else if (ItemType == EItemType::Consumable)
@@ -121,7 +118,7 @@ void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType
 				Strategy->Use(GetOwner());
 			}
 		}
-		RemoveInventoryItem(InventoryIndex, 1, false);
+		RemoveInventoryItem(SlotIndex, 1, false);
 	}
 }
 
@@ -173,7 +170,7 @@ void UADInventoryComponent::InventoryInitialize()
 		if (InventoryWidgetInstance)
 		{
 			InventoryWidgetInstance->AddToViewport();
-			InventoryWidgetInstance->SetVisibility(ESlateVisibility::Collapsed);
+			InventoryWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
 			InventoryWidgetInstance->InitializeInventoriesInfo(this);
 		}
 	}
@@ -226,11 +223,12 @@ void UADInventoryComponent::AddInventoryItem(FItemData ItemData)
 				{
 					uint8 SlotIndex = GetTypeInventoryEmptyIndex(ItemData.ItemType);
 				
-					FItemData NewItem = { FoundRow->Name, FoundRow->Id, ItemData.Quantity, SlotIndex, FoundRow->Amount, ItemData.Mass,ItemData.Price, FoundRow->ItemType, FoundRow->Thumbnail };
+					FItemData NewItem = { FoundRow->Name, FoundRow->Id, ItemData.Quantity, SlotIndex, ItemData.Amount, ItemData.Mass,ItemData.Price, FoundRow->ItemType, FoundRow->Thumbnail };
 					if (InventoryIndexMapByType.Contains(NewItem.ItemType) && GetTypeInventoryEmptyIndex(NewItem.ItemType) != -1)
 					{
 						InventoryList.AddItem(NewItem);
 						LOG(TEXT("Add New Item SlotIndex : %d"), SlotIndex);
+						LOG(TEXT("NewItem's Amount : %d"), NewItem.Amount);
 					}
 					if (ItemData.ItemType == EItemType::Exchangable)
 					{
@@ -256,7 +254,7 @@ void UADInventoryComponent::ToggleInventoryShowed()
 		bInventoryWidgetShowed = false;
 		if (InventoryWidgetInstance)
 		{
-			InventoryWidgetInstance->SetVisibility(ESlateVisibility::Collapsed);
+			InventoryWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
 
 			PC->bShowMouseCursor = false;
 			PC->SetIgnoreLookInput(false);
@@ -269,7 +267,7 @@ void UADInventoryComponent::ToggleInventoryShowed()
 		if (InventoryWidgetInstance)
 		{
 			InventoryWidgetInstance->SetVisibility(ESlateVisibility::Visible);
-			//InventoryUIUpdate();
+			InventoryUIUpdate();
 			PC->bShowMouseCursor = true;
 
 			FInputModeGameAndUI InputMode;
@@ -302,7 +300,7 @@ int16 UADInventoryComponent::FindItemIndexByName(FName ItemID) //빈슬롯이 �
 
 void UADInventoryComponent::RemoveInventoryItem(uint8 InventoryIndex, int8 Count, bool bIsDropAction)
 {
-	PrintLogInventoryData();
+	//PrintLogInventoryData();
 	if (InventoryList.Items.IsValidIndex(InventoryIndex))
 	{
 		FItemData& Item = InventoryList.Items[InventoryIndex];
@@ -344,12 +342,14 @@ void UADInventoryComponent::RemoveInventoryItem(uint8 InventoryIndex, int8 Count
 
 void UADInventoryComponent::RemoveBySlotIndex(uint8 SlotIndex, EItemType ItemType, bool bIsDropAction)
 {
-	int8 InventoryIndex = -1;
-	for (int i = 0; i < InventoryList.Items.Num(); ++i)
+	int8 InventoryIndex = GetInventoryIndexByTypeAndSlotIndex(ItemType, SlotIndex);
+	if (InventoryIndex == -1) return;
+	if (ItemType == EItemType::Equipment && CurrentEquipmentSlotIndex != -1)
 	{
-		if (InventoryList.Items[i].ItemType == ItemType && InventoryList.Items[i].SlotIndex == SlotIndex)
-			InventoryIndex = i;
+		if (CurrentEquipmentSlotIndex == SlotIndex)
+			UnEquip();
 	}
+
 	if (InventoryList.Items.IsValidIndex(InventoryIndex))
 	{
 		FItemData& Item = InventoryList.Items[InventoryIndex];
@@ -364,7 +364,10 @@ void UADInventoryComponent::RemoveBySlotIndex(uint8 SlotIndex, EItemType ItemTyp
 		LOGN(TEXT("Remove Inventory Index %d: Item : %s"), InventoryIndex, *Item.Name.ToString());
 		if (Item.Quantity <= 0)
 		{
-			OnInventoryInfoUpdate(-Item.Mass, -Item.Price);
+			if (Item.ItemType == EItemType::Exchangable)
+			{
+				OnInventoryInfoUpdate(-Item.Mass, -Item.Price);
+			}
 			InventoryList.RemoveItem(InventoryIndex);
 		}
 	}
@@ -406,7 +409,7 @@ void UADInventoryComponent::InventoryUIUpdate()
 	{
 		InventoryUpdateDelegate.Broadcast();
 	}
-	PrintLogInventoryData();
+	//PrintLogInventoryData();
 }
 
 int8 UADInventoryComponent::GetTypeInventoryEmptyIndex(EItemType ItemType)
@@ -429,19 +432,32 @@ FVector UADInventoryComponent::GetDropLocation()
 	return DropLocation;
 }
 
-FItemData UADInventoryComponent::CurrentEquipmentItemData()
+FItemData* UADInventoryComponent::GetCurrentEquipmentItemData()
 {
-	int8 Index = InventoryIndexMapByType[EItemType::Equipment][CurrentEquipmentIndex];
-	return InventoryList.Items[Index];
+	int8 Index = GetInventoryIndexByTypeAndSlotIndex(EItemType::Equipment, CurrentEquipmentSlotIndex);
+	if (Index == -1) return nullptr;
+	return &InventoryList.Items[Index];
 }
 
-void UADInventoryComponent::SetEquipInfo(int8 TypeInventoryIndex, AADUseItem* SpawnItem)
+int8 UADInventoryComponent::GetInventoryIndexByTypeAndSlotIndex(EItemType Type, int8 SlotIndex) //못 찾으면 -1 반환
 {
-	CurrentEquipmentIndex = TypeInventoryIndex;
+	int8 InventoryIndex = -1;
+	for (int i = 0; i < InventoryList.Items.Num(); ++i)
+	{
+		if (InventoryList.Items[i].ItemType == Type && InventoryList.Items[i].SlotIndex == SlotIndex)
+			InventoryIndex = i;
+	}
+	return InventoryIndex;
+}
+
+
+void UADInventoryComponent::SetEquipInfo(int8 SlotIndex, AADUseItem* SpawnItem)
+{
+	CurrentEquipmentSlotIndex = SlotIndex;
 	CurrentEquipmentInstance = SpawnItem;
 }
 
-void UADInventoryComponent::Equip(FItemData ItemData, int8 Index)
+void UADInventoryComponent::Equip(FItemData& ItemData, int8 SlotIndex)
 {
 	if (ItemData.ItemType != EItemType::Equipment || ItemData.Quantity == 0) return;
 
@@ -465,13 +481,14 @@ void UADInventoryComponent::Equip(FItemData ItemData, int8 Index)
 		{
 			SpawnedItem->AttachToComponent(MeshComp, FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("Hand_R"));
 			SpawnedItem->SetItemInfo(ItemData, true);
-			LOG(TEXT("EquipItem"));
 			CurrentEquipmentInstance = SpawnedItem;
-			SetEquipInfo(Index, SpawnedItem);
+			LOG(TEXT("ItemToEquip Amount %d"), ItemData.Amount);
+			SetEquipInfo(SlotIndex, SpawnedItem);
 
 			if (UEquipUseComponent* EquipComp = Pawn->FindComponentByClass<UEquipUseComponent>()) // 나중에 Getter로 바꿔야 함
 			{
-				EquipComp->Initialize(SpawnedItem->ItemData.Id);
+				if(GetCurrentEquipmentItemData())
+					EquipComp->Initialize(*GetCurrentEquipmentItemData());
 			}
 		}
 	}
@@ -516,6 +533,7 @@ void UADInventoryComponent::DropItem(FItemData& ItemData)
 	}
 	AADUseItem* SpawnItem = GetWorld()->SpawnActor<AADUseItem>(AADUseItem::StaticClass(), GetDropLocation(), FRotator::ZeroRotator);
 	SpawnItem->SetItemInfo(ItemData, false);
+	LOG(TEXT("ItemData's Amount : %d, Spawn Item's Amount : %d"), ItemData.Amount, SpawnItem->ItemData.Amount);
 	LOGN(TEXT("SpawnItem"));
 }
 

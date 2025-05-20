@@ -6,6 +6,8 @@
 
 enum class EMapName : uint8;
 
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnGameStatePropertyChangedDelegate, int32 /*Changed Value*/);
+
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADInGameState : public AGameState
 {
@@ -19,6 +21,7 @@ public:
 	virtual void PostInitializeComponents() override;
 	virtual void BeginPlay() override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void PostNetInit() override;
 
 	UFUNCTION(BlueprintCallable, Exec)
 	void AddTeamCredit(int32 Credit);
@@ -29,6 +32,11 @@ public:
 	void SendDataToGameInstance();
 
 	FString GetMapDisplayName() const;
+
+	FOnGameStatePropertyChangedDelegate TeamCreditsChangedDelegate;
+	FOnGameStatePropertyChangedDelegate CurrentPhaseChangedDelegate;
+	FOnGameStatePropertyChangedDelegate CurrentPhaseGoalChangedDelegate;
+
 protected:
 
 	UFUNCTION()
@@ -56,7 +64,7 @@ protected:
 	UPROPERTY(Replicated, ReplicatedUsing = OnRep_Phase, BlueprintReadOnly)
 	uint8 CurrentPhase;
 
-	UPROPERTY(Replicated, ReplicatedUsing = OnRep_Phase, BlueprintReadOnly)
+	UPROPERTY(Replicated, ReplicatedUsing = OnRep_PhaseGoal, BlueprintReadOnly)
 	int32 CurrentPhaseGoal = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -68,15 +76,46 @@ private:
 
 #pragma region Getter, Setteer
 public:
-	void SetTotalTeamCredit(int32 InMoney) { TeamCredits = InMoney; }
+	FORCEINLINE void SetTotalTeamCredit(int32 InMoney) 
+	{ 
+		if (HasAuthority() == false)
+		{
+			return;
+		}
+
+		TeamCredits = InMoney; 
+		TeamCreditsChangedDelegate.Broadcast(InMoney);
+
+	}
+
 	int32 GetTotalTeamCredit() const { return TeamCredits; }
 
-	void SetPhase(uint8 InPhase) { CurrentPhase = InPhase; }
+	FORCEINLINE void SetPhase(uint8 InPhase)
+	{ 
+		if (HasAuthority() == false)
+		{
+			return;
+		}
+
+		CurrentPhase = InPhase;
+		CurrentPhaseChangedDelegate.Broadcast(InPhase);
+	}
+
 	uint8 GetPhase() const { return CurrentPhase; }
 
 	uint8 GetMaxPhase() const { return MaxPhase; }
 
-	void SetCurrentPhaseGoal(int32 NewPhaseGoal) { CurrentPhaseGoal = NewPhaseGoal; }
+	FORCEINLINE void SetCurrentPhaseGoal(int32 NewPhaseGoal) 
+	{ 
+		if (HasAuthority() == false)
+		{
+			return;
+		}
+
+		CurrentPhaseGoal = NewPhaseGoal;
+		CurrentPhaseGoalChangedDelegate.Broadcast(NewPhaseGoal);
+	}
+
 	int32 GetCurrentPhaseGoal() const { return CurrentPhaseGoal; }
 
 	void SetSelectedLevel(EMapName LevelName) { SelectedLevelName = LevelName; }

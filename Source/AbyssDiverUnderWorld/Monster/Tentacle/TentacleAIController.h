@@ -14,9 +14,4 @@ class ABYSSDIVERUNDERWORLD_API ATentacleAIController : public AMonsterAIControll
 	
 public:
 	ATentacleAIController();
-
-protected:
-	virtual void BeginPlay() override;
-	virtual void OnPossess(APawn* InPawn) override;
-
 };

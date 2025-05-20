@@ -4,9 +4,13 @@
 #include "Monster/Monster.h"
 #include "Components/SplineComponent.h"
 #include "Monster/SplinePathActor.h"
+#include "Character/StatComponent.h"
 #include "BehaviorTree/BlackboardComponent.h"
+#include "Net/UnrealNetwork.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "AbyssDiverUnderWorld.h"
+
+const FName AMonster::MonsterStateKey = "MonsterState";
 
 AMonster::AMonster()
 {
@@ -17,11 +21,26 @@ void AMonster::BeginPlay()
 {
 	Super::BeginPlay();
 
+	AnimInstance = GetMesh()->GetAnimInstance();
+	AIController = Cast<AMonsterAIController>(GetController());
+
+	if (IsValid(AIController))
+	{
+		BlackboardComponent = AIController->GetBlackboardComponent();
+	}
+
 	if (UCharacterMovementComponent* MovementComp = GetCharacterMovement())
 	{
 		MovementComp->bOrientRotationToMovement = true;
 		MovementComp->RotationRate = FRotator(0.0f, 180.0f, 0.0f);
 	}
+}
+
+void AMonster::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AMonster, MonsterState);
 }
 
 FVector AMonster::GetPatrolLocation(int32 Index) const
@@ -59,15 +78,53 @@ int32 AMonster::GetNextPatrolIndex(int32 CurrentIndex) const
 	}
 }
 
-void AMonster::M_PlayAttackMontage_Implementation()
+void AMonster::M_PlayMontage_Implementation(UAnimMontage* AnimMontage, float InPlayRate, FName StartSectionName)
 {
-	if (AttackMontage)
+	PlayAnimMontage(AnimMontage, InPlayRate, StartSectionName);
+}
+
+float AMonster::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+{
+	const float Damage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+	if (IsValid(StatComponent))
 	{
-		if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+		if (StatComponent->GetCurrentHealth() <= 0)
 		{
-			AnimInstance->Montage_Play(AttackMontage);
+			OnDeath();
 		}
 	}
+	return Damage;
 }
+
+void AMonster::OnDeath()
+{
+	AIController->StopMovement();
+	AnimInstance->StopAllMontages(0.5f);
+
+	SetMonsterState(EMonsterState::Death);
+
+	AIController->UnPossess();
+}
+
+void AMonster::PlayAttackMontage()
+{
+	const uint8 AttackType = FMath::RandRange(0, AttackAnimations.Num() - 1);
+
+	if (IsValid(AttackAnimations[AttackType]))
+	{
+		M_PlayMontage(AttackAnimations[AttackType]);
+	}
+}
+
+void AMonster::SetMonsterState(EMonsterState State)
+{
+	if (!HasAuthority()) return;
+
+	MonsterState = State;
+
+	BlackboardComponent ->SetValueAsEnum(MonsterStateKey, static_cast<uint8>(MonsterState));
+}
+
 
 

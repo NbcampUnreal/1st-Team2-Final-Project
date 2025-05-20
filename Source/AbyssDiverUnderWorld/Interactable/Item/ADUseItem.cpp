@@ -20,6 +20,7 @@ AADUseItem::AADUseItem()
 	SkeletalMesh->SetSimulatePhysics(true);
 
 	bReplicates = true;
+	bHasInitializedDynamic = false;
 }
 
 void AADUseItem::BeginPlay()
@@ -56,8 +57,11 @@ void AADUseItem::SetItemInfo(FItemData& ItemInfo, bool bIsEquipMode)
 		if (ItemRow && ItemRow->SkeletalMesh)
 		{
 			ItemData.Quantity = 1;
-			ItemData.Amount = ItemInfo.Amount; //추후 사용한 양에 대한 적용 필요
+			
 			ItemData.Id = ItemInfo.Id;
+			ItemData.Amount = ItemInfo.Amount; //추후 사용한 양에 대한 적용 필요
+			ItemData.CurrentAmmoInMag = ItemInfo.CurrentAmmoInMag;
+			ItemData.ReserveAmmo = ItemInfo.ReserveAmmo;
 			ItemData.Mass = ItemInfo.Mass;
 			ItemData.Price = ItemInfo.Price;
 			ItemData.ItemType = ItemInfo.ItemType;
@@ -68,6 +72,7 @@ void AADUseItem::SetItemInfo(FItemData& ItemInfo, bool bIsEquipMode)
 				M_SetSkeletalMesh(ItemRow->SkeletalMesh);
 			}
 		}
+
 	}
 
 	if (bIsEquipMode)
@@ -78,6 +83,13 @@ void AADUseItem::SetItemInfo(FItemData& ItemInfo, bool bIsEquipMode)
 	{
 		UnEquipMode();
 	}
+}
+
+void AADUseItem::SetVariableValues(int32 InAmount, int32 InCurrentAmmo, int32 InReserveAmmo)
+{
+	ItemData.Amount = InAmount;
+	ItemData.CurrentAmmoInMag = InCurrentAmmo;
+	ItemData.ReserveAmmo = InReserveAmmo;
 }
 
 void AADUseItem::UnEquipMode()
