@@ -17,7 +17,7 @@ public:
     int32 Stage;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    bool bIsUnlocked;
+    uint8 bIsUnlocked : 1;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     FString UnlockHint;
