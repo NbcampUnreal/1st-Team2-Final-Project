@@ -23,7 +23,6 @@ protected:
 	virtual void Init() override;
 
 public:
-
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent)
 	void ExitSession(APlayerController* Caller);
 
@@ -33,7 +32,7 @@ public:
 
 public:
 	UPROPERTY(BlueprintReadWrite)
-	bool bIsHost;
+	uint8 bIsHost : 1;
 
 	UPROPERTY(BlueprintReadWrite)
 	EMapName SelectedLevelName;
