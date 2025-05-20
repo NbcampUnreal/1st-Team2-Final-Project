@@ -42,23 +42,24 @@ public:
 protected:
     // 미션 제목 텍스트
     UPROPERTY(meta = (BindWidget))
-    UTextBlock* Text_MissionTitle;
+    TObjectPtr<UTextBlock> Text_MissionTitle;
 
     // 잠금 힌트 텍스트
     UPROPERTY(meta = (BindWidget))
-    UTextBlock* Text_UnlockHint;
+    TObjectPtr<UTextBlock> Text_UnlockHint;
 
     // 배경 UI
     UPROPERTY(meta = (BindWidget))
-    UBorder* Border_Background;
+    TObjectPtr<UBorder> Border_Background;
 
     // 테두리 UI
     UPROPERTY(meta = (BindWidget))
-    UBorder* Border_Outline;
+    TObjectPtr<UBorder> Border_Outline;
 
 private:
     // 선택 여부
-    bool bIsSelected = false;
+    UPROPERTY()
+    uint8 bIsSelected : 1;
 
     // 미션 데이터
     FMissionData MissionData;
