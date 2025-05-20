@@ -24,11 +24,17 @@ protected:
 
 public:
 
+	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent)
+	void ExitSession(APlayerController* Caller);
+
 	bool TryGetPlayerIndex(const FString& NetId, int32& OutPlayerIndex);
 	void AddPlayerNetId(const FString& NetId);
 	void RemovePlayerNetId(const FString& NetId);
 
 public:
+	UPROPERTY(BlueprintReadWrite)
+	bool bIsHost;
+
 	UPROPERTY(BlueprintReadWrite)
 	EMapName SelectedLevelName;
 
