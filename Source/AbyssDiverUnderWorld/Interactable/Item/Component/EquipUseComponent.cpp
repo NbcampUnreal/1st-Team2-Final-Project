@@ -328,6 +328,7 @@ void UEquipUseComponent::DeinitializeEquip()
 		CurrentItemData->Amount = Amount;
 		CurrentItemData->CurrentAmmoInMag = CurrentAmmoInMag;
 		CurrentItemData->ReserveAmmo = ReserveAmmo;
+		CurrentItemData = nullptr;
 		LOG(TEXT("No Current Item"));
 	}
 
