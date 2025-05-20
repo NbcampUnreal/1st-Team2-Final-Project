@@ -161,6 +161,14 @@ void AShop::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
 
+	// 게임 중이 아닌 경우 리턴(블루프린트 상일 경우)
+	// PostInitializeComponents는 블루프린트에서도 발동함
+	UWorld* World = GetWorld();
+	if (World == nullptr || World->IsGameWorld() == false)
+	{
+		return;
+	}
+
 	InitShopWidget();
 	InitData();
 }
@@ -725,7 +733,7 @@ void AShop::OnSlotEntryClicked(int32 ClickedSlotIndex)
 
 	USkeletalMesh* ItemMesh = ItemDataRow->SkeletalMesh;
 
-	ShopWidget->ShowItemInfos(ItemMesh, ItemDataRow->Description, ItemDataRow->Name.ToString(), ItemDataRow->Price, ItemDataRow->Stackable);
+	ShopWidget->ShowItemInfos(ItemId);
 	LOGS(Log, TEXT("Showing Item Infos..., id : %d"), ItemId);
 	CurrentSelectedItemId = ItemId;
 }

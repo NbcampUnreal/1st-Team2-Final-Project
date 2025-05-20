@@ -233,10 +233,9 @@ void UShopWidget::RefreshItemView()
 	}
 }
 
-void UShopWidget::ShowItemInfos(USkeletalMesh* NewItemMesh, const FString& NewDescription, const FString& NewNameInfoText, int32 ItemCost, bool bIsStackable)
+void UShopWidget::ShowItemInfos(int32 ItemId)
 {
-	InfoWidget->ShowItemInfos(NewItemMesh, NewDescription, NewNameInfoText, ItemCost, bIsStackable);
-	InfoWidget->GetItemMeshPanel()->SetMeshRotation(FRotator::ZeroRotator);
+	InfoWidget->ShowItemInfos(ItemId);
 }
 
 void UShopWidget::ShowUpgradeInfos(USkeletalMesh* NewUpgradeItemMesh, int32 CurrentUpgradeLevel, bool bIsMaxLevel, int32 CurrentUpgradeCost, const FString& ExtraInfoText)
