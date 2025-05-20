@@ -13,12 +13,14 @@
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/PawnNoiseEmitterComponent.h"
+#include "Components/SpotLightComponent.h"
 #include "Framework/ADPlayerState.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PhysicsVolume.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Interactable/Item/Component/EquipUseComponent.h"
 #include "Inventory/ADInventoryComponent.h"
+#include "Net/UnrealNetwork.h"
 #include "Shops/ShopInteractionComponent.h"
 #include "Subsystems/DataTableSubsystem.h"
 #include "UI/HoldInteractionWidget.h"
@@ -90,6 +92,15 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	InteractionComponent = CreateDefaultSubobject<UADInteractionComponent>(TEXT("InteractionComponent"));
 	ShopInteractionComponent = CreateDefaultSubobject<UShopInteractionComponent>(TEXT("ShopInteractionComponent"));
 	EquipUseComponent = CreateDefaultSubobject<UEquipUseComponent>(TEXT("EquipUseComponent"));
+
+	LanternLightComponent = CreateDefaultSubobject<USpotLightComponent>(TEXT("LanternLightComponent"));
+	LanternLightComponent->SetupAttachment(FirstPersonCameraComponent);
+	LanternLightComponent->SetRelativeLocation(FVector(20.0f, 0.0f, 0.0f));
+	LanternLightComponent->SetOuterConeAngle(25.0f);
+	LanternLightComponent->SetAttenuationRadius(2000.0f); // 거리에 영향을 준다.
+	LanternLightComponent->SetIntensity(200000.0f);
+	bIsLanternOn = false;
+	LanternLightComponent->SetVisibility(bIsLanternOn);
 
 	EnvState = EEnvState::Underwater;
 }
@@ -231,6 +242,13 @@ void AUnderwaterCharacter::OnRep_PlayerState()
 	{
 		LOGVN(Error, TEXT("Player State Init failed : %d"), GetUniqueID());
 	}
+}
+
+void AUnderwaterCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AUnderwaterCharacter, bIsLanternOn);
 }
 
 void AUnderwaterCharacter::SetEnvState(EEnvState State)
@@ -529,6 +547,31 @@ void AUnderwaterCharacter::AdjustSpeed()
 	{
 		LOGVN(Error, TEXT("Invalid Character State"));
 	}
+}
+
+void AUnderwaterCharacter::RequestToggleLanternLight()
+{
+	// @TODO: 서버에서의 빛과 클라이언트에서의 빛의 방향이 서로 다르다.
+	
+	if (HasAuthority())
+	{
+		bIsLanternOn = !bIsLanternOn;
+		OnRep_bIsLanternOn();
+	}
+	else
+	{
+		S_ToggleLanternLight();
+	}
+}
+
+void AUnderwaterCharacter::S_ToggleLanternLight_Implementation()
+{
+	RequestToggleLanternLight();
+}
+
+void AUnderwaterCharacter::OnRep_bIsLanternOn()
+{
+	LanternLightComponent->SetVisibility(bIsLanternOn);
 }
 
 void AUnderwaterCharacter::OnOxygenLevelChanged(float CurrentOxygenLevel, float MaxOxygenLevel)
@@ -875,6 +918,13 @@ void AUnderwaterCharacter::CompleteInteraction(const FInputActionValue& InputAct
 
 void AUnderwaterCharacter::Light(const FInputActionValue& InputActionValue)
 {
+	if (CharacterState != ECharacterState::Normal)
+	{
+		return;
+	}
+
+	// @TODO : Lantern Light 몬스터 인지 기능 추가
+	RequestToggleLanternLight();
 }
 
 void AUnderwaterCharacter::Radar(const FInputActionValue& InputActionValue)

@@ -60,6 +60,7 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void OnRep_PlayerState() override;
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 
 	/** IA를 Enhanced Input Component에 연결 */
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
@@ -163,6 +164,17 @@ protected:
 	/** 현재 상태 속도 갱신.(무게, Sprint) */
 	UFUNCTION()
 	void AdjustSpeed();
+
+	/** Lantern Toggle 요청 */
+	void RequestToggleLanternLight();
+
+	/** Request Toggle Lantern Light를 서버에서 처리한다. */
+	UFUNCTION(Server, Reliable)
+	void S_ToggleLanternLight();
+	void S_ToggleLanternLight_Implementation();
+
+	UFUNCTION()
+	void OnRep_bIsLanternOn();
 
 	/** 산소 상태가 변경될 떄 호출되는 함수 */
 	UFUNCTION()
@@ -327,6 +339,9 @@ private:
 	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true", ClampMin = "0.0", ClampMax = "1.0"))
 	float DepleteHealthLossRate;
 
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing=OnRep_bIsLanternOn, Category = Character, meta = (AllowPrivateAccess = "true"))
+	bool bIsLanternOn;
+
 	/** 이동 입력, 3차원 입력을 받는다. 캐릭터의 XYZ 축대로 맵핑을 한다. Forward : X, Right : Y, Up : Z */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> MoveAction;
@@ -415,6 +430,9 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UEquipUseComponent> EquipUseComponent;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class USpotLightComponent> LanternLightComponent;
+	
 	UPROPERTY()
 	TObjectPtr<class UADInventoryComponent> InventoryComponent;
 
