@@ -23,9 +23,6 @@ protected:
 	virtual void Init() override;
 
 public:
-    // 데이터 테이블
-    UPROPERTY(EditDefaultsOnly, Category = "ADGameInstance", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.FADItemDataRow"))
-    TObjectPtr<UDataTable> ItemDataTable;
 
 	bool TryGetPlayerIndex(const FString& NetId, int32& OutPlayerIndex);
 	void AddPlayerNetId(const FString& NetId);
