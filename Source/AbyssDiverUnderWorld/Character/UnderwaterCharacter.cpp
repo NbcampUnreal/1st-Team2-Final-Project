@@ -13,13 +13,14 @@
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/PawnNoiseEmitterComponent.h"
+#include "Components/SpotLightComponent.h"
 #include "Framework/ADPlayerState.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PhysicsVolume.h"
 #include "GameFramework/SpringArmComponent.h"
-
 #include "Interactable/Item/Component/EquipUseComponent.h"
 #include "Inventory/ADInventoryComponent.h"
+#include "Net/UnrealNetwork.h"
 #include "Shops/ShopInteractionComponent.h"
 #include "Subsystems/DataTableSubsystem.h"
 #include "UI/HoldInteractionWidget.h"
@@ -37,6 +38,8 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	GroggyReductionRate = 0.1f;
 	MinGroggyDuration = 10.0f;
 	GroggyCount = 0;
+	RescueRequireTime = 6.0f;
+	RecoveryHealthPercentage = 1.0f;
 	
 	GatherMultiplier = 1.0f;
 	
@@ -89,8 +92,18 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	StaminaComponent = CreateDefaultSubobject<UStaminaComponent>(TEXT("StaminaComponent"));
 
 	InteractionComponent = CreateDefaultSubobject<UADInteractionComponent>(TEXT("InteractionComponent"));
+	InteractableComponent = CreateDefaultSubobject<UADInteractableComponent>(TEXT("InteractableComponent"));
 	ShopInteractionComponent = CreateDefaultSubobject<UShopInteractionComponent>(TEXT("ShopInteractionComponent"));
 	EquipUseComponent = CreateDefaultSubobject<UEquipUseComponent>(TEXT("EquipUseComponent"));
+
+	LanternLightComponent = CreateDefaultSubobject<USpotLightComponent>(TEXT("LanternLightComponent"));
+	LanternLightComponent->SetupAttachment(FirstPersonCameraComponent);
+	LanternLightComponent->SetRelativeLocation(FVector(20.0f, 0.0f, 0.0f));
+	LanternLightComponent->SetOuterConeAngle(25.0f);
+	LanternLightComponent->SetAttenuationRadius(2000.0f); // 거리에 영향을 준다.
+	LanternLightComponent->SetIntensity(200000.0f);
+	bIsLanternOn = false;
+	LanternLightComponent->SetVisibility(bIsLanternOn);
 
 	EnvState = EEnvState::Underwater;
 }
@@ -134,7 +147,7 @@ void AUnderwaterCharacter::InitFromPlayerState(AADPlayerState* ADPlayerState)
 	
 	if (UADInventoryComponent* Inventory = ADPlayerState->GetInventory())
 	{
-		InventoryComponent = Inventory;
+		CachedInventoryComponent = Inventory;
 		// 인벤토리가 변경될 떄 OnRep에서도 호출되기 때문에 여기서 바인딩하면 Server, Client 양쪽에서 바인딩 가능하다.
 		Inventory->InventoryUpdateDelegate.AddUObject(this, &AUnderwaterCharacter::AdjustSpeed);
 	}
@@ -234,6 +247,13 @@ void AUnderwaterCharacter::OnRep_PlayerState()
 	}
 }
 
+void AUnderwaterCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AUnderwaterCharacter, bIsLanternOn);
+}
+
 void AUnderwaterCharacter::SetEnvState(EEnvState State)
 {
 	EnvState = State;
@@ -262,7 +282,6 @@ void AUnderwaterCharacter::SetEnvState(EEnvState State)
 		UE_LOG(AbyssDiver, Error, TEXT("Invalid Character State"));
 		break;
 	}
-
 }
 
 void AUnderwaterCharacter::StartCaptureState()
@@ -370,9 +389,7 @@ void AUnderwaterCharacter::HandleEnterGroggy()
 	// 추후에 오차가 커질 경우 Timer를 사용하지 않고 시작 시간을 기점으로 계산하도록 한다.
 	// Transition 4
 
-	LOGN(TEXT("Groggy State Entered : Groggy Time : %f"), GroggyDuration);
 	GetWorldTimerManager().SetTimer(GroggyTimer, FTimerDelegate::CreateUObject(this, &AUnderwaterCharacter::SetCharacterState, ECharacterState::Death), GroggyDuration, false);
-	// 1. Interaction 기능을 활성화해서 구조 받을 수 있게 한다.
 	
 	if (IsLocallyControlled())
 	{
@@ -394,6 +411,7 @@ void AUnderwaterCharacter::HandleExitGroggy()
 	// @TODO
 	// 1. Groggy UI 제거
 	// 2. Interaction 기능을 비활성화한다.
+	GroggyDuration = CalculateGroggyTime(GroggyDuration, ++GroggyCount);
 }
 
 void AUnderwaterCharacter::HandleEnterNormal()
@@ -443,11 +461,7 @@ void AUnderwaterCharacter::HandleEnterDeath()
 
 void AUnderwaterCharacter::S_Revive_Implementation()
 {
-	if (CharacterState != ECharacterState::Normal)
-	{
-		// Transition 5
-		SetCharacterState(ECharacterState::Normal);
-	}
+	RequestRevive();
 }
 
 float AUnderwaterCharacter::CalculateGroggyTime(float CurrentGroggyDuration, uint8 CalculateGroggyCount) const
@@ -531,6 +545,31 @@ void AUnderwaterCharacter::AdjustSpeed()
 	{
 		LOGVN(Error, TEXT("Invalid Character State"));
 	}
+}
+
+void AUnderwaterCharacter::RequestToggleLanternLight()
+{
+	// @TODO: 서버에서의 빛과 클라이언트에서의 빛의 방향이 서로 다르다.
+	
+	if (HasAuthority())
+	{
+		bIsLanternOn = !bIsLanternOn;
+		OnRep_bIsLanternOn();
+	}
+	else
+	{
+		S_ToggleLanternLight();
+	}
+}
+
+void AUnderwaterCharacter::S_ToggleLanternLight_Implementation()
+{
+	RequestToggleLanternLight();
+}
+
+void AUnderwaterCharacter::OnRep_bIsLanternOn()
+{
+	LanternLightComponent->SetVisibility(bIsLanternOn);
 }
 
 void AUnderwaterCharacter::OnOxygenLevelChanged(float CurrentOxygenLevel, float MaxOxygenLevel)
@@ -706,7 +745,6 @@ void AUnderwaterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 			);
 		}
 	}
-
 	else
 	{
 		UE_LOG(AbyssDiver, Error, TEXT("Failed to find an Enhanced Input Component."))
@@ -726,15 +764,50 @@ float AUnderwaterCharacter::TakeDamage(float DamageAmount, struct FDamageEvent c
 	return ActualDamage;
 }
 
+void AUnderwaterCharacter::InteractHold_Implementation(AActor* InstigatorActor)
+{
+	LOGN(TEXT("Interact Hold : %s"), *GetName());
+	if (!HasAuthority() || CharacterState != ECharacterState::Groggy)
+	{
+		return;
+	}
+
+	RequestRevive();
+}
+
+bool AUnderwaterCharacter::CanHighlight_Implementation() const
+{
+	return CharacterState == ECharacterState::Groggy;
+}
+
+float AUnderwaterCharacter::GetHoldDuration_Implementation() const
+{
+	return RescueRequireTime;
+}
+
+UADInteractableComponent* AUnderwaterCharacter::GetInteractableComponent() const
+{
+	return InteractableComponent;
+}
+
+bool AUnderwaterCharacter::IsHoldMode() const
+{
+	return  true;
+}
+
 void AUnderwaterCharacter::RequestRevive()
 {
 	if (HasAuthority())
 	{
 		// Transition 5
-		if (CharacterState != ECharacterState::Normal)
+		if (CharacterState != ECharacterState::Groggy)
 		{
-			SetCharacterState(ECharacterState::Normal);
+			return;
 		}
+
+		SetCharacterState(ECharacterState::Normal);
+		const float RecoveryHealth = StatComponent->GetMaxHealth() * RecoveryHealthPercentage;
+		StatComponent->RestoreHealth(RecoveryHealth);
 	}
 	else
 	{
@@ -878,6 +951,13 @@ void AUnderwaterCharacter::CompleteInteraction(const FInputActionValue& InputAct
 
 void AUnderwaterCharacter::Light(const FInputActionValue& InputActionValue)
 {
+	if (CharacterState != ECharacterState::Normal)
+	{
+		return;
+	}
+
+	// @TODO : Lantern Light 몬스터 인지 기능 추가
+	RequestToggleLanternLight();
 }
 
 void AUnderwaterCharacter::Radar(const FInputActionValue& InputActionValue)
@@ -890,7 +970,7 @@ void AUnderwaterCharacter::EquipSlot1(const FInputActionValue& InputActionValue)
 	{
 		return;
 	}
-	InventoryComponent->S_UseInventoryItem(EItemType::Equipment, 0);
+	CachedInventoryComponent->S_UseInventoryItem(EItemType::Equipment, 0);
 }
 
 void AUnderwaterCharacter::EquipSlot2(const FInputActionValue& InputActionValue)
@@ -899,7 +979,7 @@ void AUnderwaterCharacter::EquipSlot2(const FInputActionValue& InputActionValue)
 	{
 		return;
 	}
-	InventoryComponent->S_UseInventoryItem(EItemType::Equipment, 1);
+	CachedInventoryComponent->S_UseInventoryItem(EItemType::Equipment, 1);
 }
 
 void AUnderwaterCharacter::EquipSlot3(const FInputActionValue& InputActionValue)
@@ -908,7 +988,7 @@ void AUnderwaterCharacter::EquipSlot3(const FInputActionValue& InputActionValue)
 	{
 		return;
 	}
-	InventoryComponent->S_UseInventoryItem(EItemType::Equipment, 2);
+	CachedInventoryComponent->S_UseInventoryItem(EItemType::Equipment, 2);
 }
 
 void AUnderwaterCharacter::SetDebugCameraMode(bool bDebugCameraEnable)
@@ -950,5 +1030,5 @@ bool AUnderwaterCharacter::IsSprinting() const
 
 bool AUnderwaterCharacter::IsOverloaded() const
 {
-	return IsValid(InventoryComponent) && InventoryComponent->GetTotalWeight() >= OverloadWeight;
+	return IsValid(CachedInventoryComponent) && CachedInventoryComponent->GetTotalWeight() >= OverloadWeight;
 }

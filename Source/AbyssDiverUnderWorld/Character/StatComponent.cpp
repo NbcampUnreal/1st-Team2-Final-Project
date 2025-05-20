@@ -56,6 +56,12 @@ void UStatComponent::TakeDamage(const float DamageAmount)
 	OnHealthChanged.Broadcast(CurrentHealth, MaxHealth);
 }
 
+void UStatComponent::RestoreHealth(const float RestoreAmount)
+{
+	CurrentHealth = FMath::Clamp(CurrentHealth + RestoreAmount, 0, MaxHealth);
+	OnHealthChanged.Broadcast(CurrentHealth, MaxHealth);
+}
+
 void UStatComponent::OnRep_MaxHealth()
 {
 	OnHealthChanged.Broadcast(CurrentHealth, MaxHealth);

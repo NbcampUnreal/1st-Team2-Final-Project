@@ -40,7 +40,10 @@ protected:
 	TWeakObjectPtr<class UCharacterMovementComponent> CharacterMovement;
 
 	UPROPERTY(BlueprintReadOnly)
-	EEnvState CharacterState;
+	EEnvState EnvState;
+
+	UPROPERTY(BlueprintReadOnly)
+	ECharacterState CharacterState;
 	
 	/** 캐릭터 Should Move에서 Move를 가능하게 하는 임계값 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
@@ -68,7 +71,13 @@ protected:
 	
 	/** 단순하게 속도를 기준으로 하면 정지했을 때 속도가 줄지 않았을 경우 이동 모션이 출력이 된다. 따라서 가속도를 고려한다. */
 	UPROPERTY(BlueprintReadOnly)
-	bool bShouldMove;
+	uint8 bShouldMove : 1;
+
+	UPROPERTY(BlueprintReadOnly)
+	uint8 bIsGroggy : 1;
+
+	UPROPERTY(BlueprintReadOnly)
+	uint8 bIsDead : 1;
 
 #pragma endregion
 
