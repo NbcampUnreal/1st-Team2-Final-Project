@@ -120,7 +120,7 @@ void AADSpearGunBullet::Burst()
 
     TArray<FHitResult> HitResults;
     TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
-    ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_WorldDynamic));
+    ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_GameTraceChannel3));
 
     FVector Start = GetActorLocation();
     FVector End = Start;
