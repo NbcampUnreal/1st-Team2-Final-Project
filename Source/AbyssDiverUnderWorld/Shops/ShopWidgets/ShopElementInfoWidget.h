@@ -116,6 +116,7 @@ private:
 	int32 CurrentCost = INT_MAX;
 
 	uint8 bIsStackableItem : 1;
+	uint8 bIsShowingUpgradeView : 1;
 
 	const int32 MAX_ITEM_COUNT = 99;
 
