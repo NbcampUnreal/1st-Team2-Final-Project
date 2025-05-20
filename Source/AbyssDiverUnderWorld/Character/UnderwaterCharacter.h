@@ -344,7 +344,7 @@ private:
 	// Gather와 같은 정보는 추후 다른 곳으로 이동될 수 있지만 일단은 캐릭터에 구현한다.
 
 	/** 채광 속도. 2.0일 경우 2배의 속도로 채광한다. */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category= "Character|Stat", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category= "Character|Stat", meta = (AllowPrivateAccess = "true"))
 	float GatherMultiplier;
 
 	/** 디버그 카메라 활성화 여부 */
@@ -368,11 +368,11 @@ private:
 	float BloodEmitPower;
 
 	/** 초과 적재 기준 무게. 초과할 경우 속도를 감소시킨다. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Weight", meta = (AllowPrivateAccess = "true"))
 	float OverloadWeight;
 
 	/** 초과 적재 시의 속도 감소 비율. [0, 1]의 범위로 속도를 감소시킨다. 0.4일 경우 40% 감소해서 60%의 속도이다. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Character,
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Weight",
 		meta = (AllowPrivateAccess = "true", ClampMin = "0.0", ClampMax = "1.0"))
 	float OverloadSpeedFactor;
 
@@ -384,19 +384,23 @@ private:
 	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float SprintSpeed;
 
-	UPROPERTY(BlueprintReadOnly, ReplicatedUsing=OnRep_bIsLanternOn, Category = Character,
-		meta = (AllowPrivateAccess = "true"))
+	/** 현재 라이트 활성화 여부 */
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing=OnRep_bIsLanternOn, Category = Character, meta = (AllowPrivateAccess = "true"))
 	uint8 bIsLanternOn : 1;
 
+	/** 생성할 레이더 BP */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Radar", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<class ARadar> RadarClass;
 
+	/** 생성한 레이더 인스턴스 */
 	UPROPERTY()
 	TObjectPtr<class ARadar> RadarObject;
 
+	/** 레이더가 생성된 위치 오프셋. 카메라 기준으로 부착이 된다. */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Radar", meta = (AllowPrivateAccess = "true"))
 	FVector RadarOffset;
 
+	/** 레이더 활성화 여부 */
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, ReplicatedUsing=OnRep_bIsRadarOn, Category = Character, meta = (AllowPrivateAccess = "true"))
 	uint8 bIsRadarOn : 1;
 

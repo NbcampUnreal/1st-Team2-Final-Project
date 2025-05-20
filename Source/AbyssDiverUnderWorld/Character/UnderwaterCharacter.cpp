@@ -14,13 +14,17 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/PawnNoiseEmitterComponent.h"
 #include "Components/SpotLightComponent.h"
+#include "Framework/ADCampGameMode.h"
+#include "Framework/ADInGameMode.h"
 #include "Framework/ADPlayerState.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/GameModeBase.h"
 #include "GameFramework/PhysicsVolume.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Interactable/Item/Component/EquipUseComponent.h"
 #include "Interactable/OtherActors/Radars/Radar.h"
 #include "Inventory/ADInventoryComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 #include "Shops/ShopInteractionComponent.h"
 #include "Subsystems/DataTableSubsystem.h"
@@ -279,9 +283,9 @@ void AUnderwaterCharacter::SetEnvState(EEnvState State)
 		// 지상에서는 이동 방향으로 회전을 하게 한다.
 		GetCharacterMovement()->GetPhysicsVolume()->bWaterVolume = false;
 		GetCharacterMovement()->SetMovementMode(MOVE_Walking);
-		GetCharacterMovement()->bOrientRotationToMovement = true;
+		GetCharacterMovement()->bOrientRotationToMovement = false;
 		GetCharacterMovement()->GravityScale = 1.0f;
-		bUseControllerRotationYaw = false;
+		bUseControllerRotationYaw = true;
 		break;
 	default:
 		UE_LOG(AbyssDiver, Error, TEXT("Invalid Character State"));
