@@ -3,6 +3,8 @@
 #include "AbyssDiverUnderWorld.h"
 #include "Shops/ShopWidgets/ShopItemMeshPanel.h"
 #include "Framework/ADInGameState.h"
+#include "Subsystems/DataTableSubsystem.h"
+#include "DataRow/FADItemDataRow.h"
 
 #include "Components/RichTextBlock.h"
 #include "Components/Button.h"
@@ -28,6 +30,16 @@ void UShopElementInfoWidget::NativeOnInitialized()
 		DecreaseButton->OnClicked.AddDynamic(this, &UShopElementInfoWidget::OnDecreaseButtonClicked);
 	}
 
+
+	
+	bIsStackableItem = false;
+	bIsShowingUpgradeView = false;
+}
+
+void UShopElementInfoWidget::NativeConstruct()
+{
+	Super::NativeConstruct();
+
 	AADInGameState* GS = Cast<AADInGameState>(UGameplayStatics::GetGameState(GetWorld()));
 	if (ensureMsgf(GS, TEXT("GS 캐스팅 실패, 게임 모드 확인 부탁.")) == false)
 	{
@@ -35,14 +47,24 @@ void UShopElementInfoWidget::NativeOnInitialized()
 	}
 
 	GS->TeamCreditsChangedDelegate.AddUObject(this, &UShopElementInfoWidget::OnTeamCreditChanged);
-	bIsStackableItem = false;
+}
 
+void UShopElementInfoWidget::NativeDestruct()
+{
+	AADInGameState* GS = Cast<AADInGameState>(UGameplayStatics::GetGameState(GetWorld()));
+	if (ensureMsgf(GS, TEXT("GS 캐스팅 실패, 게임 모드 확인 부탁.")) == false)
+	{
+		return;
+	}
+
+	GS->TeamCreditsChangedDelegate.RemoveAll(this);
+
+	Super::NativeDestruct();
 }
 
 void UShopElementInfoWidget::Init(USkeletalMeshComponent* NewItemMeshComp)
 {
 	ItemMeshPanel->Init(NewItemMeshComp);
-	CurrentQuantityNumber = 0;
 	ChangeCurrentQuantityNumber(0);
 
 	SetItemMeshActive(false);
@@ -55,8 +77,26 @@ void UShopElementInfoWidget::Init(USkeletalMeshComponent* NewItemMeshComp)
 	SetRemainingMoneyAfterPurchaseTextActive(false);
 }
 
-void UShopElementInfoWidget::ShowItemInfos(USkeletalMesh* NewItemMesh, const FString& NewDescription, const FString& NewNameInfoText, int32 ItemCost, bool bIsStackable)
+void UShopElementInfoWidget::ShowItemInfos(int32 ItemId)
 {
+	UDataTableSubsystem* DataTableSubsystem = GetGameInstance()->GetSubsystem<UDataTableSubsystem>();
+	if (DataTableSubsystem == nullptr)
+	{
+		LOGV(Warning, TEXT("DataTableSubsystem == nullptr"));
+		return;
+	}
+
+	FFADItemDataRow* ItemData = DataTableSubsystem->GetItemData(ItemId);
+	if (ItemData == nullptr)
+	{
+		LOGV(Warning, TEXT("ItemData == nullptr"));
+		return;
+	}
+
+	CurrentCost = ItemData->Price;
+	bIsStackableItem = ItemData->Stackable;
+	ChangeCurrentQuantityNumber(1);
+
 	SetItemMeshActive(true);
 	SetDescriptionActive(true);
 	SetNameInfoTextActive(true);
@@ -66,20 +106,22 @@ void UShopElementInfoWidget::ShowItemInfos(USkeletalMesh* NewItemMesh, const FSt
 	SetQuantityOverlayActive(true); 
 	SetRemainingMoneyAfterPurchaseTextActive(true);
 
-	ChangeItemMesh(NewItemMesh);
-	ChangeItemDescription(NewDescription);
-	ChangeNameInfoText(NewNameInfoText);
-	ChangeCostInfo(ItemCost, false);
-	ChangeCurrentQuantityNumber(1);
+	ChangeItemMesh(ItemData->SkeletalMesh, ItemId);
+	ChangeItemDescription(ItemData->Description);
+	ChangeNameInfoText(ItemData->Name.ToString());
+	
+	ChangeCostInfo(ItemData->Price, false);
+	ChangeRemainingMoneyAfterPurchaseTextFromCost(ItemData->Price);
 
-	CurrentCost = ItemCost;
-	bIsStackableItem = bIsStackable;
-
-	ChangeRemainingMoneyAfterPurchaseTextFromCost(ItemCost);
+	bIsShowingUpgradeView = false;
 }
 
 void UShopElementInfoWidget::ShowUpgradeInfos(USkeletalMesh* NewUpgradeItemMesh, int32 CurrentUpgradeLevel, bool bIsMaxLevel, int32 CurrentUpgradeCost, const FString& ExtraInfoText)
 {
+	CurrentCost = CurrentUpgradeCost;
+	bIsShowingUpgradeView = true;
+	ChangeCurrentQuantityNumber(1);
+
 	SetItemMeshActive(true);
 	SetDescriptionActive(false);
 	SetNameInfoTextActive(false);
@@ -89,12 +131,10 @@ void UShopElementInfoWidget::ShowUpgradeInfos(USkeletalMesh* NewUpgradeItemMesh,
 	SetQuantityOverlayActive(false);
 	SetRemainingMoneyAfterPurchaseTextActive(true);
 
-	ChangeItemMesh(NewUpgradeItemMesh);
+	ChangeItemMesh(NewUpgradeItemMesh, INDEX_NONE);
 	ChangeUpgradeLevelInfo(CurrentUpgradeLevel, bIsMaxLevel);
 	ChangeCostInfo(CurrentUpgradeCost, true);
-	ChangeCurrentQuantityNumber(1);
 
-	CurrentCost = CurrentUpgradeCost;
 	ChangeRemainingMoneyAfterPurchaseTextFromCost(CurrentUpgradeCost);
 }
 
@@ -108,9 +148,9 @@ void UShopElementInfoWidget::ChangeNameInfoText(const FString& NewInfoText)
 	NameInfoText->SetText(FText::FromString(NewInfoText));
 }
 
-void UShopElementInfoWidget::ChangeItemMesh(USkeletalMesh* NewMesh)
+void UShopElementInfoWidget::ChangeItemMesh(USkeletalMesh* NewMesh, int32 ItemId)
 {
-	ItemMeshPanel->ChangeItemMesh(NewMesh);
+	ItemMeshPanel->ChangeItemMesh(NewMesh, ItemId);
 }
 
 void UShopElementInfoWidget::ChangeUpgradeLevelInfo(int32 CurrentLevel, bool bIsMaxLevel)
@@ -138,15 +178,15 @@ void UShopElementInfoWidget::ChangeCostInfo(int32 Cost, bool bIsUpgradeCost)
 	if (bIsUpgradeCost)
 	{
 		NewInfoText = TEXT("<S>업그레이드 비용 ");
+		NewInfoText += FString::FromInt(Cost);
+		NewInfoText += TEXT("Cr</>");
 	}
 	else
 	{
 		NewInfoText = TEXT("<S>비용 ");
+		NewInfoText += FString::Printf(TEXT("%d * %d Cr </>"), Cost, CurrentQuantityNumber);
 	}
 
-	NewInfoText += FString::FromInt(Cost);
-	NewInfoText += TEXT("Cr</>");
-	
 	CostInfoText->SetText(FText::FromString(NewInfoText));
 }
 
@@ -161,12 +201,12 @@ void UShopElementInfoWidget::ChangeCurrentQuantityNumber(int32 NewNumber)
 
 	if (bIsStackableItem)
 	{
-		int32 MaxCount = (CurrentCost == 0) ? MAX_ITEM_COUNT : FMath::Min(MAX_ITEM_COUNT, GS->GetTotalTeamCredit() / CurrentCost * NewNumber);
+		int32 MaxCount = (CurrentCost == 0) ? MAX_ITEM_COUNT : FMath::Min(MAX_ITEM_COUNT, GS->GetTotalTeamCredit() / CurrentCost);
 		if (MaxCount == 0)
 		{
 			NewNumber = 0;
 		}
-		else
+		else //if (MaxCount < NewNumber)
 		{
 			NewNumber = FMath::Clamp(NewNumber, 1, MaxCount);
 		}
@@ -294,12 +334,14 @@ void UShopElementInfoWidget::OnIncreaseButtonClicked()
 {
 	ChangeCurrentQuantityNumber(CurrentQuantityNumber + 1);
 	ChangeRemainingMoneyAfterPurchaseTextFromCost(CurrentCost);
+	ChangeCostInfo(CurrentCost, bIsShowingUpgradeView);
 }
 
 void UShopElementInfoWidget::OnDecreaseButtonClicked()
 {
 	ChangeCurrentQuantityNumber(CurrentQuantityNumber - 1);
 	ChangeRemainingMoneyAfterPurchaseTextFromCost(CurrentCost);
+	ChangeCostInfo(CurrentCost, bIsShowingUpgradeView);
 }
 
 void UShopElementInfoWidget::OnTeamCreditChanged(int32 ChangedValue)

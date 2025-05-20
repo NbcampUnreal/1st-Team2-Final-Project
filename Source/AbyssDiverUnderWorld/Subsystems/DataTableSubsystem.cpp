@@ -6,19 +6,27 @@
 #include "DataRow/FADItemDataRow.h"
 #include "DataRow/FADProjectileDataRow.h"
 #include "DataRow/PhaseGoalRow.h"
+#include "DataRow/ShopItemMeshTransformRow.h"
 #include "Interactable/Item/ADOreRock.h"
 #include "Logging/LogMacros.h"
-
 
 void UDataTableSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 
 	UADGameInstance* GI = CastChecked<UADGameInstance>(GetGameInstance());
-	//ItemDataTable->GetAllRows<FFADItemDataRow>(TEXT("TestShopItemData"), DataTableArray);
 	if (UDataTable* ItemDataTable = GI->ItemDataTable)
 	{
 		ItemDataTable->GetAllRows<FFADItemDataRow>(TEXT("ItemDataTable"), ItemDataTableArray);
+	}
+	else
+	{
+		LOGV(Error, TEXT("ItemDataTable is null"));
+	}
+
+	if (UDataTable* ShopItemTransformTable = GI->ShopMeshTransformTable)
+	{
+		ShopItemTransformTable->GetAllRows<FShopItemMeshTransformRow>(TEXT("ShopItemMeshTransformRow"), ShopItemMeshTransformTableArray);
 	}
 	else
 	{
@@ -41,8 +49,15 @@ void UDataTableSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 			return A->Id < B->Id;
 		});
 
+	Algo::Sort(ShopItemMeshTransformTableArray, [](const FShopItemMeshTransformRow* A, const FShopItemMeshTransformRow* B)
+		{
+			return A->ItemId < B->ItemId;
+		});
+
 	ParsePhaseGoalDataTable(GI);
 	ParseMapPathDataTable(GI);
+
+
 
 }
 
@@ -100,9 +115,14 @@ FPhaseGoalRow* UDataTableSubsystem::GetPhaseGoalData(EMapName MapName, int32 Pha
 	return PhaseGoalTableMap.FindRef(TPair<EMapName, int32>(MapName, Phase));
 }
 
-FString UDataTableSubsystem::GetMapPath(EMapName MapName) const
+const FString& UDataTableSubsystem::GetMapPath(EMapName MapName) const
 {
 	return MapPathDataTableMap[MapName];
+}
+
+FShopItemMeshTransformRow* UDataTableSubsystem::GetShopItemMeshTransformData(int32 ItemId) const
+{
+	return ShopItemMeshTransformTableArray[ItemId];
 }
 
 void UDataTableSubsystem::ParseUpgradeDataTable(UADGameInstance* GameInstance)

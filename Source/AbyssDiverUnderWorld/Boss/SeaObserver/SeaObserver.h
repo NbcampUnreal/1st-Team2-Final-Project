@@ -14,6 +14,7 @@ public:
 
 public:
 	virtual void BeginPlay() override;
+	virtual void OnDeath() override;
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Collision")

@@ -39,6 +39,7 @@ public:
 private:
 	int8 SlotIndex;
 	EItemType SlotType;
+	uint8 bIsEmptySlot : 1;
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<URichTextBlock> QuantityText;

@@ -330,8 +330,7 @@ private:
 	uint8 GroggyCount;
 
 	/** 그로기에서 회복 후의 체력량, 회복 후의 체력량은 MaxHealth * RecoveryHealthPercentage로 설정된다. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Groggy",
-		meta = (AllowPrivateAccess = "true", ClampMin = "0.01", ClampMax = "1.0"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true", ClampMin = "0.01", ClampMax = "1.0"))
 	float RecoveryHealthPercentage;
 
 	/** 그로기에서 사망 전이 Timer */
@@ -372,8 +371,7 @@ private:
 	float OverloadWeight;
 
 	/** 초과 적재 시의 속도 감소 비율. [0, 1]의 범위로 속도를 감소시킨다. 0.4일 경우 40% 감소해서 60%의 속도이다. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Weight",
-		meta = (AllowPrivateAccess = "true", ClampMin = "0.0", ClampMax = "1.0"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Weight", meta = (AllowPrivateAccess = "true", ClampMin = "0.0", ClampMax = "1.0"))
 	float OverloadSpeedFactor;
 
 	/** 캐릭터의 효과가 적용된 최종 속도 */
@@ -514,6 +512,7 @@ private:
 #pragma region Getter Setter
 
 public:
+	
 	/** 캐릭터의 Oxygen Component를 반환 */
 	FORCEINLINE class UOxygenComponent* GetOxygenComponent() const { return OxygenComponent; }
 
@@ -549,5 +548,7 @@ public:
 	/** 채광 속도를 반환 2.0일 경우 2배로 빠르게 채광한다. */
 	FORCEINLINE float GetGatherMultiplier() const { return GatherMultiplier; }
 
+	FORCEINLINE USkeletalMeshComponent* GetMesh1P() const { return Mesh1P; }
+	
 #pragma endregion
 };

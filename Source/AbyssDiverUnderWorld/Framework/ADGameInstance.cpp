@@ -12,6 +12,7 @@ void UADGameInstance::Init()
 {
     Super::Init();
 
+	bIsHost = false;
     PlayerIdMap.Empty(MAX_PLAYER_NUMBER);
     ValidPlayerIndexArray.Init(false, MAX_PLAYER_NUMBER);
 }
