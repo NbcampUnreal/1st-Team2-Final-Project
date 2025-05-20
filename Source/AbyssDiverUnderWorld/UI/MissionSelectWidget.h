@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "UI/MissionData.h"
+#include "UI/SelectedMissionListWidget.h"
 #include "MissionSelectWidget.generated.h"
 
 class UButton;
@@ -42,6 +43,10 @@ protected:
     // 미션 엔트리 위젯 클래스
     UPROPERTY(EditAnywhere, Category = "UI")
     TSubclassOf<UMissionEntryWidget> MissionEntryClass;
+
+    UPROPERTY(EditDefaultsOnly, Category = "UI")
+    TSubclassOf<USelectedMissionListWidget> WBP_SelectedMissionListClass;
+
 
 private:
     // 미션 데이터

@@ -6,6 +6,7 @@
 #include "Components/Button.h"
 #include "Framework/ADGameInstance.h"
 #include "Kismet/GameplayStatics.h"
+#include "Framework/ADPlayerState.h"
 #include "Character/UnderwaterCharacter.h"
 
 void UMissionSelectWidget::NativeConstruct()
@@ -95,51 +96,38 @@ void UMissionSelectWidget::OnMissionClicked(const FMissionData& Data, bool bSele
 
 void UMissionSelectWidget::OnStartButtonClicked()
 {
-    if (UADGameInstance* GI = Cast<UADGameInstance>(UGameplayStatics::GetGameInstance(this)))
-    {
-        GI->SelectedMissions = SelectedMissions;
-        UE_LOG(LogTemp, Warning, TEXT("✅ [MissionSelectWidget] 선택된 미션 수: %d"), SelectedMissions.Num());
-    }
-    else
-    {
-        UE_LOG(LogTemp, Error, TEXT("❌ [MissionSelectWidget] GameInstance cast 실패"));
-    }
-
-    RemoveFromParent();
+    RemoveFromParent();  // 👉 미션 선택 UI 닫기
 
     if (APlayerController* PC = GetOwningPlayer())
     {
+        if (AADPlayerState* PS = PC->GetPlayerState<AADPlayerState>())
+        {
+            PS->SetSelectedMissions(SelectedMissions);
+            UE_LOG(LogTemp, Warning, TEXT("✅ [MissionSelectWidget] 선택된 미션 수: %d"), SelectedMissions.Num());
+        }
+
+        // 입력 모드 원복
         FInputModeGameOnly InputMode;
         PC->SetInputMode(InputMode);
         PC->bShowMouseCursor = false;
 
-        APawn* Pawn = PC->GetPawn();
-        if (AUnderwaterCharacter* UWCharacter = Cast<AUnderwaterCharacter>(Pawn))
+        // ✅ 미션 리스트 위젯 생성 및 화면에 추가
+        if (WBP_SelectedMissionListClass) // UPROPERTY로 받은 위젯 클래스
         {
-            if (UWCharacter->AllInventoryWidgetClass)
+            USelectedMissionListWidget* MissionListWidget = CreateWidget<USelectedMissionListWidget>(GetWorld(), WBP_SelectedMissionListClass);
+            if (MissionListWidget)
             {
-                UWCharacter->InventoryWidgetInstance = CreateWidget<UAllInventoryWidget>(GetWorld(), UWCharacter->AllInventoryWidgetClass);
-
-                if (UWCharacter->InventoryWidgetInstance)
-                {
-                    UE_LOG(LogTemp, Warning, TEXT("✅ [MissionSelectWidget] 인벤토리 위젯 생성 성공"));
-
-                    // ❌ 바로 AddToViewport 하지 말기!
-                    //UWCharacter->InventoryWidgetInstance->AddToViewport();
-
-                }
+                MissionListWidget->AddToViewport();
+                UE_LOG(LogTemp, Warning, TEXT("✅ 선택된 미션 리스트 위젯 AddToViewport 완료"));
             }
             else
             {
-                UE_LOG(LogTemp, Error, TEXT("❌ [MissionSelectWidget] AllInventoryWidgetClass가 설정되지 않음"));
+                UE_LOG(LogTemp, Error, TEXT("❌ 선택된 미션 리스트 위젯 생성 실패"));
             }
         }
         else
         {
-            UE_LOG(LogTemp, Error, TEXT("❌ [MissionSelectWidget] UWCharacter 캐스팅 실패"));
+            UE_LOG(LogTemp, Error, TEXT("❌ WBP_SelectedMissionListClass가 설정되지 않음"));
         }
     }
-
-    UE_LOG(LogTemp, Warning, TEXT("🎮 [MissionSelectWidget] 미션 %d개 선택됨. 게임 시작."), SelectedMissions.Num());
 }
-
