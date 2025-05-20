@@ -31,12 +31,12 @@ public:
 
 	void Init(USkeletalMeshComponent* NewItemMeshComp);
 
-	void ShowItemInfos(USkeletalMesh* NewItemMesh, const FString& NewDescription, const FString& NewNameInfoText, int32 ItemCost, bool bIsStackable);
+	void ShowItemInfos(int32 ItemId);
 	void ShowUpgradeInfos(USkeletalMesh* NewUpgradeItemMesh, int32 CurrentUpgradeLevel, bool bIsMaxLevel, int32 CurrentUpgradeCost, const FString& ExtraInfoText);
 
 	void ChangeItemDescription(const FString& NewDescription);
 	void ChangeNameInfoText(const FString& NewInfoText);
-	void ChangeItemMesh(USkeletalMesh* NewMesh);
+	void ChangeItemMesh(USkeletalMesh* NewMesh, int32 ItemId);
 
 	void ChangeUpgradeLevelInfo(int32 CurrentLevel, bool bIsMaxLevel);
 	void ChangeCostInfo(int32 Cost, bool bIsUpgradeCost);

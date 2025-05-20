@@ -59,6 +59,8 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "ADGameInstance", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.MapPathDataRow"))
 	TObjectPtr<UDataTable> MapPathDataTable;
 
+	UPROPERTY(EditDefaultsOnly, Category = "ADGameInstance", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.ShopItemMeshTransformRow"))
+	TObjectPtr<UDataTable> ShopMeshTransformTable;
 
 private:
 
