@@ -438,15 +438,15 @@ void UEquipUseComponent::FireHarpoon()
 		return;
 	}
 	
-	if (CurrentRowName == "BasicSpearGun")
+	if (CurrentItemData->Name == "BasicSpearGun")
 	{
 		Proj->SetBulletType(ESpearGunType::Basic);
 	}
-	else if (CurrentRowName == "BombSpearGun")
+	else if (CurrentItemData->Name == "BombSpearGun")
 	{
 		Proj->SetBulletType(ESpearGunType::Bomb);
 	}
-	else if (CurrentRowName == "PoisonSpearGun")
+	else if (CurrentItemData->Name == "PoisonSpearGun")
 	{
 		Proj->SetBulletType(ESpearGunType::Poison);
 	}
