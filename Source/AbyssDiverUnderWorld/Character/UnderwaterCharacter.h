@@ -515,6 +515,8 @@ public:
 
 	/** 채광 속도를 반환 2.0일 경우 2배로 빠르게 채광한다. */
 	FORCEINLINE float GetGatherMultiplier() const { return GatherMultiplier; }
+
+	FORCEINLINE USkeletalMeshComponent* GetMesh1P() const { return Mesh1P; }
 	
 #pragma endregion
 };
