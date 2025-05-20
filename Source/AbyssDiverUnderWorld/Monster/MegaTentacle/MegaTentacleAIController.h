@@ -4,14 +4,14 @@
 
 #include "CoreMinimal.h"
 #include "Monster/MonsterAIController.h"
-#include "TentacleAIController.generated.h"
+#include "MegaTentacleAIController.generated.h"
 
 
 UCLASS()
-class ABYSSDIVERUNDERWORLD_API ATentacleAIController : public AMonsterAIController
+class ABYSSDIVERUNDERWORLD_API AMegaTentacleAIController : public AMonsterAIController
 {
 	GENERATED_BODY()
 	
 public:
-	ATentacleAIController();
+	AMegaTentacleAIController();
 };
