@@ -23,12 +23,17 @@ protected:
 	virtual void Init() override;
 
 public:
+	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent)
+	void ExitSession(APlayerController* Caller);
 
 	bool TryGetPlayerIndex(const FString& NetId, int32& OutPlayerIndex);
 	void AddPlayerNetId(const FString& NetId);
 	void RemovePlayerNetId(const FString& NetId);
 
 public:
+	UPROPERTY(BlueprintReadWrite)
+	uint8 bIsHost : 1;
+
 	UPROPERTY(BlueprintReadWrite)
 	EMapName SelectedLevelName;
 
