@@ -28,6 +28,9 @@ public:
 	/** 데미지를 계산 */
 	void TakeDamage(const float DamageAmount);
 
+	/** 체력을 회복한다. */
+	void RestoreHealth(const float RestoreAmount);
+
 protected:
 	/** 최대 체력 레플리케이트 함수 */
 	UFUNCTION()

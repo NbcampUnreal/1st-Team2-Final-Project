@@ -127,7 +127,6 @@ void UPlayerHUDWidget::UpdateCharacterStateText(ECharacterState CharacterState)
 		);
 		
 		CharacterStateTextBlock->SetText(CharacterStateText);
-		LOGV(Warning, TEXT("Character State : %s"), *UEnum::GetDisplayValueAsText(CharacterState).ToString());
 	}
 	else
 	{
