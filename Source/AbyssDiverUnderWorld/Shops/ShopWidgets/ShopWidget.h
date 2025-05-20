@@ -24,6 +24,7 @@ class ABYSSDIVERUNDERWORLD_API UShopWidget : public UUserWidget
 
 protected:
 
+	virtual void NativeOnInitialized() override;
 	virtual void NativeConstruct() override;
 
 	virtual FReply NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
@@ -42,7 +43,7 @@ public:
 	void ShowItemViewForTab(EShopCategoryTab TabType);
 	void RefreshItemView();
 
-	void ShowItemInfos(USkeletalMesh* NewItemMesh, const FString& NewDescription, const FString& NewInfoText);
+	void ShowItemInfos(USkeletalMesh* NewItemMesh, const FString& NewDescription, const FString& NewNameInfoText, int32 ItemCost, bool bIsStackable);
 	void ShowUpgradeInfos(USkeletalMesh* NewUpgradeItemMesh, int32 CurrentUpgradeLevel, bool bIsMaxLevel, int32 CurrentUpgradeCost, const FString& ExtraInfoText);
 
 	void SetTeamMoneyText(int32 NewTeamMoney);

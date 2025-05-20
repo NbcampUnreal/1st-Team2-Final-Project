@@ -39,9 +39,6 @@ void UBTTask_BossInvestigate::TickTask(UBehaviorTreeComponent& OwnerComp, uint8*
 	// 캐스팅
 	ABossAIController* AIController = Cast<ABossAIController>(OwnerComp.GetAIOwner());
 	ABoss* Boss = Cast<ABoss>(AIController->GetCharacter());
-
-	// 마지막으로 플레이어를 목격한 위치를 향해 보스 회전
-	Boss->RotationToTarget(Boss->LastDetectedLocation);
 	
 	// 해당 위치로 이동 완료한 경우 Idle 상태로 전이
 	if (AIController->GetPathFollowingComponent()->GetStatus() == EPathFollowingStatus::Idle)

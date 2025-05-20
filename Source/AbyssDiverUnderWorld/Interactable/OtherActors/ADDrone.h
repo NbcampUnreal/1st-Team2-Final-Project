@@ -6,6 +6,7 @@
 #include "ADDrone.generated.h"
 
 class UADInteractableComponent;
+class AADDroneSeller;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADDrone : public AActor,  public IIADInteractable
@@ -28,7 +29,7 @@ public:
 
 	virtual bool CanHighlight_Implementation() const override { return bIsActive; }
 	UFUNCTION()
-	void Activate(class AADDroneSeller* Seller);
+	void Activate();
 	UFUNCTION()
 	void OnRep_IsActive();
 	void StartRising();
@@ -36,7 +37,6 @@ public:
 
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-
 private:
 	
 #pragma endregion
@@ -45,15 +45,17 @@ private:
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Component")
 	TObjectPtr<UADInteractableComponent> InteractableComp;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction")
+	uint8 bIsHold : 1;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Money")
-	int32 TargetMoney = 1000;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Money")
 	int32 AccumulatedMoney = 0;
 	UPROPERTY(ReplicatedUsing = OnRep_IsActive, EditAnywhere, BlueprintReadWrite)
 	uint8 bIsActive : 1;
-	UPROPERTY()
-	AADDroneSeller* SellerRef = nullptr;
+	UPROPERTY(EditAnywhere)
+	TObjectPtr<AADDroneSeller> CurrentSeller = nullptr;
+	UPROPERTY(EditAnywhere)
+	TObjectPtr<AADDroneSeller> NextSeller = nullptr;
 	UPROPERTY(EditAnywhere)
 	float RaiseSpeed = 200.f;
 	UPROPERTY(EditAnywhere)
@@ -61,6 +63,9 @@ public:
 
 protected:
 
+	// 드론에 해당하는 Phase를 나타내는 숫자
+	UPROPERTY(EditAnywhere)
+	int32 DronePhaseNumber = 0;
 
 private:
 	FTimerHandle DestroyHandle;
@@ -70,6 +75,9 @@ private:
 #pragma region Getter, Setteer
 public:
 	virtual UADInteractableComponent* GetInteractableComponent() const override;
+	virtual bool IsHoldMode() const override;
+
+	int32 GetDronePhaseNumber() const { return DronePhaseNumber; }
 
 #pragma endregion
 

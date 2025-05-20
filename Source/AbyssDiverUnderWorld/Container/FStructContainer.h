@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Net/Serialization/FastArraySerializer.h"
 #include "DataRow/FADItemDataRow.h"
+#include "AbyssDiverUnderWorld.h"
 #include "FStructContainer.generated.h"
 
 class UADInventoryComponent;
@@ -27,6 +28,12 @@ struct FItemData : public FFastArraySerializerItem
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 Amount;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 CurrentAmmoInMag;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 ReserveAmmo;
+
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     int32 Mass;
 
@@ -43,16 +50,20 @@ struct FItemData : public FFastArraySerializerItem
 	FItemData()
 		: Name(NAME_None), Id(0), Quantity(0), SlotIndex(99), Amount(0), Mass(0), Price(0), ItemType(EItemType::Max), Thumbnail(nullptr)
 	{
+		CurrentAmmoInMag = 0;
+		ReserveAmmo = 0;
 	}
 	FItemData(FName InName, uint8 InId, uint8 InQuantity, uint8 InSlotIndex, int32 InAmount, int32 InMass, int32 InPrice, EItemType InType, UTexture2D* InThumbnail)
 		: Name(InName), Id(InId), Quantity(InQuantity), SlotIndex(InSlotIndex), Amount(InAmount), Mass(InMass), Price(InPrice), ItemType(InType), Thumbnail(InThumbnail)
 	{
+		CurrentAmmoInMag = 5;
+		ReserveAmmo = Amount - CurrentAmmoInMag;
 	}
 
 	// 이 값이 바뀌면 Replication에 포함됨
 	bool operator==(const FItemData& Other) const
 	{
-		return Name == Other.Name && Quantity == Other.Quantity && SlotIndex == Other.SlotIndex && ItemType == Other.ItemType && Thumbnail == Other.Thumbnail && Amount == Other.Amount;
+		return Name == Other.Name && Quantity == Other.Quantity && SlotIndex == Other.SlotIndex && ItemType == Other.ItemType && Thumbnail == Other.Thumbnail && Amount == Other.Amount && CurrentAmmoInMag == Other.CurrentAmmoInMag && ReserveAmmo == Other.ReserveAmmo;
 	}
 };
 
@@ -71,6 +82,7 @@ struct FInventoryList : public FFastArraySerializer
 	void SetOwningComponent(UADInventoryComponent* InComp)
 	{
 		OwnerComponent = InComp;
+		LOG(TEXT("Component Init"));
 	}
 
 	//Replication을 위한 필수 함수
@@ -83,13 +95,35 @@ struct FInventoryList : public FFastArraySerializer
 	{
 		FItemData NewItem;
 		NewItem.Name = Item.Name;
+		NewItem.Id = Item.Id;
 		NewItem.Quantity = Item.Quantity;
+		NewItem.SlotIndex = Item.SlotIndex;
+		NewItem.Amount = Item.Amount;
+		NewItem.CurrentAmmoInMag = Item.CurrentAmmoInMag;
+		NewItem.ReserveAmmo= Item.ReserveAmmo;
+		NewItem.Mass = Item.Mass;
+		NewItem.Price = Item.Price;
 		NewItem.ItemType = Item.ItemType;
 		NewItem.Thumbnail = Item.Thumbnail;
-		NewItem.Amount = Item.Amount;
-		NewItem.Price = Item.Price;
 		Items.Add(NewItem);
-		MarkArrayDirty();
+		MarkItemDirty(Items.Last());
+	}
+
+	bool UpdateQuantity(int8 ItemIndex, int8 Amount) //Update 성공 여부 반환
+	{
+		if (Items[ItemIndex].Quantity + Amount >= 0)
+		{
+			Items[ItemIndex].Quantity += Amount;
+			MarkItemDirty(Items[ItemIndex]);
+			return true;
+		}
+		else
+			return false;
+	}
+	void UpdateSlotIndex(int8 ItemIndex, int8 NewIndex)
+	{
+		Items[ItemIndex].SlotIndex = NewIndex;
+		MarkItemDirty(Items[ItemIndex]);
 	}
 
 	void RemoveItem(int8 Index)

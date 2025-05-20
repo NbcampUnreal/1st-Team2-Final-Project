@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 
@@ -14,7 +12,6 @@ enum class EItemType : uint8
 	Equipment = 0,
 	Consumable = 1,
 	Exchangable = 2,
-	Battery = 3,
 	Bullet = 4,
 	Max = 5 UMETA(Hidden)
 };

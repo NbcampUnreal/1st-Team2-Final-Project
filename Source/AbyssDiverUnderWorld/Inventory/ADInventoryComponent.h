@@ -13,14 +13,6 @@ class UAllInventoryWidget;
 class UDataTableSubsystem;
 class AADUseItem;
 
-UENUM(BlueprintType)
-enum class EItemEquipState : uint8
-{
-	Idle = 0,
-	Equip = 1,
-	Use = 2,
-	Max = 3 UMETA(Hidden)
-};
 
 DECLARE_MULTICAST_DELEGATE(FInventoryUpdateDelegate);
 DECLARE_MULTICAST_DELEGATE_TwoParams(FInventoryInfoUpdateDelegate, int32, int32);
@@ -55,6 +47,10 @@ public:
 	void S_RequestRemove(uint8 InventoryIndex, int8 Count, bool bIsDropAction);
 	void S_RequestRemove_Implementation(uint8 InventoryIndex, int8 Count, bool bIsDropAction);
 
+	UFUNCTION(Server, Reliable)
+	void S_RemoveBySlotIndex(uint8 SlotIndex, EItemType ItemType, bool bIsDropAction);
+	void S_RemoveBySlotIndex_Implementation(uint8 SlotIndex, EItemType ItemType, bool bIsDropAction);
+
 	UFUNCTION(BlueprintCallable)
 	void InventoryInitialize();
 
@@ -69,6 +65,7 @@ public:
 
 	int16 FindItemIndexByName(FName ItemID); //아이템 이름으로 InventoryList 인덱스 반환 (빈슬롯이 없으면 -1 반환)
 	void RemoveInventoryItem(uint8 InventoryIndex, int8 Count, bool bIsDropAction);
+	void RemoveBySlotIndex(uint8 SlotIndex, EItemType ItemType, bool bIsDropAction);
 	void ClientRequestInventoryInitialize();
 	void InventoryUIUpdate();
 
@@ -79,11 +76,11 @@ private:
 	int8 GetTypeInventoryEmptyIndex(EItemType ItemType); //빈슬롯이 없으면 -1 반환
 	FVector GetDropLocation();
 
-	FItemData CurrentEquipmentItemData(); // 현재 장착한 무기 아이템 데이터
+
 	void SetEquipInfo(int8 TypeInventoryIndex, AADUseItem* SpawnItem);
-	void Equip(FItemData ItemData, int8 Index);
+	void Equip(FItemData& ItemData, int8 Index);
 	void UnEquip();
-	void DropItem(FItemData ItemData);
+	void DropItem(FItemData& ItemData);
 
 	void OnInventoryInfoUpdate(int32 MassInfo, int32 PriceInfo);
 	void RebuildIndexMap();
@@ -120,8 +117,7 @@ private:
 	TArray<int8> InventorySizeByType;
 
 	TObjectPtr<UAllInventoryWidget> InventoryWidgetInstance;
-	TObjectPtr<UDataTableSubsystem> ItemDataTableSubsystem; 
-	TObjectPtr<UDataTable> TestItemDataTable;
+	TObjectPtr<UDataTableSubsystem> DataTableSubsystem; 
 #pragma endregion
 
 
@@ -132,6 +128,7 @@ public:
 
 	const FItemData& GetItemData(FName ItemNameToFind) { return InventoryList.Items[FindItemIndexByName(ItemNameToFind)]; }; //이름으로 아이템 데이터 반환
 	const FItemData& GetEquipmentItemDataByIndex(int8 KeyNum) { return InventoryList.Items[InventoryIndexMapByType[EItemType::Equipment][KeyNum]]; }; //타입별 인벤토리 슬롯 값으로 아이템 데이터 반환
+	FItemData& CurrentEquipmentItemData(); // 현재 장착한 무기 아이템 데이터
 
 	const FInventoryList& GetInventoryList() { return InventoryList; } 
 

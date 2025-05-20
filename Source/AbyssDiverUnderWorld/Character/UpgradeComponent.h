@@ -57,6 +57,8 @@ public:
 	/** Upgrade가 되었을 경우 호출되는 Delegate */
 	UPROPERTY(BlueprintAssignable)
 	FOnUpgradePerformed OnUpgradePerformed;
+
+	virtual void CopyProperties(UUpgradeComponent* Other);
 	
 private:
 	/** Data Table Subsystem Weak Pointer */

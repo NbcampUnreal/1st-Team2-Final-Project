@@ -12,6 +12,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Navigation/PathFollowingComponent.h"
 #include "Net/UnrealNetwork.h"
+#include "NavigationSystem.h"
 
 const FName ABoss::BossStateKey = "BossState";
 
@@ -24,6 +25,8 @@ ABoss::ABoss()
 	LastDetectedLocation = FVector::ZeroVector;
 	AttackRadius = 500.0f;
 	LaunchPower = 1000.0f;
+	MinPatrolDistance = 500.0f;
+	MaxPatrolDistance = 1000.0f;
 	AttackedCameraShakeScale = 1.0f;
 	bIsBiteAttackSuccess = false;
 	
@@ -98,7 +101,7 @@ float ABoss::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
                         AActor* DamageCauser)
 {
 	// 사망 상태면 얼리 리턴
-	if (BlackboardComponent->GetValueAsEnum(BossStateKey) == static_cast<uint8>(EBossState::Death)) return 0.0f;
+	if (BossState == EBossState::Death) return 0.0f;
 
 	const float Damage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
@@ -147,12 +150,12 @@ void ABoss::OnDeath()
 	// 사망 시 가라앉는 연출
 	GetCharacterMovement()->GravityScale = 0.1f;
 
+	// 사망 상태로 전이
+	SetBossState(EBossState::Death);
+	
 	// 이동을 멈추고 모든 애니메이션 출력 정지
 	AIController->StopMovement();
 	AnimInstance->StopAllMontages(0.5f);
-
-	// 사망 상태로 전이
-	SetBossState(EBossState::Death);
 
 	// AIController 작동 중지
 	AIController->UnPossess();
@@ -269,6 +272,36 @@ void ABoss::OnAttackCollisionOverlapEnd(UPrimitiveComponent* OverlappedComp, AAc
 	if (!IsValid(Player)) return;
 	
 	bIsAttackCollisionOverlappedPlayer = false;
+}
+
+FVector ABoss::GetNextPatrolPoint()
+{
+	// NavMesh 기반 랜덤 위치 찾기
+	UNavigationSystemV1* NavSys = UNavigationSystemV1::GetCurrent(GetWorld());
+	if (!IsValid(NavSys)) return GetActorLocation();
+
+	FNavLocation RandomNavLocation;
+	
+	// 최대로 시도할 다음 경로 찾기 알고리즘 횟수
+	const uint8 MaxTries = 20;
+
+	for (uint8 i = 0; i < MaxTries; ++i)
+	{
+		bool bFound = NavSys->GetRandomReachablePointInRadius(GetActorLocation(), MaxPatrolDistance, RandomNavLocation);
+
+		if (bFound)
+		{
+			const FVector CurrentLocation = GetActorLocation();
+			const FVector TargetLocation = RandomNavLocation.Location;
+
+			if (FVector::Distance(CurrentLocation, TargetLocation) > MinPatrolDistance)
+			{
+				return TargetLocation;
+			}
+		}	
+	}
+
+	return GetActorLocation();
 }
 
 #pragma region Getter, Setter

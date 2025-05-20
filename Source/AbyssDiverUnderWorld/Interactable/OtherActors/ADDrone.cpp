@@ -1,7 +1,7 @@
 ﻿#include "Interactable/OtherActors/ADDrone.h"
 #include "Interactable/Item/Component/ADInteractableComponent.h"
 #include "Inventory/ADInventoryComponent.h"
-#include "FrameWork/TestGameState.h"
+#include "FrameWork/ADInGameState.h"
 #include "ADDroneSeller.h"
 #include "Net/UnrealNetwork.h"
 
@@ -15,6 +15,8 @@ AADDrone::AADDrone()
 	bReplicates = true;
 	SetReplicateMovement(true); // 위치 상승하는 것 보이도록
 	bIsActive = false;
+
+	bIsHold = false;
 }
 
 // Called when the game starts or when spawned
@@ -36,38 +38,42 @@ void AADDrone::Tick(float DeltaSeconds)
 		Loc.Z += DeltaZ;
 		SetActorLocation(Loc);
 
-		if (SellerRef && IsValid(SellerRef))
+		if (CurrentSeller && IsValid(CurrentSeller))
 		{
-			FVector SellerLoc = SellerRef->GetActorLocation();
+			FVector SellerLoc = CurrentSeller->GetActorLocation();
 			SellerLoc.Z += DeltaZ;
-			SellerRef->SetActorLocation(SellerLoc);
+			CurrentSeller->SetActorLocation(SellerLoc);
 		}
 	}
 }
 
 void AADDrone::Interact_Implementation(AActor* InstigatorActor)
 {
-	if (!HasAuthority() || !bIsActive || !SellerRef ||!IsValid(SellerRef)) return;
+	if (!HasAuthority() || !bIsActive || !IsValid(CurrentSeller)) return;
 
 	// 차액 계산
-	int32 Diff = SellerRef->GetCurrentMoney() - SellerRef->GetTargetMoney();
+	int32 Diff = CurrentSeller->GetCurrentMoney() - CurrentSeller->GetTargetMoney();
+
 	if (Diff > 0)
 	{
-		if (ATestGameState* GS = GetWorld()->GetGameState<ATestGameState>())
+		if (AADInGameState* GS = GetWorld()->GetGameState<AADInGameState>())
 		{
-			GS->AddMoney(Diff);
+			GS->AddTeamCredit(Diff);
 			GS->IncrementPhase();
+			if (NextSeller)
+			{
+				NextSeller->Activate();
+			}
 		}
 	}
-	SellerRef->DisableSelling();
+	CurrentSeller->DisableSelling();
 	StartRising();
 }
 
-void AADDrone::Activate(AADDroneSeller* Seller)
+void AADDrone::Activate()
 {
-	if (!HasAuthority() || bIsActive || !Seller) return;
+	if (bIsActive) return;
 	bIsActive = true;
-	SellerRef = Seller;
 	OnRep_IsActive(); // 서버에서는 직접 호출해저야함
 }
 
@@ -89,10 +95,10 @@ void AADDrone::StartRising()
 
 void AADDrone::OnDestroyTimer()
 {
-	if (SellerRef && IsValid(SellerRef))
+	if (CurrentSeller && IsValid(CurrentSeller))
 	{
-		UE_LOG(LogTemp, Log, TEXT("[%s] Destroying linked seller %s"), *GetName(), *SellerRef->GetName());
-		SellerRef->Destroy();
+		UE_LOG(LogTemp, Log, TEXT("[%s] Destroying linked seller %s"), *GetName(), *CurrentSeller->GetName());
+		CurrentSeller->Destroy();
 	}
 	Destroy();
 }
@@ -108,3 +114,7 @@ UADInteractableComponent* AADDrone::GetInteractableComponent() const
 	return InteractableComp;
 }
 
+bool AADDrone::IsHoldMode() const
+{
+	return bIsHold;
+}
