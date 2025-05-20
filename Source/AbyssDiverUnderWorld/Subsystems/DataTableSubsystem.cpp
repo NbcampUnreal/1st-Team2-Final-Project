@@ -27,14 +27,14 @@ void UDataTableSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	
 	ParseUpgradeDataTable(GI);
 	
-	if (UDataTable* OreDropTable = GI->OreDropTable)
-	{
-		OreDropTable->GetAllRows<FDropEntry>(TEXT("OreDropDataTable"), OreDropEntryTableArray);
-	}
-	else
-	{
-		LOGV(Error, TEXT("OreDropTable is null"));
-	}
+	//if (UDataTable* OreDropTable = GI->OreDropTable)
+	//{
+	//	OreDropTable->GetAllRows<FDropEntry>(TEXT("OreDropDataTable"), OreDropEntryTableArray);
+	//}
+	//else
+	//{
+	//	LOGV(Error, TEXT("OreDropTable is null"));
+	//}
 
 	Algo::Sort(ItemDataTableArray, [](const FFADItemDataRow* A, const FFADItemDataRow* B)
 		{

@@ -17,6 +17,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PhysicsVolume.h"
 #include "GameFramework/SpringArmComponent.h"
+
 #include "Interactable/Item/Component/EquipUseComponent.h"
 #include "Inventory/ADInventoryComponent.h"
 #include "Shops/ShopInteractionComponent.h"
@@ -261,6 +262,7 @@ void AUnderwaterCharacter::SetEnvState(EEnvState State)
 		UE_LOG(AbyssDiver, Error, TEXT("Invalid Character State"));
 		break;
 	}
+
 }
 
 void AUnderwaterCharacter::StartCaptureState()
@@ -704,6 +706,7 @@ void AUnderwaterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 			);
 		}
 	}
+
 	else
 	{
 		UE_LOG(AbyssDiver, Error, TEXT("Failed to find an Enhanced Input Component."))
