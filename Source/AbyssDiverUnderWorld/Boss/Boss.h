@@ -5,6 +5,7 @@
 #include "Character/UnitBase.h"
 #include "Boss.generated.h"
 
+enum class EBossPhysicsType : uint8;
 class UCameraControllerComponent;
 class ATargetPoint;
 class AUnderwaterCharacter;
@@ -32,7 +33,7 @@ public:
 	
 	/** 보스의 체력이 0이하로 떨어지는 경우 사망 상태로 전이 */
 	virtual void OnDeath();
-	
+
 	/** 보스를 타겟 방향으로 회전시키는 함수 */
 	virtual void RotationToTarget(AActor* Target);
 	virtual void RotationToTarget(const FVector& TargetLocation);
@@ -77,6 +78,7 @@ public:
 							UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 protected:
+	void ApplyPhysicsSimulation();
 	
 private:
 	
@@ -84,6 +86,9 @@ private:
 
 #pragma region Variable
 public:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
+	EBossPhysicsType BossPhysicsType;
+	
 	UPROPERTY()
 	uint8 bIsAttackCollisionOverlappedPlayer : 1;
 
