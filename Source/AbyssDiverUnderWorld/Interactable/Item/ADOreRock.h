@@ -106,7 +106,8 @@ protected:
 	float SpawnHeight = 150.f;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction")
 	TObjectPtr<UADInteractableComponent> InteractableComp;
-	
+	UPROPERTY(EditAnywhere, Category = "Mining")
+	int32 DefaultMiningStrength = 25;
 
 private:
 	TArray<FDropEntry*> CachedEntries;
