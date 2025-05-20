@@ -30,7 +30,7 @@ void UInventoryWidget::RefreshInventoryWidget()
 				EmptySlot.ItemType = InventoryItemType;
 				if (SlotWidget)
 				{
-					SlotWidget->SetItemData(EmptySlot, -1, InventoryComp);
+					SlotWidget->SetItemData(EmptySlot, i, InventoryComp);
 					InventoryWrapBox->AddChild(SlotWidget);
 				}
 			}
@@ -50,7 +50,7 @@ void UInventoryWidget::InitializeSlots()
 			EmptySlot.ItemType = InventoryItemType;
 			if (SlotWidget)
 			{
-				SlotWidget->SetItemData(EmptySlot, -1, InventoryComp);
+				SlotWidget->SetItemData(EmptySlot, i, InventoryComp);
 				InventoryWrapBox->AddChild(SlotWidget);
 			}
 		}

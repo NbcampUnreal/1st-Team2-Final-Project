@@ -40,8 +40,8 @@ public:
 	void S_InventoryInitialize_Implementation();
 
 	UFUNCTION(Server, Reliable)
-	void S_TransferSlots(uint8 FromIndex, uint8 ToIndex);
-	void S_TransferSlots_Implementation(uint8 FromIndex, uint8 ToIndex);
+	void S_TransferSlots(EItemType SlotType, uint8 FromIndex, uint8 ToIndex);
+	void S_TransferSlots_Implementation(EItemType SlotType, uint8 FromIndex, uint8 ToIndex);
 
 	UFUNCTION(Server, Reliable)
 	void S_RequestRemove(uint8 InventoryIndex, int8 Count, bool bIsDropAction);
