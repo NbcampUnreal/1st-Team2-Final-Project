@@ -887,7 +887,7 @@ void AUnderwaterCharacter::EquipSlot1(const FInputActionValue& InputActionValue)
 	{
 		return;
 	}
-	InventoryComponent->S_UseInventoryItem(EItemType::Equipment, 1);
+	InventoryComponent->S_UseInventoryItem(EItemType::Equipment, 0);
 }
 
 void AUnderwaterCharacter::EquipSlot2(const FInputActionValue& InputActionValue)
@@ -896,7 +896,7 @@ void AUnderwaterCharacter::EquipSlot2(const FInputActionValue& InputActionValue)
 	{
 		return;
 	}
-	InventoryComponent->S_UseInventoryItem(EItemType::Equipment, 2);
+	InventoryComponent->S_UseInventoryItem(EItemType::Equipment, 1);
 }
 
 void AUnderwaterCharacter::EquipSlot3(const FInputActionValue& InputActionValue)
@@ -905,7 +905,7 @@ void AUnderwaterCharacter::EquipSlot3(const FInputActionValue& InputActionValue)
 	{
 		return;
 	}
-	InventoryComponent->S_UseInventoryItem(EItemType::Equipment, 3);
+	InventoryComponent->S_UseInventoryItem(EItemType::Equipment, 2);
 }
 
 void AUnderwaterCharacter::SetDebugCameraMode(bool bDebugCameraEnable)
