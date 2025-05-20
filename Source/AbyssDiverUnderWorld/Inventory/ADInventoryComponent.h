@@ -77,9 +77,8 @@ private:
 	FVector GetDropLocation();
 
 	int8 GetInventoryIndexByTypeAndSlotIndex(EItemType Type, int8 SlotIndex); //못 찾으면 -1 반환
-	FItemData GetCurrentEquipmentItemData(); // 현재 장착한 무기 아이템 데이터
 	void SetEquipInfo(int8 TypeInventoryIndex, AADUseItem* SpawnItem);
-	void Equip(FItemData ItemData, int8 SlotIndex);
+	void Equip(FItemData& ItemData, int8 SlotIndex);
 	void UnEquip();
 	void DropItem(FItemData& ItemData);
 
@@ -132,7 +131,7 @@ public:
 
 	const FItemData& GetItemData(FName ItemNameToFind) { return InventoryList.Items[FindItemIndexByName(ItemNameToFind)]; }; //이름으로 아이템 데이터 반환
 	const FItemData& GetEquipmentItemDataByIndex(int8 KeyNum) { return InventoryList.Items[InventoryIndexMapByType[EItemType::Equipment][KeyNum]]; }; //타입별 인벤토리 슬롯 값으로 아이템 데이터 반환
-	FItemData& CurrentEquipmentItemData(); // 현재 장착한 무기 아이템 데이터
+	FItemData* GetCurrentEquipmentItemData(); // 현재 장착한 무기 아이템 데이터
 
 	const FInventoryList& GetInventoryList() { return InventoryList; } 
 

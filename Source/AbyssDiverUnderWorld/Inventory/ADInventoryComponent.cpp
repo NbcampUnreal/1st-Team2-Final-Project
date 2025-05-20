@@ -431,10 +431,11 @@ FVector UADInventoryComponent::GetDropLocation()
 	return DropLocation;
 }
 
-FItemData& UADInventoryComponent::CurrentEquipmentItemData()
+FItemData* UADInventoryComponent::GetCurrentEquipmentItemData()
 {
 	int8 Index = GetInventoryIndexByTypeAndSlotIndex(EItemType::Equipment, CurrentEquipmentSlotIndex);
-	return InventoryList.Items[Index];
+	if (Index == -1) return nullptr;
+	return &InventoryList.Items[Index];
 }
 
 int8 UADInventoryComponent::GetInventoryIndexByTypeAndSlotIndex(EItemType Type, int8 SlotIndex) //못 찾으면 -1 반환
@@ -455,7 +456,7 @@ void UADInventoryComponent::SetEquipInfo(int8 SlotIndex, AADUseItem* SpawnItem)
 	CurrentEquipmentInstance = SpawnItem;
 }
 
-void UADInventoryComponent::Equip(FItemData& ItemData, int8 Index)
+void UADInventoryComponent::Equip(FItemData& ItemData, int8 SlotIndex)
 {
 	if (ItemData.ItemType != EItemType::Equipment || ItemData.Quantity == 0) return;
 
