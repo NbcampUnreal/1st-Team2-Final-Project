@@ -5,6 +5,7 @@
 #include "BehaviorTree/BehaviorTree.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Character/UnderwaterCharacter.h"
+#include "Net/UnrealNetwork.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Sight.h"
 
@@ -15,6 +16,8 @@ ABossAIController::ABossAIController()
 	AIPerceptionComponent = CreateDefaultSubobject<UAIPerceptionComponent>("PerceptionComponent");
 	SightConfig = CreateDefaultSubobject<UAISenseConfig_Sight>("SightConfig");
 
+	MoveToLocationAcceptanceRadius = 50.0f;
+	MoveToActorAcceptanceRadius = 500.0f;
 	DefaultVisionAngle = 90.0f;
 	ChasingVisionAngle = 150.0f;
 
@@ -36,13 +39,16 @@ ABossAIController::ABossAIController()
 	bIsDetectedStatePossible = true;
 	AccumulatedTime = 0.0f;
 	DetectedStateInterval = 20.0f;
+
+	// 시야 감지 가능한 상태로 설정
+	bIsSightDetectionPossible = true;
 }
 
 void ABossAIController::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (IsValid(AIPerceptionComponent))
+	if (IsValid(AIPerceptionComponent) && bIsSightDetectionPossible)
 	{
 		AIPerceptionComponent->OnTargetPerceptionUpdated.AddDynamic(this, &ABossAIController::OnTargetPerceptionUpdated);
 	}
@@ -57,93 +63,104 @@ void ABossAIController::OnPossess(APawn* InPawn)
 		UseBlackboard(BehaviorTree->BlackboardAsset, (UBlackboardComponent*&)BlackboardComponent);
 		RunBehaviorTree(BehaviorTree);
 	}
-}
 
-void ABossAIController::Tick(float DeltaSeconds)
-{
-	Super::Tick(DeltaSeconds);
-
-	// Detected 상태로 전이한지 DetectedStateInterval 만큼 지났는지 확인
-	if (!bIsDetectedStatePossible)
-	{
-		AccumulatedTime += DeltaSeconds;
-
-		if (AccumulatedTime >= DetectedStateInterval)
-		{
-			bIsDetectedStatePossible = true;
-			AccumulatedTime = 0.0f;
-		}
-	}
+	Boss = Cast<ABoss>(InPawn);
 }
 
 void ABossAIController::SetVisionAngle(float& Angle)
 {
-	// 시야각 전환 함수
+	// Angle 수치로 시야각 전환
 	UAISenseConfig_Sight* SightConfigInstance = Cast<UAISenseConfig_Sight>(AIPerceptionComponent->GetSenseConfig(UAISense::GetSenseID(UAISense_Sight::StaticClass())));
 	SightConfigInstance->PeripheralVisionAngleDegrees = Angle;
 	AIPerceptionComponent->ConfigureSense(*SightConfigInstance);
 }
 
+bool ABossAIController::IsStateSame(EBossState State)
+{
+	return (GetBlackboardComponent()->GetValueAsEnum(BossStateKey) == static_cast<uint8>(State));
+}
+
 void ABossAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
-	// @TODO: 감지된 Actor를 캐릭터로 캐스팅해서 검사하는 로직 구현 필요
-	if (!IsValid(Actor)) return;
+	// 감지한 대상이 플레이어가 아닌 경우 얼리 리턴
+	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor);
+	if (!IsValid(Player)) return;
 
 	// 시각 자극인지 확인
 	if (Stimulus.Type != UAISense::GetSenseID<UAISense_Sight>()) return;
-
+	
+	// 감지에 성공 했다면 플레이어 감지 리스트에 추가
 	if (Stimulus.WasSuccessfullySensed())
 	{
-		M_AddDetectedPlayer(Actor);
+		//LOGN(TEXT("[Detected] %s"), *Player->GetName());
+		M_AddDetectedPlayer(Player);
 	}
+	// 시야각에서 벗어났다면 플레이어 감지 리스트에서 제거
 	else
 	{
-		M_RemoveDetectedPlayer(Actor);
+		//LOGN(TEXT("[Lost Sight] %s"), *Player->GetName());
+		M_RemoveDetectedPlayer(Player);
 	}
 }
 
-void ABossAIController::M_AddDetectedPlayer_Implementation(AActor* Target)
+void ABossAIController::M_AddDetectedPlayer_Implementation(AUnderwaterCharacter* Target)
 {
-	ABoss* Boss = Cast<ABoss>(GetCharacter());
-	if (!IsValid(Boss)) return;
-
-	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Target);
-	if (IsValid(Player))
-	{
-		LOG(TEXT(" [AI] Target Perception Updated: %s"), *Player->GetName());
-		Boss->SetTarget((Player));
-	}
-
-	// 처음으로 플레이어를 감지한 경우 조건에 따라 Detected | Chase 상태로 전이
-	if (DetectedPlayers.Num() <= 0)
-	{
-		if (bIsDetectedStatePossible)
-		{
-			BlackboardComponent->SetValueAsEnum(BossStateKey, static_cast<uint8>(EBossState::Detected));
-			bIsDetectedStatePossible = false;
-		}
-		else
-		{
-			BlackboardComponent->SetValueAsEnum(BossStateKey, static_cast<uint8>(EBossState::Chase));
-		}
-	}
+	if (!IsValid(Target)) return;
 
 	// 감지된 플레이어 리스트에 추가
 	DetectedPlayers.Add(Target);
+	
+	// 이미 추적중인 플레이어가 있는 경우 얼리 리턴
+	if (IsValid(Boss->GetTarget()))
+	{
+		//LOGN(TEXT("[Already Detected] %s"), *Boss->GetTarget()->GetName());
+		return;
+	}
+
+	// 최초로 플레이어를 감지한 경우 추적할 타겟으로 설정
+	Boss->SetTarget(Target);
+
+	// Detected 상태로 전이된 지 DetectedStateInterval이 지난 경우 Detected 상태로 전이
+	if (bIsDetectedStatePossible)
+	{
+		Boss->SetBossState(EBossState::Detected);
+		bIsDetectedStatePossible = false;
+		GetWorldTimerManager().SetTimer(DetectedStateTimerHandle, this, &ABossAIController::SetDetectedStatePossible, DetectedStateInterval, false);
+	}
+	// 만약 아니라면 Chase 상태로 전이
+	else
+	{
+		Boss->SetBossState(EBossState::Chase);
+	}
 }
 
-void ABossAIController::M_RemoveDetectedPlayer_Implementation(AActor* Target)
+void ABossAIController::M_RemoveDetectedPlayer_Implementation(AUnderwaterCharacter* Target)
 {
+	if (!IsValid(Target)) return;
+	
 	// 감지된 플레이어 리스트에서 제거
 	DetectedPlayers.Remove(Target);
 
-	// 감지한 플레이어가 리스트에서 모두 제거된 경우 Investigate 상태로 전이
-	if (DetectedPlayers.Num() <= 0)
+	// 시야각에서 사라진 타겟이 추적중이었던 플레이어인 경우 Investigate 상태로 전이
+	if (Target == Boss->GetTarget())
 	{
-		ABoss* Boss = Cast<ABoss>(GetCharacter());
-		if (!IsValid(Boss)) return;
-		
 		Boss->SetLastDetectedLocation(Target->GetActorLocation());
-		BlackboardComponent->SetValueAsEnum(BossStateKey, static_cast<uint8>(EBossState::Investigate));
+		Boss->SetBossState(EBossState::Investigate);
+		Boss->InitTarget();
 	}
+}
+
+EPathFollowingRequestResult::Type ABossAIController::MoveToActorWithRadius()
+{
+	return MoveToActor(Boss->GetTarget(), MoveToActorAcceptanceRadius);
+}
+
+EPathFollowingRequestResult::Type ABossAIController::MoveToLocationWithRadius(const FVector& Location)
+{
+	return MoveToLocation(Location, MoveToLocationAcceptanceRadius);
+}
+
+void ABossAIController::SetDetectedStatePossible()
+{
+	bIsDetectedStatePossible = true;
 }

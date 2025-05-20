@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -7,9 +5,8 @@
 #include "GameFramework/PlayerController.h"
 #include "ADPlayerController.generated.h"
 
-/**
- * 
- */
+enum class EMapName : uint8;
+
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADPlayerController : public APlayerController
 {
@@ -21,6 +18,19 @@ protected:
 	virtual void BeginPlay() override;
 
 #pragma region Method
+	UFUNCTION(Server, Reliable)
+	void S_SetPlayerInfo(const FUniqueNetIdRepl& Id, const FString& Nickname);
+	void S_SetPlayerInfo_Implementation(const FUniqueNetIdRepl& Id, const FString& Nickname);
+
+	UFUNCTION(Server, Reliable)
+	void S_RequestSelectLevel(const EMapName InLevelName);
+	void S_RequestSelectLevel_Implementation(const EMapName InLevelName);
+
+	UFUNCTION(Server, Reliable)
+	void S_RequestStartGame();
+	void S_RequestStartGame_Implementation();
+
+
 
 	virtual void SetupInputComponent() override;
 	void ToggleInventoryShowed(const FInputActionValue& InputActionValue);
@@ -35,6 +45,18 @@ private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputAction> InventoryAction;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HUD", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UPlayerHUDComponent> PlayerHUDComponent;
 	
 #pragma endregion 
+
+#pragma region Getters / Setters
+
+public:
+
+	UPlayerHUDComponent* GetPlayerHUDComponent() const { return PlayerHUDComponent; }
+
+#pragma endregion
+
 };

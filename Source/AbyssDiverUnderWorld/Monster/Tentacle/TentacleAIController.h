@@ -6,14 +6,6 @@
 #include "Monster/MonsterAIController.h"
 #include "TentacleAIController.generated.h"
 
-UENUM(BlueprintType)
-enum class ESearchState : uint8
-{
-	Idle = 0,
-	Patrol = 1,
-	Chasing = 2,
-	Attack = 3
-};
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API ATentacleAIController : public AMonsterAIController
@@ -21,9 +13,5 @@ class ABYSSDIVERUNDERWORLD_API ATentacleAIController : public AMonsterAIControll
 	GENERATED_BODY()
 	
 public:
-	
-
-protected:
-
-
+	ATentacleAIController();
 };

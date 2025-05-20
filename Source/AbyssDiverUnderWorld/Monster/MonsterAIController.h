@@ -22,12 +22,17 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaSeconds) override;
 	virtual void OnPossess(APawn* InPawn) override;
 
 #pragma region Method
 protected:
 	void LoadSightDataFromTable();
 	void InitializePatrolPoint();
+
+	UFUNCTION()
+	void OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus); // Perception Callback Method
+
 #pragma endregion
 
 #pragma region Variable
@@ -52,6 +57,10 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "AI|SightData")
 	FName MonsterID;
+
+private:
+	uint8 bIsLosingTarget : 1;
+	float LostTargetTime;
 
 #pragma endregion
 

@@ -1,2 +1,59 @@
 #include "Framework/ADGameInstance.h"
+
+#include "AbyssDiverUnderWorld.h"
+
 #include "Kismet/GameplayStatics.h"
+
+UADGameInstance::UADGameInstance()
+{
+}
+
+void UADGameInstance::Init()
+{
+    Super::Init();
+
+    PlayerIdMap.Empty(MAX_PLAYER_NUMBER);
+    ValidPlayerIndexArray.Init(false, MAX_PLAYER_NUMBER);
+}
+
+bool UADGameInstance::TryGetPlayerIndex(const FString& NetId, int32& OutPlayerIndex)
+{
+    if (PlayerIdMap.Contains(NetId))
+    {
+        OutPlayerIndex = PlayerIdMap[NetId];
+        return true;
+    }
+
+    return false;
+}
+
+void UADGameInstance::AddPlayerNetId(const FString& NetId)
+{
+    for (int32 i = 0; i < MAX_PLAYER_NUMBER; ++i)
+    {
+        if (ValidPlayerIndexArray[i])
+        {
+            continue;
+        }
+
+        ValidPlayerIndexArray[i] = true;
+        PlayerIdMap.Add(NetId, i + 1);
+        return;
+    }
+
+    LOGV(Warning, TEXT("Already Exist Id : %s"), *NetId);
+}
+
+void UADGameInstance::RemovePlayerNetId(const FString& NetId)
+{
+    int32 PlayerIndex = 0;
+
+    if(TryGetPlayerIndex(NetId, PlayerIndex) == false)
+    {
+        LOGV(Warning, TEXT("Remove Failed Because of Not Valid NetId"));
+        return;
+    }
+
+    ValidPlayerIndexArray[PlayerIndex - 1] = false;
+    PlayerIdMap.Remove(NetId);
+}

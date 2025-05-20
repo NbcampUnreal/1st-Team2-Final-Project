@@ -1,6 +1,6 @@
 ﻿#include "Interactable/OtherActors/ADDroneSeller.h"
 #include "Inventory/ADInventoryComponent.h"
-#include "Framework/TestGameState.h"
+#include "Framework/ADInGameState.h"
 #include "ADDrone.h"
 #include "Net/UnrealNetwork.h"
 #include "Interactable/Item/Component/ADInteractableComponent.h"
@@ -16,6 +16,7 @@ AADDroneSeller::AADDroneSeller()
 	SetReplicateMovement(true); // 위치 상승하는 것 보이도록
 
 	bIsActive = true;
+	bIsHold = false;
 }
 
 // Called when the game starts or when spawned
@@ -40,10 +41,10 @@ void AADDroneSeller::Interact_Implementation(AActor* InstigatorActor)
 
 	CurrentMoney += Gained;
 	UE_LOG(LogTemp, Log, TEXT("→ 누적 금액: %d / %d"), CurrentMoney, TargetMoney);
-	if (CurrentMoney >= TargetMoney && LinkedDrone && LinkedDrone && IsValid(LinkedDrone))
+	if (CurrentMoney >= TargetMoney && IsValid(CurrentDrone))
 	{
 		UE_LOG(LogTemp, Log, TEXT("목표 달성! Drone 활성화 호출"));
-		LinkedDrone->Activate(this);
+		CurrentDrone->Activate();
 	}
 	
 }
@@ -52,6 +53,15 @@ void AADDroneSeller::DisableSelling()
 {
 	bIsActive = false;
 }
+
+void AADDroneSeller::Activate()
+{
+	if (bIsActive) return;
+
+	bIsActive = true;
+	OnRep_IsActive(); // 서버에서는 직접 호출해저야함
+}
+
 
 void AADDroneSeller::OnRep_IsActive()
 {
@@ -78,11 +88,11 @@ int32 AADDroneSeller::SellAllExchangeableItems(AActor* InstigatorActor)
 					int32 Price = Inv->GetTotalPrice();
 					// TODO : 인벤토리 비우는 함수 구현 필요
 					TArray<int8> TypeArray = Inv->GetInventoryIndexesByType(EItemType::Exchangable);
-					for (int8 sale : TypeArray)
+					for (int i = 0; i<TypeArray.Num(); ++i)
 					{
-						if (sale > -1)
+						if (TypeArray[i] > -1)
 						{
-							Inv->RemoveInventoryItem(sale, -1, false);
+							Inv->RemoveBySlotIndex(i, EItemType::Exchangable, false);
 						}
 					}
 					return Price;
@@ -105,3 +115,7 @@ UADInteractableComponent* AADDroneSeller::GetInteractableComponent() const
 	return InteractableComp;
 }
 
+bool AADDroneSeller::IsHoldMode() const
+{
+	return bIsHold;
+}

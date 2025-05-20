@@ -6,9 +6,7 @@
 #include "BehaviorTree/Tasks/BTTask_BlackboardBase.h"
 #include "BTTask_FindNextPatrolLocation.generated.h"
 
-/**
- * 
- */
+
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API UBTTask_FindNextPatrolLocation : public UBTTask_BlackboardBase
 {
@@ -17,6 +15,7 @@ class ABYSSDIVERUNDERWORLD_API UBTTask_FindNextPatrolLocation : public UBTTask_B
 public:
 	UBTTask_FindNextPatrolLocation();
 
+protected:
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory);
 
 #pragma region Variable

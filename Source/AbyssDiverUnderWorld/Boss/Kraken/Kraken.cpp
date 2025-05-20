@@ -1,5 +1,6 @@
 #include "Boss/Kraken/Kraken.h"
 #include "AbyssDiverUnderWorld.h"
+#include "Boss/EBossState.h"
 #include "Character/UnderwaterCharacter.h"
 #include "Components/CapsuleComponent.h"
 
@@ -44,48 +45,10 @@ void AKraken::BeginPlay()
 	PickAttackCollision->OnComponentBeginOverlap.AddDynamic(this, &ABoss::OnMeshOverlapBegin);
 }
 
-void AKraken::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-}
-
 void AKraken::OnDeath()
 {
-	Super::OnDeath();
-
+	if (BossState == EBossState::Death) return;
 	SetEmissiveTransition();
-}
-
-void AKraken::Move()
-{
-	Super::Move();
 	
-	if (CurrentPatrolPointIndex >= PatrolPoints.Num())
-	{
-		CurrentPatrolPointIndex = 0;
-	}
-	
-	const FVector TargetLocation = PatrolPoints[CurrentPatrolPointIndex]->GetActorLocation();
-	FlyingMoveToTarget(TargetLocation);
-
-	++CurrentPatrolPointIndex;
-}
-
-void AKraken::MoveStop()
-{
-	Super::MoveStop();
-	FlyingMoveToTargetStop();
-}
-
-void AKraken::MoveToTarget()
-{
-	Super::MoveToTarget();
-	if (!IsValid(TargetPlayer)) return;
-	FlyingMoveToTarget(TargetPlayer->GetActorLocation());
-}
-
-void AKraken::MoveToLastDetectedLocation()
-{
-	Super::MoveToLastDetectedLocation();
-	FlyingMoveToTarget(LastDetectedLocation);
+	Super::OnDeath();
 }

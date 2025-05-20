@@ -29,9 +29,10 @@ protected:
 #pragma region Variable
 private:
 	UPROPERTY()
-	UFlyingAIPathfindingBase* CashedPathComp; // For disabling on arrival. raw point : because depended by pawn. Don'y worry about GC
+	UFlyingAIPathfindingBase* CachedPathComp; // For disabling on arrival. raw point : because depended by pawn. Don'y worry about GC
+
 	UPROPERTY()
-	TObjectPtr<UBehaviorTreeComponent> CashedOwnerComp; // For FinishLatentTask
+	TObjectPtr<UBehaviorTreeComponent> CachedOwnerComp; // For FinishLatentTask
 
 #pragma endregion
 };
