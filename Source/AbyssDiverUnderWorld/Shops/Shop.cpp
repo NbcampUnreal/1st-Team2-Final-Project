@@ -24,12 +24,13 @@
 #include "Net/UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"
 
+DEFINE_LOG_CATEGORY(ShopLog);
+
 #pragma region FShopItemId
 
 void FShopItemId::PostReplicatedAdd(const FShopItemIdList& InArraySerializer)
 {
-	UE_LOG(LogTemp, Log, TEXT("Shop item added: Id = %d"), Id);
-
+	LOGS(Warning, TEXT("Shop item added: Id = %d"), Id);
 	int32 Index = InArraySerializer.IdList.IndexOfByKey(*this);
 	FShopItemListChangeInfo Info(InArraySerializer.TabType, Index, Id, EShopItemChangeType::Added);
 
@@ -38,7 +39,7 @@ void FShopItemId::PostReplicatedAdd(const FShopItemIdList& InArraySerializer)
 
 void FShopItemId::PostReplicatedChange(const FShopItemIdList& InArraySerializer)
 {
-	UE_LOG(LogTemp, Log, TEXT("Shop item changed: Id = %d"), Id);
+	LOGS(Warning, TEXT("Shop item changed: Id = %d"), Id);
 
 	int32 Index = InArraySerializer.IdList.IndexOfByKey(*this);
 	FShopItemListChangeInfo Info(InArraySerializer.TabType, Index, Id, EShopItemChangeType::Modified);
@@ -48,7 +49,7 @@ void FShopItemId::PostReplicatedChange(const FShopItemIdList& InArraySerializer)
 
 void FShopItemId::PreReplicatedRemove(const FShopItemIdList& InArraySerializer)
 {
-	UE_LOG(LogTemp, Log, TEXT("Shop item removed: Id = %d"), Id);
+	LOGS(Warning, TEXT("Shop item removed: Id = %d"), Id);
 
 	int32 Index = InArraySerializer.IdList.IndexOfByKey(*this);
 	FShopItemListChangeInfo Info(InArraySerializer.TabType, Index, Id, EShopItemChangeType::Removed);
@@ -83,7 +84,7 @@ bool FShopItemIdList::TryAdd(uint8 NewId)
 {
 	if (Contains(NewId) != INDEX_NONE)
 	{
-		UE_LOG(LogTemp, Log, TEXT("You Trying to Add Exist Id : %d"), NewId);
+		LOGS(Warning, TEXT("You Trying to Add Exist Id : %d"), NewId);
 		return false;
 	}
 
@@ -101,7 +102,7 @@ int32 FShopItemIdList::Remove(uint8 Id)
 	int32 Index = Contains(Id);
 	if (Index == INDEX_NONE)
 	{
-		UE_LOG(LogTemp, Log, TEXT("You Trying to Remove Not Exist Id : %d"), Id);
+		LOGS(Warning, TEXT("You Trying to Remove Not Exist Id : %d"), Id);
 		return INDEX_NONE;
 	}
 
@@ -114,7 +115,7 @@ void FShopItemIdList::Modify(uint8 InIndex, uint8 NewId)
 {
 	if (IdList.IsValidIndex(InIndex) == false)
 	{
-		UE_LOG(LogTemp, Log, TEXT("You Trying to Modify From Not Valid Index : %d"), InIndex);
+		LOGS(Warning, TEXT("You Trying to Modify From Not Valid Index : %d"), InIndex);
 		return;
 	}
 
@@ -127,7 +128,7 @@ uint8 FShopItemIdList::GetId(uint8 InIndex) const
 {
 	if (IdList.IsValidIndex(InIndex) == false)
 	{
-		UE_LOG(LogTemp, Log, TEXT("You Trying to Get From Not Valid Index"));
+		LOGS(Warning, TEXT("You Trying to Get From Not Valid Index"));
 		return INDEX_NONE;
 	}
 
@@ -252,6 +253,12 @@ EBuyResult AShop::BuyItem(uint8 ItemId, uint8 Quantity, AUnderwaterCharacter* Bu
 	{
 		return EBuyResult::NotExistItem;
 	}
+
+	if (Quantity <= 0)
+	{
+		LOGV(Warning, TEXT("Quantity <= 0"));
+		return EBuyResult::FailedFromOtherReason;
+	}
 	
 	AADPlayerState* PS = Cast<AADPlayerState>(Buyer->GetPlayerState());
 	if (PS == nullptr)
@@ -277,7 +284,7 @@ EBuyResult AShop::BuyItem(uint8 ItemId, uint8 Quantity, AUnderwaterCharacter* Bu
 		return EBuyResult::NotEnoughMoney;
 	}
 
-	GS->SetTotalTeamCredit(TeamCredits - ItemDataRow->Price);
+	GS->SetTotalTeamCredit(TeamCredits - ItemDataRow->Price * Quantity);
 
 	FItemData ItemData;
 	ItemData.Amount = ItemDataRow->Amount;
@@ -470,8 +477,8 @@ void AShop::InitUpgradeView()
 		return;
 	}
 
-	// 마지막 값은 항상 EUpgradeType_MAX이 자동생성된다고 함.(선언한 MAX를 말하는게 아님)
-	int32 EnumCount = UpgradeTypeEnum->NumEnums() - 1;
+	// 마지막 값은 항상 EUpgradeType_MAX이 자동생성된다고 함.(선언한 MAX를 말하는게 아님), 그리고 내가 선언한 MAX도 제외
+	int32 EnumCount = UpgradeTypeEnum->NumEnums() - 2;
 
 	if (CachedUpgradeGradeMap.Num() != EnumCount)
 	{
@@ -487,7 +494,7 @@ void AShop::InitUpgradeView()
 	}
 
 	LOGV(Error, TEXT("Enumcount : %d"), EnumCount);
-	for (int32 i = 0; i < EnumCount - 1; ++i) // -1은 MAX 제외
+	for (int32 i = 0; i < EnumCount; ++i)
 	{
 		EUpgradeType UpgradeType = EUpgradeType(i);
 		uint8 Grade = UpgradeComp->GetCurrentGrade(UpgradeType);
@@ -500,10 +507,10 @@ void AShop::InitUpgradeView()
 
 		if (CachedUpgradeGradeMap[i] == Grade)
 		{
-			LOGV(Log, TEXT("UpgradeState : UpgradeType(%d) - Grade(%d)"), UpgradeType, Grade);
+			LOGV(Warning, TEXT("UpgradeState : UpgradeType(%d) - Grade(%d)"), UpgradeType, Grade);
 			continue;
 		}
-		LOGV(Log, TEXT("UpgradeState(Renewed) : UpgradeType(%d) - Grade(%d)"), UpgradeType, Grade);
+		LOGV(Warning, TEXT("UpgradeState(Renewed) : UpgradeType(%d) - Grade(%d)"), UpgradeType, Grade);
 		CachedUpgradeGradeMap[i] = Grade;
 
 		FUpgradeDataRow* UpgradeDataRow = DataTableSubsystem->GetUpgradeData(UpgradeType, Grade);
@@ -728,7 +735,7 @@ void AShop::OnBuyButtonClicked(int32 Quantity)
 		int32 Grade = UpgradeComp->GetCurrentGrade(CurrentSelectedUpgradeType);
 		
 
-		FUpgradeDataRow* UpgradeData = DataTableSubsystem->GetUpgradeData(CurrentSelectedUpgradeType, Grade);
+		FUpgradeDataRow* UpgradeData = DataTableSubsystem->GetUpgradeData(CurrentSelectedUpgradeType, Grade + 1);
 
 		if (TotalTeamCredit < UpgradeData->Price)
 		{
