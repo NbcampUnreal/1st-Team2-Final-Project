@@ -368,7 +368,7 @@ private:
 	float DepleteHealthLossRate;
 
 	UPROPERTY(BlueprintReadOnly, ReplicatedUsing=OnRep_bIsLanternOn, Category = Character, meta = (AllowPrivateAccess = "true"))
-	bool bIsLanternOn;
+	uint8 bIsLanternOn : 1;
 
 	/** 이동 입력, 3차원 입력을 받는다. 캐릭터의 XYZ 축대로 맵핑을 한다. Forward : X, Right : Y, Up : Z */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
