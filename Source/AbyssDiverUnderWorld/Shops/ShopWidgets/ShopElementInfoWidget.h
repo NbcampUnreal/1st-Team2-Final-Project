@@ -22,6 +22,8 @@ class ABYSSDIVERUNDERWORLD_API UShopElementInfoWidget : public UUserWidget
 protected:
 
 	virtual void NativeOnInitialized() override;
+	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
 	
 #pragma region Methods, Delegates
 
