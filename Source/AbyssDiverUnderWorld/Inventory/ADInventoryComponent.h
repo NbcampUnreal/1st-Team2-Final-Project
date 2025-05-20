@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 #pragma once
 
 #include "CoreMinimal.h"
@@ -32,8 +32,8 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override; 
 
 	UFUNCTION(Server, Reliable, BlueprintCallable)
-	void S_UseInventoryItem(EItemType ItemType = EItemType::Equipment, int32 InventoryIndex = 0);
-	void S_UseInventoryItem_Implementation(EItemType ItemType = EItemType::Equipment, int32 InventoryIndex = 0);
+	void S_UseInventoryItem(EItemType ItemType = EItemType::Equipment, int32 SlotIndex = 0);
+	void S_UseInventoryItem_Implementation(EItemType ItemType = EItemType::Equipment, int32 SlotIndex = 0);
 
 	UFUNCTION(Server, Reliable, BlueprintCallable)
 	void S_InventoryInitialize();
@@ -76,9 +76,10 @@ private:
 	int8 GetTypeInventoryEmptyIndex(EItemType ItemType); //빈슬롯이 없으면 -1 반환
 	FVector GetDropLocation();
 
-
+	int8 GetInventoryIndexByTypeAndSlotIndex(EItemType Type, int8 SlotIndex); //못 찾으면 -1 반환
+	FItemData GetCurrentEquipmentItemData(); // 현재 장착한 무기 아이템 데이터
 	void SetEquipInfo(int8 TypeInventoryIndex, AADUseItem* SpawnItem);
-	void Equip(FItemData& ItemData, int8 Index);
+	void Equip(FItemData ItemData, int8 SlotIndex);
 	void UnEquip();
 	void DropItem(FItemData& ItemData);
 
@@ -112,7 +113,7 @@ private:
 
 	TMap<EItemType, TArray<int8>> InventoryIndexMapByType;
 	UPROPERTY(Replicated)
-	int8 CurrentEquipmentIndex;
+	int8 CurrentEquipmentSlotIndex;
 	UPROPERTY(Replicated)
 	TObjectPtr<AADUseItem> CurrentEquipmentInstance;
 	UPROPERTY(Replicated)
