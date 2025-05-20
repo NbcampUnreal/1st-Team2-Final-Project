@@ -24,6 +24,23 @@ FReply UInventorySlotWidget::NativeOnMouseButtonDown(const FGeometry& InGeometry
 	return Super::NativeOnMouseButtonDown(InGeometry, InMouseEvent);
 }
 
+FReply UInventorySlotWidget::NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
+{
+	if (SlotIndex != -1)
+	{
+		if (SlotType == EItemType::Consumable)
+		{
+			if (InMouseEvent.GetEffectingButton() == EKeys::LeftMouseButton)
+			{
+				InventoryComponent->S_UseInventoryItem(EItemType::Consumable, SlotIndex);
+				return FReply::Handled();
+			}
+		}
+
+	}
+	return Super::NativeOnMouseButtonUp(InGeometry, InMouseEvent);
+}
+
 void UInventorySlotWidget::NativeOnDragDetected(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent, UDragDropOperation*& Operation)
 {
 	Super::NativeOnDragDetected(InGeometry, InMouseEvent, Operation);
@@ -44,7 +61,7 @@ void UInventorySlotWidget::NativeOnDragDetected(const FGeometry& InGeometry, con
 			DragDropOp->Index = SlotIndex;
 			DragDropOp->Type = SlotType;
 			DragDropOp->OnDragCancelled.AddDynamic(this, &UInventorySlotWidget::HandleDragCancelled);
-			
+
 			Operation = DragDropOp;
 		}
 	}
@@ -53,7 +70,7 @@ void UInventorySlotWidget::NativeOnDragDetected(const FGeometry& InGeometry, con
 bool UInventorySlotWidget::NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation)
 {
 	Super::NativeOnDrop(InGeometry, InDragDropEvent, InOperation);
-	
+
 	if (InOperation)
 	{
 		UInventoryDDO* DragDropOp = Cast<UInventoryDDO>(InOperation);
@@ -61,7 +78,7 @@ bool UInventorySlotWidget::NativeOnDrop(const FGeometry& InGeometry, const FDrag
 		{
 			if (DragDropOp->Index != SlotIndex && DragDropOp->Type == SlotType)
 			{
-				InventoryComponent->TransferSlots(DragDropOp->Index, SlotIndex);
+				InventoryComponent->S_TransferSlots(DragDropOp->Index, SlotIndex);
 				return true;
 			}
 			else
@@ -77,19 +94,37 @@ void UInventorySlotWidget::SetItemData(FItemData ItemInfo, int32 Index, UADInven
 {
 	InventoryComponent = InventoryComp;
 	SlotType = ItemInfo.ItemType;
+	SlotIndex = Index;
+
 	if (!QuantityText && !Image)
 		return;
-	QuantityText->SetText(FText::FromString(FString::Printf(TEXT("%d"), ItemInfo.Quantity)));
+
 	if (ItemInfo.Quantity == 0)
 	{
 		QuantityText->SetVisibility(ESlateVisibility::Collapsed);
+		Image->SetBrushFromTexture(EmptySlotTexture);
 	}
-	Image->SetBrushFromTexture(ItemInfo.Thumbnail);
+	else
+	{
+		QuantityText->SetVisibility(ESlateVisibility::Visible);
+		Image->SetBrushFromTexture(ItemInfo.Thumbnail);
+	}
 
-	SlotIndex = Index;
+	switch (SlotType)
+	{
+	case EItemType::Equipment:
+		QuantityText->SetVisibility(ESlateVisibility::Collapsed);
+		break;
+	case EItemType::Exchangable:
+		QuantityText->SetText(FText::FromString(FString::Printf(TEXT("%dkg"), ItemInfo.Mass)));
+		break;
+	default:
+		QuantityText->SetText(FText::FromString(FString::Printf(TEXT("%d"), ItemInfo.Quantity)));
+		break;
+	}
 }
 
 void UInventorySlotWidget::HandleDragCancelled(UDragDropOperation* Operation)
 {
-	InventoryComponent->RemoveInventoryItem(SlotIndex, -1, true);
+	InventoryComponent->S_RemoveBySlotIndex(SlotIndex, SlotType, true);
 }

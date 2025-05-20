@@ -3,3 +3,8 @@
 
 #include "Monster/Tentacle/TentacleAIController.h"
 
+ATentacleAIController::ATentacleAIController()
+{
+	MonsterID = "Tentacle";
+}
+

@@ -25,7 +25,11 @@ public class AbyssDiverUnderWorld : ModuleRules
             , "SlateCore"
             , "NetCore"
             , "Niagara"
+            , "NavigationSystem"
             , "AnimGraphRuntime"
+            , "GameplayTags"
+            , "Voice"
+            , "NavigationSystem"
         });
 		
         PublicIncludePaths.AddRange(new string[] { "AbyssDiverUnderWorld" });

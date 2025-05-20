@@ -9,14 +9,8 @@ void UAnimNotify_ChangeBossState::Notify(USkeletalMeshComponent* MeshComp, UAnim
 {
 	Super::Notify(MeshComp, Animation, EventReference);
 
-	ACharacter* Character = Cast<ACharacter>(MeshComp->GetOwner());
-	if (!IsValid(Character)) return;
+	ABoss* Boss = Cast<ABoss>(MeshComp->GetOwner());
+	if (!IsValid(Boss)) return;
 
-	AAIController* AIController = Cast<AAIController>(Character->GetController());
-	if (!IsValid(AIController)) return;
-
-	UBlackboardComponent* Blackboard = AIController->GetBlackboardComponent();
-	if (!IsValid(Blackboard)) return;
-
-	Blackboard->SetValueAsEnum(BossStateKey, static_cast<uint8>(BossState));
+	Boss->SetBossState(BossState);
 }
