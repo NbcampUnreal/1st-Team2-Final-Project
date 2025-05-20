@@ -14,7 +14,7 @@ AADExchangeableItem::AADExchangeableItem()
 	DropMovement = CreateDefaultSubobject<UProjectileMovementComponent>("DropMovement");
 	DropMovement->SetUpdatedComponent(MeshComponent);
 	DropMovement->bAutoActivate = false;
-	DropMovement->ProjectileGravityScale = 1.5f;
+	DropMovement->ProjectileGravityScale = WaterGravityScale;
 	DropMovement->InitialSpeed = 0.f;
 	DropMovement->MaxSpeed = 0.f;
 	DropMovement->bRotationFollowsVelocity = false;
@@ -28,6 +28,13 @@ void AADExchangeableItem::BeginPlay()
 {
 	Super::BeginPlay();
 	CalculateTotalPrice();
+}
+
+void AADExchangeableItem::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	DropMovement->Velocity *= FMath::Clamp(1.f - WaterDampingFactor * DeltaTime, 0.f, 1.f);
 }
 
 void AADExchangeableItem::OnRep_TotalPrice()
