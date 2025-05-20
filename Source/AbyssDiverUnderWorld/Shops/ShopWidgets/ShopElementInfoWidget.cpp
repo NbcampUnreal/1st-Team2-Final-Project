@@ -28,6 +28,16 @@ void UShopElementInfoWidget::NativeOnInitialized()
 		DecreaseButton->OnClicked.AddDynamic(this, &UShopElementInfoWidget::OnDecreaseButtonClicked);
 	}
 
+
+	
+	bIsStackableItem = false;
+	bIsShowingUpgradeView = false;
+}
+
+void UShopElementInfoWidget::NativeConstruct()
+{
+	Super::NativeConstruct();
+
 	AADInGameState* GS = Cast<AADInGameState>(UGameplayStatics::GetGameState(GetWorld()));
 	if (ensureMsgf(GS, TEXT("GS 캐스팅 실패, 게임 모드 확인 부탁.")) == false)
 	{
@@ -35,9 +45,19 @@ void UShopElementInfoWidget::NativeOnInitialized()
 	}
 
 	GS->TeamCreditsChangedDelegate.AddUObject(this, &UShopElementInfoWidget::OnTeamCreditChanged);
-	bIsStackableItem = false;
-	bIsShowingUpgradeView = false;
+}
 
+void UShopElementInfoWidget::NativeDestruct()
+{
+	AADInGameState* GS = Cast<AADInGameState>(UGameplayStatics::GetGameState(GetWorld()));
+	if (ensureMsgf(GS, TEXT("GS 캐스팅 실패, 게임 모드 확인 부탁.")) == false)
+	{
+		return;
+	}
+
+	GS->TeamCreditsChangedDelegate.RemoveAll(this);
+
+	Super::NativeDestruct();
 }
 
 void UShopElementInfoWidget::Init(USkeletalMeshComponent* NewItemMeshComp)
