@@ -42,11 +42,10 @@ protected:
     TObjectPtr<UBoxComponent> TriggerZone;
 
 private:
-    TSet<AUnderwaterCharacter*> AffectedCharacters;
-
+    TSet<TObjectPtr<AUnderwaterCharacter>> AffectedCharacters;
     FTimerHandle CurrentForceTimer;
-    TMap<AUnderwaterCharacter*, float> OriginalSpeeds;
-    TMap<AUnderwaterCharacter*, float> OriginalAccelerations;
+    TMap<TObjectPtr<AUnderwaterCharacter>, float> OriginalSpeeds;
+    TMap<TObjectPtr<AUnderwaterCharacter>, float> OriginalAccelerations;
 
 #pragma endregion
 };
