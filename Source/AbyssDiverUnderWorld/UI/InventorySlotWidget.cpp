@@ -12,7 +12,7 @@
 
 FReply UInventorySlotWidget::NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
 {
-	if (SlotIndex != -1)
+	if (!bIsEmptySlot)
 	{
 		if (InMouseEvent.IsMouseButtonDown(EKeys::LeftMouseButton))
 		{
@@ -26,7 +26,7 @@ FReply UInventorySlotWidget::NativeOnMouseButtonDown(const FGeometry& InGeometry
 
 FReply UInventorySlotWidget::NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
 {
-	if (SlotIndex != -1)
+	if (!bIsEmptySlot)
 	{
 		if (SlotType == EItemType::Consumable)
 		{
@@ -78,7 +78,7 @@ bool UInventorySlotWidget::NativeOnDrop(const FGeometry& InGeometry, const FDrag
 		{
 			if (DragDropOp->Index != SlotIndex && DragDropOp->Type == SlotType)
 			{
-				InventoryComponent->S_TransferSlots(DragDropOp->Index, SlotIndex);
+				InventoryComponent->S_TransferSlots(SlotType, DragDropOp->Index, SlotIndex);
 				return true;
 			}
 			else
@@ -95,6 +95,7 @@ void UInventorySlotWidget::SetItemData(FItemData ItemInfo, int32 Index, UADInven
 	InventoryComponent = InventoryComp;
 	SlotType = ItemInfo.ItemType;
 	SlotIndex = Index;
+	bIsEmptySlot = ItemInfo.Name == "" ? true : false;
 
 	if (!QuantityText && !Image)
 		return;

@@ -127,21 +127,23 @@ void UADInventoryComponent::S_InventoryInitialize_Implementation()
 	ServerSideInventoryInitialize();
 }
 
-void UADInventoryComponent::S_TransferSlots_Implementation(uint8 FromIndex, uint8 ToIndex)
+void UADInventoryComponent::S_TransferSlots_Implementation(EItemType SlotType, uint8 FromIndex, uint8 ToIndex)
 {
-	if (InventoryList.Items.IsValidIndex(FromIndex) && InventoryList.Items.IsValidIndex(ToIndex))
+	int8 FromInventoryIndex = GetInventoryIndexByTypeAndSlotIndex(SlotType, FromIndex);
+	int8 ToInventoryIndex = GetInventoryIndexByTypeAndSlotIndex(SlotType, ToIndex);
+
+	if (ToInventoryIndex == -1)
 	{
-		int8 TempSlotIndex = InventoryList.Items[ToIndex].SlotIndex;
-		InventoryList.Items[ToIndex].SlotIndex = InventoryList.Items[FromIndex].SlotIndex;
-		InventoryList.Items[FromIndex].SlotIndex = TempSlotIndex;
-		InventoryList.MarkItemDirty(InventoryList.Items[FromIndex]);
-		InventoryList.MarkItemDirty(InventoryList.Items[ToIndex]);
-		InventoryUIUpdate();
+		InventoryList.Items[FromInventoryIndex].SlotIndex = ToIndex;
 	}
 	else
 	{
-		LOG(TEXT("Invalid Inventory Index"));
+		InventoryList.Items[FromInventoryIndex].SlotIndex = ToIndex;
+		InventoryList.Items[ToInventoryIndex].SlotIndex = FromIndex;
 	}
+	InventoryList.MarkItemDirty(InventoryList.Items[FromInventoryIndex]);
+	InventoryList.MarkItemDirty(InventoryList.Items[ToInventoryIndex]);
+	InventoryUIUpdate();
 }
 
 void UADInventoryComponent::S_RequestRemove_Implementation(uint8 InventoryIndex, int8 Count, bool bIsDropAction)
