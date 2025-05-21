@@ -2,19 +2,19 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "SpearCountHudWidget.generated.h"
+#include "PlayerStatusWidget.generated.h"
 
 class UTextBlock;
 class UProgressBar;
 
 UCLASS()
-class ABYSSDIVERUNDERWORLD_API USpearCountHudWidget : public UUserWidget
+class ABYSSDIVERUNDERWORLD_API UPlayerStatusWidget : public UUserWidget
 {
     GENERATED_BODY()
 
 public:
     // 생성자
-    USpearCountHudWidget(const FObjectInitializer& ObjectInitializer);
+    UPlayerStatusWidget(const FObjectInitializer& ObjectInitializer);
 
 protected:
     // 생명주기 함수
