@@ -8,6 +8,7 @@
 
 class UWidgetComponent;
 class UCameraComponent;
+class AUnderwaterCharacter;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADTablet : public AActor, public IIADInteractable
@@ -18,18 +19,22 @@ public:
 	// Sets default values for this actor's properties
 	AADTablet();
 
-protected:
-	virtual void Tick(float DeltaSeconds) override;
 
 #pragma region Method
 public:
 	virtual void Interact_Implementation(AActor* InstigatorActor) override;
 	virtual bool CanHighlight_Implementation() const override { return !bIsHeld; }
-	void Pickup(AActor* InstigatorActor);
+	void Pickup(AUnderwaterCharacter* UnderwaterCharacter);
+	UFUNCTION(BlueprintCallable)
 	void PutDown();
 
 protected:
+	UFUNCTION()
+	void OnRep_Held();
+	//UFUNCTION()
+	//void OnRep_HeldBy();
 
+	virtual void GetLifetimeReplicatedProps(TArray< FLifetimeProperty>& OutLifetimeProps) const override;
 
 private:
 #pragma endregion
@@ -52,13 +57,15 @@ protected:
 	TObjectPtr<UWidgetComponent> ScreenWidget;
 
 private:
+	UPROPERTY(ReplicatedUsing = OnRep_Held)
+	uint8 bIsHeld : 1;
+	UPROPERTY(Replicated)
+	TObjectPtr<AUnderwaterCharacter> HeldBy;
 	UPROPERTY(EditAnywhere)
 	FVector HoldOffsetLocation = FVector(50.f, 0.f, -20.f);
 	UPROPERTY(EditAnywhere)
 	FRotator HoldOffsetRotation = FRotator(-10.f, 0.f, 0.f);
 	UCameraComponent* OwnerCamera = nullptr;
-
-	uint8 bIsHeld : 1;
 	FTransform CachedWorldTransform;
 
 #pragma endregion

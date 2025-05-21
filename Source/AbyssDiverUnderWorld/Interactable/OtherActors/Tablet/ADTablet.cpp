@@ -1,15 +1,18 @@
-#include "Interactable/OtherActors/Tablet/ADTablet.h"
+癤�#include "Interactable/OtherActors/Tablet/ADTablet.h"
 #include "Components/WidgetComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Character/UnderwaterCharacter.h"
 #include "AbyssDiverUnderWorld.h"
+#include "Net/UnrealNetwork.h"
 
 // Sets default values
 AADTablet::AADTablet()
 {
-	PrimaryActorTick.bCanEverTick = true;
-	PrimaryActorTick.bStartWithTickEnabled = false;
+	PrimaryActorTick.bCanEverTick = false;
 	bReplicates = true;
+	SetReplicateMovement(true);
+
+	
 
 	SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
 	RootComponent = SceneRoot;
@@ -17,6 +20,8 @@ AADTablet::AADTablet()
 	TabletMesh->SetupAttachment(SceneRoot);
 	TabletMesh->SetSimulatePhysics(true);
 	TabletMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	TabletMesh->SetMobility(EComponentMobility::Movable);
+	TabletMesh->SetIsReplicated(true);
 
 	ScreenWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("ScreenWidget"));
 	ScreenWidget->SetupAttachment(TabletMesh);
@@ -29,75 +34,109 @@ AADTablet::AADTablet()
 	InteractableComp = CreateDefaultSubobject<UADInteractableComponent>(TEXT("InteractableComp"));
 
 	bIsHeld = false;
-}
 
-void AADTablet::Tick(float DeltaSeconds)
-{
-	Super::Tick(DeltaSeconds);
-	if (!bIsHeld || !OwnerCamera) return;
-
-	// 카메라 위치 + 전방벡터 * 거리 + 오프셋
-	FVector CamLoc = OwnerCamera->GetComponentLocation();
-	FVector CamFwd = OwnerCamera->GetForwardVector();
-	FRotator CamRot = OwnerCamera->GetComponentRotation();
-
-	FVector TargetLoc = CamLoc + CamFwd * HoldOffsetLocation.X
-		+ CamRot.RotateVector(FVector(0, HoldOffsetLocation.Y, HoldOffsetLocation.Z));
-	FRotator TargetRot = CamRot + HoldOffsetRotation;
-
-	SetActorLocationAndRotation(TargetLoc, TargetRot);
 }
 
 void AADTablet::Interact_Implementation(AActor* InstigatorActor)
 {
-	if (bIsHeld) { PutDown(); }
-	else { Pickup(InstigatorActor); }
+	AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(InstigatorActor);
+	
+	if (!UnderwaterCharacter) return;
+	LOG(TEXT("Is Character"))
+
+	if (!bIsHeld)
+	{
+		Pickup(UnderwaterCharacter);
+	}
+	else
+	{
+		PutDown();
+	}    
+	if (bIsHeld)
+	{
+		
+	}
+	else
+	{
+		
+	}
 }
 
-void AADTablet::Pickup(AActor* InstigatorActor)
+void AADTablet::Pickup(AUnderwaterCharacter* UnderwaterCharacter)
 {
-	if (!InstigatorActor) return;
-	if (bIsHeld) return;
+	if (!UnderwaterCharacter) return;
 
-	// 원위치 저장
-	CachedWorldTransform = GetActorTransform();
 
-	// 카메라 컴포넌트 가져오기
-	if (APawn* Pawn = Cast<APawn>(InstigatorActor))
-	{
-		if (UCameraComponent* Cam = Pawn->FindComponentByClass<UCameraComponent>())
-		{
-			OwnerCamera = Cam;
-			LOG(TEXT("%s"), *Cam->GetName());
-			bIsHeld = true;
+	TabletMesh->SetSimulatePhysics(false);
+	TabletMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
-			// Physics, Collision 끄기(선택)
-			TabletMesh->SetSimulatePhysics(false);
-			TabletMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	USkeletalMeshComponent* Mesh1P = UnderwaterCharacter->GetMesh1P();
+	if (!Mesh1P) return;
 
-			// Tick 활성화
-			SetActorTickEnabled(true);
+	TabletMesh->AttachToComponent(
+		Mesh1P,
+		FAttachmentTransformRules::SnapToTargetNotIncludingScale,
+		TEXT("TabletSocket")
+	);
+	bIsHeld = true;
 
-			LOG(TEXT("Hold!!"));
-		}
-	}
+	TabletMesh->SetRelativeLocation(FVector::ZeroVector);
+	TabletMesh->SetRelativeRotation(FRotator::ZeroRotator);
+
+	ScreenWidget->SetVisibility(true);
+
+	LOG(TEXT("Tablet attached to Mesh1P at TabletSocket"));
+	
+	HeldBy = UnderwaterCharacter;
 }
 
 void AADTablet::PutDown()
 {
-	if (!bIsHeld) return;
 
-	bIsHeld = false;
-	SetActorTickEnabled(false);
-
-	// 원래 위치 복귀
-	SetActorTransform(CachedWorldTransform);
-
-	// Physics, Collision 복원(선택)
+	TabletMesh->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+	
 	TabletMesh->SetSimulatePhysics(true);
 	TabletMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	bIsHeld = false;
 
-	OwnerCamera = nullptr;
+	ScreenWidget->SetVisibility(false);
+
+	LOG(TEXT("Tablet detached and placed back"));
+
+	HeldBy = nullptr;
+}
+
+void AADTablet::OnRep_Held()
+{
+	if (bIsHeld && HeldBy)
+	{
+		Pickup(HeldBy);
+		LOG(TEXT("Pickup!!"));
+	}
+	else if (!bIsHeld && HeldBy)
+	{
+		PutDown();
+	}
+}
+
+//void AADTablet::OnRep_HeldBy()
+//{
+//	if (bIsHeld && HeldBy)
+//	{
+//		Pickup(HeldBy);
+//		LOG(TEXT("Pickup!!"));
+//	}
+//	else if (!bIsHeld && HeldBy)
+//	{
+//		PutDown();
+//	}
+//}
+
+void AADTablet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(AADTablet, bIsHeld);
+	DOREPLIFETIME(AADTablet, HeldBy);
 }
 
 
