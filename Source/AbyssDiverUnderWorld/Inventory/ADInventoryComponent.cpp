@@ -174,8 +174,8 @@ void UADInventoryComponent::InventoryInitialize()
 		if (InventoryWidgetInstance)
 		{
 			InventoryWidgetInstance->AddToViewport();
-			InventoryWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
 			InventoryWidgetInstance->InitializeInventoriesInfo(this);
+			InventoryWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
 		}
 	}
 }
