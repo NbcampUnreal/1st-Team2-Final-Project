@@ -43,28 +43,19 @@ void AADProjectileBase::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AAct
     LOG(TEXT("OnHitStart"));
     if (OtherActor && OtherActor != this && OtherComp)
     {
-        ABoss* Boss = Cast<ABoss>(OtherActor);
-        AMonster* Monster = Cast<AMonster>(OtherActor);
-        if (Boss || Monster)
-        {
-            UGameplayStatics::ApplyPointDamage(
-                OtherActor,
-                Damage,
-                GetActorForwardVector(),
-                SweepResult,
-                GetInstigatorController(),
-                this,
-                UDamageType::StaticClass()
-            );
-            LOG(TEXT("Hit"));
-            LOG(TEXT("%s"), *OtherActor->GetName());
+        UGameplayStatics::ApplyPointDamage(
+            OtherActor,
+            Damage,
+            GetActorForwardVector(),
+            SweepResult,
+            GetInstigatorController(),
+            this,
+            UDamageType::StaticClass()
+        );
+        LOG(TEXT("Hit"));
+        LOG(TEXT("%s"), *OtherActor->GetName());
 
-            Destroy();
-        }
-        else
-        {
-            LOG(TEXT("Is not Monster Actor"));
-        }
+        Destroy();
     }
 }
 

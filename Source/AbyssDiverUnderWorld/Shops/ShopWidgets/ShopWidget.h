@@ -43,7 +43,7 @@ public:
 	void ShowItemViewForTab(EShopCategoryTab TabType);
 	void RefreshItemView();
 
-	void ShowItemInfos(USkeletalMesh* NewItemMesh, const FString& NewDescription, const FString& NewNameInfoText, int32 ItemCost, bool bIsStackable);
+	void ShowItemInfos(int32 ItemId);
 	void ShowUpgradeInfos(USkeletalMesh* NewUpgradeItemMesh, int32 CurrentUpgradeLevel, bool bIsMaxLevel, int32 CurrentUpgradeCost, const FString& ExtraInfoText);
 
 	void SetTeamMoneyText(int32 NewTeamMoney);

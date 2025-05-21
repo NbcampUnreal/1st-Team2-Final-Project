@@ -268,7 +268,6 @@ void UADInteractionComponent::OnInteractPressed()
 {
 	if (!FocusedInteractable) return;
 	bIsInteractingStart = true;
-	PerformFocusCheck();
 	if (AActor* Owner = FocusedInteractable->GetOwner())
 	{
 		

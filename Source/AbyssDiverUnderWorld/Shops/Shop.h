@@ -8,6 +8,10 @@
 
 #include "Shop.generated.h"
 
+#define LOGS(Verbosity, Format, ...) UE_LOG(ShopLog, Verbosity, TEXT("%s(%s) %s"), ANSI_TO_TCHAR(__FUNCTION__), *FString::FromInt(__LINE__), *FString::Printf(Format, ##__VA_ARGS__));
+
+DECLARE_LOG_CATEGORY_EXTERN(ShopLog, Log, All);
+
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnShopItemListChangedDelegate, const FShopItemListChangeInfo&);
 
 #pragma region Enums
@@ -154,7 +158,7 @@ public:
 	AShop();
 
 protected:
-
+	virtual void PostInitializeComponents() override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void BeginPlay() override;
 

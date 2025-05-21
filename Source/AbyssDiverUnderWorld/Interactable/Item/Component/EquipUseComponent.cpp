@@ -14,6 +14,7 @@
 #include "Interactable/Item/Component/ADInteractionComponent.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "Subsystems/DataTableSubsystem.h"
+#include "UI/ADNightVisionGoggle.h"
 
 // Sets default values for this component's properties
 UEquipUseComponent::UEquipUseComponent()
@@ -30,6 +31,8 @@ UEquipUseComponent::UEquipUseComponent()
 	bOriginalExposureCached = false;
 	bCanFire = true;
 	bIsWeapon = true;
+	NightVisionInstance = nullptr;
+	bNVGWidgetVisible = false;
 
 	// 테스트용
 	if (ACharacter* Char = Cast<ACharacter>(GetOwner()))
@@ -57,12 +60,26 @@ void UEquipUseComponent::BeginPlay()
 		NightVisionMaterialInstance = UMaterialInstanceDynamic::Create(Base, this);
 		NightVisionMaterialInstance->SetScalarParameterValue("NightBlend", 0.f);
 	}
-	
 
 	CameraComp = OwningCharacter->FindComponentByClass<UCameraComponent>(); // Getter를 사용하는 것이 좋아 보임
 	if (!CameraComp) return;
 	CameraComp->PostProcessSettings.WeightedBlendables.Array.Add(FWeightedBlendable(1.f, NightVisionMaterialInstance));
 	OriginalPPSettings = CameraComp->PostProcessSettings;
+
+	// 위젯 추가
+	if (OwningCharacter->IsLocallyControlled() && NightVisionClass)
+	{
+		APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController());
+		if (PC && !NightVisionInstance)
+		{
+			NightVisionInstance = CreateWidget<UADNightVisionGoggle>(PC, NightVisionClass);
+			if (NightVisionInstance)
+			{
+				NightVisionInstance->AddToViewport();
+				NightVisionInstance->SetVisibility(ESlateVisibility::Hidden);
+			}
+		}
+	}
 }
 
 void UEquipUseComponent::EndPlay(const EEndPlayReason::Type Reason)
@@ -153,7 +170,10 @@ void UEquipUseComponent::S_RKey_Implementation()
 
 void UEquipUseComponent::OnRep_Amount()
 {
-	// HUD 업데이트 브로드캐스트
+	if (OwningCharacter->IsLocallyControlled() && bNightVisionOn && NightVisionInstance)
+	{
+		NightVisionInstance->SetBatteryAmount(Amount);
+	}
 }
 
 void UEquipUseComponent::OnRep_CurrentAmmoInMag()
@@ -168,105 +188,54 @@ void UEquipUseComponent::OnRep_ReserveAmmo()
 
 void UEquipUseComponent::OnRep_NightVisionOn()
 {
-	const float Target = bNightVisionOn ? 1.f : 0.f;
-	NightVisionMaterialInstance->SetScalarParameterValue(TEXT("NightBlend"), Target);
+	if (bNightVisionOn)
+	{
+		NightVisionMaterialInstance->SetScalarParameterValue(TEXT("NightBlend"), 1);
+		if (NightVisionInstance)
+		{
+			NightVisionInstance->NightVigionUse();
+		}
+		else
+		{
+			LOG(TEXT("No UI Instance"))
+		}
+
+	}
+	else
+	{
+		NightVisionMaterialInstance->SetScalarParameterValue(TEXT("NightBlend"), 0);
+		if (NightVisionInstance)
+		{
+			NightVisionInstance->NightVigionUnUse();
+		}
+		else
+		{
+			LOG(TEXT("No UI Instance"))
+		}
+	}
+
+	//const float Target = bNightVisionOn ? 1.f : 0.f;
+	//NightVisionMaterialInstance->SetScalarParameterValue(TEXT("NightBlend"), Target);
 	SetComponentTickEnabled(bNightVisionOn || bBoostActive);
 }
 
-void UEquipUseComponent::Initialize(uint8 ItemId)
+void UEquipUseComponent::OnRep_NightVisionUIVisible()
 {
-	LOG(TEXT("UEquipUseComponent::Initialize START – ItemId=%d"), ItemId);
-
-	UGameInstance* GI = GetWorld()->GetGameInstance();
-	if (!GI)
+	if (OwningCharacter != nullptr)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Initialize: No valid GameInstance"));
-		return;
+		if (NightVisionInstance && OwningCharacter->IsLocallyControlled())
+		{
+			NightVisionInstance->SetVisibility(bNVGWidgetVisible
+				? ESlateVisibility::Visible
+				: ESlateVisibility::Hidden);
+		}
+		LOG(TEXT("%s"), bNVGWidgetVisible ? TEXT("True") : TEXT("False"));
 	}
-	UDataTableSubsystem* DataTableSubsystem = GI->GetSubsystem<UDataTableSubsystem>();
-	FFADItemDataRow* InItemMeta = DataTableSubsystem ? DataTableSubsystem->GetItemData(ItemId) : nullptr;
-	if (!InItemMeta)
+	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("EquipUseComponent::Initialize – Invalid ItemId %d"), ItemId);
-		return;
+		LOG(TEXT("No Owning Character"));
 	}
-	const FName RowName = InItemMeta->Name;
-
-	// 기존 장비의 효과 해제
-	if (bBoostActive || bNightVisionOn || CurrentMultiplier != 1.f)
-	{
-		DeinitializeEquip();
-	}
-
-	//// 해제 전에 상태 저장
-	//if (!CurrentRowName.IsNone())
-	//{
-	//	if (bIsWeapon)
-	//	{
-	//		AmountMap.FindOrAdd(CurrentRowName) = FEquipState(CurrentAmmoInMag, ReserveAmmo);
-	//	}
-	//	else
-	//	{
-	//		AmountMap.FindOrAdd(CurrentRowName) = FEquipState(Amount);
-	//	}
-	//}
-
-	// 새 장착 아이템
-	CurrentRowName = RowName;
 	
-	// Action Type 결정
-	LeftAction = TagToAction(InItemMeta->LeftTag);
-	RKeyAction = TagToAction(InItemMeta->RKeyTag);
-	bIsWeapon = (LeftAction == EAction::WeaponFire || RKeyAction == EAction::WeaponFire);
-	LOG(TEXT("Initialize: LeftAction=%d, RKeyAction=%d, bIsWeapon=%s"),
-		(int32)LeftAction, (int32)RKeyAction, bIsWeapon ? TEXT("true") : TEXT("false"));
-
-	// 저장된 총량 가져오기
-	if (const FEquipState* Saved = AmountMap.Find(CurrentRowName))
-	{
-		if (bIsWeapon)
-		{
-			CurrentAmmoInMag = Saved->InMag;
-			ReserveAmmo = Saved->Reserve;
-		}
-		else
-		{
-			Amount = Saved->Amount;
-		}
-	}
-	else
-	{
-		// 첫 장착 시 기본값
-		if (bIsWeapon)
-		{
-			CurrentAmmoInMag = FMath::Min(InItemMeta->Amount, MagazineSize);
-			ReserveAmmo = InItemMeta->Amount - CurrentAmmoInMag;
-		}
-		else
-		{
-			Amount = InItemMeta->Amount;
-		}
-	}
-	LOG(TEXT("Initialize: bIsWeapon=%s, Total=%d, InMag=%d, Reserve=%d"),
-		bIsWeapon ? TEXT("true") : TEXT("false"),
-		Amount, CurrentAmmoInMag, ReserveAmmo);
-
-	if (ACharacter* Char = Cast<ACharacter>(GetOwner()))
-	{
-		OwningCharacter = Char;
-		DefaultSpeed = Char->GetCharacterMovement()->MaxSwimSpeed;
-	}
-
-	// 서버에서 HUD 동기화
-	if (bIsWeapon)
-	{
-		OnRep_CurrentAmmoInMag();
-		OnRep_ReserveAmmo();
-	}
-	else
-	{
-		OnRep_Amount();
-	}
 }
 
 void UEquipUseComponent::Initialize(FItemData& ItemData)
@@ -299,6 +268,8 @@ void UEquipUseComponent::Initialize(FItemData& ItemData)
 
 	bIsWeapon = (LeftAction == EAction::WeaponFire || RKeyAction == EAction::WeaponFire);
 
+	
+
 	if (bIsWeapon)
 	{
 		OnRep_CurrentAmmoInMag();
@@ -308,11 +279,20 @@ void UEquipUseComponent::Initialize(FItemData& ItemData)
 	{
 		OnRep_Amount();
 	}
-
+	
 	if (ACharacter* Char = Cast<ACharacter>(GetOwner()))
 	{
 		OwningCharacter = Char;
 		DefaultSpeed = Char->GetCharacterMovement()->MaxSwimSpeed;
+		if (LeftAction == EAction::ToggleNVGToggle)
+		{
+			if (NightVisionInstance)
+			{
+				NightVisionInstance->SetVisibility(ESlateVisibility::Visible);
+				
+			}
+			bNVGWidgetVisible = true;
+		}
 	}
 
 	UE_LOG(LogTemp, Log, TEXT(
@@ -328,6 +308,7 @@ void UEquipUseComponent::DeinitializeEquip()
 		CurrentItemData->Amount = Amount;
 		CurrentItemData->CurrentAmmoInMag = CurrentAmmoInMag;
 		CurrentItemData->ReserveAmmo = ReserveAmmo;
+		CurrentItemData = nullptr;
 		LOG(TEXT("No Current Item"));
 	}
 
@@ -336,6 +317,16 @@ void UEquipUseComponent::DeinitializeEquip()
 	{
 		GetWorld()->GetTimerManager().ClearTimer(TimerHandle_HandleRefire);
 		GetWorld()->GetTimerManager().ClearTimer(TimerHandle_HandleReload);
+	}
+
+	if (LeftAction == EAction::ToggleNVGToggle)
+	{
+		if (NightVisionInstance)
+		{
+			NightVisionInstance->SetVisibility(ESlateVisibility::Hidden);
+
+		}
+		bNVGWidgetVisible = false;
 	}
 
 	// 입력·액션 상태 초기화
@@ -447,15 +438,15 @@ void UEquipUseComponent::FireHarpoon()
 		return;
 	}
 	
-	if (CurrentRowName == "BasicSpearGun")
+	if (CurrentItemData->Name == "BasicSpearGun")
 	{
 		Proj->SetBulletType(ESpearGunType::Basic);
 	}
-	else if (CurrentRowName == "BombSpearGun")
+	else if (CurrentItemData->Name == "BombSpearGun")
 	{
 		Proj->SetBulletType(ESpearGunType::Bomb);
 	}
-	else if (CurrentRowName == "PoisonSpearGun")
+	else if (CurrentItemData->Name == "PoisonSpearGun")
 	{
 		Proj->SetBulletType(ESpearGunType::Poison);
 	}
@@ -501,7 +492,24 @@ void UEquipUseComponent::ToggleNightVision()
 	if (!NightVisionMaterialInstance || !CameraComp) return;
 	if (Amount <= 0 || bBoostActive) return;
 	
-	bNightVisionOn = !bNightVisionOn;
+	if (!bNightVisionOn)
+	{
+		if (NightVisionInstance)
+		{
+			NightVisionInstance->NightVigionUse();
+		}
+
+		bNightVisionOn = true;
+	}
+	else
+	{
+		if (NightVisionInstance)
+		{
+			NightVisionInstance->NightVigionUnUse();
+		}
+		bNightVisionOn = false;
+	}
+	//bNightVisionOn = !bNightVisionOn;
 	const float Target = bNightVisionOn ? 1.f : 0.f;
 	NightVisionMaterialInstance->SetScalarParameterValue("NightBlend", Target);
 
@@ -548,32 +556,10 @@ void UEquipUseComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 	DOREPLIFETIME(UEquipUseComponent, ReserveAmmo);
 	DOREPLIFETIME(UEquipUseComponent, bBoostActive);
 	DOREPLIFETIME(UEquipUseComponent, bNightVisionOn);
+	DOREPLIFETIME(UEquipUseComponent, bNVGWidgetVisible);
 }
 
 bool UEquipUseComponent::IsInterpolating() const
 {
 	return !FMath::IsNearlyEqual(CurrentMultiplier, TargetMultiplier, 0.001f);
 }
-
-//void UEquipUseComponent::ResetEquipState()
-//{
-//	bBoostActive = false;
-//	bNightVisionOn = false;
-//
-//	CurrentMultiplier = TargetMultiplier = 1.f;
-//	if (OwningCharacter.IsValid())
-//	{
-//		OwningCharacter->GetCharacterMovement()->MaxSwimSpeed = DefaultSpeed;
-//	}
-//
-//	if (NightVisionMaterialInstance)
-//	{
-//		NightVisionMaterialInstance->SetScalarParameterValue(TEXT("NightBlend"), 0.f);
-//	}
-//	if (CameraComp)
-//	{
-//		CameraComp->PostProcessSettings = OriginalPPSettings;
-//	}
-//
-//	SetComponentTickEnabled(false);
-//}

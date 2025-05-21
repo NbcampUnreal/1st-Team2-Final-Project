@@ -16,6 +16,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaTime) override;
 
 #pragma region Method
 public:
@@ -54,6 +55,8 @@ protected:
 
 
 private:
+	float WaterGravityScale = 0.3f;
+	float WaterDampingFactor = 1.f;
 
 #pragma endregion
 

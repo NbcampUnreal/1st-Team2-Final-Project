@@ -11,7 +11,7 @@ UUnderwaterAnimInstance::UUnderwaterAnimInstance()
 {
 	ShouldMoveThresholdSpeed = 3.0f;
 
-	CharacterState = EEnvState::Underwater;
+	EnvState = EEnvState::Underwater;
 	
 	Speed = 0.0f;
 	ForwardSpeed = 0.0f;
@@ -20,6 +20,8 @@ UUnderwaterAnimInstance::UUnderwaterAnimInstance()
 	Direction = 0.0f;
 	
 	bShouldMove = false;
+	bIsGroggy = false;
+	bIsDead = false;
 }
 
 void UUnderwaterAnimInstance::NativeInitializeAnimation()
@@ -47,7 +49,10 @@ void UUnderwaterAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 
 void UUnderwaterAnimInstance::UpdateVariables()
 {
-	CharacterState = UnderwaterCharacter->GetEnvState();
+	EnvState = UnderwaterCharacter->GetEnvState();
+	CharacterState = UnderwaterCharacter->GetCharacterState();
+	bIsGroggy = CharacterState == ECharacterState::Groggy;
+	bIsDead = CharacterState == ECharacterState::Death;
 	
 	const FVector Velocity = UnderwaterCharacter->GetVelocity();
 	Speed = Velocity.Size();

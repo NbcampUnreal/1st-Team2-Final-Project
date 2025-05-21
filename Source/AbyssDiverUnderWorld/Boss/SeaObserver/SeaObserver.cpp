@@ -20,3 +20,11 @@ void ASeaObserver::BeginPlay()
 
 	BiteCollision->OnComponentBeginOverlap.AddDynamic(this, &ABoss::OnMeshOverlapBegin);
 }
+
+void ASeaObserver::OnDeath()
+{
+	Super::OnDeath();
+
+	GetMesh()->OnComponentBeginOverlap.RemoveAll(this);
+	BiteCollision->OnComponentBeginOverlap.RemoveAll(this);
+}

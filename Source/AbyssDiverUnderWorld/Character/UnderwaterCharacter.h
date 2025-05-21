@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "InputActionValue.h"
 #include "UnitBase.h"
-#include "UI/SpearCountHudWidget.h"
+#include "Interface/IADInteractable.h"
 #include "UnderwaterCharacter.generated.h"
 
 // @TODO : Character Status Replicate 문제
@@ -49,7 +49,7 @@ enum class ECharacterState : uint8
 class UInputAction;
 
 UCLASS()
-class ABYSSDIVERUNDERWORLD_API AUnderwaterCharacter : public AUnitBase
+class ABYSSDIVERUNDERWORLD_API AUnderwaterCharacter : public AUnitBase, public IIADInteractable
 {
 	GENERATED_BODY()
 
@@ -61,6 +61,7 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void OnRep_PlayerState() override;
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 
 	/** IA를 Enhanced Input Component에 연결 */
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
@@ -69,6 +70,25 @@ protected:
 #pragma region Method
 
 public:
+	// Interactable Interface Begin
+
+	/** Interact Hold됬을 때 호출될 함수 */
+	virtual void InteractHold_Implementation(AActor* InstigatorActor) override;
+	
+	/** Interact Highlight 출력 여부 */
+	virtual bool CanHighlight_Implementation() const override;
+
+	/** Hold 지속 시간 반환 */
+	virtual float GetHoldDuration_Implementation() const override;
+	
+	/** Interactable 컴포넌트를 반환 */
+	virtual UADInteractableComponent* GetInteractableComponent() const override;
+
+	/** Interactable Hold 모드 설정 */
+	virtual bool IsHoldMode() const override;
+
+	// Interactable Interface End
+	
 	/** 그로기 상태 캐릭터를 부활시킨다. */
 	UFUNCTION(BlueprintCallable)
 	void RequestRevive();
@@ -165,10 +185,40 @@ protected:
 	UFUNCTION()
 	void AdjustSpeed();
 
+	/** Lantern Toggle 요청 */
+	void RequestToggleLanternLight();
+
+	/** Request Toggle Lantern Light를 서버에서 처리한다. */
+	UFUNCTION(Server, Reliable)
+	void S_ToggleLanternLight();
+	void S_ToggleLanternLight_Implementation();
+
+	UFUNCTION()
+	void OnRep_bIsLanternOn();
+
+	/** 레이더 Actor를 생성한다. */
+	void SpawnRadar();
+
+	/** Radar Toggle을 요청한다. */
+	UFUNCTION(BlueprintCallable)
+	void RequestToggleRadar();
+
+	/** Radar 보이는 것을 설정 */
+	void SetRadarVisibility(bool bRadarVisible);
+
+	/** Toggle Radar Server RPC */
+	UFUNCTION(Server, Reliable)
+	void S_ToggleRadar();
+	void S_ToggleRadar_Implementation();
+
+	/** bIsRadarOn Replicate 함수. 변화된 값에 따라서 레이더의 Visibility를 변경한다. */
+	UFUNCTION()
+	void OnRep_bIsRadarOn();
+
 	/** 산소 상태가 변경될 떄 호출되는 함수 */
 	UFUNCTION()
 	void OnOxygenLevelChanged(float CurrentOxygenLevel, float MaxOxygenLevel);
-	
+
 	/** 산소가 소진되었을 때 호출되는 함수 */
 	UFUNCTION()
 	void OnOxygenDepleted();
@@ -176,7 +226,7 @@ protected:
 	/** 체력 상태가 변경될 떄 호출되는 함수 */
 	UFUNCTION()
 	void OnHealthChanged(int32 CurrentHealth, int32 MaxHealth);
-	
+
 	/** 이동 함수. 지상, 수중 상태에 따라 이동한다. */
 	void Move(const FInputActionValue& InputActionValue);
 
@@ -279,15 +329,23 @@ private:
 	UPROPERTY(BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true"))
 	uint8 GroggyCount;
 
+	/** 그로기에서 회복 후의 체력량, 회복 후의 체력량은 MaxHealth * RecoveryHealthPercentage로 설정된다. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true", ClampMin = "0.01", ClampMax = "1.0"))
+	float RecoveryHealthPercentage;
+
 	/** 그로기에서 사망 전이 Timer */
 	FTimerHandle GroggyTimer;
+
+	/** 그로기 상태에서 부활할 때 Hold해야 하는 시간. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true"))
+	float RescueRequireTime;
 	
 	// Gather와 같은 정보는 추후 다른 곳으로 이동될 수 있지만 일단은 캐릭터에 구현한다.
-	
+
 	/** 채광 속도. 2.0일 경우 2배의 속도로 채광한다. */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category= "Character|Stat", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category= "Character|Stat", meta = (AllowPrivateAccess = "true"))
 	float GatherMultiplier;
-	
+
 	/** 디버그 카메라 활성화 여부 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Debug, meta = (AllowPrivateAccess = "true"))
 	uint8 bUseDebugCamera : 1;
@@ -309,11 +367,11 @@ private:
 	float BloodEmitPower;
 
 	/** 초과 적재 기준 무게. 초과할 경우 속도를 감소시킨다. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Weight", meta = (AllowPrivateAccess = "true"))
 	float OverloadWeight;
 
 	/** 초과 적재 시의 속도 감소 비율. [0, 1]의 범위로 속도를 감소시킨다. 0.4일 경우 40% 감소해서 60%의 속도이다. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true", ClampMin = "0.0", ClampMax = "1.0"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Weight", meta = (AllowPrivateAccess = "true", ClampMin = "0.0", ClampMax = "1.0"))
 	float OverloadSpeedFactor;
 
 	/** 캐릭터의 효과가 적용된 최종 속도 */
@@ -324,9 +382,25 @@ private:
 	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float SprintSpeed;
 
-	/** 산소 고갈 시에 1초 당 소모되는 산소 비율. [0.0, 1.0] */
-	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true", ClampMin = "0.0", ClampMax = "1.0"))
-	float DepleteHealthLossRate;
+	/** 현재 라이트 활성화 여부 */
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing=OnRep_bIsLanternOn, Category = Character, meta = (AllowPrivateAccess = "true"))
+	uint8 bIsLanternOn : 1;
+
+	/** 생성할 레이더 BP */
+	UPROPERTY(EditDefaultsOnly, Category = "Character|Radar", meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<class ARadar> RadarClass;
+
+	/** 생성한 레이더 인스턴스 */
+	UPROPERTY()
+	TObjectPtr<class ARadar> RadarObject;
+
+	/** 레이더가 생성된 위치 오프셋. 카메라 기준으로 부착이 된다. */
+	UPROPERTY(EditDefaultsOnly, Category = "Character|Radar", meta = (AllowPrivateAccess = "true"))
+	FVector RadarOffset;
+
+	/** 레이더 활성화 여부 */
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, ReplicatedUsing=OnRep_bIsRadarOn, Category = Character, meta = (AllowPrivateAccess = "true"))
+	uint8 bIsRadarOn : 1;
 
 	/** 이동 입력, 3차원 입력을 받는다. 캐릭터의 XYZ 축대로 맵핑을 한다. Forward : X, Right : Y, Up : Z */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
@@ -375,7 +449,7 @@ private:
 	/** 3번 슬롯 장착 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> EquipSlot3Action;
-	
+
 	/** 게임에 사용될 1인칭 Camera Component */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UCameraComponent> FirstPersonCameraComponent;
@@ -389,7 +463,7 @@ private:
 	TObjectPtr<class UCameraComponent> ThirdPersonCameraComponent;
 
 	/** 게임에 사용될 1인칭 Mesh Component */
-	UPROPERTY(VisibleAnywhere, Category = Mesh , meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleAnywhere, Category = Mesh, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class USkeletalMeshComponent> Mesh1P;
 
 	/** 캐릭터의 산소 상태를 관리하는 Component */
@@ -403,7 +477,7 @@ private:
 	/** 캐릭터 출혈을 시뮬레이션을 하는 Noise Emitter Component */
 	UPROPERTY()
 	TObjectPtr<class UPawnNoiseEmitterComponent> NoiseEmitterComponent;
-	
+
 	/** 상호작용 실행하게 하는 Component */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UADInteractionComponent> InteractionComponent;
@@ -416,23 +490,22 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UEquipUseComponent> EquipUseComponent;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class USpotLightComponent> LanternLightComponent;
+
+	/** 상호작용 대상이 되게 하는 컴포넌트 */
+	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UADInteractableComponent> InteractableComponent;
+
+	/** 인벤토리 컴포넌트 캐시 */
 	UPROPERTY()
-	TObjectPtr<class UADInventoryComponent> InventoryComponent;
+	TObjectPtr<class UADInventoryComponent> CachedInventoryComponent;
 
 	UPROPERTY(EditAnywhere, Category = "UI", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<class UHoldInteractionWidget> HoldWidgetClass;
 
 	UPROPERTY(EditAnywhere, Category = "UI", meta = (AllowPrivateAccess = "true"))
 	class UHoldInteractionWidget* HoldWidgetInstance;
-	
-	// 산소 위젯 클래스 에디터에서 할당
-	UPROPERTY(EditDefaultsOnly, Category = "UI")
-	TSubclassOf<USpearCountHudWidget> OxygenHudWidgetClass;
-
-	// 생성된 위젯 인스턴스
-	UPROPERTY()
-	TObjectPtr<USpearCountHudWidget> OxygenHudWidget;
-
 
 #pragma endregion
 
@@ -442,7 +515,7 @@ public:
 	
 	/** 캐릭터의 Oxygen Component를 반환 */
 	FORCEINLINE class UOxygenComponent* GetOxygenComponent() const { return OxygenComponent; }
-	
+
 	/** Interaction Component를 반환 */
 	FORCEINLINE UADInteractionComponent* GetInteractionComponent() const { return InteractionComponent; }
 
@@ -461,7 +534,7 @@ public:
 	/** 캐릭터의 남은 그로기 시간을 반환 */
 	UFUNCTION(BlueprintCallable)
 	float GetRemainGroggyTime() const;
-	
+
 	/** 현재 캐릭터의 최종 속도를 반환 */
 	FORCEINLINE float GetEffectiveSpeed() const { return EffectiveSpeed; }
 
@@ -474,6 +547,8 @@ public:
 
 	/** 채광 속도를 반환 2.0일 경우 2배로 빠르게 채광한다. */
 	FORCEINLINE float GetGatherMultiplier() const { return GatherMultiplier; }
+
+	FORCEINLINE USkeletalMeshComponent* GetMesh1P() const { return Mesh1P; }
 	
 #pragma endregion
 };

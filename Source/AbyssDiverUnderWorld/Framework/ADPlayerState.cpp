@@ -15,6 +15,8 @@ AADPlayerState::AADPlayerState()
 	, MonsterKillCount(0)
 	, OreMinedCount(0)
 	, bIsSafeReturn(false)
+	, PlayerIndex(INDEX_NONE)
+	, bIsHost(false)
 {
 	bReplicates = true;
 

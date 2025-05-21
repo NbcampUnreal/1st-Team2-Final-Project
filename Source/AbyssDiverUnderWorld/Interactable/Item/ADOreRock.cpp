@@ -8,6 +8,7 @@
 #include "NiagaraFunctionLibrary.h"
 #include "Interactable/Item/Component/ADInteractableComponent.h"
 #include "Interactable/OtherActors/Radars/RadarReturnComponent.h"
+#include "Character/UnderwaterCharacter.h"
 
 // Sets default values
 AADOreRock::AADOreRock()
@@ -58,26 +59,30 @@ void AADOreRock::HandleMineRequest(APawn* InstigatorPawn)
 {
 	if (!HasAuthority() || CurrentMiningGauge <= 0) return;
 
-	// 25는 나중에 레이저 발사기가 생기면 변경해야 합니다.. (InstigatorPawn에서 가져오면 됨)
-	CurrentMiningGauge = FMath::Max(0, CurrentMiningGauge - 25);
-	OnRep_CurrentMiningGauge();
-	PlayMiningFX();
-
-	// 채광 이펙트
-	if (CurrentMiningGauge > 0 && PickAxeImpactFX)
+	if (AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(InstigatorPawn))
 	{
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-			GetWorld(), PickAxeImpactFX, GetActorLocation(), FRotator::ZeroRotator
-		);
-	}
+		CurrentMiningGauge = FMath::Max(0, CurrentMiningGauge - DefaultMiningStrength * UnderwaterCharacter->GetGatherMultiplier());
+		OnRep_CurrentMiningGauge();
+		PlayMiningFX();
 
-	// 게이지 소진 시 파괴 이펙트 & 드롭
-	if (CurrentMiningGauge <= 0)
-	{
-		PlayFractureFX();
-		SpawnDrops();
-		//Destroy();
+		// 채광 이펙트
+		if (CurrentMiningGauge > 0 && PickAxeImpactFX)
+		{
+			FVector MiningLocation = GetActorLocation() + (0, 0, 90);
+			UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+				GetWorld(), PickAxeImpactFX, MiningLocation, FRotator::ZeroRotator
+			);
+		}
+
+		// 게이지 소진 시 파괴 이펙트 & 드롭
+		if (CurrentMiningGauge <= 0)
+		{
+			PlayFractureFX();
+			SpawnDrops();
+			//Destroy();
+		}
 	}
+	
 }
 
 void AADOreRock::SpawnDrops()
