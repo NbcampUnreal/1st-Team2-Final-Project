@@ -132,17 +132,19 @@ void UADInventoryComponent::S_TransferSlots_Implementation(EItemType SlotType, u
 	int8 FromInventoryIndex = GetInventoryIndexByTypeAndSlotIndex(SlotType, FromIndex);
 	int8 ToInventoryIndex = GetInventoryIndexByTypeAndSlotIndex(SlotType, ToIndex);
 
-	if (ToInventoryIndex == -1)
+	if (!InventoryList.Items.IsValidIndex(ToInventoryIndex))
 	{
 		InventoryList.Items[FromInventoryIndex].SlotIndex = ToIndex;
+		InventoryList.MarkItemDirty(InventoryList.Items[FromInventoryIndex]);
 	}
 	else
 	{
 		InventoryList.Items[FromInventoryIndex].SlotIndex = ToIndex;
 		InventoryList.Items[ToInventoryIndex].SlotIndex = FromIndex;
+		InventoryList.MarkItemDirty(InventoryList.Items[FromInventoryIndex]);
+		InventoryList.MarkItemDirty(InventoryList.Items[ToInventoryIndex]);
 	}
-	InventoryList.MarkItemDirty(InventoryList.Items[FromInventoryIndex]);
-	InventoryList.MarkItemDirty(InventoryList.Items[ToInventoryIndex]);
+
 	InventoryUIUpdate();
 }
 
