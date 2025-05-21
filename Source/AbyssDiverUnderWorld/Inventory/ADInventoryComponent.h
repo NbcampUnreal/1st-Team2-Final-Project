@@ -13,6 +13,10 @@ class UToggleWidget;
 class UDataTableSubsystem;
 class AADUseItem;
 
+#define LOGI(Verbosity, Format, ...) UE_LOG(InventoryLog, Verbosity, TEXT("%s(%s) %s"), ANSI_TO_TCHAR(__FUNCTION__), *FString::FromInt(__LINE__), *FString::Printf(Format, ##__VA_ARGS__));
+
+DECLARE_LOG_CATEGORY_EXTERN(InventoryLog, Log, All);
+
 
 DECLARE_MULTICAST_DELEGATE(FInventoryUpdateDelegate);
 DECLARE_MULTICAST_DELEGATE_TwoParams(FInventoryInfoUpdateDelegate, int32, int32);
@@ -34,10 +38,6 @@ public:
 	UFUNCTION(Server, Reliable, BlueprintCallable)
 	void S_UseInventoryItem(EItemType ItemType = EItemType::Equipment, int32 SlotIndex = 0);
 	void S_UseInventoryItem_Implementation(EItemType ItemType = EItemType::Equipment, int32 SlotIndex = 0);
-
-	UFUNCTION(Server, Reliable, BlueprintCallable)
-	void S_InventoryInitialize();
-	void S_InventoryInitialize_Implementation();
 
 	UFUNCTION(Server, Reliable)
 	void S_TransferSlots(EItemType SlotType, uint8 FromIndex, uint8 ToIndex);
@@ -85,7 +85,6 @@ private:
 	void OnInventoryInfoUpdate(int32 MassInfo, int32 PriceInfo);
 	void RebuildIndexMap();
 	void OnUseCoolTimeEnd(); //아이템 사용 지연
-	void ServerSideInventoryInitialize();
 	void PrintLogInventoryData();
 
 #pragma endregion
