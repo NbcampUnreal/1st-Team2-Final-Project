@@ -431,7 +431,8 @@ private:
 
 	// 생성된 위젯 인스턴스
 	UPROPERTY()
-	USpearCountHudWidget* OxygenHudWidget;
+	TObjectPtr<USpearCountHudWidget> OxygenHudWidget;
+
 
 #pragma endregion
 
