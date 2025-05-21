@@ -5,6 +5,7 @@
 #include "Interactable/Item/Component/ADInteractableComponent.h"
 #include "Inventory/ADInventoryComponent.h"
 #include "Framework/ADPlayerState.h"
+#include "GameFramework/ProjectileMovementComponent.h"
 
 // Sets default values
 AADItemBase::AADItemBase()
@@ -13,6 +14,19 @@ AADItemBase::AADItemBase()
 	PrimaryActorTick.bCanEverTick = false;
 	bReplicates = true;
 	bIsHold = false;
+
+	// 발사체 모션 세팅
+	DropMovement = CreateDefaultSubobject<UProjectileMovementComponent>("DropMovement");
+	//DropMovement->SetUpdatedComponent(MeshComponent);
+	DropMovement->bAutoActivate = false;
+	DropMovement->ProjectileGravityScale = WaterGravityScale;
+	DropMovement->InitialSpeed = 0.f;
+	DropMovement->MaxSpeed = 0.f;
+	DropMovement->bRotationFollowsVelocity = false;
+	DropMovement->bShouldBounce = true;            // 살짝 튕기게
+	DropMovement->Bounciness = 0.3f;
+	DropMovement->SetIsReplicated(true);
+	SetReplicateMovement(true);
 
 	// InteractableComponent 생성
 	InteractableComp = CreateDefaultSubobject<UADInteractableComponent>(TEXT("InteractableComp"));

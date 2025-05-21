@@ -16,7 +16,6 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
-	virtual void Tick(float DeltaTime) override;
 
 #pragma region Method
 public:
@@ -39,9 +38,6 @@ private:
 
 #pragma region Variable
 public:
-	// 드롭 모션 적용을 위한 발사체 컴포넌트
-	UPROPERTY(VisibleAnywhere)
-	TObjectPtr<UProjectileMovementComponent> DropMovement;
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Exchange")
@@ -55,8 +51,8 @@ protected:
 
 
 private:
-	float WaterGravityScale = 0.3f;
-	float WaterDampingFactor = 1.f;
+	//float WaterGravityScale = 0.3f;
+	//float WaterDampingFactor = 1.f;
 
 #pragma endregion
 

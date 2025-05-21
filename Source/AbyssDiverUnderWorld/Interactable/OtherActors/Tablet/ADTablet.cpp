@@ -4,6 +4,7 @@
 #include "Character/UnderwaterCharacter.h"
 #include "AbyssDiverUnderWorld.h"
 #include "Net/UnrealNetwork.h"
+#include "UI/TabletBaseWidget.h"
 
 // Sets default values
 AADTablet::AADTablet()
@@ -26,6 +27,7 @@ AADTablet::AADTablet()
 	ScreenWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("ScreenWidget"));
 	ScreenWidget->SetupAttachment(TabletMesh);
 	ScreenWidget->SetVisibility(false);
+	ScreenWidget->SetIsReplicated(true);
 
 	ScreenWidget->SetDrawAtDesiredSize(false);
 	ScreenWidget->SetRelativeScale3D({ 0.1f,0.1f, 0.1f });
@@ -52,14 +54,6 @@ void AADTablet::Interact_Implementation(AActor* InstigatorActor)
 	{
 		PutDown();
 	}    
-	if (bIsHeld)
-	{
-		
-	}
-	else
-	{
-		
-	}
 }
 
 void AADTablet::Pickup(AUnderwaterCharacter* UnderwaterCharacter)
@@ -68,7 +62,9 @@ void AADTablet::Pickup(AUnderwaterCharacter* UnderwaterCharacter)
 
 
 	TabletMesh->SetSimulatePhysics(false);
-	TabletMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	TabletMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+
+	TabletMesh->SetVisibility(false, true);
 
 	USkeletalMeshComponent* Mesh1P = UnderwaterCharacter->GetMesh1P();
 	if (!Mesh1P) return;
@@ -85,6 +81,19 @@ void AADTablet::Pickup(AUnderwaterCharacter* UnderwaterCharacter)
 
 	ScreenWidget->SetVisibility(true);
 
+	if (UUserWidget* UserWidget = ScreenWidget->GetUserWidgetObject())
+	{
+		if (UTabletBaseWidget* TabletWidget = Cast<UTabletBaseWidget>(UserWidget))
+		{
+			if (TabletWidget->Start)
+			{
+				// PlayAnimation(애니메이션, 시작 시간, LoopCount, 플레이 모드)
+				TabletWidget->PlayAnimation(TabletWidget->Start, 0.f, 1, EUMGSequencePlayMode::Forward, 1.f);
+				LOG(TEXT("TabletUI Animation Start"))
+			}
+		}
+	}
+
 	LOG(TEXT("Tablet attached to Mesh1P at TabletSocket"));
 	
 	HeldBy = UnderwaterCharacter;
@@ -95,6 +104,8 @@ void AADTablet::PutDown()
 
 	TabletMesh->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
 	
+	TabletMesh->SetVisibility(true, true);
+
 	TabletMesh->SetSimulatePhysics(true);
 	TabletMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	bIsHeld = false;
@@ -108,29 +119,21 @@ void AADTablet::PutDown()
 
 void AADTablet::OnRep_Held()
 {
-	if (bIsHeld && HeldBy)
+	if (bIsHeld)
 	{
-		Pickup(HeldBy);
-		LOG(TEXT("Pickup!!"));
+		if (HeldBy)
+		{
+			Pickup(HeldBy);
+			LOG(TEXT("Pickup!!"));
+			ScreenWidget->InitWidget();
+			ScreenWidget->MarkRenderStateDirty();
+		}
 	}
-	else if (!bIsHeld && HeldBy)
+	else
 	{
 		PutDown();
 	}
 }
-
-//void AADTablet::OnRep_HeldBy()
-//{
-//	if (bIsHeld && HeldBy)
-//	{
-//		Pickup(HeldBy);
-//		LOG(TEXT("Pickup!!"));
-//	}
-//	else if (!bIsHeld && HeldBy)
-//	{
-//		PutDown();
-//	}
-//}
 
 void AADTablet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {

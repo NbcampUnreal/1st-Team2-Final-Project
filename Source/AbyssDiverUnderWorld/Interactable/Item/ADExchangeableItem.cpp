@@ -9,32 +9,12 @@ AADExchangeableItem::AADExchangeableItem()
 	RootComponent = MeshComponent;
 	MeshComponent->SetMobility(EComponentMobility::Movable); 
 	MeshComponent->SetIsReplicated(true);
-
-	// 발사체 모션 세팅
-	DropMovement = CreateDefaultSubobject<UProjectileMovementComponent>("DropMovement");
-	DropMovement->SetUpdatedComponent(MeshComponent);
-	DropMovement->bAutoActivate = false;
-	DropMovement->ProjectileGravityScale = WaterGravityScale;
-	DropMovement->InitialSpeed = 0.f;
-	DropMovement->MaxSpeed = 0.f;
-	DropMovement->bRotationFollowsVelocity = false;
-	DropMovement->bShouldBounce = true;            // 살짝 튕기게
-	DropMovement->Bounciness = 0.3f;
-	DropMovement->SetIsReplicated(true);
-	SetReplicateMovement(true);
 	bReplicates = true;
 }
 void AADExchangeableItem::BeginPlay()
 {
 	Super::BeginPlay();
 	CalculateTotalPrice();
-}
-
-void AADExchangeableItem::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-	DropMovement->Velocity *= FMath::Clamp(1.f - WaterDampingFactor * DeltaTime, 0.f, 1.f);
 }
 
 void AADExchangeableItem::OnRep_TotalPrice()

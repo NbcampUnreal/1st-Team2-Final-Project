@@ -7,6 +7,7 @@
 #include "ADItemBase.generated.h"
 
 class UADInteractableComponent;
+class UProjectileMovementComponent;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADItemBase : public AActor, public IIADInteractable
@@ -41,6 +42,10 @@ private:
 
 #pragma region Variable
 public:
+	// 드롭 모션 적용을 위한 발사체 컴포넌트
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<UProjectileMovementComponent> DropMovement;
+
 	UPROPERTY(ReplicatedUsing = OnRep_ItemData, EditAnywhere, Category = "Item")
 	FItemData ItemData;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction")
@@ -53,6 +58,8 @@ protected:
 	uint8 bIsHold : 1;
 
 private:
+	float WaterGravityScale = 0.3f;
+	float WaterDampingFactor = 1.f;
 
 #pragma endregion
 
