@@ -55,8 +55,8 @@ protected:
 
 
 private:
-	float WaterGravityScale = 0.1f;
-	float WaterDampingFactor = 2.f;
+	float WaterGravityScale = 0.3f;
+	float WaterDampingFactor = 1.f;
 
 #pragma endregion
 
