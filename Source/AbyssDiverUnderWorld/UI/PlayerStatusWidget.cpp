@@ -1,20 +1,20 @@
-#include "UI/SpearCountHudWidget.h"
+#include "UI/PlayerStatusWidget.h"
 #include "Components/TextBlock.h"
 #include "Components/ProgressBar.h"
 
-USpearCountHudWidget::USpearCountHudWidget(const FObjectInitializer& ObjectInitializer)
+UPlayerStatusWidget::UPlayerStatusWidget(const FObjectInitializer& ObjectInitializer)
     : Super(ObjectInitializer)
 {
 }
 
-void USpearCountHudWidget::NativeConstruct()
+void UPlayerStatusWidget::NativeConstruct()
 {
     Super::NativeConstruct();
 
     SetSpearCount(CurrentSpear, TotalSpearCount);
 }
 
-void USpearCountHudWidget::SetSpearCount(int32 Current, int32 Total)
+void UPlayerStatusWidget::SetSpearCount(int32 Current, int32 Total)
 {
     CurrentSpear = Current;
     TotalSpearCount = Total;
@@ -30,17 +30,17 @@ void USpearCountHudWidget::SetSpearCount(int32 Current, int32 Total)
     }
 }
 
-void USpearCountHudWidget::SetCurrentSpear(int32 InValue)
+void UPlayerStatusWidget::SetCurrentSpear(int32 InValue)
 {
     SetSpearCount(InValue, TotalSpearCount);
 }
 
-void USpearCountHudWidget::SetTotalSpear(int32 InValue)
+void UPlayerStatusWidget::SetTotalSpear(int32 InValue)
 {
     SetSpearCount(CurrentSpear, InValue);
 }
 
-void USpearCountHudWidget::SetOxygenPercent(float InPercent)
+void UPlayerStatusWidget::SetOxygenPercent(float InPercent)
 {
     if (OxygenBar)
     {

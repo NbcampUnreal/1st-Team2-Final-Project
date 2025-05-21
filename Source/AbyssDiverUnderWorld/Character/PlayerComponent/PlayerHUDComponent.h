@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "UI/PlayerStatusWidget.h"
 #include "PlayerHUDComponent.generated.h"
 
 
@@ -41,6 +42,8 @@ private:
 	UFUNCTION()
 	void OnPossessedPawnChanged(APawn* OldPawn, APawn* NewPawn);
 	
+	UFUNCTION()
+	void UpdateOxygenHUD(float CurrentOxygenLevel, float MaxOxygenLevel);
 #pragma endregion
 
 #pragma region Variable
@@ -62,5 +65,12 @@ private:
 	UPROPERTY()
 	TObjectPtr<class UResultScreen> ResultScreenWidget;
 	
+	// 산소 위젯 클래스 (에디터에서 설정)
+	UPROPERTY(EditDefaultsOnly, Category = "UI", meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<class UPlayerStatusWidget> PlayerStatusWidgetClass;
+
+	// 실제 생성된 산소 위젯 인스턴스
+	UPROPERTY()
+	TObjectPtr<UPlayerStatusWidget> PlayerStatusWidget;
 #pragma endregion
 };

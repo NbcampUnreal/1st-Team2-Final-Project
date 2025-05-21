@@ -2,10 +2,10 @@
 
 #include "AbyssDiverUnderWorld.h"
 #include "Character/PlayerHUDWidget.h"
-#include "Framework/CreateTeamWidget.h"
 #include "Framework/ADPlayerState.h"
 #include "UI/ResultScreen.h"
-
+#include "UI/PlayerStatusWidget.h"
+#include "GameFramework/PlayerController.h"
 #include "EngineUtils.h"
 
 UPlayerHUDComponent::UPlayerHUDComponent()
@@ -29,6 +29,7 @@ void UPlayerHUDComponent::BeginPlay()
 		return;
 	}
 
+	// 메인 HUD 위젯 생성
 	if (HudWidgetClass)
 	{
 		HudWidget = CreateWidget<UPlayerHUDWidget>(PlayerController, HudWidgetClass);
@@ -46,6 +47,24 @@ void UPlayerHUDComponent::BeginPlay()
 	else
 	{
 		LOGV(Warning, TEXT("HudWidgetClass is nullptr"));
+	}
+
+	// 산소/스테이터스 UI 위젯 생성
+	if (PlayerStatusWidgetClass)
+	{
+		PlayerStatusWidget = CreateWidget<UPlayerStatusWidget>(PlayerController, PlayerStatusWidgetClass);
+		if (PlayerStatusWidget)
+		{
+			PlayerStatusWidget->AddToViewport();
+		}
+		else
+		{
+			LOGV(Warning, TEXT("Failed to create PlayerStatusWidget"));
+		}
+	}
+	else
+	{
+		LOGV(Warning, TEXT("PlayerStatusWidgetClass is nullptr"));
 	}
 
 	// Pawn이 늦게 생성이 되거나 혹은, Respawn 상황에도 Binding을 수행해야 한다.
@@ -71,7 +90,6 @@ void UPlayerHUDComponent::C_ShowResultScreen_Implementation()
 		UpdateResultScreen(PS->GetPlayerIndex(), Params);
 	}
 
-	
 	SetResultScreenVisible(true);
 }
 
@@ -109,18 +127,26 @@ void UPlayerHUDComponent::UpdateResultScreen(int32 PlayerIndexBased_1, const FRe
 void UPlayerHUDComponent::OnPossessedPawnChanged(APawn* OldPawn, APawn* NewPawn)
 {
 	LOGN(TEXT("Rebind HUD Widget"))
-	
-	// OnPossessedPawnChanged에서는 새로운 Pawn Possess 상황만 대응한다.
-	// 사망 시의 UI는 Character Component의 사망 시점에서 처리하도록 한다.
-	if (NewPawn)
+
+		// OnPossessedPawnChanged에서는 새로운 Pawn Possess 상황만 대응한다.
+		// 사망 시의 UI는 Character Component의 사망 시점에서 처리하도록 한다.
+		if (NewPawn)
+		{
+			if (HudWidget)
+			{
+				HudWidget->BindWidget(NewPawn);
+			}
+			else
+			{
+				LOGV(Warning, TEXT("HudWidget is nullptr when possessed"));
+			}
+		}
+}
+void UPlayerHUDComponent::UpdateOxygenHUD(float CurrentOxygenLevel, float MaxOxygenLevel)
+{
+	if (PlayerStatusWidget)
 	{
-		if (HudWidget)
-		{
-			HudWidget->BindWidget(NewPawn);
-		}
-		else
-		{
-			LOGV(Warning, TEXT("HudWidget is nullptr when possessed"));
-		}
+		const float Ratio = MaxOxygenLevel > 0.f ? CurrentOxygenLevel / MaxOxygenLevel : 0.f;
+		PlayerStatusWidget->SetOxygenPercent(Ratio);
 	}
 }
