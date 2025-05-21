@@ -563,26 +563,3 @@ bool UEquipUseComponent::IsInterpolating() const
 {
 	return !FMath::IsNearlyEqual(CurrentMultiplier, TargetMultiplier, 0.001f);
 }
-
-//void UEquipUseComponent::ResetEquipState()
-//{
-//	bBoostActive = false;
-//	bNightVisionOn = false;
-//
-//	CurrentMultiplier = TargetMultiplier = 1.f;
-//	if (OwningCharacter.IsValid())
-//	{
-//		OwningCharacter->GetCharacterMovement()->MaxSwimSpeed = DefaultSpeed;
-//	}
-//
-//	if (NightVisionMaterialInstance)
-//	{
-//		NightVisionMaterialInstance->SetScalarParameterValue(TEXT("NightBlend"), 0.f);
-//	}
-//	if (CameraComp)
-//	{
-//		CameraComp->PostProcessSettings = OriginalPPSettings;
-//	}
-//
-//	SetComponentTickEnabled(false);
-//}
