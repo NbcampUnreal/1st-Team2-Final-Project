@@ -1,4 +1,4 @@
-#include "UI/AllInventoryWidget.h"
+#include "UI/ToggleWidget.h"
 #include "InventoryWidget.h"
 #include "Inventory/ADInventoryComponent.h"
 #include "Framework/ADGameInstance.h"
@@ -8,10 +8,10 @@
 #include "Components/RichTextBlock.h"
 #include "Kismet/GameplayStatics.h"
 
-void UAllInventoryWidget::InitializeInventoriesInfo(UADInventoryComponent* InventoryComp)
+void UToggleWidget::InitializeInventoriesInfo(UADInventoryComponent* InventoryComp)
 {
     const TArray<int8>& InventorySizeByType = InventoryComp->GetInventorySizeByType();
-    InventoryComp->InventoryInfoUpdateDelegate.AddUObject(this, &UAllInventoryWidget::RefreshExchangableInventoryInfo);
+    InventoryComp->InventoryInfoUpdateDelegate.AddUObject(this, &UToggleWidget::RefreshExchangableInventoryInfo);
     RefreshExchangableInventoryInfo(0, 0);
 
     if (EquipmentInventory && ConsumableInventory && ExchangableInventory)
@@ -22,7 +22,7 @@ void UAllInventoryWidget::InitializeInventoriesInfo(UADInventoryComponent* Inven
     }
 }
 
-void UAllInventoryWidget::RefreshExchangableInventoryInfo(int32 Mass, int32 Price)
+void UToggleWidget::RefreshExchangableInventoryInfo(int32 Mass, int32 Price)
 {
     if (MassText && PriceText)
     {

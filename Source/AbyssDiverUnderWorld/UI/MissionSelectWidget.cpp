@@ -1,7 +1,7 @@
 #include "UI/MissionSelectWidget.h"
 #include "UI/MissionEntryWidget.h"
 #include "UI/MissionData.h"
-#include "UI/AllInventoryWidget.h"
+#include "UI/ToggleWidget.h"
 #include "Components/ScrollBox.h"
 #include "Components/Button.h"
 #include "Framework/ADGameInstance.h"

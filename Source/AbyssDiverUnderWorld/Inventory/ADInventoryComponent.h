@@ -9,7 +9,7 @@
 
 
 enum class EItemType : uint8;
-class UAllInventoryWidget;
+class UToggleWidget;
 class UDataTableSubsystem;
 class AADUseItem;
 
@@ -94,7 +94,7 @@ private:
 public:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	TSubclassOf<UAllInventoryWidget> InventoryWidgetClass;
+	TSubclassOf<UToggleWidget> InventoryWidgetClass;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TSubclassOf<UUserWidget> NightVisionWidgetClass;
 	
@@ -118,7 +118,7 @@ private:
 	UPROPERTY(Replicated)
 	TArray<int8> InventorySizeByType;
 
-	TObjectPtr<UAllInventoryWidget> InventoryWidgetInstance;
+	TObjectPtr<UToggleWidget> InventoryWidgetInstance;
 	TObjectPtr<UUserWidget> NightVisionWidgetInstance;
 	TObjectPtr<UDataTableSubsystem> DataTableSubsystem; 
 #pragma endregion
