@@ -3,7 +3,7 @@
 #include "Blueprint/UserWidget.h"
 #include "UI/MissionData.h"
 #include "UI/MissionEntryWidget.h"
-#include "AllInventoryWidget.generated.h"
+#include "ToggleWidget.generated.h"
 
 class UInventoryWidget;
 class UADInventoryComponent;
@@ -12,7 +12,7 @@ class UVerticalBox;
 class USelectedMissionListWidget;
 
 UCLASS()
-class ABYSSDIVERUNDERWORLD_API UAllInventoryWidget : public UUserWidget
+class ABYSSDIVERUNDERWORLD_API UToggleWidget : public UUserWidget
 {
     GENERATED_BODY()
 
