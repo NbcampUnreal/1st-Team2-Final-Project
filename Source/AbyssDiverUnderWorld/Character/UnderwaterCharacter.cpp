@@ -14,12 +14,17 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/PawnNoiseEmitterComponent.h"
 #include "Components/SpotLightComponent.h"
+#include "Framework/ADCampGameMode.h"
+#include "Framework/ADInGameMode.h"
 #include "Framework/ADPlayerState.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/GameModeBase.h"
 #include "GameFramework/PhysicsVolume.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Interactable/Item/Component/EquipUseComponent.h"
+#include "Interactable/OtherActors/Radars/Radar.h"
 #include "Inventory/ADInventoryComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 #include "Shops/ShopInteractionComponent.h"
 #include "Subsystems/DataTableSubsystem.h"
@@ -104,6 +109,9 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	LanternLightComponent->SetIntensity(200000.0f);
 	bIsLanternOn = false;
 	LanternLightComponent->SetVisibility(bIsLanternOn);
+	
+	bIsRadarOn = false;
+	RadarOffset = FVector(150.0f, 0.0f, -50.0f);
 
 	EnvState = EEnvState::Underwater;
 }
@@ -125,17 +133,17 @@ void AUnderwaterCharacter::BeginPlay()
 	NoiseEmitterComponent = NewObject<UPawnNoiseEmitterComponent>(this);
 	NoiseEmitterComponent->RegisterComponent();
 
-	if (HoldWidgetClass)
+	if (IsLocallyControlled() && HoldWidgetClass)
 	{
 		APlayerController* PC = Cast<APlayerController>(GetController());
-		if (!PC) return;
 		// 인스턴스 생성 → 뷰포트에 붙이지 않음(필요 시 Remove/Attach)
 		HoldWidgetInstance = CreateWidget<UHoldInteractionWidget>(PC, HoldWidgetClass);
+		
+		InteractionComponent->OnHoldStart.AddDynamic(HoldWidgetInstance, &UHoldInteractionWidget::HandleHoldStart);
+		InteractionComponent->OnHoldCancel.AddDynamic(HoldWidgetInstance, &UHoldInteractionWidget::HandleHoldCancel);
 	}
 
-	// 델리게이트 연결
-	InteractionComponent->OnHoldStart.AddDynamic(HoldWidgetInstance, &UHoldInteractionWidget::HandleHoldStart);
-	InteractionComponent->OnHoldCancel.AddDynamic(HoldWidgetInstance, &UHoldInteractionWidget::HandleHoldCancel);
+	SpawnRadar();
 }
 
 void AUnderwaterCharacter::InitFromPlayerState(AADPlayerState* ADPlayerState)
@@ -252,6 +260,7 @@ void AUnderwaterCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProp
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(AUnderwaterCharacter, bIsLanternOn);
+	DOREPLIFETIME(AUnderwaterCharacter, bIsRadarOn);
 }
 
 void AUnderwaterCharacter::SetEnvState(EEnvState State)
@@ -274,9 +283,9 @@ void AUnderwaterCharacter::SetEnvState(EEnvState State)
 		// 지상에서는 이동 방향으로 회전을 하게 한다.
 		GetCharacterMovement()->GetPhysicsVolume()->bWaterVolume = false;
 		GetCharacterMovement()->SetMovementMode(MOVE_Walking);
-		GetCharacterMovement()->bOrientRotationToMovement = true;
+		GetCharacterMovement()->bOrientRotationToMovement = false;
 		GetCharacterMovement()->GravityScale = 1.0f;
-		bUseControllerRotationYaw = false;
+		bUseControllerRotationYaw = true;
 		break;
 	default:
 		UE_LOG(AbyssDiver, Error, TEXT("Invalid Character State"));
@@ -570,6 +579,56 @@ void AUnderwaterCharacter::S_ToggleLanternLight_Implementation()
 void AUnderwaterCharacter::OnRep_bIsLanternOn()
 {
 	LanternLightComponent->SetVisibility(bIsLanternOn);
+}
+
+void AUnderwaterCharacter::SpawnRadar()
+{
+	if (RadarClass == nullptr)
+	{
+		LOGVN(Error, TEXT("RadarClass is not valid"));
+		return;
+	}
+
+	FVector SpawnLocation = FirstPersonCameraComponent->GetComponentLocation() + RadarOffset;
+	FRotator SpawnRotation = FirstPersonCameraComponent->GetComponentRotation();
+
+	RadarObject = GetWorld()->SpawnActor<ARadar>(RadarClass, SpawnLocation, SpawnRotation);
+	RadarObject->AttachToComponent(FirstPersonCameraComponent, FAttachmentTransformRules::KeepWorldTransform);
+	SetRadarVisibility(false);
+}
+
+void AUnderwaterCharacter::RequestToggleRadar()
+{
+	if (HasAuthority())
+	{
+		bIsRadarOn = !bIsRadarOn;
+		SetRadarVisibility(bIsRadarOn);
+	}
+	else
+	{
+		S_ToggleRadar();
+	}
+}
+
+void AUnderwaterCharacter::SetRadarVisibility(bool bRadarVisible)
+{
+	if (!IsValid(RadarObject))
+	{
+		return;
+	}
+	
+	// Visible == true 이면 Hidden == false이다.
+	RadarObject->SetActorHiddenInGame(!bRadarVisible);
+}
+
+void AUnderwaterCharacter::S_ToggleRadar_Implementation()
+{
+	RequestToggleRadar();
+}
+
+void AUnderwaterCharacter::OnRep_bIsRadarOn()
+{
+	SetRadarVisibility(bIsRadarOn);
 }
 
 void AUnderwaterCharacter::OnOxygenLevelChanged(float CurrentOxygenLevel, float MaxOxygenLevel)
@@ -962,6 +1021,7 @@ void AUnderwaterCharacter::Light(const FInputActionValue& InputActionValue)
 
 void AUnderwaterCharacter::Radar(const FInputActionValue& InputActionValue)
 {
+	RequestToggleRadar();
 }
 
 void AUnderwaterCharacter::EquipSlot1(const FInputActionValue& InputActionValue)
