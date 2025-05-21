@@ -116,7 +116,7 @@ void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType
 			if (Strategy)
 			{
 				Strategy->Use(GetOwner());
-				LOGI(Warning, TEXT("Use Consumable Item"));
+				LOGI(Warning, TEXT("Use Consumable Item %s"), *FoundRow->Name.ToString());
 			}
 		}
 		RemoveInventoryItem(SlotIndex, 1, false);
@@ -140,7 +140,7 @@ void UADInventoryComponent::S_TransferSlots_Implementation(EItemType SlotType, u
 		InventoryList.MarkItemDirty(InventoryList.Items[FromInventoryIndex]);
 		InventoryList.MarkItemDirty(InventoryList.Items[ToInventoryIndex]);
 	}
-	LOGI(Warning, TEXT("Transfer Slot"));
+	LOGI(Warning, TEXT("Type: %s Transfer Slot %d -> %d"), *StaticEnum<EItemType>()->GetDisplayNameTextByValue((int64)SlotType).ToString(), FromIndex, ToIndex);
 	InventoryUIUpdate();
 }
 
@@ -335,7 +335,7 @@ void UADInventoryComponent::RemoveBySlotIndex(uint8 SlotIndex, EItemType ItemTyp
 		}
 		InventoryList.UpdateQuantity(InventoryIndex, -1);
 
-		LOGN(TEXT("Remove Inventory Index %d: Item : %s"), InventoryIndex, *Item.Name.ToString());
+		LOGN(TEXT("Remove Inventory Slot Index %d: Item : %s"), InventoryIndex, *Item.Name.ToString());
 		if (Item.Quantity <= 0)
 		{
 			if (Item.ItemType == EItemType::Exchangable)
@@ -443,7 +443,7 @@ void UADInventoryComponent::Equip(FItemData& ItemData, int8 SlotIndex)
 			SpawnedItem->AttachToComponent(MeshComp, FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("Hand_R"));
 			SpawnedItem->SetItemInfo(ItemData, true);
 			CurrentEquipmentInstance = SpawnedItem;
-			LOGI(Warning, TEXT("ItemToEquip Amount %d"), ItemData.Amount);
+			LOGI(Warning, TEXT("ItemToEquip Name: %s, Amount %d"), *ItemData.Name.ToString(), ItemData.Amount);
 			SetEquipInfo(SlotIndex, SpawnedItem);
 
 			if (UEquipUseComponent* EquipComp = Pawn->FindComponentByClass<UEquipUseComponent>()) // 나중에 Getter로 바꿔야 함
@@ -471,10 +471,10 @@ void UADInventoryComponent::UnEquip()
 		}
 	}
 
+	LOGI(Warning, TEXT("UnEquipItem %s"), *CurrentEquipmentInstance->ItemData.Name.ToString());
 	if(CurrentEquipmentInstance)
 		CurrentEquipmentInstance->Destroy();
 	SetEquipInfo(-1, nullptr);
-	LOGI(Warning, TEXT("UnEquipItem"));
 }
 
 void UADInventoryComponent::DropItem(FItemData& ItemData)
