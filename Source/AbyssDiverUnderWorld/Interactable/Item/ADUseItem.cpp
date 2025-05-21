@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Interactable/Item/ADUseItem.h"
@@ -23,6 +23,8 @@ void AADUseItem::BeginPlay()
 {
 	Super::BeginPlay();
 	//TODO : 기포 이펙트 추가
+	SkeletalMesh->SetLinearDamping(WaterLinearDamping); //2.0 ~ 5.0 사이
+	SkeletalMesh->SetAngularDamping(WaterAngularDamping); //5.0 이상
 }
 
 void AADUseItem::M_SetSkeletalMesh_Implementation(USkeletalMesh* NewMesh)
