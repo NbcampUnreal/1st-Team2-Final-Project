@@ -122,14 +122,25 @@ void ACurrentZone::ApplyCurrentForce()
             Movement->SetMovementMode(MOVE_Swimming);
         }
 
-        // ✅ 직접 Velocity를 계속 덧붙여서 밀어주는 방식
         FVector PushDir = PushDirection.GetSafeNormal();
-        FVector CurrentVelocity = Movement->Velocity;
+        FVector InputDir = Movement->GetLastInputVector().GetSafeNormal();
+        float Dot = FVector::DotProduct(InputDir, PushDir);
 
-        // 상하좌우 입력은 그대로 유지되되, 흐름 방향으로 추가 속도 부여
-        float FlowStrength = 50.f; // ← 조절 가능: 물살 세기
-        FVector FlowForce = PushDir * FlowStrength * Movement->GetMaxAcceleration() * GetWorld()->DeltaTimeSeconds;
+        // 흐름 힘 조절
+        float FinalFlowStrength = FlowStrength;
+
+        if (!InputDir.IsNearlyZero())
+        {
+            if (Dot < -0.3f)       FinalFlowStrength *= 0.0f;   // 뒤로 갈 때: 흐름 힘 완전 제거
+            else if (Dot < 0.3f)   FinalFlowStrength *= 0.3f;   // 측면 이동 시: 약하게
+            else                   FinalFlowStrength *= 1.0f;   // 흐름 따라갈 때: 그대로
+        }
+
+        FVector FlowForce = PushDir * FinalFlowStrength * Movement->GetMaxAcceleration() * GetWorld()->DeltaTimeSeconds;
 
         Movement->Velocity += FlowForce;
+
+        DrawDebugLine(GetWorld(), Character->GetActorLocation(),
+            Character->GetActorLocation() + FlowForce * 5.0f, FColor::Cyan, false, 0.1f, 0, 1.5f);
     }
 }

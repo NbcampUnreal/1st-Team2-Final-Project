@@ -12,7 +12,6 @@ void USpearCountHudWidget::NativeConstruct()
     Super::NativeConstruct();
 
     SetSpearCount(CurrentSpear, TotalSpearCount);
-    SetOxygenPercent(1.0f); // 시작 시 100%
 }
 
 void USpearCountHudWidget::SetSpearCount(int32 Current, int32 Total)

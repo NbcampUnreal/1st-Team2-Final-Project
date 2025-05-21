@@ -36,6 +36,9 @@ public:
     UPROPERTY(EditAnywhere, Category = "Current")
     float PushForce = 0.35f;
 
+    UPROPERTY(EditAnywhere, Category = "Current")
+    float FlowStrength = 50.f;
+
 protected:
     UPROPERTY(VisibleAnywhere, Category = "Component")
     TObjectPtr<UBoxComponent> TriggerZone;

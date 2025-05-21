@@ -22,6 +22,7 @@
 #include "Inventory/ADInventoryComponent.h"
 #include "Shops/ShopInteractionComponent.h"
 #include "Subsystems/DataTableSubsystem.h"
+#include "UI/SpearCountHudWidget.h"
 #include "UI/HoldInteractionWidget.h"
 
 AUnderwaterCharacter::AUnderwaterCharacter()
@@ -123,6 +124,19 @@ void AUnderwaterCharacter::BeginPlay()
 	// 델리게이트 연결
 	InteractionComponent->OnHoldStart.AddDynamic(HoldWidgetInstance, &UHoldInteractionWidget::HandleHoldStart);
 	InteractionComponent->OnHoldCancel.AddDynamic(HoldWidgetInstance, &UHoldInteractionWidget::HandleHoldCancel);
+
+	if (OxygenHudWidgetClass)
+	{
+		APlayerController* PC = Cast<APlayerController>(GetController());
+		if (PC)
+		{
+			OxygenHudWidget = CreateWidget<USpearCountHudWidget>(PC, OxygenHudWidgetClass);
+			if (OxygenHudWidget)
+			{
+				OxygenHudWidget->AddToViewport();
+			}
+		}
+	}
 }
 
 void AUnderwaterCharacter::InitFromPlayerState(AADPlayerState* ADPlayerState)
@@ -543,6 +557,12 @@ void AUnderwaterCharacter::OnOxygenLevelChanged(float CurrentOxygenLevel, float 
 
 	// 헤더의 주석에 작성했지만 현재로는 간단하게 구현 위주로 작성한다.
 	StaminaComponent->SetMaxStamina(CurrentOxygenLevel);
+
+	if (OxygenHudWidget)
+	{
+		const float OxygenRatio = MaxOxygenLevel > 0.f ? CurrentOxygenLevel / MaxOxygenLevel : 0.f;
+		OxygenHudWidget->SetOxygenPercent(OxygenRatio);
+	}
 }
 
 

@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "InputActionValue.h"
 #include "UnitBase.h"
+#include "UI/SpearCountHudWidget.h"
 #include "UnderwaterCharacter.generated.h"
 
 // @TODO : Character Status Replicate 문제
@@ -424,6 +425,14 @@ private:
 	UPROPERTY(EditAnywhere, Category = "UI", meta = (AllowPrivateAccess = "true"))
 	class UHoldInteractionWidget* HoldWidgetInstance;
 	
+	// 산소 위젯 클래스 에디터에서 할당
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<USpearCountHudWidget> OxygenHudWidgetClass;
+
+	// 생성된 위젯 인스턴스
+	UPROPERTY()
+	USpearCountHudWidget* OxygenHudWidget;
+
 #pragma endregion
 
 #pragma region Getter Setter
