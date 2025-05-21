@@ -30,8 +30,6 @@ void UShopElementInfoWidget::NativeOnInitialized()
 		DecreaseButton->OnClicked.AddDynamic(this, &UShopElementInfoWidget::OnDecreaseButtonClicked);
 	}
 
-
-	
 	bIsStackableItem = false;
 	bIsShowingUpgradeView = false;
 }

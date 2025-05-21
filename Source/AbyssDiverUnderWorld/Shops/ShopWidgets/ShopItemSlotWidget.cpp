@@ -22,7 +22,6 @@ void UShopItemSlotWidget::NativeOnListItemObjectSet(UObject* ListItemObject)
     SlotIndex = EntryData->GetSlotIndex();
 
     EntryData->OnEntryUpdatedFromDataDelegate.Broadcast(this);
-    LOGV(Log, TEXT("%s - EntryUpdated, Index : %d"), *GetName(), SlotIndex);
 }
 
 FReply UShopItemSlotWidget::NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
