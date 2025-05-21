@@ -55,6 +55,11 @@ void UShopItemMeshPanel::SetItemMeshActive(bool bShouldActivate)
 
 void UShopItemMeshPanel::AddMeshRotationYaw(float Yaw)
 {
+	if (Yaw == 0.0f)
+	{
+		return;
+	}
+
 	FRotator NewRotator = ItemMeshComponent->GetComponentRotation();
 	NewRotator.Yaw += Yaw;
 	SetMeshRotation(NewRotator);
@@ -62,7 +67,7 @@ void UShopItemMeshPanel::AddMeshRotationYaw(float Yaw)
 
 void UShopItemMeshPanel::SetMeshRotation(const FRotator& NewRotator)
 {
-	ItemMeshComponent->SetRelativeRotation(NewRotator, true);
+	ItemMeshComponent->SetWorldRotation(NewRotator, true);
 }
 
 bool UShopItemMeshPanel::GetMouseDown() const

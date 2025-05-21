@@ -28,11 +28,6 @@ void UShopWidget::NativeOnInitialized()
 	{
 		CloseButton->OnClicked.AddDynamic(this, &UShopWidget::OnCloseButtonClicked);
 	}
-}
-
-void UShopWidget::NativeConstruct()
-{
-	Super::NativeConstruct();
 
 	CurrentActivatedTab = EShopCategoryTab::Equipment;
 }
@@ -241,7 +236,6 @@ void UShopWidget::ShowItemInfos(int32 ItemId)
 void UShopWidget::ShowUpgradeInfos(USkeletalMesh* NewUpgradeItemMesh, int32 CurrentUpgradeLevel, bool bIsMaxLevel, int32 CurrentUpgradeCost, const FString& ExtraInfoText)
 {
 	InfoWidget->ShowUpgradeInfos(NewUpgradeItemMesh, CurrentUpgradeLevel, bIsMaxLevel, CurrentUpgradeCost, ExtraInfoText);
-	InfoWidget->GetItemMeshPanel()->SetMeshRotation(FRotator::ZeroRotator);
 }
 
 void UShopWidget::SetTeamMoneyText(int32 NewTeamMoney)
