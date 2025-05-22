@@ -58,10 +58,11 @@ void AADItemBase::HandlePickup(APawn* InstigatorPawn)
 	if (UADInventoryComponent* Inventory = PS->GetInventory())
 	{
 		LOGI(Log, TEXT("Find Inventory"));
-		Inventory->AddInventoryItem(ItemData);
+		if (Inventory->AddInventoryItem(ItemData))
+		{
+			Destroy();
+		}
 	}
-
-	Destroy();
 }
 
 void AADItemBase::OnRep_ItemData()

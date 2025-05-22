@@ -16,6 +16,7 @@
 #include <Actions/PawnActionsComponent.h>
 #include "GameFramework/Character.h"
 #include "Interactable/Item/Component/EquipUseComponent.h"
+#include "UI/ChargeBatteryWidget.h"
 
 DEFINE_LOG_CATEGORY(InventoryLog);
 
@@ -88,7 +89,7 @@ void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType
 	int8 InventoryIndex = GetInventoryIndexByTypeAndSlotIndex(ItemType, SlotIndex);
 	if (InventoryIndex == -1) return;
 	FItemData& Item = InventoryList.Items[InventoryIndex];
-	LOGI(Warning, TEXT("UseItem %s"), *Item.Name.ToString());
+	LOGINVEN(Warning, TEXT("UseItem %s"), *Item.Name.ToString());
 	if (ItemType == EItemType::Equipment)
 	{
 		if (CurrentEquipmentSlotIndex == SlotIndex)
@@ -100,7 +101,7 @@ void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType
 			if (CurrentEquipmentSlotIndex != -1)
 			{
 				UnEquip();
-				LOGI(Warning, TEXT("ChangeEquipment"));
+				LOGINVEN(Warning, TEXT("ChangeEquipment"));
 			}
 			Equip(Item, SlotIndex);
 		}
@@ -116,7 +117,7 @@ void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType
 			if (Strategy)
 			{
 				Strategy->Use(GetOwner());
-				LOGI(Warning, TEXT("Use Consumable Item %s"), *FoundRow->Name.ToString());
+				LOGINVEN(Warning, TEXT("Use Consumable Item %s"), *FoundRow->Name.ToString());
 			}
 		}
 		RemoveInventoryItem(SlotIndex, 1, false);
@@ -140,7 +141,7 @@ void UADInventoryComponent::S_TransferSlots_Implementation(EItemType SlotType, u
 		InventoryList.MarkItemDirty(InventoryList.Items[FromInventoryIndex]);
 		InventoryList.MarkItemDirty(InventoryList.Items[ToInventoryIndex]);
 	}
-	LOGI(Warning, TEXT("Type: %s Transfer Slot %d -> %d"), *StaticEnum<EItemType>()->GetDisplayNameTextByValue((int64)SlotType).ToString(), FromIndex, ToIndex);
+	LOGINVEN(Warning, TEXT("Type: %s Transfer Slot %d -> %d"), *StaticEnum<EItemType>()->GetDisplayNameTextByValue((int64)SlotType).ToString(), FromIndex, ToIndex);
 	InventoryUIUpdate();
 }
 
@@ -160,7 +161,7 @@ void UADInventoryComponent::InventoryInitialize()
 	if (InventoryWidgetClass && PC && PC->IsLocalController())
 	{
 		InventoryWidgetInstance = CreateWidget<UToggleWidget>(PC, InventoryWidgetClass);
-		LOGI(Warning, TEXT("WidgetCreate!"));
+		LOGINVEN(Warning, TEXT("WidgetCreate!"));
 
 		if (InventoryWidgetInstance)
 		{
@@ -171,7 +172,7 @@ void UADInventoryComponent::InventoryInitialize()
 	}
 }
 
-void UADInventoryComponent::AddInventoryItem(FItemData ItemData)
+bool UADInventoryComponent::AddInventoryItem(FItemData ItemData)
 {
 	if (TotalWeight + ItemData.Mass <= WeightMax)
 	{
@@ -186,10 +187,11 @@ void UADInventoryComponent::AddInventoryItem(FItemData ItemData)
 					bool bIsUpdateSuccess = InventoryList.UpdateQuantity(ItemIndex, ItemData.Quantity);
 					if (bIsUpdateSuccess)
 					{
-						LOGI(Warning, TEXT("Item Update, ItemName : %s, Id : %d"), *InventoryList.Items[ItemIndex].Name.ToString(), InventoryList.Items[ItemIndex].Id);
+						LOGINVEN(Warning, TEXT("Item Update, ItemName : %s, Id : %d"), *InventoryList.Items[ItemIndex].Name.ToString(), InventoryList.Items[ItemIndex].Id);
+						return true;
 					}
 					else
-						LOGI(Warning, TEXT("Update fail"));
+						LOGINVEN(Warning, TEXT("Update fail"));
 				}
 			}
 			else
@@ -199,24 +201,24 @@ void UADInventoryComponent::AddInventoryItem(FItemData ItemData)
 					uint8 SlotIndex = GetTypeInventoryEmptyIndex(ItemData.ItemType);
 				
 					FItemData NewItem = { FoundRow->Name, FoundRow->Id, ItemData.Quantity, SlotIndex, ItemData.Amount, ItemData.Mass,ItemData.Price, FoundRow->ItemType, FoundRow->Thumbnail };
-					if (InventoryIndexMapByType.Contains(NewItem.ItemType) && GetTypeInventoryEmptyIndex(NewItem.ItemType) != -1)
-					{
-						InventoryList.AddItem(NewItem);
-						LOGI(Warning, TEXT("Add New Item %s SlotIndex : %d"), *NewItem.Name.ToString(), SlotIndex);
-					}
+					InventoryList.AddItem(NewItem);
+					LOGINVEN(Warning, TEXT("Add New Item %s SlotIndex : %d"), *NewItem.Name.ToString(), SlotIndex);
 					if (ItemData.ItemType == EItemType::Exchangable)
 					{
 						OnInventoryInfoUpdate(NewItem.Mass, NewItem.Price);
 					}
+					InventoryUIUpdate();
+					return true;
 				}
 				else
 				{
-					LOGI(Warning, TEXT("%s Inventory is full"), *StaticEnum<EItemType>()->GetNameStringByValue((int64)ItemData.ItemType));
+					LOGINVEN(Warning, TEXT("%s Inventory is full"), *StaticEnum<EItemType>()->GetNameStringByValue((int64)ItemData.ItemType));
 				}
 			}
 		}
 	}
-	InventoryUIUpdate();
+	return false;
+	
 }
 
 void UADInventoryComponent::ToggleInventoryShowed()
@@ -258,6 +260,11 @@ void UADInventoryComponent::ToggleInventoryShowed()
 void UADInventoryComponent::OnRep_InventoryList()
 {
 	InventoryUIUpdate();
+}
+
+void UADInventoryComponent::OnRep_CurrentEquipmentSlotIndex()
+{
+
 }
 
 int16 UADInventoryComponent::FindItemIndexByName(FName ItemID) //빈슬롯이 없으면 -1 반환
@@ -335,7 +342,7 @@ void UADInventoryComponent::RemoveBySlotIndex(uint8 SlotIndex, EItemType ItemTyp
 		}
 		InventoryList.UpdateQuantity(InventoryIndex, -1);
 
-		LOGN(TEXT("Remove Inventory Slot Index %d: Item : %s"), InventoryIndex, *Item.Name.ToString());
+		LOGINVEN(Warning, TEXT("Remove Inventory Slot Index %d: Item : %s"), InventoryIndex, *Item.Name.ToString());
 		if (Item.Quantity <= 0)
 		{
 			if (Item.ItemType == EItemType::Exchangable)
@@ -347,7 +354,7 @@ void UADInventoryComponent::RemoveBySlotIndex(uint8 SlotIndex, EItemType ItemTyp
 	}
 	else
 	{
-		LOG(TEXT("Invalid Inventory Index"));
+		LOGINVEN(Warning, TEXT("Invalid Inventory Index"));
 	}
 
 	InventoryUIUpdate();
@@ -392,6 +399,15 @@ FVector UADInventoryComponent::GetDropLocation()
 	return DropLocation;
 }
 
+const FItemData* UADInventoryComponent::GetInventoryItemData(FName ItemNameToFind)
+{
+	int8 Index = FindItemIndexByName(ItemNameToFind);
+	if (Index != -1)
+		return &InventoryList.Items[Index];
+	else
+		return &EmptyItem;
+}
+
 FItemData* UADInventoryComponent::GetCurrentEquipmentItemData()
 {
 	int8 Index = GetInventoryIndexByTypeAndSlotIndex(EItemType::Equipment, CurrentEquipmentSlotIndex);
@@ -415,7 +431,7 @@ void UADInventoryComponent::SetEquipInfo(int8 SlotIndex, AADUseItem* SpawnItem)
 {
 	CurrentEquipmentSlotIndex = SlotIndex;
 	CurrentEquipmentInstance = SpawnItem;
-	LOGI(Warning, TEXT("Slot Index : %d Item Name: %s"), SlotIndex, *SpawnItem->ItemData.Name.ToString());
+	LOGINVEN(Warning, TEXT("Slot Index : %d Item Name: %s"), SlotIndex, *SpawnItem->ItemData.Name.ToString());
 }
 
 void UADInventoryComponent::Equip(FItemData& ItemData, int8 SlotIndex)
@@ -433,7 +449,7 @@ void UADInventoryComponent::Equip(FItemData& ItemData, int8 SlotIndex)
 	SpawnParams.Owner = Pawn;
 
 	AADUseItem* SpawnedItem = GetWorld()->SpawnActor<AADUseItem>(AADUseItem::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
-	LOGI(Warning, TEXT("SpawnItem")); 
+	LOGINVEN(Warning, TEXT("SpawnItem")); 
 	if (SpawnedItem)
 	{
 		ACharacter* Character = Cast<ACharacter>(Pawn);
@@ -443,7 +459,7 @@ void UADInventoryComponent::Equip(FItemData& ItemData, int8 SlotIndex)
 			SpawnedItem->AttachToComponent(MeshComp, FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("Hand_R"));
 			SpawnedItem->SetItemInfo(ItemData, true);
 			CurrentEquipmentInstance = SpawnedItem;
-			LOGI(Warning, TEXT("ItemToEquip Name: %s, Amount %d"), *ItemData.Name.ToString(), ItemData.Amount);
+			LOGINVEN(Warning, TEXT("ItemToEquip Name: %s, Amount %d"), *ItemData.Name.ToString(), ItemData.Amount);
 			SetEquipInfo(SlotIndex, SpawnedItem);
 
 			if (UEquipUseComponent* EquipComp = Pawn->FindComponentByClass<UEquipUseComponent>()) // 나중에 Getter로 바꿔야 함
@@ -471,7 +487,7 @@ void UADInventoryComponent::UnEquip()
 		}
 	}
 
-	LOGI(Warning, TEXT("UnEquipItem %s"), *CurrentEquipmentInstance->ItemData.Name.ToString());
+	LOGINVEN(Warning, TEXT("UnEquipItem %s"), *CurrentEquipmentInstance->ItemData.Name.ToString());
 	if(CurrentEquipmentInstance)
 		CurrentEquipmentInstance->Destroy();
 	SetEquipInfo(-1, nullptr);
@@ -494,7 +510,7 @@ void UADInventoryComponent::DropItem(FItemData& ItemData)
 	}
 	AADUseItem* SpawnItem = GetWorld()->SpawnActor<AADUseItem>(AADUseItem::StaticClass(), GetDropLocation(), FRotator::ZeroRotator);
 	SpawnItem->SetItemInfo(ItemData, false);
-	LOGI(Warning, TEXT("Spawn Item To Drop : %s"), *ItemData.Name.ToString());
+	LOGINVEN(Warning, TEXT("Spawn Item To Drop : %s"), *ItemData.Name.ToString());
 }
 
 void UADInventoryComponent::OnInventoryInfoUpdate(int32 MassInfo, int32 PriceInfo)

@@ -12,13 +12,15 @@ enum class EItemType : uint8;
 class UToggleWidget;
 class UDataTableSubsystem;
 class AADUseItem;
+class UChargeBatteryWidget;
 
-#define LOGI(Verbosity, Format, ...) UE_LOG(InventoryLog, Verbosity, TEXT("%s(%s) %s"), ANSI_TO_TCHAR(__FUNCTION__), *FString::FromInt(__LINE__), *FString::Printf(Format, ##__VA_ARGS__));
+#define LOGINVEN(Verbosity, Format, ...) UE_LOG(InventoryLog, Verbosity, TEXT("%s(%s) %s"), ANSI_TO_TCHAR(__FUNCTION__), *FString::FromInt(__LINE__), *FString::Printf(Format, ##__VA_ARGS__));
 
 DECLARE_LOG_CATEGORY_EXTERN(InventoryLog, Log, All);
 
 
 DECLARE_MULTICAST_DELEGATE(FInventoryUpdateDelegate);
+DECLARE_MULTICAST_DELEGATE(FBatteryUpdateDelegate);
 DECLARE_MULTICAST_DELEGATE_TwoParams(FInventoryInfoUpdateDelegate, int32, int32);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -55,21 +57,23 @@ public:
 	void InventoryInitialize();
 
 	UFUNCTION(BlueprintCallable)
-	void AddInventoryItem(FItemData ItemData);
+	bool AddInventoryItem(FItemData ItemData);
 
 	UFUNCTION(BlueprintCallable)
 	void ToggleInventoryShowed(); //추후 나침반이나 서브미션 UI 추가되었을 때 고려 대상
 
 	UFUNCTION()
 	void OnRep_InventoryList();
+	UFUNCTION()
+	void OnRep_CurrentEquipmentSlotIndex();
 
 	int16 FindItemIndexByName(FName ItemID); //아이템 이름으로 InventoryList 인덱스 반환 (빈슬롯이 없으면 -1 반환)
-	void RemoveInventoryItem(uint8 InventoryIndex, int8 Count, bool bIsDropAction);
 	void RemoveBySlotIndex(uint8 SlotIndex, EItemType ItemType, bool bIsDropAction);
 	void ClientRequestInventoryInitialize();
 	void InventoryUIUpdate();
 
 	FInventoryUpdateDelegate InventoryUpdateDelegate;
+	FBatteryUpdateDelegate BatteryUpdateDelegate;
 	FInventoryInfoUpdateDelegate InventoryInfoUpdateDelegate;
 
 private:
@@ -94,12 +98,11 @@ public:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TSubclassOf<UToggleWidget> InventoryWidgetClass;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	TSubclassOf<UUserWidget> NightVisionWidgetClass;
 	
 private:
 	UPROPERTY(ReplicatedUsing = OnRep_InventoryList)
 	FInventoryList InventoryList; // 실제 아이템 데이터 저장
+	FItemData EmptyItem;
 	UPROPERTY(Replicated)
 	int32 TotalWeight;
 	UPROPERTY(Replicated)
@@ -110,7 +113,7 @@ private:
 	uint8 bCanUseItem : 1;
 
 	TMap<EItemType, TArray<int8>> InventoryIndexMapByType;
-	UPROPERTY(Replicated)
+	UPROPERTY(ReplicatedUsing = OnRep_CurrentEquipmentSlotIndex)
 	int8 CurrentEquipmentSlotIndex;
 	UPROPERTY(Replicated)
 	TObjectPtr<AADUseItem> CurrentEquipmentInstance;
@@ -118,7 +121,6 @@ private:
 	TArray<int8> InventorySizeByType;
 
 	TObjectPtr<UToggleWidget> InventoryWidgetInstance;
-	TObjectPtr<UUserWidget> NightVisionWidgetInstance;
 	TObjectPtr<UDataTableSubsystem> DataTableSubsystem; 
 #pragma endregion
 
@@ -128,7 +130,7 @@ public:
 	int16 GetTotalWeight() const { return TotalWeight; }
 	int16 GetTotalPrice() const { return TotalPrice; }
 
-	const FItemData& GetItemData(FName ItemNameToFind) { return InventoryList.Items[FindItemIndexByName(ItemNameToFind)]; }; //이름으로 아이템 데이터 반환
+	const FItemData* GetInventoryItemData(FName ItemNameToFind); //이름으로 아이템 데이터 반환
 	const FItemData& GetEquipmentItemDataByIndex(int8 KeyNum) { return InventoryList.Items[InventoryIndexMapByType[EItemType::Equipment][KeyNum]]; }; //타입별 인벤토리 슬롯 값으로 아이템 데이터 반환
 	FItemData* GetCurrentEquipmentItemData(); // 현재 장착한 무기 아이템 데이터
 
