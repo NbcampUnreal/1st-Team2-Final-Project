@@ -19,8 +19,8 @@ AMonsterAIController::AMonsterAIController()
 	
 	// Sight Filltering
 	SightConfig->DetectionByAffiliation.bDetectEnemies = true;
-	SightConfig->DetectionByAffiliation.bDetectFriendlies = false;
-	SightConfig->DetectionByAffiliation.bDetectNeutrals = false;
+	SightConfig->DetectionByAffiliation.bDetectFriendlies = true;
+	SightConfig->DetectionByAffiliation.bDetectNeutrals = true;
 	SetGenericTeamId(FGenericTeamId(1)); // Team 1 = Monster, Team 2 = Player
 
 	AIPerceptionComponent->ConfigureSense(*SightConfig);
@@ -111,7 +111,7 @@ void AMonsterAIController::InitializePatrolPoint()
 
 void AMonsterAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
-	if (Actor->IsA(ATestPlayerCharacter::StaticClass()))
+	if (Actor->IsA(AUnderwaterCharacter::StaticClass()))
 	{
 		BlackboardComponent = GetBlackboardComponent();
 

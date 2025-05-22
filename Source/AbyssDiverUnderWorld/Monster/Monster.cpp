@@ -14,7 +14,14 @@ const FName AMonster::MonsterStateKey = "MonsterState";
 
 AMonster::AMonster()
 {
+	AssignedSplineActor = nullptr;
+	BlackboardComponent = nullptr;
+	AIController = nullptr;
+	AnimInstance = nullptr;
+	
 	bUseControllerRotationYaw = false;
+	bReplicates = true;
+	SetReplicatingMovement(true);
 }
 
 void AMonster::BeginPlay()
