@@ -17,3 +17,7 @@ void AGobleFish::FireProjectile()
 	
 	GetWorld()->SpawnActor<AGFProjectile>(ProjectileClass, FireLocation, FireRotation, SpawnParams);
 }
+
+void AGobleFish::PlayAttackMontage()
+{
+}
