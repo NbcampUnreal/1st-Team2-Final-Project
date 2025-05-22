@@ -120,7 +120,7 @@ void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType
 				LOGINVEN(Warning, TEXT("Use Consumable Item %s"), *FoundRow->Name.ToString());
 			}
 		}
-		RemoveInventoryItem(SlotIndex, 1, false);
+		RemoveBySlotIndex(SlotIndex, EItemType::Consumable, false);
 	}
 }
 
@@ -143,11 +143,6 @@ void UADInventoryComponent::S_TransferSlots_Implementation(EItemType SlotType, u
 	}
 	LOGINVEN(Warning, TEXT("Type: %s Transfer Slot %d -> %d"), *StaticEnum<EItemType>()->GetDisplayNameTextByValue((int64)SlotType).ToString(), FromIndex, ToIndex);
 	InventoryUIUpdate();
-}
-
-void UADInventoryComponent::S_RequestRemove_Implementation(uint8 InventoryIndex, int8 Count, bool bIsDropAction)
-{
-	RemoveInventoryItem(InventoryIndex, Count, bIsDropAction);
 }
 
 void UADInventoryComponent::S_RemoveBySlotIndex_Implementation(uint8 SlotIndex, EItemType ItemType, bool bIsDropAction)
