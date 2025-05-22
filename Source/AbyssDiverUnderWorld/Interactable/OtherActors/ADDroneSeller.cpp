@@ -28,22 +28,22 @@ void AADDroneSeller::BeginPlay()
 
 void AADDroneSeller::Interact_Implementation(AActor* InstigatorActor)
 {
-	UE_LOG(LogTemp, Log, TEXT("Not Active"));
+	LOGD(Log, TEXT("Not Active"));
 	if (!HasAuthority() || !bIsActive) return;
 	
 	int32 Gained = SellAllExchangeableItems(InstigatorActor);
 	if (Gained <= 0)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Gained < 0"));
+		LOGD(Log, TEXT("Gained < 0"))
 		return;
 	}
 	
 
 	CurrentMoney += Gained;
-	UE_LOG(LogTemp, Log, TEXT("→ 누적 금액: %d / %d"), CurrentMoney, TargetMoney);
+	LOGD(Log, TEXT("→ 누적 금액: %d / %d"), CurrentMoney, TargetMoney);
 	if (CurrentMoney >= TargetMoney && IsValid(CurrentDrone))
 	{
-		UE_LOG(LogTemp, Log, TEXT("목표 달성! Drone 활성화 호출"));
+		LOGD(Log, TEXT("목표 달성! Drone 활성화 호출"))
 		CurrentDrone->Activate();
 	}
 	

@@ -25,9 +25,9 @@ void AADExchangeableItem::OnRep_TotalPrice()
 void AADExchangeableItem::Interact_Implementation(AActor* InstigatorActor)
 {
 	if (!HasAuthority()) return;
-	LOG(TEXT("Mineral's Mass : %d"), ItemData.Mass);
+	LOGI(Log, TEXT("Mineral's Mass : %d"), ItemData.Mass);
 	ItemData.Price = TotalPrice;
-	LOG(TEXT("Mineral's Price : %d"), ItemData.Price);
+	LOGI(Log, TEXT("Mineral's Price : %d"), ItemData.Price);
 
 	HandlePickup(Cast<APawn>(InstigatorActor));
 }

@@ -4,6 +4,10 @@
 #include "Components/ActorComponent.h"
 #include "ADInteractableComponent.generated.h"
 
+#define LOGIC(Verbosity, Format, ...) UE_LOG(ItemComponentLog, Verbosity, TEXT("%s(%s) %s"), ANSI_TO_TCHAR(__FUNCTION__), *FString::FromInt(__LINE__), *FString::Printf(Format, ##__VA_ARGS__));
+
+DECLARE_LOG_CATEGORY_EXTERN(ItemComponentLog, Log, All);
+
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class ABYSSDIVERUNDERWORLD_API UADInteractableComponent : public UActorComponent
 {

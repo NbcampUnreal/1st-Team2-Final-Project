@@ -7,6 +7,8 @@
 #include "Framework/ADPlayerState.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 
+DEFINE_LOG_CATEGORY(ItemLog);
+
 // Sets default values
 AADItemBase::AADItemBase()
 {
@@ -51,11 +53,11 @@ void AADItemBase::HandlePickup(APawn* InstigatorPawn)
 	APlayerController* PC = Cast<APlayerController>(InstigatorPawn->GetController());
 	AADPlayerState* PS = Cast<AADPlayerState>(PC->PlayerState);
 
-	LOG(TEXT("Add to Inventory"));
+	LOGI(Log, TEXT("Add to Inventory"));
 	// TODO 인벤토리 추가 로직과 획득 효과 추가
 	if (UADInventoryComponent* Inventory = PS->GetInventory())
 	{
-		LOG(TEXT("Find Inventory"));
+		LOGI(Log, TEXT("Find Inventory"));
 		Inventory->AddInventoryItem(ItemData);
 	}
 

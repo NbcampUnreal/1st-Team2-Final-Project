@@ -6,6 +6,10 @@
 #include "Container/FStructContainer.h"
 #include "ADItemBase.generated.h"
 
+#define LOGI(Verbosity, Format, ...) UE_LOG(ItemLog, Verbosity, TEXT("%s(%s) %s"), ANSI_TO_TCHAR(__FUNCTION__), *FString::FromInt(__LINE__), *FString::Printf(Format, ##__VA_ARGS__));
+
+DECLARE_LOG_CATEGORY_EXTERN(ItemLog, Log, All);
+
 class UADInteractableComponent;
 class UProjectileMovementComponent;
 
