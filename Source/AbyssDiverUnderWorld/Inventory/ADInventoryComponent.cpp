@@ -3,7 +3,7 @@
 #include "Engine/World.h"
 #include "Engine/EngineTypes.h"
 #include "DataRow/FADItemDataRow.h"
-#include "UI/AllInventoryWidget.h"
+#include "UI/ToggleWidget.h"
 #include <Net/UnrealNetwork.h>
 #include "AbyssDiverUnderWorld.h"
 #include <Kismet/KismetMathLibrary.h>
@@ -34,10 +34,10 @@ UADInventoryComponent::UADInventoryComponent() :
 
 	InventorySizeByType = { 3, 2, 9, 1, 3 };
 
-	ConstructorHelpers::FClassFinder<UAllInventoryWidget> AllInventoryWidget(TEXT("/Game/_AbyssDiver/Blueprints/UI/InventoryUI/WBP_AllInventoryWidget"));
-	if (AllInventoryWidget.Succeeded())
+	ConstructorHelpers::FClassFinder<UToggleWidget> ToggleWidget(TEXT("/Game/_AbyssDiver/Blueprints/UI/InventoryUI/WBP_ToggleWidget"));
+	if (ToggleWidget.Succeeded())
 	{
-		InventoryWidgetClass = AllInventoryWidget.Class;
+		InventoryWidgetClass = ToggleWidget.Class;
 	}	
 
 	for (int32 i = 0; i < static_cast<int32>(EItemType::Max); ++i)
@@ -132,17 +132,19 @@ void UADInventoryComponent::S_TransferSlots_Implementation(EItemType SlotType, u
 	int8 FromInventoryIndex = GetInventoryIndexByTypeAndSlotIndex(SlotType, FromIndex);
 	int8 ToInventoryIndex = GetInventoryIndexByTypeAndSlotIndex(SlotType, ToIndex);
 
-	if (ToInventoryIndex == -1)
+	if (!InventoryList.Items.IsValidIndex(ToInventoryIndex))
 	{
 		InventoryList.Items[FromInventoryIndex].SlotIndex = ToIndex;
+		InventoryList.MarkItemDirty(InventoryList.Items[FromInventoryIndex]);
 	}
 	else
 	{
 		InventoryList.Items[FromInventoryIndex].SlotIndex = ToIndex;
 		InventoryList.Items[ToInventoryIndex].SlotIndex = FromIndex;
+		InventoryList.MarkItemDirty(InventoryList.Items[FromInventoryIndex]);
+		InventoryList.MarkItemDirty(InventoryList.Items[ToInventoryIndex]);
 	}
-	InventoryList.MarkItemDirty(InventoryList.Items[FromInventoryIndex]);
-	InventoryList.MarkItemDirty(InventoryList.Items[ToInventoryIndex]);
+
 	InventoryUIUpdate();
 }
 
@@ -166,14 +168,14 @@ void UADInventoryComponent::InventoryInitialize()
 	APlayerController* PC = Cast<APlayerController>(Cast<AADPlayerState>(GetOwner())->GetPlayerController());
 	if (InventoryWidgetClass && PC && PC->IsLocalController())
 	{
-		InventoryWidgetInstance = CreateWidget<UAllInventoryWidget>(PC, InventoryWidgetClass);
+		InventoryWidgetInstance = CreateWidget<UToggleWidget>(PC, InventoryWidgetClass);
 		LOG(TEXT("WidgetCreate!"));
 
 		if (InventoryWidgetInstance)
 		{
 			InventoryWidgetInstance->AddToViewport();
-			InventoryWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
 			InventoryWidgetInstance->InitializeInventoriesInfo(this);
+			InventoryWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
 		}
 	}
 }

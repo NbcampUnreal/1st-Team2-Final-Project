@@ -438,15 +438,15 @@ void UEquipUseComponent::FireHarpoon()
 		return;
 	}
 	
-	if (CurrentRowName == "BasicSpearGun")
+	if (CurrentItemData->Name == "BasicSpearGun")
 	{
 		Proj->SetBulletType(ESpearGunType::Basic);
 	}
-	else if (CurrentRowName == "BombSpearGun")
+	else if (CurrentItemData->Name == "BombSpearGun")
 	{
 		Proj->SetBulletType(ESpearGunType::Bomb);
 	}
-	else if (CurrentRowName == "PoisonSpearGun")
+	else if (CurrentItemData->Name == "PoisonSpearGun")
 	{
 		Proj->SetBulletType(ESpearGunType::Poison);
 	}
@@ -563,26 +563,3 @@ bool UEquipUseComponent::IsInterpolating() const
 {
 	return !FMath::IsNearlyEqual(CurrentMultiplier, TargetMultiplier, 0.001f);
 }
-
-//void UEquipUseComponent::ResetEquipState()
-//{
-//	bBoostActive = false;
-//	bNightVisionOn = false;
-//
-//	CurrentMultiplier = TargetMultiplier = 1.f;
-//	if (OwningCharacter.IsValid())
-//	{
-//		OwningCharacter->GetCharacterMovement()->MaxSwimSpeed = DefaultSpeed;
-//	}
-//
-//	if (NightVisionMaterialInstance)
-//	{
-//		NightVisionMaterialInstance->SetScalarParameterValue(TEXT("NightBlend"), 0.f);
-//	}
-//	if (CameraComp)
-//	{
-//		CameraComp->PostProcessSettings = OriginalPPSettings;
-//	}
-//
-//	SetComponentTickEnabled(false);
-//}
