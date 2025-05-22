@@ -15,8 +15,6 @@ public:
 
 #pragma region Method
 public:
-	virtual void BeginPlay() override;
-
 	UFUNCTION(NetMulticast, Reliable)
 	void M_SetSkeletalMesh(USkeletalMesh* NewMesh);
 	void M_SetSkeletalMesh_Implementation(USkeletalMesh* NewMesh);

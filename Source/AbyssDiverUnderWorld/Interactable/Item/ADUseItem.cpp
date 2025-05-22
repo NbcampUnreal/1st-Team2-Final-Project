@@ -14,12 +14,12 @@ AADUseItem::AADUseItem()
 	RootComponent = SkeletalMesh;
 	SkeletalMesh->SetMobility(EComponentMobility::Movable);
 	SkeletalMesh->SetIsReplicated(true);
-	bReplicates = true;
-}
 
-void AADUseItem::BeginPlay()
-{
-	Super::BeginPlay();
+	SkeletalMesh->SetCollisionProfileName("BlockAllDynamic");
+	SkeletalMesh->SetGenerateOverlapEvents(true);
+	SkeletalMesh->SetSimulatePhysics(true);
+
+	bReplicates = true;
 }
 
 void AADUseItem::M_SetSkeletalMesh_Implementation(USkeletalMesh* NewMesh)
@@ -76,7 +76,6 @@ void AADUseItem::UnEquipMode()
 	SkeletalMesh->SetGenerateOverlapEvents(true);
 	SkeletalMesh->SetSimulatePhysics(true);
 	SkeletalMesh->SetCollisionProfileName("BlockAllDynamic");
-	SetActorTickEnabled(true);
 }
 
 void AADUseItem::EquipMode()
@@ -84,5 +83,4 @@ void AADUseItem::EquipMode()
 	SkeletalMesh->SetGenerateOverlapEvents(false);
 	SkeletalMesh->SetSimulatePhysics(false);
 	SkeletalMesh->SetCollisionProfileName("NoCollision");
-	SetActorTickEnabled(false);
 }
