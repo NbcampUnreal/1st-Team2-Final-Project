@@ -1,6 +1,6 @@
 #include "Boss/Task/Boss/BTTask_BossPatrolMove.h"
 #include "Boss/Boss.h"
-#include "Boss/EBossState.h"
+#include "Boss/Enum/EBossState.h"
 
 UBTTask_BossPatrolMove::UBTTask_BossPatrolMove()
 {

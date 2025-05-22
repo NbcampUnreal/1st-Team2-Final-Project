@@ -1,6 +1,6 @@
 #include "Boss/Task/Serpmare/BTTask_SerpmareIdle.h"
 #include "AbyssDiverUnderWorld.h"
-#include "Boss/EBossState.h"
+#include "Boss/Enum/EBossState.h"
 #include "Boss/Serpmare/Serpmare.h"
 
 UBTTask_SerpmareIdle::UBTTask_SerpmareIdle()

@@ -5,6 +5,7 @@
 #include "Character/UnitBase.h"
 #include "Boss.generated.h"
 
+class UNiagaraSystem;
 enum class EBossPhysicsType : uint8;
 class UCameraControllerComponent;
 class ATargetPoint;
@@ -91,6 +92,9 @@ public:
 	
 	UPROPERTY()
 	uint8 bIsAttackCollisionOverlappedPlayer : 1;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Effect")
+	TObjectPtr<UNiagaraSystem> BloodEffect;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
 	float MinPatrolDistance;
@@ -180,6 +184,8 @@ public:
 
 	FORCEINLINE bool GetIsBiteAttackSuccess() const { return bIsBiteAttackSuccess; }
 	FORCEINLINE void SetIsBiteAttackFalse() { bIsBiteAttackSuccess = false; }
+
+	FORCEINLINE UAnimInstance* GetAnimInstance() const { return AnimInstance; }
 
 #pragma endregion
 	

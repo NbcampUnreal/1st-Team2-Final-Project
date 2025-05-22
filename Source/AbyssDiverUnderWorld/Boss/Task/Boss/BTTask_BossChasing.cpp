@@ -3,7 +3,7 @@
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Boss/Boss.h"
-#include "Boss/EBossState.h"
+#include "Boss/Enum/EBossState.h"
 #include "Character/UnderwaterCharacter.h"
 #include "Navigation/PathFollowingComponent.h"
 

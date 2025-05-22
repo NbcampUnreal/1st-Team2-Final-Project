@@ -84,11 +84,13 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AI|Perception")
 	uint8 bIsSightDetectionPossible : 1;
 
+	UPROPERTY()
+	TObjectPtr<ABoss> Boss;
+	
 private:
 	static const FName BossStateKey;
 	uint8 bIsDetectedStatePossible : 1;
 	float AccumulatedTime;
-	TObjectPtr<ABoss> Boss;
 	FTimerHandle DetectedStateTimerHandle;
 #pragma endregion
 

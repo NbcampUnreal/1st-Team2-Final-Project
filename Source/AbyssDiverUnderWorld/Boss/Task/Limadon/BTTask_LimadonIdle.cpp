@@ -1,5 +1,5 @@
 #include "Boss/Task/Limadon/BTTask_LimadonIdle.h"
-#include "Boss/EBossState.h"
+#include "Boss/Enum/EBossState.h"
 #include "Boss/Limadon/Limadon.h"
 #include "Character/StatComponent.h"
 #include "Character/UnderwaterCharacter.h"

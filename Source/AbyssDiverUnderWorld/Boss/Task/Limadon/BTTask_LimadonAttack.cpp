@@ -1,7 +1,7 @@
 #include "Boss/Task/Limadon/BTTask_LimadonAttack.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Boss/Boss.h"
-#include "Boss/EBossState.h"
+#include "Boss/Enum/EBossState.h"
 #include "Boss/Limadon/Limadon.h"
 
 const FName UBTTask_LimadonAttack::BossStateKey = "BossState";

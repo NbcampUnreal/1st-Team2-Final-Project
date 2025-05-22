@@ -2,7 +2,7 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Boss/Boss.h"
 #include "Boss/BossAIController.h"
-#include "Boss/EBossState.h"
+#include "Boss/Enum/EBossState.h"
 
 const FName UBTTask_ChangeBossState::BossStateKey = "BossState";
 
