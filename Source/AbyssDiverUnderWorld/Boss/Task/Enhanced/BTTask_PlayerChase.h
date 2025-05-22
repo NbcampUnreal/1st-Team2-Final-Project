@@ -19,10 +19,10 @@ private:
 
 private:
 	UPROPERTY()
-	ABoss* Boss;
+	TObjectPtr<ABoss> Boss;
 
 	UPROPERTY()
-	AEnhancedBossAIController* AIController;
+	TObjectPtr<AEnhancedBossAIController> AIController;
 
 	UPROPERTY(EditAnywhere)
 	float MoveSpeedMultiplier = 1.3f;
