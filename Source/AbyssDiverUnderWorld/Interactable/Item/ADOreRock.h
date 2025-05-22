@@ -9,8 +9,10 @@
 
 class AADItemBase;
 class UNiagaraSystem;
+class UNiagaraComponent;
 class UADInteractableComponent;
 class URadarReturnComponent;
+class AUnderwaterCharacter;
 
 USTRUCT(BlueprintType)
 struct FDropEntry : public FTableRowBase
@@ -50,7 +52,9 @@ protected:
 public:
 
 	virtual void Interact_Implementation(AActor* InstigatorActor) override;
-	virtual void InteractHold_Implementation(AActor* InstigatorActor);
+	virtual void InteractHold_Implementation(AActor* InstigatorActor) override;
+	virtual void OnHoldStart_Implementation(APawn* InstigatorPawn) override;
+	virtual void OnHoldStop_Implementation(APawn* InstigatorPawn) override;
 
 	void HandleMineRequest(APawn* InstigatorPawn);
 
@@ -72,6 +76,12 @@ protected:
 
 private:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	void SpawnAndAttachTool(APawn* InstigatorPawn);
+	void PlayMiningAnim(APawn* InstigatorPawn);
+	void ActivateMiningEffects();
+	void PlayStowAnim(APawn* InstigatorPawn);
+	void CleanupToolAndEffects();
 
 #pragma endregion
 
@@ -108,6 +118,24 @@ protected:
 	TObjectPtr<UADInteractableComponent> InteractableComp;
 	UPROPERTY(EditAnywhere, Category = "Mining")
 	int32 DefaultMiningStrength = 25;
+
+	// Mining Effect 관련 변수
+	UPROPERTY(EditAnywhere, Category = "Mining")
+	TSubclassOf<AActor>  MiningToolClass;
+	UPROPERTY(EditAnywhere, Category = "Mining")
+	TObjectPtr<UAnimMontage> MiningMontage;
+	UPROPERTY(EditAnywhere, Category = "Mining")
+	UAnimMontage* StowMontage;
+	UPROPERTY(EditAnywhere, Category = "Mining")
+	TObjectPtr<UNiagaraSystem> MiningVFX;
+	UPROPERTY(EditAnywhere, Category = "Mining")
+	TObjectPtr<USoundBase> MiningSFX;
+	UPROPERTY() 
+	TObjectPtr<AActor> SpawnedTool;
+	UPROPERTY() 
+	TObjectPtr<UNiagaraComponent> ActiveMiningVFX;
+	UPROPERTY() 
+	TObjectPtr<UAudioComponent> ActiveMiningSFX;
 
 private:
 	TArray<FDropEntry*> CachedEntries;

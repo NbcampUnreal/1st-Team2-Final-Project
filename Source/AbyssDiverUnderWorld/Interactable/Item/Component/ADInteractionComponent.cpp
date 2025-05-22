@@ -238,7 +238,14 @@ UADInteractableComponent* UADInteractionComponent::PerformLineTrace(const FVecto
 void UADInteractionComponent::UpdateFocus(UADInteractableComponent* NewFocus)
 {
 //	if (!IsLocallyControlled()) return;
-	if (NewFocus == FocusedInteractable) return;
+	if (NewFocus == FocusedInteractable) 
+	{
+		if (!ShouldHighlight(NewFocus))
+		{
+			ClearFocus();
+		}
+		return;
+	}
 
 	if (FocusedInteractable)
 		FocusedInteractable->SetHighLight(false);
@@ -336,6 +343,8 @@ void UADInteractionComponent::HandleInteractPressed(AActor* TargetActor)
 
 	if (TargetActor->GetClass()->ImplementsInterface(UIADInteractable::StaticClass()))
 	{
+		IIADInteractable::Execute_OnHoldStart(TargetActor, Cast<APawn>(GetOwner()));
+
 		// == Hold 모드 ==
 		bHoldTriggered = false;
 		HoldInstigator = Cast<APawn>(GetOwner());
@@ -353,6 +362,17 @@ void UADInteractionComponent::HandleInteractReleased()
 	bIsInteractingStart = false;
 	GetWorld()->GetTimerManager().ClearTimer(HoldTimerHandle);
 	LOGIC(Log, TEXT("Fail Hold!"));
+
+	if (FocusedInteractable && HoldInstigator.Get())
+	{
+		APawn* InstigatorPawn = Cast<APawn>(HoldInstigator.Get());
+		if (InstigatorPawn)
+		{
+			IIADInteractable::Execute_OnHoldStop(FocusedInteractable->GetOwner(), InstigatorPawn);
+		}
+		
+	}
+		
 	HoldInstigator = nullptr;
 }
 
