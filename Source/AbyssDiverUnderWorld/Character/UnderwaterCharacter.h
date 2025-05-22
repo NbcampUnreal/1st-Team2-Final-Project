@@ -366,6 +366,10 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float BloodEmitPower;
 
+	/** 캐릭터가 수풀에 숨어있는지 여부 */
+	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	uint8 bIsHideInSeaweed : 1;
+
 	/** 초과 적재 기준 무게. 초과할 경우 속도를 감소시킨다. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Weight", meta = (AllowPrivateAccess = "true"))
 	float OverloadWeight;
@@ -550,6 +554,12 @@ public:
 
 	/** 현재 캐릭터가 달리기 상태인지를 반환 */
 	FORCEINLINE bool IsSprinting() const;
+
+	/** 현재 캐릭터가 수중 상태인지 여부를 반환 */
+	FORCEINLINE bool IsHideInSeaweed() const { return bIsHideInSeaweed; }
+
+	/** 현재 캐릭터가 수풀에 숨어있는지 여부를 설정 */
+	void SetHideInSeaweed(const bool bNewHideInSeaweed);
 
 	/** 초과 무게 상태인지를 반환. 무게 >= 최대 무게일 때 True를 반환 */
 	UFUNCTION(BlueprintCallable)

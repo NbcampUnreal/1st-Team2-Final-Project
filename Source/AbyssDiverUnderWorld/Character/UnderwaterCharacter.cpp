@@ -74,6 +74,8 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	bIsCaptured = false;
 	CaptureFadeTime = 0.5f;
 
+	bIsHideInSeaweed = false;
+	
 	BloodEmitPower = 1.0f;
 
 	OverloadWeight = 40.0f;
@@ -1103,6 +1105,11 @@ float AUnderwaterCharacter::GetRemainGroggyTime() const
 bool AUnderwaterCharacter::IsSprinting() const
 {
 	return StaminaComponent->IsSprinting();
+}
+
+void AUnderwaterCharacter::SetHideInSeaweed(const bool bNewHideInSeaweed)
+{
+	bIsHideInSeaweed = bNewHideInSeaweed;
 }
 
 bool AUnderwaterCharacter::IsOverloaded() const
