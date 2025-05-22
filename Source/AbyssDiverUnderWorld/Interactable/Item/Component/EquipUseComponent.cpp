@@ -71,7 +71,7 @@ void UEquipUseComponent::BeginPlay()
 	OriginalPPSettings = CameraComp->PostProcessSettings;
 
 	// 위젯 추가
-	if (OwningCharacter->IsLocallyControlled() && NightVisionClass)
+	if (OwningCharacter->IsLocallyControlled())
 	{
 		APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController());
 		if (PC)
@@ -85,7 +85,7 @@ void UEquipUseComponent::BeginPlay()
 					NightVisionInstance->SetVisibility(ESlateVisibility::Hidden);
 				}
 			}
-			if (!ChargeBatteryInstance && NightVisionClass)
+			if (!ChargeBatteryInstance && ChargeBatteryClass)
 			{
 				ChargeBatteryInstance = CreateWidget<UChargeBatteryWidget>(PC, ChargeBatteryClass);
 				if (ChargeBatteryInstance)

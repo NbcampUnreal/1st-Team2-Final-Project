@@ -1,7 +1,7 @@
 #include "Boss/BossAIController.h"
 #include "AbyssDiverUnderWorld.h"
 #include "Boss.h"
-#include "EBossState.h"
+#include "Enum/EBossState.h"
 #include "BehaviorTree/BehaviorTree.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Character/UnderwaterCharacter.h"
