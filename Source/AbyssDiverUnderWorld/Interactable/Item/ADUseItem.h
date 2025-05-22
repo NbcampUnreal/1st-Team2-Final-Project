@@ -15,8 +15,6 @@ public:
 
 #pragma region Method
 public:
-	virtual void BeginPlay() override;
-
 	UFUNCTION(NetMulticast, Reliable)
 	void M_SetSkeletalMesh(USkeletalMesh* NewMesh);
 	void M_SetSkeletalMesh_Implementation(USkeletalMesh* NewMesh);
@@ -30,8 +28,6 @@ public:
 
 #pragma region Variable
 protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
-	TObjectPtr<USceneComponent> Scene;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TObjectPtr<USkeletalMeshComponent> SkeletalMesh;
 

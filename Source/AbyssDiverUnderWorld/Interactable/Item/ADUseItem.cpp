@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Interactable/Item/ADUseItem.h"
@@ -9,20 +9,17 @@
 AADUseItem::AADUseItem()
 {
 	PrimaryActorTick.bCanEverTick = false;
-	Scene = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
-	RootComponent = Scene;
 
 	SkeletalMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SkeletalMesh"));
-	SkeletalMesh->SetupAttachment(Scene);
+	RootComponent = SkeletalMesh;
+	SkeletalMesh->SetMobility(EComponentMobility::Movable);
+	SkeletalMesh->SetIsReplicated(true);
+
+	SkeletalMesh->SetCollisionProfileName("BlockAllDynamic");
+	SkeletalMesh->SetGenerateOverlapEvents(true);
+	SkeletalMesh->SetSimulatePhysics(true);
 
 	bReplicates = true;
-
-}
-
-void AADUseItem::BeginPlay()
-{
-	Super::BeginPlay();
-	//TODO : 기포 이펙트 추가
 }
 
 void AADUseItem::M_SetSkeletalMesh_Implementation(USkeletalMesh* NewMesh)
@@ -79,7 +76,6 @@ void AADUseItem::UnEquipMode()
 	SkeletalMesh->SetGenerateOverlapEvents(true);
 	SkeletalMesh->SetSimulatePhysics(true);
 	SkeletalMesh->SetCollisionProfileName("BlockAllDynamic");
-	SetActorTickEnabled(true);
 }
 
 void AADUseItem::EquipMode()
@@ -87,5 +83,4 @@ void AADUseItem::EquipMode()
 	SkeletalMesh->SetGenerateOverlapEvents(false);
 	SkeletalMesh->SetSimulatePhysics(false);
 	SkeletalMesh->SetCollisionProfileName("NoCollision");
-	SetActorTickEnabled(false);
 }
