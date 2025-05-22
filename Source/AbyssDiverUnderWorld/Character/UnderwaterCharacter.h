@@ -398,6 +398,9 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Radar", meta = (AllowPrivateAccess = "true"))
 	FVector RadarOffset;
 
+	UPROPERTY(EditAnywhere, Category = "Character|Radar", meta = (AllowPrivateAccess = "true"))
+	FRotator RadarRotation;
+
 	/** 레이더 활성화 여부 */
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, ReplicatedUsing=OnRep_bIsRadarOn, Category = Character, meta = (AllowPrivateAccess = "true"))
 	uint8 bIsRadarOn : 1;

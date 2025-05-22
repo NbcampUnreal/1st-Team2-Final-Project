@@ -120,7 +120,8 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	LanternLightComponent->SetVisibility(bIsLanternOn);
 	
 	bIsRadarOn = false;
-	RadarOffset = FVector(150.0f, 0.0f, -50.0f);
+	RadarOffset = FVector(150.0f, 0.0f, 0.0f);
+	RadarRotation = FRotator(90.0f, 0.0f, 0.0f);
 
 	EnvState = EEnvState::Underwater;
 }
@@ -597,12 +598,19 @@ void AUnderwaterCharacter::SpawnRadar()
 		LOGVN(Error, TEXT("RadarClass is not valid"));
 		return;
 	}
+	// Radar는 Local에서만 존재하면 된다.
+	if (!IsLocallyControlled())
+	{
+		return;
+	}
 
 	FVector SpawnLocation = FirstPersonCameraComponent->GetComponentLocation() + RadarOffset;
-	FRotator SpawnRotation = FirstPersonCameraComponent->GetComponentRotation();
+	FRotator SpawnRotation = FirstPersonCameraComponent->GetComponentRotation() + RadarRotation;
 
+	// @ToDO : Forward Actor에 맞추어서 Radar 회전
 	RadarObject = GetWorld()->SpawnActor<ARadar>(RadarClass, SpawnLocation, SpawnRotation);
 	RadarObject->AttachToComponent(FirstPersonCameraComponent, FAttachmentTransformRules::KeepWorldTransform);
+	RadarObject->UpdateRadarSourceComponent(GetRootComponent(), GetRootComponent());
 	SetRadarVisibility(false);
 }
 
