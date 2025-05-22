@@ -30,8 +30,6 @@ public:
 
 #pragma region Variable
 protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
-	TObjectPtr<USceneComponent> Scene;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TObjectPtr<USkeletalMeshComponent> SkeletalMesh;
 

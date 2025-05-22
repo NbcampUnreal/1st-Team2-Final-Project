@@ -9,22 +9,17 @@
 AADUseItem::AADUseItem()
 {
 	PrimaryActorTick.bCanEverTick = false;
-	Scene = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
-	RootComponent = Scene;
 
 	SkeletalMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SkeletalMesh"));
-	SkeletalMesh->SetupAttachment(Scene);
-
+	RootComponent = SkeletalMesh;
+	SkeletalMesh->SetMobility(EComponentMobility::Movable);
+	SkeletalMesh->SetIsReplicated(true);
 	bReplicates = true;
-
 }
 
 void AADUseItem::BeginPlay()
 {
 	Super::BeginPlay();
-	//TODO : 기포 이펙트 추가
-	SkeletalMesh->SetLinearDamping(WaterLinearDamping); //2.0 ~ 5.0 사이
-	SkeletalMesh->SetAngularDamping(WaterAngularDamping); //5.0 이상
 }
 
 void AADUseItem::M_SetSkeletalMesh_Implementation(USkeletalMesh* NewMesh)
