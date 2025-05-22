@@ -125,7 +125,7 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Mining")
 	TObjectPtr<UAnimMontage> MiningMontage;
 	UPROPERTY(EditAnywhere, Category = "Mining")
-	UAnimMontage* StowMontage;
+	TObjectPtr<UAnimMontage> StowMontage;
 	UPROPERTY(EditAnywhere, Category = "Mining")
 	TObjectPtr<UNiagaraSystem> MiningVFX;
 	UPROPERTY(EditAnywhere, Category = "Mining")
