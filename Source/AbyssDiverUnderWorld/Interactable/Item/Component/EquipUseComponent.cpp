@@ -15,6 +15,7 @@
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "Subsystems/DataTableSubsystem.h"
 #include "UI/ADNightVisionGoggle.h"
+#include "UI/ChargeBatteryWidget.h"
 
 
 
@@ -35,6 +36,7 @@ UEquipUseComponent::UEquipUseComponent()
 	bIsWeapon = true;
 	NightVisionInstance = nullptr;
 	bNVGWidgetVisible = false;
+	bChargeBatteryWidgetVisible = false;
 
 	// 테스트용
 	if (ACharacter* Char = Cast<ACharacter>(GetOwner()))
@@ -72,13 +74,25 @@ void UEquipUseComponent::BeginPlay()
 	if (OwningCharacter->IsLocallyControlled() && NightVisionClass)
 	{
 		APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController());
-		if (PC && !NightVisionInstance)
+		if (PC)
 		{
-			NightVisionInstance = CreateWidget<UADNightVisionGoggle>(PC, NightVisionClass);
-			if (NightVisionInstance)
+			if (!NightVisionInstance && NightVisionClass)
 			{
-				NightVisionInstance->AddToViewport();
-				NightVisionInstance->SetVisibility(ESlateVisibility::Hidden);
+				NightVisionInstance = CreateWidget<UADNightVisionGoggle>(PC, NightVisionClass);
+				if (NightVisionInstance)
+				{
+					NightVisionInstance->AddToViewport();
+					NightVisionInstance->SetVisibility(ESlateVisibility::Hidden);
+				}
+			}
+			if (!ChargeBatteryInstance && NightVisionClass)
+			{
+				ChargeBatteryInstance = CreateWidget<UChargeBatteryWidget>(PC, ChargeBatteryClass);
+				if (ChargeBatteryInstance)
+				{
+					ChargeBatteryInstance->AddToViewport();
+					ChargeBatteryInstance->SetVisibility(ESlateVisibility::Hidden);
+				}
 			}
 		}
 	}
@@ -166,7 +180,7 @@ void UEquipUseComponent::S_RKey_Implementation()
 	{
 	case EAction::WeaponReload:   StartReload();     break;
 	case EAction::ApplyChargeUI:  OpenChargeWidget();break;
-	default:                      break;
+	default:                      OpenChargeWidget();break;
 	}
 }
 
@@ -238,6 +252,24 @@ void UEquipUseComponent::OnRep_NightVisionUIVisible()
 		LOGIC(Log, TEXT("No Owning Character"));
 	}
 	
+}
+
+void UEquipUseComponent::OnRep_ChargeBatteryUIVisible()
+{
+	if (OwningCharacter != nullptr)
+	{
+		if (ChargeBatteryInstance && OwningCharacter->IsLocallyControlled())
+		{
+			ChargeBatteryInstance->SetVisibility(bChargeBatteryWidgetVisible
+				? ESlateVisibility::Visible
+				: ESlateVisibility::Hidden);
+		}
+		LOG(TEXT("%s"), bChargeBatteryWidgetVisible ? TEXT("True") : TEXT("False"));
+	}
+	else
+	{
+		LOG(TEXT("No Owning Character"));
+	}
 }
 
 void UEquipUseComponent::Initialize(FItemData& ItemData)
@@ -535,8 +567,7 @@ void UEquipUseComponent::StartReload()
 
 void UEquipUseComponent::OpenChargeWidget()
 {
-	//TODO 피자형 UI 생성하고 만들기
-
+	bChargeBatteryWidgetVisible = !bChargeBatteryWidgetVisible ? true : false;
 }
 
 void UEquipUseComponent::FinishReload()
@@ -558,6 +589,7 @@ void UEquipUseComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 	DOREPLIFETIME(UEquipUseComponent, bBoostActive);
 	DOREPLIFETIME(UEquipUseComponent, bNightVisionOn);
 	DOREPLIFETIME(UEquipUseComponent, bNVGWidgetVisible);
+	DOREPLIFETIME(UEquipUseComponent, bChargeBatteryWidgetVisible);
 }
 
 bool UEquipUseComponent::IsInterpolating() const
