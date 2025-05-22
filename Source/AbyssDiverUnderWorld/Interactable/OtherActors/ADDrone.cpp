@@ -5,6 +5,8 @@
 #include "ADDroneSeller.h"
 #include "Net/UnrealNetwork.h"
 
+DEFINE_LOG_CATEGORY(DroneLog);
+
 // Sets default values
 AADDrone::AADDrone()
 {
@@ -97,7 +99,7 @@ void AADDrone::OnDestroyTimer()
 {
 	if (CurrentSeller && IsValid(CurrentSeller))
 	{
-		UE_LOG(LogTemp, Log, TEXT("[%s] Destroying linked seller %s"), *GetName(), *CurrentSeller->GetName());
+		LOGD(Log, TEXT("[%s] Destroying linked seller %s"), *GetName(), *CurrentSeller->GetName());
 		CurrentSeller->Destroy();
 	}
 	Destroy();
