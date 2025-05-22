@@ -1,2 +1,2 @@
-#include "Boss/EBossState.h"
+#include "Boss/Enum/EBossState.h"
 
