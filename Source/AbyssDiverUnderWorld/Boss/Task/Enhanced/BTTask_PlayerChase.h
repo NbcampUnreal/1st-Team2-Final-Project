@@ -30,6 +30,12 @@ private:
 	UPROPERTY(EditAnywhere)
 	float MaxChaseTime;
 
+	UPROPERTY(EditAnywhere)
+	float MinChaseTime;
+
 	UPROPERTY()
 	float AccumulatedTime;
+
+	UPROPERTY()
+	float TimeCriteria;
 };
