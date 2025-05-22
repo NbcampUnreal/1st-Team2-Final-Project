@@ -2,8 +2,6 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Boss/Boss.h"
 
-const FName UAnimNotify_ChangeBossState::BossStateKey = "BossState";
-
 void UAnimNotify_ChangeBossState::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation,
 									const FAnimNotifyEventReference& EventReference)
 {

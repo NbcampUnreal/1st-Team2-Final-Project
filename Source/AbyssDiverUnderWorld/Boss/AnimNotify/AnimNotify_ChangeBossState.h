@@ -18,6 +18,4 @@ public:
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	EBossState BossState;
-
-	static const FName BossStateKey;
 };
