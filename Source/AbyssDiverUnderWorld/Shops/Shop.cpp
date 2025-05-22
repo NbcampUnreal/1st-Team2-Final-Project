@@ -23,6 +23,7 @@
 
 #include "Net/UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"
+#include "Components/SceneCaptureComponent2D.h"
 
 DEFINE_LOG_CATEGORY(ShopLog);
 
@@ -149,6 +150,55 @@ AShop::AShop()
 	ItemMeshComponent->SetVisibleInSceneCaptureOnly(true);
 	ItemMeshComponent->SetIsReplicated(false);
 	ItemMeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	// 설정을 좀 더 건드려야 함. 
+	ItemMeshCaptureComp = CreateDefaultSubobject<USceneCaptureComponent2D>(TEXT("ItemMeshCapureComp"));
+	ItemMeshCaptureComp->SetupAttachment(RootComponent);
+	ItemMeshCaptureComp->ShowFlags.AntiAliasing = false;
+	ItemMeshCaptureComp->ShowFlags.Atmosphere = false;
+	ItemMeshCaptureComp->ShowFlags.BSP = false;
+	ItemMeshCaptureComp->ShowFlags.Cloud = false;
+	ItemMeshCaptureComp->ShowFlags.Decals = false;
+	ItemMeshCaptureComp->ShowFlags.Fog = false;
+	ItemMeshCaptureComp->ShowFlags.Landscape = false;
+	ItemMeshCaptureComp->ShowFlags.Particles = false;
+	ItemMeshCaptureComp->ShowFlags.SkeletalMeshes = true;
+	ItemMeshCaptureComp->ShowFlags.StaticMeshes = false;
+	ItemMeshCaptureComp->ShowFlags.Translucency = false;
+
+	ItemMeshCaptureComp->ShowFlags.DisableAdvancedFeatures();
+
+	ItemMeshCaptureComp->ShowFlags.Bloom = false;
+	ItemMeshCaptureComp->ShowFlags.EyeAdaptation = false;
+	ItemMeshCaptureComp->ShowFlags.LocalExposure = false;
+	ItemMeshCaptureComp->ShowFlags.MotionBlur = false;
+	ItemMeshCaptureComp->ShowFlags.PostProcessMaterial = false;
+	ItemMeshCaptureComp->ShowFlags.ToneCurve = false;
+	ItemMeshCaptureComp->ShowFlags.Tonemapper = false;
+
+	ItemMeshCaptureComp->ShowFlags.SkyLighting = false;
+
+	ItemMeshCaptureComp->ShowFlags.AmbientOcclusion = false;
+	ItemMeshCaptureComp->ShowFlags.DynamicShadows = false;
+
+	ItemMeshCaptureComp->ShowFlags.AmbientCubemap = false;
+	ItemMeshCaptureComp->ShowFlags.DistanceFieldAO = false;
+	ItemMeshCaptureComp->ShowFlags.LightFunctions = false;
+	ItemMeshCaptureComp->ShowFlags.LightShafts = false;
+	ItemMeshCaptureComp->ShowFlags.ReflectionEnvironment = false;
+	ItemMeshCaptureComp->ShowFlags.ScreenSpaceReflections = false;
+	ItemMeshCaptureComp->ShowFlags.TexturedLightProfiles = false;
+	ItemMeshCaptureComp->ShowFlags.VolumetricFog = false;
+
+	ItemMeshCaptureComp->ShowFlags.NaniteMeshes = true;
+
+	//ItemMeshCaptureComp->ShowFlags.Game = false;
+	//ItemMeshCaptureComp->ShowFlags.Lighting = false;
+	//ItemMeshCaptureComp->ShowFlags.PathTracing = false;
+	//ItemMeshCaptureComp->ShowFlags.PostProcessing = false;
+
+	ItemMeshCaptureComp->bCaptureEveryFrame = false;
+
+	ItemMeshCaptureComp->SetRelativeLocation(FVector(200, 0, 0));
 
 	InteractableComp = CreateDefaultSubobject<UADInteractableComponent>(TEXT("InteractableComp"));
 
@@ -242,6 +292,7 @@ void AShop::OpenShop(AUnderwaterCharacter* Requester)
 	PC->SetShowMouseCursor(true);
 	bIsOpened = true;
 	PC->SetIgnoreMoveInput(true);
+	ItemMeshCaptureComp->bCaptureEveryFrame = true;
 }
 
 void AShop::CloseShop(AUnderwaterCharacter* Requester)
@@ -263,6 +314,8 @@ void AShop::CloseShop(AUnderwaterCharacter* Requester)
 	PC->SetShowMouseCursor(false);
 	bIsOpened = false;
 	PC->SetIgnoreMoveInput(false);
+
+	ItemMeshCaptureComp->bCaptureEveryFrame = false;
 }
 
 EBuyResult AShop::BuyItem(uint8 ItemId, uint8 Quantity, AUnderwaterCharacter* Buyer)
@@ -607,6 +660,9 @@ void AShop::InitShopWidget()
 
 	InfoWidget->Init(ItemMeshComponent);
 	InfoWidget->OnBuyButtonClickedDelegate.AddUObject(this, &AShop::OnBuyButtonClicked);
+
+	ItemMeshCaptureComp->ShowOnlyActorComponents(this);
+	ensureMsgf(ItemMeshCaptureComp->TextureTarget, TEXT("상점에 있는 ItemMeshCaptureComp의 TextureTarget이 지정이 되어있지 않습니다"));
 }
 
 void AShop::InitData()

@@ -95,7 +95,7 @@ void AADInGameState::SendDataToGameInstance()
 		ADGameInstance->TeamCredits = TeamCredits;
 	}
 
-	LOGVN(Error, TEXT("SelectedLevelName: %s / TeamCredits: %d"), SelectedLevelName, TeamCredits);
+	LOGVN(Error, TEXT("SelectedLevelName: %d / TeamCredits: %d"), SelectedLevelName, TeamCredits);
 }
 
 void AADInGameState::OnRep_Money()

@@ -49,6 +49,7 @@ class AShop;
 class UShopWidget;
 class UShopItemEntryData;
 class AUnderwaterCharacter;
+class USceneCaptureComponent2D;
 
 struct FFADItemDataRow;
 struct FShopItemIdList;
@@ -218,6 +219,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, Category = "Shop")
 	TObjectPtr<USkeletalMeshComponent> ItemMeshComponent;
+
+	UPROPERTY(VisibleAnywhere, Category = "Shop")
+	TObjectPtr<USceneCaptureComponent2D> ItemMeshCaptureComp;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Shop");
 	TArray<uint8> DefaultConsumableItemIdList; // 블루프린트 노출용
