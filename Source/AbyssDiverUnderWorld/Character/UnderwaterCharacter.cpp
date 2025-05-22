@@ -32,10 +32,33 @@
 
 AUnderwaterCharacter::AUnderwaterCharacter()
 {
+	FirstPersonCameraArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("FirstPersonCameraArm"));
+	FirstPersonCameraArm->SetupAttachment(GetCapsuleComponent());
+	FirstPersonCameraArm->bUsePawnControlRotation = true;
+	FirstPersonCameraArm->TargetArmLength = 0.f; // Camera가 Mesh에 붙어있도록 한다.
+	FirstPersonCameraArm->bEnableCameraRotationLag = true;
+	FirstPersonCameraArm->CameraRotationLagSpeed = 10.f;
+	
 	FirstPersonCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
-	FirstPersonCameraComponent->SetupAttachment(GetCapsuleComponent());
+	FirstPersonCameraComponent->SetupAttachment(FirstPersonCameraArm);
 	FirstPersonCameraComponent->SetRelativeLocation(FVector(-10.f, 0.f, 60.f)); // Position the camera
-	FirstPersonCameraComponent->bUsePawnControlRotation = true;
+	FirstPersonCameraComponent->bUsePawnControlRotation = false;
+
+	Mesh1PSpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("Mesh1PSpringArm"));
+	Mesh1PSpringArm->SetupAttachment(FirstPersonCameraComponent);
+	Mesh1PSpringArm->TargetArmLength = 0.0f;
+	Mesh1PSpringArm->bEnableCameraRotationLag = true;
+	Mesh1PSpringArm->CameraRotationLagSpeed = 10.0f;
+	Mesh1PSpringArm->SetRelativeLocation(FVector(0.f, 0.f, -10.f));
+	
+	Mesh1P = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Mesh1P"));
+	Mesh1P->SetOnlyOwnerSee(true);
+	Mesh1P->SetupAttachment(Mesh1PSpringArm);
+	Mesh1P->CastShadow = false;
+	Mesh1P->bCastDynamicShadow = false;
+	
+	GetMesh()->SetOwnerNoSee(true);
+	GetMesh()->bCastHiddenShadow = true;
 
 	StatComponent->Initialize(1000, 1000, 400.0f, 10);
 
@@ -66,10 +89,7 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	}
 	SprintSpeed = StatComponent->MoveSpeed * 1.75f;
 
-	// To-Do
-	// 외부에 보여지는 Mesh와 1인칭 Mesh를 다르게 구현
-	GetMesh()->SetOwnerNoSee(true);
-
+	// Debug용 카메라
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(GetCapsuleComponent());
 	CameraBoom->TargetArmLength = 300.f;
@@ -82,17 +102,6 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	bUseDebugCamera = false;
 	ThirdPersonCameraComponent->SetActive(false);
 
-	// To-Do
-	// 외부에 보여지는 Mesh와 1인칭 Mesh를 다르게 구현
-	GetMesh()->SetOwnerNoSee(true);
-	GetMesh()->bCastHiddenShadow = true;
-	
-	Mesh1P = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Mesh1P"));
-	Mesh1P->SetOnlyOwnerSee(true);
-	Mesh1P->SetupAttachment(FirstPersonCameraComponent);
-	Mesh1P->CastShadow = false;
-	Mesh1P->bCastDynamicShadow = false;
-	
 	OxygenComponent = CreateDefaultSubobject<UOxygenComponent>(TEXT("OxygenComponent"));
 	StaminaComponent = CreateDefaultSubobject<UStaminaComponent>(TEXT("StaminaComponent"));
 
@@ -102,7 +111,7 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	EquipUseComponent = CreateDefaultSubobject<UEquipUseComponent>(TEXT("EquipUseComponent"));
 
 	LanternLightComponent = CreateDefaultSubobject<USpotLightComponent>(TEXT("LanternLightComponent"));
-	LanternLightComponent->SetupAttachment(FirstPersonCameraComponent);
+	LanternLightComponent->SetupAttachment(Mesh1P);
 	LanternLightComponent->SetRelativeLocation(FVector(20.0f, 0.0f, 0.0f));
 	LanternLightComponent->SetOuterConeAngle(25.0f);
 	LanternLightComponent->SetAttenuationRadius(2000.0f); // 거리에 영향을 준다.
