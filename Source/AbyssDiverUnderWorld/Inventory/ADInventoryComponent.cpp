@@ -279,48 +279,6 @@ int16 UADInventoryComponent::FindItemIndexByName(FName ItemID) //빈슬롯이 �
 	return -1;
 }
 
-void UADInventoryComponent::RemoveInventoryItem(uint8 InventoryIndex, int8 Count, bool bIsDropAction)
-{
-	//PrintLogInventoryData();
-	if (InventoryList.Items.IsValidIndex(InventoryIndex))
-	{
-		FItemData& Item = InventoryList.Items[InventoryIndex];
-		if (Count != -1 && Item.Quantity < Count) return;
-		if (bIsDropAction)
-		{
-			int8 SpawnCount = Count != -1 ? Count : Item.Quantity;
-			for(int i = 0; i< SpawnCount; ++i)
-				DropItem(Item);
-		}
-		if (Count == -1)
-		{
-			InventoryList.UpdateQuantity(InventoryIndex, -Item.Quantity);
-			if (Item.ItemType == EItemType::Exchangable)
-			{
-				OnInventoryInfoUpdate(-Item.Mass, -Item.Price);
-			}
-		}
-		else
-		{
-			InventoryList.UpdateQuantity(InventoryIndex, -Count);
-			//if (Item.ItemType != EItemType::Exchangable)
-			//	Item.Quantity -= Count;
-		}
-		LOG(TEXT("Remove Inventory Index %d: Item : %s"), InventoryIndex, *Item.Name.ToString());
-		if (Item.Quantity <= 0)
-		{
-			InventoryList.RemoveItem(InventoryIndex);
-			//Item.SlotIndex = 99;
-		}
-	}
-	else
-	{
-		LOG(TEXT("Invalid Inventory Index"));
-	}
-
-	InventoryUIUpdate();
-}
-
 void UADInventoryComponent::RemoveBySlotIndex(uint8 SlotIndex, EItemType ItemType, bool bIsDropAction)
 {
 	int8 InventoryIndex = GetInventoryIndexByTypeAndSlotIndex(ItemType, SlotIndex);
