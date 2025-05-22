@@ -14,17 +14,13 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/PawnNoiseEmitterComponent.h"
 #include "Components/SpotLightComponent.h"
-#include "Framework/ADCampGameMode.h"
-#include "Framework/ADInGameMode.h"
 #include "Framework/ADPlayerState.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "GameFramework/GameModeBase.h"
 #include "GameFramework/PhysicsVolume.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Interactable/Item/Component/EquipUseComponent.h"
 #include "Interactable/OtherActors/Radars/Radar.h"
 #include "Inventory/ADInventoryComponent.h"
-#include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 #include "Shops/ShopInteractionComponent.h"
 #include "Subsystems/DataTableSubsystem.h"
@@ -95,7 +91,7 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(GetCapsuleComponent());
 	CameraBoom->TargetArmLength = 300.f;
-	CameraBoom->bUsePawnControlRotation = false;
+	CameraBoom->bUsePawnControlRotation = true;
 
 	ThirdPersonCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("ThirdPersonCamera"));
 	ThirdPersonCameraComponent->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
@@ -336,6 +332,58 @@ void AUnderwaterCharacter::EmitBloodNoise()
 	{
 		NoiseEmitterComponent->MakeNoise(this, BloodEmitPower, GetActorLocation());
 	}
+}
+
+void AUnderwaterCharacter::M_PlayMontageOnBothMesh_Implementation(UAnimMontage* Montage, float InPlayRate, FName StartSectionName, FAnimSyncState NewAnimSyncState)
+{
+	if (Montage == nullptr)
+	{
+		return;
+	}
+
+	bIsAnim3PSyncStateOverride = true;
+	bIsAnim1PSyncStateOverride = true;
+	OverrideAnimSyncState = NewAnimSyncState;
+	
+	if (UAnimInstance* AnimInstance = Mesh1P->GetAnimInstance())
+	{
+		AnimInstance->Montage_Play(Montage, InPlayRate);
+		if (StartSectionName != NAME_None)
+		{
+			AnimInstance->Montage_JumpToSection(StartSectionName, Montage);
+		}
+	}
+
+	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+	{
+		AnimInstance->Montage_Play(Montage, InPlayRate);
+		if (StartSectionName != NAME_None)
+		{
+			AnimInstance->Montage_JumpToSection(StartSectionName, Montage);
+		}
+	}
+}
+
+void AUnderwaterCharacter::RequestChangeAnimSyncState(FAnimSyncState NewAnimSyncState)
+{
+	if (HasAuthority())
+	{
+		M_UpdateAnimSyncState(NewAnimSyncState);
+	}
+	else
+	{
+		S_ChangeAnimSyncState(NewAnimSyncState);
+	}
+}
+
+void AUnderwaterCharacter::S_ChangeAnimSyncState_Implementation(FAnimSyncState NewAnimSyncState)
+{
+	RequestChangeAnimSyncState(NewAnimSyncState);
+}
+
+void AUnderwaterCharacter::M_UpdateAnimSyncState_Implementation(FAnimSyncState NewAnimSyncState)
+{
+	AnimSyncState = NewAnimSyncState;
 }
 
 void AUnderwaterCharacter::SetCharacterState(const ECharacterState NewCharacterState)
@@ -1099,6 +1147,43 @@ void AUnderwaterCharacter::ToggleDebugCameraMode()
 {
 	bUseDebugCamera = !bUseDebugCamera;
 	SetDebugCameraMode(bUseDebugCamera);
+}
+
+void AUnderwaterCharacter::OnMesh1PMontageStarted(UAnimMontage* Montage)
+{
+	OnMesh1PMontageStartedDelegate.Broadcast(Montage);
+}
+
+void AUnderwaterCharacter::OnMesh1PMontageEnded(UAnimMontage* Montage, bool bInterrupted)
+{
+	bIsAnim1PSyncStateOverride = false;
+	OnMesh1PMontageEndDelegate.Broadcast(Montage, bInterrupted);
+}
+
+void AUnderwaterCharacter::OnMesh3PMontageStarted(UAnimMontage* Montage)
+{
+	OnMesh3PMontageStartedDelegate.Broadcast(Montage);
+}
+
+void AUnderwaterCharacter::OnMesh3PMontageEnded(UAnimMontage* Montage, bool bInterrupted)
+{
+	bIsAnim3PSyncStateOverride = false;
+	OnMesh3PMontageEndDelegate.Broadcast(Montage, bInterrupted);
+}
+
+void AUnderwaterCharacter::SetupMontageCallbacks()
+{
+	if (UAnimInstance* AnimInstance3P = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr)
+	{
+		AnimInstance3P->OnMontageStarted.AddDynamic(this, &AUnderwaterCharacter::OnMesh3PMontageStarted);
+		AnimInstance3P->OnMontageEnded.AddDynamic(this, &AUnderwaterCharacter::OnMesh3PMontageEnded);
+	}
+
+	if (UAnimInstance* AnimInstance1P = Mesh1P ? Mesh1P->GetAnimInstance() : nullptr)
+	{
+		AnimInstance1P->OnMontageStarted.AddDynamic(this, &AUnderwaterCharacter::OnMesh1PMontageStarted);
+		AnimInstance1P->OnMontageEnded.AddDynamic(this, &AUnderwaterCharacter::OnMesh1PMontageEnded);
+	}
 }
 
 float AUnderwaterCharacter::GetRemainGroggyTime() const

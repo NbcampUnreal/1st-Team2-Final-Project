@@ -46,6 +46,24 @@ enum class ECharacterState : uint8
 // 4. Groggy -> Death : Groggy Time Out
 // 5. Groggy -> Normal : Revive
 
+USTRUCT(BlueprintType)
+struct FAnimSyncState
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	uint8 bEnableRightHandIK : 1 = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	uint8 bEnableLeftHandIK : 1 = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	uint8 bEnableFootIK : 1 = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	uint8 bIsStrafing : 1 = false;
+};
+
 class UInputAction;
 
 UCLASS()
@@ -121,9 +139,28 @@ public:
 	/** 출혈을 모델링하는 소리를 발생한다. */
 	UFUNCTION(BlueprintCallable)
 	void EmitBloodNoise();
+
+	/** 1인칭 메시, 3인칭 메시 모두에 애니메이션 몽타주를 재생한다. */
+	UFUNCTION(NetMulticast, Reliable)
+	void M_PlayMontageOnBothMesh(UAnimMontage* Montage, float InPlayRate = 1.0f, FName StartSectionName = NAME_None, FAnimSyncState NewAnimSyncState = FAnimSyncState());
+	void M_PlayMontageOnBothMesh_Implementation(UAnimMontage* Montage, float InPlayRate = 1.0f, FName StartSectionName = NAME_None, FAnimSyncState NewAnimSyncState = FAnimSyncState());
+
+	/** Anim State 변경 요청 */
+	void RequestChangeAnimSyncState(FAnimSyncState NewAnimSyncState);
+
 	
 protected:
 
+	/** Anim State 변경 Server RPC */
+	UFUNCTION(Server, Reliable)
+	void S_ChangeAnimSyncState(FAnimSyncState NewAnimSyncState);
+	void S_ChangeAnimSyncState_Implementation(FAnimSyncState NewAnimSyncState);
+
+	/** Anim State 변경 Multicast RPC */
+	UFUNCTION(NetMulticast, Reliable)
+	void M_UpdateAnimSyncState(FAnimSyncState NewAnimSyncState);
+	void M_UpdateAnimSyncState_Implementation(FAnimSyncState NewAnimSyncState);
+	
 	/** 캐릭터 상태를 설정한다. Server에서만 실행 가능하다. */
 	void SetCharacterState(ECharacterState NewCharacterState);
 
@@ -291,6 +328,27 @@ protected:
 	UFUNCTION(CallInEditor)
 	void ToggleDebugCameraMode();
 
+	/** 1인칭 메시 몽타주 시작 시 호출되는 함수 */
+	UFUNCTION()
+	virtual void OnMesh1PMontageStarted(UAnimMontage* Montage);
+
+	/** 1인칭 메시 몽타주 종료 시 호출되는 함수 */
+	UFUNCTION()
+	virtual void OnMesh1PMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+
+	/** 3인칭 메시 몽타주 시작 시 호출되는 함수 */
+	UFUNCTION()
+	virtual void OnMesh3PMontageStarted(UAnimMontage* Montage);
+
+	/** 3인칭 메시 몽타주 종료 시 호출되는 함수 */
+	UFUNCTION()
+	virtual void OnMesh3PMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+	
+private:
+
+	/** Montage 콜백을 등록 */
+	void SetupMontageCallbacks();
+	
 #pragma endregion
 
 #pragma region Variable
@@ -311,6 +369,24 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FOnCharacterStateChanged OnCharacterStateChangedDelegate;
 
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnMontageEnd, UAnimMontage*, Montage, bool, bInterrupted);
+	/** 1인칭 메시 몽타주 종료 시 호출되는 델리게이트 */
+	UPROPERTY(BlueprintAssignable, Category = Animation)
+	FOnMontageEnd OnMesh1PMontageEndDelegate;
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMontageStarted, UAnimMontage*, Montage);
+	/** 1인칭 메시 몽타주 시작 시 호출되는 델리게이트 */
+	UPROPERTY(BlueprintAssignable, Category = Animation)
+	FOnMontageStarted OnMesh1PMontageStartedDelegate;
+
+	UPROPERTY(BlueprintAssignable, Category = Animation)
+	/** 3인칭 메시 몽타주 종료 시 호출되는 델리게이트 */
+	FOnMontageEnd OnMesh3PMontageEndDelegate;
+
+	UPROPERTY(BlueprintAssignable, Category = Animation)
+	/** 3인칭 메시 몽타주 시작 시 호출되는 델리게이트 */
+	FOnMontageStarted OnMesh3PMontageStartedDelegate;
+	
 private:
 
 	// Character State는 현재 State 종료 시에 따로 처리할 것이 없기 때문에 현재 상태 값만 Replicate하도록 한다.
@@ -414,6 +490,19 @@ private:
 	/** 레이더 활성화 여부 */
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, ReplicatedUsing=OnRep_bIsRadarOn, Category = Character, meta = (AllowPrivateAccess = "true"))
 	uint8 bIsRadarOn : 1;
+
+	/** Animation를 재생하기 위한 정보이다. 애니메이션 재생 시에 한 번에 동기화되기 위해 사용된다. */
+	UPROPERTY(BlueprintReadOnly, Category = Animation, meta = (AllowPrivateAccess = "true"))
+	FAnimSyncState AnimSyncState;
+
+	/** Animation 1P Montage 적용 중인지 여부 */
+	uint8 bIsAnim1PSyncStateOverride : 1;
+
+	/** Animation 3P Montage 적용 중인지 여부 */
+	uint8 bIsAnim3PSyncStateOverride : 1;
+	
+	/** Montage 재생 중에 적용될 Anim Sync State */
+	FAnimSyncState OverrideAnimSyncState;
 
 	/** 이동 입력, 3차원 입력을 받는다. 캐릭터의 XYZ 축대로 맵핑을 한다. Forward : X, Right : Y, Up : Z */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
@@ -574,7 +663,14 @@ public:
 	/** 채광 속도를 반환 2.0일 경우 2배로 빠르게 채광한다. */
 	FORCEINLINE float GetGatherMultiplier() const { return GatherMultiplier; }
 
+	/** Mesh 1P 메시를 반환 */
 	FORCEINLINE USkeletalMeshComponent* GetMesh1P() const { return Mesh1P; }
-	
+
+	/** 1인칭 메시 Strafe 여부 반환 */
+	FORCEINLINE bool Is1PStrafe() const {return bIsAnim1PSyncStateOverride ? AnimSyncState.bIsStrafing : OverrideAnimSyncState.bIsStrafing;}
+
+	/** 3인칭 메시 Strafe 여부 반환 */
+	FORCEINLINE bool Is3PStrafe() const {return bIsAnim3PSyncStateOverride ? AnimSyncState.bIsStrafing : OverrideAnimSyncState.bIsStrafing;}
+		
 #pragma endregion
 };
