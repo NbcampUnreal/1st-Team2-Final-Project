@@ -74,6 +74,12 @@ public:
 
 	/** Interact Hold됬을 때 호출될 함수 */
 	virtual void InteractHold_Implementation(AActor* InstigatorActor) override;
+
+	/** Interact Hold가 시작됬을 때 호출될 함수 */
+	virtual void OnHoldStart_Implementation(APawn* InstigatorPawn) override;
+
+	/** Interact Hold가 중간에 멈췄을 때 호출될 함수 */
+	virtual void OnHoldStop_Implementation(APawn* InstigatorPawn) override;
 	
 	/** Interact Highlight 출력 여부 */
 	virtual bool CanHighlight_Implementation() const override;

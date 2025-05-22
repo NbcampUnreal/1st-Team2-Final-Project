@@ -6,6 +6,8 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "NiagaraSystem.h"  
 #include "NiagaraFunctionLibrary.h"
+#include "NiagaraComponent.h"
+#include "Components/AudioComponent.h"
 #include "Interactable/Item/Component/ADInteractableComponent.h"
 #include "Interactable/OtherActors/Radars/RadarReturnComponent.h"
 #include "Character/UnderwaterCharacter.h"
@@ -21,6 +23,10 @@ AADOreRock::AADOreRock()
 	InteractableComp = CreateDefaultSubobject<UADInteractableComponent>(TEXT("InteractableComp"));
 
 	bIsHold = true;
+
+	SpawnedTool = nullptr;
+	ActiveMiningVFX = nullptr;
+	ActiveMiningSFX = nullptr;
 }
 
 // Called when the game starts or when spawned
@@ -55,6 +61,21 @@ void AADOreRock::InteractHold_Implementation(AActor* InstigatorActor)
 	HandleMineRequest(Cast<APawn>(InstigatorActor));
 }
 
+void AADOreRock::OnHoldStart_Implementation(APawn* InstigatorPawn)
+{
+	LOGI(Log, TEXT("Mining Starts"));
+	SpawnAndAttachTool(InstigatorPawn);
+	PlayMiningAnim(InstigatorPawn);
+	ActivateMiningEffects();
+}
+
+void AADOreRock::OnHoldStop_Implementation(APawn* InstigatorPawn)
+{
+	LOGI(Log, TEXT("Mining Stops"));
+	PlayStowAnim(InstigatorPawn);
+	CleanupToolAndEffects();
+}
+
 void AADOreRock::HandleMineRequest(APawn* InstigatorPawn)
 {
 	if (!HasAuthority() || CurrentMiningGauge <= 0) return;
@@ -82,7 +103,8 @@ void AADOreRock::HandleMineRequest(APawn* InstigatorPawn)
 			//Destroy();
 		}
 	}
-	
+	PlayStowAnim(InstigatorPawn);
+	CleanupToolAndEffects();
 }
 
 void AADOreRock::SpawnDrops()
@@ -186,6 +208,122 @@ void AADOreRock::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifeti
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AADOreRock, CurrentMiningGauge);
+}
+
+void AADOreRock::SpawnAndAttachTool(APawn* InstigatorPawn)
+{
+	if (SpawnedTool || !MiningToolClass || !InstigatorPawn) return;
+
+	FActorSpawnParameters Params;
+	Params.Owner = InstigatorPawn;
+	Params.Instigator = InstigatorPawn;
+
+	SpawnedTool = GetWorld()->SpawnActor<AActor>(
+		MiningToolClass,
+		InstigatorPawn->GetActorLocation(),
+		InstigatorPawn->GetActorRotation(),
+		Params
+	);
+
+	if (SpawnedTool)
+	{
+		if (AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(InstigatorPawn))
+		{
+			SpawnedTool->AttachToComponent(
+				UnderwaterCharacter->GetMesh1P(),
+				FAttachmentTransformRules::SnapToTargetIncludingScale,
+				TEXT("Laser")
+			);
+			SpawnedTool->AttachToComponent(
+				UnderwaterCharacter->GetMesh(),
+				FAttachmentTransformRules::SnapToTargetIncludingScale,
+				TEXT("Laser")
+			);
+		}
+	}
+}
+
+void AADOreRock::PlayMiningAnim(APawn* InstigatorPawn)
+{
+	if (!MiningMontage || !InstigatorPawn) return;
+	if (AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(InstigatorPawn))
+	{
+		UnderwaterCharacter->PlayAnimMontage(MiningMontage);
+	}
+}
+
+void AADOreRock::ActivateMiningEffects()
+{
+	if (!SpawnedTool) return;
+
+	// VFX
+	if (MiningVFX)
+	{
+		UStaticMeshComponent* StaticMeshComp = SpawnedTool->FindComponentByClass<UStaticMeshComponent>();
+		USceneComponent* AttachComp = StaticMeshComp;
+		if (!AttachComp) AttachComp = SpawnedTool->GetRootComponent();
+
+		if (StaticMeshComp && StaticMeshComp->DoesSocketExist(TEXT("FX_Socket")))
+		{
+			ActiveMiningVFX = UNiagaraFunctionLibrary::SpawnSystemAttached(
+				MiningVFX,
+				AttachComp,
+				TEXT("FX_Socket"),
+				FVector::ZeroVector,
+				FRotator::ZeroRotator,
+				EAttachLocation::SnapToTarget,
+				false
+			);
+			LOGI(Log, TEXT("Is FX_Socket in StaticMesh"));
+		}
+		
+	}
+
+	// SFX
+	if (MiningSFX)
+	{
+		ActiveMiningSFX = UGameplayStatics::SpawnSoundAttached(
+			MiningSFX,
+			SpawnedTool->GetRootComponent(),
+			TEXT("FX_Socket"),
+			FVector::ZeroVector,
+			EAttachLocation::SnapToTarget,
+			false
+		);
+		LOGI(Log, TEXT("Is FX_Socket in Root"));
+	}
+}
+
+void AADOreRock::PlayStowAnim(APawn* InstigatorPawn)
+{
+	if (!StowMontage || !InstigatorPawn) return;
+	if (AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(InstigatorPawn))
+	{
+		UnderwaterCharacter->PlayAnimMontage(StowMontage);
+	}
+}
+
+void AADOreRock::CleanupToolAndEffects()
+{
+	if (ActiveMiningVFX)
+	{
+		ActiveMiningVFX->DeactivateImmediate();
+		ActiveMiningVFX->DestroyComponent();
+		ActiveMiningVFX = nullptr;
+	}
+
+	if (ActiveMiningSFX)
+	{
+		ActiveMiningSFX->Stop();
+		ActiveMiningSFX->DestroyComponent();
+		ActiveMiningSFX = nullptr;
+	}
+
+	if (SpawnedTool)
+	{
+		SpawnedTool->Destroy();
+		SpawnedTool = nullptr;
+	}
 }
 
 UADInteractableComponent* AADOreRock::GetInteractableComponent() const
