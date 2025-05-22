@@ -185,6 +185,8 @@ public:
 	FORCEINLINE bool GetIsBiteAttackSuccess() const { return bIsBiteAttackSuccess; }
 	FORCEINLINE void SetIsBiteAttackFalse() { bIsBiteAttackSuccess = false; }
 
+	FORCEINLINE UAnimInstance* GetAnimInstance() const { return AnimInstance; }
+
 #pragma endregion
 	
 };
