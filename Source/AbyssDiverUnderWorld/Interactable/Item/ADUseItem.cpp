@@ -8,39 +8,21 @@
 
 AADUseItem::AADUseItem()
 {
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 	Scene = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 	RootComponent = Scene;
 
 	SkeletalMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SkeletalMesh"));
 	SkeletalMesh->SetupAttachment(Scene);
 
-	SkeletalMesh->SetCollisionProfileName("BlockAllDynamic");
-	SkeletalMesh->SetGenerateOverlapEvents(true);
-	SkeletalMesh->SetSimulatePhysics(true);
-
 	bReplicates = true;
-	bHasInitializedDynamic = false;
+
 }
 
 void AADUseItem::BeginPlay()
 {
 	Super::BeginPlay();
 	//TODO : 기포 이펙트 추가
-}
-
-void AADUseItem::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-	FVector Location = GetActorLocation();
-	float SubmersionDepth = WaterHeight - Location.Z;
-
-	if (SubmersionDepth > 0) // 물속에 있음
-	{
-		// 물 저항 적용
-		SkeletalMesh->SetLinearDamping(WaterLinearDamping); //2.0 ~ 5.0 사이
-		SkeletalMesh->SetAngularDamping(WaterAngularDamping); //5.0 이상
-	}
 }
 
 void AADUseItem::M_SetSkeletalMesh_Implementation(USkeletalMesh* NewMesh)

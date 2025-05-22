@@ -21,11 +21,9 @@ class ABYSSDIVERUNDERWORLD_API UShopWidget : public UUserWidget
 {
 	GENERATED_BODY()
 
-
 protected:
 
 	virtual void NativeOnInitialized() override;
-	virtual void NativeConstruct() override;
 
 	virtual FReply NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 	virtual FReply NativeOnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;

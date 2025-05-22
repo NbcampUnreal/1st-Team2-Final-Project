@@ -84,7 +84,7 @@ void UADInteractionComponent::S_RequestInteract_Implementation(AActor* TargetAct
 			if (Pawn && Pawn->HasAuthority())
 			{
 				ADIC->Interact(Pawn);
-				LOG(TEXT("Pawn HasAuthority"));
+				LOGIC(Log, TEXT("Pawn HasAuthority"));
 			}
 		}
 	}
@@ -165,13 +165,13 @@ void UADInteractionComponent::TryInteract()
 	{
 		if (Pawn->HasAuthority())
 		{
-			LOG(TEXT("Server"));
+			LOGIC(Log, TEXT("Server"));
 			// 호스트 모드라면 바로 호출
 			FocusedInteractable->Interact(Pawn);
 		}
 		else
 		{
-			LOG(TEXT("Client"));
+			LOGIC(Log, TEXT("Client"));
 			S_RequestInteract(FocusedInteractable->GetOwner());
 		}
 	}
@@ -238,7 +238,14 @@ UADInteractableComponent* UADInteractionComponent::PerformLineTrace(const FVecto
 void UADInteractionComponent::UpdateFocus(UADInteractableComponent* NewFocus)
 {
 //	if (!IsLocallyControlled()) return;
-	if (NewFocus == FocusedInteractable) return;
+	if (NewFocus == FocusedInteractable) 
+	{
+		if (!ShouldHighlight(NewFocus))
+		{
+			ClearFocus();
+		}
+		return;
+	}
 
 	if (FocusedInteractable)
 		FocusedInteractable->SetHighLight(false);
@@ -325,7 +332,7 @@ void UADInteractionComponent::OnHoldComplete()
 	AActor* Instigator = HoldInstigator.Get();
 	if (!Instigator || !FocusedInteractable) return;
 
-	LOG(TEXT("End Hold!"));
+	LOGIC(Log, TEXT("End Hold!"));
 	IIADInteractable::Execute_InteractHold(FocusedInteractable->GetOwner(), Instigator);
 
 	bIsInteractingStart = false;
@@ -336,11 +343,13 @@ void UADInteractionComponent::HandleInteractPressed(AActor* TargetActor)
 
 	if (TargetActor->GetClass()->ImplementsInterface(UIADInteractable::StaticClass()))
 	{
+		IIADInteractable::Execute_OnHoldStart(TargetActor, Cast<APawn>(GetOwner()));
+
 		// == Hold 모드 ==
 		bHoldTriggered = false;
 		HoldInstigator = Cast<APawn>(GetOwner());
 
-		LOG(TEXT("Start Hold!"));
+		LOGIC(Log, TEXT("Start Hold!"));
 		GetWorld()->GetTimerManager().SetTimer(
 			HoldTimerHandle, this,
 			&UADInteractionComponent::OnHoldComplete,
@@ -352,7 +361,18 @@ void UADInteractionComponent::HandleInteractReleased()
 {
 	bIsInteractingStart = false;
 	GetWorld()->GetTimerManager().ClearTimer(HoldTimerHandle);
-	LOG(TEXT("Fail Hold!"));
+	LOGIC(Log, TEXT("Fail Hold!"));
+
+	if (FocusedInteractable && HoldInstigator.Get())
+	{
+		APawn* InstigatorPawn = Cast<APawn>(HoldInstigator.Get());
+		if (InstigatorPawn)
+		{
+			IIADInteractable::Execute_OnHoldStop(FocusedInteractable->GetOwner(), InstigatorPawn);
+		}
+		
+	}
+		
 	HoldInstigator = nullptr;
 }
 

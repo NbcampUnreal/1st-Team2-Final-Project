@@ -16,6 +16,8 @@
 #include "Subsystems/DataTableSubsystem.h"
 #include "UI/ADNightVisionGoggle.h"
 
+
+
 // Sets default values for this component's properties
 UEquipUseComponent::UEquipUseComponent()
 {
@@ -197,7 +199,7 @@ void UEquipUseComponent::OnRep_NightVisionOn()
 		}
 		else
 		{
-			LOG(TEXT("No UI Instance"))
+			LOGIC(Log, TEXT("No UI Instance"))
 		}
 
 	}
@@ -210,7 +212,7 @@ void UEquipUseComponent::OnRep_NightVisionOn()
 		}
 		else
 		{
-			LOG(TEXT("No UI Instance"))
+			LOGIC(Log, TEXT("No UI Instance"))
 		}
 	}
 
@@ -229,11 +231,11 @@ void UEquipUseComponent::OnRep_NightVisionUIVisible()
 				? ESlateVisibility::Visible
 				: ESlateVisibility::Hidden);
 		}
-		LOG(TEXT("%s"), bNVGWidgetVisible ? TEXT("True") : TEXT("False"));
+		LOGIC(Log, TEXT("%s"), bNVGWidgetVisible ? TEXT("True") : TEXT("False"));
 	}
 	else
 	{
-		LOG(TEXT("No Owning Character"));
+		LOGIC(Log, TEXT("No Owning Character"));
 	}
 	
 }
@@ -254,7 +256,7 @@ void UEquipUseComponent::Initialize(FItemData& ItemData)
 	UGameInstance* GI = GetWorld()->GetGameInstance();
 	if (!GI)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Initialize: No valid GameInstance"));
+		LOGIC(Log, TEXT("Initialize: No valid GameInstance"))
 		return;
 	}
 	UDataTableSubsystem* DataTableSubsystem = GI->GetSubsystem<UDataTableSubsystem>();
@@ -294,8 +296,7 @@ void UEquipUseComponent::Initialize(FItemData& ItemData)
 			bNVGWidgetVisible = true;
 		}
 	}
-
-	UE_LOG(LogTemp, Log, TEXT(
+	LOGIC(Log, TEXT(
 		"Initialize: Weapon=%s, Ammo=%d/%d, Amount=%d"),
 		bIsWeapon ? TEXT("true") : TEXT("false"),
 		CurrentAmmoInMag, ReserveAmmo, Amount);
@@ -309,7 +310,7 @@ void UEquipUseComponent::DeinitializeEquip()
 		CurrentItemData->CurrentAmmoInMag = CurrentAmmoInMag;
 		CurrentItemData->ReserveAmmo = ReserveAmmo;
 		CurrentItemData = nullptr;
-		LOG(TEXT("No Current Item"));
+		LOGIC(Log, TEXT("No Current Item"));
 	}
 
 
@@ -402,7 +403,7 @@ void UEquipUseComponent::FireHarpoon()
 	FRotator  CamRot = FRotator::ZeroRotator;;
 	if (AController* PC = OwningCharacter->GetController())
 	{
-		LOG(TEXT("Is PlayerController"));
+		LOGIC(Log, TEXT("Is PlayerController"));
 		PC->GetPlayerViewPoint(CamLoc, CamRot);     
 	}
 	else { return; }
@@ -413,7 +414,7 @@ void UEquipUseComponent::FireHarpoon()
 	{
 		if (Mesh->DoesSocketExist(SocketName))
 		{
-			LOG(TEXT("Is Socket"));
+			LOGIC(Log, TEXT("Is Socket"));
 			MuzzleLoc = Mesh->GetSocketLocation(SocketName);
 		}
 	}
@@ -434,7 +435,7 @@ void UEquipUseComponent::FireHarpoon()
 
 	if (!Proj)
 	{
-		LOG(TEXT("No Projectile"));
+		LOGIC(Log, TEXT("No Projectile"));
 		return;
 	}
 	

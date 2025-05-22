@@ -33,6 +33,9 @@ private:
 
 	UFUNCTION(Exec, Category = "Cheat")
 	void GetOre();
+	
+	UFUNCTION(Exec, Category = "Cheat")
+	void GetMoney();
 
 #pragma endregion
 
