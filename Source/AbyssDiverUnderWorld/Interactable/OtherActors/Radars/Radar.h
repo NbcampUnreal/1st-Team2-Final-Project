@@ -22,7 +22,8 @@ enum class EGridRotationOption : uint8
 	NoGridRotation,
 	MaintainLocalRotation,
 	ZRotationOnly,
-	ZMatchesWorld
+	ZMatchesWorld,
+	GridRotatesOnZYAxisInverse,
 };
 
 USTRUCT(BlueprintType)
@@ -114,6 +115,7 @@ protected:
 #pragma region Methods
 public:
 
+	UFUNCTION(BlueprintCallable, Category = "Radar")
 	void UpdateRadarSourceComponent(USceneComponent* NewRadarSourceLocation, USceneComponent* NewRadarSourceRotation);
 	void AddReturn(URadarReturnComponent* RadarReturn, EFriendOrFoe FriendOrFoe);
 	void RemoveReturn(URadarReturnComponent* RadarReturn, int32 InIndex);
@@ -331,6 +333,8 @@ public:
 
 	const FName& GetRadarTag() const;
 	void SetRadarTag(const FName& NewTag);
+
+	void SetGridRotationOption(EGridRotationOption Option);
 
 #pragma endregion
 
