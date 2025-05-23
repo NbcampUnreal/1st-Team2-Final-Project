@@ -72,5 +72,7 @@ private:
 	// 실제 생성된 산소 위젯 인스턴스
 	UPROPERTY()
 	TObjectPtr<UPlayerStatusWidget> PlayerStatusWidget;
+
+
 #pragma endregion
 };
