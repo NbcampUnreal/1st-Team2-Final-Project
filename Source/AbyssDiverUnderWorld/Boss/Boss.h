@@ -52,7 +52,7 @@ public:
 	void AddPatrolPoint();
 
 	/** 보스의 이동속도를 설정하는 함수 */
-	void SetMoveSpeed(float& SpeedMultiplier);
+	void SetMoveSpeed(const float& SpeedMultiplier);
 	
 	UFUNCTION(NetMulticast, Reliable)
 	virtual void M_PlayAnimation(UAnimMontage* AnimMontage, float InPlayRate = 1, FName StartSectionName = NAME_None);
@@ -88,9 +88,6 @@ private:
 public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
 	EBossPhysicsType BossPhysicsType;
-	
-	UPROPERTY()
-	uint8 bIsAttackCollisionOverlappedPlayer : 1;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Effect")
 	TObjectPtr<UNiagaraSystem> BloodEffect;
@@ -169,6 +166,7 @@ private:
 	static const FName BossStateKey;
 	uint8 CurrentPatrolPointIndex = 0;
 	uint8 bIsBiteAttackSuccess : 1;
+	uint8 bIsAttackCollisionOverlappedPlayer : 1;
 	
 #pragma endregion
 
@@ -195,7 +193,7 @@ public:
 	FORCEINLINE void InitCachedTarget() { CachedTargetPlayer = nullptr; };
 
 	AActor* GetTargetPoint();
-	FVector GetTargetPointLocation();
+	const FVector GetTargetPointLocation() const;
 	
 #pragma endregion
 	

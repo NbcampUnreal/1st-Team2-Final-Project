@@ -5,6 +5,7 @@
 #include "Navigation/PathFollowingComponent.h"
 #include "BossAIController.generated.h"
 
+class UAISenseConfig_Hearing;
 class UAISenseConfig_Damage;
 enum class EBossState : uint8;
 class AUnderwaterCharacter;
@@ -25,6 +26,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaTime) override;
 	virtual void OnPossess(APawn* InPawn) override;
 
 #pragma region Method
@@ -73,6 +75,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Perception")
 	TObjectPtr<UAISenseConfig_Damage> DamageConfig;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Perception")
+	TObjectPtr<UAISenseConfig_Hearing> HearingConfig;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI|Target")
 	TArray<TObjectPtr<AUnderwaterCharacter>> DetectedPlayers;
 
@@ -101,6 +106,7 @@ private:
 #pragma region Getter, Setter
 public:
 	void SetDetectedStatePossible();
+	void DrawDebugRangeCircle();
 
 #pragma endregion
 	
