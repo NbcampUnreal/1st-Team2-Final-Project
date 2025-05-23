@@ -63,6 +63,8 @@ protected:
 #pragma endregion
 
 private:
+    UPROPERTY()
     TArray<TObjectPtr<UImage>> HealthSegments;
+
 
 };
