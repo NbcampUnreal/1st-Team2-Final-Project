@@ -23,7 +23,7 @@ enum class EGridRotationOption : uint8
 	MaintainLocalRotation,
 	ZRotationOnly,
 	ZMatchesWorld,
-	IgnoreYawRotation,
+	GridRotatesOnZYAxisInverse,
 };
 
 USTRUCT(BlueprintType)

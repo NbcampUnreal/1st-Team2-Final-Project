@@ -739,11 +739,9 @@ void ARadar::RotateRadarGrid()
 		NewRotationYaw = UKismetMathLibrary::MakeRelativeTransform(ATransform, ReletiveTransform).Rotator().Yaw;
 
 		break;
-	case EGridRotationOption::IgnoreYawRotation:
+	case EGridRotationOption::GridRotatesOnZYAxisInverse:
 
-		NewRotationRoll = NewRotation.Roll;
-		NewRotationPitch = NewRotation.Pitch;
-		NewRotationYaw = NewRotation.Yaw;
+		NewRotationYaw =  -RadarSourceRotationComponent->GetComponentRotation().Yaw;
 		break;
 	default:
 		check(false);
@@ -977,27 +975,7 @@ void ARadar::UpdateExistingReturnMesh()
 		ReturnMesh->AttachToComponent(RadarGrid, Rules);
 	}
 
-	if (GridRotationOption == EGridRotationOption::IgnoreYawRotation)
-	{
-		FVector ParentLocation = RadarGrid->GetComponentLocation();
-		FRotator ParentRotator = RadarGrid->GetComponentRotation();
-
-		// Yaw 제거
-		FRotator NoYawRotation = FRotator(ParentRotator.Pitch, 0.f, ParentRotator.Roll);
-
-		// Offset 회전 적용
-		FVector RotatedOffset = NoYawRotation.RotateVector(CurrentMeshTransform.GetLocation());
-
-		// 회전 적용: Pitch + Roll만 적용, Yaw는 0 고정
-		//ReturnMesh->SetWorldRotation(NoYawRotation);
-		ReturnMesh->SetWorldLocation(RotatedOffset + RadarGrid->GetComponentLocation());
-		ReturnMesh->SetRelativeScale3D(CurrentMeshTransform.GetScale3D());
-		ReturnMesh->SetRelativeRotation(CurrentMeshTransform.GetRotation());
-	}
-	else
-	{
-		ReturnMesh->SetRelativeTransform(CurrentMeshTransform);
-	}
+	ReturnMesh->SetRelativeTransform(CurrentMeshTransform);
 
 	check(FriendOrFoeStatusArray.IsValidIndex(CurrentIndexCached));
 
