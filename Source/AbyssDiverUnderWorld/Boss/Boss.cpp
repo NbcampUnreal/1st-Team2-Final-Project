@@ -1,7 +1,8 @@
 #include "Boss/Boss.h"
 #include "AbyssDiverUnderWorld.h"
-#include "EBossPhysicsType.h"
-#include "EBossState.h"
+#include "EngineUtils.h"
+#include "Enum/EBossPhysicsType.h"
+#include "Enum/EBossState.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Character/StatComponent.h"
 #include "Character/UnderwaterCharacter.h"
@@ -14,6 +15,8 @@
 #include "Navigation/PathFollowingComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "NavigationSystem.h"
+#include "NiagaraFunctionLibrary.h"
+#include "Perception/AISense_Damage.h"
 
 const FName ABoss::BossStateKey = "BossState";
 
@@ -31,6 +34,7 @@ ABoss::ABoss()
 	AttackedCameraShakeScale = 1.0f;
 	bIsBiteAttackSuccess = false;
 	BossPhysicsType = EBossPhysicsType::None;
+	DamagedLocation = FVector::ZeroVector;
 	
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 
@@ -42,7 +46,12 @@ ABoss::ABoss()
 	AttackCollision->ComponentTags.Add(TEXT("Attack Collision"));
 
 	CameraControllerComponent = CreateDefaultSubobject<UCameraControllerComponent>("Camera Controller Component");
-	
+
+	static ConstructorHelpers::FObjectFinder<UNiagaraSystem> BloodNiagara(TEXT("/Game/SurvivalFX/Particles/Hit/PS_Hit_Blood_Big"));
+	if (BloodNiagara.Succeeded())
+	{
+		BloodEffect = BloodNiagara.Object;
+	}
 	bReplicates = true;
 }
 
@@ -61,6 +70,8 @@ void ABoss::BeginPlay()
 
 	AttackCollision->OnComponentBeginOverlap.AddDynamic(this, &ABoss::OnAttackCollisionOverlapBegin);
 	AttackCollision->OnComponentEndOverlap.AddDynamic(this, &ABoss::OnAttackCollisionOverlapEnd);
+
+	GetCharacterMovement()->MaxFlySpeed = StatComponent->GetMoveSpeed();
 }
 
 void ABoss::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
@@ -104,7 +115,7 @@ float ABoss::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
 {
 	// 사망 상태면 얼리 리턴
 	if (BossState == EBossState::Death) return 0.0f;
-
+	
 	const float Damage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
 	// 부위 타격 정보
@@ -119,12 +130,6 @@ float ABoss::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
 			LOG(TEXT("Hit Bone: %s"), *HitResult.BoneName.ToString());
 		}
 
-		if (HitResult.PhysMaterial.IsValid())
-		{
-			FString CollisionName = HitResult.PhysMaterial->GetName();
-			LOG(TEXT("Hit Collision: %s"), *CollisionName);
-		}
-
 		if (HitResult.PhysicsObjectOwner.IsValid())
 		{
 			FName RegionName = *HitResult.PhysicsObjectOwner->GetName();
@@ -134,7 +139,23 @@ float ABoss::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
 		if (HitResult.ImpactPoint != FVector::ZeroVector)
 		{
 			LOG(TEXT("Damage Location: %s"), *HitResult.ImpactPoint.ToString());
+			if (IsValid(BloodEffect))
+			{
+				UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+				GetWorld(), BloodEffect,HitResult.ImpactPoint, FRotator::ZeroRotator, FVector(1), true, true );
+			}
 		}
+
+		UAISense_Damage::ReportDamageEvent(
+		GetWorld(),
+		this,        // 데미지를 입은 보스
+		DamageCauser,      // 공격한 플레이어
+		Damage,
+		DamageCauser->GetActorLocation(),
+		HitResult.ImpactPoint
+		);
+
+		DamagedLocation = DamageCauser->GetActorLocation();
 	}
 	
 	if (IsValid(StatComponent))
@@ -164,7 +185,6 @@ void ABoss::OnDeath()
 
 	// AIController 작동 중지
 	AIController->UnPossess();
-	
 }
 
 
@@ -213,6 +233,11 @@ void ABoss::AddPatrolPoint()
 	{
 		++CurrentPatrolPointIndex;
 	}
+}
+
+void ABoss::SetMoveSpeed(float& SpeedMultiplier)
+{
+	GetCharacterMovement()->MaxFlySpeed = StatComponent->MoveSpeed * SpeedMultiplier;
 }
 
 void ABoss::M_PlayAnimation_Implementation(class UAnimMontage* AnimMontage, float InPlayRate, FName StartSectionName)
@@ -333,45 +358,12 @@ FVector ABoss::GetNextPatrolPoint()
 }
 
 #pragma region Getter, Setter
-AUnderwaterCharacter* ABoss::GetTarget()
-{
-	if (!IsValid(TargetPlayer)) return nullptr;
-	
-	return TargetPlayer;
-}
-
-void ABoss::SetTarget(AUnderwaterCharacter* Target)
-{
-	if (!IsValid(Target)) return;
-	
-	TargetPlayer = Target;
-}
-
-void ABoss::InitTarget()
-{
-	TargetPlayer = nullptr;
-}
-
-void ABoss::SetLastDetectedLocation(const FVector& InLastDetectedLocation)
-{
-	LastDetectedLocation = InLastDetectedLocation;
-}
 
 FVector ABoss::GetTargetPointLocation()
 {
 	if (!PatrolPoints.IsValidIndex(CurrentPatrolPointIndex)) return FVector::ZeroVector;
 	
 	return PatrolPoints[CurrentPatrolPointIndex]->GetActorLocation();
-}
-
-bool ABoss::GetIsAttackCollisionOverlappedPlayer()
-{
-	return bIsAttackCollisionOverlappedPlayer;
-}
-
-UCameraControllerComponent* ABoss::GetCameraControllerComponent() const
-{
-	return CameraControllerComponent;
 }
 
 AActor* ABoss::GetTargetPoint()

@@ -1,6 +1,6 @@
 #include "Boss/Kraken/Kraken.h"
 #include "AbyssDiverUnderWorld.h"
-#include "Boss/EBossState.h"
+#include "Boss/Enum/EBossState.h"
 #include "Character/UnderwaterCharacter.h"
 #include "Components/CapsuleComponent.h"
 

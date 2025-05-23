@@ -1,6 +1,6 @@
 #include "Boss/Task/Serpmare/BTTask_SerpmareAttack.h"
 #include "BehaviorTree/BlackboardComponent.h"
-#include "Boss/EBossState.h"
+#include "Boss/Enum/EBossState.h"
 #include "Boss/Serpmare/Serpmare.h"
 
 UBTTask_SerpmareAttack::UBTTask_SerpmareAttack()

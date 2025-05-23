@@ -5,6 +5,7 @@
 #include "Navigation/PathFollowingComponent.h"
 #include "BossAIController.generated.h"
 
+class UAISenseConfig_Damage;
 enum class EBossState : uint8;
 class AUnderwaterCharacter;
 class ABoss;
@@ -69,6 +70,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Perception")
 	TObjectPtr<UAISenseConfig_Sight> SightConfig;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Perception")
+	TObjectPtr<UAISenseConfig_Damage> DamageConfig;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI|Target")
 	TArray<TObjectPtr<AUnderwaterCharacter>> DetectedPlayers;
 
@@ -84,11 +88,13 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AI|Perception")
 	uint8 bIsSightDetectionPossible : 1;
 
+	UPROPERTY()
+	TObjectPtr<ABoss> Boss;
+	
 private:
 	static const FName BossStateKey;
 	uint8 bIsDetectedStatePossible : 1;
 	float AccumulatedTime;
-	TObjectPtr<ABoss> Boss;
 	FTimerHandle DetectedStateTimerHandle;
 #pragma endregion
 

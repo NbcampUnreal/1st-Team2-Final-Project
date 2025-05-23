@@ -1,6 +1,5 @@
 #include "Boss/Task/Serpmare/BTTask_SerpmareDetected.h"
-
-#include "Boss/EBossState.h"
+#include "Boss/Enum/EBossState.h"
 #include "Boss/Serpmare/Serpmare.h"
 
 UBTTask_SerpmareDetected::UBTTask_SerpmareDetected()

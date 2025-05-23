@@ -5,6 +5,7 @@
 #include "Character/UnitBase.h"
 #include "Boss.generated.h"
 
+class UNiagaraSystem;
 enum class EBossPhysicsType : uint8;
 class UCameraControllerComponent;
 class ATargetPoint;
@@ -51,8 +52,7 @@ public:
 	void AddPatrolPoint();
 
 	/** 보스의 이동속도를 설정하는 함수 */
-	UFUNCTION(BlueprintImplementableEvent)
-	void SetMoveSpeed(float Speed);
+	void SetMoveSpeed(float& SpeedMultiplier);
 	
 	UFUNCTION(NetMulticast, Reliable)
 	virtual void M_PlayAnimation(UAnimMontage* AnimMontage, float InPlayRate = 1, FName StartSectionName = NAME_None);
@@ -92,6 +92,9 @@ public:
 	UPROPERTY()
 	uint8 bIsAttackCollisionOverlappedPlayer : 1;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Effect")
+	TObjectPtr<UNiagaraSystem> BloodEffect;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
 	float MinPatrolDistance;
 
@@ -109,6 +112,9 @@ public:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Target")
 	TObjectPtr<AUnderwaterCharacter> TargetPlayer;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Target")
+	TObjectPtr<AUnderwaterCharacter> CachedTargetPlayer;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Target")
 	FVector LastDetectedLocation;
@@ -156,6 +162,9 @@ protected:
 	UPROPERTY(Replicated, BlueprintReadWrite)
 	EBossState BossState;
 
+	UPROPERTY()
+	FVector DamagedLocation;
+
 private:
 	static const FName BossStateKey;
 	uint8 CurrentPatrolPointIndex = 0;
@@ -165,22 +174,29 @@ private:
 
 #pragma region Getter, Setter
 public:
-	AUnderwaterCharacter* GetTarget();
-	void SetTarget(AUnderwaterCharacter* Target);
-	void InitTarget();
-	
-	void SetLastDetectedLocation(const FVector& InLastDetectedLocation);
+	/** Target Getter, Setter */
+	FORCEINLINE AUnderwaterCharacter* GetTarget() const { return TargetPlayer; };
+	FORCEINLINE void SetTarget(AUnderwaterCharacter* Target) { TargetPlayer = Target; };
+	FORCEINLINE void InitTarget() { TargetPlayer = nullptr; };
 
-	AActor* GetTargetPoint();
-	FVector GetTargetPointLocation();
+	/** LastDetectedLocation Getter */
+	FORCEINLINE void SetLastDetectedLocation(const FVector& InLastDetectedLocation) { LastDetectedLocation = InLastDetectedLocation; };
 
-	bool GetIsAttackCollisionOverlappedPlayer();
+	FORCEINLINE bool GetIsAttackCollisionOverlappedPlayer() const { return bIsAttackCollisionOverlappedPlayer; };
 
-	UCameraControllerComponent* GetCameraControllerComponent() const;
+	FORCEINLINE UCameraControllerComponent* GetCameraControllerComponent() const { return CameraControllerComponent; };
 
 	FORCEINLINE bool GetIsBiteAttackSuccess() const { return bIsBiteAttackSuccess; }
 	FORCEINLINE void SetIsBiteAttackFalse() { bIsBiteAttackSuccess = false; }
+	FORCEINLINE UAnimInstance* GetAnimInstance() const { return AnimInstance; }
+	FORCEINLINE FVector GetDamagedLocation() const { return DamagedLocation; }
+	FORCEINLINE AUnderwaterCharacter* GetCachedTarget() const { return CachedTargetPlayer; };
+	FORCEINLINE void SetCachedTarget(AUnderwaterCharacter* Target) { CachedTargetPlayer = Target; };
+	FORCEINLINE void InitCachedTarget() { CachedTargetPlayer = nullptr; };
 
+	AActor* GetTargetPoint();
+	FVector GetTargetPointLocation();
+	
 #pragma endregion
 	
 };
