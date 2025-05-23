@@ -6,7 +6,19 @@
 #include "InputActionValue.h"
 #include "UnitBase.h"
 #include "Interface/IADInteractable.h"
+#include "AbyssDiverUnderWorld.h"
 #include "UnderwaterCharacter.generated.h"
+
+#if UE_BUILD_SHIPPING
+	#define LOG_ABYSS_DIVER_COMPILE_VERBOSITY Error
+#else
+	#define LOG_ABYSS_DIVER_COMPILE_VERBOSITY All
+#endif
+
+#define LOG_NETWORK(Category, Verbosity, Format, ...) \
+	UE_LOG(Category, Verbosity, TEXT("[%s] %s %s"), LOG_NETMODEINFO, LOG_CALLINFO, *FString::Printf(Format, ##__VA_ARGS__))
+
+DECLARE_LOG_CATEGORY_EXTERN(LogAbyssDiverCharacter, Log, LOG_ABYSS_DIVER_COMPILE_VERBOSITY);
 
 // @TODO : Character Status Replicate 문제
 // 1. 최대 Stamina는 최대 Oxygen에 비례하는데 값이 따로따로 Replicate될 수 있다. 이렇게 되면 항상 오차가 존재하게 된다.
@@ -270,6 +282,9 @@ protected:
 	UFUNCTION()
 	void OnHealthChanged(int32 CurrentHealth, int32 MaxHealth);
 
+	UFUNCTION()
+	void OnPhysicsVolumeChanged(class APhysicsVolume* NewVolume);
+	
 	/** 이동 함수. 지상, 수중 상태에 따라 이동한다. */
 	void Move(const FInputActionValue& InputActionValue);
 

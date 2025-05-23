@@ -26,6 +26,8 @@
 #include "Subsystems/DataTableSubsystem.h"
 #include "UI/HoldInteractionWidget.h"
 
+DEFINE_LOG_CATEGORY(LogAbyssDiverCharacter);
+
 AUnderwaterCharacter::AUnderwaterCharacter()
 {
 	FirstPersonCameraArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("FirstPersonCameraArm"));
@@ -128,7 +130,7 @@ void AUnderwaterCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
-	SetEnvState(EnvState);
+	RootComponent->PhysicsVolumeChangedDelegate.AddDynamic(this, &AUnderwaterCharacter::OnPhysicsVolumeChanged);
 
 	SetDebugCameraMode(bUseDebugCamera);
 
@@ -273,27 +275,20 @@ void AUnderwaterCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProp
 
 void AUnderwaterCharacter::SetEnvState(EEnvState State)
 {
+	if (EnvState == State)
+	{
+		return;
+	}
 	EnvState = State;
 
 	switch (EnvState)
 	{
 	case EEnvState::Underwater:
-		// 현재 Physics Volume을 Water로 설정한다.
-		// 현재 Physics Volume이 Water가 아닐 경우 World의 Default Volume을 반환한다.
-		// Default Volume을 Water를 설정해서 Swim Mode를 사용할 수 있도록 한다.
-		GetCharacterMovement()->GetPhysicsVolume()->bWaterVolume = true;
-		GetCharacterMovement()->SetMovementMode(MOVE_Swimming);
-		GetCharacterMovement()->bOrientRotationToMovement = false;
 		GetCharacterMovement()->GravityScale = 0.0f;
-		bUseControllerRotationYaw = true;
 		break;
 	case EEnvState::Ground:
 		// 지상에서는 이동 방향으로 회전을 하게 한다.
-		GetCharacterMovement()->GetPhysicsVolume()->bWaterVolume = false;
-		GetCharacterMovement()->SetMovementMode(MOVE_Walking);
-		GetCharacterMovement()->bOrientRotationToMovement = false;
 		GetCharacterMovement()->GravityScale = 1.0f;
-		bUseControllerRotationYaw = true;
 		break;
 	default:
 		UE_LOG(AbyssDiver, Error, TEXT("Invalid Character State"));
@@ -724,6 +719,14 @@ void AUnderwaterCharacter::OnHealthChanged(int32 CurrentHealth, int32 MaxHealth)
 		// Transition 1
 		SetCharacterState(ECharacterState::Groggy);
 	}
+}
+
+void AUnderwaterCharacter::OnPhysicsVolumeChanged(class APhysicsVolume* NewVolume)
+{
+	LOG_NETWORK(LogAbyssDiverCharacter, Display, TEXT("Physics Volume Changed : %s"), *NewVolume->GetName());
+
+	const EEnvState NewEnvState = NewVolume->bWaterVolume ? EEnvState::Underwater : EEnvState::Ground;
+	SetEnvState(NewEnvState);
 }
 
 void AUnderwaterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)

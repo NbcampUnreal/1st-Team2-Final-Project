@@ -19,6 +19,13 @@ UUnderwaterAnimInstance::UUnderwaterAnimInstance()
 	UpSpeed = 0.0f;
 	Direction = 0.0f;
 	
+	bIsStrafing = false;
+	ModifyPitch = 0.0f;
+	LeanThresholdSpeed = 200.0f;
+	MaxLeanAngle = 30.0f;
+
+	bShouldLean = false;
+	
 	bShouldMove = false;
 	bIsGroggy = false;
 	bIsDead = false;
@@ -44,7 +51,9 @@ void UUnderwaterAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		return;
 	}
 	
-	UpdateVariables();	
+	UpdateVariables();
+
+	UpdateLeanAngle();
 }
 
 void UUnderwaterAnimInstance::UpdateVariables()
@@ -68,4 +77,25 @@ void UUnderwaterAnimInstance::UpdateVariables()
 
 	// Actor는 Z축 기준으로만 회전하기 때문에 Rotation으로만 계산해도 현재로서는 문제 없다.
 	Direction = UKismetAnimationLibrary::CalculateDirection(Velocity, UnderwaterCharacter->GetActorRotation());
+}
+
+void UUnderwaterAnimInstance::UpdateLeanAngle()
+{
+	// 현재 기준으로는 느리게 움직일 경우 Lean을 할 필요가 없다.
+	// BS에서 기준이 되는 지점에서 적용하면 될 듯 하다.
+
+	float TargetAngle = 0.0f;
+	float InterpSpeed = 1.0f;
+
+	const bool bMoveBackward = Direction < -90 || Direction > 90;
+	if (Speed > LeanThresholdSpeed && !bMoveBackward)
+	{
+		TargetAngle = FMath::Clamp(Direction, -MaxLeanAngle, MaxLeanAngle);
+		InterpSpeed = 5.0f;
+	}
+
+	ModifyPitch = FMath::FInterpTo(ModifyPitch, TargetAngle, GetWorld()->GetDeltaSeconds(), InterpSpeed);
+
+	// UE_LOG(LogTemp,Display, TEXT("Direction : %f"), Direction);
+	// UE_LOG(LogTemp,Display, TEXT("ModifyPitch : %f"), ModifyPitch);
 }
