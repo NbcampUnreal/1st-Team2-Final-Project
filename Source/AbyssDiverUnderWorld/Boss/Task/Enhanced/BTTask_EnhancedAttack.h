@@ -31,6 +31,6 @@ private:
 	TObjectPtr<UAnimInstance> AnimInstance;
 
 	UPROPERTY()
-	uint8 bHasAttacked : 1;
+	FName BlackboardKeyName;
 	
 };
