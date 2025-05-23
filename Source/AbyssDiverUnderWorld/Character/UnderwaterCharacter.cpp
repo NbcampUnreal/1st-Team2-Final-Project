@@ -26,6 +26,8 @@
 #include "Subsystems/DataTableSubsystem.h"
 #include "UI/HoldInteractionWidget.h"
 
+DEFINE_LOG_CATEGORY(LogAbyssDiverCharacter);
+
 AUnderwaterCharacter::AUnderwaterCharacter()
 {
 	FirstPersonCameraArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("FirstPersonCameraArm"));
