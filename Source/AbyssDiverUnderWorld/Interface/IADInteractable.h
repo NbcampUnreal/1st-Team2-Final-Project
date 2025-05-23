@@ -26,6 +26,14 @@ public:
 	UFUNCTION(BlueprintNativeEvent, Category = "Interaction")
 	void InteractHold(AActor* InstigatorActor);
 	virtual void InteractHold_Implementation(AActor* InstigatorActor);
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interaction")
+	void OnHoldStart(APawn* InstigatorPawn);
+	virtual void OnHoldStart_Implementation(APawn* InstigatorPawn);
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interaction")
+	void OnHoldStop(APawn* InstigatorPawn);
+	virtual void OnHoldStop_Implementation(APawn* InstigatorPawn);
+
 	UFUNCTION(BlueprintNativeEvent, Category = "Interaction")
 	bool CanHighlight() const;
 	virtual bool CanHighlight_Implementation() const { return true; }

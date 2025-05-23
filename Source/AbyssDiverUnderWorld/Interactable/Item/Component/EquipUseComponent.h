@@ -7,10 +7,13 @@
 #include "Interactable/Item/ADUseItem.h"
 #include "EquipUseComponent.generated.h"
 
+
+
 class AADProjectileBase;
 class UUserWidget;
 class AADSpearGunBullet;
 class UADNightVisionGoggle;
+class UChargeBatteryWidget;
 
 enum class EAction : uint8
 {
@@ -77,6 +80,8 @@ public:
 	void OnRep_NightVisionOn();
 	UFUNCTION()
 	void OnRep_NightVisionUIVisible();
+	UFUNCTION()
+	void OnRep_ChargeBatteryUIVisible();
 
 	// 내부 실행 함수
 	UFUNCTION(BlueprintCallable)
@@ -155,9 +160,15 @@ public:
 	TSubclassOf<UADNightVisionGoggle> NightVisionClass;
 	UPROPERTY(VisibleAnywhere, Category = "NightVision")
 	TObjectPtr<UADNightVisionGoggle> NightVisionInstance;
+	UPROPERTY(EditAnywhere, Category = "Battery")
+	TSubclassOf<UChargeBatteryWidget> ChargeBatteryClass;
+	UPROPERTY(VisibleAnywhere, Category = "Battery")
+	TObjectPtr<UChargeBatteryWidget> ChargeBatteryInstance;
 
 	UPROPERTY(ReplicatedUsing = OnRep_NightVisionUIVisible)
 	uint8 bNVGWidgetVisible : 1;
+	UPROPERTY(ReplicatedUsing = OnRep_ChargeBatteryUIVisible)
+	uint8 bChargeBatteryWidgetVisible : 1;
 
 	
 	

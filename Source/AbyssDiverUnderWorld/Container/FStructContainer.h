@@ -120,6 +120,15 @@ struct FInventoryList : public FFastArraySerializer
 		else
 			return false;
 	}
+
+	void UpdateAmount(int8 ItemIndex, int32 AddAmount)
+	{
+		Items[ItemIndex].Amount += AddAmount;
+		if (Items[ItemIndex].Amount < 0)
+			Items[ItemIndex].Amount = 0;
+		MarkItemDirty(Items[ItemIndex]);
+	}
+
 	void UpdateSlotIndex(int8 ItemIndex, int8 NewIndex)
 	{
 		Items[ItemIndex].SlotIndex = NewIndex;

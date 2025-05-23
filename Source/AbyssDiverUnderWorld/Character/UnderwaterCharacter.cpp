@@ -834,6 +834,14 @@ void AUnderwaterCharacter::InteractHold_Implementation(AActor* InstigatorActor)
 	RequestRevive();
 }
 
+void AUnderwaterCharacter::OnHoldStart_Implementation(APawn* InstigatorPawn)
+{
+}
+
+void AUnderwaterCharacter::OnHoldStop_Implementation(APawn* InstigatorPawn)
+{
+}
+
 bool AUnderwaterCharacter::CanHighlight_Implementation() const
 {
 	return CharacterState == ECharacterState::Groggy;

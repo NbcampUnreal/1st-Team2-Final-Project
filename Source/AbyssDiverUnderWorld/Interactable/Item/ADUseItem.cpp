@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Interactable/Item/ADUseItem.h"
@@ -8,39 +8,18 @@
 
 AADUseItem::AADUseItem()
 {
-	PrimaryActorTick.bCanEverTick = true;
-	Scene = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
-	RootComponent = Scene;
+	PrimaryActorTick.bCanEverTick = false;
 
 	SkeletalMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SkeletalMesh"));
-	SkeletalMesh->SetupAttachment(Scene);
+	RootComponent = SkeletalMesh;
+	SkeletalMesh->SetMobility(EComponentMobility::Movable);
+	SkeletalMesh->SetIsReplicated(true);
 
 	SkeletalMesh->SetCollisionProfileName("BlockAllDynamic");
 	SkeletalMesh->SetGenerateOverlapEvents(true);
 	SkeletalMesh->SetSimulatePhysics(true);
 
 	bReplicates = true;
-	bHasInitializedDynamic = false;
-}
-
-void AADUseItem::BeginPlay()
-{
-	Super::BeginPlay();
-	//TODO : 기포 이펙트 추가
-}
-
-void AADUseItem::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-	FVector Location = GetActorLocation();
-	float SubmersionDepth = WaterHeight - Location.Z;
-
-	if (SubmersionDepth > 0) // 물속에 있음
-	{
-		// 물 저항 적용
-		SkeletalMesh->SetLinearDamping(WaterLinearDamping); //2.0 ~ 5.0 사이
-		SkeletalMesh->SetAngularDamping(WaterAngularDamping); //5.0 이상
-	}
 }
 
 void AADUseItem::M_SetSkeletalMesh_Implementation(USkeletalMesh* NewMesh)
@@ -97,7 +76,6 @@ void AADUseItem::UnEquipMode()
 	SkeletalMesh->SetGenerateOverlapEvents(true);
 	SkeletalMesh->SetSimulatePhysics(true);
 	SkeletalMesh->SetCollisionProfileName("BlockAllDynamic");
-	SetActorTickEnabled(true);
 }
 
 void AADUseItem::EquipMode()
@@ -105,5 +83,4 @@ void AADUseItem::EquipMode()
 	SkeletalMesh->SetGenerateOverlapEvents(false);
 	SkeletalMesh->SetSimulatePhysics(false);
 	SkeletalMesh->SetCollisionProfileName("NoCollision");
-	SetActorTickEnabled(false);
 }

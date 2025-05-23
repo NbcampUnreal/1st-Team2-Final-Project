@@ -5,6 +5,10 @@
 #include "Interface/IADInteractable.h"
 #include "ADDrone.generated.h"
 
+#define LOGD(Verbosity, Format, ...) UE_LOG(DroneLog, Verbosity, TEXT("%s(%s) %s"), ANSI_TO_TCHAR(__FUNCTION__), *FString::FromInt(__LINE__), *FString::Printf(Format, ##__VA_ARGS__));
+
+DECLARE_LOG_CATEGORY_EXTERN(DroneLog, Log, All);
+
 class UADInteractableComponent;
 class AADDroneSeller;
 

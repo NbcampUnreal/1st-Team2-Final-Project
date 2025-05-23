@@ -15,6 +15,9 @@
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "Subsystems/DataTableSubsystem.h"
 #include "UI/ADNightVisionGoggle.h"
+#include "UI/ChargeBatteryWidget.h"
+
+
 
 // Sets default values for this component's properties
 UEquipUseComponent::UEquipUseComponent()
@@ -33,6 +36,7 @@ UEquipUseComponent::UEquipUseComponent()
 	bIsWeapon = true;
 	NightVisionInstance = nullptr;
 	bNVGWidgetVisible = false;
+	bChargeBatteryWidgetVisible = false;
 
 	// 테스트용
 	if (ACharacter* Char = Cast<ACharacter>(GetOwner()))
@@ -67,16 +71,28 @@ void UEquipUseComponent::BeginPlay()
 	OriginalPPSettings = CameraComp->PostProcessSettings;
 
 	// 위젯 추가
-	if (OwningCharacter->IsLocallyControlled() && NightVisionClass)
+	if (OwningCharacter->IsLocallyControlled())
 	{
 		APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController());
-		if (PC && !NightVisionInstance)
+		if (PC)
 		{
-			NightVisionInstance = CreateWidget<UADNightVisionGoggle>(PC, NightVisionClass);
-			if (NightVisionInstance)
+			if (!NightVisionInstance && NightVisionClass)
 			{
-				NightVisionInstance->AddToViewport();
-				NightVisionInstance->SetVisibility(ESlateVisibility::Hidden);
+				NightVisionInstance = CreateWidget<UADNightVisionGoggle>(PC, NightVisionClass);
+				if (NightVisionInstance)
+				{
+					NightVisionInstance->AddToViewport();
+					NightVisionInstance->SetVisibility(ESlateVisibility::Hidden);
+				}
+			}
+			if (!ChargeBatteryInstance && ChargeBatteryClass)
+			{
+				ChargeBatteryInstance = CreateWidget<UChargeBatteryWidget>(PC, ChargeBatteryClass);
+				if (ChargeBatteryInstance)
+				{
+					ChargeBatteryInstance->AddToViewport();
+					ChargeBatteryInstance->SetVisibility(ESlateVisibility::Hidden);
+				}
 			}
 		}
 	}
@@ -164,7 +180,7 @@ void UEquipUseComponent::S_RKey_Implementation()
 	{
 	case EAction::WeaponReload:   StartReload();     break;
 	case EAction::ApplyChargeUI:  OpenChargeWidget();break;
-	default:                      break;
+	default:                      OpenChargeWidget();break;
 	}
 }
 
@@ -197,7 +213,7 @@ void UEquipUseComponent::OnRep_NightVisionOn()
 		}
 		else
 		{
-			LOG(TEXT("No UI Instance"))
+			LOGIC(Log, TEXT("No UI Instance"))
 		}
 
 	}
@@ -210,7 +226,7 @@ void UEquipUseComponent::OnRep_NightVisionOn()
 		}
 		else
 		{
-			LOG(TEXT("No UI Instance"))
+			LOGIC(Log, TEXT("No UI Instance"))
 		}
 	}
 
@@ -229,13 +245,31 @@ void UEquipUseComponent::OnRep_NightVisionUIVisible()
 				? ESlateVisibility::Visible
 				: ESlateVisibility::Hidden);
 		}
-		LOG(TEXT("%s"), bNVGWidgetVisible ? TEXT("True") : TEXT("False"));
+		LOGIC(Log, TEXT("%s"), bNVGWidgetVisible ? TEXT("True") : TEXT("False"));
+	}
+	else
+	{
+		LOGIC(Log, TEXT("No Owning Character"));
+	}
+	
+}
+
+void UEquipUseComponent::OnRep_ChargeBatteryUIVisible()
+{
+	if (OwningCharacter != nullptr)
+	{
+		if (ChargeBatteryInstance && OwningCharacter->IsLocallyControlled())
+		{
+			ChargeBatteryInstance->SetVisibility(bChargeBatteryWidgetVisible
+				? ESlateVisibility::Visible
+				: ESlateVisibility::Hidden);
+		}
+		LOG(TEXT("%s"), bChargeBatteryWidgetVisible ? TEXT("True") : TEXT("False"));
 	}
 	else
 	{
 		LOG(TEXT("No Owning Character"));
 	}
-	
 }
 
 void UEquipUseComponent::Initialize(FItemData& ItemData)
@@ -254,7 +288,7 @@ void UEquipUseComponent::Initialize(FItemData& ItemData)
 	UGameInstance* GI = GetWorld()->GetGameInstance();
 	if (!GI)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Initialize: No valid GameInstance"));
+		LOGIC(Log, TEXT("Initialize: No valid GameInstance"))
 		return;
 	}
 	UDataTableSubsystem* DataTableSubsystem = GI->GetSubsystem<UDataTableSubsystem>();
@@ -294,8 +328,7 @@ void UEquipUseComponent::Initialize(FItemData& ItemData)
 			bNVGWidgetVisible = true;
 		}
 	}
-
-	UE_LOG(LogTemp, Log, TEXT(
+	LOGIC(Log, TEXT(
 		"Initialize: Weapon=%s, Ammo=%d/%d, Amount=%d"),
 		bIsWeapon ? TEXT("true") : TEXT("false"),
 		CurrentAmmoInMag, ReserveAmmo, Amount);
@@ -309,7 +342,7 @@ void UEquipUseComponent::DeinitializeEquip()
 		CurrentItemData->CurrentAmmoInMag = CurrentAmmoInMag;
 		CurrentItemData->ReserveAmmo = ReserveAmmo;
 		CurrentItemData = nullptr;
-		LOG(TEXT("No Current Item"));
+		LOGIC(Log, TEXT("No Current Item"));
 	}
 
 
@@ -402,7 +435,7 @@ void UEquipUseComponent::FireHarpoon()
 	FRotator  CamRot = FRotator::ZeroRotator;;
 	if (AController* PC = OwningCharacter->GetController())
 	{
-		LOG(TEXT("Is PlayerController"));
+		LOGIC(Log, TEXT("Is PlayerController"));
 		PC->GetPlayerViewPoint(CamLoc, CamRot);     
 	}
 	else { return; }
@@ -413,7 +446,7 @@ void UEquipUseComponent::FireHarpoon()
 	{
 		if (Mesh->DoesSocketExist(SocketName))
 		{
-			LOG(TEXT("Is Socket"));
+			LOGIC(Log, TEXT("Is Socket"));
 			MuzzleLoc = Mesh->GetSocketLocation(SocketName);
 		}
 	}
@@ -434,7 +467,7 @@ void UEquipUseComponent::FireHarpoon()
 
 	if (!Proj)
 	{
-		LOG(TEXT("No Projectile"));
+		LOGIC(Log, TEXT("No Projectile"));
 		return;
 	}
 	
@@ -534,8 +567,7 @@ void UEquipUseComponent::StartReload()
 
 void UEquipUseComponent::OpenChargeWidget()
 {
-	//TODO 피자형 UI 생성하고 만들기
-
+	bChargeBatteryWidgetVisible = !bChargeBatteryWidgetVisible ? true : false;
 }
 
 void UEquipUseComponent::FinishReload()
@@ -557,6 +589,7 @@ void UEquipUseComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 	DOREPLIFETIME(UEquipUseComponent, bBoostActive);
 	DOREPLIFETIME(UEquipUseComponent, bNightVisionOn);
 	DOREPLIFETIME(UEquipUseComponent, bNVGWidgetVisible);
+	DOREPLIFETIME(UEquipUseComponent, bChargeBatteryWidgetVisible);
 }
 
 bool UEquipUseComponent::IsInterpolating() const
