@@ -79,7 +79,6 @@ private:
 
 	void SpawnAndAttachTool(APawn* InstigatorPawn);
 	void PlayMiningAnim(APawn* InstigatorPawn);
-	void ActivateMiningEffects();
 	void PlayStowAnim(APawn* InstigatorPawn);
 	void CleanupToolAndEffects();
 
