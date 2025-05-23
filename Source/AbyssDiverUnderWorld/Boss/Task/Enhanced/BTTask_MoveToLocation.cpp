@@ -1,6 +1,7 @@
 #include "Boss/Task/Enhanced/BTTask_MoveToLocation.h"
 #include "AbyssDiverUnderWorld.h"
 #include "Boss/Boss.h"
+#include "Boss/ENum/EBossState.h"
 
 // ----- 기능 -----
 // 1. Task에 할당한 Blackboard Key를 FName으로 가져온다.
@@ -31,6 +32,8 @@ EBTNodeResult::Type UBTTask_MoveToLocation::ExecuteTask(UBehaviorTreeComponent& 
 	Boss = Cast<ABoss>(AIController->GetCharacter());
 	if (!IsValid(Boss)) return EBTNodeResult::Failed;
 
+	Boss->SetBossState(EBossState::Move);
+	
 	const FName KeyName = GetSelectedBlackboardKey();
 	TargetLocation = AIController->GetBlackboardComponent()->GetValueAsVector(KeyName);
 
@@ -43,7 +46,7 @@ EBTNodeResult::Type UBTTask_MoveToLocation::ExecuteTask(UBehaviorTreeComponent& 
 void UBTTask_MoveToLocation::TickTask(UBehaviorTreeComponent& Comp, uint8* NodeMemory, float DeltaSeconds)
 {
 	Super::TickTask(Comp, NodeMemory, DeltaSeconds);
-
+	
 	if (AIController->GetPathFollowingComponent()->GetStatus() == EPathFollowingStatus::Idle)
 	{
 		AIController->InitVariables();	

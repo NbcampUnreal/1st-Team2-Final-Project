@@ -1,6 +1,7 @@
 #include "Boss/Task/Enhanced/BTTask_PlayerChase.h"
 #include "AbyssDiverUnderWorld.h"
 #include "Boss/Boss.h"
+#include "Boss/ENum/EBossState.h"
 #include "Boss/Enum/EPerceptionType.h"
 
 UBTTask_PlayerChase::UBTTask_PlayerChase()
@@ -22,6 +23,8 @@ EBTNodeResult::Type UBTTask_PlayerChase::ExecuteTask(UBehaviorTreeComponent& Com
 
 	Boss = Cast<ABoss>(AIController->GetCharacter());
 	if (!IsValid(Boss)) return EBTNodeResult::Failed;
+
+	Boss->SetBossState(EBossState::Chase);
 
 	// 랜덤 시간 추출
 	AccumulatedTime = 0.f;

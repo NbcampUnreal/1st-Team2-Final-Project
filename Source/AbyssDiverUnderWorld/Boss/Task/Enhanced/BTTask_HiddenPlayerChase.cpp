@@ -1,5 +1,6 @@
 #include "Boss/Task/Enhanced/BTTask_HiddenPlayerChase.h"
 #include "Boss/Boss.h"
+#include "Boss/ENum/EBossState.h"
 
 UBTTask_HiddenPlayerChase::UBTTask_HiddenPlayerChase()
 {
@@ -16,6 +17,8 @@ EBTNodeResult::Type UBTTask_HiddenPlayerChase::ExecuteTask(UBehaviorTreeComponen
 
 	Boss = Cast<ABoss>(AIController->GetCharacter());
 	if (!IsValid(Boss)) return EBTNodeResult::Failed;
+
+	Boss->SetBossState(EBossState::Chase);
 	
 	return EBTNodeResult::InProgress;
 }
