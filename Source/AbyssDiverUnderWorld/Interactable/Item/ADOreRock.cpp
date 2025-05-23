@@ -227,6 +227,9 @@ void AADOreRock::SpawnAndAttachTool(APawn* InstigatorPawn)
 
 	if (SpawnedTool)
 	{
+
+		SpawnedTool->SetActorEnableCollision(false);
+
 		if (AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(InstigatorPawn))
 		{
 			SpawnedTool->AttachToComponent(
