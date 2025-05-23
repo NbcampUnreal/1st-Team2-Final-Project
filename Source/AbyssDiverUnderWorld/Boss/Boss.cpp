@@ -235,7 +235,7 @@ void ABoss::AddPatrolPoint()
 	}
 }
 
-void ABoss::SetMoveSpeed(float& SpeedMultiplier)
+void ABoss::SetMoveSpeed(const float& SpeedMultiplier)
 {
 	GetCharacterMovement()->MaxFlySpeed = StatComponent->MoveSpeed * SpeedMultiplier;
 }
@@ -359,7 +359,7 @@ FVector ABoss::GetNextPatrolPoint()
 
 #pragma region Getter, Setter
 
-FVector ABoss::GetTargetPointLocation()
+const FVector ABoss::GetTargetPointLocation() const
 {
 	if (!PatrolPoints.IsValidIndex(CurrentPatrolPointIndex)) return FVector::ZeroVector;
 	
