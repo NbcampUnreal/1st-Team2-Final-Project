@@ -42,8 +42,14 @@ void UPlayerStatusWidget::SetTotalSpear(int32 InValue)
 
 void UPlayerStatusWidget::SetOxygenPercent(float InPercent)
 {
+
     if (OxygenBar)
     {
         OxygenBar->SetPercent(FMath::Clamp(InPercent, 0.0f, 1.0f));
     }
+    else
+    {
+        UE_LOG(LogTemp, Error, TEXT("OxygenBar is nullptr!"));
+    }
 }
+
