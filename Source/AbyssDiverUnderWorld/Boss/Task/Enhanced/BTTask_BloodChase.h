@@ -19,9 +19,9 @@ private:
 
 private:
 	UPROPERTY()
-	ABoss* Boss;
+	TObjectPtr<ABoss> Boss;
 
 	UPROPERTY()
-	AEnhancedBossAIController* AIController;
+	TObjectPtr<AEnhancedBossAIController> AIController;
 	
 };

@@ -5,6 +5,7 @@
 #include "Navigation/PathFollowingComponent.h"
 #include "BossAIController.generated.h"
 
+class UAISenseConfig_Damage;
 enum class EBossState : uint8;
 class AUnderwaterCharacter;
 class ABoss;
@@ -68,6 +69,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Perception")
 	TObjectPtr<UAISenseConfig_Sight> SightConfig;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Perception")
+	TObjectPtr<UAISenseConfig_Damage> DamageConfig;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI|Target")
 	TArray<TObjectPtr<AUnderwaterCharacter>> DetectedPlayers;

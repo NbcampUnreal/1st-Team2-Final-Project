@@ -1,12 +1,12 @@
 #include "Boss/BossAIController.h"
 #include "AbyssDiverUnderWorld.h"
 #include "Boss.h"
-#include "Enum/EBossState.h"
+#include "ENum/EBossState.h"
 #include "BehaviorTree/BehaviorTree.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Character/UnderwaterCharacter.h"
-#include "Net/UnrealNetwork.h"
 #include "Perception/AIPerceptionComponent.h"
+#include "Perception/AISenseConfig_Damage.h"
 #include "Perception/AISenseConfig_Sight.h"
 
 const FName ABossAIController::BossStateKey = "BossState";
@@ -15,6 +15,7 @@ ABossAIController::ABossAIController()
 {
 	AIPerceptionComponent = CreateDefaultSubobject<UAIPerceptionComponent>("PerceptionComponent");
 	SightConfig = CreateDefaultSubobject<UAISenseConfig_Sight>("SightConfig");
+	DamageConfig = CreateDefaultSubobject<UAISenseConfig_Damage>("DamageConfig");
 
 	MoveToLocationAcceptanceRadius = 50.0f;
 	MoveToActorAcceptanceRadius = 500.0f;
@@ -31,9 +32,11 @@ ABossAIController::ABossAIController()
 	SightConfig->DetectionByAffiliation.bDetectEnemies = true;
 	SightConfig->DetectionByAffiliation.bDetectFriendlies = true;
 	SightConfig->DetectionByAffiliation.bDetectNeutrals = true;
-
-	// 시각을 우선순위로 설정
+	
+	// 시각, 촉각 등록
 	AIPerceptionComponent->ConfigureSense(*SightConfig);
+	AIPerceptionComponent->ConfigureSense(*DamageConfig);
+
 	AIPerceptionComponent->SetDominantSense(SightConfig->GetSenseImplementation());
 
 	bIsDetectedStatePossible = true;
@@ -92,13 +95,11 @@ void ABossAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Sti
 	// 감지에 성공 했다면 플레이어 감지 리스트에 추가
 	if (Stimulus.WasSuccessfullySensed())
 	{
-		//LOGN(TEXT("[Detected] %s"), *Player->GetName());
 		M_AddDetectedPlayer(Player);
 	}
 	// 시야각에서 벗어났다면 플레이어 감지 리스트에서 제거
 	else
 	{
-		//LOGN(TEXT("[Lost Sight] %s"), *Player->GetName());
 		M_RemoveDetectedPlayer(Player);
 	}
 }
@@ -113,7 +114,6 @@ void ABossAIController::M_AddDetectedPlayer_Implementation(AUnderwaterCharacter*
 	// 이미 추적중인 플레이어가 있는 경우 얼리 리턴
 	if (IsValid(Boss->GetTarget()))
 	{
-		//LOGN(TEXT("[Already Detected] %s"), *Boss->GetTarget()->GetName());
 		return;
 	}
 
