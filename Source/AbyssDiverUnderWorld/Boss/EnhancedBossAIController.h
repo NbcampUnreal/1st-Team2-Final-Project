@@ -56,6 +56,8 @@ private:
 	static const FName PerceptionTypeKey;
 	static const FName bHasDetectedPlayerKey;
 	static const FName bIsChasingKey;
+	static const FName bHasAttackedKey;
+	static const FName BloodOccurredLocationKey;
 
 public:
 	FORCEINLINE bool GetIsDetectedPlayer() const { return bIsDetectedPlayer; }
