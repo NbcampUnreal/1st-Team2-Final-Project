@@ -55,7 +55,7 @@ UEquipUseComponent::UEquipUseComponent()
 	{
 		NightVisionClass = NVClassFinder.Class;
 	}
-	static ConstructorHelpers::FClassFinder<UADNightVisionGoggle> BatteryClassFinder(TEXT("/Game/_AbyssDiver/Blueprints/UI/EquipUI/WBP_ChargeBattery"));
+	static ConstructorHelpers::FClassFinder<UChargeBatteryWidget> BatteryClassFinder(TEXT("/Game/_AbyssDiver/Blueprints/UI/EquipUI/WBP_ChargeBattery"));
 	if (BatteryClassFinder.Succeeded())
 	{
 		ChargeBatteryClass = BatteryClassFinder.Class;
