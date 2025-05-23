@@ -5,6 +5,8 @@
 #include "Framework/ADPlayerState.h"
 #include "UI/ResultScreen.h"
 #include "UI/PlayerStatusWidget.h"
+#include "Character/UnderwaterCharacter.h"
+#include "Character/PlayerComponent/OxygenComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "EngineUtils.h"
 
@@ -23,13 +25,12 @@ void UPlayerHUDComponent::BeginPlay()
 		LOGV(Warning, TEXT("PlayerController is nullptr"));
 		return;
 	}
-	// Local Controller일 경우에만 HudWidget을 생성합니다.
 	if (!PlayerController->IsLocalController())
 	{
 		return;
 	}
 
-	// 메인 HUD 위젯 생성
+	// 메인 HUD 생성
 	if (HudWidgetClass)
 	{
 		HudWidget = CreateWidget<UPlayerHUDWidget>(PlayerController, HudWidgetClass);
@@ -49,7 +50,7 @@ void UPlayerHUDComponent::BeginPlay()
 		LOGV(Warning, TEXT("HudWidgetClass is nullptr"));
 	}
 
-	// 산소/스테이터스 UI 위젯 생성
+	// 산소/스테이터스 UI 생성
 	if (PlayerStatusWidgetClass)
 	{
 		PlayerStatusWidget = CreateWidget<UPlayerStatusWidget>(PlayerController, PlayerStatusWidgetClass);
@@ -67,13 +68,24 @@ void UPlayerHUDComponent::BeginPlay()
 		LOGV(Warning, TEXT("PlayerStatusWidgetClass is nullptr"));
 	}
 
-	// Pawn이 늦게 생성이 되거나 혹은, Respawn 상황에도 Binding을 수행해야 한다.
+	// 초기 Pawn에 산소 이벤트 바인딩
+	if (APawn* Pawn = PlayerController->GetPawn())
+	{
+		if (AUnderwaterCharacter* UWCharacter = Cast<AUnderwaterCharacter>(Pawn))
+		{
+			if (UOxygenComponent* OxygenComp = UWCharacter->GetOxygenComponent())
+			{
+				OxygenComp->OnOxygenLevelChanged.AddDynamic(this, &UPlayerHUDComponent::UpdateOxygenHUD);
+				UpdateOxygenHUD(OxygenComp->GetOxygenLevel(), OxygenComp->GetMaxOxygenLevel());
+			}
+		}
+	}
+
 	PlayerController->OnPossessedPawnChanged.AddDynamic(this, &UPlayerHUDComponent::OnPossessedPawnChanged);
 
-	//check(ResultScreenWidgetClass);
 	ResultScreenWidget = CreateWidget<UResultScreen>(PlayerController, ResultScreenWidgetClass);
-	//check(ResultScreenWidget);
 }
+
 
 void UPlayerHUDComponent::C_ShowResultScreen_Implementation()
 {
@@ -139,6 +151,14 @@ void UPlayerHUDComponent::OnPossessedPawnChanged(APawn* OldPawn, APawn* NewPawn)
 			else
 			{
 				LOGV(Warning, TEXT("HudWidget is nullptr when possessed"));
+			}
+		}
+		if (AUnderwaterCharacter* UWCharacter = Cast<AUnderwaterCharacter>(NewPawn))
+		{
+			if (UOxygenComponent* OxygenComp = UWCharacter->GetOxygenComponent())
+			{
+				OxygenComp->OnOxygenLevelChanged.AddDynamic(this, &UPlayerHUDComponent::UpdateOxygenHUD);
+				UpdateOxygenHUD(OxygenComp->GetOxygenLevel(), OxygenComp->GetMaxOxygenLevel());
 			}
 		}
 }
