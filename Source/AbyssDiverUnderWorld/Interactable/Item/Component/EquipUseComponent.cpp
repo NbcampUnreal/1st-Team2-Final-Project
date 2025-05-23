@@ -567,7 +567,7 @@ void UEquipUseComponent::StartReload()
 
 void UEquipUseComponent::OpenChargeWidget()
 {
-	bChargeBatteryWidgetVisible = !bChargeBatteryWidgetVisible ? true : false;
+	bChargeBatteryWidgetVisible = !bChargeBatteryWidgetVisible;
 }
 
 void UEquipUseComponent::FinishReload()

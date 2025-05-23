@@ -384,7 +384,10 @@ void UADInventoryComponent::SetEquipInfo(int8 SlotIndex, AADUseItem* SpawnItem)
 {
 	CurrentEquipmentSlotIndex = SlotIndex;
 	CurrentEquipmentInstance = SpawnItem;
-	LOGINVEN(Warning, TEXT("Slot Index : %d Item Name: %s"), SlotIndex, *SpawnItem->ItemData.Name.ToString());
+	if (CurrentEquipmentInstance)
+	{
+		LOGINVEN(Warning, TEXT("Slot Index : %d Item Name: %s"), SlotIndex, *SpawnItem->ItemData.Name.ToString());
+	}
 }
 
 void UADInventoryComponent::Equip(FItemData& ItemData, int8 SlotIndex)
