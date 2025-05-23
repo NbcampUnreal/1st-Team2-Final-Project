@@ -282,6 +282,9 @@ protected:
 	UFUNCTION()
 	void OnHealthChanged(int32 CurrentHealth, int32 MaxHealth);
 
+	UFUNCTION()
+	void OnPhysicsVolumeChanged(class APhysicsVolume* NewVolume);
+	
 	/** 이동 함수. 지상, 수중 상태에 따라 이동한다. */
 	void Move(const FInputActionValue& InputActionValue);
 
