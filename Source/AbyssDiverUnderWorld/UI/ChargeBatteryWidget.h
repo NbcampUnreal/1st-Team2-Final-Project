@@ -47,13 +47,16 @@ private:
 
 	int32 DPVBatteryMax = 0;
 	uint8 NVBatteryMax = 0;
+	uint8 BatteryMax = 0;
 	uint8 InitializeNum = 5;
 #pragma endregion
 
 #pragma region Getter/Setter
 public:
 	void SetEquipBatteryAmount(FName Name, int32 Amount);
+	void SetEquipBatteryButtonActivate(FName Name, bool bActivate);
 
-	void SetBatteryButtonActivate(FName Name, bool bActivate);
+	void UpdateBatteryInfoDelay();
+	void UpdateBatteryInfo();
 #pragma endregion
 };

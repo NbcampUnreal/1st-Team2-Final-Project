@@ -17,13 +17,17 @@ void UChargeBatteryWidget::NativeConstruct()
 		UDataTableSubsystem* DataTableSubsystem = GI->GetSubsystem<UDataTableSubsystem>();
 		FFADItemDataRow* DPVRow = DataTableSubsystem->GetItemDataByName("DPV");
 		FFADItemDataRow* NVRow = DataTableSubsystem->GetItemDataByName("NightVisionGoggle");
+		FFADItemDataRow* BatteryRow = DataTableSubsystem->GetItemDataByName("Battery");
 		DPVBatteryMax = DPVRow->Amount;
 		NVBatteryMax = NVRow->Amount;
+		BatteryMax = BatteryRow->Amount;
 	}
 	DPVButton->SetIsEnabled(false);
 	DPVBatteryText->SetVisibility(ESlateVisibility::Hidden);
 	NVButton->SetIsEnabled(false);
 	NVBatteryText->SetVisibility(ESlateVisibility::Hidden);
+	BatteryNumText->SetVisibility(ESlateVisibility::Hidden);
+	BatteryAmountText->SetVisibility(ESlateVisibility::Hidden);
 
 	GetWorld()->GetTimerManager().SetTimer(InitialzieTimerHandle, this, &UChargeBatteryWidget::InitializeInventory, 2.0f, true);
 }
@@ -67,7 +71,7 @@ void UChargeBatteryWidget::SetEquipBatteryAmount(FName Name, int32 Amount)
 	}
 }
 
-void UChargeBatteryWidget::SetBatteryButtonActivate(FName Name, bool bActivate)
+void UChargeBatteryWidget::SetEquipBatteryButtonActivate(FName Name, bool bActivate)
 {
 	if (Name == "DPV")
 	{
@@ -80,4 +84,33 @@ void UChargeBatteryWidget::SetBatteryButtonActivate(FName Name, bool bActivate)
 		NVBatteryText->SetVisibility(bActivate ? ESlateVisibility::Visible : ESlateVisibility::Hidden);
 	}
 }
+
+void UChargeBatteryWidget::UpdateBatteryInfoDelay()
+{
+	const FItemData* BatteryData = InventoryComp->GetInventoryItemData("Battery");
+	int8 BatteryQuantity = BatteryData->Quantity;
+	int8 BatteryAmount = BatteryData->Amount;
+	if (BatteryQuantity <= 0)
+	{
+		BatteryNumText->SetVisibility(ESlateVisibility::Hidden);
+		BatteryAmountText->SetVisibility(ESlateVisibility::Hidden);
+	}
+	else
+	{
+		BatteryNumText->SetVisibility(ESlateVisibility::Visible);
+		BatteryAmountText->SetVisibility(ESlateVisibility::Visible);
+	}
+
+	int8 Percent = FMath::RoundToInt((float)BatteryAmount / BatteryMax * 100.0f);
+	BatteryNumText->SetText(FText::FromString(FString::Printf(TEXT("%d"), BatteryQuantity)));
+	BatteryAmountText->SetText(FText::FromString(FString::Printf(TEXT("%d%%"), Percent)));
+}
+
+void UChargeBatteryWidget::UpdateBatteryInfo()
+{
+	FTimerHandle UpdateBatteryInfoTimerHandle;
+
+	GetWorld()->GetTimerManager().SetTimer(UpdateBatteryInfoTimerHandle, this, &UChargeBatteryWidget::UpdateBatteryInfoDelay, 1.0f, false);
+}
+
 

@@ -157,7 +157,7 @@ void UADInventoryComponent::C_SetButtonActive_Implementation(FName CName, bool b
 {
 	if (ChargeBatteryWidget)
 	{
-		ChargeBatteryWidget->SetBatteryButtonActivate(CName, bCIsActive);
+		ChargeBatteryWidget->SetEquipBatteryButtonActivate(CName, bCIsActive);
 		ChargeBatteryWidget->SetEquipBatteryAmount(CName, CAmount);
 		if (bCIsActive)
 		{
@@ -166,6 +166,11 @@ void UADInventoryComponent::C_SetButtonActive_Implementation(FName CName, bool b
 		else
 			LOGVN(Warning, TEXT("DeActivate %s Button"), *CName.ToString());
 	}
+}
+
+void UADInventoryComponent::C_UpdateBatteryInfo_Implementation()
+{
+	ChargeBatteryWidget->UpdateBatteryInfo();
 }
 
 void UADInventoryComponent::InventoryInitialize()
@@ -193,15 +198,15 @@ bool UADInventoryComponent::AddInventoryItem(FItemData ItemData)
 		if (FoundRow)
 		{
 			int8 ItemIndex = ItemData.ItemType == EItemType::Exchangable ? -1 : FindItemIndexByName(ItemData.Name);
+			bool bIsUpdateSuccess = false;
 			if (ItemIndex > -1) 
 			{
 				if (FoundRow->Stackable)
 				{
-					bool bIsUpdateSuccess = InventoryList.UpdateQuantity(ItemIndex, ItemData.Quantity);
+					bIsUpdateSuccess = InventoryList.UpdateQuantity(ItemIndex, ItemData.Quantity);
 					if (bIsUpdateSuccess)
 					{
 						LOGINVEN(Warning, TEXT("Item Update, ItemName : %s, Id : %d"), *InventoryList.Items[ItemIndex].Name.ToString(), InventoryList.Items[ItemIndex].Id);
-						return true;
 					}
 					else
 						LOGINVEN(Warning, TEXT("Update fail"));
@@ -211,32 +216,46 @@ bool UADInventoryComponent::AddInventoryItem(FItemData ItemData)
 			{
 				if (InventoryIndexMapByType.Contains(ItemData.ItemType) && GetTypeInventoryEmptyIndex(ItemData.ItemType) != -1)
 				{
+					bIsUpdateSuccess = true;
 					uint8 SlotIndex = GetTypeInventoryEmptyIndex(ItemData.ItemType);
 				
 					FItemData NewItem = { FoundRow->Name, FoundRow->Id, ItemData.Quantity, SlotIndex, ItemData.Amount, ItemData.Mass,ItemData.Price, FoundRow->ItemType, FoundRow->Thumbnail };
 					InventoryList.AddItem(NewItem);
-					LOGINVEN(Warning, TEXT("Add New Item %s SlotIndex : %d"), *NewItem.Name.ToString(), SlotIndex);
 					if (ItemData.ItemType == EItemType::Exchangable)
 					{
 						OnInventoryInfoUpdate(NewItem.Mass, NewItem.Price);
 					}
-					InventoryUIUpdate();
-					if (ItemData.Name == "NightVisionGoggle" || ItemData.Name == "DPV")
-					{
-						if (ChargeBatteryWidget)
-						{
-							ChargeBatteryWidget->SetBatteryButtonActivate(ItemData.Name, true);
-							ChargeBatteryWidget->SetEquipBatteryAmount(ItemData.Name, ItemData.Amount);
-							LOGVN(Warning, TEXT("Activate %s Button"), *ItemData.Name.ToString());
-						}
-						C_SetButtonActive(ItemData.Name, true, ItemData.Amount);
-					}
-					return true;
+					LOGINVEN(Warning, TEXT("Add New Item %s SlotIndex : %d"), *NewItem.Name.ToString(), SlotIndex);
 				}
 				else
 				{
 					LOGINVEN(Warning, TEXT("%s Inventory is full"), *StaticEnum<EItemType>()->GetNameStringByValue((int64)ItemData.ItemType));
 				}
+			}
+
+			if (bIsUpdateSuccess)
+			{
+				InventoryUIUpdate();
+				if (ItemData.Name == "NightVisionGoggle" || ItemData.Name == "DPV")
+				{
+					if (ChargeBatteryWidget)
+					{
+						ChargeBatteryWidget->SetEquipBatteryButtonActivate(ItemData.Name, true);
+						ChargeBatteryWidget->SetEquipBatteryAmount(ItemData.Name, ItemData.Amount);
+						LOGVN(Warning, TEXT("Activate %s Button"), *ItemData.Name.ToString());
+					}
+					C_SetButtonActive(ItemData.Name, true, ItemData.Amount);
+				}
+				else if (ItemData.Name == "Battery")
+				{
+					if (ChargeBatteryWidget)
+					{
+						ChargeBatteryWidget->UpdateBatteryInfo();
+						LOGVN(Warning, TEXT("Acquire a battery"));
+					}
+					C_UpdateBatteryInfo();
+				}
+				return true;
 			}
 		}
 	}
@@ -312,15 +331,24 @@ void UADInventoryComponent::RemoveBySlotIndex(uint8 SlotIndex, EItemType ItemTyp
 				if (CurrentEquipmentSlotIndex == SlotIndex)
 					UnEquip();
 			}
-			if (Item.Name == "NightVisionGoggle" || Item.Name == "DPV")
+		}
+		if (Item.Name == "NightVisionGoggle" || Item.Name == "DPV")
+		{
+			if (ChargeBatteryWidget)
 			{
-				if (ChargeBatteryWidget)
-				{
-					ChargeBatteryWidget->SetBatteryButtonActivate(Item.Name, false);
-					LOGVN(Warning, TEXT("DeActivate %s Button"), *Item.Name.ToString());
-				}
-				C_SetButtonActive(Item.Name, false, Item.Amount);
+				ChargeBatteryWidget->SetEquipBatteryButtonActivate(Item.Name, false);
+				LOGVN(Warning, TEXT("DeActivate %s Button"), *Item.Name.ToString());
 			}
+			C_SetButtonActive(Item.Name, false, Item.Amount);
+		}
+		else if (Item.Name == "Battery")
+		{
+			if (ChargeBatteryWidget)
+			{
+				ChargeBatteryWidget->UpdateBatteryInfo();
+				LOGVN(Warning, TEXT("Remove a battery"));
+			}
+			C_UpdateBatteryInfo();
 		}
 
 		if (Item.Quantity < 1) return;

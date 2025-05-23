@@ -53,6 +53,11 @@ public:
 	void C_SetButtonActive(FName CName, bool bCIsActive, int32 CAmount);
 	void C_SetButtonActive_Implementation(FName CName, bool bCIsActive, int32 CAmount);
 
+
+	UFUNCTION(Client, Reliable)
+	void C_UpdateBatteryInfo();
+	void C_UpdateBatteryInfo_Implementation();
+
 	UFUNCTION(BlueprintCallable)
 	void InventoryInitialize();
 
