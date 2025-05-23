@@ -29,7 +29,7 @@ UADInventoryComponent::UADInventoryComponent() :
 	bInventoryWidgetShowed(false), 
 	bAlreadyCursorShowed(false),
 	bCanUseItem(true),
-	CurrentEquipmentSlotIndex(-1),
+	CurrentEquipmentSlotIndex(INDEX_NONE),
 	CurrentEquipmentInstance(nullptr),
 	InventoryWidgetInstance(nullptr),
 	DataTableSubsystem(nullptr),
@@ -101,7 +101,7 @@ void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType
 		}
 		else
 		{
-			if (CurrentEquipmentSlotIndex != -1)
+			if (CurrentEquipmentSlotIndex != INDEX_NONE)
 			{
 				UnEquip();
 				LOGINVEN(Warning, TEXT("ChangeEquipment"));
@@ -214,7 +214,7 @@ bool UADInventoryComponent::AddInventoryItem(FItemData ItemData)
 			}
 			else
 			{
-				if (InventoryIndexMapByType.Contains(ItemData.ItemType) && GetTypeInventoryEmptyIndex(ItemData.ItemType) != -1)
+				if (InventoryIndexMapByType.Contains(ItemData.ItemType) && GetTypeInventoryEmptyIndex(ItemData.ItemType) != INDEX_NONE)
 				{
 					bIsUpdateSuccess = true;
 					uint8 SlotIndex = GetTypeInventoryEmptyIndex(ItemData.ItemType);
@@ -314,19 +314,19 @@ int16 UADInventoryComponent::FindItemIndexByName(FName ItemID) //빈슬롯이 �
 			return i;
 		}
 	}
-	return -1;
+	return INDEX_NONE;
 }
 
 void UADInventoryComponent::RemoveBySlotIndex(uint8 SlotIndex, EItemType ItemType, bool bIsDropAction)
 {
 	int8 InventoryIndex = GetInventoryIndexByTypeAndSlotIndex(ItemType, SlotIndex);
-	if (InventoryIndex == -1) return;
+	if (InventoryIndex == INDEX_NONE) return;
 	if (InventoryList.Items.IsValidIndex(InventoryIndex))
 	{
 		FItemData& Item = InventoryList.Items[InventoryIndex];
 		if (ItemType == EItemType::Equipment)
 		{
-			if (CurrentEquipmentSlotIndex != -1)
+			if (CurrentEquipmentSlotIndex != INDEX_NONE)
 			{
 				if (CurrentEquipmentSlotIndex == SlotIndex)
 					UnEquip();
@@ -357,7 +357,7 @@ void UADInventoryComponent::RemoveBySlotIndex(uint8 SlotIndex, EItemType ItemTyp
 		{
 			DropItem(Item);
 		}
-		InventoryList.UpdateQuantity(InventoryIndex, -1);
+		InventoryList.UpdateQuantity(InventoryIndex, INDEX_NONE);
 
 		LOGINVEN(Warning, TEXT("Remove Inventory Slot Index %d: Item : %s"), InventoryIndex, *Item.Name.ToString());
 		if (Item.Quantity <= 0)
@@ -401,10 +401,10 @@ int8 UADInventoryComponent::GetTypeInventoryEmptyIndex(EItemType ItemType)
 	RebuildIndexMap();
 	for (int i = 0; i < InventoryIndexMapByType[ItemType].Num(); ++i)
 	{
-		if (InventoryIndexMapByType[ItemType][i] == -1)
+		if (InventoryIndexMapByType[ItemType][i] == INDEX_NONE)
 			return i;
 	}
-	return -1;
+	return INDEX_NONE;
 } 
 
 FVector UADInventoryComponent::GetDropLocation()
@@ -419,7 +419,7 @@ FVector UADInventoryComponent::GetDropLocation()
 const FItemData* UADInventoryComponent::GetInventoryItemData(FName ItemNameToFind)
 {
 	int8 Index = FindItemIndexByName(ItemNameToFind);
-	if (Index != -1)
+	if (Index != INDEX_NONE)
 		return &InventoryList.Items[Index];
 	else
 		return &EmptyItem;
@@ -428,7 +428,7 @@ const FItemData* UADInventoryComponent::GetInventoryItemData(FName ItemNameToFin
 FItemData* UADInventoryComponent::GetCurrentEquipmentItemData()
 {
 	int8 Index = GetInventoryIndexByTypeAndSlotIndex(EItemType::Equipment, CurrentEquipmentSlotIndex);
-	if (Index == -1) return nullptr;
+	if (Index == INDEX_NONE) return nullptr;
 	return &InventoryList.Items[Index];
 }
 
@@ -436,7 +436,7 @@ FItemData* UADInventoryComponent::GetCurrentEquipmentItemData()
 
 int8 UADInventoryComponent::GetInventoryIndexByTypeAndSlotIndex(EItemType Type, int8 SlotIndex) //못 찾으면 -1 반환
 {
-	int8 InventoryIndex = -1;
+	int8 InventoryIndex = INDEX_NONE;
 	for (int i = 0; i < InventoryList.Items.Num(); ++i)
 	{
 		if (InventoryList.Items[i].ItemType == Type && InventoryList.Items[i].SlotIndex == SlotIndex)
@@ -512,7 +512,7 @@ void UADInventoryComponent::UnEquip()
 	LOGINVEN(Warning, TEXT("UnEquipItem %s"), *CurrentEquipmentInstance->ItemData.Name.ToString());
 	if(CurrentEquipmentInstance)
 		CurrentEquipmentInstance->Destroy();
-	SetEquipInfo(-1, nullptr);
+	SetEquipInfo(INDEX_NONE, nullptr);
 }
 
 void UADInventoryComponent::DropItem(FItemData& ItemData)
@@ -547,7 +547,7 @@ void UADInventoryComponent::RebuildIndexMap()
 	for (auto& Pair : InventoryIndexMapByType)
 	{
 		for (int8& Idx : Pair.Value)
-			Idx = -1;
+			Idx = INDEX_NONE;
 	}
 
 	for (int16 ItemIdx = 0; ItemIdx < InventoryList.Items.Num(); ++ItemIdx)
