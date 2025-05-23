@@ -25,12 +25,20 @@ protected:
 
 #pragma region Method
 
+protected:
+	
+	/** 캐릭터 상태 변수 업데이트 */
 	void UpdateVariables();
+
+	/** 캐릭터 기울기 업데이트 */
+	void UpdateLeanAngle();
 	
 #pragma endregion
 	
 #pragma region Variable
 
+protected:
+	
 	/** Character 약참조 */
 	UPROPERTY(BlueprintReadOnly)
 	TWeakObjectPtr<class AUnderwaterCharacter> UnderwaterCharacter;
@@ -73,12 +81,34 @@ protected:
 	UPROPERTY(BlueprintReadOnly)
 	uint8 bShouldMove : 1;
 
+	/** 캐릭터가 Groggy 상태인지 여부 */
 	UPROPERTY(BlueprintReadOnly)
 	uint8 bIsGroggy : 1;
 
+	/** 캐릭터가 Dead 상태인지 여부 */
 	UPROPERTY(BlueprintReadOnly)
 	uint8 bIsDead : 1;
 
+	/** Strafing 적용 여부. Strafing Mode일 경우 직립 상태로만 이동한다. */
+	UPROPERTY(BlueprintReadOnly)
+	uint8 bIsStrafing : 1;
+
+	/** Pelvis에 적용될 Pitch */
+	UPROPERTY(BlueprintReadOnly)
+	float ModifyPitch;
+	
+	/** Lean을 적용할 최소 속도 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	float LeanThresholdSpeed;
+
+	/** Lean을 적용할 최대 각도 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	float MaxLeanAngle;
+
+	/** Lean 적용 여부 */
+	UPROPERTY(BlueprintReadOnly)
+	uint8 bShouldLean : 1;
+	
 #pragma endregion
 
 #pragma region Getter Setter
