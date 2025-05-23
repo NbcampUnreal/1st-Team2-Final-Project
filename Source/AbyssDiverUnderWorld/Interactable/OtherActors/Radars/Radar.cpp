@@ -699,6 +699,8 @@ void ARadar::RotateRadarGrid()
 	FTransform ATransform;
 	FTransform ReletiveTransform;
 
+	FRotator NewRotation = RadarSourceRotationComponent->GetComponentRotation();
+
 	switch (GridRotationOption)
 	{
 	case EGridRotationOption::GridRotatesOnAllAxis:
@@ -708,8 +710,6 @@ void ARadar::RotateRadarGrid()
 		NewRotationYaw = RadarSourceRotationComponent->GetComponentRotation().Yaw;
 		break;
 	case EGridRotationOption::NoGridRotation:
-
-		FRotator NewRotation = RadarSourceRotationComponent->GetComponentRotation();
 
 		NewRotationRoll = NewRotation.Roll;
 		NewRotationPitch = NewRotation.Pitch;
@@ -738,6 +738,12 @@ void ARadar::RotateRadarGrid()
 
 		NewRotationYaw = UKismetMathLibrary::MakeRelativeTransform(ATransform, ReletiveTransform).Rotator().Yaw;
 
+		break;
+	case EGridRotationOption::IgnoreYawRotation:
+
+		NewRotationRoll = NewRotation.Roll;
+		NewRotationPitch = NewRotation.Pitch;
+		NewRotationYaw = NewRotation.Yaw;
 		break;
 	default:
 		check(false);
@@ -952,7 +958,6 @@ void ARadar::FindTransformForPillarsOrPings()
 	{
 		bIsStandHidden = true;
 	}
-
 }
 
 void ARadar::UpdateExistingReturnMesh()
@@ -972,7 +977,27 @@ void ARadar::UpdateExistingReturnMesh()
 		ReturnMesh->AttachToComponent(RadarGrid, Rules);
 	}
 
-	ReturnMesh->SetRelativeTransform(CurrentMeshTransform);
+	if (GridRotationOption == EGridRotationOption::IgnoreYawRotation)
+	{
+		FVector ParentLocation = RadarGrid->GetComponentLocation();
+		FRotator ParentRotator = RadarGrid->GetComponentRotation();
+
+		// Yaw 제거
+		FRotator NoYawRotation = FRotator(ParentRotator.Pitch, 0.f, ParentRotator.Roll);
+
+		// Offset 회전 적용
+		FVector RotatedOffset = NoYawRotation.RotateVector(CurrentMeshTransform.GetLocation());
+
+		// 회전 적용: Pitch + Roll만 적용, Yaw는 0 고정
+		//ReturnMesh->SetWorldRotation(NoYawRotation);
+		ReturnMesh->SetWorldLocation(RotatedOffset + RadarGrid->GetComponentLocation());
+		ReturnMesh->SetRelativeScale3D(CurrentMeshTransform.GetScale3D());
+		ReturnMesh->SetRelativeRotation(CurrentMeshTransform.GetRotation());
+	}
+	else
+	{
+		ReturnMesh->SetRelativeTransform(CurrentMeshTransform);
+	}
 
 	check(FriendOrFoeStatusArray.IsValidIndex(CurrentIndexCached));
 
@@ -1290,5 +1315,10 @@ const FName& ARadar::GetRadarTag() const
 void ARadar::SetRadarTag(const FName& NewTag)
 {
 	RadarTagToFindActors = NewTag;
+}
+
+void ARadar::SetGridRotationOption(EGridRotationOption Option)
+{
+	GridRotationOption = Option;
 }
 
