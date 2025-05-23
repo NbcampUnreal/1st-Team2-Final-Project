@@ -21,6 +21,7 @@ EBTNodeResult::Type UBTTask_PlayerDetected::ExecuteTask(UBehaviorTreeComponent& 
 	Boss = Cast<ABoss>(AIController->GetCharacter());
 	if (!IsValid(Boss)) return EBTNodeResult::Failed;
 
+	AIController->StopMovement();
 	AccumulatedTime = 0;
 	
 	return EBTNodeResult::InProgress;
@@ -41,10 +42,8 @@ void UBTTask_PlayerDetected::TickTask(UBehaviorTreeComponent& Comp, uint8* NodeM
 	{
 		FinishLatentTask(Comp, EBTNodeResult::Succeeded);
 	}
-	else
-	{
-		AccumulatedTime += DeltaSeconds;
-	}
+
+	AccumulatedTime += FMath::Clamp(DeltaSeconds, 0.f, 0.1f);
 	
 }
 

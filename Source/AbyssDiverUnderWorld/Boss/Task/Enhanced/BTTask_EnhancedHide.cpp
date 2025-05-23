@@ -10,22 +10,23 @@ UBTTask_EnhancedHide::UBTTask_EnhancedHide()
 	bNotifyTaskFinished = true;
 	Boss = nullptr;
 	AIController = nullptr;
-	HideLocation = FVector::ZeroVector;
+	TargetLocation = FVector::ZeroVector;
 }
 
 EBTNodeResult::Type UBTTask_EnhancedHide::ExecuteTask(UBehaviorTreeComponent& Comp, uint8* NodeMemory)
 {
-	LOG(TEXT("In"));
 	AIController = Cast<AEnhancedBossAIController>(Comp.GetAIOwner());
 	if (!IsValid(AIController)) return EBTNodeResult::Failed;
 
 	Boss = Cast<ABoss>(AIController->GetCharacter());
 	if (!IsValid(Boss)) return EBTNodeResult::Failed;
 
-	HideLocation = AIController->GetBlackboardComponent()->GetValueAsVector("HideLocation");
-	AIController->MoveToLocationWithRadius(HideLocation);
+	// 블랙보드에 할당된 키 추출
+	const FName KeyName = GetSelectedBlackboardKey();
+	TargetLocation = AIController->GetBlackboardComponent()->GetValueAsVector(KeyName);
 
-	LOG(TEXT("Hide"));
+	// 해당 지점으로 이동
+	AIController->MoveToLocationWithRadius(TargetLocation);
 	
 	return EBTNodeResult::InProgress;
 }
@@ -34,7 +35,7 @@ void UBTTask_EnhancedHide::TickTask(UBehaviorTreeComponent& Comp, uint8* NodeMem
 {
 	Super::TickTask(Comp, NodeMemory, DeltaSeconds);
 
-	// 현재 Patrol Point로 이동 완료 후 Success 반환
+	// 목표 지점으로 이동 완료 후 Success 반환
 	if (AIController->GetPathFollowingComponent()->GetStatus() == EPathFollowingStatus::Idle)
 	{
 		FinishLatentTask(Comp, EBTNodeResult::Succeeded);
@@ -47,5 +48,5 @@ void UBTTask_EnhancedHide::OnTaskFinished(UBehaviorTreeComponent& OwnerComp, uin
 {
 	Super::OnTaskFinished(OwnerComp, NodeMemory, TaskResult);
 
-	AIController->InitBlackboardVariables();
+	AIController->InitVariables();
 }

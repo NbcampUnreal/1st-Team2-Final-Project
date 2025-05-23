@@ -45,7 +45,6 @@ void UBTTask_EnhancedAttack::TickTask(UBehaviorTreeComponent& Comp, uint8* NodeM
 
 void UBTTask_EnhancedAttack::FinishPerception(UAnimMontage* Montage, bool bInterrupted)
 {
-	LOG(TEXT("Begin"));
 	if (IsValid(AIController))
 	{
 		AIController->SetBlackboardPerceptionType(EPerceptionType::Finish);	

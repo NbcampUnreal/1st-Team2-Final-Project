@@ -26,6 +26,6 @@ private:
 	TObjectPtr<AEnhancedBossAIController> AIController;
 
 	UPROPERTY()
-	FVector HideLocation;
+	FVector TargetLocation;
 	
 };
