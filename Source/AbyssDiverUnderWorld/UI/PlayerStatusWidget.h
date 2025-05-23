@@ -24,7 +24,7 @@ protected:
 public:
     void SetSpearCount(int32 Current, int32 Total);
     void SetOxygenPercent(float InPercent);
-    void SetHealthPercent(float InPercent);      // ✅ 분절형 체력 구현용
+    void SetHealthPercent(float InPercent);     
     void SetStaminaPercent(float InPercent);
 #pragma endregion
 
@@ -56,8 +56,6 @@ protected:
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UProgressBar> HealthBar;
 
-
-    // ✅ 스태미나
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UProgressBar> StaminaBar;
 #pragma endregion
@@ -65,6 +63,4 @@ protected:
 private:
     UPROPERTY()
     TArray<TObjectPtr<UImage>> HealthSegments;
-
-
 };
