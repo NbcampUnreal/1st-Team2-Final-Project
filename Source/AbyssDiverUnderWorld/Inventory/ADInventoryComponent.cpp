@@ -263,36 +263,38 @@ bool UADInventoryComponent::AddInventoryItem(FItemData ItemData)
 	
 }
 
-void UADInventoryComponent::ToggleInventoryShowed()
+void UADInventoryComponent::ShowInventory()
 {
 	APlayerController* PC = Cast<APlayerController>(Cast<AADPlayerState>(GetOwner())->GetPlayerController());
 	if (!PC && !InventoryWidgetInstance) return;
-	if (bInventoryWidgetShowed)
-	{
-		bInventoryWidgetShowed = false;
-		InventoryWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
 
-		if (!bAlreadyCursorShowed)
-			PC->bShowMouseCursor = false;
-		PC->SetIgnoreLookInput(false);
-		PC->SetInputMode(FInputModeGameOnly());
-	}
-	else
-	{
-		bInventoryWidgetShowed = true;
-		InventoryWidgetInstance->SetVisibility(ESlateVisibility::Visible);
-		InventoryUIUpdate();
-		bAlreadyCursorShowed = PC->bShowMouseCursor;
-		PC->bShowMouseCursor = true;
+	InventoryWidgetInstance->SetVisibility(ESlateVisibility::Visible);
+	InventoryUIUpdate();
+	bAlreadyCursorShowed = PC->bShowMouseCursor;
+	PC->bShowMouseCursor = true;
 
-		FInputModeGameAndUI InputMode;
-		InputMode.SetWidgetToFocus(InventoryWidgetInstance->TakeWidget());
+	FInputModeGameAndUI InputMode;
+	InputMode.SetWidgetToFocus(InventoryWidgetInstance->TakeWidget());
 
-		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-		InputMode.SetHideCursorDuringCapture(false);
-		PC->SetIgnoreLookInput(true);
-		PC->SetInputMode(InputMode);
-	}
+	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	InputMode.SetHideCursorDuringCapture(false);
+	PC->SetIgnoreLookInput(true);
+	PC->SetInputMode(InputMode);
+}
+
+void UADInventoryComponent::HideInventory()
+{
+	APlayerController* PC = Cast<APlayerController>(Cast<AADPlayerState>(GetOwner())->GetPlayerController());
+	if (!PC && !InventoryWidgetInstance) return;
+
+	bInventoryWidgetShowed = false;
+	InventoryWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
+
+	if (!bAlreadyCursorShowed)
+		PC->bShowMouseCursor = false;
+	PC->SetIgnoreLookInput(false);
+	PC->SetInputMode(FInputModeGameOnly());
+	
 }
 
 void UADInventoryComponent::OnRep_InventoryList()

@@ -65,7 +65,9 @@ public:
 	bool AddInventoryItem(FItemData ItemData);
 
 	UFUNCTION(BlueprintCallable)
-	void ToggleInventoryShowed(); //추후 나침반이나 서브미션 UI 추가되었을 때 고려 대상
+	void ShowInventory(); 
+	UFUNCTION(BlueprintCallable)
+	void HideInventory();
 
 	UFUNCTION()
 	void OnRep_InventoryList();
