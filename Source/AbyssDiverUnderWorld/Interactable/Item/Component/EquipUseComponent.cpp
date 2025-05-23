@@ -35,7 +35,10 @@ UEquipUseComponent::UEquipUseComponent()
 	bOriginalExposureCached = false;
 	bCanFire = true;
 	bIsWeapon = true;
+	NightVisionClass = nullptr;
 	NightVisionInstance = nullptr;
+	ChargeBatteryClass = nullptr;
+	ChargeBatteryInstance = nullptr;
 	bNVGWidgetVisible = false;
 	bChargeBatteryWidgetVisible = false;
 	bAlreadyCursorShowed = false;
@@ -45,6 +48,17 @@ UEquipUseComponent::UEquipUseComponent()
 	{
 		OwningCharacter = Char;
 		DefaultSpeed = Char->GetCharacterMovement()->MaxSwimSpeed;
+	}
+
+	static ConstructorHelpers::FClassFinder<UADNightVisionGoggle> NVClassFinder(TEXT("/Game/_AbyssDiver/Blueprints/UI/EquipUI/WBP_NightVisionGoggle"));
+	if (NVClassFinder.Succeeded())
+	{
+		NightVisionClass = NVClassFinder.Class;
+	}
+	static ConstructorHelpers::FClassFinder<UADNightVisionGoggle> BatteryClassFinder(TEXT("/Game/_AbyssDiver/Blueprints/UI/EquipUI/WBP_ChargeBattery"));
+	if (BatteryClassFinder.Succeeded())
+	{
+		ChargeBatteryClass = BatteryClassFinder.Class;
 	}
 }
 
