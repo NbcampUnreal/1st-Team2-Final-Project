@@ -49,6 +49,10 @@ public:
 	void S_RemoveBySlotIndex(uint8 SlotIndex, EItemType ItemType, bool bIsDropAction);
 	void S_RemoveBySlotIndex_Implementation(uint8 SlotIndex, EItemType ItemType, bool bIsDropAction);
 
+	UFUNCTION(Client, Reliable)
+	void C_SetButtonActive(FName CName, bool bCIsActive, int32 CAmount);
+	void C_SetButtonActive_Implementation(FName CName, bool bCIsActive, int32 CAmount);
+
 	UFUNCTION(BlueprintCallable)
 	void InventoryInitialize();
 
@@ -106,6 +110,7 @@ private:
 	int32 WeightMax;
 
 	uint8 bInventoryWidgetShowed : 1;
+	uint8 bAlreadyCursorShowed : 1;
 	uint8 bCanUseItem : 1;
 
 	TMap<EItemType, TArray<int8>> InventoryIndexMapByType;
@@ -113,11 +118,11 @@ private:
 	int8 CurrentEquipmentSlotIndex;
 	UPROPERTY(Replicated)
 	TObjectPtr<AADUseItem> CurrentEquipmentInstance;
-	UPROPERTY(Replicated)
 	TArray<int8> InventorySizeByType;
 
 	TObjectPtr<UToggleWidget> InventoryWidgetInstance;
 	TObjectPtr<UDataTableSubsystem> DataTableSubsystem; 
+	TObjectPtr<UChargeBatteryWidget> ChargeBatteryWidget;
 #pragma endregion
 
 
@@ -135,5 +140,6 @@ public:
 	const TArray<int8>& GetInventoryIndexesByType(EItemType ItemType) const { return InventoryIndexMapByType[ItemType]; } //타입별 인벤토리에 저장된 InventoryList 인벤토리 인덱스 배열 반환
 	const TArray<int8>& GetInventorySizeByType() const { return InventorySizeByType; } //인벤토리 사이즈 배열 반환
 
+	void SetChargeBatteryInstance(UChargeBatteryWidget* BatteryWidget);
 #pragma endregion
 };

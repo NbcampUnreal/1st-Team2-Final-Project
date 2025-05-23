@@ -10,6 +10,7 @@ struct FItemData;
 class URichTextBlock;
 class UADInventoryComponent;
 class UEquipUseComponent;
+class UButton;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API UChargeBatteryWidget : public UUserWidget
@@ -18,11 +19,16 @@ class ABYSSDIVERUNDERWORLD_API UChargeBatteryWidget : public UUserWidget
 	
 #pragma region Method
 public:
+	virtual void NativeConstruct() override;
+
+private:
+	void InitializeInventory();
 #pragma endregion
 
 #pragma region Variable
-	TObjectPtr<UADInventoryComponent> InventoryComp;
-	TObjectPtr<UEquipUseComponent> EquipUseComp;
+private:
+	TObjectPtr<UADInventoryComponent> InventoryComp = nullptr;
+
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<URichTextBlock> BatteryAmountText;
 	UPROPERTY(meta = (BindWidget))
@@ -31,6 +37,23 @@ public:
 	TObjectPtr<URichTextBlock> DPVBatteryText;
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<URichTextBlock> NVBatteryText;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UButton> DPVButton;
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UButton> NVButton;
+
+	FTimerHandle InitialzieTimerHandle;
+
+	int32 DPVBatteryMax = 0;
+	uint8 NVBatteryMax = 0;
+	uint8 InitializeNum = 5;
 #pragma endregion
 
+#pragma region Getter/Setter
+public:
+	void SetEquipBatteryAmount(FName Name, int32 Amount);
+
+	void SetBatteryButtonActivate(FName Name, bool bActivate);
+#pragma endregion
 };

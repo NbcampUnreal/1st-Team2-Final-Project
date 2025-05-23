@@ -16,6 +16,7 @@
 #include "Subsystems/DataTableSubsystem.h"
 #include "UI/ADNightVisionGoggle.h"
 #include "UI/ChargeBatteryWidget.h"
+#include "Framework/ADPlayerState.h"
 
 
 
@@ -37,6 +38,7 @@ UEquipUseComponent::UEquipUseComponent()
 	NightVisionInstance = nullptr;
 	bNVGWidgetVisible = false;
 	bChargeBatteryWidgetVisible = false;
+	bAlreadyCursorShowed = false;
 
 	// 테스트용
 	if (ACharacter* Char = Cast<ACharacter>(GetOwner()))
@@ -189,6 +191,14 @@ void UEquipUseComponent::OnRep_Amount()
 	if (OwningCharacter->IsLocallyControlled() && bNightVisionOn && NightVisionInstance)
 	{
 		NightVisionInstance->SetBatteryAmount(Amount);
+		if (ChargeBatteryInstance)
+		{
+			ChargeBatteryInstance->SetEquipBatteryAmount("NightVisionGoggle", Amount);
+		}
+	}
+	else if (OwningCharacter->IsLocallyControlled() && bBoostActive && ChargeBatteryInstance)
+	{
+		ChargeBatteryInstance->SetEquipBatteryAmount("DPV", Amount);
 	}
 }
 
@@ -256,20 +266,7 @@ void UEquipUseComponent::OnRep_NightVisionUIVisible()
 
 void UEquipUseComponent::OnRep_ChargeBatteryUIVisible()
 {
-	if (OwningCharacter != nullptr)
-	{
-		if (ChargeBatteryInstance && OwningCharacter->IsLocallyControlled())
-		{
-			ChargeBatteryInstance->SetVisibility(bChargeBatteryWidgetVisible
-				? ESlateVisibility::Visible
-				: ESlateVisibility::Hidden);
-		}
-		LOG(TEXT("%s"), bChargeBatteryWidgetVisible ? TEXT("True") : TEXT("False"));
-	}
-	else
-	{
-		LOG(TEXT("No Owning Character"));
-	}
+	ToggleChargeBatteryWidget();
 }
 
 void UEquipUseComponent::Initialize(FItemData& ItemData)
@@ -550,6 +547,45 @@ void UEquipUseComponent::ToggleNightVision()
 	SetComponentTickEnabled(bStillNeed);
 }
 
+void UEquipUseComponent::ToggleChargeBatteryWidget()
+{
+	if (OwningCharacter != nullptr)
+	{
+		if (OwningCharacter->IsLocallyControlled() && ChargeBatteryInstance)
+		{
+			LOGIC(Log, TEXT("%s"), bChargeBatteryWidgetVisible ? TEXT("True") : TEXT("False"));
+			APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController());
+
+			if (!bChargeBatteryWidgetVisible)
+			{
+				ChargeBatteryInstance->SetVisibility(ESlateVisibility::Hidden);
+
+				if(!bAlreadyCursorShowed)
+					PC->bShowMouseCursor = false;
+				PC->SetIgnoreLookInput(false);
+				PC->SetInputMode(FInputModeGameOnly());
+			}
+			else
+			{
+				ChargeBatteryInstance->SetVisibility(ESlateVisibility::Visible);
+				bAlreadyCursorShowed = PC->bShowMouseCursor;
+				PC->bShowMouseCursor = true;
+				FInputModeGameAndUI InputMode;
+				InputMode.SetWidgetToFocus(ChargeBatteryInstance->TakeWidget());
+
+				InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+				InputMode.SetHideCursorDuringCapture(false);
+				PC->SetIgnoreLookInput(true);
+				PC->SetInputMode(InputMode);
+			}
+		}
+	}
+	else
+	{
+		LOGIC(Log, TEXT("No Owning Character"));
+	}
+}
+
 void UEquipUseComponent::StartReload()
 {
 	if (!bIsWeapon || ReserveAmmo <= 0 || CurrentAmmoInMag == MagazineSize)
@@ -567,7 +603,9 @@ void UEquipUseComponent::StartReload()
 
 void UEquipUseComponent::OpenChargeWidget()
 {
-	bChargeBatteryWidgetVisible = !bChargeBatteryWidgetVisible;
+	bChargeBatteryWidgetVisible = ~bChargeBatteryWidgetVisible;
+
+	ToggleChargeBatteryWidget();
 }
 
 void UEquipUseComponent::FinishReload()
