@@ -35,12 +35,12 @@ void UShopWidget::NativeConstruct()
 
 void UShopWidget::NativeDestruct()
 {
-	Super::NativeDestruct();
-
 	ConsumableTab->OnShopCategoryTabClickedDelegate.RemoveAll(this);
 	EquipmentTab->OnShopCategoryTabClickedDelegate.RemoveAll(this);
 	UpgradeTab->OnShopCategoryTabClickedDelegate.RemoveAll(this);
 	CloseButton->OnClicked.RemoveAll(this);
+
+	Super::NativeDestruct();
 }
 
 FReply UShopWidget::NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
