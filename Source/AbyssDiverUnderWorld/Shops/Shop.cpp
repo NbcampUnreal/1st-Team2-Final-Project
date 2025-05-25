@@ -254,9 +254,6 @@ void AShop::BeginPlay()
 {
 	Super::BeginPlay();
 
-	/*InitShopWidget();
-	InitData();*/
-
 	AADInGameState* GS = Cast<AADInGameState>(UGameplayStatics::GetGameState(GetWorld()));
 	if (ensureMsgf(GS, TEXT("올바른 GS 타입이 아닌 듯. 게임모드의 GameState가 ADInGameState가 맞는지 확인 필요.")) == false)
 	{
