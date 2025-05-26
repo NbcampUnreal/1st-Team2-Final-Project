@@ -1,6 +1,7 @@
 #include "Framework/ADGameInstance.h"
 
 #include "AbyssDiverUnderWorld.h"
+#include "Subsystems/SoundSubsystem.h"
 
 #include "Kismet/GameplayStatics.h"
 
@@ -57,4 +58,19 @@ void UADGameInstance::RemovePlayerNetId(const FString& NetId)
 
     ValidPlayerIndexArray[PlayerIndex - 1] = false;
     PlayerIdMap.Remove(NetId);
+}
+
+void UADGameInstance::ChangeMasterVolume(const float& NewVolume) const
+{
+    GetSubsystem<USoundSubsystem>()->ChangeMasterVolume(NewVolume);
+}
+
+void UADGameInstance::ChangeBGMVolume(const float& NewVolume) const
+{
+    GetSubsystem<USoundSubsystem>()->ChangeBGMVolume(NewVolume);
+}
+
+void UADGameInstance::ChangeSFXVolume(const float& NewVolume) const
+{
+    GetSubsystem<USoundSubsystem>()->ChangeSFXVolume(NewVolume);
 }

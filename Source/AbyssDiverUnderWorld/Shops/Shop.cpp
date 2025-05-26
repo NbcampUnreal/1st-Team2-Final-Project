@@ -216,7 +216,7 @@ AShop::AShop()
 	LightComp->LightingChannels.bChannel1 = false;
 	LightComp->LightingChannels.bChannel2 = true;
 
-	LightComp->SetMobility(EComponentMobility::Static);
+	LightComp->SetMobility(EComponentMobility::Stationary);
 	LightComp->SetRelativeLocation(FVector(0, 0, 100));
 
 	InteractableComp = CreateDefaultSubobject<UADInteractableComponent>(TEXT("InteractableComp"));
