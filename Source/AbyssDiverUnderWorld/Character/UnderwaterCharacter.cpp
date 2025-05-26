@@ -60,6 +60,9 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 
 	StatComponent->Initialize(1000, 1000, 400.0f, 10);
 
+	LeftFlipperSocketName = TEXT("foot_l_flipper_socket");
+	RightFlipperSocketName = TEXT("foot_r_flipper_socket");
+	
 	LookSensitivity = 1.0f;
 	NormalLookSensitivity = 1.0f;
 	
@@ -158,6 +161,7 @@ void AUnderwaterCharacter::BeginPlay()
 	}
 
 	SpawnRadar();
+	SpawnFlipperMesh();
 }
 
 void AUnderwaterCharacter::InitFromPlayerState(AADPlayerState* ADPlayerState)
@@ -289,10 +293,12 @@ void AUnderwaterCharacter::SetEnvState(EEnvState State)
 	{
 	case EEnvState::Underwater:
 		GetCharacterMovement()->GravityScale = 0.0f;
+		SetFlipperMeshVisibility(true);
 		break;
 	case EEnvState::Ground:
 		// 지상에서는 이동 방향으로 회전을 하게 한다.
 		GetCharacterMovement()->GravityScale = 1.0f;
+		SetFlipperMeshVisibility(false);
 		break;
 	default:
 		UE_LOG(AbyssDiver, Error, TEXT("Invalid Character State"));
@@ -372,6 +378,96 @@ void AUnderwaterCharacter::RequestChangeAnimSyncState(FAnimSyncState NewAnimSync
 	else
 	{
 		S_ChangeAnimSyncState(NewAnimSyncState);
+	}
+}
+
+UStaticMeshComponent* AUnderwaterCharacter::CreateAndAttachMesh(const FString& ComponentName, UStaticMesh* MeshAsset, USceneComponent* Parent, FName SocketName, bool bIsThirdPerson)
+{
+	UStaticMeshComponent* MeshComponent = NewObject<UStaticMeshComponent>(this, *ComponentName);
+	if (MeshComponent == nullptr)
+	{
+		UE_LOG(LogAbyssDiverCharacter, Error, TEXT("Failed to create StaticMeshComponent: %s"), *ComponentName);
+		return nullptr;
+	}
+
+	MeshComponent->SetStaticMesh(MeshAsset);
+	MeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	MeshComponent->SetOwnerNoSee(bIsThirdPerson);
+	MeshComponent->SetOnlyOwnerSee(!bIsThirdPerson);
+	MeshComponent->CastShadow = bIsThirdPerson;
+	MeshComponent->bCastHiddenShadow = bIsThirdPerson;
+	MeshComponent->RegisterComponent();
+
+	MeshComponent->AttachToComponent(Parent, FAttachmentTransformRules::SnapToTargetNotIncludingScale, SocketName);
+	MeshComponent->SetRelativeTransform(FTransform::Identity);
+
+	return MeshComponent;
+}
+
+void AUnderwaterCharacter::SpawnFlipperMesh()
+{
+	if (LeftFlipperMesh == nullptr || RightFlipperMesh == nullptr)
+	{
+		UE_LOG(LogAbyssDiverCharacter, Warning, TEXT("Flipper Mesh is not set"));
+		return;
+	}
+
+	// 모든 노드(Guest, Host)의 모든 캐릭터에서 3인칭 메시를 생성한다.
+	// 다만, Owner No See 설정이기 때문에 Local Player는 보이지 않게 된다.
+	LeftFlipperMesh3PComponent = CreateAndAttachMesh(
+		TEXT("LeftFlipperMesh3P"),
+		LeftFlipperMesh,
+		GetMesh(),
+		LeftFlipperSocketName,
+		true
+	);
+	
+	RightFlipperMesh3PComponent = CreateAndAttachMesh(
+		TEXT("RightFlipperMesh3P"),
+		RightFlipperMesh,
+		GetMesh(),
+		RightFlipperSocketName,
+		true
+	);
+
+	// 1인칭 메시는 Local Player에서만 생성한다.
+	if (IsLocallyControlled())
+	{
+		LeftFlipperMesh1PComponent = CreateAndAttachMesh(
+			TEXT("LeftFlipperMesh1P"),
+			LeftFlipperMesh,
+			Mesh1P,
+			LeftFlipperSocketName,
+			false
+		);
+		
+		RightFlipperMesh1PComponent = CreateAndAttachMesh(
+			TEXT("RightFlipperMesh1P"),
+			RightFlipperMesh,
+			Mesh1P,
+			RightFlipperSocketName,
+			false
+		);
+	}
+}
+
+void AUnderwaterCharacter::SetFlipperMeshVisibility(const bool bVisible)
+{
+	if (LeftFlipperMesh1PComponent)
+	{
+		LeftFlipperMesh1PComponent->SetVisibility(bVisible);
+	}
+	if (RightFlipperMesh1PComponent)
+	{
+		RightFlipperMesh1PComponent->SetVisibility(bVisible);
+	}
+	if (LeftFlipperMesh3PComponent)
+	{
+		LeftFlipperMesh3PComponent->SetVisibility(bVisible);
+	}
+	if (RightFlipperMesh3PComponent)
+	{
+		RightFlipperMesh3PComponent->SetVisibility(bVisible);
 	}
 }
 
