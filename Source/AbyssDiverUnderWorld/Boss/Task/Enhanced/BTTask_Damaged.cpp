@@ -2,6 +2,7 @@
 
 #include "AbyssDiverUnderWorld.h"
 #include "Boss/Boss.h"
+#include "Boss/ENum/EBossState.h"
 #include "Boss/Enum/EPerceptionType.h"
 
 UBTTask_Damaged::UBTTask_Damaged()
@@ -26,6 +27,8 @@ EBTNodeResult::Type UBTTask_Damaged::ExecuteTask(UBehaviorTreeComponent& Comp, u
 
 	Boss = Cast<ABoss>(AIController->GetCharacter());
 	if (!IsValid(Boss)) return EBTNodeResult::Failed;
+
+	Boss->SetBossState(EBossState::Idle);
 
 	AIController->StopMovement();
 

@@ -211,9 +211,28 @@ void UEquipUseComponent::S_RKey_Implementation()
 	}
 }
 
+void UEquipUseComponent::S_IncreaseAmount_Implementation(int8 AddAmount)
+{
+	Amount += AddAmount;
+
+	UGameInstance* GI = GetWorld()->GetGameInstance();
+	if (!GI)
+	{
+		LOGIC(Log, TEXT("Initialize: No valid GameInstance"))
+			return;
+	}
+	UDataTableSubsystem* DataTableSubsystem = GI->GetSubsystem<UDataTableSubsystem>();
+	FFADItemDataRow* InItemMeta = DataTableSubsystem ? DataTableSubsystem->GetItemDataByName(CurrentEquipmentName) : nullptr;
+
+	if (CurrentEquipmentName != NAME_None && InItemMeta)
+	{
+		FMath::Clamp(Amount, 0.0f, InItemMeta->Amount);
+	}
+}
+
 void UEquipUseComponent::OnRep_Amount()
 {
-	if (OwningCharacter->IsLocallyControlled() && bNightVisionOn && NightVisionInstance)
+	if (OwningCharacter->IsLocallyControlled() && (bNightVisionOn || CurrentEquipmentName == "NightVisionGoggle") && NightVisionInstance)
 	{
 		NightVisionInstance->SetBatteryAmount(Amount);
 		if (ChargeBatteryInstance)
@@ -221,7 +240,7 @@ void UEquipUseComponent::OnRep_Amount()
 			ChargeBatteryInstance->SetEquipBatteryAmount("NightVisionGoggle", Amount);
 		}
 	}
-	else if (OwningCharacter->IsLocallyControlled() && bBoostActive && ChargeBatteryInstance)
+	else if (OwningCharacter->IsLocallyControlled() && (bBoostActive || CurrentEquipmentName == "DPV") && ChargeBatteryInstance)
 	{
 		ChargeBatteryInstance->SetEquipBatteryAmount("DPV", Amount);
 	}
@@ -333,6 +352,7 @@ void UEquipUseComponent::Initialize(FItemData& ItemData)
 	CurrentAmmoInMag = CurrentItemData->CurrentAmmoInMag;
 	ReserveAmmo = CurrentItemData->ReserveAmmo;
 	Amount = CurrentItemData->Amount;
+	CurrentEquipmentName = CurrentItemData->Name;
 
 	UGameInstance* GI = GetWorld()->GetGameInstance();
 	if (!GI)
@@ -391,6 +411,7 @@ void UEquipUseComponent::DeinitializeEquip()
 		CurrentItemData->CurrentAmmoInMag = CurrentAmmoInMag;
 		CurrentItemData->ReserveAmmo = ReserveAmmo;
 		CurrentItemData = nullptr;
+		CurrentEquipmentName = NAME_None;
 		LOGIC(Log, TEXT("No Current Item"));
 	}
 
@@ -421,9 +442,6 @@ void UEquipUseComponent::DeinitializeEquip()
 	CurrentAmmoInMag = 0;
 	ReserveAmmo = 0;
 	Amount = 0;
-
-	// 현재 장착 아이템 키 제거
-	CurrentRowName = NAME_None;
 
 	// 부스트·야간투시 효과 끄기
 	bBoostActive = false;
@@ -680,6 +698,7 @@ void UEquipUseComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 	DOREPLIFETIME(UEquipUseComponent, bNightVisionOn);
 	DOREPLIFETIME(UEquipUseComponent, bNVGWidgetVisible);
 	DOREPLIFETIME(UEquipUseComponent, bChargeBatteryWidgetVisible);
+	DOREPLIFETIME(UEquipUseComponent, CurrentEquipmentName);
 }
 
 bool UEquipUseComponent::IsInterpolating() const

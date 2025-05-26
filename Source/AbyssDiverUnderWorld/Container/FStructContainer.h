@@ -129,6 +129,12 @@ struct FInventoryList : public FFastArraySerializer
 		MarkItemDirty(Items[ItemIndex]);
 	}
 
+	void SetAmount(int8 ItemIndex, int32 NewAmount)
+	{
+		Items[ItemIndex].Amount = NewAmount;
+		MarkItemDirty(Items[ItemIndex]);
+	}
+
 	void UpdateSlotIndex(int8 ItemIndex, int8 NewIndex)
 	{
 		Items[ItemIndex].SlotIndex = NewIndex;
