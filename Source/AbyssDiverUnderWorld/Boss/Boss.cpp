@@ -35,6 +35,7 @@ ABoss::ABoss()
 	bIsBiteAttackSuccess = false;
 	BossPhysicsType = EBossPhysicsType::None;
 	DamagedLocation = FVector::ZeroVector;
+	Acceleration = 2.f;
 	
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 
@@ -89,11 +90,11 @@ void ABoss::SetBossState(EBossState State)
 	BlackboardComponent->SetValueAsEnum(BossStateKey, static_cast<uint8>(BossState));
 }
 
-void ABoss::LaunchPlayer(AUnderwaterCharacter* Player, float& Power)
+void ABoss::LaunchPlayer(AUnderwaterCharacter* Player, const float& Power) const
 {
 	// 플레이어를 밀치는 로직
 	const FVector PushDirection = (Player->GetActorLocation() - GetActorLocation()).GetSafeNormal();
-	const float PushStrength = Power; // 밀치는 힘의 크기 -> 변수화 필요할 것 같은데 일단 고민
+	const float PushStrength = Power;
 	const FVector PushForce = PushDirection * PushStrength;
 	
 	// 물리 시뮬레이션이 아닌 경우 LaunchCharacter 사용
@@ -110,6 +111,18 @@ void ABoss::LaunchPlayer(AUnderwaterCharacter* Player, float& Power)
 	}, 0.5f, false);
 }
 
+void ABoss::MoveForward(const float& InDeltaTime)
+{
+	// 목표 속도까지 부드럽게 가속
+	CurrentMoveSpeed = FMath::FInterpTo(CurrentMoveSpeed, StatComponent->GetMoveSpeed(), InDeltaTime, Acceleration);
+	
+	// 실제 이동
+	const FVector MoveDelta = GetActorForwardVector() * CurrentMoveSpeed * InDeltaTime;
+
+	// 충돌 적용
+	SetActorLocation(GetActorLocation() + MoveDelta, true);
+}
+
 float ABoss::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator,
                         AActor* DamageCauser)
 {
@@ -119,7 +132,6 @@ float ABoss::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
 	const float Damage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
 	// 부위 타격 정보
-	// @TODO : 맞은 부위에 따라 추가 데미지 혹은 출혈 이펙트 출력
 	if (DamageEvent.IsOfType(FPointDamageEvent::ClassID))
 	{
 		const FPointDamageEvent* PointDamage = static_cast<const FPointDamageEvent*>(&DamageEvent);
