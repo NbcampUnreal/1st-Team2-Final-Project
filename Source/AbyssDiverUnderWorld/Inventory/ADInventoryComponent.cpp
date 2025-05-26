@@ -159,14 +159,6 @@ void UADInventoryComponent::S_EquipmentChargeBattery_Implementation(FName ItemNa
 
 	InventoryList.UpdateAmount(Index, Amount);
 
-	UGameInstance* GI = GetWorld()->GetGameInstance();
-	if (!GI)
-	{
-		LOGIC(Log, TEXT("Initialize: No valid GameInstance"))
-			return;
-	}
-
-	UDataTableSubsystem* DTSubsystem = GI->GetSubsystem<UDataTableSubsystem>();
 	FFADItemDataRow* InItemMeta = DataTableSubsystem ? DataTableSubsystem->GetItemDataByName(ItemName) : nullptr;
 
 	if (InventoryList.Items[Index].Amount >= InItemMeta->Amount)
@@ -189,11 +181,12 @@ void UADInventoryComponent::S_UseBatteryAmount_Implementation(int32 Amount)
 	int16 Index = FindItemIndexByName("Battery");
 	if (Index != INDEX_NONE)
 	{
+		FFADItemDataRow* InItemMeta = DataTableSubsystem ? DataTableSubsystem->GetItemDataByName("Battery") : nullptr;
 		InventoryList.UpdateAmount(Index, Amount);
 
-		if (InventoryList.Items[Index].Amount == 0)
+		if (InventoryList.Items[Index].Amount == 0 && InItemMeta)
 		{
-			InventoryList.SetAmount(Index, 45); //Row로 바꾸기
+			InventoryList.SetAmount(Index, InItemMeta->Amount); 
 			RemoveBySlotIndex(InventoryList.Items[Index].SlotIndex, EItemType::Consumable, false);
 		}
 	}
@@ -406,7 +399,7 @@ void UADInventoryComponent::RemoveBySlotIndex(uint8 SlotIndex, EItemType ItemTyp
 		}
 		else if (Item.Name == "Battery")
 		{
-			InventoryList.SetAmountToMax(InventoryIndex);
+			InventoryList.SetAmount(InventoryIndex, 45);
 			if (ChargeBatteryWidget)
 			{
 				ChargeBatteryWidget->UpdateBatteryInfo();
