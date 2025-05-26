@@ -25,28 +25,6 @@ enum class EAction : uint8
 	ApplyChargeUI
 };
 
-USTRUCT(BlueprintType)
-struct FEquipState
-{
-	GENERATED_BODY()
-
-	// 비무기용 배터리/소모 상태
-	UPROPERTY()
-	int32 Amount = 0;
-
-	// 무기용 탄창 상태
-	UPROPERTY()
-	int32 InMag = 0;
-	UPROPERTY()
-	int32 Reserve = 0;
-
-	FEquipState() {}
-	FEquipState(int32 InAmount) : Amount(InAmount), InMag(0), Reserve(0) {}
-	FEquipState(int32 InInMag, int32 InReserve)
-		: Amount(0), InMag(InInMag), Reserve(InReserve) {
-	}
-};
-
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class ABYSSDIVERUNDERWORLD_API UEquipUseComponent : public UActorComponent
 {
@@ -197,11 +175,6 @@ protected:
 	TObjectPtr<UADInventoryComponent> Inventory = nullptr;
 	UPROPERTY(EditAnywhere, Category = "Projectile")
 	TSubclassOf<AADSpearGunBullet> ProjectileClass = nullptr;
-	UPROPERTY()
-	TMap<FName, FEquipState> AmountMap;
-	UPROPERTY(EditAnywhere)
-	FName CurrentRowName;
-	
 	FItemData* CurrentItemData = nullptr;
 
 	TWeakObjectPtr<class ACharacter> OwningCharacter;
@@ -224,8 +197,6 @@ private:
 
 #pragma region Getter, Setteer
 public:
-	TMap<FName, FEquipState> GetAmountMap() const { return AmountMap; }
 	uint8 IsBoost() const { return bBoostActive; }
-	void SetCurrentRowName(FName InName) { CurrentRowName = InName; }
 #pragma endregion		
 };
