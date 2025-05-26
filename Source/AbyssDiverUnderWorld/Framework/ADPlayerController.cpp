@@ -92,16 +92,30 @@ void AADPlayerController::SetupInputComponent()
 				InventoryAction,
 				ETriggerEvent::Started,
 				this,
-				&AADPlayerController::ToggleInventoryShowed
+				&AADPlayerController::ShowInventory
+			);
+			EnhancedInput->BindAction(
+				InventoryAction,
+				ETriggerEvent::Completed,
+				this,
+				&AADPlayerController::HideInventory
 			);
 		}
 	}
 }
 
-void AADPlayerController::ToggleInventoryShowed(const FInputActionValue& InputActionValue)
+void AADPlayerController::ShowInventory(const FInputActionValue& InputActionValue)
 {
 	if (AADPlayerState* PS = GetPlayerState<AADPlayerState>())
 	{
-		PS->GetInventory()->ToggleInventoryShowed();
+		PS->GetInventory()->ShowInventory();
+	}
+}
+
+void AADPlayerController::HideInventory(const FInputActionValue& InputActionValue)
+{
+	if (AADPlayerState* PS = GetPlayerState<AADPlayerState>())
+	{
+		PS->GetInventory()->HideInventory();
 	}
 }
