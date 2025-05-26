@@ -19,8 +19,17 @@ private:
 
 private:
 	UPROPERTY()
-	ABoss* Boss;
+	TObjectPtr<ABoss> Boss;
 
 	UPROPERTY()
-	AEnhancedBossAIController* AIController;
+	TObjectPtr<AEnhancedBossAIController> AIController;
+
+	UPROPERTY()
+	FVector BloodOccurredLocation;
+
+	UPROPERTY()
+	float AccumulatedTime;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = true))
+	float DetectedStateInterval;
 };

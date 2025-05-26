@@ -11,7 +11,7 @@ void UEnvQueryContext_ChasingTarget::ProvideContext(FEnvQueryInstance& QueryInst
 	Super::ProvideContext(QueryInstance, ContextData);
 
 	ABoss* Boss = Cast<ABoss>(QueryInstance.Owner);
-	if (!IsValid(Boss) || !IsValid(Boss->GetTarget())) return;
+	if (!IsValid(Boss) || !IsValid(Boss->GetCachedTarget())) return;
 	
-	UEnvQueryItemType_Actor::SetContextHelper(ContextData, Boss->GetTarget());
+	UEnvQueryItemType_Actor::SetContextHelper(ContextData, Boss->GetCachedTarget());
 }

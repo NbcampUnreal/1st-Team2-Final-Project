@@ -91,6 +91,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void ToggleNightVision();
 	UFUNCTION(BlueprintCallable)
+	void ToggleChargeBatteryWidget();
+	UFUNCTION(BlueprintCallable)
 	void StartReload();
 	UFUNCTION(BlueprintCallable)
 	void OpenChargeWidget();
@@ -169,6 +171,7 @@ public:
 	uint8 bNVGWidgetVisible : 1;
 	UPROPERTY(ReplicatedUsing = OnRep_ChargeBatteryUIVisible)
 	uint8 bChargeBatteryWidgetVisible : 1;
+	uint8 bAlreadyCursorShowed : 1;
 
 	
 	
@@ -185,6 +188,8 @@ protected:
 	TObjectPtr<UMaterialInstanceDynamic> NightVisionMaterialInstance = nullptr;
 	UPROPERTY()
 	TObjectPtr<UUserWidget> ChargeWidget = nullptr;
+	UPROPERTY()
+	TObjectPtr<UADInventoryComponent> Inventory = nullptr;
 	UPROPERTY(EditAnywhere, Category = "Projectile")
 	TSubclassOf<AADSpearGunBullet> ProjectileClass = nullptr;
 	UPROPERTY()
