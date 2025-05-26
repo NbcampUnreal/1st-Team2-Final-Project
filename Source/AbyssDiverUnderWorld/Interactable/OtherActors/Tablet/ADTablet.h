@@ -74,6 +74,7 @@ private:
 public:
 	virtual UADInteractableComponent* GetInteractableComponent() const override { return InteractableComp; }
 	virtual bool IsHoldMode() const override { return false; }
+	virtual EInteractionType GetInteractionType() const override { return EInteractionType::Pickup; }
 #pragma endregion
 
 

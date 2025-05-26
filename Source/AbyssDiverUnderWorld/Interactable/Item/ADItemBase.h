@@ -73,6 +73,7 @@ public:
 	void SetPrice(int32 InPrice);
 	virtual UADInteractableComponent* GetInteractableComponent() const override;
 	virtual bool IsHoldMode() const override;
+	virtual EInteractionType GetInteractionType() const override;
 #pragma endregion
 
 };

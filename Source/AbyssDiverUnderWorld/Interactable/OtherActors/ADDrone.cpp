@@ -132,3 +132,8 @@ bool AADDrone::IsHoldMode() const
 {
 	return bIsHold;
 }
+
+EInteractionType AADDrone::GetInteractionType() const
+{
+	return EInteractionType::SendDrone;
+}
