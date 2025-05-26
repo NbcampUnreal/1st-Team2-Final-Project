@@ -91,9 +91,7 @@ public:
 	
 	//void ResetEquipState();
 
-
-	
-	
+	void InitializeAmmoUI();
 
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;

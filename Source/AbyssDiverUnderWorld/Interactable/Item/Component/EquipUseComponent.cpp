@@ -16,6 +16,8 @@
 #include "Subsystems/DataTableSubsystem.h"
 #include "UI/ADNightVisionGoggle.h"
 #include "UI/ChargeBatteryWidget.h"
+#include "Character/PlayerComponent/PlayerHUDComponent.h"
+#include "Character/UnderwaterCharacter.h"
 #include "Framework/ADPlayerState.h"
 
 
@@ -111,6 +113,15 @@ void UEquipUseComponent::BeginPlay()
 				}
 			}
 		}
+	}
+	if (GetOwner() && GetOwner()->HasAuthority())
+	{
+		FTimerHandle InitHandle;
+		GetWorld()->GetTimerManager().SetTimer(InitHandle, [this]()
+			{
+				OnRep_CurrentAmmoInMag();
+				OnRep_ReserveAmmo();
+			}, 0.5f, false);
 	}
 }
 
@@ -237,13 +248,40 @@ void UEquipUseComponent::OnRep_Amount()
 
 void UEquipUseComponent::OnRep_CurrentAmmoInMag()
 {
-	// HUD와 UI에 탄알 수 갱신
+	if (!OwningCharacter.IsValid()) return;
+
+	APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController());
+	if (!PC) return;
+
+	UPlayerHUDComponent* HUDComp = PC->FindComponentByClass<UPlayerHUDComponent>();
+	if (!HUDComp) return;
+
+	UPlayerStatusWidget* StatusWidget = HUDComp->GetPlayerStatusWidget();
+	if (!StatusWidget)
+	{
+		UE_LOG(LogTemp, Error, TEXT("❌ StatusWidget is NULL"));
+		return;
+	}
+
+	StatusWidget->SetCurrentSpear(CurrentAmmoInMag);
 }
 
 void UEquipUseComponent::OnRep_ReserveAmmo()
 {
-	// HUD와 UI에 탄알 수 갱신
+	if (!OwningCharacter.IsValid()) return;
+
+	APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController());
+	if (!PC) return;
+
+	UPlayerHUDComponent* HUDComp = PC->FindComponentByClass<UPlayerHUDComponent>();
+	if (!HUDComp) return;
+
+	UPlayerStatusWidget* StatusWidget = HUDComp->GetPlayerStatusWidget();
+	if (!StatusWidget) return;
+
+	StatusWidget->SetTotalSpear(ReserveAmmo);
 }
+
 
 void UEquipUseComponent::OnRep_NightVisionOn()
 {
@@ -666,4 +704,10 @@ void UEquipUseComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 bool UEquipUseComponent::IsInterpolating() const
 {
 	return !FMath::IsNearlyEqual(CurrentMultiplier, TargetMultiplier, 0.001f);
+}
+
+void UEquipUseComponent::InitializeAmmoUI()
+{
+	OnRep_CurrentAmmoInMag();
+	OnRep_ReserveAmmo();
 }
