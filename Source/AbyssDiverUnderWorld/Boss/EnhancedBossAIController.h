@@ -30,7 +30,7 @@ protected:
 private:
 	void OnSightPerceptionSuccess(AUnderwaterCharacter* Player);
 	void OnSightPerceptionFail();
-	void OnHearingPerceptionSuccess(FAIStimulus Stimulus);
+	void OnHearingPerceptionSuccess(const FAIStimulus& Stimulus);
 	void OnDamagePerceptionSuccess();
 
 private:

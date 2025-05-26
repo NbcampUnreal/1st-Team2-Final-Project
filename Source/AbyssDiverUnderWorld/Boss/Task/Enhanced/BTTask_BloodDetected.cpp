@@ -31,9 +31,8 @@ EBTNodeResult::Type UBTTask_BloodDetected::ExecuteTask(UBehaviorTreeComponent& C
 	if (!IsValid(Boss)) return EBTNodeResult::Failed;
 	
 	Boss->SetBossState(EBossState::Idle);
-
-	AIController->StopMovement();
-
+	Boss->SetDecelerate(true);
+	
 	AccumulatedTime = 0;
 	
 	const FName TargetLocationName = GetSelectedBlackboardKey();

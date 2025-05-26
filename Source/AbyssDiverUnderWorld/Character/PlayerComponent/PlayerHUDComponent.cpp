@@ -186,3 +186,11 @@ void UPlayerHUDComponent::UpdateStaminaHUD(float Stamina, float MaxStamina)
 		PlayerStatusWidget->SetStaminaPercent(Ratio);
 	}
 }
+
+void UPlayerHUDComponent::UpdateSpearCount(const int32& CurrentSpear, const int32& TotalSpear)
+{
+	if (PlayerStatusWidget)
+	{
+		PlayerStatusWidget->SetSpearCount(CurrentSpear, TotalSpear);
+	}
+}

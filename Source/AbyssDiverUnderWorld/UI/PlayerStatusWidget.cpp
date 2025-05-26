@@ -13,8 +13,6 @@ void UPlayerStatusWidget::NativeConstruct()
 {
     Super::NativeConstruct();
 
-    SetSpearCount(CurrentSpear, TotalSpearCount);
-
 }
 
 void UPlayerStatusWidget::SetSpearCount(int32 Current, int32 Total)
