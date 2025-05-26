@@ -261,6 +261,16 @@ void AUnderwaterCharacter::PossessedBy(AController* NewController)
 	}
 }
 
+void AUnderwaterCharacter::PostNetInit()
+{
+	Super::PostNetInit();
+
+	if (IsValid(EquipUseComponent))
+	{
+		EquipUseComponent->InitializeAmmoUI();
+	}
+}
+
 void AUnderwaterCharacter::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
