@@ -3,8 +3,9 @@
 #include "AbyssDiverUnderWorld.h"
 #include "Shops/ShopWidgets/ShopItemMeshPanel.h"
 #include "Framework/ADInGameState.h"
-#include "Subsystems/DataTableSubsystem.h"
 #include "DataRow/FADItemDataRow.h"
+#include "Subsystems/DataTableSubsystem.h"
+#include "Subsystems/SoundSubsystem.h"
 
 #include "Components/RichTextBlock.h"
 #include "Components/Button.h"
@@ -14,21 +15,6 @@
 void UShopElementInfoWidget::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
-
-	if (BuyButton->OnClicked.IsBound() == false)
-	{
-		BuyButton->OnClicked.AddDynamic(this, &UShopElementInfoWidget::OnBuyButtonClicked);
-	}
-
-	if (IncreaseButton->OnClicked.IsBound() == false)
-	{
-		IncreaseButton->OnClicked.AddDynamic(this, &UShopElementInfoWidget::OnIncreaseButtonClicked);
-	}
-
-	if (DecreaseButton->OnClicked.IsBound() == false)
-	{
-		DecreaseButton->OnClicked.AddDynamic(this, &UShopElementInfoWidget::OnDecreaseButtonClicked);
-	}
 
 	bIsStackableItem = false;
 	bIsShowingUpgradeView = false;
@@ -45,6 +31,21 @@ void UShopElementInfoWidget::NativeConstruct()
 	}
 
 	GS->TeamCreditsChangedDelegate.AddUObject(this, &UShopElementInfoWidget::OnTeamCreditChanged);
+
+	if (BuyButton->OnClicked.IsBound() == false)
+	{
+		BuyButton->OnClicked.AddDynamic(this, &UShopElementInfoWidget::OnBuyButtonClicked);
+	}
+
+	if (IncreaseButton->OnClicked.IsBound() == false)
+	{
+		IncreaseButton->OnClicked.AddDynamic(this, &UShopElementInfoWidget::OnIncreaseButtonClicked);
+	}
+
+	if (DecreaseButton->OnClicked.IsBound() == false)
+	{
+		DecreaseButton->OnClicked.AddDynamic(this, &UShopElementInfoWidget::OnDecreaseButtonClicked);
+	}
 }
 
 void UShopElementInfoWidget::NativeDestruct()
@@ -56,6 +57,9 @@ void UShopElementInfoWidget::NativeDestruct()
 	}
 
 	GS->TeamCreditsChangedDelegate.RemoveAll(this);
+	BuyButton->OnClicked.RemoveAll(this);
+	IncreaseButton->OnClicked.RemoveAll(this);
+	DecreaseButton->OnClicked.RemoveAll(this);
 
 	Super::NativeDestruct();
 }
@@ -325,11 +329,13 @@ void UShopElementInfoWidget::SetRemainingMoneyAfterPurchaseTextActive(bool bShou
 
 void UShopElementInfoWidget::OnBuyButtonClicked()
 {
+	GetGameInstance()->GetSubsystem<USoundSubsystem>()->Play2D(ESFX_UI::UIClicked);
 	OnBuyButtonClickedDelegate.Broadcast(CurrentQuantityNumber);
 }
 
 void UShopElementInfoWidget::OnIncreaseButtonClicked()
 {
+	GetGameInstance()->GetSubsystem<USoundSubsystem>()->Play2D(ESFX_UI::UIClicked);
 	ChangeCurrentQuantityNumber(CurrentQuantityNumber + 1);
 	ChangeRemainingMoneyAfterPurchaseTextFromCost(CurrentCost);
 	ChangeCostInfo(CurrentCost, bIsShowingUpgradeView);
@@ -337,6 +343,7 @@ void UShopElementInfoWidget::OnIncreaseButtonClicked()
 
 void UShopElementInfoWidget::OnDecreaseButtonClicked()
 {
+	GetGameInstance()->GetSubsystem<USoundSubsystem>()->Play2D(ESFX_UI::UIClicked);
 	ChangeCurrentQuantityNumber(CurrentQuantityNumber - 1);
 	ChangeRemainingMoneyAfterPurchaseTextFromCost(CurrentCost);
 	ChangeCostInfo(CurrentCost, bIsShowingUpgradeView);
@@ -344,6 +351,7 @@ void UShopElementInfoWidget::OnDecreaseButtonClicked()
 
 void UShopElementInfoWidget::OnTeamCreditChanged(int32 ChangedValue)
 {
+	// 돈소리?
 	ChangeRemainingMoneyAfterPurchaseTextFromCost(CurrentCost);
 }
 
