@@ -25,28 +25,6 @@ enum class EAction : uint8
 	ApplyChargeUI
 };
 
-USTRUCT(BlueprintType)
-struct FEquipState
-{
-	GENERATED_BODY()
-
-	// 비무기용 배터리/소모 상태
-	UPROPERTY()
-	int32 Amount = 0;
-
-	// 무기용 탄창 상태
-	UPROPERTY()
-	int32 InMag = 0;
-	UPROPERTY()
-	int32 Reserve = 0;
-
-	FEquipState() {}
-	FEquipState(int32 InAmount) : Amount(InAmount), InMag(0), Reserve(0) {}
-	FEquipState(int32 InInMag, int32 InReserve)
-		: Amount(0), InMag(InInMag), Reserve(InReserve) {
-	}
-};
-
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class ABYSSDIVERUNDERWORLD_API UEquipUseComponent : public UActorComponent
 {
@@ -70,6 +48,9 @@ public:
 	UFUNCTION(Server, Reliable)
 	void S_RKey();
 	void S_RKey_Implementation();
+	UFUNCTION(Server, Reliable)
+	void S_IncreaseAmount(int8 AddAmount);
+	void S_IncreaseAmount_Implementation(int8 AddAmount);
 	UFUNCTION()
 	void OnRep_Amount();
 	UFUNCTION()
@@ -91,6 +72,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void ToggleNightVision();
 	UFUNCTION(BlueprintCallable)
+	void ToggleChargeBatteryWidget();
+	UFUNCTION(BlueprintCallable)
 	void StartReload();
 	UFUNCTION(BlueprintCallable)
 	void OpenChargeWidget();
@@ -108,9 +91,7 @@ public:
 	
 	//void ResetEquipState();
 
-
-	
-	
+	void InitializeAmmoUI();
 
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -149,6 +130,8 @@ public:
 	UPROPERTY(ReplicatedUsing = OnRep_Amount, EditAnywhere, BlueprintReadWrite)
 	int32 Amount = 0;
 	UPROPERTY(Replicated)
+	FName CurrentEquipmentName;
+	UPROPERTY(Replicated)
 	uint8 bBoostActive : 1;
 	UPROPERTY(ReplicatedUsing = OnRep_NightVisionOn)
 	uint8 bNightVisionOn : 1;
@@ -169,6 +152,7 @@ public:
 	uint8 bNVGWidgetVisible : 1;
 	UPROPERTY(ReplicatedUsing = OnRep_ChargeBatteryUIVisible)
 	uint8 bChargeBatteryWidgetVisible : 1;
+	uint8 bAlreadyCursorShowed : 1;
 
 	
 	
@@ -185,13 +169,10 @@ protected:
 	TObjectPtr<UMaterialInstanceDynamic> NightVisionMaterialInstance = nullptr;
 	UPROPERTY()
 	TObjectPtr<UUserWidget> ChargeWidget = nullptr;
+	UPROPERTY()
+	TObjectPtr<UADInventoryComponent> Inventory = nullptr;
 	UPROPERTY(EditAnywhere, Category = "Projectile")
 	TSubclassOf<AADSpearGunBullet> ProjectileClass = nullptr;
-	UPROPERTY()
-	TMap<FName, FEquipState> AmountMap;
-	UPROPERTY(EditAnywhere)
-	FName CurrentRowName;
-	
 	FItemData* CurrentItemData = nullptr;
 
 	TWeakObjectPtr<class ACharacter> OwningCharacter;
@@ -214,8 +195,6 @@ private:
 
 #pragma region Getter, Setteer
 public:
-	TMap<FName, FEquipState> GetAmountMap() const { return AmountMap; }
 	uint8 IsBoost() const { return bBoostActive; }
-	void SetCurrentRowName(FName InName) { CurrentRowName = InName; }
 #pragma endregion		
 };

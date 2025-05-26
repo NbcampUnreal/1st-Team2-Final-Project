@@ -49,7 +49,7 @@ void AADProjectileBase::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AAct
             GetActorForwardVector(),
             SweepResult,
             GetInstigatorController(),
-            this,
+            GetOwner(),
             UDamageType::StaticClass()
         );
         LOG(TEXT("Hit"));

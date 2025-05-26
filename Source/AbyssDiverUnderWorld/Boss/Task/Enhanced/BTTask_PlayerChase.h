@@ -19,10 +19,10 @@ private:
 
 private:
 	UPROPERTY()
-	ABoss* Boss;
+	TObjectPtr<ABoss> Boss;
 
 	UPROPERTY()
-	AEnhancedBossAIController* AIController;
+	TObjectPtr<AEnhancedBossAIController> AIController;
 
 	UPROPERTY(EditAnywhere)
 	float MoveSpeedMultiplier = 1.3f;
@@ -30,6 +30,14 @@ private:
 	UPROPERTY(EditAnywhere)
 	float MaxChaseTime;
 
+	UPROPERTY(EditAnywhere)
+	float MinChaseTime;
+
 	UPROPERTY()
 	float AccumulatedTime;
+
+	UPROPERTY()
+	float TimeCriteria;
+
+	static const FName bIsPlayerHiddenKey;
 };

@@ -6,7 +6,19 @@
 #include "InputActionValue.h"
 #include "UnitBase.h"
 #include "Interface/IADInteractable.h"
+#include "AbyssDiverUnderWorld.h"
 #include "UnderwaterCharacter.generated.h"
+
+#if UE_BUILD_SHIPPING
+	#define LOG_ABYSS_DIVER_COMPILE_VERBOSITY Error
+#else
+	#define LOG_ABYSS_DIVER_COMPILE_VERBOSITY All
+#endif
+
+#define LOG_NETWORK(Category, Verbosity, Format, ...) \
+	UE_LOG(Category, Verbosity, TEXT("[%s] %s %s"), LOG_NETMODEINFO, LOG_CALLINFO, *FString::Printf(Format, ##__VA_ARGS__))
+
+DECLARE_LOG_CATEGORY_EXTERN(LogAbyssDiverCharacter, Log, LOG_ABYSS_DIVER_COMPILE_VERBOSITY);
 
 // @TODO : Character Status Replicate 문제
 // 1. 최대 Stamina는 최대 Oxygen에 비례하는데 값이 따로따로 Replicate될 수 있다. 이렇게 되면 항상 오차가 존재하게 된다.
@@ -45,6 +57,24 @@ enum class ECharacterState : uint8
 // 3. Groggy -> Death : Oxygen == 0
 // 4. Groggy -> Death : Groggy Time Out
 // 5. Groggy -> Normal : Revive
+
+USTRUCT(BlueprintType)
+struct FAnimSyncState
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	uint8 bEnableRightHandIK : 1 = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	uint8 bEnableLeftHandIK : 1 = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	uint8 bEnableFootIK : 1 = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	uint8 bIsStrafing : 1 = false;
+};
 
 class UInputAction;
 
@@ -121,9 +151,34 @@ public:
 	/** 출혈을 모델링하는 소리를 발생한다. */
 	UFUNCTION(BlueprintCallable)
 	void EmitBloodNoise();
+
+	/** 1인칭 메시, 3인칭 메시 모두에 애니메이션 몽타주를 재생한다. */
+	UFUNCTION(NetMulticast, Reliable)
+	void M_PlayMontageOnBothMesh(UAnimMontage* Montage, float InPlayRate = 1.0f, FName StartSectionName = NAME_None, FAnimSyncState NewAnimSyncState = FAnimSyncState());
+	void M_PlayMontageOnBothMesh_Implementation(UAnimMontage* Montage, float InPlayRate = 1.0f, FName StartSectionName = NAME_None, FAnimSyncState NewAnimSyncState = FAnimSyncState());
+
+	/** Anim State 변경 요청 */
+	void RequestChangeAnimSyncState(FAnimSyncState NewAnimSyncState);
+
+	/** AnimNotify_LaserCutter 가 호출하는 정리 함수 */
+	UFUNCTION(BlueprintCallable, Category = "Mining")
+	void CleanupToolAndEffects();
+
+	/** 암반이 요청하면 Mining Tool을 스폰해 착용하는 함수 */
+	void SpawnAndAttachTool(TSubclassOf<AActor> ToolClass);
 	
 protected:
 
+	/** Anim State 변경 Server RPC */
+	UFUNCTION(Server, Reliable)
+	void S_ChangeAnimSyncState(FAnimSyncState NewAnimSyncState);
+	void S_ChangeAnimSyncState_Implementation(FAnimSyncState NewAnimSyncState);
+
+	/** Anim State 변경 Multicast RPC */
+	UFUNCTION(NetMulticast, Reliable)
+	void M_UpdateAnimSyncState(FAnimSyncState NewAnimSyncState);
+	void M_UpdateAnimSyncState_Implementation(FAnimSyncState NewAnimSyncState);
+	
 	/** 캐릭터 상태를 설정한다. Server에서만 실행 가능하다. */
 	void SetCharacterState(ECharacterState NewCharacterState);
 
@@ -233,6 +288,9 @@ protected:
 	UFUNCTION()
 	void OnHealthChanged(int32 CurrentHealth, int32 MaxHealth);
 
+	UFUNCTION()
+	void OnPhysicsVolumeChanged(class APhysicsVolume* NewVolume);
+	
 	/** 이동 함수. 지상, 수중 상태에 따라 이동한다. */
 	void Move(const FInputActionValue& InputActionValue);
 
@@ -291,6 +349,27 @@ protected:
 	UFUNCTION(CallInEditor)
 	void ToggleDebugCameraMode();
 
+	/** 1인칭 메시 몽타주 시작 시 호출되는 함수 */
+	UFUNCTION()
+	virtual void OnMesh1PMontageStarted(UAnimMontage* Montage);
+
+	/** 1인칭 메시 몽타주 종료 시 호출되는 함수 */
+	UFUNCTION()
+	virtual void OnMesh1PMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+
+	/** 3인칭 메시 몽타주 시작 시 호출되는 함수 */
+	UFUNCTION()
+	virtual void OnMesh3PMontageStarted(UAnimMontage* Montage);
+
+	/** 3인칭 메시 몽타주 종료 시 호출되는 함수 */
+	UFUNCTION()
+	virtual void OnMesh3PMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+	
+private:
+
+	/** Montage 콜백을 등록 */
+	void SetupMontageCallbacks();
+	
 #pragma endregion
 
 #pragma region Variable
@@ -310,6 +389,32 @@ public:
 	/** 캐릭터 상태가 변경되었을 때 호출되는 델리게이트 */
 	UPROPERTY(BlueprintAssignable)
 	FOnCharacterStateChanged OnCharacterStateChangedDelegate;
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnMontageEnd, UAnimMontage*, Montage, bool, bInterrupted);
+	/** 1인칭 메시 몽타주 종료 시 호출되는 델리게이트 */
+	UPROPERTY(BlueprintAssignable, Category = Animation)
+	FOnMontageEnd OnMesh1PMontageEndDelegate;
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMontageStarted, UAnimMontage*, Montage);
+	/** 1인칭 메시 몽타주 시작 시 호출되는 델리게이트 */
+	UPROPERTY(BlueprintAssignable, Category = Animation)
+	FOnMontageStarted OnMesh1PMontageStartedDelegate;
+
+	UPROPERTY(BlueprintAssignable, Category = Animation)
+	/** 3인칭 메시 몽타주 종료 시 호출되는 델리게이트 */
+	FOnMontageEnd OnMesh3PMontageEndDelegate;
+
+	UPROPERTY(BlueprintAssignable, Category = Animation)
+	/** 3인칭 메시 몽타주 시작 시 호출되는 델리게이트 */
+	FOnMontageStarted OnMesh3PMontageStartedDelegate;
+
+	UPROPERTY(VisibleAnywhere, Category = "Mining")
+	/** 현재 1p에 장착된 Tool 인스턴스 */
+	TObjectPtr<AActor> SpawnedTool1P;
+	
+	UPROPERTY(VisibleAnywhere, Category = "Mining")
+	/** 현재 3p에 장착된 Tool 인스턴스 */
+	TObjectPtr<AActor> SpawnedTool3P;
 
 private:
 
@@ -372,6 +477,10 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float BloodEmitPower;
 
+	/** 캐릭터가 수풀에 숨어있는지 여부 */
+	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	uint8 bIsHideInSeaweed : 1;
+
 	/** 초과 적재 기준 무게. 초과할 경우 속도를 감소시킨다. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Weight", meta = (AllowPrivateAccess = "true"))
 	float OverloadWeight;
@@ -404,9 +513,25 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Radar", meta = (AllowPrivateAccess = "true"))
 	FVector RadarOffset;
 
+	UPROPERTY(EditAnywhere, Category = "Character|Radar", meta = (AllowPrivateAccess = "true"))
+	FRotator RadarRotation;
+
 	/** 레이더 활성화 여부 */
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, ReplicatedUsing=OnRep_bIsRadarOn, Category = Character, meta = (AllowPrivateAccess = "true"))
 	uint8 bIsRadarOn : 1;
+
+	/** Animation를 재생하기 위한 정보이다. 애니메이션 재생 시에 한 번에 동기화되기 위해 사용된다. */
+	UPROPERTY(BlueprintReadOnly, Category = Animation, meta = (AllowPrivateAccess = "true"))
+	FAnimSyncState AnimSyncState;
+
+	/** Animation 1P Montage 적용 중인지 여부 */
+	uint8 bIsAnim1PSyncStateOverride : 1;
+
+	/** Animation 3P Montage 적용 중인지 여부 */
+	uint8 bIsAnim3PSyncStateOverride : 1;
+	
+	/** Montage 재생 중에 적용될 Anim Sync State */
+	FAnimSyncState OverrideAnimSyncState;
 
 	/** 이동 입력, 3차원 입력을 받는다. 캐릭터의 XYZ 축대로 맵핑을 한다. Forward : X, Right : Y, Up : Z */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
@@ -456,6 +581,10 @@ private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> EquipSlot3Action;
 
+	/** 게임에 사용될 1인칭 Camera Component의 Spring Arm. 회전 Smoothing을 위해 사용한다. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class USpringArmComponent> FirstPersonCameraArm;
+	
 	/** 게임에 사용될 1인칭 Camera Component */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UCameraComponent> FirstPersonCameraComponent;
@@ -468,6 +597,9 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UCameraComponent> ThirdPersonCameraComponent;
 
+	UPROPERTY(VisibleAnywhere, Category = Mesh, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class USpringArmComponent> Mesh1PSpringArm;
+	
 	/** 게임에 사용될 1인칭 Mesh Component */
 	UPROPERTY(VisibleAnywhere, Category = Mesh, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class USkeletalMeshComponent> Mesh1P;
@@ -513,6 +645,9 @@ private:
 	UPROPERTY(EditAnywhere, Category = "UI", meta = (AllowPrivateAccess = "true"))
 	class UHoldInteractionWidget* HoldWidgetInstance;
 
+	/** Tool 소켓 명 (1P/3P 공용) */
+	FName LaserSocketName = TEXT("Laser");
+
 #pragma endregion
 
 #pragma region Getter Setter
@@ -547,6 +682,12 @@ public:
 	/** 현재 캐릭터가 달리기 상태인지를 반환 */
 	FORCEINLINE bool IsSprinting() const;
 
+	/** 현재 캐릭터가 수중 상태인지 여부를 반환 */
+	FORCEINLINE bool IsHideInSeaweed() const { return bIsHideInSeaweed; }
+
+	/** 현재 캐릭터가 수풀에 숨어있는지 여부를 설정 */
+	void SetHideInSeaweed(const bool bNewHideInSeaweed);
+
 	/** 초과 무게 상태인지를 반환. 무게 >= 최대 무게일 때 True를 반환 */
 	UFUNCTION(BlueprintCallable)
 	bool IsOverloaded() const;
@@ -554,7 +695,14 @@ public:
 	/** 채광 속도를 반환 2.0일 경우 2배로 빠르게 채광한다. */
 	FORCEINLINE float GetGatherMultiplier() const { return GatherMultiplier; }
 
+	/** Mesh 1P 메시를 반환 */
 	FORCEINLINE USkeletalMeshComponent* GetMesh1P() const { return Mesh1P; }
-	
+
+	/** 1인칭 메시 Strafe 여부 반환 */
+	FORCEINLINE bool Is1PStrafe() const {return bIsAnim1PSyncStateOverride ? AnimSyncState.bIsStrafing : OverrideAnimSyncState.bIsStrafing;}
+
+	/** 3인칭 메시 Strafe 여부 반환 */
+	FORCEINLINE bool Is3PStrafe() const {return bIsAnim3PSyncStateOverride ? AnimSyncState.bIsStrafing : OverrideAnimSyncState.bIsStrafing;}
+		
 #pragma endregion
 };

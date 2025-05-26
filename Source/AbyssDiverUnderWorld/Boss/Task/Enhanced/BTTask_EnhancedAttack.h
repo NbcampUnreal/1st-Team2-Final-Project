@@ -22,15 +22,15 @@ private:
 
 private:
 	UPROPERTY()
-	ABoss* Boss;
+	TObjectPtr<ABoss> Boss;
 
 	UPROPERTY()
-	AEnhancedBossAIController* AIController;
+	TObjectPtr<AEnhancedBossAIController> AIController;
 
 	UPROPERTY()
-	UAnimInstance* AnimInstance;
+	TObjectPtr<UAnimInstance> AnimInstance;
 
 	UPROPERTY()
-	uint8 bHasAttacked : 1;
+	FName BlackboardKeyName;
 	
 };

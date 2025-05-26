@@ -5,6 +5,10 @@
 #include "Framework/ADPlayerState.h"
 #include "UI/ResultScreen.h"
 #include "UI/PlayerStatusWidget.h"
+#include "Character/UnderwaterCharacter.h"
+#include "Character/PlayerComponent/OxygenComponent.h"
+#include "Character/PlayerComponent/StaminaComponent.h"
+#include "Character/StatComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "EngineUtils.h"
 
@@ -18,38 +22,23 @@ void UPlayerHUDComponent::BeginPlay()
 	Super::BeginPlay();
 
 	APlayerController* PlayerController = Cast<APlayerController>(GetOwner());
-	if (!PlayerController)
-	{
-		LOGV(Warning, TEXT("PlayerController is nullptr"));
-		return;
-	}
-	// Local Controller일 경우에만 HudWidget을 생성합니다.
-	if (!PlayerController->IsLocalController())
+	if (!PlayerController || !PlayerController->IsLocalController())
 	{
 		return;
 	}
 
-	// 메인 HUD 위젯 생성
+	// 메인 HUD 생성
 	if (HudWidgetClass)
 	{
 		HudWidget = CreateWidget<UPlayerHUDWidget>(PlayerController, HudWidgetClass);
 		if (HudWidget)
 		{
-			APawn* PlayerPawn = PlayerController->GetPawn();
 			HudWidget->AddToViewport();
-			HudWidget->BindWidget(PlayerPawn);
+			HudWidget->BindWidget(PlayerController->GetPawn());
 		}
-		else
-		{
-			LOGV(Warning, TEXT("Failed to create HudWidget"));
-		}
-	}
-	else
-	{
-		LOGV(Warning, TEXT("HudWidgetClass is nullptr"));
 	}
 
-	// 산소/스테이터스 UI 위젯 생성
+	// 상태 UI 생성
 	if (PlayerStatusWidgetClass)
 	{
 		PlayerStatusWidget = CreateWidget<UPlayerStatusWidget>(PlayerController, PlayerStatusWidgetClass);
@@ -57,36 +46,47 @@ void UPlayerHUDComponent::BeginPlay()
 		{
 			PlayerStatusWidget->AddToViewport();
 		}
-		else
+	}
+
+	// 올바른 수정
+	if (APawn* Pawn = PlayerController->GetPawn())
+	{
+		if (AUnderwaterCharacter* UWCharacter = Cast<AUnderwaterCharacter>(Pawn)) 
 		{
-			LOGV(Warning, TEXT("Failed to create PlayerStatusWidget"));
+			// 스탯 컴포넌트
+			if (UStatComponent* StatComponent = UWCharacter->FindComponentByClass<UStatComponent>())
+			{
+				StatComponent->OnHealthChanged.AddDynamic(this, &UPlayerHUDComponent::UpdateHealthHUD);
+				UpdateHealthHUD(StatComponent->GetCurrentHealth(), StatComponent->GetMaxHealth());
+			}
+
+			// 산소
+			if (UOxygenComponent* OxygenComp = UWCharacter->FindComponentByClass<UOxygenComponent>())
+			{
+				OxygenComp->OnOxygenLevelChanged.AddDynamic(this, &UPlayerHUDComponent::UpdateOxygenHUD);
+				UpdateOxygenHUD(OxygenComp->GetOxygenLevel(), OxygenComp->GetMaxOxygenLevel());
+			}
+
+			// 스태미나
+			if (UStaminaComponent* StaminaComp = UWCharacter->FindComponentByClass<UStaminaComponent>())
+			{
+				StaminaComp->OnStaminaChanged.AddDynamic(this, &UPlayerHUDComponent::UpdateStaminaHUD);
+				UpdateStaminaHUD(StaminaComp->GetStamina(), StaminaComp->GetMaxStamina());
+			}
 		}
 	}
-	else
-	{
-		LOGV(Warning, TEXT("PlayerStatusWidgetClass is nullptr"));
-	}
-
-	// Pawn이 늦게 생성이 되거나 혹은, Respawn 상황에도 Binding을 수행해야 한다.
-	PlayerController->OnPossessedPawnChanged.AddDynamic(this, &UPlayerHUDComponent::OnPossessedPawnChanged);
-
-	//check(ResultScreenWidgetClass);
-	ResultScreenWidget = CreateWidget<UResultScreen>(PlayerController, ResultScreenWidgetClass);
-	//check(ResultScreenWidget);
 }
 
 void UPlayerHUDComponent::C_ShowResultScreen_Implementation()
 {
 	for (AADPlayerState* PS : TActorRange<AADPlayerState>(GetWorld()))
 	{
-		FResultScreenParams Params
-		(
+		FResultScreenParams Params(
 			PS->GetPlayerNickname(),
 			98,
 			PS->GetTotalOreMinedCount(),
 			EAliveInfo::Abandoned
 		);
-
 		UpdateResultScreen(PS->GetPlayerIndex(), Params);
 	}
 
@@ -103,7 +103,7 @@ void UPlayerHUDComponent::SetVisibility(const bool NewVisible) const
 
 void UPlayerHUDComponent::SetResultScreenVisible(const bool bShouldVisible) const
 {
-	if (ResultScreenWidget == nullptr)
+	if (!ResultScreenWidget)
 	{
 		LOGV(Error, TEXT("ResultScreenWidget == nullptr"));
 		return;
@@ -121,32 +121,76 @@ void UPlayerHUDComponent::SetResultScreenVisible(const bool bShouldVisible) cons
 
 void UPlayerHUDComponent::UpdateResultScreen(int32 PlayerIndexBased_1, const FResultScreenParams& Params)
 {
-	ResultScreenWidget->Update(PlayerIndexBased_1, Params);
+	if (ResultScreenWidget)
+	{
+		ResultScreenWidget->Update(PlayerIndexBased_1, Params);
+	}
 }
 
 void UPlayerHUDComponent::OnPossessedPawnChanged(APawn* OldPawn, APawn* NewPawn)
 {
-	LOGN(TEXT("Rebind HUD Widget"))
+	if (!NewPawn) return;
 
-		// OnPossessedPawnChanged에서는 새로운 Pawn Possess 상황만 대응한다.
-		// 사망 시의 UI는 Character Component의 사망 시점에서 처리하도록 한다.
-		if (NewPawn)
+	if (HudWidget)
+	{
+		HudWidget->BindWidget(NewPawn);
+	}
+
+	if (AUnderwaterCharacter* UWCharacter = Cast<AUnderwaterCharacter>(NewPawn))
+	{
+		if (UOxygenComponent* OxygenComp = UWCharacter->GetOxygenComponent())
 		{
-			if (HudWidget)
-			{
-				HudWidget->BindWidget(NewPawn);
-			}
-			else
-			{
-				LOGV(Warning, TEXT("HudWidget is nullptr when possessed"));
-			}
+			OxygenComp->OnOxygenLevelChanged.AddDynamic(this, &UPlayerHUDComponent::UpdateOxygenHUD);
+			UpdateOxygenHUD(OxygenComp->GetOxygenLevel(), OxygenComp->GetMaxOxygenLevel());
 		}
+
+		if (UStatComponent* StatComp = UWCharacter->FindComponentByClass<UStatComponent>())
+		{
+			StatComp->OnHealthChanged.AddDynamic(this, &UPlayerHUDComponent::UpdateHealthHUD);
+			UpdateHealthHUD(StatComp->GetCurrentHealth(), StatComp->GetMaxHealth());
+		}
+
+		// 스태미나 컴포넌트 바인딩
+		if (UStaminaComponent* StaminaComp = UWCharacter->FindComponentByClass<UStaminaComponent>())
+		{
+			StaminaComp->OnStaminaChanged.AddDynamic(this, &UPlayerHUDComponent::UpdateStaminaHUD);
+			UpdateStaminaHUD(StaminaComp->GetStamina(), StaminaComp->GetMaxStamina());
+		}
+	}
 }
+
 void UPlayerHUDComponent::UpdateOxygenHUD(float CurrentOxygenLevel, float MaxOxygenLevel)
 {
 	if (PlayerStatusWidget)
 	{
-		const float Ratio = MaxOxygenLevel > 0.f ? CurrentOxygenLevel / MaxOxygenLevel : 0.f;
+		const float Ratio = (MaxOxygenLevel > 0.f) ? CurrentOxygenLevel / MaxOxygenLevel : 0.f;
 		PlayerStatusWidget->SetOxygenPercent(Ratio);
+	}
+}
+
+void UPlayerHUDComponent::UpdateHealthHUD(int32 CurrentHealth, int32 MaxHealth)
+{
+	if (PlayerStatusWidget)
+	{
+		const float Ratio = MaxHealth > 0 ? (float)CurrentHealth / MaxHealth : 0.f;
+		PlayerStatusWidget->SetHealthPercent(Ratio);
+	}
+}
+
+void UPlayerHUDComponent::UpdateStaminaHUD(float Stamina, float MaxStamina)
+{
+
+	if (PlayerStatusWidget)
+	{
+		const float Ratio = MaxStamina > 0 ? Stamina / MaxStamina : 0.f;
+		PlayerStatusWidget->SetStaminaPercent(Ratio);
+	}
+}
+
+void UPlayerHUDComponent::UpdateSpearCount(const int32& CurrentSpear, const int32& TotalSpear)
+{
+	if (PlayerStatusWidget)
+	{
+		PlayerStatusWidget->SetSpearCount(CurrentSpear, TotalSpear);
 	}
 }

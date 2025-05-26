@@ -49,6 +49,26 @@ public:
 	void S_RemoveBySlotIndex(uint8 SlotIndex, EItemType ItemType, bool bIsDropAction);
 	void S_RemoveBySlotIndex_Implementation(uint8 SlotIndex, EItemType ItemType, bool bIsDropAction);
 
+	UFUNCTION(Server, Reliable)
+	void S_EquipmentChargeBattery(FName ItemName, int32 Amount);
+	void S_EquipmentChargeBattery_Implementation(FName ItemName, int32 Amount);
+
+	UFUNCTION(Server, Reliable)
+	void S_UseBatteryAmount(int32 Amount);
+	void S_UseBatteryAmount_Implementation(int32 Amount);
+
+	UFUNCTION(Client, Reliable)
+	void C_SetButtonActive(FName CName, bool bCIsActive, int32 CAmount);
+	void C_SetButtonActive_Implementation(FName CName, bool bCIsActive, int32 CAmount);
+
+	UFUNCTION(Client, Reliable)
+	void C_UpdateBatteryInfo();
+	void C_UpdateBatteryInfo_Implementation();
+
+	UFUNCTION(Client, Reliable)
+	void C_SetEquipBatteryAmount(FName CItemName);
+	void C_SetEquipBatteryAmount_Implementation(FName CItemName);
+
 	UFUNCTION(BlueprintCallable)
 	void InventoryInitialize();
 
@@ -56,7 +76,9 @@ public:
 	bool AddInventoryItem(FItemData ItemData);
 
 	UFUNCTION(BlueprintCallable)
-	void ToggleInventoryShowed(); //추후 나침반이나 서브미션 UI 추가되었을 때 고려 대상
+	void ShowInventory(); 
+	UFUNCTION(BlueprintCallable)
+	void HideInventory();
 
 	UFUNCTION()
 	void OnRep_InventoryList();
@@ -85,6 +107,7 @@ private:
 	void OnInventoryInfoUpdate(int32 MassInfo, int32 PriceInfo);
 	void RebuildIndexMap();
 	void OnUseCoolTimeEnd(); //아이템 사용 지연
+	void EquipmentChargeBatteryUpdateDelay();
 	void PrintLogInventoryData();
 
 #pragma endregion
@@ -106,6 +129,7 @@ private:
 	int32 WeightMax;
 
 	uint8 bInventoryWidgetShowed : 1;
+	uint8 bAlreadyCursorShowed : 1;
 	uint8 bCanUseItem : 1;
 
 	TMap<EItemType, TArray<int8>> InventoryIndexMapByType;
@@ -113,11 +137,11 @@ private:
 	int8 CurrentEquipmentSlotIndex;
 	UPROPERTY(Replicated)
 	TObjectPtr<AADUseItem> CurrentEquipmentInstance;
-	UPROPERTY(Replicated)
 	TArray<int8> InventorySizeByType;
 
 	TObjectPtr<UToggleWidget> InventoryWidgetInstance;
 	TObjectPtr<UDataTableSubsystem> DataTableSubsystem; 
+	TObjectPtr<UChargeBatteryWidget> ChargeBatteryWidget;
 #pragma endregion
 
 
@@ -129,11 +153,13 @@ public:
 	const FItemData* GetInventoryItemData(FName ItemNameToFind); //이름으로 아이템 데이터 반환
 	const FItemData& GetEquipmentItemDataByIndex(int8 KeyNum) { return InventoryList.Items[InventoryIndexMapByType[EItemType::Equipment][KeyNum]]; }; //타입별 인벤토리 슬롯 값으로 아이템 데이터 반환
 	FItemData* GetCurrentEquipmentItemData(); // 현재 장착한 무기 아이템 데이터
+	FItemData* GetEditableItemDataByName(FName ItemNameToEdit);
 
 	const FInventoryList& GetInventoryList() { return InventoryList; } 
 
 	const TArray<int8>& GetInventoryIndexesByType(EItemType ItemType) const { return InventoryIndexMapByType[ItemType]; } //타입별 인벤토리에 저장된 InventoryList 인벤토리 인덱스 배열 반환
 	const TArray<int8>& GetInventorySizeByType() const { return InventorySizeByType; } //인벤토리 사이즈 배열 반환
 
+	void SetChargeBatteryInstance(UChargeBatteryWidget* BatteryWidget);
 #pragma endregion
 };

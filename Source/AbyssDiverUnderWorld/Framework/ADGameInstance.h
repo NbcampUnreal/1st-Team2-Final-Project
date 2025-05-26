@@ -30,6 +30,18 @@ public:
 	void AddPlayerNetId(const FString& NetId);
 	void RemovePlayerNetId(const FString& NetId);
 
+	// 0~1의 값
+	UFUNCTION(Exec, BlueprintCallable, Category = "ADGameInstance")
+	void ChangeMasterVolume(const float& NewVolume) const;
+
+	// 0~1의 값
+	UFUNCTION(Exec, BlueprintCallable, Category = "ADGameInstance")
+	void ChangeBGMVolume(const float& NewVolume) const;
+
+	// 0~1의 값
+	UFUNCTION(Exec, BlueprintCallable, Category = "ADGameInstance")
+	void ChangeSFXVolume(const float& NewVolume) const;
+
 public:
 	UPROPERTY(BlueprintReadWrite)
 	uint8 bIsHost : 1;
@@ -61,6 +73,22 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, Category = "ADGameInstance", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.ShopItemMeshTransformRow"))
 	TObjectPtr<UDataTable> ShopMeshTransformTable;
+
+#pragma region Sound Tables
+
+	UPROPERTY(EditDefaultsOnly, Category = "ADGameInstance", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.SFXDataRow"))
+	TObjectPtr<UDataTable> SFXDataTable;
+
+	UPROPERTY(EditDefaultsOnly, Category = "ADGameInstance", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.UISFXDataRow"))
+	TObjectPtr<UDataTable> UISFXDataTable;
+
+	UPROPERTY(EditDefaultsOnly, Category = "ADGameInstance", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.MonsterSFXDataRow"))
+	TObjectPtr<UDataTable> MonsterSFXDataTable;
+
+	UPROPERTY(EditDefaultsOnly, Category = "ADGameInstance", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.BGMDataRow"))
+	TObjectPtr<UDataTable> BGMDataTable;
+
+#pragma endregion
 
 private:
 

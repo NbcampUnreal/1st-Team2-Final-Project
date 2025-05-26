@@ -11,6 +11,7 @@
 #include "Character/UpgradeComponent.h"
 #include "DataRow/UpgradeDataRow.h"
 #include "Subsystems/DataTableSubsystem.h"
+#include "Subsystems/SoundSubsystem.h"
 
 #include "Components/Button.h"
 #include "Components/RichTextBlock.h"
@@ -20,16 +21,27 @@ void UShopWidget::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
 
+	CurrentActivatedTab = EShopCategoryTab::Equipment;
+}
+
+void UShopWidget::NativeConstruct()
+{
+	Super::NativeConstruct();
+
 	ConsumableTab->OnShopCategoryTabClickedDelegate.AddUObject(this, &UShopWidget::OnCategoryTabClicked);
 	EquipmentTab->OnShopCategoryTabClickedDelegate.AddUObject(this, &UShopWidget::OnCategoryTabClicked);
 	UpgradeTab->OnShopCategoryTabClickedDelegate.AddUObject(this, &UShopWidget::OnCategoryTabClicked);
+	CloseButton->OnClicked.AddDynamic(this, &UShopWidget::OnCloseButtonClicked);
+}
 
-	if (CloseButton->OnClicked.IsBound() == false)
-	{
-		CloseButton->OnClicked.AddDynamic(this, &UShopWidget::OnCloseButtonClicked);
-	}
+void UShopWidget::NativeDestruct()
+{
+	ConsumableTab->OnShopCategoryTabClickedDelegate.RemoveAll(this);
+	EquipmentTab->OnShopCategoryTabClickedDelegate.RemoveAll(this);
+	UpgradeTab->OnShopCategoryTabClickedDelegate.RemoveAll(this);
+	CloseButton->OnClicked.RemoveAll(this);
 
-	CurrentActivatedTab = EShopCategoryTab::Equipment;
+	Super::NativeDestruct();
 }
 
 FReply UShopWidget::NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
@@ -256,10 +268,12 @@ void UShopWidget::OnCategoryTabClicked(EShopCategoryTab CategoryTab)
 	}
 
 	ShowItemViewForTab(CategoryTab);
+	GetGameInstance()->GetSubsystem<USoundSubsystem>()->Play2D(ESFX_UI::UIClicked);
 }
 
 void UShopWidget::OnCloseButtonClicked()
 {
+	GetGameInstance()->GetSubsystem<USoundSubsystem>()->Play2D(ESFX_UI::UIClicked);
 	OnShopCloseButtonClickedDelegate.Broadcast();
 }
 

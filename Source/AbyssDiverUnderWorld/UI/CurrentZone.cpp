@@ -56,9 +56,6 @@ void ACurrentZone::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* O
             FVector Velocity = Character->GetVelocity();
             float Speed = Velocity.Size();
             float DirDot = !Velocity.IsNearlyZero() ? FVector::DotProduct(Velocity.GetSafeNormal(), PushDirection.GetSafeNormal()) : 0.f;
-
-            UE_LOG(LogTemp, Log, TEXT("✅ 급류 진입 [%s] | Speed: %.1f | DirDot: %.2f"),
-                *Character->GetName(), Speed, DirDot);
         }
     }
 }
@@ -87,8 +84,6 @@ void ACurrentZone::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* Oth
             float Speed = Velocity.Size();
             float DirDot = !Velocity.IsNearlyZero() ? FVector::DotProduct(Velocity.GetSafeNormal(), PushDirection.GetSafeNormal()) : 0.f;
 
-            UE_LOG(LogTemp, Log, TEXT("⛔ 급류 탈출 [%s] | Speed: %.1f | DirDot: %.2f"),
-                *Character->GetName(), Speed, DirDot);
         }
 
         if (AffectedCharacters.Num() == 0)
@@ -102,7 +97,6 @@ void ACurrentZone::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* Oth
                 if (Character && Character->GetCharacterMovement())
                 {
                     Character->GetCharacterMovement()->SetMovementMode(MOVE_Swimming);
-                    UE_LOG(LogTemp, Log, TEXT("🏊‍♂️ 수영 모드 복구 [%s]"), *Character->GetName());
                 }
             }, 2.0f, false);
     }
@@ -126,7 +120,6 @@ void ACurrentZone::ApplyCurrentForce()
         FVector InputDir = Movement->GetLastInputVector().GetSafeNormal();
         float Dot = FVector::DotProduct(InputDir, PushDir);
 
-        // 흐름 힘 조절
         float FinalFlowStrength = FlowStrength;
 
         if (!InputDir.IsNearlyZero())
@@ -139,8 +132,5 @@ void ACurrentZone::ApplyCurrentForce()
         FVector FlowForce = PushDir * FinalFlowStrength * Movement->GetMaxAcceleration() * GetWorld()->DeltaTimeSeconds;
 
         Movement->Velocity += FlowForce;
-
-        DrawDebugLine(GetWorld(), Character->GetActorLocation(),
-            Character->GetActorLocation() + FlowForce * 5.0f, FColor::Cyan, false, 0.1f, 0, 1.5f);
     }
 }

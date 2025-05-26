@@ -21,17 +21,17 @@ public:
 
 public:
 	void SetBlackboardPerceptionType(EPerceptionType PerceptionType);
-	void InitPerceptionInfo();
-	void InitBlackboardVariables();
+	void InitVariables();
 
 protected:
 	UFUNCTION()
 	void OnTargetPerceptionUpdatedHandler(AActor* Actor, FAIStimulus Stimulus);
 
-protected:
-	/** 시야에서 플레이어가 사라진 이후 플레이어를 기억하는 최대 시간 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="AI|Stat")
-	float TargetSaveTime;
+private:
+	void OnSightPerceptionSuccess(AUnderwaterCharacter* Player);
+	void OnSightPerceptionFail();
+	void OnHearingPerceptionSuccess(const FAIStimulus& Stimulus);
+	void OnDamagePerceptionSuccess();
 
 private:
 	/** 플레이어를 감지한 경우 true 반환 */
@@ -48,22 +48,21 @@ private:
 
 	/** Perception 중 플레이어가 사라진 경우 true 반환 */
 	uint8 bIsDisappearPlayer : 1;
-
-	EPerceptionType PerceptionType;
-
+	
 	FTimerHandle DamageStateTransitionTimerHandle;
-	FTimerHandle TargetSaveTimerHandle;
 
-	static const FName bPerceptionUpdatedKey;
 	static const FName bHasSeenPlayerKey;
 	static const FName PerceptionTypeKey;
 	static const FName bHasDetectedPlayerKey;
-	
+	static const FName bIsChasingKey;
+	static const FName bHasAttackedKey;
+	static const FName bIsPlayerHiddenKey;
+	static const FName BloodOccurredLocationKey;
+
 public:
 	FORCEINLINE bool GetIsDetectedPlayer() const { return bIsDetectedPlayer; }
 	FORCEINLINE bool GetIsDetectedBlood() const { return bIsDamagedByPlayer; }
 	FORCEINLINE bool GetIsDamagedByPlayer() const { return bIsDamagedByPlayer; }
 	FORCEINLINE bool GetIsDisappearPlayer() const { return bIsDisappearPlayer; }
-	FORCEINLINE EPerceptionType GetPerceptionType() const { return PerceptionType; }
-	FORCEINLINE void SetPerceptionType(EPerceptionType InPerceptionType) { PerceptionType = InPerceptionType; }
+	
 };

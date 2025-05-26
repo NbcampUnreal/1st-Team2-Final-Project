@@ -33,7 +33,8 @@ protected:
 
 
 	virtual void SetupInputComponent() override;
-	void ToggleInventoryShowed(const FInputActionValue& InputActionValue);
+	void ShowInventory(const FInputActionValue& InputActionValue);
+	void HideInventory(const FInputActionValue& InputActionValue);
 	
 #pragma endregion
 	

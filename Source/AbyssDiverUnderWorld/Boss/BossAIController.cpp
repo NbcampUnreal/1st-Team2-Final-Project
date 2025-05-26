@@ -1,12 +1,13 @@
 #include "Boss/BossAIController.h"
 #include "AbyssDiverUnderWorld.h"
 #include "Boss.h"
-#include "Enum/EBossState.h"
+#include "ENum/EBossState.h"
 #include "BehaviorTree/BehaviorTree.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Character/UnderwaterCharacter.h"
-#include "Net/UnrealNetwork.h"
 #include "Perception/AIPerceptionComponent.h"
+#include "Perception/AISenseConfig_Damage.h"
+#include "Perception/AISenseConfig_Hearing.h"
 #include "Perception/AISenseConfig_Sight.h"
 
 const FName ABossAIController::BossStateKey = "BossState";
@@ -15,25 +16,34 @@ ABossAIController::ABossAIController()
 {
 	AIPerceptionComponent = CreateDefaultSubobject<UAIPerceptionComponent>("PerceptionComponent");
 	SightConfig = CreateDefaultSubobject<UAISenseConfig_Sight>("SightConfig");
+	DamageConfig = CreateDefaultSubobject<UAISenseConfig_Damage>("DamageConfig");
+	HearingConfig = CreateDefaultSubobject<UAISenseConfig_Hearing>("HearingConfig");
 
 	MoveToLocationAcceptanceRadius = 50.0f;
 	MoveToActorAcceptanceRadius = 500.0f;
-	DefaultVisionAngle = 90.0f;
-	ChasingVisionAngle = 150.0f;
+	DefaultVisionAngle = 60.0f;
+	ChasingVisionAngle = 45.0f;
 
 	// 시야 설정
-	SightConfig->SightRadius = 5000.0f;					// 시야 범위
-	SightConfig->LoseSightRadius = 6000.0f;				// 시야 상실 범위
-	SightConfig->PeripheralVisionAngleDegrees = 70.0f;	// 주변 시야 각도
-	SightConfig->SetMaxAge(5.0f);						// 자극 최대 기억 시간
-
-	// 감지 설정
+	SightConfig->SightRadius = 5000.0f;							// 시야 범위
+	SightConfig->LoseSightRadius = 6000.0f;						// 시야 상실 범위
+	SightConfig->PeripheralVisionAngleDegrees = 70.0f;			// 주변 시야 각도
+	SightConfig->SetMaxAge(5.0f);								// 자극 최대 기억 시간
 	SightConfig->DetectionByAffiliation.bDetectEnemies = true;
 	SightConfig->DetectionByAffiliation.bDetectFriendlies = true;
 	SightConfig->DetectionByAffiliation.bDetectNeutrals = true;
 
-	// 시각을 우선순위로 설정
+	// 청각 설정
+	HearingConfig->HearingRange = 10000.0f;						// 청각 범위
+	HearingConfig->DetectionByAffiliation.bDetectEnemies = true;
+	HearingConfig->DetectionByAffiliation.bDetectFriendlies = true;
+	HearingConfig->DetectionByAffiliation.bDetectNeutrals = true;
+	
+	// 시각, 촉각 등록
 	AIPerceptionComponent->ConfigureSense(*SightConfig);
+	AIPerceptionComponent->ConfigureSense(*DamageConfig);
+	AIPerceptionComponent->ConfigureSense(*HearingConfig);
+
 	AIPerceptionComponent->SetDominantSense(SightConfig->GetSenseImplementation());
 
 	bIsDetectedStatePossible = true;
@@ -52,6 +62,13 @@ void ABossAIController::BeginPlay()
 	{
 		AIPerceptionComponent->OnTargetPerceptionUpdated.AddDynamic(this, &ABossAIController::OnTargetPerceptionUpdated);
 	}
+}
+
+void ABossAIController::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	DrawDebugRangeCircle();
 }
 
 void ABossAIController::OnPossess(APawn* InPawn)
@@ -92,13 +109,11 @@ void ABossAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Sti
 	// 감지에 성공 했다면 플레이어 감지 리스트에 추가
 	if (Stimulus.WasSuccessfullySensed())
 	{
-		//LOGN(TEXT("[Detected] %s"), *Player->GetName());
 		M_AddDetectedPlayer(Player);
 	}
 	// 시야각에서 벗어났다면 플레이어 감지 리스트에서 제거
 	else
 	{
-		//LOGN(TEXT("[Lost Sight] %s"), *Player->GetName());
 		M_RemoveDetectedPlayer(Player);
 	}
 }
@@ -113,7 +128,6 @@ void ABossAIController::M_AddDetectedPlayer_Implementation(AUnderwaterCharacter*
 	// 이미 추적중인 플레이어가 있는 경우 얼리 리턴
 	if (IsValid(Boss->GetTarget()))
 	{
-		//LOGN(TEXT("[Already Detected] %s"), *Boss->GetTarget()->GetName());
 		return;
 	}
 
@@ -163,4 +177,26 @@ EPathFollowingRequestResult::Type ABossAIController::MoveToLocationWithRadius(co
 void ABossAIController::SetDetectedStatePossible()
 {
 	bIsDetectedStatePossible = true;
+}
+
+void ABossAIController::DrawDebugRangeCircle()
+{
+	FVector Center = Boss->GetActorLocation();
+	FVector YAxis = FVector(0, 1, 0); // 원의 평면을 정의할 축
+	float Radius = 10000.0f;
+
+	DrawDebugCircle(
+		GetWorld(),
+		Center,
+		Radius,
+		64,                // 세그먼트 개수 (더 많을수록 더 부드러움)
+		FColor::Green,
+		false,             // 영구 여부 (false면 일정 시간 후 사라짐)
+		0.1f,              // 지속 시간 (초)
+		0,                 // DepthPriority
+		5.0f,              // 선 두께
+		FVector(1,0,0),    // 원의 평면을 구성하는 벡터
+		YAxis,             // 원의 평면을 구성하는 벡터
+		false              // Draw axis
+	);
 }
