@@ -26,7 +26,8 @@ public:
     void SetResultScreenVisible(const bool bShouldVisible) const;
     void UpdateResultScreen(int32 PlayerIndexBased_1, const struct FResultScreenParams& Params);
 
-private:
+    FORCEINLINE TObjectPtr<UPlayerStatusWidget> GetPlayerStatusWidget() const { return PlayerStatusWidget; }
+
     UFUNCTION()
     void OnPossessedPawnChanged(APawn* OldPawn, APawn* NewPawn);
 
@@ -38,6 +39,11 @@ private:
 
     UFUNCTION()
     void UpdateHealthHUD(int32 CurrentHealth, int32 MaxHealth);
+
+    UFUNCTION()
+    void UpdateSpearCount(int32 CurrentSpear, int32 TotalSpear);
+
+private:
 #pragma endregion
 
 #pragma region Variable
