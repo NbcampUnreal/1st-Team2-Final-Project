@@ -89,7 +89,10 @@ private:
 
 #pragma region Variable
 public:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Stat")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Stat")
+	float CurrentMoveSpeed = 0.f;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
 	float Acceleration;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
@@ -173,7 +176,6 @@ private:
 	uint8 CurrentPatrolPointIndex = 0;
 	uint8 bIsBiteAttackSuccess : 1;
 	uint8 bIsAttackCollisionOverlappedPlayer : 1;
-	float CurrentMoveSpeed = 0.f;
 	
 #pragma endregion
 
