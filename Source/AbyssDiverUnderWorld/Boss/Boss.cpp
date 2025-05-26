@@ -130,8 +130,6 @@ void ABoss::MoveForward(const float& InDeltaTime)
 	
 	// 실제 이동
 	const FVector MoveDelta = GetActorForwardVector() * CurrentMoveSpeed * InDeltaTime;
-
-	LOG(TEXT("Current Speed : %f"), CurrentMoveSpeed);
 	
 	// 충돌 적용
 	SetActorLocation(GetActorLocation() + MoveDelta, true);
