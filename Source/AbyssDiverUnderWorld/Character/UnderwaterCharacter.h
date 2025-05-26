@@ -409,9 +409,13 @@ public:
 	FOnMontageStarted OnMesh3PMontageStartedDelegate;
 
 	UPROPERTY(VisibleAnywhere, Category = "Mining")
-	/** 현재 장착된 Tool 인스턴스 */
-	TObjectPtr<AActor> SpawnedTool;
+	/** 현재 1p에 장착된 Tool 인스턴스 */
+	TObjectPtr<AActor> SpawnedTool1P;
 	
+	UPROPERTY(VisibleAnywhere, Category = "Mining")
+	/** 현재 3p에 장착된 Tool 인스턴스 */
+	TObjectPtr<AActor> SpawnedTool3P;
+
 private:
 
 	// Character State는 현재 State 종료 시에 따로 처리할 것이 없기 때문에 현재 상태 값만 Replicate하도록 한다.

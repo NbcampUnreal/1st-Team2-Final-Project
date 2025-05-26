@@ -15,6 +15,7 @@
 #include "Components/PawnNoiseEmitterComponent.h"
 #include "Components/SpotLightComponent.h"
 #include "Framework/ADPlayerState.h"
+#include "Framework/ADPlayerController.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PhysicsVolume.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -25,6 +26,7 @@
 #include "Shops/ShopInteractionComponent.h"
 #include "Subsystems/DataTableSubsystem.h"
 #include "UI/HoldInteractionWidget.h"
+#include "Laser/ADLaserCutter.h"
 
 DEFINE_LOG_CATEGORY(LogAbyssDiverCharacter);
 
@@ -373,44 +375,63 @@ void AUnderwaterCharacter::RequestChangeAnimSyncState(FAnimSyncState NewAnimSync
 
 void AUnderwaterCharacter::CleanupToolAndEffects()
 {
-	if (SpawnedTool)
+	if (SpawnedTool1P || SpawnedTool3P)
 	{
-		SpawnedTool->Destroy();
-		SpawnedTool = nullptr;
+		SpawnedTool1P->Destroy();
+		SpawnedTool1P = nullptr;
+
+		SpawnedTool3P->Destroy();
+		SpawnedTool3P = nullptr;
 	}
 }
 
 void AUnderwaterCharacter::SpawnAndAttachTool(TSubclassOf<AActor> ToolClass)
 {
-	if (SpawnedTool || !ToolClass) return;
-
+	if (SpawnedTool1P || SpawnedTool3P || !ToolClass) return;
+	
 	FActorSpawnParameters Params;
 	Params.Owner = this;
 	Params.Instigator = this;
 
-	SpawnedTool = GetWorld()->SpawnActor<AActor>(
+	SpawnedTool1P = GetWorld()->SpawnActor<AActor>(
+		ToolClass,
+		GetActorLocation(),
+		GetActorRotation(),
+		Params
+	);
+	if (AADLaserCutter* Laser1P = Cast<AADLaserCutter>(SpawnedTool1P))
+		Laser1P->M_SetupVisibility(true);
+
+	SpawnedTool3P = GetWorld()->SpawnActor<AActor>(
 		ToolClass,
 		GetActorLocation(),
 		GetActorRotation(),
 		Params
 	);
 
-	if (!SpawnedTool) return;
+	if (AADLaserCutter* Laser3P = Cast<AADLaserCutter>(SpawnedTool3P))
+		Laser3P->M_SetupVisibility(false);
 
-	SpawnedTool->SetActorEnableCollision(false);
+	if (!SpawnedTool1P || !SpawnedTool3P) return;
+
+	SpawnedTool1P->SetActorEnableCollision(false);
+	SpawnedTool3P->SetActorEnableCollision(false);
 
 	// 1-인칭
-	SpawnedTool->AttachToComponent(
+	SpawnedTool1P->AttachToComponent(
 		GetMesh1P(),
 		FAttachmentTransformRules::SnapToTargetIncludingScale,
 		LaserSocketName
 	);
+
+
 	// 3-인칭
-	SpawnedTool->AttachToComponent(
+	SpawnedTool3P->AttachToComponent(
 		GetMesh(),
 		FAttachmentTransformRules::SnapToTargetIncludingScale,
 		LaserSocketName
 	);
+	
 }
 
 void AUnderwaterCharacter::S_ChangeAnimSyncState_Implementation(FAnimSyncState NewAnimSyncState)
