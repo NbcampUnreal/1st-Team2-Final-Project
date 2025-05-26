@@ -38,6 +38,8 @@ ABoss::ABoss()
 	BossPhysicsType = EBossPhysicsType::None;
 	DamagedLocation = FVector::ZeroVector;
 	Acceleration = 2.f;
+	CurrentMoveSpeed = 0.0f;
+	RotationInterpSpeed = 1.1f;
 	
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 
@@ -118,6 +120,18 @@ void ABoss::LaunchPlayer(AUnderwaterCharacter* Player, const float& Power) const
 			Player->GetCharacterMovement()->SetMovementMode(MOVE_Swimming);	
 		}
 	}, 0.5f, false);
+}
+
+void ABoss::InitializeRotation(const float& InDeltaTime)
+{
+	FRotator CurrentRotation = GetActorRotation();
+
+	// Pitch와 Roll만 보간하고, Yaw는 유지
+	const FRotator TargetRotation = FRotator(0.f, CurrentRotation.Yaw, 0.f);
+
+	CurrentRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, InDeltaTime, RotationInterpSpeed);
+	
+	SetActorRotation(CurrentRotation);
 }
 
 void ABoss::MoveForward(const float& InDeltaTime)
@@ -218,7 +232,7 @@ void ABoss::RotationToTarget(AActor* Target)
 
 	const FRotator CurrentRotation = GetActorRotation();
 	const FRotator TargetRotation = (Target->GetActorLocation() - GetActorLocation()).Rotation();
-	const FRotator NewRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, GetWorld()->GetDeltaSeconds(), 2.0f);
+	const FRotator NewRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, GetWorld()->GetDeltaSeconds(), RotationInterpSpeed);
 	
 	SetActorRotation(NewRotation);
 }
@@ -227,7 +241,7 @@ void ABoss::RotationToTarget(const FVector& TargetLocation)
 {
 	const FRotator CurrentRotation = GetActorRotation();
 	const FRotator TargetRotation = (TargetLocation - GetActorLocation()).Rotation();
-	const FRotator NewRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, GetWorld()->GetDeltaSeconds(), 2.0f);
+	const FRotator NewRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, GetWorld()->GetDeltaSeconds(), RotationInterpSpeed);
 	
 	SetActorRotation(NewRotation);
 }
