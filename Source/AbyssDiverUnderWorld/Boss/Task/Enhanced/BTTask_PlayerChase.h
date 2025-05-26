@@ -39,4 +39,6 @@ private:
 
 	UPROPERTY()
 	float TimeCriteria;
+
+	static const FName bIsPlayerHiddenKey;
 };

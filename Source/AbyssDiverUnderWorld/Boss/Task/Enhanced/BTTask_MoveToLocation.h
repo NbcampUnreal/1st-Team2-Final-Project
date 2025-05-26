@@ -29,6 +29,9 @@ private:
 	FVector TargetLocation;
 
 	UPROPERTY(EditAnywhere)
+	uint8 bIsInitialized : 1;
+
+	UPROPERTY(EditAnywhere)
 	float MoveSpeedMultiplier = 1.0f;
 	
 };
