@@ -17,6 +17,7 @@
 #include "GameFramework/Character.h"
 #include "Interactable/Item/Component/EquipUseComponent.h"
 #include "UI/ChargeBatteryWidget.h"
+#include "Character/UnderwaterCharacter.h"
 
 DEFINE_LOG_CATEGORY(InventoryLog);
 
@@ -26,11 +27,13 @@ UADInventoryComponent::UADInventoryComponent() :
 	TotalPrice(0),
 	WeightMax(100),
 	bInventoryWidgetShowed(false), 
+	bAlreadyCursorShowed(false),
 	bCanUseItem(true),
-	CurrentEquipmentSlotIndex(-1),
+	CurrentEquipmentSlotIndex(INDEX_NONE),
 	CurrentEquipmentInstance(nullptr),
 	InventoryWidgetInstance(nullptr),
-	DataTableSubsystem(nullptr)
+	DataTableSubsystem(nullptr),
+	ChargeBatteryWidget(nullptr)
 {
 	PrimaryComponentTick.bCanEverTick = true;
 	SetIsReplicatedByDefault(true);
@@ -98,7 +101,7 @@ void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType
 		}
 		else
 		{
-			if (CurrentEquipmentSlotIndex != -1)
+			if (CurrentEquipmentSlotIndex != INDEX_NONE)
 			{
 				UnEquip();
 				LOGINVEN(Warning, TEXT("ChangeEquipment"));
@@ -150,6 +153,26 @@ void UADInventoryComponent::S_RemoveBySlotIndex_Implementation(uint8 SlotIndex, 
 	RemoveBySlotIndex(SlotIndex, ItemType, bIsDropAction);
 }
 
+void UADInventoryComponent::C_SetButtonActive_Implementation(FName CName, bool bCIsActive, int32 CAmount)
+{
+	if (ChargeBatteryWidget)
+	{
+		ChargeBatteryWidget->SetEquipBatteryButtonActivate(CName, bCIsActive);
+		ChargeBatteryWidget->SetEquipBatteryAmount(CName, CAmount);
+		if (bCIsActive)
+		{
+			LOGVN(Warning, TEXT("Activate %s Button"), *CName.ToString());
+		}
+		else
+			LOGVN(Warning, TEXT("DeActivate %s Button"), *CName.ToString());
+	}
+}
+
+void UADInventoryComponent::C_UpdateBatteryInfo_Implementation()
+{
+	ChargeBatteryWidget->UpdateBatteryInfo();
+}
+
 void UADInventoryComponent::InventoryInitialize()
 {
 	APlayerController* PC = Cast<APlayerController>(Cast<AADPlayerState>(GetOwner())->GetPlayerController());
@@ -175,15 +198,15 @@ bool UADInventoryComponent::AddInventoryItem(FItemData ItemData)
 		if (FoundRow)
 		{
 			int8 ItemIndex = ItemData.ItemType == EItemType::Exchangable ? -1 : FindItemIndexByName(ItemData.Name);
+			bool bIsUpdateSuccess = false;
 			if (ItemIndex > -1) 
 			{
 				if (FoundRow->Stackable)
 				{
-					bool bIsUpdateSuccess = InventoryList.UpdateQuantity(ItemIndex, ItemData.Quantity);
+					bIsUpdateSuccess = InventoryList.UpdateQuantity(ItemIndex, ItemData.Quantity);
 					if (bIsUpdateSuccess)
 					{
 						LOGINVEN(Warning, TEXT("Item Update, ItemName : %s, Id : %d"), *InventoryList.Items[ItemIndex].Name.ToString(), InventoryList.Items[ItemIndex].Id);
-						return true;
 					}
 					else
 						LOGINVEN(Warning, TEXT("Update fail"));
@@ -191,24 +214,48 @@ bool UADInventoryComponent::AddInventoryItem(FItemData ItemData)
 			}
 			else
 			{
-				if (InventoryIndexMapByType.Contains(ItemData.ItemType) && GetTypeInventoryEmptyIndex(ItemData.ItemType) != -1)
+				if (InventoryIndexMapByType.Contains(ItemData.ItemType) && GetTypeInventoryEmptyIndex(ItemData.ItemType) != INDEX_NONE)
 				{
+					bIsUpdateSuccess = true;
 					uint8 SlotIndex = GetTypeInventoryEmptyIndex(ItemData.ItemType);
 				
 					FItemData NewItem = { FoundRow->Name, FoundRow->Id, ItemData.Quantity, SlotIndex, ItemData.Amount, ItemData.Mass,ItemData.Price, FoundRow->ItemType, FoundRow->Thumbnail };
 					InventoryList.AddItem(NewItem);
-					LOGINVEN(Warning, TEXT("Add New Item %s SlotIndex : %d"), *NewItem.Name.ToString(), SlotIndex);
 					if (ItemData.ItemType == EItemType::Exchangable)
 					{
 						OnInventoryInfoUpdate(NewItem.Mass, NewItem.Price);
 					}
-					InventoryUIUpdate();
-					return true;
+					LOGINVEN(Warning, TEXT("Add New Item %s SlotIndex : %d"), *NewItem.Name.ToString(), SlotIndex);
 				}
 				else
 				{
 					LOGINVEN(Warning, TEXT("%s Inventory is full"), *StaticEnum<EItemType>()->GetNameStringByValue((int64)ItemData.ItemType));
 				}
+			}
+
+			if (bIsUpdateSuccess)
+			{
+				InventoryUIUpdate();
+				if (ItemData.Name == "NightVisionGoggle" || ItemData.Name == "DPV")
+				{
+					if (ChargeBatteryWidget)
+					{
+						ChargeBatteryWidget->SetEquipBatteryButtonActivate(ItemData.Name, true);
+						ChargeBatteryWidget->SetEquipBatteryAmount(ItemData.Name, ItemData.Amount);
+						LOGVN(Warning, TEXT("Activate %s Button"), *ItemData.Name.ToString());
+					}
+					C_SetButtonActive(ItemData.Name, true, ItemData.Amount);
+				}
+				else if (ItemData.Name == "Battery")
+				{
+					if (ChargeBatteryWidget)
+					{
+						ChargeBatteryWidget->UpdateBatteryInfo();
+						LOGVN(Warning, TEXT("Acquire a battery"));
+					}
+					C_UpdateBatteryInfo();
+				}
+				return true;
 			}
 		}
 	}
@@ -219,36 +266,32 @@ bool UADInventoryComponent::AddInventoryItem(FItemData ItemData)
 void UADInventoryComponent::ToggleInventoryShowed()
 {
 	APlayerController* PC = Cast<APlayerController>(Cast<AADPlayerState>(GetOwner())->GetPlayerController());
-	if (!PC) return;
+	if (!PC && !InventoryWidgetInstance) return;
 	if (bInventoryWidgetShowed)
 	{
 		bInventoryWidgetShowed = false;
-		if (InventoryWidgetInstance)
-		{
-			InventoryWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
+		InventoryWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
 
+		if (!bAlreadyCursorShowed)
 			PC->bShowMouseCursor = false;
-			PC->SetIgnoreLookInput(false);
-			PC->SetInputMode(FInputModeGameOnly());
-		}
+		PC->SetIgnoreLookInput(false);
+		PC->SetInputMode(FInputModeGameOnly());
 	}
 	else
 	{
 		bInventoryWidgetShowed = true;
-		if (InventoryWidgetInstance)
-		{
-			InventoryWidgetInstance->SetVisibility(ESlateVisibility::Visible);
-			InventoryUIUpdate();
-			PC->bShowMouseCursor = true;
+		InventoryWidgetInstance->SetVisibility(ESlateVisibility::Visible);
+		InventoryUIUpdate();
+		bAlreadyCursorShowed = PC->bShowMouseCursor;
+		PC->bShowMouseCursor = true;
 
-			FInputModeGameAndUI InputMode;
-			InputMode.SetWidgetToFocus(InventoryWidgetInstance->TakeWidget());
+		FInputModeGameAndUI InputMode;
+		InputMode.SetWidgetToFocus(InventoryWidgetInstance->TakeWidget());
 
-			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-			InputMode.SetHideCursorDuringCapture(false);
-			PC->SetIgnoreLookInput(true);
-			PC->SetInputMode(InputMode);
-		}
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		InputMode.SetHideCursorDuringCapture(false);
+		PC->SetIgnoreLookInput(true);
+		PC->SetInputMode(InputMode);
 	}
 }
 
@@ -271,29 +314,50 @@ int16 UADInventoryComponent::FindItemIndexByName(FName ItemID) //빈슬롯이 �
 			return i;
 		}
 	}
-	return -1;
+	return INDEX_NONE;
 }
 
 void UADInventoryComponent::RemoveBySlotIndex(uint8 SlotIndex, EItemType ItemType, bool bIsDropAction)
 {
 	int8 InventoryIndex = GetInventoryIndexByTypeAndSlotIndex(ItemType, SlotIndex);
-	if (InventoryIndex == -1) return;
-	if (ItemType == EItemType::Equipment && CurrentEquipmentSlotIndex != -1)
-	{
-		if (CurrentEquipmentSlotIndex == SlotIndex)
-			UnEquip();
-	}
-
+	if (InventoryIndex == INDEX_NONE) return;
 	if (InventoryList.Items.IsValidIndex(InventoryIndex))
 	{
 		FItemData& Item = InventoryList.Items[InventoryIndex];
+		if (ItemType == EItemType::Equipment)
+		{
+			if (CurrentEquipmentSlotIndex != INDEX_NONE)
+			{
+				if (CurrentEquipmentSlotIndex == SlotIndex)
+					UnEquip();
+			}
+		}
+		if (Item.Name == "NightVisionGoggle" || Item.Name == "DPV")
+		{
+			if (ChargeBatteryWidget)
+			{
+				ChargeBatteryWidget->SetEquipBatteryButtonActivate(Item.Name, false);
+				LOGVN(Warning, TEXT("DeActivate %s Button"), *Item.Name.ToString());
+			}
+			C_SetButtonActive(Item.Name, false, Item.Amount);
+		}
+		else if (Item.Name == "Battery")
+		{
+			if (ChargeBatteryWidget)
+			{
+				ChargeBatteryWidget->UpdateBatteryInfo();
+				LOGVN(Warning, TEXT("Remove a battery"));
+			}
+			C_UpdateBatteryInfo();
+		}
+
 		if (Item.Quantity < 1) return;
 
 		if (bIsDropAction)
 		{
 			DropItem(Item);
 		}
-		InventoryList.UpdateQuantity(InventoryIndex, -1);
+		InventoryList.UpdateQuantity(InventoryIndex, INDEX_NONE);
 
 		LOGINVEN(Warning, TEXT("Remove Inventory Slot Index %d: Item : %s"), InventoryIndex, *Item.Name.ToString());
 		if (Item.Quantity <= 0)
@@ -337,10 +401,10 @@ int8 UADInventoryComponent::GetTypeInventoryEmptyIndex(EItemType ItemType)
 	RebuildIndexMap();
 	for (int i = 0; i < InventoryIndexMapByType[ItemType].Num(); ++i)
 	{
-		if (InventoryIndexMapByType[ItemType][i] == -1)
+		if (InventoryIndexMapByType[ItemType][i] == INDEX_NONE)
 			return i;
 	}
-	return -1;
+	return INDEX_NONE;
 } 
 
 FVector UADInventoryComponent::GetDropLocation()
@@ -355,7 +419,7 @@ FVector UADInventoryComponent::GetDropLocation()
 const FItemData* UADInventoryComponent::GetInventoryItemData(FName ItemNameToFind)
 {
 	int8 Index = FindItemIndexByName(ItemNameToFind);
-	if (Index != -1)
+	if (Index != INDEX_NONE)
 		return &InventoryList.Items[Index];
 	else
 		return &EmptyItem;
@@ -364,13 +428,15 @@ const FItemData* UADInventoryComponent::GetInventoryItemData(FName ItemNameToFin
 FItemData* UADInventoryComponent::GetCurrentEquipmentItemData()
 {
 	int8 Index = GetInventoryIndexByTypeAndSlotIndex(EItemType::Equipment, CurrentEquipmentSlotIndex);
-	if (Index == -1) return nullptr;
+	if (Index == INDEX_NONE) return nullptr;
 	return &InventoryList.Items[Index];
 }
 
+
+
 int8 UADInventoryComponent::GetInventoryIndexByTypeAndSlotIndex(EItemType Type, int8 SlotIndex) //못 찾으면 -1 반환
 {
-	int8 InventoryIndex = -1;
+	int8 InventoryIndex = INDEX_NONE;
 	for (int i = 0; i < InventoryList.Items.Num(); ++i)
 	{
 		if (InventoryList.Items[i].ItemType == Type && InventoryList.Items[i].SlotIndex == SlotIndex)
@@ -446,7 +512,7 @@ void UADInventoryComponent::UnEquip()
 	LOGINVEN(Warning, TEXT("UnEquipItem %s"), *CurrentEquipmentInstance->ItemData.Name.ToString());
 	if(CurrentEquipmentInstance)
 		CurrentEquipmentInstance->Destroy();
-	SetEquipInfo(-1, nullptr);
+	SetEquipInfo(INDEX_NONE, nullptr);
 }
 
 void UADInventoryComponent::DropItem(FItemData& ItemData)
@@ -481,7 +547,7 @@ void UADInventoryComponent::RebuildIndexMap()
 	for (auto& Pair : InventoryIndexMapByType)
 	{
 		for (int8& Idx : Pair.Value)
-			Idx = -1;
+			Idx = INDEX_NONE;
 	}
 
 	for (int16 ItemIdx = 0; ItemIdx < InventoryList.Items.Num(); ++ItemIdx)
@@ -521,8 +587,11 @@ void UADInventoryComponent::PrintLogInventoryData()
 	}
 }
 
-
-
+void UADInventoryComponent::SetChargeBatteryInstance(UChargeBatteryWidget* BatteryWidget)
+{
+	ChargeBatteryWidget = BatteryWidget;
+	LOGINVEN(Warning, TEXT("Allocate BatteryWidget To Inventory"));
+}
 
 
 

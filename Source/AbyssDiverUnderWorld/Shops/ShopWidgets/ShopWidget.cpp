@@ -20,16 +20,27 @@ void UShopWidget::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
 
+	CurrentActivatedTab = EShopCategoryTab::Equipment;
+}
+
+void UShopWidget::NativeConstruct()
+{
+	Super::NativeConstruct();
+
 	ConsumableTab->OnShopCategoryTabClickedDelegate.AddUObject(this, &UShopWidget::OnCategoryTabClicked);
 	EquipmentTab->OnShopCategoryTabClickedDelegate.AddUObject(this, &UShopWidget::OnCategoryTabClicked);
 	UpgradeTab->OnShopCategoryTabClickedDelegate.AddUObject(this, &UShopWidget::OnCategoryTabClicked);
+	CloseButton->OnClicked.AddDynamic(this, &UShopWidget::OnCloseButtonClicked);
+}
 
-	if (CloseButton->OnClicked.IsBound() == false)
-	{
-		CloseButton->OnClicked.AddDynamic(this, &UShopWidget::OnCloseButtonClicked);
-	}
+void UShopWidget::NativeDestruct()
+{
+	ConsumableTab->OnShopCategoryTabClickedDelegate.RemoveAll(this);
+	EquipmentTab->OnShopCategoryTabClickedDelegate.RemoveAll(this);
+	UpgradeTab->OnShopCategoryTabClickedDelegate.RemoveAll(this);
+	CloseButton->OnClicked.RemoveAll(this);
 
-	CurrentActivatedTab = EShopCategoryTab::Equipment;
+	Super::NativeDestruct();
 }
 
 FReply UShopWidget::NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
