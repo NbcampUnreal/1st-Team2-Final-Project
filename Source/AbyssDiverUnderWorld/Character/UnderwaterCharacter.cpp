@@ -60,10 +60,14 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 
 	StatComponent->Initialize(1000, 1000, 400.0f, 10);
 
+	LookSensitivity = 1.0f;
+	NormalLookSensitivity = 1.0f;
+	
 	GroggyDuration = 60.0f;
 	GroggyReductionRate = 0.1f;
 	MinGroggyDuration = 10.0f;
 	GroggyCount = 0;
+	GroggyLookSensitivity = 0.25f;
 	RescueRequireTime = 6.0f;
 	RecoveryHealthPercentage = 1.0f;
 	
@@ -463,6 +467,8 @@ void AUnderwaterCharacter::HandleEnterGroggy()
 			PlayerController->SetIgnoreMoveInput(true);
 		}
 
+
+		LookSensitivity = GroggyLookSensitivity;
 		// @TODO Local Groggy
 		// 1. Groggy UI 출력(남은 시간을 출력)
 		// 2. 캐릭터 회전 적용(캐릭터가 회전해서는 안 된다)
@@ -487,6 +493,8 @@ void AUnderwaterCharacter::HandleEnterNormal()
 			PlayerController->SetIgnoreLookInput(false);
 			PlayerController->SetIgnoreMoveInput(false);
 		}
+
+		LookSensitivity = NormalLookSensitivity;
 	}
 }
 
@@ -1042,8 +1050,8 @@ void AUnderwaterCharacter::Look(const FInputActionValue& InputActionValue)
 	FVector2d LookInput = InputActionValue.Get<FVector2d>();
 
 	// Y축은 반전되어서 들어오므로 그대로 적용한다.
-	AddControllerYawInput(LookInput.X);
-	AddControllerPitchInput(LookInput.Y);
+	AddControllerYawInput(LookInput.X * LookSensitivity);
+	AddControllerPitchInput(LookInput.Y * LookSensitivity);
 }
 
 void AUnderwaterCharacter::Fire(const FInputActionValue& InputActionValue)
@@ -1099,6 +1107,10 @@ void AUnderwaterCharacter::Light(const FInputActionValue& InputActionValue)
 
 void AUnderwaterCharacter::Radar(const FInputActionValue& InputActionValue)
 {
+	if (CharacterState != ECharacterState::Normal)
+	{
+		return;
+	}
 	RequestToggleRadar();
 }
 

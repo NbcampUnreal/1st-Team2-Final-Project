@@ -410,6 +410,12 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	ECharacterState CharacterState;
 
+	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	float LookSensitivity;
+
+	UPROPERTY(EditDefaultsOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	float NormalLookSensitivity;
+	
 	/** 그로기 상태에서 사망까지 걸리는 시간. 그로기 상태에 진입할 떄마다 줄어든다. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true"))
 	float GroggyDuration;
@@ -432,6 +438,9 @@ private:
 
 	/** 그로기에서 사망 전이 Timer */
 	FTimerHandle GroggyTimer;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Character|Groggy")
+	float GroggyLookSensitivity;
 
 	/** 그로기 상태에서 부활할 때 Hold해야 하는 시간. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true"))
