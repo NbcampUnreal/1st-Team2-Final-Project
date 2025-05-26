@@ -36,10 +36,10 @@ protected:
 
 protected:
 
-	UPROPERTY(meta = (BindWidget))
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UButton> Button_Public;
 
-	UPROPERTY(meta = (BindWidget))
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UButton> Button_Private;
 	
 	UPROPERTY(meta = (BindWidget))
@@ -49,6 +49,6 @@ protected:
 	TObjectPtr<UButton> Button_Confirm;
 
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadWrite)
 	uint8 bIsPrivate : 1 = 0;
 };

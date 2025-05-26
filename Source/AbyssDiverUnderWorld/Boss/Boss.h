@@ -21,6 +21,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaSeconds) override;
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 
 #pragma region Method
@@ -28,6 +29,8 @@ public:
 	FVector GetNextPatrolPoint();
 	void SetBossState(EBossState State);
 	void LaunchPlayer(AUnderwaterCharacter* Player, const float& Power) const;
+
+	void InitializeRotation(const float& InDeltaTime);
 
 	/** 전방을 향해 이동하는 함수 */
 	void MoveForward(const float& InDeltaTime);
@@ -89,8 +92,11 @@ private:
 
 #pragma region Variable
 public:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
+	float RotationInterpSpeed;
+    	
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Stat")
-	float CurrentMoveSpeed = 0.f;
+	float CurrentMoveSpeed;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
 	float Acceleration;
@@ -176,6 +182,7 @@ private:
 	uint8 CurrentPatrolPointIndex = 0;
 	uint8 bIsBiteAttackSuccess : 1;
 	uint8 bIsAttackCollisionOverlappedPlayer : 1;
+	uint8 bShouldDecelerate : 1;
 	
 #pragma endregion
 
@@ -200,7 +207,8 @@ public:
 	FORCEINLINE AUnderwaterCharacter* GetCachedTarget() const { return CachedTargetPlayer; };
 	FORCEINLINE void SetCachedTarget(AUnderwaterCharacter* Target) { CachedTargetPlayer = Target; };
 	FORCEINLINE void InitCachedTarget() { CachedTargetPlayer = nullptr; };
-	FORCEINLINE void InitCurrentMoveSpeed() { CurrentMoveSpeed = 0.f; }
+	FORCEINLINE void InitCurrentMoveSpeed() { CurrentMoveSpeed = 0.f; bShouldDecelerate = false; };
+	FORCEINLINE void SetDecelerate(const uint8 InDecelerate) { bShouldDecelerate = InDecelerate; };
 
 	AActor* GetTargetPoint();
 	const FVector GetTargetPointLocation() const;

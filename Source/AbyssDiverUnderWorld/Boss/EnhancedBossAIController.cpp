@@ -132,7 +132,7 @@ void AEnhancedBossAIController::OnSightPerceptionFail()
 	BlackboardComponent->SetValueAsBool(bHasSeenPlayerKey, false);
 }
 
-void AEnhancedBossAIController::OnHearingPerceptionSuccess(FAIStimulus Stimulus)
+void AEnhancedBossAIController::OnHearingPerceptionSuccess(const FAIStimulus& Stimulus)
 {
 	// 플레이어가 피를 흘린 위치를 저장
 	BlackboardComponent->SetValueAsVector(BloodOccurredLocationKey, Stimulus.StimulusLocation);

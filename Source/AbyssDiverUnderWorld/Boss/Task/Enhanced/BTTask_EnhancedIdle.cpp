@@ -7,8 +7,11 @@
 UBTTask_EnhancedIdle::UBTTask_EnhancedIdle()
 {
 	NodeName = "Enhanced Idle";
+	bNotifyTick = true;
 	Boss = nullptr;
 	AIController = nullptr;
+	IdleFinishMaxInterval = 5.0f;
+	IdleFinishMinInterval = 2.0f;
 }
 
 EBTNodeResult::Type UBTTask_EnhancedIdle::ExecuteTask(UBehaviorTreeComponent& Comp, uint8* NodeMemory)
@@ -20,8 +23,24 @@ EBTNodeResult::Type UBTTask_EnhancedIdle::ExecuteTask(UBehaviorTreeComponent& Co
 	if (!IsValid(Boss)) return EBTNodeResult::Failed;
 
 	Boss->SetBossState(EBossState::Idle);
+	Boss->SetDecelerate(true);
+
+	AccumulatedTime = 0.f;
+	IdleFinishTime = FMath::RandRange(IdleFinishMinInterval, IdleFinishMaxInterval);
 	
-	AIController->StopMovement();
+	return EBTNodeResult::InProgress;
+}
+
+void UBTTask_EnhancedIdle::TickTask(UBehaviorTreeComponent& Comp, uint8* NodeMemory, float DeltaSeconds)
+{
+	Super::TickTask(Comp, NodeMemory, DeltaSeconds);
+
+	Boss->InitializeRotation(DeltaSeconds);
+
+	if (AccumulatedTime > IdleFinishTime)
+	{
+		FinishLatentTask(Comp, EBTNodeResult::Succeeded);
+	}
 	
-	return EBTNodeResult::Succeeded;
+	AccumulatedTime += FMath::Clamp(DeltaSeconds, 0.f, 1.f);
 }

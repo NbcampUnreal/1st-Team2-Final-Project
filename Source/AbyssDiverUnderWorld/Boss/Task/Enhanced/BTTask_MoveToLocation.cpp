@@ -19,11 +19,13 @@ UBTTask_MoveToLocation::UBTTask_MoveToLocation()
 {
 	NodeName = "Move To Location";
 	bNotifyTick = true;
-	bNotifyTaskFinished = true;
 	Boss = nullptr;
 	AIController = nullptr;
 	bIsInitialized = true;
 	TargetLocation = FVector::ZeroVector;
+	AccumulatedTime = 0.f;
+	FinishTaskInterval = 3.f;
+	DecelerationTriggeredRadius = 2000.0f;
 }
 
 EBTNodeResult::Type UBTTask_MoveToLocation::ExecuteTask(UBehaviorTreeComponent& Comp, uint8* NodeMemory)
@@ -39,8 +41,10 @@ EBTNodeResult::Type UBTTask_MoveToLocation::ExecuteTask(UBehaviorTreeComponent& 
 	const FName KeyName = GetSelectedBlackboardKey();
 	TargetLocation = AIController->GetBlackboardComponent()->GetValueAsVector(KeyName);
 
+	Boss->SetDecelerate(false);
+	AccumulatedTime = 0.f;
+
 	AIController->MoveToLocationWithRadius(TargetLocation);
-	Boss->SetMoveSpeed(MoveSpeedMultiplier);
 	
 	return EBTNodeResult::InProgress;
 }
@@ -49,7 +53,24 @@ void UBTTask_MoveToLocation::TickTask(UBehaviorTreeComponent& Comp, uint8* NodeM
 {
 	Super::TickTask(Comp, NodeMemory, DeltaSeconds);
 	
-	Boss->MoveForward(DeltaSeconds);
+	const float Distance = FVector::Dist(Boss->GetActorLocation(), TargetLocation);
+	if (Distance < DecelerationTriggeredRadius)
+	{
+		Boss->SetDecelerate(true);
+		
+		if (AccumulatedTime > FinishTaskInterval)
+		{
+			if (bIsInitialized)
+			{
+				AIController->InitVariables();	
+			}
+		
+			FinishLatentTask(Comp, EBTNodeResult::Succeeded);
+			return;
+		}
+
+		AccumulatedTime += FMath::Clamp(DeltaSeconds, 0.f, 1.f);
+	}
 	
 	if (AIController->GetPathFollowingComponent()->GetStatus() == EPathFollowingStatus::Idle)
 	{
@@ -61,12 +82,4 @@ void UBTTask_MoveToLocation::TickTask(UBehaviorTreeComponent& Comp, uint8* NodeM
 		FinishLatentTask(Comp, EBTNodeResult::Succeeded);
 		return;
 	}
-}
-
-void UBTTask_MoveToLocation::OnTaskFinished(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory,
-	EBTNodeResult::Type TaskResult)
-{
-	Super::OnTaskFinished(OwnerComp, NodeMemory, TaskResult);
-
-	Boss->InitCurrentMoveSpeed();
 }

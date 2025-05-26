@@ -22,6 +22,7 @@ const FName ABoss::BossStateKey = "BossState";
 
 ABoss::ABoss()
 {
+	PrimaryActorTick.bCanEverTick = true;
 	bIsAttackCollisionOverlappedPlayer = false;
 	BlackboardComponent = nullptr;
 	AIController = nullptr;
@@ -33,9 +34,12 @@ ABoss::ABoss()
 	MaxPatrolDistance = 1000.0f;
 	AttackedCameraShakeScale = 1.0f;
 	bIsBiteAttackSuccess = false;
+	bShouldDecelerate = false;
 	BossPhysicsType = EBossPhysicsType::None;
 	DamagedLocation = FVector::ZeroVector;
 	Acceleration = 2.f;
+	CurrentMoveSpeed = 0.0f;
+	RotationInterpSpeed = 1.1f;
 	
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 
@@ -75,6 +79,13 @@ void ABoss::BeginPlay()
 	GetCharacterMovement()->MaxFlySpeed = StatComponent->GetMoveSpeed();
 }
 
+void ABoss::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	MoveForward(DeltaSeconds);
+}
+
 void ABoss::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
@@ -111,14 +122,29 @@ void ABoss::LaunchPlayer(AUnderwaterCharacter* Player, const float& Power) const
 	}, 0.5f, false);
 }
 
+void ABoss::InitializeRotation(const float& InDeltaTime)
+{
+	FRotator CurrentRotation = GetActorRotation();
+
+	// Pitch와 Roll만 보간하고, Yaw는 유지
+	const FRotator TargetRotation = FRotator(0.f, CurrentRotation.Yaw, 0.f);
+
+	CurrentRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, InDeltaTime, RotationInterpSpeed);
+	
+	SetActorRotation(CurrentRotation);
+}
+
 void ABoss::MoveForward(const float& InDeltaTime)
 {
+	// 목표 속도 계산
+	const float TargetSpeed = bShouldDecelerate ? 100.0f : StatComponent->GetMoveSpeed();
+	
 	// 목표 속도까지 부드럽게 가속
-	CurrentMoveSpeed = FMath::FInterpTo(CurrentMoveSpeed, StatComponent->GetMoveSpeed(), InDeltaTime, Acceleration);
+	CurrentMoveSpeed = FMath::FInterpTo(CurrentMoveSpeed, TargetSpeed, InDeltaTime, Acceleration);
 	
 	// 실제 이동
 	const FVector MoveDelta = GetActorForwardVector() * CurrentMoveSpeed * InDeltaTime;
-
+	
 	// 충돌 적용
 	SetActorLocation(GetActorLocation() + MoveDelta, true);
 }
@@ -206,7 +232,7 @@ void ABoss::RotationToTarget(AActor* Target)
 
 	const FRotator CurrentRotation = GetActorRotation();
 	const FRotator TargetRotation = (Target->GetActorLocation() - GetActorLocation()).Rotation();
-	const FRotator NewRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, GetWorld()->GetDeltaSeconds(), 2.0f);
+	const FRotator NewRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, GetWorld()->GetDeltaSeconds(), RotationInterpSpeed);
 	
 	SetActorRotation(NewRotation);
 }
@@ -215,7 +241,7 @@ void ABoss::RotationToTarget(const FVector& TargetLocation)
 {
 	const FRotator CurrentRotation = GetActorRotation();
 	const FRotator TargetRotation = (TargetLocation - GetActorLocation()).Rotation();
-	const FRotator NewRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, GetWorld()->GetDeltaSeconds(), 2.0f);
+	const FRotator NewRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, GetWorld()->GetDeltaSeconds(), RotationInterpSpeed);
 	
 	SetActorRotation(NewRotation);
 }
@@ -350,13 +376,14 @@ FVector ABoss::GetNextPatrolPoint()
 	// 최대로 시도할 다음 경로 찾기 알고리즘 횟수
 	const uint8 MaxTries = 20;
 
+	const FVector CurrentLocation = GetActorLocation();
+
 	for (uint8 i = 0; i < MaxTries; ++i)
 	{
-		bool bFound = NavSys->GetRandomReachablePointInRadius(GetActorLocation(), MaxPatrolDistance, RandomNavLocation);
+		bool bFound = NavSys->GetRandomReachablePointInRadius(CurrentLocation, MaxPatrolDistance, RandomNavLocation);
 
 		if (bFound)
 		{
-			const FVector CurrentLocation = GetActorLocation();
 			const FVector TargetLocation = RandomNavLocation.Location;
 
 			if (FVector::Distance(CurrentLocation, TargetLocation) > MinPatrolDistance)

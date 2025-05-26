@@ -6,6 +6,19 @@
 #include "Interactable/Item/Component/ADInteractableComponent.h"
 #include "IADInteractable.generated.h"
 
+UENUM(BlueprintType)
+enum class EInteractionType : uint8
+{
+	Pickup			UMETA(DisplayName = "줍기"),
+	Mining			UMETA(DisplayName = "채광하기"),
+	GiveOre			UMETA(DisplayName = "광석 제출하기"),
+	SendDrone		UMETA(DisplayName = "드론 보내기"),
+	OpenShop		UMETA(DisplayName = "상점 열기"),
+	GoToSubmarine	UMETA(DisplayName = "잠수정으로 이동하기"),
+	ReviveCharacter UMETA(DisplayName = "살리기"),
+	GoToNextLevel	UMETA(DisplayName = "다음 맵으로 이동하기")
+};
+
 // This class does not need to be modified.
 UINTERFACE(MinimalAPI)
 class UIADInteractable : public UInterface
@@ -43,4 +56,5 @@ public:
 
 	virtual UADInteractableComponent* GetInteractableComponent() const = 0;
 	virtual bool IsHoldMode() const = 0;
+	virtual EInteractionType GetInteractionType() const = 0;
 };

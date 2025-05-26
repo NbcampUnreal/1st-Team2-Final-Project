@@ -78,4 +78,9 @@ bool APortal::IsHoldMode() const
 	return false;
 }
 
+EInteractionType APortal::GetInteractionType() const
+{
+	return EInteractionType::GoToSubmarine;
+}
+
 

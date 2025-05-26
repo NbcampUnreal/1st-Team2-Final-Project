@@ -31,16 +31,20 @@ public:
 	void RemovePlayerNetId(const FString& NetId);
 
 	// 0~1의 값
-	UFUNCTION(Exec, BlueprintCallable, Category = "ADGameInstance")
-	void ChangeMasterVolume(const float& NewVolume) const;
+	UFUNCTION(BlueprintCallable, Category = "ADGameInstance")
+	void ChangeMasterVolume(const float& NewVolume);
 
 	// 0~1의 값
-	UFUNCTION(Exec, BlueprintCallable, Category = "ADGameInstance")
-	void ChangeBGMVolume(const float& NewVolume) const;
+	UFUNCTION(BlueprintCallable, Category = "ADGameInstance")
+	void ChangeBGMVolume(const float& NewVolume);
 
 	// 0~1의 값
-	UFUNCTION(Exec, BlueprintCallable, Category = "ADGameInstance")
-	void ChangeSFXVolume(const float& NewVolume) const;
+	UFUNCTION(BlueprintCallable, Category = "ADGameInstance")
+	void ChangeSFXVolume(const float& NewVolume);
+
+	// 0~1의 값
+	UFUNCTION(BlueprintCallable, Category = "ADGameInstance")
+	void ChangeAmbientVolume(const float& NewVolume);
 
 public:
 	UPROPERTY(BlueprintReadWrite)
@@ -88,6 +92,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "ADGameInstance", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.BGMDataRow"))
 	TObjectPtr<UDataTable> BGMDataTable;
 
+	UPROPERTY(EditDefaultsOnly, Category = "ADGameInstance", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.AmbientDataRow"))
+	TObjectPtr<UDataTable> AmbientDataTable;
+
 #pragma endregion
 
 private:
@@ -96,5 +103,22 @@ private:
 	TArray<bool> ValidPlayerIndexArray;
 
 	const int32 MAX_PLAYER_NUMBER = 4;
+
+#pragma region Getters / Setters
+
+	UFUNCTION(BlueprintPure, Category = "ADGameInstance")
+	const float GetCurrentMasterVolume() const;
+
+	UFUNCTION(BlueprintPure, Category = "ADGameInstance")
+	const float GetCurrentBGMVolume() const;
+
+	UFUNCTION(BlueprintPure, Category = "ADGameInstance")
+	const float GetCurrentSFXVolume() const;
+
+	UFUNCTION(BlueprintPure, Category = "ADGameInstance")
+	const float GetCurrentAmbientVolume() const;
+
+#pragma endregion
+
 
 };

@@ -25,8 +25,8 @@ ABossAIController::ABossAIController()
 	ChasingVisionAngle = 45.0f;
 
 	// 시야 설정
-	SightConfig->SightRadius = 5000.0f;							// 시야 범위
-	SightConfig->LoseSightRadius = 6000.0f;						// 시야 상실 범위
+	SightConfig->SightRadius = 3000.0f;							// 시야 범위
+	SightConfig->LoseSightRadius = 4000.0f;						// 시야 상실 범위
 	SightConfig->PeripheralVisionAngleDegrees = 70.0f;			// 주변 시야 각도
 	SightConfig->SetMaxAge(5.0f);								// 자극 최대 기억 시간
 	SightConfig->DetectionByAffiliation.bDetectEnemies = true;
