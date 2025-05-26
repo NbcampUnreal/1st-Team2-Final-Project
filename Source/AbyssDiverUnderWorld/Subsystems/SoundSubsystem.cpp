@@ -82,56 +82,79 @@ void USoundSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	}
 	
 	LOGV(Warning, TEXT("SFXMonsterData is Initialized, Count : %d"), SFXMonsterDataCount);
+
+	GI->AmbientDataTable->GetAllRows<FAmbientDataRow>(TEXT("Getting Monster SFXs.."), AmbientData);
+	AmbientDataCount = AmbientData.Num();
+
+	Algo::Sort(AmbientData, [](const FAmbientDataRow* A, const FAmbientDataRow* B)
+		{
+			return A->SoundType < B->SoundType;
+		});
+
+	for (int32 i = 0; i < AmbientDataCount; ++i)
+	{
+		if (ensureMsgf(i == (int32)AmbientData[i]->SoundType, TEXT("DT_AmbientSFX에 %d 번에 해당하는 사운드 데이터가 없습니다. 반드시 0번부터 빈 Enum 없이 채워주세요"), i) == false)
+		{
+			break;
+		}
+	}
+
+	LOGV(Warning, TEXT("AmbientData is Initialized, Count : %d"), AmbientDataCount);
 }
 
-void USoundSubsystem::Play2D(ESFX SFXType, float Volume)
+void USoundSubsystem::Play2D(const ESFX& SFXType, const float& Volume)
 {
-	PlayInternal(SFXData[int32(SFXType)]->Sound, false, true, FVector::ZeroVector, nullptr, Volume);
+	Play2DInternal(SFXData[int32(SFXType)]->Sound, false, false, Volume);
 }
 
-void USoundSubsystem::Play2D(ESFX_Monster SFXType, float Volume)
+void USoundSubsystem::Play2D(const ESFX_Monster& SFXType, const float& Volume)
 {
-	PlayInternal(SFXMonsterData[int32(SFXType)]->Sound, false, true, FVector::ZeroVector, nullptr, Volume);
+	Play2DInternal(SFXMonsterData[int32(SFXType)]->Sound, false, false, Volume);
 }
 
-void USoundSubsystem::Play2D(ESFX_UI SFXType, float Volume)
+void USoundSubsystem::Play2D(const ESFX_UI& SFXType, const float& Volume)
 {
-	PlayInternal(SFXUIData[int32(SFXType)]->Sound, false, true, FVector::ZeroVector, nullptr, Volume);
+	Play2DInternal(SFXUIData[int32(SFXType)]->Sound, false, false, Volume);
 }
 
-void USoundSubsystem::PlayBGM(ESFX_BGM SFXType, float Volume)
+void USoundSubsystem::PlayBGM(const ESFX_BGM& SFXType, const float& Volume)
 {
-	PlayInternal(SFXBGMData[int32(SFXType)]->Sound, true, true, FVector::ZeroVector, nullptr, Volume);
+	Play2DInternal(SFXBGMData[int32(SFXType)]->Sound, true, false, Volume);
 }
 
-void USoundSubsystem::PlayAt(ESFX SFXType, const FVector& Position, float Volume)
+void USoundSubsystem::PlayAmbient(const ESFX_Ambient& SFXType, const float& Volume)
 {
-	PlayInternal(SFXData[int32(SFXType)]->Sound, false, false, Position, nullptr, Volume);
+	Play2DInternal(SFXBGMData[int32(SFXType)]->Sound, false, true, Volume);
 }
 
-void USoundSubsystem::PlayAt(ESFX_Monster SFXType, const FVector& Position, float Volume)
+void USoundSubsystem::PlayAt(const ESFX& SFXType, const FVector& Position, const float& Volume)
 {
-	PlayInternal(SFXMonsterData[int32(SFXType)]->Sound, false, true, Position, nullptr, Volume);
+	Play3DInternal(SFXData[int32(SFXType)]->Sound, Position, nullptr, Volume);
 }
 
-void USoundSubsystem::PlayAt(ESFX_UI SFXType, const FVector& Position, float Volume)
+void USoundSubsystem::PlayAt(const ESFX_Monster& SFXType, const FVector& Position, const float& Volume)
 {
-	PlayInternal(SFXUIData[int32(SFXType)]->Sound, false, false, Position, nullptr, Volume);
+	Play3DInternal(SFXMonsterData[int32(SFXType)]->Sound, Position, nullptr, Volume);
 }
 
-void USoundSubsystem::PlayAttach(ESFX SFXType, USceneComponent* AttachComp, float Volume)
+void USoundSubsystem::PlayAt(const ESFX_UI& SFXType, const FVector& Position, const float& Volume)
 {
-	PlayInternal(SFXData[int32(SFXType)]->Sound, false, false, FVector::ZeroVector, AttachComp, Volume);
+	Play3DInternal(SFXUIData[int32(SFXType)]->Sound, Position, nullptr, Volume);
 }
 
-void USoundSubsystem::PlayAttach(ESFX_Monster SFXType, USceneComponent* AttachComp, float Volume)
+void USoundSubsystem::PlayAttach(const ESFX& SFXType, USceneComponent* AttachComp, const float& Volume)
 {
-	PlayInternal(SFXMonsterData[int32(SFXType)]->Sound, false, false, FVector::ZeroVector, AttachComp, Volume);
+	Play3DInternal(SFXData[int32(SFXType)]->Sound, FVector::ZeroVector, AttachComp, Volume);
 }
 
-void USoundSubsystem::PlayAttach(ESFX_UI SFXType, USceneComponent* AttachComp, float Volume)
+void USoundSubsystem::PlayAttach(const ESFX_Monster& SFXType, USceneComponent* AttachComp, const float& Volume)
 {
-	PlayInternal(SFXUIData[int32(SFXType)]->Sound, false, false, FVector::ZeroVector, AttachComp, Volume);
+	Play3DInternal(SFXMonsterData[int32(SFXType)]->Sound, FVector::ZeroVector, AttachComp, Volume);
+}
+
+void USoundSubsystem::PlayAttach(const ESFX_UI& SFXType, USceneComponent* AttachComp, const float& Volume)
+{
+	Play3DInternal(SFXUIData[int32(SFXType)]->Sound, FVector::ZeroVector, AttachComp, Volume);
 }
 
 void USoundSubsystem::StopAllBGM()
@@ -150,48 +173,85 @@ void USoundSubsystem::StopAllSFX()
 	}
 }
 
-void USoundSubsystem::ChangeMasterVolume(float NewMasterVolume)
+void USoundSubsystem::StopAllAmbient()
+{
+	for (const auto& ActivatedAmbient : ActivatedAmbientComponents)
+	{
+		ActivatedAmbient.Key->Stop();
+	}
+}
+
+void USoundSubsystem::ChangeMasterVolume(const float& NewMasterVolume)
 {
 	MasterVolume = FMath::Clamp(NewMasterVolume, 0, 1);
-	ChangeVolumeInternal();
+	ChangeMasterVolumeInternal();
 }
 
-void USoundSubsystem::ChangeBGMVolume(float NewBGMVolume)
+void USoundSubsystem::ChangeBGMVolume(const float& NewBGMVolume)
 {
 	BGMVolume = FMath::Clamp(NewBGMVolume, 0, 1);
-	ChangeVolumeInternal();
+	ChangeBGMVolumeInternal();
 }
 
-void USoundSubsystem::ChangeSFXVolume(float NewSFXVolume)
+void USoundSubsystem::ChangeSFXVolume(const float& NewSFXVolume)
 {
 	SFXVolume = FMath::Clamp(NewSFXVolume, 0, 1);
-	ChangeVolumeInternal();
+	ChangeSFXVolumeInternal();
 }
 
-void USoundSubsystem::ChangeVolumeInternal()
+void USoundSubsystem::ChangeAmbientVolume(const float& NewAmbientVolume)
+{
+	AmbientVolume = FMath::Clamp(NewAmbientVolume, 0, 1);
+	ChangeAmbientVolumeInternal();
+}
+
+void USoundSubsystem::ChangeMasterVolumeInternal()
+{
+	ChangeBGMVolumeInternal();
+	ChangeSFXVolumeInternal();
+	ChangeAmbientVolumeInternal();
+}
+
+void USoundSubsystem::ChangeBGMVolumeInternal()
 {
 	for (const auto& BGM : ActivatedBGMComponents)
 	{
 		BGM.Key->SetVolumeMultiplier(MasterVolume * BGMVolume * BGM.Value);
 	}
+}
 
+void USoundSubsystem::ChangeSFXVolumeInternal()
+{
 	for (const auto& SFX : ActivatedSFXComponents)
 	{
 		SFX.Key->SetVolumeMultiplier(MasterVolume * SFXVolume * SFX.Value);
 	}
 }
 
+void USoundSubsystem::ChangeAmbientVolumeInternal()
+{
+	for (const auto& Ambient : ActivatedAmbientComponents)
+	{
+		Ambient.Key->SetVolumeMultiplier(MasterVolume * AmbientVolume * Ambient.Value);
+	}
+}
+
 void USoundSubsystem::OnAudioFinished(UAudioComponent* FinishedAudio)
 {
-	bool bIsBGM = true;
 	if (ActivatedBGMComponents.Contains(FinishedAudio))
 	{
 		ActivatedBGMComponents.Remove(FinishedAudio);
+		LOGV(Warning, TEXT("Removing BGM Comp, Activated : %d, Deactivated? : %d"), ActivatedBGMComponents.Num(), DeactivatedComponents.IsEmpty());
+	}
+	else if(ActivatedSFXComponents.Contains(FinishedAudio))
+	{
+		ActivatedSFXComponents.Remove(FinishedAudio);
+		LOGV(Warning, TEXT("Removing SFX Comp, Activated : %d, Deactivated? : %d"), ActivatedSFXComponents.Num(), DeactivatedComponents.IsEmpty());
 	}
 	else
 	{
-		ActivatedSFXComponents.Remove(FinishedAudio);
-		bIsBGM = false;
+		ActivatedAmbientComponents.Remove(FinishedAudio);
+		LOGV(Warning, TEXT("Removing Ambient Comp, Activated : %d, Deactivated? : %d"), ActivatedAmbientComponents.Num(), DeactivatedComponents.IsEmpty());
 	}
 
 	if (::IsValid(FinishedAudio) == false || FinishedAudio->IsValidLowLevel() == false)
@@ -210,11 +270,82 @@ void USoundSubsystem::OnAudioFinished(UAudioComponent* FinishedAudio)
 	FinishedAudio->OnAudioFinishedNative.RemoveAll(this);
 	DeactivatedComponents.Enqueue(FinishedAudio);
 	FinishedAudio->UnregisterComponent();
-
-	LOGV(Warning, TEXT("OnAudioFinished, Actvated : %d, Deactivated Empty? : %d"), (bIsBGM ? ActivatedBGMComponents.Num() : ActivatedSFXComponents.Num()), DeactivatedComponents.IsEmpty());
 }
 
-void USoundSubsystem::PlayInternal(USoundBase* SoundAsset, bool bIsBGM, bool bIs2D, const FVector& Position, USceneComponent* AttachComp, float Volume)
+void USoundSubsystem::Play2DInternal(USoundBase* SoundAsset, const bool& bIsBGM, const bool& bIsAmbient, const float& Volume)
+{
+	TObjectPtr<UAudioComponent> NewAudio = GetNewAudio();
+	NewAudio->RegisterComponent();
+
+	float NewVolume = MasterVolume * Volume;
+
+	if (bIsBGM)
+	{
+		check(ActivatedBGMComponents.Contains(NewAudio) == false);
+		ActivatedBGMComponents.Add(NewAudio, Volume);
+		NewVolume *= BGMVolume;
+		LOGV(Warning, TEXT("Play 2D Internal(BGM), Actvated : %d, Deactivated Empty? : %d"), ActivatedBGMComponents.Num(), DeactivatedComponents.IsEmpty());
+	}
+	else if (bIsAmbient)
+	{
+		check(ActivatedAmbientComponents.Contains(NewAudio) == false);
+		ActivatedAmbientComponents.Add(NewAudio, Volume);
+		NewVolume *= AmbientVolume;
+		LOGV(Warning, TEXT("Play 2D Internal(Ambient), Actvated : %d, Deactivated Empty? : %d"), ActivatedAmbientComponents.Num(), DeactivatedComponents.IsEmpty());
+	}
+	else
+	{
+		check(ActivatedSFXComponents.Contains(NewAudio) == false);
+		ActivatedSFXComponents.Add(NewAudio, Volume);
+		NewVolume *= SFXVolume;
+		LOGV(Warning, TEXT("Play 2D Internal(SFX), Actvated : %d, Deactivated Empty? : %d"), ActivatedSFXComponents.Num(), DeactivatedComponents.IsEmpty());
+	}
+
+	NewAudio->SetSound(SoundAsset);
+	NewAudio->SetVolumeMultiplier(NewVolume);
+	NewAudio->bAllowSpatialization = false;
+	NewAudio->SetUISound(true);
+
+	PlayAudio(NewAudio);
+}
+
+void USoundSubsystem::Play3DInternal(USoundBase* SoundAsset, const FVector& Position, USceneComponent* AttachComp, const float& Volume)
+{
+	TObjectPtr<UAudioComponent> NewAudio = GetNewAudio();
+	NewAudio->RegisterComponent();
+
+	float NewVolume = MasterVolume * Volume;
+
+	check(ActivatedSFXComponents.Contains(NewAudio) == false);
+	ActivatedSFXComponents.Add(NewAudio, Volume);
+	NewVolume *= SFXVolume;
+	LOGV(Warning, TEXT("Play 3D Internal, Actvated : %d, Deactivated Empty? : %d"), ActivatedSFXComponents.Num(), DeactivatedComponents.IsEmpty());
+
+	NewAudio->SetSound(SoundAsset);
+	NewAudio->SetVolumeMultiplier(NewVolume);
+
+	NewAudio->bAllowSpatialization = true;
+	NewAudio->SetUISound(false);
+	NewAudio->SetWorldLocation(Position);
+	LOGV(Warning, TEXT("Located to : %s"), *Position.ToString());
+
+	if (AttachComp)
+	{
+		FAttachmentTransformRules Rule(EAttachmentRule::KeepRelative, false);
+		NewAudio->AttachToComponent(AttachComp, Rule);
+		LOGV(Warning, TEXT("Attached to : %s"), *AttachComp->GetName());
+	}
+
+	PlayAudio(NewAudio);
+}
+
+void USoundSubsystem::PlayAudio(UAudioComponent* Audio)
+{
+	Audio->OnAudioFinishedNative.AddUObject(this, &USoundSubsystem::OnAudioFinished);
+	Audio->Play();
+}
+
+UAudioComponent* USoundSubsystem::GetNewAudio()
 {
 	TObjectPtr<UAudioComponent> NewAudio = nullptr;
 
@@ -225,54 +356,11 @@ void USoundSubsystem::PlayInternal(USoundBase* SoundAsset, bool bIsBGM, bool bIs
 			NewAudio = NewObject<UAudioComponent>((UObject*)UGameplayStatics::GetGameState(GetWorld()));
 			break;
 		}
-		else if(DeactivatedComponents.Dequeue(NewAudio) && ::IsValid(NewAudio) && NewAudio->IsValidLowLevel())
+		else if (DeactivatedComponents.Dequeue(NewAudio) && ::IsValid(NewAudio) && NewAudio->IsValidLowLevel())
 		{
 			break;
 		}
 	}
-	
-	NewAudio->RegisterComponent();
 
-	float NewVolume = MasterVolume * Volume;
-
-	if (bIsBGM)
-	{
-		check(ActivatedBGMComponents.Contains(NewAudio) == false);
-		ActivatedBGMComponents.Add(NewAudio, Volume);
-		NewVolume *= BGMVolume;
-		LOGV(Warning, TEXT("Play Internal, Actvated : %d, Deactivated Empty? : %d"), ActivatedBGMComponents.Num(), DeactivatedComponents.IsEmpty());
-	}
-	else
-	{
-		check(ActivatedSFXComponents.Contains(NewAudio) == false);
-		ActivatedSFXComponents.Add(NewAudio, Volume);
-		NewVolume *= SFXVolume;
-		LOGV(Warning, TEXT("Play Internal, Actvated : %d, Deactivated Empty? : %d"), ActivatedSFXComponents.Num(), DeactivatedComponents.IsEmpty());
-	}
-
-	NewAudio->SetSound(SoundAsset);
-	NewAudio->SetVolumeMultiplier(NewVolume);
-
-	if (bIs2D)
-	{
-		NewAudio->bAllowSpatialization = false;
-		NewAudio->SetUISound(true);
-	}
-	else
-	{
-		NewAudio->bAllowSpatialization = true;
-		NewAudio->SetUISound(false);
-		NewAudio->SetWorldLocation(Position);
-		LOGV(Warning, TEXT("Located to : %s"), *Position.ToString());
-	}
-	
-	if (AttachComp)
-	{
-		FAttachmentTransformRules Rule(EAttachmentRule::KeepRelative, false);
-		NewAudio->AttachToComponent(AttachComp, Rule);
-		LOGV(Warning, TEXT("Attached to : %s"), *AttachComp->GetName());
-	}
-
-	NewAudio->OnAudioFinishedNative.AddUObject(this, &USoundSubsystem::OnAudioFinished);
-	NewAudio->Play();
+	return NewAudio;
 }
