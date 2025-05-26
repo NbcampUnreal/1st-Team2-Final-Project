@@ -187,7 +187,7 @@ void UPlayerHUDComponent::UpdateStaminaHUD(float Stamina, float MaxStamina)
 	}
 }
 
-void UPlayerHUDComponent::UpdateSpearCount(int32 CurrentSpear, int32 TotalSpear)
+void UPlayerHUDComponent::UpdateSpearCount(const int32& CurrentSpear, const int32& TotalSpear)
 {
 	if (PlayerStatusWidget)
 	{

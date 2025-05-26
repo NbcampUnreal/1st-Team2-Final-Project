@@ -114,13 +114,15 @@ void UEquipUseComponent::BeginPlay()
 			}
 		}
 	}
-	FTimerHandle InitHandle;
-	GetWorld()->GetTimerManager().SetTimer(InitHandle, [this]()
-		{
-			OnRep_CurrentAmmoInMag();
-			OnRep_ReserveAmmo();
-		}, 0.5f, false);
-
+	if (GetOwner() && GetOwner()->HasAuthority())
+	{
+		FTimerHandle InitHandle;
+		GetWorld()->GetTimerManager().SetTimer(InitHandle, [this]()
+			{
+				OnRep_CurrentAmmoInMag();
+				OnRep_ReserveAmmo();
+			}, 0.5f, false);
+	}
 }
 
 void UEquipUseComponent::EndPlay(const EEndPlayReason::Type Reason)
@@ -683,4 +685,10 @@ void UEquipUseComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 bool UEquipUseComponent::IsInterpolating() const
 {
 	return !FMath::IsNearlyEqual(CurrentMultiplier, TargetMultiplier, 0.001f);
+}
+
+void UEquipUseComponent::InitializeAmmoUI()
+{
+	OnRep_CurrentAmmoInMag();
+	OnRep_ReserveAmmo();
 }

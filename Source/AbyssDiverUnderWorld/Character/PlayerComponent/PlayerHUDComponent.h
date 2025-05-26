@@ -41,7 +41,7 @@ public:
     void UpdateHealthHUD(int32 CurrentHealth, int32 MaxHealth);
 
     UFUNCTION()
-    void UpdateSpearCount(int32 CurrentSpear, int32 TotalSpear);
+    void UpdateSpearCount(const int32& CurrentSpear, const int32& TotalSpear);
 
 private:
 #pragma endregion
