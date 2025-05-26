@@ -8,7 +8,7 @@
 UENUM(BlueprintType)
 enum class ESFX_UI : uint8
 {
-	Sound0,
+	UIClicked,
 	Sound1,
 	Sound2,
 };
