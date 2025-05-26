@@ -50,9 +50,4 @@ void UCreateTeamWidget::OnConfirmClicked()
 
 void UCreateTeamWidget::UpdateSelection()
 {
-    if (Button_Public && Button_Private)
-    {
-        Button_Public->SetBackgroundColor(bIsPrivate ? FLinearColor(0.1f, 0.1f, 0.1f) : FLinearColor::Yellow);
-        Button_Private->SetBackgroundColor(bIsPrivate ? FLinearColor::Yellow : FLinearColor(0.1f, 0.1f, 0.1f));
-    }
 }
