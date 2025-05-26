@@ -49,14 +49,25 @@ public:
 	void S_RemoveBySlotIndex(uint8 SlotIndex, EItemType ItemType, bool bIsDropAction);
 	void S_RemoveBySlotIndex_Implementation(uint8 SlotIndex, EItemType ItemType, bool bIsDropAction);
 
+	UFUNCTION(Server, Reliable)
+	void S_EquipmentChargeBattery(FName ItemName, int32 Amount);
+	void S_EquipmentChargeBattery_Implementation(FName ItemName, int32 Amount);
+
+	UFUNCTION(Server, Reliable)
+	void S_UseBatteryAmount(int32 Amount);
+	void S_UseBatteryAmount_Implementation(int32 Amount);
+
 	UFUNCTION(Client, Reliable)
 	void C_SetButtonActive(FName CName, bool bCIsActive, int32 CAmount);
 	void C_SetButtonActive_Implementation(FName CName, bool bCIsActive, int32 CAmount);
 
-
 	UFUNCTION(Client, Reliable)
 	void C_UpdateBatteryInfo();
 	void C_UpdateBatteryInfo_Implementation();
+
+	UFUNCTION(Client, Reliable)
+	void C_SetEquipBatteryAmount(FName CItemName);
+	void C_SetEquipBatteryAmount_Implementation(FName CItemName);
 
 	UFUNCTION(BlueprintCallable)
 	void InventoryInitialize();
@@ -96,6 +107,7 @@ private:
 	void OnInventoryInfoUpdate(int32 MassInfo, int32 PriceInfo);
 	void RebuildIndexMap();
 	void OnUseCoolTimeEnd(); //아이템 사용 지연
+	void EquipmentChargeBatteryUpdateDelay();
 	void PrintLogInventoryData();
 
 #pragma endregion
@@ -141,6 +153,7 @@ public:
 	const FItemData* GetInventoryItemData(FName ItemNameToFind); //이름으로 아이템 데이터 반환
 	const FItemData& GetEquipmentItemDataByIndex(int8 KeyNum) { return InventoryList.Items[InventoryIndexMapByType[EItemType::Equipment][KeyNum]]; }; //타입별 인벤토리 슬롯 값으로 아이템 데이터 반환
 	FItemData* GetCurrentEquipmentItemData(); // 현재 장착한 무기 아이템 데이터
+	FItemData* GetEditableItemDataByName(FName ItemNameToEdit);
 
 	const FInventoryList& GetInventoryList() { return InventoryList; } 
 

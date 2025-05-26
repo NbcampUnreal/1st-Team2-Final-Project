@@ -153,6 +153,52 @@ void UADInventoryComponent::S_RemoveBySlotIndex_Implementation(uint8 SlotIndex, 
 	RemoveBySlotIndex(SlotIndex, ItemType, bIsDropAction);
 }
 
+void UADInventoryComponent::S_EquipmentChargeBattery_Implementation(FName ItemName, int32 Amount)
+{
+	int8 Index = FindItemIndexByName(ItemName);
+
+	InventoryList.UpdateAmount(Index, Amount);
+
+	UGameInstance* GI = GetWorld()->GetGameInstance();
+	if (!GI)
+	{
+		LOGIC(Log, TEXT("Initialize: No valid GameInstance"))
+			return;
+	}
+
+	UDataTableSubsystem* DTSubsystem = GI->GetSubsystem<UDataTableSubsystem>();
+	FFADItemDataRow* InItemMeta = DataTableSubsystem ? DataTableSubsystem->GetItemDataByName(ItemName) : nullptr;
+
+	if (InventoryList.Items[Index].Amount >= InItemMeta->Amount)
+	{
+		InventoryList.SetAmount(Index, InItemMeta->Amount);
+	}
+
+	FTimerHandle TimerHandle;
+	GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this, ItemName]()
+		{
+			if (ChargeBatteryWidget)
+				ChargeBatteryWidget->SetEquipBatteryAmount(ItemName, InventoryList.Items[FindItemIndexByName(ItemName)].Amount);
+			C_SetEquipBatteryAmount(ItemName);
+		}, 1.0f, false);
+
+}
+
+void UADInventoryComponent::S_UseBatteryAmount_Implementation(int32 Amount)
+{
+	int16 Index = FindItemIndexByName("Battery");
+	if (Index != INDEX_NONE)
+	{
+		InventoryList.UpdateAmount(Index, Amount);
+
+		if (InventoryList.Items[Index].Amount == 0)
+		{
+			InventoryList.SetAmount(Index, 45); //Row로 바꾸기
+			RemoveBySlotIndex(InventoryList.Items[Index].SlotIndex, EItemType::Consumable, false);
+		}
+	}
+}
+
 void UADInventoryComponent::C_SetButtonActive_Implementation(FName CName, bool bCIsActive, int32 CAmount)
 {
 	if (ChargeBatteryWidget)
@@ -171,6 +217,12 @@ void UADInventoryComponent::C_SetButtonActive_Implementation(FName CName, bool b
 void UADInventoryComponent::C_UpdateBatteryInfo_Implementation()
 {
 	ChargeBatteryWidget->UpdateBatteryInfo();
+}
+
+void UADInventoryComponent::C_SetEquipBatteryAmount_Implementation(FName CItemName)
+{
+	if (ChargeBatteryWidget)
+		ChargeBatteryWidget->SetEquipBatteryAmount(CItemName, InventoryList.Items[FindItemIndexByName(CItemName)].Amount);
 }
 
 void UADInventoryComponent::InventoryInitialize()
@@ -326,6 +378,15 @@ void UADInventoryComponent::RemoveBySlotIndex(uint8 SlotIndex, EItemType ItemTyp
 	if (InventoryList.Items.IsValidIndex(InventoryIndex))
 	{
 		FItemData& Item = InventoryList.Items[InventoryIndex];
+
+		if (Item.Quantity < 1) return;
+
+		if (bIsDropAction)
+		{
+			DropItem(Item);
+		}
+		InventoryList.UpdateQuantity(InventoryIndex, INDEX_NONE);
+
 		if (ItemType == EItemType::Equipment)
 		{
 			if (CurrentEquipmentSlotIndex != INDEX_NONE)
@@ -339,28 +400,21 @@ void UADInventoryComponent::RemoveBySlotIndex(uint8 SlotIndex, EItemType ItemTyp
 			if (ChargeBatteryWidget)
 			{
 				ChargeBatteryWidget->SetEquipBatteryButtonActivate(Item.Name, false);
-				LOGVN(Warning, TEXT("DeActivate %s Button"), *Item.Name.ToString());
+				LOGINVEN(Warning, TEXT("DeActivate %s Button"), *Item.Name.ToString());
 			}
 			C_SetButtonActive(Item.Name, false, Item.Amount);
 		}
 		else if (Item.Name == "Battery")
 		{
+			InventoryList.SetAmountToMax(InventoryIndex);
 			if (ChargeBatteryWidget)
 			{
 				ChargeBatteryWidget->UpdateBatteryInfo();
-				LOGVN(Warning, TEXT("Remove a battery"));
+				LOGINVEN(Warning, TEXT("Remove a battery"));
 			}
 			C_UpdateBatteryInfo();
 		}
-
-		if (Item.Quantity < 1) return;
-
-		if (bIsDropAction)
-		{
-			DropItem(Item);
-		}
-		InventoryList.UpdateQuantity(InventoryIndex, INDEX_NONE);
-
+		
 		LOGINVEN(Warning, TEXT("Remove Inventory Slot Index %d: Item : %s"), InventoryIndex, *Item.Name.ToString());
 		if (Item.Quantity <= 0)
 		{
@@ -434,7 +488,13 @@ FItemData* UADInventoryComponent::GetCurrentEquipmentItemData()
 	return &InventoryList.Items[Index];
 }
 
-
+FItemData* UADInventoryComponent::GetEditableItemDataByName(FName ItemNameToEdit)
+{
+	int8 Index = FindItemIndexByName(ItemNameToEdit);
+	if (Index != INDEX_NONE)
+		return &InventoryList.Items[Index];
+	return nullptr;
+}
 
 int8 UADInventoryComponent::GetInventoryIndexByTypeAndSlotIndex(EItemType Type, int8 SlotIndex) //못 찾으면 -1 반환
 {
@@ -507,6 +567,7 @@ void UADInventoryComponent::UnEquip()
 			if (UEquipUseComponent* EquipComp = Pawn->FindComponentByClass<UEquipUseComponent>())
 			{
 				EquipComp->DeinitializeEquip();
+				InventoryList.MarkItemDirty(InventoryList.Items[FindItemIndexByName(CurrentEquipmentInstance->ItemData.Name)]);
 			}
 		}
 	}
@@ -565,6 +626,10 @@ void UADInventoryComponent::RebuildIndexMap()
 void UADInventoryComponent::OnUseCoolTimeEnd()
 {
 	bCanUseItem = true;
+}
+
+void UADInventoryComponent::EquipmentChargeBatteryUpdateDelay()
+{
 }
 
 void UADInventoryComponent::PrintLogInventoryData()

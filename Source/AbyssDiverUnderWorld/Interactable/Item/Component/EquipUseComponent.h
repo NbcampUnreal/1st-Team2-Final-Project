@@ -70,6 +70,9 @@ public:
 	UFUNCTION(Server, Reliable)
 	void S_RKey();
 	void S_RKey_Implementation();
+	UFUNCTION(Server, Reliable)
+	void S_IncreaseAmount(int8 AddAmount);
+	void S_IncreaseAmount_Implementation(int8 AddAmount);
 	UFUNCTION()
 	void OnRep_Amount();
 	UFUNCTION()
@@ -150,6 +153,8 @@ public:
 	// ======================
 	UPROPERTY(ReplicatedUsing = OnRep_Amount, EditAnywhere, BlueprintReadWrite)
 	int32 Amount = 0;
+	UPROPERTY(Replicated)
+	FName CurrentEquipmentName;
 	UPROPERTY(Replicated)
 	uint8 bBoostActive : 1;
 	UPROPERTY(ReplicatedUsing = OnRep_NightVisionOn)
