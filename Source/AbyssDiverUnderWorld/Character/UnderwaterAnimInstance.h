@@ -97,18 +97,19 @@ protected:
 	UPROPERTY(BlueprintReadOnly)
 	float ModifyPitch;
 
-	/** 모델의 경우 언리얼의 XYZ 좌표계와 다르기 때문에 Roll에 적용할 경우 Pitch에 적용된다. */
+	/** 모델의 경우 언리얼의 XYZ 좌표계와 다르기 때문에 Roll에 적용할 경우 Yaw에 적용된다. */
 	UPROPERTY(BlueprintReadOnly)
 	float ModifyYaw;
 	
-	/** Lean을 적용할 최소 속도 */
+	/** Lean을 적용할 최소 속도, 크롤로 움직일 시점부터 Lean을 적용해야 한다. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	float LeanThresholdSpeed;
 
-	/** Lean을 적용할 최대 각도 */
+	/** Lean을 적용할 최대 Pitch 각도 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	float MaxPitchAngle;
 
+	/** Lean을 적용할 최대 Yaw 각도 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	float MaxYawAngle;
 

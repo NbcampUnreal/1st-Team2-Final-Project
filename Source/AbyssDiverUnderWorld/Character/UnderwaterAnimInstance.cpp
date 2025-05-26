@@ -12,6 +12,7 @@ UUnderwaterAnimInstance::UUnderwaterAnimInstance()
 	ShouldMoveThresholdSpeed = 3.0f;
 
 	EnvState = EEnvState::Underwater;
+	CharacterState = ECharacterState::Normal;
 	
 	Speed = 0.0f;
 	ForwardSpeed = 0.0f;
