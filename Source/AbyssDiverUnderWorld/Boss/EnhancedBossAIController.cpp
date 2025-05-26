@@ -14,6 +14,7 @@ const FName AEnhancedBossAIController::PerceptionTypeKey = "EPerceptionType";
 const FName AEnhancedBossAIController::bHasDetectedPlayerKey = "bHasDetectedPlayer";
 const FName AEnhancedBossAIController::bIsChasingKey = "bIsChasing";
 const FName AEnhancedBossAIController::bHasAttackedKey = "bHasAttacked";
+const FName AEnhancedBossAIController::bIsPlayerHiddenKey = "bIsPlayerHidden";
 const FName AEnhancedBossAIController::BloodOccurredLocationKey = "BloodOccurredLocation";
 
 AEnhancedBossAIController::AEnhancedBossAIController()
@@ -23,7 +24,6 @@ AEnhancedBossAIController::AEnhancedBossAIController()
 	bIsDamagedByPlayer = false;
 	bCanTransitionToDamagedState = false;
 	bIsDisappearPlayer = false;
-	TargetSaveTime = 3.f;
 }
 
 void AEnhancedBossAIController::BeginPlay()
@@ -46,13 +46,6 @@ void AEnhancedBossAIController::SetBlackboardPerceptionType(EPerceptionType InPe
 	BlackboardComponent->SetValueAsEnum(PerceptionTypeKey, static_cast<uint8>(InPerceptionType));
 }
 
-void AEnhancedBossAIController::InitPerceptionInfo()
-{
-	SetBlackboardPerceptionType(EPerceptionType::Finish);
-	Boss->InitTarget();
-	BlackboardComponent->SetValueAsBool(bIsChasingKey, false);
-}
-
 void AEnhancedBossAIController::InitVariables()
 {
 	// 타겟 플레이어 망각
@@ -63,19 +56,12 @@ void AEnhancedBossAIController::InitVariables()
 	BlackboardComponent->SetValueAsBool(bIsChasingKey, false);
 	BlackboardComponent->SetValueAsBool(bHasDetectedPlayerKey, false);
 	BlackboardComponent->SetValueAsBool(bHasAttackedKey, false);
+	BlackboardComponent->SetValueAsBool(bIsPlayerHiddenKey, false);
 	SetBlackboardPerceptionType(EPerceptionType::None);
 }
 
 void AEnhancedBossAIController::OnTargetPerceptionUpdatedHandler(AActor* Actor, FAIStimulus Stimulus)
 {
-	// Stimulus 조건문은 "감지에 성공할 경우", "시야에서 벗어날 경우" 각각 한 번씩 호출된다.
-	// 따라서 Stimulus 조건문 내부에서 플레이어가 해초더미에 있는지 체크하는 건 옳지 않다.
-	// 결론적으로 Detected, Chase Task의 TickTask에서 플레이어가 해초더미에 있는지 확인해주어야 한다.
-	// 오직 타겟은 한 명으로만 지정한다.
-
-
-
-	
 	// --------------------- 시각 자극 ---------------------
 	// 플레이어가 시야각에 들어오는 경우
 	if (Stimulus.Type == UAISense::GetSenseID<UAISense_Sight>())
@@ -92,21 +78,11 @@ void AEnhancedBossAIController::OnTargetPerceptionUpdatedHandler(AActor* Actor, 
 		
 		if (Stimulus.WasSuccessfullySensed())
 		{
-			LOG(TEXT("Stimulus Success !"));
-			BlackboardComponent->SetValueAsBool(bIsChasingKey, true);
-			BlackboardComponent->SetValueAsBool(bHasSeenPlayerKey, true);
-			Boss->SetTarget(Player);
-			Boss->SetCachedTarget(Player);
-			bIsDisappearPlayer = false;
-			SetBlackboardPerceptionType(EPerceptionType::Player);
-			GetWorldTimerManager().ClearTimer(TargetSaveTimerHandle);
+			OnSightPerceptionSuccess(Player);
 		}
 		else
 		{
-			LOG(TEXT("Player was out of sight !"));
-			bIsDisappearPlayer = true;
-			BlackboardComponent->SetValueAsBool(bHasSeenPlayerKey, false);
-			GetWorldTimerManager().SetTimer(TargetSaveTimerHandle, this, &AEnhancedBossAIController::InitPerceptionInfo, TargetSaveTime, false);
+			OnSightPerceptionFail();
 		}
 	}
 
@@ -116,7 +92,7 @@ void AEnhancedBossAIController::OnTargetPerceptionUpdatedHandler(AActor* Actor, 
 	{
 		if (Stimulus.WasSuccessfullySensed())
 		{
-			SetBlackboardPerceptionType(EPerceptionType::Damage);
+			OnDamagePerceptionSuccess();
 		}
 	}
 	
@@ -126,8 +102,44 @@ void AEnhancedBossAIController::OnTargetPerceptionUpdatedHandler(AActor* Actor, 
 	{
 		if (Stimulus.WasSuccessfullySensed())
 		{
-			BlackboardComponent->SetValueAsVector(BloodOccurredLocationKey, Stimulus.StimulusLocation);
-			SetBlackboardPerceptionType(EPerceptionType::Blood);
+			OnHearingPerceptionSuccess(Stimulus);
 		}
 	}
+}
+
+void AEnhancedBossAIController::OnSightPerceptionSuccess(AUnderwaterCharacter* Player)
+{
+	// 플레이어가 부쉬에 숨은 상태라면 얼리 리턴
+	if (Player->IsHideInSeaweed())	return;
+	
+	// 블랙보드 키 값 세팅
+	BlackboardComponent->SetValueAsBool(bIsChasingKey, true);
+	BlackboardComponent->SetValueAsBool(bHasSeenPlayerKey, true);
+	SetBlackboardPerceptionType(EPerceptionType::Player);
+			
+	// 타겟 세팅
+	Boss->SetTarget(Player);
+	Boss->SetCachedTarget(Player);
+
+	// 플레이어 사라짐 인지 변수 초기화
+	bIsDisappearPlayer = false;
+}
+
+void AEnhancedBossAIController::OnSightPerceptionFail()
+{
+	// 플레이어 사라짐 인지 변수 초기화
+	bIsDisappearPlayer = true;
+	BlackboardComponent->SetValueAsBool(bHasSeenPlayerKey, false);
+}
+
+void AEnhancedBossAIController::OnHearingPerceptionSuccess(const FAIStimulus& Stimulus)
+{
+	// 플레이어가 피를 흘린 위치를 저장
+	BlackboardComponent->SetValueAsVector(BloodOccurredLocationKey, Stimulus.StimulusLocation);
+	SetBlackboardPerceptionType(EPerceptionType::Blood);
+}
+
+void AEnhancedBossAIController::OnDamagePerceptionSuccess()
+{
+	SetBlackboardPerceptionType(EPerceptionType::Damage);
 }

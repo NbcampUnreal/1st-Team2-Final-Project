@@ -23,7 +23,7 @@ public:
 #pragma region Method
 public:
 	virtual void Interact_Implementation(AActor* InstigatorActor) override;
-	virtual bool CanHighlight_Implementation() const override { return !bIsHeld; }
+	virtual bool CanHighlight_Implementation() const override { return true; }
 	void Pickup(AUnderwaterCharacter* UnderwaterCharacter);
 	UFUNCTION(BlueprintCallable)
 	void PutDown();

@@ -23,10 +23,6 @@ AADOreRock::AADOreRock()
 	InteractableComp = CreateDefaultSubobject<UADInteractableComponent>(TEXT("InteractableComp"));
 
 	bIsHold = true;
-
-	SpawnedTool = nullptr;
-	ActiveMiningVFX = nullptr;
-	ActiveMiningSFX = nullptr;
 }
 
 // Called when the game starts or when spawned
@@ -64,16 +60,17 @@ void AADOreRock::InteractHold_Implementation(AActor* InstigatorActor)
 void AADOreRock::OnHoldStart_Implementation(APawn* InstigatorPawn)
 {
 	LOGI(Log, TEXT("Mining Starts"));
-	SpawnAndAttachTool(InstigatorPawn);
-	PlayMiningAnim(InstigatorPawn);
-	ActivateMiningEffects();
+	if (AUnderwaterCharacter* Diver = Cast<AUnderwaterCharacter>(InstigatorPawn))
+	{
+		Diver->SpawnAndAttachTool(MiningToolClass);
+		PlayMiningAnim(InstigatorPawn);
+	}
 }
 
 void AADOreRock::OnHoldStop_Implementation(APawn* InstigatorPawn)
 {
 	LOGI(Log, TEXT("Mining Stops"));
 	PlayStowAnim(InstigatorPawn);
-	CleanupToolAndEffects();
 }
 
 void AADOreRock::HandleMineRequest(APawn* InstigatorPawn)
@@ -100,11 +97,9 @@ void AADOreRock::HandleMineRequest(APawn* InstigatorPawn)
 		{
 			PlayFractureFX();
 			SpawnDrops();
-			//Destroy();
 		}
 	}
 	PlayStowAnim(InstigatorPawn);
-	CleanupToolAndEffects();
 }
 
 void AADOreRock::SpawnDrops()
@@ -210,119 +205,47 @@ void AADOreRock::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifeti
 	DOREPLIFETIME(AADOreRock, CurrentMiningGauge);
 }
 
-void AADOreRock::SpawnAndAttachTool(APawn* InstigatorPawn)
-{
-	if (SpawnedTool || !MiningToolClass || !InstigatorPawn) return;
-
-	FActorSpawnParameters Params;
-	Params.Owner = InstigatorPawn;
-	Params.Instigator = InstigatorPawn;
-
-	SpawnedTool = GetWorld()->SpawnActor<AActor>(
-		MiningToolClass,
-		InstigatorPawn->GetActorLocation(),
-		InstigatorPawn->GetActorRotation(),
-		Params
-	);
-
-	if (SpawnedTool)
-	{
-		if (AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(InstigatorPawn))
-		{
-			SpawnedTool->AttachToComponent(
-				UnderwaterCharacter->GetMesh1P(),
-				FAttachmentTransformRules::SnapToTargetIncludingScale,
-				TEXT("Laser")
-			);
-			SpawnedTool->AttachToComponent(
-				UnderwaterCharacter->GetMesh(),
-				FAttachmentTransformRules::SnapToTargetIncludingScale,
-				TEXT("Laser")
-			);
-		}
-	}
-}
-
 void AADOreRock::PlayMiningAnim(APawn* InstigatorPawn)
 {
 	if (!MiningMontage || !InstigatorPawn) return;
+
 	if (AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(InstigatorPawn))
 	{
-		UnderwaterCharacter->PlayAnimMontage(MiningMontage);
-	}
-}
+		// 1) 채집에 맞는 SyncState 구성
+		FAnimSyncState MiningSync;
+		MiningSync.bEnableRightHandIK = true;  
+		MiningSync.bEnableLeftHandIK = false;
+		MiningSync.bEnableFootIK = true;
+		MiningSync.bIsStrafing = false;
 
-void AADOreRock::ActivateMiningEffects()
-{
-	if (!SpawnedTool) return;
-
-	// VFX
-	if (MiningVFX)
-	{
-		UStaticMeshComponent* StaticMeshComp = SpawnedTool->FindComponentByClass<UStaticMeshComponent>();
-		USceneComponent* AttachComp = StaticMeshComp;
-		if (!AttachComp) AttachComp = SpawnedTool->GetRootComponent();
-
-		if (StaticMeshComp && StaticMeshComp->DoesSocketExist(TEXT("FX_Socket")))
-		{
-			ActiveMiningVFX = UNiagaraFunctionLibrary::SpawnSystemAttached(
-				MiningVFX,
-				AttachComp,
-				TEXT("FX_Socket"),
-				FVector::ZeroVector,
-				FRotator::ZeroRotator,
-				EAttachLocation::SnapToTarget,
-				false
-			);
-			LOGI(Log, TEXT("Is FX_Socket in StaticMesh"));
-		}
-		
-	}
-
-	// SFX
-	if (MiningSFX)
-	{
-		ActiveMiningSFX = UGameplayStatics::SpawnSoundAttached(
-			MiningSFX,
-			SpawnedTool->GetRootComponent(),
-			TEXT("FX_Socket"),
-			FVector::ZeroVector,
-			EAttachLocation::SnapToTarget,
-			false
+		// 2) 1P & 3P 동시에 재생
+		UnderwaterCharacter->M_PlayMontageOnBothMesh(
+			MiningMontage,
+			1.0f,
+			NAME_None,
+			MiningSync
 		);
-		LOGI(Log, TEXT("Is FX_Socket in Root"));
 	}
 }
 
 void AADOreRock::PlayStowAnim(APawn* InstigatorPawn)
 {
 	if (!StowMontage || !InstigatorPawn) return;
+
 	if (AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(InstigatorPawn))
 	{
-		UnderwaterCharacter->PlayAnimMontage(StowMontage);
-	}
-}
+		FAnimSyncState StowSync;                // 대부분 IK 끄고 기본 Strafe 복귀
+		StowSync.bEnableRightHandIK = false;
+		StowSync.bEnableLeftHandIK = false;
+		StowSync.bEnableFootIK = true;
+		StowSync.bIsStrafing = false;
 
-void AADOreRock::CleanupToolAndEffects()
-{
-	if (ActiveMiningVFX)
-	{
-		ActiveMiningVFX->DeactivateImmediate();
-		ActiveMiningVFX->DestroyComponent();
-		ActiveMiningVFX = nullptr;
-	}
-
-	if (ActiveMiningSFX)
-	{
-		ActiveMiningSFX->Stop();
-		ActiveMiningSFX->DestroyComponent();
-		ActiveMiningSFX = nullptr;
-	}
-
-	if (SpawnedTool)
-	{
-		SpawnedTool->Destroy();
-		SpawnedTool = nullptr;
+		UnderwaterCharacter->M_PlayMontageOnBothMesh(
+			StowMontage,
+			1.0f,
+			NAME_None,
+			StowSync
+		);
 	}
 }
 

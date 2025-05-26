@@ -11,6 +11,7 @@
 #include "Character/UpgradeComponent.h"
 #include "DataRow/UpgradeDataRow.h"
 #include "Subsystems/DataTableSubsystem.h"
+#include "Subsystems/SoundSubsystem.h"
 
 #include "Components/Button.h"
 #include "Components/RichTextBlock.h"
@@ -267,10 +268,12 @@ void UShopWidget::OnCategoryTabClicked(EShopCategoryTab CategoryTab)
 	}
 
 	ShowItemViewForTab(CategoryTab);
+	GetGameInstance()->GetSubsystem<USoundSubsystem>()->Play2D(ESFX_UI::UIClicked);
 }
 
 void UShopWidget::OnCloseButtonClicked()
 {
+	GetGameInstance()->GetSubsystem<USoundSubsystem>()->Play2D(ESFX_UI::UIClicked);
 	OnShopCloseButtonClickedDelegate.Broadcast();
 }
 

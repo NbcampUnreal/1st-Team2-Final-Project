@@ -21,6 +21,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaSeconds) override;
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 
 #pragma region Method
@@ -176,6 +177,7 @@ private:
 	uint8 CurrentPatrolPointIndex = 0;
 	uint8 bIsBiteAttackSuccess : 1;
 	uint8 bIsAttackCollisionOverlappedPlayer : 1;
+	uint8 bShouldDecelerate : 1;
 	
 #pragma endregion
 
@@ -200,7 +202,8 @@ public:
 	FORCEINLINE AUnderwaterCharacter* GetCachedTarget() const { return CachedTargetPlayer; };
 	FORCEINLINE void SetCachedTarget(AUnderwaterCharacter* Target) { CachedTargetPlayer = Target; };
 	FORCEINLINE void InitCachedTarget() { CachedTargetPlayer = nullptr; };
-	FORCEINLINE void InitCurrentMoveSpeed() { CurrentMoveSpeed = 0.f; }
+	FORCEINLINE void InitCurrentMoveSpeed() { CurrentMoveSpeed = 0.f; bShouldDecelerate = false; };
+	FORCEINLINE void SetDecelerate(const uint8 InDecelerate) { bShouldDecelerate = InDecelerate; };
 
 	AActor* GetTargetPoint();
 	const FVector GetTargetPointLocation() const;

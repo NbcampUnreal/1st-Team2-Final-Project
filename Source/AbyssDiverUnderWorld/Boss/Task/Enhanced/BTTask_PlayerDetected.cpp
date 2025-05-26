@@ -34,8 +34,8 @@ EBTNodeResult::Type UBTTask_PlayerDetected::ExecuteTask(UBehaviorTreeComponent& 
 	if (!IsValid(Boss)) return EBTNodeResult::Failed;
 	
 	Boss->SetBossState(EBossState::Idle);
+	Boss->SetDecelerate(true);
 	
-	AIController->StopMovement();
 	AccumulatedTime = 0;
 	
 	return EBTNodeResult::InProgress;

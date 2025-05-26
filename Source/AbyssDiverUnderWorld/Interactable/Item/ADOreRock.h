@@ -77,11 +77,9 @@ protected:
 private:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-	void SpawnAndAttachTool(APawn* InstigatorPawn);
 	void PlayMiningAnim(APawn* InstigatorPawn);
-	void ActivateMiningEffects();
 	void PlayStowAnim(APawn* InstigatorPawn);
-	void CleanupToolAndEffects();
+	
 
 #pragma endregion
 
@@ -126,16 +124,6 @@ protected:
 	TObjectPtr<UAnimMontage> MiningMontage;
 	UPROPERTY(EditAnywhere, Category = "Mining")
 	TObjectPtr<UAnimMontage> StowMontage;
-	UPROPERTY(EditAnywhere, Category = "Mining")
-	TObjectPtr<UNiagaraSystem> MiningVFX;
-	UPROPERTY(EditAnywhere, Category = "Mining")
-	TObjectPtr<USoundBase> MiningSFX;
-	UPROPERTY() 
-	TObjectPtr<AActor> SpawnedTool;
-	UPROPERTY() 
-	TObjectPtr<UNiagaraComponent> ActiveMiningVFX;
-	UPROPERTY() 
-	TObjectPtr<UAudioComponent> ActiveMiningSFX;
 
 private:
 	TArray<FDropEntry*> CachedEntries;

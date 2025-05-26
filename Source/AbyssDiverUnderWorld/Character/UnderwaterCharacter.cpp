@@ -15,6 +15,7 @@
 #include "Components/PawnNoiseEmitterComponent.h"
 #include "Components/SpotLightComponent.h"
 #include "Framework/ADPlayerState.h"
+#include "Framework/ADPlayerController.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PhysicsVolume.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -25,6 +26,7 @@
 #include "Shops/ShopInteractionComponent.h"
 #include "Subsystems/DataTableSubsystem.h"
 #include "UI/HoldInteractionWidget.h"
+#include "Laser/ADLaserCutter.h"
 
 DEFINE_LOG_CATEGORY(LogAbyssDiverCharacter);
 
@@ -60,10 +62,17 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 
 	StatComponent->Initialize(1000, 1000, 400.0f, 10);
 
+	LeftFlipperSocketName = TEXT("foot_l_flipper_socket");
+	RightFlipperSocketName = TEXT("foot_r_flipper_socket");
+	
+	LookSensitivity = 1.0f;
+	NormalLookSensitivity = 1.0f;
+	
 	GroggyDuration = 60.0f;
 	GroggyReductionRate = 0.1f;
 	MinGroggyDuration = 10.0f;
 	GroggyCount = 0;
+	GroggyLookSensitivity = 0.25f;
 	RescueRequireTime = 6.0f;
 	RecoveryHealthPercentage = 1.0f;
 	
@@ -154,6 +163,7 @@ void AUnderwaterCharacter::BeginPlay()
 	}
 
 	SpawnRadar();
+	SpawnFlipperMesh();
 }
 
 void AUnderwaterCharacter::InitFromPlayerState(AADPlayerState* ADPlayerState)
@@ -251,6 +261,16 @@ void AUnderwaterCharacter::PossessedBy(AController* NewController)
 	}
 }
 
+void AUnderwaterCharacter::PostNetInit()
+{
+	Super::PostNetInit();
+
+	if (IsValid(EquipUseComponent))
+	{
+		EquipUseComponent->InitializeAmmoUI();
+	}
+}
+
 void AUnderwaterCharacter::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
@@ -285,10 +305,12 @@ void AUnderwaterCharacter::SetEnvState(EEnvState State)
 	{
 	case EEnvState::Underwater:
 		GetCharacterMovement()->GravityScale = 0.0f;
+		SetFlipperMeshVisibility(true);
 		break;
 	case EEnvState::Ground:
 		// 지상에서는 이동 방향으로 회전을 하게 한다.
 		GetCharacterMovement()->GravityScale = 1.0f;
+		SetFlipperMeshVisibility(false);
 		break;
 	default:
 		UE_LOG(AbyssDiver, Error, TEXT("Invalid Character State"));
@@ -368,6 +390,157 @@ void AUnderwaterCharacter::RequestChangeAnimSyncState(FAnimSyncState NewAnimSync
 	else
 	{
 		S_ChangeAnimSyncState(NewAnimSyncState);
+	}
+}
+
+void AUnderwaterCharacter::CleanupToolAndEffects()
+{
+	if (SpawnedTool1P || SpawnedTool3P)
+	{
+		SpawnedTool1P->Destroy();
+		SpawnedTool1P = nullptr;
+
+		SpawnedTool3P->Destroy();
+		SpawnedTool3P = nullptr;
+	}
+}
+
+void AUnderwaterCharacter::SpawnAndAttachTool(TSubclassOf<AActor> ToolClass)
+{
+	if (SpawnedTool1P || SpawnedTool3P || !ToolClass) return;
+	
+	FActorSpawnParameters Params;
+	Params.Owner = this;
+	Params.Instigator = this;
+
+	SpawnedTool1P = GetWorld()->SpawnActor<AActor>(
+		ToolClass,
+		GetActorLocation(),
+		GetActorRotation(),
+		Params
+	);
+	if (AADLaserCutter* Laser1P = Cast<AADLaserCutter>(SpawnedTool1P))
+		Laser1P->M_SetupVisibility(true);
+
+	SpawnedTool3P = GetWorld()->SpawnActor<AActor>(
+		ToolClass,
+		GetActorLocation(),
+		GetActorRotation(),
+		Params
+	);
+
+	if (AADLaserCutter* Laser3P = Cast<AADLaserCutter>(SpawnedTool3P))
+		Laser3P->M_SetupVisibility(false);
+
+	if (!SpawnedTool1P || !SpawnedTool3P) return;
+
+	SpawnedTool1P->SetActorEnableCollision(false);
+	SpawnedTool3P->SetActorEnableCollision(false);
+
+	// 1-인칭
+	SpawnedTool1P->AttachToComponent(
+		GetMesh1P(),
+		FAttachmentTransformRules::SnapToTargetIncludingScale,
+		LaserSocketName
+	);
+
+
+	// 3-인칭
+	SpawnedTool3P->AttachToComponent(
+		GetMesh(),
+		FAttachmentTransformRules::SnapToTargetIncludingScale,
+		LaserSocketName
+	);
+	
+}
+
+UStaticMeshComponent* AUnderwaterCharacter::CreateAndAttachMesh(const FString& ComponentName, UStaticMesh* MeshAsset, USceneComponent* Parent, FName SocketName, bool bIsThirdPerson)
+{
+	UStaticMeshComponent* MeshComponent = NewObject<UStaticMeshComponent>(this, *ComponentName);
+	if (MeshComponent == nullptr)
+	{
+		UE_LOG(LogAbyssDiverCharacter, Error, TEXT("Failed to create StaticMeshComponent: %s"), *ComponentName);
+		return nullptr;
+	}
+
+	MeshComponent->SetStaticMesh(MeshAsset);
+	MeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	MeshComponent->SetOwnerNoSee(bIsThirdPerson);
+	MeshComponent->SetOnlyOwnerSee(!bIsThirdPerson);
+	MeshComponent->CastShadow = bIsThirdPerson;
+	MeshComponent->bCastHiddenShadow = bIsThirdPerson;
+	MeshComponent->RegisterComponent();
+
+	MeshComponent->AttachToComponent(Parent, FAttachmentTransformRules::SnapToTargetNotIncludingScale, SocketName);
+	MeshComponent->SetRelativeTransform(FTransform::Identity);
+
+	return MeshComponent;
+}
+
+void AUnderwaterCharacter::SpawnFlipperMesh()
+{
+	if (LeftFlipperMesh == nullptr || RightFlipperMesh == nullptr)
+	{
+		UE_LOG(LogAbyssDiverCharacter, Warning, TEXT("Flipper Mesh is not set"));
+		return;
+	}
+
+	// 모든 노드(Guest, Host)의 모든 캐릭터에서 3인칭 메시를 생성한다.
+	// 다만, Owner No See 설정이기 때문에 Local Player는 보이지 않게 된다.
+	LeftFlipperMesh3PComponent = CreateAndAttachMesh(
+		TEXT("LeftFlipperMesh3P"),
+		LeftFlipperMesh,
+		GetMesh(),
+		LeftFlipperSocketName,
+		true
+	);
+	
+	RightFlipperMesh3PComponent = CreateAndAttachMesh(
+		TEXT("RightFlipperMesh3P"),
+		RightFlipperMesh,
+		GetMesh(),
+		RightFlipperSocketName,
+		true
+	);
+
+	// 1인칭 메시는 Local Player에서만 생성한다.
+	if (IsLocallyControlled())
+	{
+		LeftFlipperMesh1PComponent = CreateAndAttachMesh(
+			TEXT("LeftFlipperMesh1P"),
+			LeftFlipperMesh,
+			Mesh1P,
+			LeftFlipperSocketName,
+			false
+		);
+		
+		RightFlipperMesh1PComponent = CreateAndAttachMesh(
+			TEXT("RightFlipperMesh1P"),
+			RightFlipperMesh,
+			Mesh1P,
+			RightFlipperSocketName,
+			false
+		);
+	}
+}
+
+void AUnderwaterCharacter::SetFlipperMeshVisibility(const bool bVisible)
+{
+	if (LeftFlipperMesh1PComponent)
+	{
+		LeftFlipperMesh1PComponent->SetVisibility(bVisible);
+	}
+	if (RightFlipperMesh1PComponent)
+	{
+		RightFlipperMesh1PComponent->SetVisibility(bVisible);
+	}
+	if (LeftFlipperMesh3PComponent)
+	{
+		LeftFlipperMesh3PComponent->SetVisibility(bVisible);
+	}
+	if (RightFlipperMesh3PComponent)
+	{
+		RightFlipperMesh3PComponent->SetVisibility(bVisible);
 	}
 }
 
@@ -463,6 +636,8 @@ void AUnderwaterCharacter::HandleEnterGroggy()
 			PlayerController->SetIgnoreMoveInput(true);
 		}
 
+
+		LookSensitivity = GroggyLookSensitivity;
 		// @TODO Local Groggy
 		// 1. Groggy UI 출력(남은 시간을 출력)
 		// 2. 캐릭터 회전 적용(캐릭터가 회전해서는 안 된다)
@@ -487,6 +662,8 @@ void AUnderwaterCharacter::HandleEnterNormal()
 			PlayerController->SetIgnoreLookInput(false);
 			PlayerController->SetIgnoreMoveInput(false);
 		}
+
+		LookSensitivity = NormalLookSensitivity;
 	}
 }
 
@@ -1042,8 +1219,8 @@ void AUnderwaterCharacter::Look(const FInputActionValue& InputActionValue)
 	FVector2d LookInput = InputActionValue.Get<FVector2d>();
 
 	// Y축은 반전되어서 들어오므로 그대로 적용한다.
-	AddControllerYawInput(LookInput.X);
-	AddControllerPitchInput(LookInput.Y);
+	AddControllerYawInput(LookInput.X * LookSensitivity);
+	AddControllerPitchInput(LookInput.Y * LookSensitivity);
 }
 
 void AUnderwaterCharacter::Fire(const FInputActionValue& InputActionValue)
@@ -1099,6 +1276,10 @@ void AUnderwaterCharacter::Light(const FInputActionValue& InputActionValue)
 
 void AUnderwaterCharacter::Radar(const FInputActionValue& InputActionValue)
 {
+	if (CharacterState != ECharacterState::Normal)
+	{
+		return;
+	}
 	RequestToggleRadar();
 }
 
