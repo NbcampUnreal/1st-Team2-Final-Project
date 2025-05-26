@@ -22,6 +22,7 @@ const FName ABoss::BossStateKey = "BossState";
 
 ABoss::ABoss()
 {
+	PrimaryActorTick.bCanEverTick = true;
 	bIsAttackCollisionOverlappedPlayer = false;
 	BlackboardComponent = nullptr;
 	AIController = nullptr;
@@ -33,6 +34,7 @@ ABoss::ABoss()
 	MaxPatrolDistance = 1000.0f;
 	AttackedCameraShakeScale = 1.0f;
 	bIsBiteAttackSuccess = false;
+	bShouldDecelerate = false;
 	BossPhysicsType = EBossPhysicsType::None;
 	DamagedLocation = FVector::ZeroVector;
 	Acceleration = 2.f;
@@ -75,6 +77,13 @@ void ABoss::BeginPlay()
 	GetCharacterMovement()->MaxFlySpeed = StatComponent->GetMoveSpeed();
 }
 
+void ABoss::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	MoveForward(DeltaSeconds);
+}
+
 void ABoss::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
@@ -113,12 +122,15 @@ void ABoss::LaunchPlayer(AUnderwaterCharacter* Player, const float& Power) const
 
 void ABoss::MoveForward(const float& InDeltaTime)
 {
+	// 목표 속도 계산
+	const float TargetSpeed = bShouldDecelerate ? 100.0f : StatComponent->GetMoveSpeed();
+	
 	// 목표 속도까지 부드럽게 가속
-	CurrentMoveSpeed = FMath::FInterpTo(CurrentMoveSpeed, StatComponent->GetMoveSpeed(), InDeltaTime, Acceleration);
+	CurrentMoveSpeed = FMath::FInterpTo(CurrentMoveSpeed, TargetSpeed, InDeltaTime, Acceleration);
 	
 	// 실제 이동
 	const FVector MoveDelta = GetActorForwardVector() * CurrentMoveSpeed * InDeltaTime;
-
+	
 	// 충돌 적용
 	SetActorLocation(GetActorLocation() + MoveDelta, true);
 }
@@ -350,13 +362,14 @@ FVector ABoss::GetNextPatrolPoint()
 	// 최대로 시도할 다음 경로 찾기 알고리즘 횟수
 	const uint8 MaxTries = 20;
 
+	const FVector CurrentLocation = GetActorLocation();
+
 	for (uint8 i = 0; i < MaxTries; ++i)
 	{
-		bool bFound = NavSys->GetRandomReachablePointInRadius(GetActorLocation(), MaxPatrolDistance, RandomNavLocation);
+		bool bFound = NavSys->GetRandomReachablePointInRadius(CurrentLocation, MaxPatrolDistance, RandomNavLocation);
 
 		if (bFound)
 		{
-			const FVector CurrentLocation = GetActorLocation();
 			const FVector TargetLocation = RandomNavLocation.Location;
 
 			if (FVector::Distance(CurrentLocation, TargetLocation) > MinPatrolDistance)
