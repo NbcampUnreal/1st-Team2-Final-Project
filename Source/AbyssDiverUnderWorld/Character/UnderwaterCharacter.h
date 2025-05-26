@@ -90,6 +90,7 @@ protected:
 	
 	virtual void BeginPlay() override;
 	virtual void PossessedBy(AController* NewController) override;
+	virtual void PostNetInit() override;
 	virtual void OnRep_PlayerState() override;
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 
@@ -169,6 +170,15 @@ public:
 	
 protected:
 
+	/** 메시 컴포넌트를 동적으로 생성하고 Parent 에 소켓으로 연결한다.*/
+	UStaticMeshComponent* CreateAndAttachMesh(const FString& ComponentName, UStaticMesh* MeshAsset, USceneComponent* Parent, FName SocketName, bool bIsThirdPerson);
+
+	/** 오리발 메시를 생성한다. 1인칭, 3인칭 모두에 적용된다. */
+	void SpawnFlipperMesh();
+
+	/** 오리발 메시의 Visibility를 설정한다. */
+	void SetFlipperMeshVisibility(bool bVisible);
+	
 	/** Anim State 변경 Server RPC */
 	UFUNCTION(Server, Reliable)
 	void S_ChangeAnimSyncState(FAnimSyncState NewAnimSyncState);
@@ -424,6 +434,44 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	ECharacterState CharacterState;
 
+	/** 오리발이 생성될 왼발 소켓 이름 */
+	UPROPERTY(EditDefaultsOnly, Category = "Character|Flipper")
+	FName LeftFlipperSocketName;
+	
+	/** 왼발에 착용될 오리발 메시 */
+	UPROPERTY(EditDefaultsOnly, Category = "Character|Flipper")
+	TObjectPtr<UStaticMesh> LeftFlipperMesh;
+
+	/** 왼발에 착용될 오리발 메시 1인칭용 컴포넌트 */
+	UPROPERTY()
+	TObjectPtr<UStaticMeshComponent> LeftFlipperMesh1PComponent;
+
+	/** 왼발에 착용될 오리발 메시 3인칭용 컴포넌트 */
+	UPROPERTY()
+	TObjectPtr<UStaticMeshComponent> LeftFlipperMesh3PComponent;
+
+	/** 오리발이 생성될 오른발 소켓 이름 */
+	UPROPERTY(EditDefaultsOnly, Category = "Character|Flipper")
+	FName RightFlipperSocketName;
+	
+	/** 오른발에 착용될 오리발 메시 */
+	UPROPERTY(EditDefaultsOnly, Category = "Character|Flipper")
+	TObjectPtr<UStaticMesh> RightFlipperMesh;
+
+	/** 오른발에 착용될 오리발 메시 1인칭용 컴포넌트 */
+	UPROPERTY()
+	TObjectPtr<UStaticMeshComponent> RightFlipperMesh1PComponent;
+
+	/** 오른발에 착용될 오리발 메시 3인칭용 컴포넌트 */
+	UPROPERTY()
+	TObjectPtr<UStaticMeshComponent> RightFlipperMesh3PComponent;
+
+	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	float LookSensitivity;
+
+	UPROPERTY(EditDefaultsOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	float NormalLookSensitivity;
+	
 	/** 그로기 상태에서 사망까지 걸리는 시간. 그로기 상태에 진입할 떄마다 줄어든다. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true"))
 	float GroggyDuration;
@@ -446,6 +494,9 @@ private:
 
 	/** 그로기에서 사망 전이 Timer */
 	FTimerHandle GroggyTimer;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Character|Groggy")
+	float GroggyLookSensitivity;
 
 	/** 그로기 상태에서 부활할 때 Hold해야 하는 시간. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true"))
