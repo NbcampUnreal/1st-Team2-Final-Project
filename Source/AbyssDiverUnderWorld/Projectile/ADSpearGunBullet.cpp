@@ -95,6 +95,7 @@ void AADSpearGunBullet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 void AADSpearGunBullet::ApplyAdditionalDamage()
 {
     FTimerHandle BurstTimerHandle;
+    float TimerDuration = 2.5f; // 폭탄이 터지는 시간
     //TODO : Hit Sound
     switch (BulletType)
     {
@@ -103,7 +104,7 @@ void AADSpearGunBullet::ApplyAdditionalDamage()
         break;
     case ESpearGunType::Bomb:
         LOG(TEXT("BombTimer"));
-        GetWorld()->GetTimerManager().SetTimer(BurstTimerHandle, this, &AADSpearGunBullet::Burst, 2.5f, false);
+        GetWorld()->GetTimerManager().SetTimer(BurstTimerHandle, this, &AADSpearGunBullet::Burst, TimerDuration, false);
         break;
     case ESpearGunType::Poison:
         Addict();

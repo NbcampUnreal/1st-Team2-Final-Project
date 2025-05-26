@@ -51,8 +51,6 @@ UADInventoryComponent::UADInventoryComponent() :
 		InventoryIndexMapByType.FindOrAdd(static_cast<EItemType>(i));
 		InventoryIndexMapByType[static_cast<EItemType>(i)].Init(-1, InventorySizeByType[i]);
 	}
-
-	InventoryList.SetOwningComponent(this);
 }
 
 void UADInventoryComponent::BeginPlay()
@@ -75,7 +73,7 @@ void UADInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	DOREPLIFETIME(UADInventoryComponent, CurrentEquipmentInstance);
 }
 
-void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType, int32 SlotIndex)
+void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType, uint8 SlotIndex)
 {
 	if (ItemType == EItemType::Equipment)
 	{
@@ -87,7 +85,8 @@ void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType
 	bCanUseItem = false;
 
 	FTimerHandle UseCoolTimeHandle;
-	GetWorld()->GetTimerManager().SetTimer(UseCoolTimeHandle, this, &UADInventoryComponent::OnUseCoolTimeEnd, 0.3f, false);
+	float CoolTime = 0.3f; // 아이템 사용 쿨타임 설정
+	GetWorld()->GetTimerManager().SetTimer(UseCoolTimeHandle, this, &UADInventoryComponent::OnUseCoolTimeEnd, CoolTime, false);
 
 	int8 InventoryIndex = GetInventoryIndexByTypeAndSlotIndex(ItemType, SlotIndex);
 	if (InventoryIndex == -1) return;
@@ -153,7 +152,7 @@ void UADInventoryComponent::S_RemoveBySlotIndex_Implementation(uint8 SlotIndex, 
 	RemoveBySlotIndex(SlotIndex, ItemType, bIsDropAction);
 }
 
-void UADInventoryComponent::S_EquipmentChargeBattery_Implementation(FName ItemName, int32 Amount)
+void UADInventoryComponent::S_EquipmentChargeBattery_Implementation(FName ItemName, int8 Amount)
 {
 	int8 Index = FindItemIndexByName(ItemName);
 
@@ -176,7 +175,7 @@ void UADInventoryComponent::S_EquipmentChargeBattery_Implementation(FName ItemNa
 
 }
 
-void UADInventoryComponent::S_UseBatteryAmount_Implementation(int32 Amount)
+void UADInventoryComponent::S_UseBatteryAmount_Implementation(int8 Amount)
 {
 	int16 Index = FindItemIndexByName("Battery");
 	if (Index != INDEX_NONE)
@@ -192,7 +191,7 @@ void UADInventoryComponent::S_UseBatteryAmount_Implementation(int32 Amount)
 	}
 }
 
-void UADInventoryComponent::C_SetButtonActive_Implementation(FName CName, bool bCIsActive, int32 CAmount)
+void UADInventoryComponent::C_SetButtonActive_Implementation(FName CName, bool bCIsActive, int16 CAmount)
 {
 	if (ChargeBatteryWidget)
 	{
@@ -249,6 +248,7 @@ bool UADInventoryComponent::AddInventoryItem(FItemData ItemData)
 				if (FoundRow->Stackable)
 				{
 					bIsUpdateSuccess = InventoryList.UpdateQuantity(ItemIndex, ItemData.Quantity);
+					InventoryList.SetAmount(ItemIndex, ItemData.Amount);
 					if (bIsUpdateSuccess)
 					{
 						LOGINVEN(Warning, TEXT("Item Update, ItemName : %s, Id : %d"), *InventoryList.Items[ItemIndex].Name.ToString(), InventoryList.Items[ItemIndex].Id);
