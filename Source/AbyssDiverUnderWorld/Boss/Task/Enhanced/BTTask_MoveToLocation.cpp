@@ -22,6 +22,7 @@ UBTTask_MoveToLocation::UBTTask_MoveToLocation()
 	bNotifyTaskFinished = true;
 	Boss = nullptr;
 	AIController = nullptr;
+	bIsInitialized = true;
 	TargetLocation = FVector::ZeroVector;
 }
 
@@ -52,7 +53,11 @@ void UBTTask_MoveToLocation::TickTask(UBehaviorTreeComponent& Comp, uint8* NodeM
 	
 	if (AIController->GetPathFollowingComponent()->GetStatus() == EPathFollowingStatus::Idle)
 	{
-		AIController->InitVariables();	
+		if (bIsInitialized)
+		{
+			AIController->InitVariables();	
+		}
+		
 		FinishLatentTask(Comp, EBTNodeResult::Succeeded);
 		return;
 	}

@@ -3,6 +3,9 @@
 #include "Boss/Boss.h"
 #include "Boss/ENum/EBossState.h"
 #include "Boss/Enum/EPerceptionType.h"
+#include "Character/UnderwaterCharacter.h"
+
+const FName UBTTask_PlayerChase::bIsPlayerHiddenKey = "bIsPlayerHidden";
 
 UBTTask_PlayerChase::UBTTask_PlayerChase()
 {
@@ -43,6 +46,16 @@ void UBTTask_PlayerChase::TickTask(UBehaviorTreeComponent& Comp, uint8* NodeMemo
 
 	// 전방을 향해 이동
 	Boss->MoveForward(DeltaSeconds);
+
+	// 플레이어가 시야에서 사라진 경우
+	if (AIController->GetIsDisappearPlayer())
+	{
+		// 플레이어가 해초 더미 속에 숨은 경우
+		if (Boss->GetTarget()->IsHideInSeaweed())
+		{
+			AIController->GetBlackboardComponent()->SetValueAsBool(bIsPlayerHiddenKey, true);
+		}
+	}
 
 	// 정해진 시간만큼 경과하면 추적 종료
 	if (AccumulatedTime > TimeCriteria)
