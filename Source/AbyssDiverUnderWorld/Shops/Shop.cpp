@@ -951,6 +951,11 @@ bool AShop::IsOpened() const
 	return bIsOpened;
 }
 
+EInteractionType AShop::GetInteractionType() const
+{
+	return EInteractionType::OpenShop;
+}
+
 UADInteractableComponent* AShop::GetInteractableComponent() const
 {
 	return InteractableComp;

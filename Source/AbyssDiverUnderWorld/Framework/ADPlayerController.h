@@ -49,6 +49,12 @@ private:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HUD", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UPlayerHUDComponent> PlayerHUDComponent;
+
+	UPROPERTY(EditAnywhere, Category = "UI")
+	TSubclassOf<class UInteractionDescriptionWidget> InteractionWidgetClass;
+
+	UPROPERTY()
+	TObjectPtr<UInteractionDescriptionWidget> InteractionWidget;
 	
 #pragma endregion 
 

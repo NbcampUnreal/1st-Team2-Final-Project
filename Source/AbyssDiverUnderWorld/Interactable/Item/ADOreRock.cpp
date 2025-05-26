@@ -264,3 +264,8 @@ float AADOreRock::GetHoldDuration_Implementation() const
 	return HoldDuration;
 }
 
+EInteractionType AADOreRock::GetInteractionType() const
+{
+	return EInteractionType::Mining;
+}
+

@@ -758,6 +758,8 @@ public:
 
 	/** 3인칭 메시 Strafe 여부 반환 */
 	FORCEINLINE bool Is3PStrafe() const {return bIsAnim3PSyncStateOverride ? AnimSyncState.bIsStrafing : OverrideAnimSyncState.bIsStrafing;}
-		
+	
+	/** 상호작용 타입 반환 */
+	virtual EInteractionType GetInteractionType() const override { return EInteractionType::ReviveCharacter; }
 #pragma endregion
 };

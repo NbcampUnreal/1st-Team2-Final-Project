@@ -18,5 +18,5 @@ void USessionListWidget::NativeConstruct()
 
 void USessionListWidget::OnBackClicked()
 {
-	RemoveFromParent(); 
+	
 }

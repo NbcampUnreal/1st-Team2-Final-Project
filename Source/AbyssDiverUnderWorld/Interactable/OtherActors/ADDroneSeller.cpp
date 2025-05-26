@@ -119,3 +119,8 @@ bool AADDroneSeller::IsHoldMode() const
 {
 	return bIsHold;
 }
+
+EInteractionType AADDroneSeller::GetInteractionType() const
+{
+	return EInteractionType::GiveOre;
+}

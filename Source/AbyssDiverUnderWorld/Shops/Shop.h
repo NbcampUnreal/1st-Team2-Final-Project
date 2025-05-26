@@ -268,6 +268,7 @@ private:
 	virtual bool IsHoldMode() const;
 	bool HasItem(int32 ItemId);
 	bool IsOpened() const;
+	virtual EInteractionType GetInteractionType() const override;
 
 #pragma endregion
 

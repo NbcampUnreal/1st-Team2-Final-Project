@@ -138,6 +138,7 @@ public:
 	virtual UADInteractableComponent* GetInteractableComponent() const override;
 	virtual bool IsHoldMode() const;
 	virtual float GetHoldDuration_Implementation() const override;
+	virtual EInteractionType GetInteractionType() const override;
 
 #pragma endregion
 };

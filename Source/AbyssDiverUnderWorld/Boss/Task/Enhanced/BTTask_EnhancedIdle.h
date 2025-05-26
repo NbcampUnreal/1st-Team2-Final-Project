@@ -15,6 +15,7 @@ public:
 
 private:
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& Comp, uint8* NodeMemory) override;
+	virtual void TickTask(UBehaviorTreeComponent& Comp, uint8* NodeMemory, float DeltaSeconds) override;
 
 private:
 	UPROPERTY()
@@ -22,5 +23,17 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<AEnhancedBossAIController> AIController;
+
+	UPROPERTY()
+	float AccumulatedTime;
+
+	UPROPERTY()
+	float IdleFinishTime;
+
+	UPROPERTY(EditAnywhere)
+	float IdleFinishMinInterval;
+
+	UPROPERTY(EditAnywhere)
+	float IdleFinishMaxInterval;
 	
 };

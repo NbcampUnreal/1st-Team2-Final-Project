@@ -142,6 +142,7 @@ void UADInteractionComponent::HandleEndOverlap(UPrimitiveComponent* OverlappedCo
 				{
 					// 외곽선 제거
 					FocusedInteractable->SetHighLight(false);
+					OnFocusEnd.Broadcast();
 					FocusedInteractable = nullptr;
 					//				LOG(TEXT("Remove Border"));
 				}
@@ -248,12 +249,21 @@ void UADInteractionComponent::UpdateFocus(UADInteractableComponent* NewFocus)
 	}
 
 	if (FocusedInteractable)
+	{
 		FocusedInteractable->SetHighLight(false);
+		OnFocusEnd.Broadcast();
+	}
+		
 
 	if (ShouldHighlight(NewFocus))
 	{
 		FocusedInteractable = NewFocus;
 		FocusedInteractable->SetHighLight(true);
+		if (IIADInteractable* FocusedActor = Cast<IIADInteractable>(FocusedInteractable->GetOwner()))
+		{
+			OnFocus.Broadcast(FocusedInteractable->GetOwner(), FocusedActor->GetInteractionType());
+		}
+		
 	}
 	else
 	{
@@ -267,6 +277,7 @@ void UADInteractionComponent::ClearFocus()
 	if (FocusedInteractable)
 	{
 		FocusedInteractable->SetHighLight(false);
+		OnFocusEnd.Broadcast();
 		FocusedInteractable = nullptr;
 	}
 }
