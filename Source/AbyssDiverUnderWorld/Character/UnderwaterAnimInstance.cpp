@@ -21,8 +21,11 @@ UUnderwaterAnimInstance::UUnderwaterAnimInstance()
 	
 	bIsStrafing = false;
 	ModifyPitch = 0.0f;
-	LeanThresholdSpeed = 200.0f;
-	MaxLeanAngle = 30.0f;
+	ModifyYaw = 0.0f;
+	LeanThresholdSpeed = 350.0f;
+	MaxPitchAngle = 10.0f;
+	MaxYawAngle = 80.0f;
+	ForwardDirectionTolerance = 5.0f;
 
 	bShouldLean = false;
 	
@@ -76,26 +79,60 @@ void UUnderwaterAnimInstance::UpdateVariables()
 	UpSpeed = FVector::DotProduct(UnderwaterCharacter->GetActorUpVector(), Velocity);
 
 	// Actor는 Z축 기준으로만 회전하기 때문에 Rotation으로만 계산해도 현재로서는 문제 없다.
-	Direction = UKismetAnimationLibrary::CalculateDirection(Velocity, UnderwaterCharacter->GetActorRotation());
+
+	// 2D 기준으로 Velocity의 방향을 계산한다.
+	// 수직, 수평 이동일 경우는 90도가 되어버리므로 0(Forward)으로 설정한다.
+	Direction = Velocity.Size2D() > KINDA_SMALL_NUMBER ? 
+		UKismetAnimationLibrary::CalculateDirection(Velocity, UnderwaterCharacter->GetActorRotation())
+		: 0.0f;
 }
 
 void UUnderwaterAnimInstance::UpdateLeanAngle()
 {
-	// 현재 기준으로는 느리게 움직일 경우 Lean을 할 필요가 없다.
-	// BS에서 기준이 되는 지점에서 적용하면 될 듯 하다.
-
+	// 1. Lean 대상
+	// - LastInputVector : 캐릭터가 이동할 때 입력한 방향 벡터
+	// - Velocity : 캐릭터가 실제로 이동하는 방향 벡터
+	// 현재는 Velocity를 기준으로 한다. 벽을 향해 달릴 경우 달리지 않는다.
+	// 2. Lean Threshold Speed
+	// - 캐릭터가 이동할 때 속도가 Lean Threshold Speed 이상일 경우에만 Lean을 한다
+	// - 캐릭터가 이동할 경우 일정 속도 이상일 경우에만 앞으로 기우는 모션이기 때문이다.
+	
 	float TargetAngle = 0.0f;
-	float InterpSpeed = 1.0f;
+	float InterpSpeed = 5.0f;
 
-	const bool bMoveBackward = Direction < -90 || Direction > 90;
-	if (Speed > LeanThresholdSpeed && !bMoveBackward)
+	const FVector Velocity = UnderwaterCharacter->GetVelocity();
+	
+	// -90, 90 뒤를 Move Backward로 판단한다.
+	// 만약에 좌우 이동에서 판단을 하고 싶으면 추가적으로 약간의 오차를 두고 판단을 해야 한다.
+	const bool bMoveForward = Direction > -90 + ForwardDirectionTolerance && Direction < 90 - ForwardDirectionTolerance;
+
+	// Model 기준 Pitch는 Yaw이다.
+	// Front(-45, 0, 45) 방향으로 이동할 때만 Lean을 한다. 그 외는 Strafing 이동이기 때문.
+	// 수직, 하강은 Roll을 하면 안 된다.
+	if (Speed > LeanThresholdSpeed && bMoveForward)
 	{
-		TargetAngle = FMath::Clamp(Direction, -MaxLeanAngle, MaxLeanAngle);
+		// UE_LOG(LogTemp,Display,TEXT("ForwardLean"))
+		TargetAngle = FMath::Clamp(Direction, -MaxPitchAngle, MaxPitchAngle);
 		InterpSpeed = 5.0f;
 	}
-
 	ModifyPitch = FMath::FInterpTo(ModifyPitch, TargetAngle, GetWorld()->GetDeltaSeconds(), InterpSpeed);
 
-	// UE_LOG(LogTemp,Display, TEXT("Direction : %f"), Direction);
+	// UE_LOG(LogTemp,Display,TEXT("Direction : %f"), Direction);
 	// UE_LOG(LogTemp,Display, TEXT("ModifyPitch : %f"), ModifyPitch);
+
+	// Model 기준 Roll은 Pitch이다.
+	float TargetRoll = 0.0f;
+	
+	//  앞(-45, 0, 45)으로 이동할 경우에만 Lean을 한다.
+	// 수직, 하강 이동 중도 Forward로 취급해야 한다.
+	if (Speed > LeanThresholdSpeed && bMoveForward)
+	{
+		FRotator VelocityRotator = Velocity.ToOrientationRotator();
+		TargetRoll = VelocityRotator.Pitch;
+		TargetRoll = FMath::Clamp(TargetRoll, -MaxYawAngle, MaxYawAngle);
+		TargetRoll *= -1.0f;
+	}
+
+	ModifyYaw = FMath::FInterpTo(ModifyYaw, TargetRoll, GetWorld()->GetDeltaSeconds(), InterpSpeed);
+	// UE_LOG(LogTemp,Display,TEXT("ModifyRoll : %f"), ModifyRoll);
 }
