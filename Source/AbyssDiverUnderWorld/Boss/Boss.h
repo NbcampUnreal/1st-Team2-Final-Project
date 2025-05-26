@@ -27,7 +27,7 @@ protected:
 public:
 	FVector GetNextPatrolPoint();
 	void SetBossState(EBossState State);
-	void LaunchPlayer(AUnderwaterCharacter* Player, float& Power);
+	void LaunchPlayer(AUnderwaterCharacter* Player, const float& Power) const;
 
 	/** 전방을 향해 이동하는 함수 */
 	void MoveForward(const float& InDeltaTime);

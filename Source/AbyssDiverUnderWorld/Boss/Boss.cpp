@@ -90,11 +90,11 @@ void ABoss::SetBossState(EBossState State)
 	BlackboardComponent->SetValueAsEnum(BossStateKey, static_cast<uint8>(BossState));
 }
 
-void ABoss::LaunchPlayer(AUnderwaterCharacter* Player, float& Power)
+void ABoss::LaunchPlayer(AUnderwaterCharacter* Player, const float& Power) const
 {
 	// 플레이어를 밀치는 로직
 	const FVector PushDirection = (Player->GetActorLocation() - GetActorLocation()).GetSafeNormal();
-	const float PushStrength = Power; // 밀치는 힘의 크기 -> 변수화 필요할 것 같은데 일단 고민
+	const float PushStrength = Power;
 	const FVector PushForce = PushDirection * PushStrength;
 	
 	// 물리 시뮬레이션이 아닌 경우 LaunchCharacter 사용
