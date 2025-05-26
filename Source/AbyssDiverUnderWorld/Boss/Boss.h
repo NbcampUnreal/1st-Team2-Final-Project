@@ -28,6 +28,9 @@ public:
 	FVector GetNextPatrolPoint();
 	void SetBossState(EBossState State);
 	void LaunchPlayer(AUnderwaterCharacter* Player, float& Power);
+
+	/** 전방을 향해 이동하는 함수 */
+	void MoveForward(const float& InDeltaTime);
 	
 	/** 데미지를 받을 때 호출하는 함수 */
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
@@ -86,6 +89,9 @@ private:
 
 #pragma region Variable
 public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Stat")
+	float Acceleration;
+	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
 	EBossPhysicsType BossPhysicsType;
 
@@ -167,6 +173,7 @@ private:
 	uint8 CurrentPatrolPointIndex = 0;
 	uint8 bIsBiteAttackSuccess : 1;
 	uint8 bIsAttackCollisionOverlappedPlayer : 1;
+	float CurrentMoveSpeed = 0.f;
 	
 #pragma endregion
 
@@ -191,6 +198,7 @@ public:
 	FORCEINLINE AUnderwaterCharacter* GetCachedTarget() const { return CachedTargetPlayer; };
 	FORCEINLINE void SetCachedTarget(AUnderwaterCharacter* Target) { CachedTargetPlayer = Target; };
 	FORCEINLINE void InitCachedTarget() { CachedTargetPlayer = nullptr; };
+	FORCEINLINE void InitCurrentMoveSpeed() { CurrentMoveSpeed = 0.f; }
 
 	AActor* GetTargetPoint();
 	const FVector GetTargetPointLocation() const;

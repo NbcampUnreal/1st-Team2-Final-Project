@@ -35,6 +35,7 @@ ABoss::ABoss()
 	bIsBiteAttackSuccess = false;
 	BossPhysicsType = EBossPhysicsType::None;
 	DamagedLocation = FVector::ZeroVector;
+	Acceleration = 2.f;
 	
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 
@@ -110,6 +111,18 @@ void ABoss::LaunchPlayer(AUnderwaterCharacter* Player, float& Power)
 	}, 0.5f, false);
 }
 
+void ABoss::MoveForward(const float& InDeltaTime)
+{
+	// 목표 속도까지 부드럽게 가속
+	CurrentMoveSpeed = FMath::FInterpTo(CurrentMoveSpeed, StatComponent->GetMoveSpeed(), InDeltaTime, Acceleration);
+	
+	// 실제 이동
+	const FVector MoveDelta = GetActorForwardVector() * CurrentMoveSpeed * InDeltaTime;
+
+	// 충돌 적용
+	SetActorLocation(GetActorLocation() + MoveDelta, true);
+}
+
 float ABoss::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator,
                         AActor* DamageCauser)
 {
@@ -119,7 +132,6 @@ float ABoss::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
 	const float Damage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
 	// 부위 타격 정보
-	// @TODO : 맞은 부위에 따라 추가 데미지 혹은 출혈 이펙트 출력
 	if (DamageEvent.IsOfType(FPointDamageEvent::ClassID))
 	{
 		const FPointDamageEvent* PointDamage = static_cast<const FPointDamageEvent*>(&DamageEvent);
