@@ -97,7 +97,7 @@ protected:
 	UPROPERTY(BlueprintReadOnly)
 	float ModifyPitch;
 
-	/** 모델의 경우 언리얼의 XYZ 좌표계와 다르기 때문에 Roll에 적용할 경우 Yaw에 적용된다. */
+	/** 모델의 경우 언리얼의 XYZ 좌표계와 다르기 때문에 Yaw에 적용할 경우 Pitch에 적용된다. */
 	UPROPERTY(BlueprintReadOnly)
 	float ModifyYaw;
 	

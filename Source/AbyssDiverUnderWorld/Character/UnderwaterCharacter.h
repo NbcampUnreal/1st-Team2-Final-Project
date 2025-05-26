@@ -466,9 +466,11 @@ private:
 	UPROPERTY()
 	TObjectPtr<UStaticMeshComponent> RightFlipperMesh3PComponent;
 
+	/** 현재 회전 감도. 현재 상태에 따라 변화 한다. */
 	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float LookSensitivity;
 
+	/** Normal 상태에서의 회전 감도. Normal 상태에 진입할 때마다 LookSensitivity를 이 값으로 설정한다. */
 	UPROPERTY(EditDefaultsOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float NormalLookSensitivity;
 	
@@ -495,6 +497,7 @@ private:
 	/** 그로기에서 사망 전이 Timer */
 	FTimerHandle GroggyTimer;
 
+	/** 그로기 상태에서의 LookSensitivity. Groggy 상태에 진입할 때마다 LookSensitivity를 이 값으로 설정한다. */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Groggy")
 	float GroggyLookSensitivity;
 
@@ -564,6 +567,7 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Radar", meta = (AllowPrivateAccess = "true"))
 	FVector RadarOffset;
 
+	/** 레이더가 생성된 회전 오프셋. 카메라 기준으로 부착이 된다. */
 	UPROPERTY(EditAnywhere, Category = "Character|Radar", meta = (AllowPrivateAccess = "true"))
 	FRotator RadarRotation;
 
