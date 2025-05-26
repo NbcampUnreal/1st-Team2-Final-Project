@@ -70,6 +70,9 @@ public:
 	UFUNCTION(Server, Reliable)
 	void S_RKey();
 	void S_RKey_Implementation();
+	UFUNCTION(Server, Reliable)
+	void S_IncreaseAmount(int8 AddAmount);
+	void S_IncreaseAmount_Implementation(int8 AddAmount);
 	UFUNCTION()
 	void OnRep_Amount();
 	UFUNCTION()
@@ -90,6 +93,8 @@ public:
 	void ToggleBoost();
 	UFUNCTION(BlueprintCallable)
 	void ToggleNightVision();
+	UFUNCTION(BlueprintCallable)
+	void ToggleChargeBatteryWidget();
 	UFUNCTION(BlueprintCallable)
 	void StartReload();
 	UFUNCTION(BlueprintCallable)
@@ -149,6 +154,8 @@ public:
 	UPROPERTY(ReplicatedUsing = OnRep_Amount, EditAnywhere, BlueprintReadWrite)
 	int32 Amount = 0;
 	UPROPERTY(Replicated)
+	FName CurrentEquipmentName;
+	UPROPERTY(Replicated)
 	uint8 bBoostActive : 1;
 	UPROPERTY(ReplicatedUsing = OnRep_NightVisionOn)
 	uint8 bNightVisionOn : 1;
@@ -169,6 +176,7 @@ public:
 	uint8 bNVGWidgetVisible : 1;
 	UPROPERTY(ReplicatedUsing = OnRep_ChargeBatteryUIVisible)
 	uint8 bChargeBatteryWidgetVisible : 1;
+	uint8 bAlreadyCursorShowed : 1;
 
 	
 	
@@ -185,6 +193,8 @@ protected:
 	TObjectPtr<UMaterialInstanceDynamic> NightVisionMaterialInstance = nullptr;
 	UPROPERTY()
 	TObjectPtr<UUserWidget> ChargeWidget = nullptr;
+	UPROPERTY()
+	TObjectPtr<UADInventoryComponent> Inventory = nullptr;
 	UPROPERTY(EditAnywhere, Category = "Projectile")
 	TSubclassOf<AADSpearGunBullet> ProjectileClass = nullptr;
 	UPROPERTY()

@@ -24,6 +24,7 @@
 #include "Net/UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/SceneCaptureComponent2D.h"
+#include "Components/PointLightComponent.h"
 
 DEFINE_LOG_CATEGORY(ShopLog);
 
@@ -144,16 +145,23 @@ AShop::AShop()
 
 	ShopMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ShopMesh"));
 	SetRootComponent(ShopMeshComponent);
+	ShopMeshComponent->SetMobility(EComponentMobility::Static);
 
 	ItemMeshComponent = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("ItemMesh"));
 	ItemMeshComponent->SetupAttachment(RootComponent);
 	ItemMeshComponent->SetVisibleInSceneCaptureOnly(true);
 	ItemMeshComponent->SetIsReplicated(false);
 	ItemMeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	// 라이팅 채널 2번만 사용. 상점 아이템 메쉬용
+	ItemMeshComponent->LightingChannels.bChannel0 = false;
+	ItemMeshComponent->LightingChannels.bChannel1 = false;
+	ItemMeshComponent->LightingChannels.bChannel2 = true;
+
 	// 설정을 좀 더 건드려야 함. 
 	ItemMeshCaptureComp = CreateDefaultSubobject<USceneCaptureComponent2D>(TEXT("ItemMeshCapureComp"));
 	ItemMeshCaptureComp->SetupAttachment(RootComponent);
-	ItemMeshCaptureComp->ShowFlags.AntiAliasing = false;
+	ItemMeshCaptureComp->ShowFlags.AntiAliasing = true;
 	ItemMeshCaptureComp->ShowFlags.Atmosphere = false;
 	ItemMeshCaptureComp->ShowFlags.BSP = false;
 	ItemMeshCaptureComp->ShowFlags.Cloud = false;
@@ -165,15 +173,20 @@ AShop::AShop()
 	ItemMeshCaptureComp->ShowFlags.StaticMeshes = false;
 	ItemMeshCaptureComp->ShowFlags.Translucency = false;
 
-	ItemMeshCaptureComp->ShowFlags.DisableAdvancedFeatures();
+	ItemMeshCaptureComp->ShowFlags.InstancedFoliage = false;
+	ItemMeshCaptureComp->ShowFlags.InstancedGrass = false;
+	ItemMeshCaptureComp->ShowFlags.InstancedStaticMeshes = false;
+	ItemMeshCaptureComp->ShowFlags.Paper2DSprites = false;
+	ItemMeshCaptureComp->ShowFlags.TextRender = false;
+	ItemMeshCaptureComp->ShowFlags.TemporalAA = true;
 
-	ItemMeshCaptureComp->ShowFlags.Bloom = false;
+	ItemMeshCaptureComp->ShowFlags.Bloom = true;
 	ItemMeshCaptureComp->ShowFlags.EyeAdaptation = false;
 	ItemMeshCaptureComp->ShowFlags.LocalExposure = false;
 	ItemMeshCaptureComp->ShowFlags.MotionBlur = false;
-	ItemMeshCaptureComp->ShowFlags.PostProcessMaterial = false;
-	ItemMeshCaptureComp->ShowFlags.ToneCurve = false;
-	ItemMeshCaptureComp->ShowFlags.Tonemapper = false;
+	ItemMeshCaptureComp->ShowFlags.PostProcessMaterial = true;
+	ItemMeshCaptureComp->ShowFlags.ToneCurve = true;
+	ItemMeshCaptureComp->ShowFlags.Tonemapper = true;
 
 	ItemMeshCaptureComp->ShowFlags.SkyLighting = false;
 
@@ -191,14 +204,20 @@ AShop::AShop()
 
 	ItemMeshCaptureComp->ShowFlags.NaniteMeshes = true;
 
-	//ItemMeshCaptureComp->ShowFlags.Game = false;
-	//ItemMeshCaptureComp->ShowFlags.Lighting = false;
-	//ItemMeshCaptureComp->ShowFlags.PathTracing = false;
-	//ItemMeshCaptureComp->ShowFlags.PostProcessing = false;
-
 	ItemMeshCaptureComp->bCaptureEveryFrame = false;
 
 	ItemMeshCaptureComp->SetRelativeLocation(FVector(200, 0, 0));
+
+	LightComp = CreateDefaultSubobject<UPointLightComponent>(TEXT("LightComp"));
+	LightComp->SetupAttachment(ItemMeshCaptureComp);
+
+	// 라이팅 채널 2번만 사용. 상점 아이템 메쉬용
+	LightComp->LightingChannels.bChannel0 = false;
+	LightComp->LightingChannels.bChannel1 = false;
+	LightComp->LightingChannels.bChannel2 = true;
+
+	LightComp->SetMobility(EComponentMobility::Stationary);
+	LightComp->SetRelativeLocation(FVector(0, 0, 100));
 
 	InteractableComp = CreateDefaultSubobject<UADInteractableComponent>(TEXT("InteractableComp"));
 
@@ -234,9 +253,6 @@ void AShop::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimePro
 void AShop::BeginPlay()
 {
 	Super::BeginPlay();
-
-	/*InitShopWidget();
-	InitData();*/
 
 	AADInGameState* GS = Cast<AADInGameState>(UGameplayStatics::GetGameState(GetWorld()));
 	if (ensureMsgf(GS, TEXT("올바른 GS 타입이 아닌 듯. 게임모드의 GameState가 ADInGameState가 맞는지 확인 필요.")) == false)

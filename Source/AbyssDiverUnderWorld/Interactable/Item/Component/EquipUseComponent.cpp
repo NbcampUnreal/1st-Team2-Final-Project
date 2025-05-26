@@ -16,6 +16,7 @@
 #include "Subsystems/DataTableSubsystem.h"
 #include "UI/ADNightVisionGoggle.h"
 #include "UI/ChargeBatteryWidget.h"
+#include "Framework/ADPlayerState.h"
 
 
 
@@ -34,15 +35,30 @@ UEquipUseComponent::UEquipUseComponent()
 	bOriginalExposureCached = false;
 	bCanFire = true;
 	bIsWeapon = true;
+	NightVisionClass = nullptr;
 	NightVisionInstance = nullptr;
+	ChargeBatteryClass = nullptr;
+	ChargeBatteryInstance = nullptr;
 	bNVGWidgetVisible = false;
 	bChargeBatteryWidgetVisible = false;
+	bAlreadyCursorShowed = false;
 
 	// 테스트용
 	if (ACharacter* Char = Cast<ACharacter>(GetOwner()))
 	{
 		OwningCharacter = Char;
 		DefaultSpeed = Char->GetCharacterMovement()->MaxSwimSpeed;
+	}
+
+	static ConstructorHelpers::FClassFinder<UADNightVisionGoggle> NVClassFinder(TEXT("/Game/_AbyssDiver/Blueprints/UI/EquipUI/WBP_NightVisionGoggle"));
+	if (NVClassFinder.Succeeded())
+	{
+		NightVisionClass = NVClassFinder.Class;
+	}
+	static ConstructorHelpers::FClassFinder<UChargeBatteryWidget> BatteryClassFinder(TEXT("/Game/_AbyssDiver/Blueprints/UI/EquipUI/WBP_ChargeBattery"));
+	if (BatteryClassFinder.Succeeded())
+	{
+		ChargeBatteryClass = BatteryClassFinder.Class;
 	}
 }
 
@@ -184,11 +200,38 @@ void UEquipUseComponent::S_RKey_Implementation()
 	}
 }
 
+void UEquipUseComponent::S_IncreaseAmount_Implementation(int8 AddAmount)
+{
+	Amount += AddAmount;
+
+	UGameInstance* GI = GetWorld()->GetGameInstance();
+	if (!GI)
+	{
+		LOGIC(Log, TEXT("Initialize: No valid GameInstance"))
+			return;
+	}
+	UDataTableSubsystem* DataTableSubsystem = GI->GetSubsystem<UDataTableSubsystem>();
+	FFADItemDataRow* InItemMeta = DataTableSubsystem ? DataTableSubsystem->GetItemDataByName(CurrentEquipmentName) : nullptr;
+
+	if (CurrentEquipmentName != NAME_None && InItemMeta)
+	{
+		FMath::Clamp(Amount, 0.0f, InItemMeta->Amount);
+	}
+}
+
 void UEquipUseComponent::OnRep_Amount()
 {
-	if (OwningCharacter->IsLocallyControlled() && bNightVisionOn && NightVisionInstance)
+	if (OwningCharacter->IsLocallyControlled() && (bNightVisionOn || CurrentEquipmentName == "NightVisionGoggle") && NightVisionInstance)
 	{
 		NightVisionInstance->SetBatteryAmount(Amount);
+		if (ChargeBatteryInstance)
+		{
+			ChargeBatteryInstance->SetEquipBatteryAmount("NightVisionGoggle", Amount);
+		}
+	}
+	else if (OwningCharacter->IsLocallyControlled() && (bBoostActive || CurrentEquipmentName == "DPV") && ChargeBatteryInstance)
+	{
+		ChargeBatteryInstance->SetEquipBatteryAmount("DPV", Amount);
 	}
 }
 
@@ -256,20 +299,7 @@ void UEquipUseComponent::OnRep_NightVisionUIVisible()
 
 void UEquipUseComponent::OnRep_ChargeBatteryUIVisible()
 {
-	if (OwningCharacter != nullptr)
-	{
-		if (ChargeBatteryInstance && OwningCharacter->IsLocallyControlled())
-		{
-			ChargeBatteryInstance->SetVisibility(bChargeBatteryWidgetVisible
-				? ESlateVisibility::Visible
-				: ESlateVisibility::Hidden);
-		}
-		LOG(TEXT("%s"), bChargeBatteryWidgetVisible ? TEXT("True") : TEXT("False"));
-	}
-	else
-	{
-		LOG(TEXT("No Owning Character"));
-	}
+	ToggleChargeBatteryWidget();
 }
 
 void UEquipUseComponent::Initialize(FItemData& ItemData)
@@ -284,6 +314,7 @@ void UEquipUseComponent::Initialize(FItemData& ItemData)
 	CurrentAmmoInMag = CurrentItemData->CurrentAmmoInMag;
 	ReserveAmmo = CurrentItemData->ReserveAmmo;
 	Amount = CurrentItemData->Amount;
+	CurrentEquipmentName = CurrentItemData->Name;
 
 	UGameInstance* GI = GetWorld()->GetGameInstance();
 	if (!GI)
@@ -342,6 +373,7 @@ void UEquipUseComponent::DeinitializeEquip()
 		CurrentItemData->CurrentAmmoInMag = CurrentAmmoInMag;
 		CurrentItemData->ReserveAmmo = ReserveAmmo;
 		CurrentItemData = nullptr;
+		CurrentEquipmentName = NAME_None;
 		LOGIC(Log, TEXT("No Current Item"));
 	}
 
@@ -550,6 +582,45 @@ void UEquipUseComponent::ToggleNightVision()
 	SetComponentTickEnabled(bStillNeed);
 }
 
+void UEquipUseComponent::ToggleChargeBatteryWidget()
+{
+	if (OwningCharacter != nullptr)
+	{
+		if (OwningCharacter->IsLocallyControlled() && ChargeBatteryInstance)
+		{
+			LOGIC(Log, TEXT("%s"), bChargeBatteryWidgetVisible ? TEXT("True") : TEXT("False"));
+			APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController());
+
+			if (!bChargeBatteryWidgetVisible)
+			{
+				ChargeBatteryInstance->SetVisibility(ESlateVisibility::Hidden);
+
+				if(!bAlreadyCursorShowed)
+					PC->bShowMouseCursor = false;
+				PC->SetIgnoreLookInput(false);
+				PC->SetInputMode(FInputModeGameOnly());
+			}
+			else
+			{
+				ChargeBatteryInstance->SetVisibility(ESlateVisibility::Visible);
+				bAlreadyCursorShowed = PC->bShowMouseCursor;
+				PC->bShowMouseCursor = true;
+				FInputModeGameAndUI InputMode;
+				InputMode.SetWidgetToFocus(ChargeBatteryInstance->TakeWidget());
+
+				InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+				InputMode.SetHideCursorDuringCapture(false);
+				PC->SetIgnoreLookInput(true);
+				PC->SetInputMode(InputMode);
+			}
+		}
+	}
+	else
+	{
+		LOGIC(Log, TEXT("No Owning Character"));
+	}
+}
+
 void UEquipUseComponent::StartReload()
 {
 	if (!bIsWeapon || ReserveAmmo <= 0 || CurrentAmmoInMag == MagazineSize)
@@ -567,7 +638,9 @@ void UEquipUseComponent::StartReload()
 
 void UEquipUseComponent::OpenChargeWidget()
 {
-	bChargeBatteryWidgetVisible = !bChargeBatteryWidgetVisible;
+	bChargeBatteryWidgetVisible = ~bChargeBatteryWidgetVisible;
+
+	ToggleChargeBatteryWidget();
 }
 
 void UEquipUseComponent::FinishReload()
@@ -590,6 +663,7 @@ void UEquipUseComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 	DOREPLIFETIME(UEquipUseComponent, bNightVisionOn);
 	DOREPLIFETIME(UEquipUseComponent, bNVGWidgetVisible);
 	DOREPLIFETIME(UEquipUseComponent, bChargeBatteryWidgetVisible);
+	DOREPLIFETIME(UEquipUseComponent, CurrentEquipmentName);
 }
 
 bool UEquipUseComponent::IsInterpolating() const

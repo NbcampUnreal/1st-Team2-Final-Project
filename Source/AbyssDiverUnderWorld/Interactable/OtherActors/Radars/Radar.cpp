@@ -699,6 +699,8 @@ void ARadar::RotateRadarGrid()
 	FTransform ATransform;
 	FTransform ReletiveTransform;
 
+	FRotator NewRotation = RadarSourceRotationComponent->GetComponentRotation();
+
 	switch (GridRotationOption)
 	{
 	case EGridRotationOption::GridRotatesOnAllAxis:
@@ -708,8 +710,6 @@ void ARadar::RotateRadarGrid()
 		NewRotationYaw = RadarSourceRotationComponent->GetComponentRotation().Yaw;
 		break;
 	case EGridRotationOption::NoGridRotation:
-
-		FRotator NewRotation = RadarSourceRotationComponent->GetComponentRotation();
 
 		NewRotationRoll = NewRotation.Roll;
 		NewRotationPitch = NewRotation.Pitch;
@@ -738,6 +738,10 @@ void ARadar::RotateRadarGrid()
 
 		NewRotationYaw = UKismetMathLibrary::MakeRelativeTransform(ATransform, ReletiveTransform).Rotator().Yaw;
 
+		break;
+	case EGridRotationOption::GridRotatesOnZYAxisInverse:
+
+		NewRotationYaw =  -RadarSourceRotationComponent->GetComponentRotation().Yaw;
 		break;
 	default:
 		check(false);
@@ -952,7 +956,6 @@ void ARadar::FindTransformForPillarsOrPings()
 	{
 		bIsStandHidden = true;
 	}
-
 }
 
 void ARadar::UpdateExistingReturnMesh()
@@ -1290,5 +1293,10 @@ const FName& ARadar::GetRadarTag() const
 void ARadar::SetRadarTag(const FName& NewTag)
 {
 	RadarTagToFindActors = NewTag;
+}
+
+void ARadar::SetGridRotationOption(EGridRotationOption Option)
+{
+	GridRotationOption = Option;
 }
 

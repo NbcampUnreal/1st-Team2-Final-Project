@@ -1,6 +1,7 @@
 #include "Boss/Task/Enhanced/BTTask_PlayerDetected.h"
 #include "AbyssDiverUnderWorld.h"
 #include "Boss/Boss.h"
+#include "Boss/ENum/EBossState.h"
 #include "Character/UnderwaterCharacter.h"
 
 // ----- 기능 -----
@@ -31,6 +32,8 @@ EBTNodeResult::Type UBTTask_PlayerDetected::ExecuteTask(UBehaviorTreeComponent& 
 
 	Boss = Cast<ABoss>(AIController->GetCharacter());
 	if (!IsValid(Boss)) return EBTNodeResult::Failed;
+	
+	Boss->SetBossState(EBossState::Idle);
 	
 	AIController->StopMovement();
 	AccumulatedTime = 0;
