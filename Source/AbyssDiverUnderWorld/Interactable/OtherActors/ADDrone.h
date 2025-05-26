@@ -11,6 +11,7 @@ DECLARE_LOG_CATEGORY_EXTERN(DroneLog, Log, All);
 
 class UADInteractableComponent;
 class AADDroneSeller;
+class ASpawnManager;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADDrone : public AActor,  public IIADInteractable
@@ -60,6 +61,8 @@ public:
 	TObjectPtr<AADDroneSeller> CurrentSeller = nullptr;
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<AADDroneSeller> NextSeller = nullptr;
+	UPROPERTY(EditAnywhere)
+	TObjectPtr<ASpawnManager> SpawnManager = nullptr;
 	UPROPERTY(EditAnywhere)
 	float RaiseSpeed = 200.f;
 	UPROPERTY(EditAnywhere)
