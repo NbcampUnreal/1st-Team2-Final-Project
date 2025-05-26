@@ -160,6 +160,12 @@ public:
 	/** Anim State 변경 요청 */
 	void RequestChangeAnimSyncState(FAnimSyncState NewAnimSyncState);
 
+	/** AnimNotify_LaserCutter 가 호출하는 정리 함수 */
+	UFUNCTION(BlueprintCallable, Category = "Mining")
+	void CleanupToolAndEffects();
+
+	/** 암반이 요청하면 Mining Tool을 스폰해 착용하는 함수 */
+	void SpawnAndAttachTool(TSubclassOf<AActor> ToolClass);
 	
 protected:
 
@@ -401,6 +407,10 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = Animation)
 	/** 3인칭 메시 몽타주 시작 시 호출되는 델리게이트 */
 	FOnMontageStarted OnMesh3PMontageStartedDelegate;
+
+	UPROPERTY(VisibleAnywhere, Category = "Mining")
+	/** 현재 장착된 Tool 인스턴스 */
+	TObjectPtr<AActor> SpawnedTool;
 	
 private:
 
@@ -630,6 +640,9 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "UI", meta = (AllowPrivateAccess = "true"))
 	class UHoldInteractionWidget* HoldWidgetInstance;
+
+	/** Tool 소켓 명 (1P/3P 공용) */
+	FName LaserSocketName = TEXT("Laser");
 
 #pragma endregion
 

@@ -373,9 +373,6 @@ void UEquipUseComponent::DeinitializeEquip()
 	ReserveAmmo = 0;
 	Amount = 0;
 
-	// 현재 장착 아이템 키 제거
-	CurrentRowName = NAME_None;
-
 	// 부스트·야간투시 효과 끄기
 	bBoostActive = false;
 	bNightVisionOn = false;

@@ -371,6 +371,48 @@ void AUnderwaterCharacter::RequestChangeAnimSyncState(FAnimSyncState NewAnimSync
 	}
 }
 
+void AUnderwaterCharacter::CleanupToolAndEffects()
+{
+	if (SpawnedTool)
+	{
+		SpawnedTool->Destroy();
+		SpawnedTool = nullptr;
+	}
+}
+
+void AUnderwaterCharacter::SpawnAndAttachTool(TSubclassOf<AActor> ToolClass)
+{
+	if (SpawnedTool || !ToolClass) return;
+
+	FActorSpawnParameters Params;
+	Params.Owner = this;
+	Params.Instigator = this;
+
+	SpawnedTool = GetWorld()->SpawnActor<AActor>(
+		ToolClass,
+		GetActorLocation(),
+		GetActorRotation(),
+		Params
+	);
+
+	if (!SpawnedTool) return;
+
+	SpawnedTool->SetActorEnableCollision(false);
+
+	// 1-인칭
+	SpawnedTool->AttachToComponent(
+		GetMesh1P(),
+		FAttachmentTransformRules::SnapToTargetIncludingScale,
+		LaserSocketName
+	);
+	// 3-인칭
+	SpawnedTool->AttachToComponent(
+		GetMesh(),
+		FAttachmentTransformRules::SnapToTargetIncludingScale,
+		LaserSocketName
+	);
+}
+
 void AUnderwaterCharacter::S_ChangeAnimSyncState_Implementation(FAnimSyncState NewAnimSyncState)
 {
 	RequestChangeAnimSyncState(NewAnimSyncState);

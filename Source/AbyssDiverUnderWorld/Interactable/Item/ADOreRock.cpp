@@ -23,11 +23,6 @@ AADOreRock::AADOreRock()
 	InteractableComp = CreateDefaultSubobject<UADInteractableComponent>(TEXT("InteractableComp"));
 
 	bIsHold = true;
-	bMiningActive = false;
-
-	SpawnedTool = nullptr;
-	ActiveMiningVFX = nullptr;
-	ActiveMiningSFX = nullptr;
 }
 
 // Called when the game starts or when spawned
@@ -65,15 +60,17 @@ void AADOreRock::InteractHold_Implementation(AActor* InstigatorActor)
 void AADOreRock::OnHoldStart_Implementation(APawn* InstigatorPawn)
 {
 	LOGI(Log, TEXT("Mining Starts"));
-	SpawnAndAttachTool(InstigatorPawn);
-	PlayMiningAnim(InstigatorPawn);
+	if (AUnderwaterCharacter* Diver = Cast<AUnderwaterCharacter>(InstigatorPawn))
+	{
+		Diver->SpawnAndAttachTool(MiningToolClass);
+		PlayMiningAnim(InstigatorPawn);
+	}
 }
 
 void AADOreRock::OnHoldStop_Implementation(APawn* InstigatorPawn)
 {
 	LOGI(Log, TEXT("Mining Stops"));
 	PlayStowAnim(InstigatorPawn);
-	CleanupToolAndEffects();
 }
 
 void AADOreRock::HandleMineRequest(APawn* InstigatorPawn)
@@ -100,11 +97,9 @@ void AADOreRock::HandleMineRequest(APawn* InstigatorPawn)
 		{
 			PlayFractureFX();
 			SpawnDrops();
-			//Destroy();
 		}
 	}
 	PlayStowAnim(InstigatorPawn);
-	CleanupToolAndEffects();
 }
 
 void AADOreRock::SpawnDrops()
@@ -208,50 +203,13 @@ void AADOreRock::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifeti
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AADOreRock, CurrentMiningGauge);
-	DOREPLIFETIME(AADOreRock, bMiningActive);
-}
-
-void AADOreRock::SpawnAndAttachTool(APawn* InstigatorPawn)
-{
-	if (SpawnedTool || !MiningToolClass || !InstigatorPawn) return;
-
-	FActorSpawnParameters Params;
-	Params.Owner = InstigatorPawn;
-	Params.Instigator = InstigatorPawn;
-
-	SpawnedTool = GetWorld()->SpawnActor<AActor>(
-		MiningToolClass,
-		InstigatorPawn->GetActorLocation(),
-		InstigatorPawn->GetActorRotation(),
-		Params
-	);
-
-	if (SpawnedTool)
-	{
-
-		SpawnedTool->SetActorEnableCollision(false);
-
-		if (AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(InstigatorPawn))
-		{
-			SpawnedTool->AttachToComponent(
-				UnderwaterCharacter->GetMesh1P(),
-				FAttachmentTransformRules::SnapToTargetIncludingScale,
-				TEXT("Laser")
-			);
-			SpawnedTool->AttachToComponent(
-				UnderwaterCharacter->GetMesh(),
-				FAttachmentTransformRules::SnapToTargetIncludingScale,
-				TEXT("Laser")
-			);
-		}
-	}
 }
 
 void AADOreRock::PlayMiningAnim(APawn* InstigatorPawn)
 {
 	if (!MiningMontage || !InstigatorPawn) return;
 
-	if (AUnderwaterCharacter* UC = Cast<AUnderwaterCharacter>(InstigatorPawn))
+	if (AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(InstigatorPawn))
 	{
 		// 1) 채집에 맞는 SyncState 구성
 		FAnimSyncState MiningSync;
@@ -261,7 +219,7 @@ void AADOreRock::PlayMiningAnim(APawn* InstigatorPawn)
 		MiningSync.bIsStrafing = false;
 
 		// 2) 1P & 3P 동시에 재생
-		UC->M_PlayMontageOnBothMesh(
+		UnderwaterCharacter->M_PlayMontageOnBothMesh(
 			MiningMontage,
 			1.0f,
 			NAME_None,
@@ -274,7 +232,7 @@ void AADOreRock::PlayStowAnim(APawn* InstigatorPawn)
 {
 	if (!StowMontage || !InstigatorPawn) return;
 
-	if (AUnderwaterCharacter* UC = Cast<AUnderwaterCharacter>(InstigatorPawn))
+	if (AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(InstigatorPawn))
 	{
 		FAnimSyncState StowSync;                // 대부분 IK 끄고 기본 Strafe 복귀
 		StowSync.bEnableRightHandIK = false;
@@ -282,21 +240,12 @@ void AADOreRock::PlayStowAnim(APawn* InstigatorPawn)
 		StowSync.bEnableFootIK = true;
 		StowSync.bIsStrafing = false;
 
-		UC->M_PlayMontageOnBothMesh(
+		UnderwaterCharacter->M_PlayMontageOnBothMesh(
 			StowMontage,
 			1.0f,
 			NAME_None,
 			StowSync
 		);
-	}
-}
-
-void AADOreRock::CleanupToolAndEffects()
-{
-	if (SpawnedTool)
-	{
-		SpawnedTool->Destroy();
-		SpawnedTool = nullptr;
 	}
 }
 
