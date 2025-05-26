@@ -32,15 +32,15 @@ public:
 
 	// 0~1의 값
 	UFUNCTION(Exec, BlueprintCallable, Category = "ADGameInstance")
-	void ChangeMasterVolume(const float& NewVolume) const;
+	void ChangeMasterVolume(const float& NewVolume);
 
 	// 0~1의 값
 	UFUNCTION(Exec, BlueprintCallable, Category = "ADGameInstance")
-	void ChangeBGMVolume(const float& NewVolume) const;
+	void ChangeBGMVolume(const float& NewVolume);
 
 	// 0~1의 값
 	UFUNCTION(Exec, BlueprintCallable, Category = "ADGameInstance")
-	void ChangeSFXVolume(const float& NewVolume) const;
+	void ChangeSFXVolume(const float& NewVolume);
 
 public:
 	UPROPERTY(BlueprintReadWrite)

@@ -60,17 +60,17 @@ void UADGameInstance::RemovePlayerNetId(const FString& NetId)
     PlayerIdMap.Remove(NetId);
 }
 
-void UADGameInstance::ChangeMasterVolume(const float& NewVolume) const
+void UADGameInstance::ChangeMasterVolume(const float& NewVolume)
 {
     GetSubsystem<USoundSubsystem>()->ChangeMasterVolume(NewVolume);
 }
 
-void UADGameInstance::ChangeBGMVolume(const float& NewVolume) const
+void UADGameInstance::ChangeBGMVolume(const float& NewVolume) 
 {
     GetSubsystem<USoundSubsystem>()->ChangeBGMVolume(NewVolume);
 }
 
-void UADGameInstance::ChangeSFXVolume(const float& NewVolume) const
+void UADGameInstance::ChangeSFXVolume(const float& NewVolume)
 {
     GetSubsystem<USoundSubsystem>()->ChangeSFXVolume(NewVolume);
 }
