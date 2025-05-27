@@ -68,7 +68,7 @@ void ABossAIController::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	DrawDebugRangeCircle();
+	//DrawDebugRangeCircle();
 }
 
 void ABossAIController::OnPossess(APawn* InPawn)

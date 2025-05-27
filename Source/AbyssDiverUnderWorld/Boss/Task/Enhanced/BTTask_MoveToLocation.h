@@ -16,6 +16,7 @@ public:
 private:
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& Comp, uint8* NodeMemory) override;
 	virtual void TickTask(UBehaviorTreeComponent& Comp, uint8* NodeMemory, float DeltaSeconds) override;
+	virtual void OnTaskFinished(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, EBTNodeResult::Type TaskResult) override;
 
 private:
 	UPROPERTY()
@@ -28,11 +29,26 @@ private:
 	FVector TargetLocation;
 
 	UPROPERTY()
+	FVector CachedLocation;
+
+	UPROPERTY()
+	uint8 bHasBeenTriggeredMoveToLocation : 1;
+
+	UPROPERTY()
+	uint8 bShouldMoveToNearestPoint : 1;
+
+	UPROPERTY()
 	float AccumulatedTime;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY()
 	float FinishTaskInterval;
 
+	UPROPERTY(EditAnywhere)
+	float MinFinishTaskInterval;
+
+	UPROPERTY(EditAnywhere)
+	float MaxFinishTaskInterval;
+	
 	UPROPERTY(EditAnywhere)
 	float DecelerationTriggeredRadius;
 
