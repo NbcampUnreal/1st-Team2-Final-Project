@@ -215,6 +215,8 @@ void UEquipUseComponent::S_IncreaseAmount_Implementation(int8 AddAmount)
 {
 	Amount += AddAmount;
 
+	SetEquipBatteryAmountText();
+
 	UGameInstance* GI = GetWorld()->GetGameInstance();
 	if (!GI)
 	{
@@ -232,18 +234,7 @@ void UEquipUseComponent::S_IncreaseAmount_Implementation(int8 AddAmount)
 
 void UEquipUseComponent::OnRep_Amount()
 {
-	if (OwningCharacter->IsLocallyControlled() && (bNightVisionOn || CurrentEquipmentName == "NightVisionGoggle") && NightVisionInstance)
-	{
-		NightVisionInstance->SetBatteryAmount(Amount);
-		if (ChargeBatteryInstance)
-		{
-			ChargeBatteryInstance->SetEquipBatteryAmount("NightVisionGoggle", Amount);
-		}
-	}
-	else if (OwningCharacter->IsLocallyControlled() && (bBoostActive || CurrentEquipmentName == "DPV") && ChargeBatteryInstance)
-	{
-		ChargeBatteryInstance->SetEquipBatteryAmount("DPV", Amount);
-	}
+	SetEquipBatteryAmountText();
 }
 
 void UEquipUseComponent::OnRep_CurrentAmmoInMag()
@@ -704,6 +695,22 @@ void UEquipUseComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 bool UEquipUseComponent::IsInterpolating() const
 {
 	return !FMath::IsNearlyEqual(CurrentMultiplier, TargetMultiplier, 0.001f);
+}
+
+void UEquipUseComponent::SetEquipBatteryAmountText()
+{
+	if (OwningCharacter->IsLocallyControlled() && (bNightVisionOn || CurrentEquipmentName == "NightVisionGoggle") && NightVisionInstance)
+	{
+		NightVisionInstance->SetBatteryAmount(Amount);
+		if (ChargeBatteryInstance)
+		{
+			ChargeBatteryInstance->SetEquipBatteryAmount("NightVisionGoggle", Amount);
+		}
+	}
+	else if (OwningCharacter->IsLocallyControlled() && (bBoostActive || CurrentEquipmentName == "DPV") && ChargeBatteryInstance)
+	{
+		ChargeBatteryInstance->SetEquipBatteryAmount("DPV", Amount);
+	}
 }
 
 void UEquipUseComponent::InitializeAmmoUI()
