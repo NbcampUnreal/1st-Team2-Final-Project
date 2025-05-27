@@ -109,10 +109,10 @@ private:
 public:
 	// ====== Fire =========
 	UPROPERTY(ReplicatedUsing = OnRep_CurrentAmmoInMag, EditAnywhere, BlueprintReadWrite, Category = "Weapon")
-	int32 CurrentAmmoInMag = 5;
+	int32 CurrentAmmoInMag = 0;
 
 	UPROPERTY(ReplicatedUsing = OnRep_ReserveAmmo, EditAnywhere, BlueprintReadWrite, Category = "Weapon")
-	int32 ReserveAmmo = 20;
+	int32 ReserveAmmo = 0;
 
 	UPROPERTY( EditAnywhere, BlueprintReadWrite, Category = "Weapon")
 	int32 MagazineSize = 5;
