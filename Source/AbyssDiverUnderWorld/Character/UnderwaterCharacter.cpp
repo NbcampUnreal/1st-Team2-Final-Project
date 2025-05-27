@@ -547,13 +547,18 @@ void AUnderwaterCharacter::SetFlipperMeshVisibility(const bool bVisible)
 	{
 		RightFlipperMesh1PComponent->SetVisibility(bVisible);
 	}
+
+	// 3인칭 메시의 경우 bCastHiddenShadow 가 true로 설정되어 있기 떄문에 그림자 설정 자체를 꺼야 한다.
 	if (LeftFlipperMesh3PComponent)
 	{
-		LeftFlipperMesh3PComponent->SetVisibility(bVisible);
+		LeftFlipperMesh3PComponent->SetCastShadow(bVisible);
+		LeftFlipperMesh3PComponent->SetHiddenInGame(!bVisible);
 	}
 	if (RightFlipperMesh3PComponent)
 	{
-		RightFlipperMesh3PComponent->SetVisibility(bVisible);
+		// RightFlipperMesh3PComponent->(bVisible);
+		RightFlipperMesh3PComponent->SetCastShadow(bVisible);
+		RightFlipperMesh3PComponent->SetHiddenInGame(!bVisible);
 	}
 }
 
