@@ -28,6 +28,8 @@ void UBTService_CheckTargetDistance::TickNode(UBehaviorTreeComponent& OwnerComp,
 
 	const float Distance = FVector::Dist(AIPawn->GetActorLocation(), Target->GetActorLocation());
 	const bool bInMeleeRange = Distance <= MeleeRange;
+	const bool bInRangedRange = Distance <= RangedRange;
 
 	Blackboard->SetValueAsBool(InMeleeRangeKey.SelectedKeyName, bInMeleeRange);
+	Blackboard->SetValueAsBool(InRangedRangeKey.SelectedKeyName, bInRangedRange);
 }

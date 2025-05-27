@@ -23,6 +23,9 @@ protected:
 	virtual void BeginPlay() override;
 
 #pragma region Method
+public:
+	void FireDirection(const FVector& ShootDirection);
+
 private:
 	UFUNCTION()
 	void OnProjectileHit(

@@ -22,10 +22,13 @@ protected:
 public:
 	UPROPERTY(EditAnywhere, Category = "AI")
 	float MeleeRange = 200.0f;
+	UPROPERTY(EditAnywhere, Category = "AI")
+	float RangedRange = 1000.0f;
 
 	UPROPERTY(EditAnywhere, Category = "Blackboard")
 	struct FBlackboardKeySelector InMeleeRangeKey;
-
+	UPROPERTY(EditAnywhere, Category = "Blackboard")
+	struct FBlackboardKeySelector InRangedRangeKey;
 	UPROPERTY(EditAnywhere, Category = "Blackboard")
 	struct FBlackboardKeySelector TargetActorKey;
 };

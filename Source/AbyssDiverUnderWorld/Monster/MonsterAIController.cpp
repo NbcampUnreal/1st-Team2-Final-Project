@@ -25,7 +25,6 @@ AMonsterAIController::AMonsterAIController()
 
 	AIPerceptionComponent->ConfigureSense(*SightConfig);
 	AIPerceptionComponent->SetDominantSense(SightConfig->GetSenseImplementation());
-	
 	bIsLosingTarget = false;
 }
 

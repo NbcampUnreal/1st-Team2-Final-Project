@@ -59,6 +59,11 @@ void AGFProjectile::BeginPlay()
 }
 
 
+void AGFProjectile::FireDirection(const FVector& ShootDirection)
+{
+	ProjectileMovementComp->Velocity = ShootDirection * ProjectileMovementComp->InitialSpeed;
+}
+
 void AGFProjectile::OnProjectileHit(
 	UPrimitiveComponent* HitComponent,
 	AActor* OtherActor,
