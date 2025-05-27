@@ -52,6 +52,13 @@ void AADPlayerController::BeginPlay()
 		S_SetPlayerInfo(Id, Nickname);
 	}
 
+	
+}
+
+void AADPlayerController::OnPossess(APawn* InPawn)
+{
+	Super::OnPossess(InPawn);
+
 	// 상호작용 UI 생성과 함수 바인딩
 	if (InteractionWidgetClass && IsLocalController())
 	{
