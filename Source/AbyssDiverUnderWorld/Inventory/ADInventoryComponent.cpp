@@ -525,24 +525,28 @@ void UADInventoryComponent::Equip(FItemData& ItemData, int8 SlotIndex)
 	SpawnParams.Instigator = Pawn;
 	SpawnParams.Owner = Pawn;
 
-	AADUseItem* SpawnedItem = GetWorld()->SpawnActor<AADUseItem>(AADUseItem::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
-	LOGINVEN(Warning, TEXT("SpawnItem")); 
-	if (SpawnedItem)
-	{
-		ACharacter* Character = Cast<ACharacter>(Pawn);
-		USkeletalMeshComponent* MeshComp = Character->GetMesh();
-		if (MeshComp)
-		{
-			SpawnedItem->SetItemInfo(ItemData, true);
-			SpawnedItem->AttachToComponent(MeshComp, FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("Hand_R"));
-			CurrentEquipmentInstance = SpawnedItem;
-			LOGINVEN(Warning, TEXT("ItemToEquip Name: %s, Amount %d"), *ItemData.Name.ToString(), ItemData.Amount);
-			SetEquipInfo(SlotIndex, SpawnedItem);
+	ACharacter* Character = Cast<ACharacter>(Pawn);
+	USkeletalMeshComponent* MeshComp = Character->GetMesh();
 
-			if (UEquipUseComponent* EquipComp = Pawn->FindComponentByClass<UEquipUseComponent>()) // 나중에 Getter로 바꿔야 함
+	if (MeshComp)
+	{
+		if (MeshComp->DoesSocketExist("Hand_R"))
+		{
+			LOGINVEN(Warning, TEXT("SpawnItem")); 
+			AADUseItem* SpawnedItem = GetWorld()->SpawnActor<AADUseItem>(AADUseItem::StaticClass(), MeshComp->GetSocketLocation("Hand_R"), MeshComp->GetSocketRotation("Hand_R"), SpawnParams);
+			if (SpawnedItem)
 			{
-				if(GetCurrentEquipmentItemData())
-					EquipComp->Initialize(*GetCurrentEquipmentItemData());
+				SpawnedItem->SetItemInfo(ItemData, true);
+				SpawnedItem->AttachToComponent(MeshComp, FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("Hand_R"));
+				CurrentEquipmentInstance = SpawnedItem;
+				LOGINVEN(Warning, TEXT("ItemToEquip Name: %s, Amount %d"), *ItemData.Name.ToString(), ItemData.Amount);
+				SetEquipInfo(SlotIndex, SpawnedItem);
+
+				if (UEquipUseComponent* EquipComp = Pawn->FindComponentByClass<UEquipUseComponent>()) // 나중에 Getter로 바꿔야 함
+				{
+					if(GetCurrentEquipmentItemData())
+						EquipComp->Initialize(*GetCurrentEquipmentItemData());
+				}
 			}
 		}
 	}
