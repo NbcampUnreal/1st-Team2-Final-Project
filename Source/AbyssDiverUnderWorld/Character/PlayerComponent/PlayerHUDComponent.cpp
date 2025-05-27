@@ -11,6 +11,7 @@
 #include "Character/StatComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "EngineUtils.h"
+#include "Logging/StructuredLogFormat.h"
 
 UPlayerHUDComponent::UPlayerHUDComponent()
 {
@@ -26,6 +27,8 @@ void UPlayerHUDComponent::BeginPlay()
 	{
 		return;
 	}
+
+	PlayerController->OnPossessedPawnChanged.AddDynamic(this, &UPlayerHUDComponent::OnPossessedPawnChanged);
 
 	// 메인 HUD 생성
 	if (HudWidgetClass)
@@ -131,8 +134,13 @@ void UPlayerHUDComponent::OnPossessedPawnChanged(APawn* OldPawn, APawn* NewPawn)
 {
 	if (!NewPawn) return;
 
+	if (!IsValid(HudWidget))
+	{
+		HudWidget = CreateWidget<UPlayerHUDWidget>(GetWorld(), HudWidgetClass);
+	}
 	if (HudWidget)
 	{
+		HudWidget->AddToViewport();
 		HudWidget->BindWidget(NewPawn);
 	}
 
