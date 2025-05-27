@@ -8,6 +8,10 @@
 
 #include "Shop.generated.h"
 
+#define LOGS(Verbosity, Format, ...) UE_LOG(ShopLog, Verbosity, TEXT("%s(%s) %s"), ANSI_TO_TCHAR(__FUNCTION__), *FString::FromInt(__LINE__), *FString::Printf(Format, ##__VA_ARGS__));
+
+DECLARE_LOG_CATEGORY_EXTERN(ShopLog, Log, All);
+
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnShopItemListChangedDelegate, const FShopItemListChangeInfo&);
 
 #pragma region Enums
@@ -45,6 +49,8 @@ class AShop;
 class UShopWidget;
 class UShopItemEntryData;
 class AUnderwaterCharacter;
+class USceneCaptureComponent2D;
+class UPointLightComponent;
 
 struct FFADItemDataRow;
 struct FShopItemIdList;
@@ -154,7 +160,7 @@ public:
 	AShop();
 
 protected:
-
+	virtual void PostInitializeComponents() override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void BeginPlay() override;
 
@@ -215,6 +221,12 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Shop")
 	TObjectPtr<USkeletalMeshComponent> ItemMeshComponent;
 
+	UPROPERTY(VisibleAnywhere, Category = "Shop")
+	TObjectPtr<USceneCaptureComponent2D> ItemMeshCaptureComp;
+
+	UPROPERTY(VisibleAnywhere, Category = "Shop")
+	TObjectPtr<UPointLightComponent> LightComp;
+
 	UPROPERTY(EditDefaultsOnly, Category = "Shop");
 	TArray<uint8> DefaultConsumableItemIdList; // 블루프린트 노출용
 
@@ -256,6 +268,7 @@ private:
 	virtual bool IsHoldMode() const;
 	bool HasItem(int32 ItemId);
 	bool IsOpened() const;
+	virtual EInteractionType GetInteractionType() const override;
 
 #pragma endregion
 

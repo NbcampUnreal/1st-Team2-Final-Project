@@ -13,6 +13,7 @@ struct FUpgradeDataRow;
 struct FDropEntry;
 struct FPhaseGoalRow;
 struct FMapPathDataRow;
+struct FShopItemMeshTransformRow;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API UDataTableSubsystem : public UGameInstanceSubsystem
@@ -37,7 +38,9 @@ public:
 
 	FPhaseGoalRow* GetPhaseGoalData(EMapName MapName, int32 Phase) const;
 
-	FString GetMapPath(EMapName MapName) const;
+	const FString& GetMapPath(EMapName MapName) const;
+
+	FShopItemMeshTransformRow* GetShopItemMeshTransformData(int32 ItemId) const;
 
 private:
 	void ParseUpgradeDataTable(class UADGameInstance* GameInstance);
@@ -62,6 +65,7 @@ private:
 	TArray<FMapPathDataRow*> MapPathDataTableArray;
 	TMap<EMapName, FString> MapPathDataTableMap;
 
+	TArray<FShopItemMeshTransformRow*> ShopItemMeshTransformTableArray;
 
 #pragma endregion
 

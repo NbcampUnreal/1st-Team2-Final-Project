@@ -1,5 +1,6 @@
 #include "Boss/AlienShark/AlienShark.h"
 #include "Components/CapsuleComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 AAlienShark::AAlienShark()
 {
@@ -16,4 +17,5 @@ void AAlienShark::BeginPlay()
 	Super::BeginPlay();
 
 	BiteCollision->OnComponentBeginOverlap.AddDynamic(this, &ABoss::OnMeshOverlapBegin);
+	GetCharacterMovement()->MaxFlySpeed = 0.0f;
 }

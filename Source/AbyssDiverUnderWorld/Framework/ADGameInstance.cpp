@@ -1,6 +1,7 @@
 #include "Framework/ADGameInstance.h"
 
 #include "AbyssDiverUnderWorld.h"
+#include "Subsystems/SoundSubsystem.h"
 
 #include "Kismet/GameplayStatics.h"
 
@@ -12,6 +13,7 @@ void UADGameInstance::Init()
 {
     Super::Init();
 
+	bIsHost = false;
     PlayerIdMap.Empty(MAX_PLAYER_NUMBER);
     ValidPlayerIndexArray.Init(false, MAX_PLAYER_NUMBER);
 }
@@ -56,4 +58,44 @@ void UADGameInstance::RemovePlayerNetId(const FString& NetId)
 
     ValidPlayerIndexArray[PlayerIndex - 1] = false;
     PlayerIdMap.Remove(NetId);
+}
+
+void UADGameInstance::ChangeMasterVolume(const float& NewVolume)
+{
+    GetSubsystem<USoundSubsystem>()->ChangeMasterVolume(NewVolume);
+}
+
+void UADGameInstance::ChangeBGMVolume(const float& NewVolume)
+{
+    GetSubsystem<USoundSubsystem>()->ChangeBGMVolume(NewVolume);
+}
+
+void UADGameInstance::ChangeSFXVolume(const float& NewVolume)
+{
+    GetSubsystem<USoundSubsystem>()->ChangeSFXVolume(NewVolume);
+}
+
+void UADGameInstance::ChangeAmbientVolume(const float& NewVolume)
+{
+    GetSubsystem<USoundSubsystem>()->ChangeAmbientVolume(NewVolume);
+}
+
+const float UADGameInstance::GetCurrentMasterVolume() const
+{
+    return GetSubsystem<USoundSubsystem>()->GetMasterVolume();
+}
+
+const float UADGameInstance::GetCurrentBGMVolume() const
+{
+    return GetSubsystem<USoundSubsystem>()->GetBGMVolume();
+}
+
+const float UADGameInstance::GetCurrentSFXVolume() const
+{
+    return GetSubsystem<USoundSubsystem>()->GetSFXVolume();
+}
+
+const float UADGameInstance::GetCurrentAmbientVolume() const
+{
+    return GetSubsystem<USoundSubsystem>()->GetAmbientVolume();
 }

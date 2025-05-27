@@ -1,6 +1,8 @@
 #include "Interactable/Item/Component/ADInteractableComponent.h"
 #include "Interface/IADInteractable.h"
 
+DEFINE_LOG_CATEGORY(ItemComponentLog);
+
 UADInteractableComponent::UADInteractableComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;

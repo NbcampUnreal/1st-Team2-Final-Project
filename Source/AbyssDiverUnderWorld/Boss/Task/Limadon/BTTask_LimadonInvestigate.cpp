@@ -1,6 +1,6 @@
 #include "Boss/Task/Limadon/BTTask_LimadonInvestigate.h"
 #include "AbyssDiverUnderWorld.h"
-#include "Boss/EBossState.h"
+#include "Boss/Enum/EBossState.h"
 #include "Boss/Limadon/Limadon.h"
 
 UBTTask_LimadonInvestigate::UBTTask_LimadonInvestigate()

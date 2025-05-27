@@ -1,18 +1,16 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
-
-
-#include "UpgradeComponent.h"
+﻿#include "UpgradeComponent.h"
 
 #include "AbyssDiverUnderWorld.h"
-#include "Kismet/GameplayStatics.h"
-#include "Net/UnrealNetwork.h"
 #include "Subsystems/DataTableSubsystem.h"
 #include "Framework/ADPlayerState.h"
+#include "Framework/ADInGameState.h"
 #include "Character/UnderwaterCharacter.h"
 #include "Shops/ShopInteractionComponent.h"
 #include "Shops/Shop.h"
 
-// Sets default values for this component's properties
+#include "Kismet/GameplayStatics.h"
+#include "Net/UnrealNetwork.h"
+
 UUpgradeComponent::UUpgradeComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
@@ -23,8 +21,6 @@ UUpgradeComponent::UUpgradeComponent()
 	UpgradeGradeMap.Init(DefaultGrade, static_cast<int>(EUpgradeType::Max));
 }
 
-
-// Called when the game starts
 void UUpgradeComponent::BeginPlay()
 {
 	Super::BeginPlay();
@@ -50,10 +46,36 @@ void UUpgradeComponent::GetLifetimeReplicatedProps(TArray<class FLifetimePropert
 
 void UUpgradeComponent::S_RequestUpgrade_Implementation(EUpgradeType UpgradeType)
 {
+	if (DataTableSubsystem.IsValid() == false)
+	{
+		LOGV(Warning, TEXT("DataTableSubsystem.IsValid() == false"));
+		return;
+	}
+	bool bIsMaxGrade = IsMaxGrade(UpgradeType);
+	if (bIsMaxGrade)
+	{
+		LOGV(Log, TEXT("This Upgrade Type Has Reached to Max Level"));
+		return;
+	}
+
+	AADInGameState* GS = CastChecked<AADInGameState>(UGameplayStatics::GetGameState(GetWorld()));
+
+	int32 TotalTeamCredit = GS->GetTotalTeamCredit();
+
+	int32 Grade = GetCurrentGrade(UpgradeType);
+
+	FUpgradeDataRow* UpgradeData = DataTableSubsystem->GetUpgradeData(UpgradeType, Grade + 1);
+	if (TotalTeamCredit < UpgradeData->Price)
+	{
+		LOGV(Warning, TEXT("업그레이드 돈부족!! 남은 돈 : %d, 필요한 돈 : %d"), TotalTeamCredit, UpgradeData->Price);
+		return;
+	}
+
 	bool bIsSucceeded = Upgrade(UpgradeType);
 	if (bIsSucceeded)
 	{
 		OnRep_UpgradeGradeMap();
+		GS->SetTotalTeamCredit(TotalTeamCredit - UpgradeData->Price);
 	}
 }
 

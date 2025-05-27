@@ -5,7 +5,20 @@
 #include "CoreMinimal.h"
 #include "InputActionValue.h"
 #include "UnitBase.h"
+#include "Interface/IADInteractable.h"
+#include "AbyssDiverUnderWorld.h"
 #include "UnderwaterCharacter.generated.h"
+
+#if UE_BUILD_SHIPPING
+	#define LOG_ABYSS_DIVER_COMPILE_VERBOSITY Error
+#else
+	#define LOG_ABYSS_DIVER_COMPILE_VERBOSITY All
+#endif
+
+#define LOG_NETWORK(Category, Verbosity, Format, ...) \
+	UE_LOG(Category, Verbosity, TEXT("[%s] %s %s"), LOG_NETMODEINFO, LOG_CALLINFO, *FString::Printf(Format, ##__VA_ARGS__))
+
+DECLARE_LOG_CATEGORY_EXTERN(LogAbyssDiverCharacter, Log, LOG_ABYSS_DIVER_COMPILE_VERBOSITY);
 
 // @TODO : Character Status Replicate 문제
 // 1. 최대 Stamina는 최대 Oxygen에 비례하는데 값이 따로따로 Replicate될 수 있다. 이렇게 되면 항상 오차가 존재하게 된다.
@@ -45,10 +58,28 @@ enum class ECharacterState : uint8
 // 4. Groggy -> Death : Groggy Time Out
 // 5. Groggy -> Normal : Revive
 
+USTRUCT(BlueprintType)
+struct FAnimSyncState
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	uint8 bEnableRightHandIK : 1 = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	uint8 bEnableLeftHandIK : 1 = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	uint8 bEnableFootIK : 1 = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	uint8 bIsStrafing : 1 = false;
+};
+
 class UInputAction;
 
 UCLASS()
-class ABYSSDIVERUNDERWORLD_API AUnderwaterCharacter : public AUnitBase
+class ABYSSDIVERUNDERWORLD_API AUnderwaterCharacter : public AUnitBase, public IIADInteractable
 {
 	GENERATED_BODY()
 
@@ -59,7 +90,9 @@ protected:
 	
 	virtual void BeginPlay() override;
 	virtual void PossessedBy(AController* NewController) override;
+	virtual void PostNetInit() override;
 	virtual void OnRep_PlayerState() override;
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 
 	/** IA를 Enhanced Input Component에 연결 */
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
@@ -68,6 +101,31 @@ protected:
 #pragma region Method
 
 public:
+	// Interactable Interface Begin
+
+	/** Interact Hold됬을 때 호출될 함수 */
+	virtual void InteractHold_Implementation(AActor* InstigatorActor) override;
+
+	/** Interact Hold가 시작됬을 때 호출될 함수 */
+	virtual void OnHoldStart_Implementation(APawn* InstigatorPawn) override;
+
+	/** Interact Hold가 중간에 멈췄을 때 호출될 함수 */
+	virtual void OnHoldStop_Implementation(APawn* InstigatorPawn) override;
+	
+	/** Interact Highlight 출력 여부 */
+	virtual bool CanHighlight_Implementation() const override;
+
+	/** Hold 지속 시간 반환 */
+	virtual float GetHoldDuration_Implementation() const override;
+	
+	/** Interactable 컴포넌트를 반환 */
+	virtual UADInteractableComponent* GetInteractableComponent() const override;
+
+	/** Interactable Hold 모드 설정 */
+	virtual bool IsHoldMode() const override;
+
+	// Interactable Interface End
+	
 	/** 그로기 상태 캐릭터를 부활시킨다. */
 	UFUNCTION(BlueprintCallable)
 	void RequestRevive();
@@ -94,9 +152,43 @@ public:
 	/** 출혈을 모델링하는 소리를 발생한다. */
 	UFUNCTION(BlueprintCallable)
 	void EmitBloodNoise();
+
+	/** 1인칭 메시, 3인칭 메시 모두에 애니메이션 몽타주를 재생한다. */
+	UFUNCTION(NetMulticast, Reliable)
+	void M_PlayMontageOnBothMesh(UAnimMontage* Montage, float InPlayRate = 1.0f, FName StartSectionName = NAME_None, FAnimSyncState NewAnimSyncState = FAnimSyncState());
+	void M_PlayMontageOnBothMesh_Implementation(UAnimMontage* Montage, float InPlayRate = 1.0f, FName StartSectionName = NAME_None, FAnimSyncState NewAnimSyncState = FAnimSyncState());
+
+	/** Anim State 변경 요청 */
+	void RequestChangeAnimSyncState(FAnimSyncState NewAnimSyncState);
+
+	/** AnimNotify_LaserCutter 가 호출하는 정리 함수 */
+	UFUNCTION(BlueprintCallable, Category = "Mining")
+	void CleanupToolAndEffects();
+
+	/** 암반이 요청하면 Mining Tool을 스폰해 착용하는 함수 */
+	void SpawnAndAttachTool(TSubclassOf<AActor> ToolClass);
 	
 protected:
 
+	/** 메시 컴포넌트를 동적으로 생성하고 Parent 에 소켓으로 연결한다.*/
+	UStaticMeshComponent* CreateAndAttachMesh(const FString& ComponentName, UStaticMesh* MeshAsset, USceneComponent* Parent, FName SocketName, bool bIsThirdPerson);
+
+	/** 오리발 메시를 생성한다. 1인칭, 3인칭 모두에 적용된다. */
+	void SpawnFlipperMesh();
+
+	/** 오리발 메시의 Visibility를 설정한다. */
+	void SetFlipperMeshVisibility(bool bVisible);
+	
+	/** Anim State 변경 Server RPC */
+	UFUNCTION(Server, Reliable)
+	void S_ChangeAnimSyncState(FAnimSyncState NewAnimSyncState);
+	void S_ChangeAnimSyncState_Implementation(FAnimSyncState NewAnimSyncState);
+
+	/** Anim State 변경 Multicast RPC */
+	UFUNCTION(NetMulticast, Reliable)
+	void M_UpdateAnimSyncState(FAnimSyncState NewAnimSyncState);
+	void M_UpdateAnimSyncState_Implementation(FAnimSyncState NewAnimSyncState);
+	
 	/** 캐릭터 상태를 설정한다. Server에서만 실행 가능하다. */
 	void SetCharacterState(ECharacterState NewCharacterState);
 
@@ -164,10 +256,40 @@ protected:
 	UFUNCTION()
 	void AdjustSpeed();
 
+	/** Lantern Toggle 요청 */
+	void RequestToggleLanternLight();
+
+	/** Request Toggle Lantern Light를 서버에서 처리한다. */
+	UFUNCTION(Server, Reliable)
+	void S_ToggleLanternLight();
+	void S_ToggleLanternLight_Implementation();
+
+	UFUNCTION()
+	void OnRep_bIsLanternOn();
+
+	/** 레이더 Actor를 생성한다. */
+	void SpawnRadar();
+
+	/** Radar Toggle을 요청한다. */
+	UFUNCTION(BlueprintCallable)
+	void RequestToggleRadar();
+
+	/** Radar 보이는 것을 설정 */
+	void SetRadarVisibility(bool bRadarVisible);
+
+	/** Toggle Radar Server RPC */
+	UFUNCTION(Server, Reliable)
+	void S_ToggleRadar();
+	void S_ToggleRadar_Implementation();
+
+	/** bIsRadarOn Replicate 함수. 변화된 값에 따라서 레이더의 Visibility를 변경한다. */
+	UFUNCTION()
+	void OnRep_bIsRadarOn();
+
 	/** 산소 상태가 변경될 떄 호출되는 함수 */
 	UFUNCTION()
 	void OnOxygenLevelChanged(float CurrentOxygenLevel, float MaxOxygenLevel);
-	
+
 	/** 산소가 소진되었을 때 호출되는 함수 */
 	UFUNCTION()
 	void OnOxygenDepleted();
@@ -175,6 +297,9 @@ protected:
 	/** 체력 상태가 변경될 떄 호출되는 함수 */
 	UFUNCTION()
 	void OnHealthChanged(int32 CurrentHealth, int32 MaxHealth);
+
+	UFUNCTION()
+	void OnPhysicsVolumeChanged(class APhysicsVolume* NewVolume);
 	
 	/** 이동 함수. 지상, 수중 상태에 따라 이동한다. */
 	void Move(const FInputActionValue& InputActionValue);
@@ -234,6 +359,27 @@ protected:
 	UFUNCTION(CallInEditor)
 	void ToggleDebugCameraMode();
 
+	/** 1인칭 메시 몽타주 시작 시 호출되는 함수 */
+	UFUNCTION()
+	virtual void OnMesh1PMontageStarted(UAnimMontage* Montage);
+
+	/** 1인칭 메시 몽타주 종료 시 호출되는 함수 */
+	UFUNCTION()
+	virtual void OnMesh1PMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+
+	/** 3인칭 메시 몽타주 시작 시 호출되는 함수 */
+	UFUNCTION()
+	virtual void OnMesh3PMontageStarted(UAnimMontage* Montage);
+
+	/** 3인칭 메시 몽타주 종료 시 호출되는 함수 */
+	UFUNCTION()
+	virtual void OnMesh3PMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+	
+private:
+
+	/** Montage 콜백을 등록 */
+	void SetupMontageCallbacks();
+	
 #pragma endregion
 
 #pragma region Variable
@@ -254,6 +400,32 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FOnCharacterStateChanged OnCharacterStateChangedDelegate;
 
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnMontageEnd, UAnimMontage*, Montage, bool, bInterrupted);
+	/** 1인칭 메시 몽타주 종료 시 호출되는 델리게이트 */
+	UPROPERTY(BlueprintAssignable, Category = Animation)
+	FOnMontageEnd OnMesh1PMontageEndDelegate;
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMontageStarted, UAnimMontage*, Montage);
+	/** 1인칭 메시 몽타주 시작 시 호출되는 델리게이트 */
+	UPROPERTY(BlueprintAssignable, Category = Animation)
+	FOnMontageStarted OnMesh1PMontageStartedDelegate;
+
+	UPROPERTY(BlueprintAssignable, Category = Animation)
+	/** 3인칭 메시 몽타주 종료 시 호출되는 델리게이트 */
+	FOnMontageEnd OnMesh3PMontageEndDelegate;
+
+	UPROPERTY(BlueprintAssignable, Category = Animation)
+	/** 3인칭 메시 몽타주 시작 시 호출되는 델리게이트 */
+	FOnMontageStarted OnMesh3PMontageStartedDelegate;
+
+	UPROPERTY(VisibleAnywhere, Category = "Mining")
+	/** 현재 1p에 장착된 Tool 인스턴스 */
+	TObjectPtr<AActor> SpawnedTool1P;
+	
+	UPROPERTY(VisibleAnywhere, Category = "Mining")
+	/** 현재 3p에 장착된 Tool 인스턴스 */
+	TObjectPtr<AActor> SpawnedTool3P;
+
 private:
 
 	// Character State는 현재 State 종료 시에 따로 처리할 것이 없기 때문에 현재 상태 값만 Replicate하도록 한다.
@@ -262,6 +434,46 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	ECharacterState CharacterState;
 
+	/** 오리발이 생성될 왼발 소켓 이름 */
+	UPROPERTY(EditDefaultsOnly, Category = "Character|Flipper")
+	FName LeftFlipperSocketName;
+	
+	/** 왼발에 착용될 오리발 메시 */
+	UPROPERTY(EditDefaultsOnly, Category = "Character|Flipper")
+	TObjectPtr<UStaticMesh> LeftFlipperMesh;
+
+	/** 왼발에 착용될 오리발 메시 1인칭용 컴포넌트 */
+	UPROPERTY()
+	TObjectPtr<UStaticMeshComponent> LeftFlipperMesh1PComponent;
+
+	/** 왼발에 착용될 오리발 메시 3인칭용 컴포넌트 */
+	UPROPERTY()
+	TObjectPtr<UStaticMeshComponent> LeftFlipperMesh3PComponent;
+
+	/** 오리발이 생성될 오른발 소켓 이름 */
+	UPROPERTY(EditDefaultsOnly, Category = "Character|Flipper")
+	FName RightFlipperSocketName;
+	
+	/** 오른발에 착용될 오리발 메시 */
+	UPROPERTY(EditDefaultsOnly, Category = "Character|Flipper")
+	TObjectPtr<UStaticMesh> RightFlipperMesh;
+
+	/** 오른발에 착용될 오리발 메시 1인칭용 컴포넌트 */
+	UPROPERTY()
+	TObjectPtr<UStaticMeshComponent> RightFlipperMesh1PComponent;
+
+	/** 오른발에 착용될 오리발 메시 3인칭용 컴포넌트 */
+	UPROPERTY()
+	TObjectPtr<UStaticMeshComponent> RightFlipperMesh3PComponent;
+
+	/** 현재 회전 감도. 현재 상태에 따라 변화 한다. */
+	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	float LookSensitivity;
+
+	/** Normal 상태에서의 회전 감도. Normal 상태에 진입할 때마다 LookSensitivity를 이 값으로 설정한다. */
+	UPROPERTY(EditDefaultsOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	float NormalLookSensitivity;
+	
 	/** 그로기 상태에서 사망까지 걸리는 시간. 그로기 상태에 진입할 떄마다 줄어든다. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true"))
 	float GroggyDuration;
@@ -278,15 +490,27 @@ private:
 	UPROPERTY(BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true"))
 	uint8 GroggyCount;
 
+	/** 그로기에서 회복 후의 체력량, 회복 후의 체력량은 MaxHealth * RecoveryHealthPercentage로 설정된다. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true", ClampMin = "0.01", ClampMax = "1.0"))
+	float RecoveryHealthPercentage;
+
 	/** 그로기에서 사망 전이 Timer */
 	FTimerHandle GroggyTimer;
+
+	/** 그로기 상태에서의 LookSensitivity. Groggy 상태에 진입할 때마다 LookSensitivity를 이 값으로 설정한다. */
+	UPROPERTY(EditDefaultsOnly, Category = "Character|Groggy")
+	float GroggyLookSensitivity;
+
+	/** 그로기 상태에서 부활할 때 Hold해야 하는 시간. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true"))
+	float RescueRequireTime;
 	
 	// Gather와 같은 정보는 추후 다른 곳으로 이동될 수 있지만 일단은 캐릭터에 구현한다.
-	
+
 	/** 채광 속도. 2.0일 경우 2배의 속도로 채광한다. */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category= "Character|Stat", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category= "Character|Stat", meta = (AllowPrivateAccess = "true"))
 	float GatherMultiplier;
-	
+
 	/** 디버그 카메라 활성화 여부 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Debug, meta = (AllowPrivateAccess = "true"))
 	uint8 bUseDebugCamera : 1;
@@ -307,12 +531,16 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float BloodEmitPower;
 
+	/** 캐릭터가 수풀에 숨어있는지 여부 */
+	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	uint8 bIsHideInSeaweed : 1;
+
 	/** 초과 적재 기준 무게. 초과할 경우 속도를 감소시킨다. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Weight", meta = (AllowPrivateAccess = "true"))
 	float OverloadWeight;
 
 	/** 초과 적재 시의 속도 감소 비율. [0, 1]의 범위로 속도를 감소시킨다. 0.4일 경우 40% 감소해서 60%의 속도이다. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true", ClampMin = "0.0", ClampMax = "1.0"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Weight", meta = (AllowPrivateAccess = "true", ClampMin = "0.0", ClampMax = "1.0"))
 	float OverloadSpeedFactor;
 
 	/** 캐릭터의 효과가 적용된 최종 속도 */
@@ -323,9 +551,42 @@ private:
 	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float SprintSpeed;
 
-	/** 산소 고갈 시에 1초 당 소모되는 산소 비율. [0.0, 1.0] */
-	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true", ClampMin = "0.0", ClampMax = "1.0"))
-	float DepleteHealthLossRate;
+	/** 현재 라이트 활성화 여부 */
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing=OnRep_bIsLanternOn, Category = Character, meta = (AllowPrivateAccess = "true"))
+	uint8 bIsLanternOn : 1;
+
+	/** 생성할 레이더 BP */
+	UPROPERTY(EditDefaultsOnly, Category = "Character|Radar", meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<class ARadar> RadarClass;
+
+	/** 생성한 레이더 인스턴스 */
+	UPROPERTY()
+	TObjectPtr<class ARadar> RadarObject;
+
+	/** 레이더가 생성된 위치 오프셋. 카메라 기준으로 부착이 된다. */
+	UPROPERTY(EditDefaultsOnly, Category = "Character|Radar", meta = (AllowPrivateAccess = "true"))
+	FVector RadarOffset;
+
+	/** 레이더가 생성된 회전 오프셋. 카메라 기준으로 부착이 된다. */
+	UPROPERTY(EditAnywhere, Category = "Character|Radar", meta = (AllowPrivateAccess = "true"))
+	FRotator RadarRotation;
+
+	/** 레이더 활성화 여부 */
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, ReplicatedUsing=OnRep_bIsRadarOn, Category = Character, meta = (AllowPrivateAccess = "true"))
+	uint8 bIsRadarOn : 1;
+
+	/** Animation를 재생하기 위한 정보이다. 애니메이션 재생 시에 한 번에 동기화되기 위해 사용된다. */
+	UPROPERTY(BlueprintReadOnly, Category = Animation, meta = (AllowPrivateAccess = "true"))
+	FAnimSyncState AnimSyncState;
+
+	/** Animation 1P Montage 적용 중인지 여부 */
+	uint8 bIsAnim1PSyncStateOverride : 1;
+
+	/** Animation 3P Montage 적용 중인지 여부 */
+	uint8 bIsAnim3PSyncStateOverride : 1;
+	
+	/** Montage 재생 중에 적용될 Anim Sync State */
+	FAnimSyncState OverrideAnimSyncState;
 
 	/** 이동 입력, 3차원 입력을 받는다. 캐릭터의 XYZ 축대로 맵핑을 한다. Forward : X, Right : Y, Up : Z */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
@@ -374,6 +635,10 @@ private:
 	/** 3번 슬롯 장착 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> EquipSlot3Action;
+
+	/** 게임에 사용될 1인칭 Camera Component의 Spring Arm. 회전 Smoothing을 위해 사용한다. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class USpringArmComponent> FirstPersonCameraArm;
 	
 	/** 게임에 사용될 1인칭 Camera Component */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
@@ -387,8 +652,11 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UCameraComponent> ThirdPersonCameraComponent;
 
+	UPROPERTY(VisibleAnywhere, Category = Mesh, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class USpringArmComponent> Mesh1PSpringArm;
+	
 	/** 게임에 사용될 1인칭 Mesh Component */
-	UPROPERTY(VisibleAnywhere, Category = Mesh , meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleAnywhere, Category = Mesh, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class USkeletalMeshComponent> Mesh1P;
 
 	/** 캐릭터의 산소 상태를 관리하는 Component */
@@ -402,7 +670,7 @@ private:
 	/** 캐릭터 출혈을 시뮬레이션을 하는 Noise Emitter Component */
 	UPROPERTY()
 	TObjectPtr<class UPawnNoiseEmitterComponent> NoiseEmitterComponent;
-	
+
 	/** 상호작용 실행하게 하는 Component */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UADInteractionComponent> InteractionComponent;
@@ -415,15 +683,26 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UEquipUseComponent> EquipUseComponent;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class USpotLightComponent> LanternLightComponent;
+
+	/** 상호작용 대상이 되게 하는 컴포넌트 */
+	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UADInteractableComponent> InteractableComponent;
+
+	/** 인벤토리 컴포넌트 캐시 */
 	UPROPERTY()
-	TObjectPtr<class UADInventoryComponent> InventoryComponent;
+	TObjectPtr<class UADInventoryComponent> CachedInventoryComponent;
 
 	UPROPERTY(EditAnywhere, Category = "UI", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<class UHoldInteractionWidget> HoldWidgetClass;
 
 	UPROPERTY(EditAnywhere, Category = "UI", meta = (AllowPrivateAccess = "true"))
 	class UHoldInteractionWidget* HoldWidgetInstance;
-	
+
+	/** Tool 소켓 명 (1P/3P 공용) */
+	FName LaserSocketName = TEXT("Laser");
+
 #pragma endregion
 
 #pragma region Getter Setter
@@ -432,7 +711,7 @@ public:
 	
 	/** 캐릭터의 Oxygen Component를 반환 */
 	FORCEINLINE class UOxygenComponent* GetOxygenComponent() const { return OxygenComponent; }
-	
+
 	/** Interaction Component를 반환 */
 	FORCEINLINE UADInteractionComponent* GetInteractionComponent() const { return InteractionComponent; }
 
@@ -451,12 +730,18 @@ public:
 	/** 캐릭터의 남은 그로기 시간을 반환 */
 	UFUNCTION(BlueprintCallable)
 	float GetRemainGroggyTime() const;
-	
+
 	/** 현재 캐릭터의 최종 속도를 반환 */
 	FORCEINLINE float GetEffectiveSpeed() const { return EffectiveSpeed; }
 
 	/** 현재 캐릭터가 달리기 상태인지를 반환 */
 	FORCEINLINE bool IsSprinting() const;
+
+	/** 현재 캐릭터가 수중 상태인지 여부를 반환 */
+	FORCEINLINE bool IsHideInSeaweed() const { return bIsHideInSeaweed; }
+
+	/** 현재 캐릭터가 수풀에 숨어있는지 여부를 설정 */
+	void SetHideInSeaweed(const bool bNewHideInSeaweed);
 
 	/** 초과 무게 상태인지를 반환. 무게 >= 최대 무게일 때 True를 반환 */
 	UFUNCTION(BlueprintCallable)
@@ -464,6 +749,17 @@ public:
 
 	/** 채광 속도를 반환 2.0일 경우 2배로 빠르게 채광한다. */
 	FORCEINLINE float GetGatherMultiplier() const { return GatherMultiplier; }
+
+	/** Mesh 1P 메시를 반환 */
+	FORCEINLINE USkeletalMeshComponent* GetMesh1P() const { return Mesh1P; }
+
+	/** 1인칭 메시 Strafe 여부 반환 */
+	FORCEINLINE bool Is1PStrafe() const {return bIsAnim1PSyncStateOverride ? AnimSyncState.bIsStrafing : OverrideAnimSyncState.bIsStrafing;}
+
+	/** 3인칭 메시 Strafe 여부 반환 */
+	FORCEINLINE bool Is3PStrafe() const {return bIsAnim3PSyncStateOverride ? AnimSyncState.bIsStrafing : OverrideAnimSyncState.bIsStrafing;}
 	
+	/** 상호작용 타입 반환 */
+	virtual EInteractionType GetInteractionType() const override { return EInteractionType::ReviveCharacter; }
 #pragma endregion
 };

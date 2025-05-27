@@ -9,19 +9,6 @@ AADExchangeableItem::AADExchangeableItem()
 	RootComponent = MeshComponent;
 	MeshComponent->SetMobility(EComponentMobility::Movable); 
 	MeshComponent->SetIsReplicated(true);
-
-	// 발사체 모션 세팅
-	DropMovement = CreateDefaultSubobject<UProjectileMovementComponent>("DropMovement");
-	DropMovement->SetUpdatedComponent(MeshComponent);
-	DropMovement->bAutoActivate = false;
-	DropMovement->ProjectileGravityScale = 1.5f;
-	DropMovement->InitialSpeed = 0.f;
-	DropMovement->MaxSpeed = 0.f;
-	DropMovement->bRotationFollowsVelocity = false;
-	DropMovement->bShouldBounce = true;            // 살짝 튕기게
-	DropMovement->Bounciness = 0.3f;
-	DropMovement->SetIsReplicated(true);
-	SetReplicateMovement(true);
 	bReplicates = true;
 }
 void AADExchangeableItem::BeginPlay()
@@ -38,9 +25,9 @@ void AADExchangeableItem::OnRep_TotalPrice()
 void AADExchangeableItem::Interact_Implementation(AActor* InstigatorActor)
 {
 	if (!HasAuthority()) return;
-	LOG(TEXT("Mineral's Mass : %d"), ItemData.Mass);
+	LOGI(Log, TEXT("Mineral's Mass : %d"), ItemData.Mass);
 	ItemData.Price = TotalPrice;
-	LOG(TEXT("Mineral's Price : %d"), ItemData.Price);
+	LOGI(Log, TEXT("Mineral's Price : %d"), ItemData.Price);
 
 	HandlePickup(Cast<APawn>(InstigatorActor));
 }

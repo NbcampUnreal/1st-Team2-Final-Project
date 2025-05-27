@@ -5,6 +5,8 @@
 #include "Navigation/PathFollowingComponent.h"
 #include "BossAIController.generated.h"
 
+class UAISenseConfig_Hearing;
+class UAISenseConfig_Damage;
 enum class EBossState : uint8;
 class AUnderwaterCharacter;
 class ABoss;
@@ -24,6 +26,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaTime) override;
 	virtual void OnPossess(APawn* InPawn) override;
 
 #pragma region Method
@@ -69,6 +72,12 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Perception")
 	TObjectPtr<UAISenseConfig_Sight> SightConfig;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Perception")
+	TObjectPtr<UAISenseConfig_Damage> DamageConfig;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Perception")
+	TObjectPtr<UAISenseConfig_Hearing> HearingConfig;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI|Target")
 	TArray<TObjectPtr<AUnderwaterCharacter>> DetectedPlayers;
 
@@ -84,17 +93,20 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AI|Perception")
 	uint8 bIsSightDetectionPossible : 1;
 
+	UPROPERTY()
+	TObjectPtr<ABoss> Boss;
+	
 private:
 	static const FName BossStateKey;
 	uint8 bIsDetectedStatePossible : 1;
 	float AccumulatedTime;
-	TObjectPtr<ABoss> Boss;
 	FTimerHandle DetectedStateTimerHandle;
 #pragma endregion
 
 #pragma region Getter, Setter
 public:
 	void SetDetectedStatePossible();
+	void DrawDebugRangeCircle();
 
 #pragma endregion
 	

@@ -6,16 +6,15 @@
 #include "DataRow/FADItemDataRow.h"
 #include "DataRow/FADProjectileDataRow.h"
 #include "DataRow/PhaseGoalRow.h"
+#include "DataRow/ShopItemMeshTransformRow.h"
 #include "Interactable/Item/ADOreRock.h"
 #include "Logging/LogMacros.h"
-
 
 void UDataTableSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 
 	UADGameInstance* GI = CastChecked<UADGameInstance>(GetGameInstance());
-	//ItemDataTable->GetAllRows<FFADItemDataRow>(TEXT("TestShopItemData"), DataTableArray);
 	if (UDataTable* ItemDataTable = GI->ItemDataTable)
 	{
 		ItemDataTable->GetAllRows<FFADItemDataRow>(TEXT("ItemDataTable"), ItemDataTableArray);
@@ -24,25 +23,41 @@ void UDataTableSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	{
 		LOGV(Error, TEXT("ItemDataTable is null"));
 	}
-	
-	ParseUpgradeDataTable(GI);
-	
-	if (UDataTable* OreDropTable = GI->OreDropTable)
+
+	if (UDataTable* ShopItemTransformTable = GI->ShopMeshTransformTable)
 	{
-		OreDropTable->GetAllRows<FDropEntry>(TEXT("OreDropDataTable"), OreDropEntryTableArray);
+		ShopItemTransformTable->GetAllRows<FShopItemMeshTransformRow>(TEXT("ShopItemMeshTransformRow"), ShopItemMeshTransformTableArray);
 	}
 	else
 	{
-		LOGV(Error, TEXT("OreDropTable is null"));
+		LOGV(Error, TEXT("ItemDataTable is null"));
 	}
+	
+	ParseUpgradeDataTable(GI);
+	
+	//if (UDataTable* OreDropTable = GI->OreDropTable)
+	//{
+	//	OreDropTable->GetAllRows<FDropEntry>(TEXT("OreDropDataTable"), OreDropEntryTableArray);
+	//}
+	//else
+	//{
+	//	LOGV(Error, TEXT("OreDropTable is null"));
+	//}
 
 	Algo::Sort(ItemDataTableArray, [](const FFADItemDataRow* A, const FFADItemDataRow* B)
 		{
 			return A->Id < B->Id;
 		});
 
+	Algo::Sort(ShopItemMeshTransformTableArray, [](const FShopItemMeshTransformRow* A, const FShopItemMeshTransformRow* B)
+		{
+			return A->ItemId < B->ItemId;
+		});
+
 	ParsePhaseGoalDataTable(GI);
 	ParseMapPathDataTable(GI);
+
+
 
 }
 
@@ -100,9 +115,14 @@ FPhaseGoalRow* UDataTableSubsystem::GetPhaseGoalData(EMapName MapName, int32 Pha
 	return PhaseGoalTableMap.FindRef(TPair<EMapName, int32>(MapName, Phase));
 }
 
-FString UDataTableSubsystem::GetMapPath(EMapName MapName) const
+const FString& UDataTableSubsystem::GetMapPath(EMapName MapName) const
 {
 	return MapPathDataTableMap[MapName];
+}
+
+FShopItemMeshTransformRow* UDataTableSubsystem::GetShopItemMeshTransformData(int32 ItemId) const
+{
+	return ShopItemMeshTransformTableArray[ItemId];
 }
 
 void UDataTableSubsystem::ParseUpgradeDataTable(UADGameInstance* GameInstance)

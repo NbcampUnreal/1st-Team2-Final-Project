@@ -23,13 +23,16 @@
 
 #include "Net/UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"
+#include "Components/SceneCaptureComponent2D.h"
+#include "Components/PointLightComponent.h"
+
+DEFINE_LOG_CATEGORY(ShopLog);
 
 #pragma region FShopItemId
 
 void FShopItemId::PostReplicatedAdd(const FShopItemIdList& InArraySerializer)
 {
-	UE_LOG(LogTemp, Log, TEXT("Shop item added: Id = %d"), Id);
-
+	LOGS(Warning, TEXT("Shop item added: Id = %d"), Id);
 	int32 Index = InArraySerializer.IdList.IndexOfByKey(*this);
 	FShopItemListChangeInfo Info(InArraySerializer.TabType, Index, Id, EShopItemChangeType::Added);
 
@@ -38,7 +41,7 @@ void FShopItemId::PostReplicatedAdd(const FShopItemIdList& InArraySerializer)
 
 void FShopItemId::PostReplicatedChange(const FShopItemIdList& InArraySerializer)
 {
-	UE_LOG(LogTemp, Log, TEXT("Shop item changed: Id = %d"), Id);
+	LOGS(Warning, TEXT("Shop item changed: Id = %d"), Id);
 
 	int32 Index = InArraySerializer.IdList.IndexOfByKey(*this);
 	FShopItemListChangeInfo Info(InArraySerializer.TabType, Index, Id, EShopItemChangeType::Modified);
@@ -48,7 +51,7 @@ void FShopItemId::PostReplicatedChange(const FShopItemIdList& InArraySerializer)
 
 void FShopItemId::PreReplicatedRemove(const FShopItemIdList& InArraySerializer)
 {
-	UE_LOG(LogTemp, Log, TEXT("Shop item removed: Id = %d"), Id);
+	LOGS(Warning, TEXT("Shop item removed: Id = %d"), Id);
 
 	int32 Index = InArraySerializer.IdList.IndexOfByKey(*this);
 	FShopItemListChangeInfo Info(InArraySerializer.TabType, Index, Id, EShopItemChangeType::Removed);
@@ -83,7 +86,7 @@ bool FShopItemIdList::TryAdd(uint8 NewId)
 {
 	if (Contains(NewId) != INDEX_NONE)
 	{
-		UE_LOG(LogTemp, Log, TEXT("You Trying to Add Exist Id : %d"), NewId);
+		LOGS(Warning, TEXT("You Trying to Add Exist Id : %d"), NewId);
 		return false;
 	}
 
@@ -101,7 +104,7 @@ int32 FShopItemIdList::Remove(uint8 Id)
 	int32 Index = Contains(Id);
 	if (Index == INDEX_NONE)
 	{
-		UE_LOG(LogTemp, Log, TEXT("You Trying to Remove Not Exist Id : %d"), Id);
+		LOGS(Warning, TEXT("You Trying to Remove Not Exist Id : %d"), Id);
 		return INDEX_NONE;
 	}
 
@@ -114,7 +117,7 @@ void FShopItemIdList::Modify(uint8 InIndex, uint8 NewId)
 {
 	if (IdList.IsValidIndex(InIndex) == false)
 	{
-		UE_LOG(LogTemp, Log, TEXT("You Trying to Modify From Not Valid Index : %d"), InIndex);
+		LOGS(Warning, TEXT("You Trying to Modify From Not Valid Index : %d"), InIndex);
 		return;
 	}
 
@@ -127,7 +130,7 @@ uint8 FShopItemIdList::GetId(uint8 InIndex) const
 {
 	if (IdList.IsValidIndex(InIndex) == false)
 	{
-		UE_LOG(LogTemp, Log, TEXT("You Trying to Get From Not Valid Index"));
+		LOGS(Warning, TEXT("You Trying to Get From Not Valid Index"));
 		return INDEX_NONE;
 	}
 
@@ -142,6 +145,7 @@ AShop::AShop()
 
 	ShopMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ShopMesh"));
 	SetRootComponent(ShopMeshComponent);
+	ShopMeshComponent->SetMobility(EComponentMobility::Static);
 
 	ItemMeshComponent = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("ItemMesh"));
 	ItemMeshComponent->SetupAttachment(RootComponent);
@@ -149,11 +153,93 @@ AShop::AShop()
 	ItemMeshComponent->SetIsReplicated(false);
 	ItemMeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
+	// 라이팅 채널 2번만 사용. 상점 아이템 메쉬용
+	ItemMeshComponent->LightingChannels.bChannel0 = false;
+	ItemMeshComponent->LightingChannels.bChannel1 = false;
+	ItemMeshComponent->LightingChannels.bChannel2 = true;
+
+	// 설정을 좀 더 건드려야 함. 
+	ItemMeshCaptureComp = CreateDefaultSubobject<USceneCaptureComponent2D>(TEXT("ItemMeshCapureComp"));
+	ItemMeshCaptureComp->SetupAttachment(RootComponent);
+	ItemMeshCaptureComp->ShowFlags.AntiAliasing = true;
+	ItemMeshCaptureComp->ShowFlags.Atmosphere = false;
+	ItemMeshCaptureComp->ShowFlags.BSP = false;
+	ItemMeshCaptureComp->ShowFlags.Cloud = false;
+	ItemMeshCaptureComp->ShowFlags.Decals = false;
+	ItemMeshCaptureComp->ShowFlags.Fog = false;
+	ItemMeshCaptureComp->ShowFlags.Landscape = false;
+	ItemMeshCaptureComp->ShowFlags.Particles = false;
+	ItemMeshCaptureComp->ShowFlags.SkeletalMeshes = true;
+	ItemMeshCaptureComp->ShowFlags.StaticMeshes = false;
+	ItemMeshCaptureComp->ShowFlags.Translucency = false;
+
+	ItemMeshCaptureComp->ShowFlags.InstancedFoliage = false;
+	ItemMeshCaptureComp->ShowFlags.InstancedGrass = false;
+	ItemMeshCaptureComp->ShowFlags.InstancedStaticMeshes = false;
+	ItemMeshCaptureComp->ShowFlags.Paper2DSprites = false;
+	ItemMeshCaptureComp->ShowFlags.TextRender = false;
+	ItemMeshCaptureComp->ShowFlags.TemporalAA = true;
+
+	ItemMeshCaptureComp->ShowFlags.Bloom = true;
+	ItemMeshCaptureComp->ShowFlags.EyeAdaptation = false;
+	ItemMeshCaptureComp->ShowFlags.LocalExposure = false;
+	ItemMeshCaptureComp->ShowFlags.MotionBlur = false;
+	ItemMeshCaptureComp->ShowFlags.PostProcessMaterial = true;
+	ItemMeshCaptureComp->ShowFlags.ToneCurve = true;
+	ItemMeshCaptureComp->ShowFlags.Tonemapper = true;
+
+	ItemMeshCaptureComp->ShowFlags.SkyLighting = false;
+
+	ItemMeshCaptureComp->ShowFlags.AmbientOcclusion = false;
+	ItemMeshCaptureComp->ShowFlags.DynamicShadows = false;
+
+	ItemMeshCaptureComp->ShowFlags.AmbientCubemap = false;
+	ItemMeshCaptureComp->ShowFlags.DistanceFieldAO = false;
+	ItemMeshCaptureComp->ShowFlags.LightFunctions = false;
+	ItemMeshCaptureComp->ShowFlags.LightShafts = false;
+	ItemMeshCaptureComp->ShowFlags.ReflectionEnvironment = false;
+	ItemMeshCaptureComp->ShowFlags.ScreenSpaceReflections = false;
+	ItemMeshCaptureComp->ShowFlags.TexturedLightProfiles = false;
+	ItemMeshCaptureComp->ShowFlags.VolumetricFog = false;
+
+	ItemMeshCaptureComp->ShowFlags.NaniteMeshes = true;
+
+	ItemMeshCaptureComp->bCaptureEveryFrame = false;
+
+	ItemMeshCaptureComp->SetRelativeLocation(FVector(200, 0, 0));
+
+	LightComp = CreateDefaultSubobject<UPointLightComponent>(TEXT("LightComp"));
+	LightComp->SetupAttachment(ItemMeshCaptureComp);
+
+	// 라이팅 채널 2번만 사용. 상점 아이템 메쉬용
+	LightComp->LightingChannels.bChannel0 = false;
+	LightComp->LightingChannels.bChannel1 = false;
+	LightComp->LightingChannels.bChannel2 = true;
+
+	LightComp->SetMobility(EComponentMobility::Stationary);
+	LightComp->SetRelativeLocation(FVector(0, 0, 100));
+
 	InteractableComp = CreateDefaultSubobject<UADInteractableComponent>(TEXT("InteractableComp"));
 
 	bIsOpened = false;
 	CurrentSelectedUpgradeType = EUpgradeType::Max;
 	bIsHold = false;
+}
+
+void AShop::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+
+	// 게임 중이 아닌 경우 리턴(블루프린트 상일 경우)
+	// PostInitializeComponents는 블루프린트에서도 발동함
+	UWorld* World = GetWorld();
+	if (World == nullptr || World->IsGameWorld() == false)
+	{
+		return;
+	}
+
+	InitShopWidget();
+	InitData();
 }
 
 void AShop::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -168,8 +254,13 @@ void AShop::BeginPlay()
 {
 	Super::BeginPlay();
 
-	InitShopWidget();
-	InitData();
+	AADInGameState* GS = Cast<AADInGameState>(UGameplayStatics::GetGameState(GetWorld()));
+	if (ensureMsgf(GS, TEXT("올바른 GS 타입이 아닌 듯. 게임모드의 GameState가 ADInGameState가 맞는지 확인 필요.")) == false)
+	{
+		return;
+	}
+
+	GS->TeamCreditsChangedDelegate.AddUObject(ShopWidget, &UShopWidget::SetTeamMoneyText);
 }
 
 void AShop::Interact_Implementation(AActor* InstigatorActor)
@@ -189,7 +280,7 @@ void AShop::Interact_Implementation(AActor* InstigatorActor)
 	UShopInteractionComponent* ShopInteractionComp = InteractingCharacter->FindComponentByClass<UShopInteractionComponent>();
 	if (ShopInteractionComp == nullptr)
 	{
-		LOGV(Warning, TEXT("ShopInteractionComp == nullptr"));
+		LOGS(Warning, TEXT("ShopInteractionComp == nullptr"));
 		return;
 	}
 
@@ -217,6 +308,7 @@ void AShop::OpenShop(AUnderwaterCharacter* Requester)
 	PC->SetShowMouseCursor(true);
 	bIsOpened = true;
 	PC->SetIgnoreMoveInput(true);
+	ItemMeshCaptureComp->bCaptureEveryFrame = true;
 }
 
 void AShop::CloseShop(AUnderwaterCharacter* Requester)
@@ -238,13 +330,15 @@ void AShop::CloseShop(AUnderwaterCharacter* Requester)
 	PC->SetShowMouseCursor(false);
 	bIsOpened = false;
 	PC->SetIgnoreMoveInput(false);
+
+	ItemMeshCaptureComp->bCaptureEveryFrame = false;
 }
 
 EBuyResult AShop::BuyItem(uint8 ItemId, uint8 Quantity, AUnderwaterCharacter* Buyer)
 {
 	if (HasAuthority() == false)
 	{
-		LOGVN(Error, TEXT("Has No Authority"));
+		LOGS(Error, TEXT("Has No Authority"));
 		return EBuyResult::HasNoAuthority;
 	}
 
@@ -252,18 +346,24 @@ EBuyResult AShop::BuyItem(uint8 ItemId, uint8 Quantity, AUnderwaterCharacter* Bu
 	{
 		return EBuyResult::NotExistItem;
 	}
+
+	if (Quantity <= 0)
+	{
+		LOGS(Warning, TEXT("Quantity <= 0"));
+		return EBuyResult::FailedFromOtherReason;
+	}
 	
 	AADPlayerState* PS = Cast<AADPlayerState>(Buyer->GetPlayerState());
 	if (PS == nullptr)
 	{
-		LOGV(Error, TEXT("PS == nullptr"));
+		LOGS(Error, TEXT("PS == nullptr"));
 		return EBuyResult::FailedFromOtherReason;
 	}
 
 	FFADItemDataRow* ItemDataRow = GetGameInstance()->GetSubsystem<UDataTableSubsystem>()->GetItemData(ItemId);
 	if (ItemDataRow == nullptr)
 	{
-		LOGV(Error, TEXT("ItemData == nullptr"));
+		LOGS(Error, TEXT("ItemData == nullptr"));
 		return EBuyResult::FailedFromOtherReason;
 	}
 
@@ -277,7 +377,7 @@ EBuyResult AShop::BuyItem(uint8 ItemId, uint8 Quantity, AUnderwaterCharacter* Bu
 		return EBuyResult::NotEnoughMoney;
 	}
 
-	GS->SetTotalTeamCredit(TeamCredits - ItemDataRow->Price);
+	GS->SetTotalTeamCredit(TeamCredits - ItemDataRow->Price * Quantity);
 
 	FItemData ItemData;
 	ItemData.Amount = ItemDataRow->Amount;
@@ -291,7 +391,7 @@ EBuyResult AShop::BuyItem(uint8 ItemId, uint8 Quantity, AUnderwaterCharacter* Bu
 
 	PS->GetInventory()->AddInventoryItem(ItemData);
 
-	LOGV(Log, TEXT("Buying Item Succeeded : %s"), *ItemDataRow->Name.ToString());
+	LOGS(Log, TEXT("Buying Item Succeeded : %s"), *ItemDataRow->Name.ToString());
 	return EBuyResult::Succeeded;
 }
 
@@ -299,7 +399,7 @@ ESellResult AShop::SellItem(uint8 ItemId, AUnderwaterCharacter* Seller)
 {
 	if (HasAuthority() == false)
 	{
-		LOGVN(Log, TEXT("Has No Authority"));
+		LOGS(Log, TEXT("Has No Authority"));
 		return ESellResult::HasNoAuthority;
 	}
 
@@ -318,7 +418,7 @@ void AShop::AddItems(const TArray<uint8>& Ids, EShopCategoryTab TabType)
 {
 	if (HasAuthority() == false)
 	{
-		LOGVN(Log, TEXT("Has No Authority"));
+		LOGS(Log, TEXT("Has No Authority"));
 		return;
 	}
 
@@ -332,15 +432,16 @@ void AShop::AddItemToList(uint8 ItemId, EShopCategoryTab TabType)
 {
 	if (HasAuthority() == false)
 	{
-		LOGVN(Log, TEXT("Has No Authority"));
+		LOGS(Log, TEXT("Has No Authority"));
 		return;
 	}
 
 	if (TabType >= EShopCategoryTab::Max)
 	{
-		LOGVN(Error, TEXT("Weird Category Type : %d"), TabType);
+		LOGS(Error, TEXT("Weird Category Type : %d"), TabType);
 		return;
 	}
+	LOGS(Warning, TEXT("Adding ~~ ITemId : %d, TabType : %d"), ItemId, TabType);
 
 	bool bIsAddSucceeded = false;
 	int32 SlotIndex;
@@ -355,25 +456,28 @@ void AShop::AddItemToList(uint8 ItemId, EShopCategoryTab TabType)
 		SlotIndex = ShopEquipmentItemIdList.IdList.Num() - 1;
 		break;
 	case EShopCategoryTab::Upgrade:
-		LOGV(Error, TEXT("Can't Add Item to Upgrade Tab"));
+		LOGS(Error, TEXT("Can't Add Item to Upgrade Tab"));
 		return;
 	case EShopCategoryTab::Max:
+		LOGS(Warning, TEXT("Weird CategoryTab(Max).. ItemId : %d, TabType : %d"), ItemId, TabType);
 		check(false);
 		return;
 	default:
+		LOGS(Warning, TEXT("Weird CategoryTab.. ItemId : %d, TabType : %d"), ItemId, TabType);
 		check(false);
 		return;
 	}
 
 	if (bIsAddSucceeded == false)
 	{
+		LOGS(Warning, TEXT("Add Failed, ItemId : %d, TabType : %d"), ItemId, TabType);
 		return;
 	}
 
 	FFADItemDataRow* ItemDataRow = GetGameInstance()->GetSubsystem<UDataTableSubsystem>()->GetItemData(ItemId);
 	if (ItemDataRow == nullptr)
 	{
-		LOGV(Error, TEXT("ItemData == nullptr"));
+		LOGS(Error, TEXT("ItemData == nullptr"));
 		return;
 	}
 
@@ -385,11 +489,11 @@ void AShop::AddItemToList(uint8 ItemId, EShopCategoryTab TabType)
 
 	if (TabType == EShopCategoryTab::Consumable)
 	{
-		LOGVN(Log, TEXT("ItemAdded to Consumable Tab, Index : %d"), SlotIndex);
+		LOGS(Warning, TEXT("ItemAdded to Consumable Tab, Index : %d"), SlotIndex);
 	}
 	else
 	{
-		LOGVN(Log, TEXT("ItemAdded to Equipment Tab, Index : %d"), SlotIndex);
+		LOGS(Warning, TEXT("ItemAdded to Equipment Tab, Index : %d"), SlotIndex);
 	}
 	
 }
@@ -398,13 +502,13 @@ void AShop::RemoveItemToList(uint8 ItemId, EShopCategoryTab TabType)
 {
 	if (HasAuthority() == false)
 	{
-		LOGVN(Log, TEXT("Has No Authority"));
+		LOGS(Log, TEXT("Has No Authority"));
 		return;
 	}
 
 	if (TabType >= EShopCategoryTab::Max)
 	{
-		LOGVN(Error, TEXT("Weird Category Type : %d"), TabType);
+		LOGS(Error, TEXT("Weird Category Type : %d"), TabType);
 		return;
 	}
 
@@ -419,7 +523,7 @@ void AShop::RemoveItemToList(uint8 ItemId, EShopCategoryTab TabType)
 		RemovedIndex = ShopEquipmentItemIdList.Remove(ItemId);
 		break;
 	case EShopCategoryTab::Upgrade:
-		LOGV(Error, TEXT("Can't Remove Item From Upgrade Tab"));
+		LOGS(Error, TEXT("Can't Remove Item From Upgrade Tab"));
 		break;
 	case EShopCategoryTab::Max:
 		check(false);
@@ -444,7 +548,7 @@ void AShop::InitUpgradeView()
 	AADPlayerState* PS = PC->GetPlayerState<AADPlayerState>();
 	if (PS == nullptr)
 	{
-		LOGV(Error, TEXT("PS == nullptr"));
+		LOGS(Error, TEXT("PS == nullptr"));
 		return;
 	}
 
@@ -452,26 +556,39 @@ void AShop::InitUpgradeView()
 	UUpgradeComponent* UpgradeComp = PS->GetUpgradeComp();
 	if (UpgradeComp == nullptr)
 	{
-		LOGV(Error, TEXT("UpgradeComp == nullptr"));
+		LOGS(Error, TEXT("UpgradeComp == nullptr"));
 		return;
 	}
 
 	UEnum* UpgradeTypeEnum = StaticEnum<EUpgradeType>();
 	if (UpgradeTypeEnum == nullptr)
 	{
-		LOGV(Error, TEXT("Cant Find Enum"));
+		LOGS(Error, TEXT("Cant Find Enum"));
 		return;
 	}
 
 	UDataTableSubsystem* DataTableSubsystem = GetGameInstance()->GetSubsystem<UDataTableSubsystem>();
 	if (DataTableSubsystem == nullptr)
 	{
-		LOGV(Error, TEXT("DataTableSubsystem == nullptr"));
+		LOGS(Error, TEXT("DataTableSubsystem == nullptr"));
 		return;
 	}
 
-	// 마지막 값은 항상 EUpgradeType_MAX이 자동생성된다고 함.(선언한 MAX를 말하는게 아님)
+	// 마지막 값은 항상 EUpgradeType_MAX이 자동생성된다고 함.(선언한 MAX를 말하는게 아님), 그리고 내가 선언한 MAX도 제외
+#if WITH_EDITOR
+	int32 EnumCount = UpgradeTypeEnum->NumEnums() - 2;
+#else
+	// 패키징에서는 마지막값 자동 생성 안되네..
 	int32 EnumCount = UpgradeTypeEnum->NumEnums() - 1;
+#endif
+
+	for (int32 i = 0; i < UpgradeTypeEnum->NumEnums(); ++i)
+	{
+		int64 Value = UpgradeTypeEnum->GetValueByIndex(i);
+		FString Name = UpgradeTypeEnum->GetNameStringByIndex(i);
+
+		LOGS(Warning, TEXT("Enum %d: %s"), Value, *Name);
+	}
 
 	if (CachedUpgradeGradeMap.Num() != EnumCount)
 	{
@@ -486,24 +603,24 @@ void AShop::InitUpgradeView()
 		UpgradeTabEntryDataList.SetNum(EnumCount);
 	}
 
-	LOGV(Error, TEXT("Enumcount : %d"), EnumCount);
-	for (int32 i = 0; i < EnumCount - 1; ++i) // -1은 MAX 제외
+	LOGS(Error, TEXT("Enumcount : %d"), EnumCount);
+	for (int32 i = 0; i < EnumCount; ++i)
 	{
 		EUpgradeType UpgradeType = EUpgradeType(i);
 		uint8 Grade = UpgradeComp->GetCurrentGrade(UpgradeType);
 
 		if (Grade == 0)
 		{
-			LOGVN(Error, TEXT("Weird Grade Detected, Type : %d"), UpgradeType);
+			LOGS(Error, TEXT("Weird Grade Detected, Type : %d"), UpgradeType);
 			return;
 		}
 
 		if (CachedUpgradeGradeMap[i] == Grade)
 		{
-			LOGV(Log, TEXT("UpgradeState : UpgradeType(%d) - Grade(%d)"), UpgradeType, Grade);
+			LOGS(Warning, TEXT("UpgradeState : UpgradeType(%d) - Grade(%d)"), UpgradeType, Grade);
 			continue;
 		}
-		LOGV(Log, TEXT("UpgradeState(Renewed) : UpgradeType(%d) - Grade(%d)"), UpgradeType, Grade);
+		LOGS(Warning, TEXT("UpgradeState(Renewed) : UpgradeType(%d) - Grade(%d)"), UpgradeType, Grade);
 		CachedUpgradeGradeMap[i] = Grade;
 
 		FUpgradeDataRow* UpgradeDataRow = DataTableSubsystem->GetUpgradeData(UpgradeType, Grade);
@@ -537,6 +654,7 @@ void AShop::Interact_Test(AActor* InstigatorActor)
 
 void AShop::InitShopWidget()
 {
+	LOGS(Warning, TEXT("Init Shop Widget Start"));
 	ShopConsumableItemIdList.IdList.Empty();
 	ShopConsumableItemIdList.OnShopItemListChangedDelegate.AddUObject(this, &AShop::OnShopItemListChanged);
 	ShopConsumableItemIdList.ShopOwner = this;
@@ -559,13 +677,8 @@ void AShop::InitShopWidget()
 	InfoWidget->Init(ItemMeshComponent);
 	InfoWidget->OnBuyButtonClickedDelegate.AddUObject(this, &AShop::OnBuyButtonClicked);
 
-	AADInGameState* GS = Cast<AADInGameState>(UGameplayStatics::GetGameState(GetWorld()));
-	if (ensureMsgf(GS, TEXT("올바른 GS 타입이 아닌 듯. 게임모드의 GameState가 ADInGameState가 맞는지 확인 필요.")) == false)
-	{
-		return;
-	}
-
-	GS->TeamCreditsChangedDelegate.AddUObject(ShopWidget, &UShopWidget::SetTeamMoneyText);
+	ItemMeshCaptureComp->ShowOnlyActorComponents(this);
+	ensureMsgf(ItemMeshCaptureComp->TextureTarget, TEXT("상점에 있는 ItemMeshCaptureComp의 TextureTarget이 지정이 되어있지 않습니다"));
 }
 
 void AShop::InitData()
@@ -580,6 +693,7 @@ void AShop::InitData()
 	for (const auto& Id : DefaultConsumableItemIdList)
 	{
 		AddItemToList(Id, EShopCategoryTab::Consumable);
+		LOGS(Warning, TEXT("Adding ConsumableItem, Id : %d "), Id);
 	}
 
 	ShopEquipmentItemIdList.MarkArrayDirty();
@@ -587,6 +701,7 @@ void AShop::InitData()
 	for (const auto& Id : DefaultEquipmentItemIdList)
 	{
 		AddItemToList(Id, EShopCategoryTab::Equipment);
+		LOGS(Warning, TEXT("Adding Equipment, Id : %d "), Id);
 	}
 
 	ShopWidget->ShowItemViewForTab(EShopCategoryTab::Equipment);
@@ -594,14 +709,17 @@ void AShop::InitData()
 
 void AShop::OnShopItemListChanged(const FShopItemListChangeInfo& Info)
 {
+	LOGS(Warning, TEXT("Begin Change"));
+
 	if (Info.ChangeType >= EShopItemChangeType::Max)
 	{
-		LOGVN(Error, TEXT("Weird Change Type : %d"), Info.ChangeType);
+		LOGS(Error, TEXT("Weird Change Type : %d"), Info.ChangeType);
 		return;
 	}
 
 	if (Info.ShopTab >= EShopCategoryTab::Upgrade)
 	{
+		LOGS(Error, TEXT("Tab.. Weird.. : %d"), Info.ChangeType);
 		return;
 	}
 
@@ -609,7 +727,7 @@ void AShop::OnShopItemListChanged(const FShopItemListChangeInfo& Info)
 	FFADItemDataRow* ItemDataRow = GetGameInstance()->GetSubsystem<UDataTableSubsystem>()->GetItemData(Info.ItemIdAfter);
 	if (ItemDataRow == nullptr)
 	{
-		LOGV(Error, TEXT("ItemData == nullptr"));
+		LOGS(Error, TEXT("ItemData == nullptr"));
 		return;
 	}
 
@@ -622,7 +740,7 @@ void AShop::OnShopItemListChanged(const FShopItemListChangeInfo& Info)
 		EntryData->OnEntryUpdatedFromDataDelegate.AddUObject(this, &AShop::OnSlotEntryWidgetUpdated);
 		
 		ShopWidget->AddItem(EntryData, Info.ShopTab);
-		LOGVN(Log, TEXT("Add Data End, Category : %d"), ItemDataRow->ItemType);
+		LOGS(Warning, TEXT("Add Data End, Category : %d"), ItemDataRow->ItemType);
 		break;
 	case EShopItemChangeType::Removed:
 		ShopWidget->RemoveItem(Info.ShopIndex, Info.ShopTab);
@@ -652,7 +770,7 @@ void AShop::OnSlotEntryClicked(int32 ClickedSlotIndex)
 
 	if (CurrentTab >= EShopCategoryTab::Max)
 	{
-		LOGV(Error, TEXT("Weird Tab Type : %d"), CurrentTab);
+		LOGS(Error, TEXT("Weird Tab Type : %d"), CurrentTab);
 		return;
 	}
 
@@ -667,7 +785,7 @@ void AShop::OnSlotEntryClicked(int32 ClickedSlotIndex)
 		ItemId = ShopEquipmentItemIdList.IdList[ClickedSlotIndex].Id;
 		break;
 	case EShopCategoryTab::Upgrade:
-		LOGV(Error, TEXT("UpgradeSlot Click!, Index : %d"), ClickedSlotIndex);
+		LOGS(Error, TEXT("UpgradeSlot Click!, Index : %d"), ClickedSlotIndex);
 		OnUpgradeSlotEntryClicked(ClickedSlotIndex);
 		return;
 	case EShopCategoryTab::Max:
@@ -681,14 +799,14 @@ void AShop::OnSlotEntryClicked(int32 ClickedSlotIndex)
 	FFADItemDataRow* ItemDataRow = GetGameInstance()->GetSubsystem<UDataTableSubsystem>()->GetItemData(ItemId);
 	if (ItemDataRow == nullptr)
 	{
-		LOGV(Error, TEXT("ItemData == nullptr"));
+		LOGS(Error, TEXT("ItemData == nullptr"));
 		return;
 	}
 
 	USkeletalMesh* ItemMesh = ItemDataRow->SkeletalMesh;
 
-	ShopWidget->ShowItemInfos(ItemMesh, ItemDataRow->Description, ItemDataRow->Name.ToString(), ItemDataRow->Price, ItemDataRow->Stackable);
-	LOGV(Log, TEXT("Showing Item Infos..., id : %d"), ItemId);
+	ShopWidget->ShowItemInfos(ItemId);
+	LOGS(Log, TEXT("Showing Item Infos..., id : %d"), ItemId);
 	CurrentSelectedItemId = ItemId;
 }
 
@@ -707,32 +825,32 @@ void AShop::OnBuyButtonClicked(int32 Quantity)
 		AADPlayerState* PS = PC->GetPlayerState<AADPlayerState>();
 		if (PS == nullptr)
 		{
-			LOGV(Error, TEXT("PS == nullptr"));
+			LOGS(Error, TEXT("PS == nullptr"));
 			return;
 		}
 
 		UUpgradeComponent* UpgradeComp = PS->GetUpgradeComp();
 		if (UpgradeComp == nullptr)
 		{
-			LOGV(Error, TEXT("UpgradeComp == nullptr"));
+			LOGS(Error, TEXT("UpgradeComp == nullptr"));
 			return;
 		}
 
 		bool bIsMaxGrade = UpgradeComp->IsMaxGrade(CurrentSelectedUpgradeType);
 		if (bIsMaxGrade)
 		{
-			LOGV(Log, TEXT("This Upgrade Type Has Reached to Max Level"));
+			LOGS(Log, TEXT("This Upgrade Type Has Reached to Max Level"));
 			return;
 		}
 
 		int32 Grade = UpgradeComp->GetCurrentGrade(CurrentSelectedUpgradeType);
 		
 
-		FUpgradeDataRow* UpgradeData = DataTableSubsystem->GetUpgradeData(CurrentSelectedUpgradeType, Grade);
+		FUpgradeDataRow* UpgradeData = DataTableSubsystem->GetUpgradeData(CurrentSelectedUpgradeType, Grade + 1);
 
 		if (TotalTeamCredit < UpgradeData->Price)
 		{
-			LOGVN(Warning, TEXT("업그레이드 돈부족!! 남은 돈 : %d, 필요한 돈 : %d"), TotalTeamCredit, UpgradeData->Price);
+			LOGS(Warning, TEXT("업그레이드 돈부족!! 남은 돈 : %d, 필요한 돈 : %d"), TotalTeamCredit, UpgradeData->Price);
 			return;
 		}
 		
@@ -743,14 +861,14 @@ void AShop::OnBuyButtonClicked(int32 Quantity)
 	AUnderwaterCharacter* BuyingCharacter = Cast<AUnderwaterCharacter>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetPawn());
 	if (BuyingCharacter == nullptr)
 	{
-		LOGV(Warning, TEXT("BuyingCharacter == nullptr"));
+		LOGS(Warning, TEXT("BuyingCharacter == nullptr"));
 		return;
 	}
 
 	UShopInteractionComponent* ShopInteractionComp = BuyingCharacter->GetShopInteractionComponent();
 	if (ShopInteractionComp == nullptr)
 	{
-		LOGV(Warning, TEXT("ShopInteractionComp == nullptr"));
+		LOGS(Warning, TEXT("ShopInteractionComp == nullptr"));
 		return;
 	}
 
@@ -758,7 +876,7 @@ void AShop::OnBuyButtonClicked(int32 Quantity)
 
 	if (TotalTeamCredit < ItemData->Price * Quantity)
 	{
-		LOGVN(Warning, TEXT("아이템 구매 돈부족!! 남은 돈 : %d, 필요한 돈 : %d"), TotalTeamCredit, ItemData->Price * Quantity);
+		LOGS(Warning, TEXT("아이템 구매 돈부족!! 남은 돈 : %d, 필요한 돈 : %d"), TotalTeamCredit, ItemData->Price * Quantity);
 		return;
 	}
 
@@ -770,7 +888,7 @@ void AShop::OnCloseButtonClicked()
 	AUnderwaterCharacter* Requester = Cast<AUnderwaterCharacter>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetPawn());
 	if (Requester == nullptr)
 	{
-		LOGVN(Error, TEXT("Requester == nullptr"));
+		LOGS(Error, TEXT("Requester == nullptr"));
 		return;
 	}
 
@@ -783,14 +901,14 @@ void AShop::OnUpgradeSlotEntryClicked(int32 ClickedSlotIndex)
 	AADPlayerState* PS = PC->GetPlayerState<AADPlayerState>();
 	if (PS == nullptr)
 	{
-		LOGV(Error, TEXT("PS == nullptr"));
+		LOGS(Error, TEXT("PS == nullptr"));
 		return;
 	}
 
 	UUpgradeComponent* UpgradeComp = PS->GetUpgradeComp();
 	if (UpgradeComp == nullptr)
 	{
-		LOGV(Error, TEXT("UpgradeComp == nullptr"));
+		LOGS(Error, TEXT("UpgradeComp == nullptr"));
 		return;
 	}
 
@@ -799,14 +917,14 @@ void AShop::OnUpgradeSlotEntryClicked(int32 ClickedSlotIndex)
 	uint8 CurrentGrade = UpgradeComp->GetCurrentGrade(UpgradeType);
 	if (CurrentGrade == 0)
 	{
-		LOGV(Log, TEXT("Weird Upgrade Type Detected : %d"), UpgradeType);
+		LOGS(Log, TEXT("Weird Upgrade Type Detected : %d"), UpgradeType);
 		return;
 	}
 
 	UDataTableSubsystem* DataTableSubSystem = GetGameInstance()->GetSubsystem<UDataTableSubsystem>();
 	if (DataTableSubSystem == nullptr)
 	{
-		LOGV(Error, TEXT("DataTableSubSystem == nullptr"));
+		LOGS(Error, TEXT("DataTableSubSystem == nullptr"));
 		return;
 	}
 
@@ -817,7 +935,7 @@ void AShop::OnUpgradeSlotEntryClicked(int32 ClickedSlotIndex)
 	ShopWidget->ShowUpgradeInfos(nullptr, CurrentGrade, bIsMaxGrade, Price, TEXT("임시 텍스트"));
 	CurrentSelectedUpgradeType = UpgradeType;
 
-	LOGV(Log, TEXT("UpgradeViewSlotClicked, Index : %d"), ClickedSlotIndex);
+	LOGS(Log, TEXT("UpgradeViewSlotClicked, Index : %d"), ClickedSlotIndex);
 }
 
 bool AShop::HasItem(int32 ItemId)
@@ -831,6 +949,11 @@ bool AShop::HasItem(int32 ItemId)
 bool AShop::IsOpened() const
 {
 	return bIsOpened;
+}
+
+EInteractionType AShop::GetInteractionType() const
+{
+	return EInteractionType::OpenShop;
 }
 
 UADInteractableComponent* AShop::GetInteractableComponent() const

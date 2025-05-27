@@ -2,6 +2,7 @@
 
 #include "AbyssDiverUnderWorld.h"
 #include "Shops/ShopItemEntryData.h"
+#include "Subsystems/SoundSubsystem.h"
 
 #include "Components/Image.h"
 #include "Components/RichTextBlock.h"
@@ -22,7 +23,6 @@ void UShopItemSlotWidget::NativeOnListItemObjectSet(UObject* ListItemObject)
     SlotIndex = EntryData->GetSlotIndex();
 
     EntryData->OnEntryUpdatedFromDataDelegate.Broadcast(this);
-    LOGV(Log, TEXT("%s - EntryUpdated, Index : %d"), *GetName(), SlotIndex);
 }
 
 FReply UShopItemSlotWidget::NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
@@ -31,7 +31,7 @@ FReply UShopItemSlotWidget::NativeOnMouseButtonUp(const FGeometry& InGeometry, c
 
     LOGV(Warning, TEXT("ShopItemSlotWidgetClicked, Index : %d"), SlotIndex);
     OnShopItemSlotWidgetClickedDelegate.ExecuteIfBound(SlotIndex);
-
+    GetGameInstance()->GetSubsystem<USoundSubsystem>()->Play2D(ESFX_UI::UIClicked);
     return Replay;
 }
 

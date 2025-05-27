@@ -152,10 +152,22 @@ void AADInGameMode::GetOre()
 		99,
 		1,
 		1,
-		1000,
+		10000,
 		EItemType::Exchangable,
 		nullptr
 	);
 
 	PS->GetInventory()->AddInventoryItem(ItemData);
+}
+
+void AADInGameMode::GetMoney()
+{
+	AADInGameState* GS = GetGameState<AADInGameState>();
+	if (GS == nullptr)
+	{
+		LOGVN(Error, TEXT("Cheat Failed : GS == nullptr"));
+		return;
+	}
+
+	GS->SetTotalTeamCredit(GS->GetTotalTeamCredit() + 10000);
 }

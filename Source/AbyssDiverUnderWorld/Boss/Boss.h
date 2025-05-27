@@ -5,6 +5,8 @@
 #include "Character/UnitBase.h"
 #include "Boss.generated.h"
 
+class UNiagaraSystem;
+enum class EBossPhysicsType : uint8;
 class UCameraControllerComponent;
 class ATargetPoint;
 class AUnderwaterCharacter;
@@ -19,20 +21,26 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaSeconds) override;
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 
 #pragma region Method
 public:
 	FVector GetNextPatrolPoint();
 	void SetBossState(EBossState State);
-	void LaunchPlayer(AUnderwaterCharacter* Player, float& Power);
+	void LaunchPlayer(AUnderwaterCharacter* Player, const float& Power) const;
+
+	void InitializeRotation(const float& InDeltaTime);
+
+	/** 전방을 향해 이동하는 함수 */
+	void MoveForward(const float& InDeltaTime);
 	
 	/** 데미지를 받을 때 호출하는 함수 */
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 	
 	/** 보스의 체력이 0이하로 떨어지는 경우 사망 상태로 전이 */
 	virtual void OnDeath();
-	
+
 	/** 보스를 타겟 방향으로 회전시키는 함수 */
 	virtual void RotationToTarget(AActor* Target);
 	virtual void RotationToTarget(const FVector& TargetLocation);
@@ -50,8 +58,7 @@ public:
 	void AddPatrolPoint();
 
 	/** 보스의 이동속도를 설정하는 함수 */
-	UFUNCTION(BlueprintImplementableEvent)
-	void SetMoveSpeed(float Speed);
+	void SetMoveSpeed(const float& SpeedMultiplier);
 	
 	UFUNCTION(NetMulticast, Reliable)
 	virtual void M_PlayAnimation(UAnimMontage* AnimMontage, float InPlayRate = 1, FName StartSectionName = NAME_None);
@@ -77,6 +84,7 @@ public:
 							UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 protected:
+	void ApplyPhysicsSimulation();
 	
 private:
 	
@@ -84,8 +92,20 @@ private:
 
 #pragma region Variable
 public:
-	UPROPERTY()
-	uint8 bIsAttackCollisionOverlappedPlayer : 1;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
+	float RotationInterpSpeed;
+    	
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Stat")
+	float CurrentMoveSpeed;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
+	float Acceleration;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
+	EBossPhysicsType BossPhysicsType;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Effect")
+	TObjectPtr<UNiagaraSystem> BloodEffect;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
 	float MinPatrolDistance;
@@ -104,6 +124,9 @@ public:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Target")
 	TObjectPtr<AUnderwaterCharacter> TargetPlayer;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Target")
+	TObjectPtr<AUnderwaterCharacter> CachedTargetPlayer;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Target")
 	FVector LastDetectedLocation;
@@ -151,31 +174,45 @@ protected:
 	UPROPERTY(Replicated, BlueprintReadWrite)
 	EBossState BossState;
 
+	UPROPERTY()
+	FVector DamagedLocation;
+
 private:
 	static const FName BossStateKey;
 	uint8 CurrentPatrolPointIndex = 0;
 	uint8 bIsBiteAttackSuccess : 1;
+	uint8 bIsAttackCollisionOverlappedPlayer : 1;
+	uint8 bShouldDecelerate : 1;
 	
 #pragma endregion
 
 #pragma region Getter, Setter
 public:
-	AUnderwaterCharacter* GetTarget();
-	void SetTarget(AUnderwaterCharacter* Target);
-	void InitTarget();
-	
-	void SetLastDetectedLocation(const FVector& InLastDetectedLocation);
+	/** Target Getter, Setter */
+	FORCEINLINE AUnderwaterCharacter* GetTarget() const { return TargetPlayer; };
+	FORCEINLINE void SetTarget(AUnderwaterCharacter* Target) { TargetPlayer = Target; };
+	FORCEINLINE void InitTarget() { TargetPlayer = nullptr; };
 
-	AActor* GetTargetPoint();
-	FVector GetTargetPointLocation();
+	/** LastDetectedLocation Getter */
+	FORCEINLINE void SetLastDetectedLocation(const FVector& InLastDetectedLocation) { LastDetectedLocation = InLastDetectedLocation; };
 
-	bool GetIsAttackCollisionOverlappedPlayer();
+	FORCEINLINE bool GetIsAttackCollisionOverlappedPlayer() const { return bIsAttackCollisionOverlappedPlayer; };
 
-	UCameraControllerComponent* GetCameraControllerComponent() const;
+	FORCEINLINE UCameraControllerComponent* GetCameraControllerComponent() const { return CameraControllerComponent; };
 
 	FORCEINLINE bool GetIsBiteAttackSuccess() const { return bIsBiteAttackSuccess; }
 	FORCEINLINE void SetIsBiteAttackFalse() { bIsBiteAttackSuccess = false; }
+	FORCEINLINE UAnimInstance* GetAnimInstance() const { return AnimInstance; }
+	FORCEINLINE FVector GetDamagedLocation() const { return DamagedLocation; }
+	FORCEINLINE AUnderwaterCharacter* GetCachedTarget() const { return CachedTargetPlayer; };
+	FORCEINLINE void SetCachedTarget(AUnderwaterCharacter* Target) { CachedTargetPlayer = Target; };
+	FORCEINLINE void InitCachedTarget() { CachedTargetPlayer = nullptr; };
+	FORCEINLINE void InitCurrentMoveSpeed() { CurrentMoveSpeed = 0.f; bShouldDecelerate = false; };
+	FORCEINLINE void SetDecelerate(const uint8 InDecelerate) { bShouldDecelerate = InDecelerate; };
 
+	AActor* GetTargetPoint();
+	const FVector GetTargetPointLocation() const;
+	
 #pragma endregion
 	
 };

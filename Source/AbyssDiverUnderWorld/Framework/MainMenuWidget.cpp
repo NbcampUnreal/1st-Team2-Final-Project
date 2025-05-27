@@ -42,23 +42,12 @@ void UMainMenuWidget::OnCreateClicked()
 	if (CreateTeamWidgetInstance && !CreateTeamWidgetInstance->IsInViewport())
 	{
 		CreateTeamWidgetInstance->AddToViewport();
-
-		TArray<UWidget*> Widgets;
-		WidgetTree->GetAllWidgets(Widgets);
-
-		for (UWidget* Widget : Widgets)
-		{
-			if (Widget)
-			{
-				Widget->SetIsEnabled(false);
-			}
-		}
 	}
 }
 
 void UMainMenuWidget::OnJoinClicked()
 {
-	//replace blueprint 
+	
 }
 
 void UMainMenuWidget::OnOptionsClicked()
@@ -81,21 +70,38 @@ void UMainMenuWidget::OnQuitClicked()
 
 void UMainMenuWidget::OnCreateTeamWidgetClosed()
 {
-
 	if (CreateTeamWidgetInstance)
 	{
 		CreateTeamWidgetInstance->RemoveFromParent();
 		CreateTeamWidgetInstance = nullptr; 
 	}
 
-	TArray<UWidget*> Widgets;
-	WidgetTree->GetAllWidgets(Widgets);
 
-	for (UWidget* Widget : Widgets)
+}
+
+void UMainMenuWidget::OnSessionListWidgetClosed()
+{
+	if (SessionListWidgetInstance)
 	{
-		if (Widget)
-		{
-			Widget->SetIsEnabled(true);
-		}
+		CreateTeamWidgetInstance->RemoveFromParent();
+		CreateTeamWidgetInstance = nullptr;
 	}
 }
+
+//void UMainMenuWidget::OnOptionsWidgetClosed()
+//{
+//	if (OptionsWidgetInstance)
+//	{
+//		OptionsWidgetInstance->RemoveFromParent();
+//		OptionsWidgetInstance = nullptr;
+//	}
+//}
+//
+//void UMainMenuWidget::OnCreditsWidgetClosed()
+//{
+//	if (CreditsWidgetInstance)
+//	{
+//		CreditsWidgetInstance->RemoveFromParent();
+//		CreditsWidgetInstance = nullptr;
+//	}
+//}

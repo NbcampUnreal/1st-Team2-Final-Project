@@ -22,7 +22,7 @@ protected:
 public:
 
 	void Init(USkeletalMeshComponent* NewItemMeshComp);
-	void ChangeItemMesh(USkeletalMesh* NewMesh);
+	void ChangeItemMesh(USkeletalMesh* NewMesh, int32 ItemId);
 
 	void SetItemMeshActive(bool bShouldActivate);
 

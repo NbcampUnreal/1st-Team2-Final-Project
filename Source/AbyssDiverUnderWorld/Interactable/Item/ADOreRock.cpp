@@ -6,8 +6,11 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "NiagaraSystem.h"  
 #include "NiagaraFunctionLibrary.h"
+#include "NiagaraComponent.h"
+#include "Components/AudioComponent.h"
 #include "Interactable/Item/Component/ADInteractableComponent.h"
 #include "Interactable/OtherActors/Radars/RadarReturnComponent.h"
+#include "Character/UnderwaterCharacter.h"
 
 // Sets default values
 AADOreRock::AADOreRock()
@@ -54,30 +57,49 @@ void AADOreRock::InteractHold_Implementation(AActor* InstigatorActor)
 	HandleMineRequest(Cast<APawn>(InstigatorActor));
 }
 
+void AADOreRock::OnHoldStart_Implementation(APawn* InstigatorPawn)
+{
+	LOGI(Log, TEXT("Mining Starts"));
+	if (AUnderwaterCharacter* Diver = Cast<AUnderwaterCharacter>(InstigatorPawn))
+	{
+		Diver->SpawnAndAttachTool(MiningToolClass);
+		PlayMiningAnim(InstigatorPawn);
+	}
+}
+
+void AADOreRock::OnHoldStop_Implementation(APawn* InstigatorPawn)
+{
+	LOGI(Log, TEXT("Mining Stops"));
+	PlayStowAnim(InstigatorPawn);
+}
+
 void AADOreRock::HandleMineRequest(APawn* InstigatorPawn)
 {
 	if (!HasAuthority() || CurrentMiningGauge <= 0) return;
 
-	// 25는 나중에 레이저 발사기가 생기면 변경해야 합니다.. (InstigatorPawn에서 가져오면 됨)
-	CurrentMiningGauge = FMath::Max(0, CurrentMiningGauge - 25);
-	OnRep_CurrentMiningGauge();
-	PlayMiningFX();
-
-	// 채광 이펙트
-	if (CurrentMiningGauge > 0 && PickAxeImpactFX)
+	if (AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(InstigatorPawn))
 	{
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-			GetWorld(), PickAxeImpactFX, GetActorLocation(), FRotator::ZeroRotator
-		);
-	}
+		CurrentMiningGauge = FMath::Max(0, CurrentMiningGauge - DefaultMiningStrength * UnderwaterCharacter->GetGatherMultiplier());
+		OnRep_CurrentMiningGauge();
+		PlayMiningFX();
 
-	// 게이지 소진 시 파괴 이펙트 & 드롭
-	if (CurrentMiningGauge <= 0)
-	{
-		PlayFractureFX();
-		SpawnDrops();
-		//Destroy();
+		// 채광 이펙트
+		if (CurrentMiningGauge > 0 && PickAxeImpactFX)
+		{
+			FVector MiningLocation = GetActorLocation() + (0, 0, 90);
+			UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+				GetWorld(), PickAxeImpactFX, MiningLocation, FRotator::ZeroRotator
+			);
+		}
+
+		// 게이지 소진 시 파괴 이펙트 & 드롭
+		if (CurrentMiningGauge <= 0)
+		{
+			PlayFractureFX();
+			SpawnDrops();
+		}
 	}
+	PlayStowAnim(InstigatorPawn);
 }
 
 void AADOreRock::SpawnDrops()
@@ -183,6 +205,50 @@ void AADOreRock::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifeti
 	DOREPLIFETIME(AADOreRock, CurrentMiningGauge);
 }
 
+void AADOreRock::PlayMiningAnim(APawn* InstigatorPawn)
+{
+	if (!MiningMontage || !InstigatorPawn) return;
+
+	if (AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(InstigatorPawn))
+	{
+		// 1) 채집에 맞는 SyncState 구성
+		FAnimSyncState MiningSync;
+		MiningSync.bEnableRightHandIK = true;  
+		MiningSync.bEnableLeftHandIK = false;
+		MiningSync.bEnableFootIK = true;
+		MiningSync.bIsStrafing = false;
+
+		// 2) 1P & 3P 동시에 재생
+		UnderwaterCharacter->M_PlayMontageOnBothMesh(
+			MiningMontage,
+			1.0f,
+			NAME_None,
+			MiningSync
+		);
+	}
+}
+
+void AADOreRock::PlayStowAnim(APawn* InstigatorPawn)
+{
+	if (!StowMontage || !InstigatorPawn) return;
+
+	if (AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(InstigatorPawn))
+	{
+		FAnimSyncState StowSync;                // 대부분 IK 끄고 기본 Strafe 복귀
+		StowSync.bEnableRightHandIK = false;
+		StowSync.bEnableLeftHandIK = false;
+		StowSync.bEnableFootIK = true;
+		StowSync.bIsStrafing = false;
+
+		UnderwaterCharacter->M_PlayMontageOnBothMesh(
+			StowMontage,
+			1.0f,
+			NAME_None,
+			StowSync
+		);
+	}
+}
+
 UADInteractableComponent* AADOreRock::GetInteractableComponent() const
 {
 	return InteractableComp;
@@ -196,5 +262,10 @@ bool AADOreRock::IsHoldMode() const
 float AADOreRock::GetHoldDuration_Implementation() const
 {
 	return HoldDuration;
+}
+
+EInteractionType AADOreRock::GetInteractionType() const
+{
+	return EInteractionType::Mining;
 }
 

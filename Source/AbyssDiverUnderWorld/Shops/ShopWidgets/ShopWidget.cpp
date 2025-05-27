@@ -11,6 +11,7 @@
 #include "Character/UpgradeComponent.h"
 #include "DataRow/UpgradeDataRow.h"
 #include "Subsystems/DataTableSubsystem.h"
+#include "Subsystems/SoundSubsystem.h"
 
 #include "Components/Button.h"
 #include "Components/RichTextBlock.h"
@@ -20,21 +21,27 @@ void UShopWidget::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
 
-	ConsumableTab->OnShopCategoryTabClickedDelegate.AddUObject(this, &UShopWidget::OnCategoryTabClicked);
-	EquipmentTab->OnShopCategoryTabClickedDelegate.AddUObject(this, &UShopWidget::OnCategoryTabClicked);
-	UpgradeTab->OnShopCategoryTabClickedDelegate.AddUObject(this, &UShopWidget::OnCategoryTabClicked);
-
-	if (CloseButton->OnClicked.IsBound() == false)
-	{
-		CloseButton->OnClicked.AddDynamic(this, &UShopWidget::OnCloseButtonClicked);
-	}
+	CurrentActivatedTab = EShopCategoryTab::Equipment;
 }
 
 void UShopWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	CurrentActivatedTab = EShopCategoryTab::Equipment;
+	ConsumableTab->OnShopCategoryTabClickedDelegate.AddUObject(this, &UShopWidget::OnCategoryTabClicked);
+	EquipmentTab->OnShopCategoryTabClickedDelegate.AddUObject(this, &UShopWidget::OnCategoryTabClicked);
+	UpgradeTab->OnShopCategoryTabClickedDelegate.AddUObject(this, &UShopWidget::OnCategoryTabClicked);
+	CloseButton->OnClicked.AddDynamic(this, &UShopWidget::OnCloseButtonClicked);
+}
+
+void UShopWidget::NativeDestruct()
+{
+	ConsumableTab->OnShopCategoryTabClickedDelegate.RemoveAll(this);
+	EquipmentTab->OnShopCategoryTabClickedDelegate.RemoveAll(this);
+	UpgradeTab->OnShopCategoryTabClickedDelegate.RemoveAll(this);
+	CloseButton->OnClicked.RemoveAll(this);
+
+	Super::NativeDestruct();
 }
 
 FReply UShopWidget::NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
@@ -233,16 +240,14 @@ void UShopWidget::RefreshItemView()
 	}
 }
 
-void UShopWidget::ShowItemInfos(USkeletalMesh* NewItemMesh, const FString& NewDescription, const FString& NewNameInfoText, int32 ItemCost, bool bIsStackable)
+void UShopWidget::ShowItemInfos(int32 ItemId)
 {
-	InfoWidget->ShowItemInfos(NewItemMesh, NewDescription, NewNameInfoText, ItemCost, bIsStackable);
-	InfoWidget->GetItemMeshPanel()->SetMeshRotation(FRotator::ZeroRotator);
+	InfoWidget->ShowItemInfos(ItemId);
 }
 
 void UShopWidget::ShowUpgradeInfos(USkeletalMesh* NewUpgradeItemMesh, int32 CurrentUpgradeLevel, bool bIsMaxLevel, int32 CurrentUpgradeCost, const FString& ExtraInfoText)
 {
 	InfoWidget->ShowUpgradeInfos(NewUpgradeItemMesh, CurrentUpgradeLevel, bIsMaxLevel, CurrentUpgradeCost, ExtraInfoText);
-	InfoWidget->GetItemMeshPanel()->SetMeshRotation(FRotator::ZeroRotator);
 }
 
 void UShopWidget::SetTeamMoneyText(int32 NewTeamMoney)
@@ -263,10 +268,12 @@ void UShopWidget::OnCategoryTabClicked(EShopCategoryTab CategoryTab)
 	}
 
 	ShowItemViewForTab(CategoryTab);
+	GetGameInstance()->GetSubsystem<USoundSubsystem>()->Play2D(ESFX_UI::UIClicked);
 }
 
 void UShopWidget::OnCloseButtonClicked()
 {
+	GetGameInstance()->GetSubsystem<USoundSubsystem>()->Play2D(ESFX_UI::UIClicked);
 	OnShopCloseButtonClickedDelegate.Broadcast();
 }
 

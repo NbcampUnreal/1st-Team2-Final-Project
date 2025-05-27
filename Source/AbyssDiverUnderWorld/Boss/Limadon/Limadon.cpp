@@ -1,6 +1,6 @@
 #include "Boss/Limadon/Limadon.h"
 #include "AbyssDiverUnderWorld.h"
-#include "Boss/EBossState.h"
+#include "Boss/Enum/EBossState.h"
 #include "Character/StatComponent.h"
 #include "Character/UnderwaterCharacter.h"
 #include "Components/CapsuleComponent.h"

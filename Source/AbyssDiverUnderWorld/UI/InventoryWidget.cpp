@@ -5,6 +5,7 @@
 #include "InventorySlotWidget.h"
 #include "Components/WrapBox.h"
 #include "Inventory/ADInventoryComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 void UInventoryWidget::RefreshInventoryWidget()
 {
@@ -13,25 +14,28 @@ void UInventoryWidget::RefreshInventoryWidget()
 		InventoryWrapBox->ClearChildren();
 		for (int8 i = 0; i < InventorySize; ++i)
 		{
-			APlayerController* PC = GetWorld()->GetFirstPlayerController();
-			UInventorySlotWidget* SlotWidget = CreateWidget<UInventorySlotWidget>(PC, SlotWidgetClass);
-			int8 InventoryItemIndexByType = InventoryComp->GetInventoryIndexesByType(InventoryItemType)[i];
-			if (InventoryItemIndexByType >= 0)
+			APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0);
+			if (PC && PC->IsLocalController())
 			{
-				SlotWidget->SetItemData(InventoryComp->GetInventoryList().Items[InventoryItemIndexByType], i, InventoryComp);
-				if (SlotWidget)
+				UInventorySlotWidget* SlotWidget = CreateWidget<UInventorySlotWidget>(PC, SlotWidgetClass);
+				int8 InventoryItemIndexByType = InventoryComp->GetInventoryIndexesByType(InventoryItemType)[i];
+				if (InventoryItemIndexByType >= 0)
 				{
-					InventoryWrapBox->AddChild(SlotWidget);
+					SlotWidget->SetItemData(InventoryComp->GetInventoryList().Items[InventoryItemIndexByType], i, InventoryComp);
+					if (SlotWidget)
+					{
+						InventoryWrapBox->AddChild(SlotWidget);
+					}
 				}
-			}
-			else
-			{
-				FItemData EmptySlot;
-				EmptySlot.ItemType = InventoryItemType;
-				if (SlotWidget)
+				else
 				{
-					SlotWidget->SetItemData(EmptySlot, -1, InventoryComp);
-					InventoryWrapBox->AddChild(SlotWidget);
+					FItemData EmptySlot;
+					EmptySlot.ItemType = InventoryItemType;
+					if (SlotWidget)
+					{
+						SlotWidget->SetItemData(EmptySlot, i, InventoryComp);
+						InventoryWrapBox->AddChild(SlotWidget);
+					}
 				}
 			}
 		}
@@ -42,15 +46,15 @@ void UInventoryWidget::InitializeSlots()
 {
 	for (int8 i = 0; i < InventorySize; ++i)
 	{
-		APlayerController* PC = GetWorld()->GetFirstPlayerController();
-		if (PC)
+		APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0);
+		if (PC && PC->IsLocalController())
 		{
 			UInventorySlotWidget* SlotWidget = CreateWidget<UInventorySlotWidget>(PC, SlotWidgetClass);
 			FItemData EmptySlot;
 			EmptySlot.ItemType = InventoryItemType;
 			if (SlotWidget)
 			{
-				SlotWidget->SetItemData(EmptySlot, -1, InventoryComp);
+				SlotWidget->SetItemData(EmptySlot, i, InventoryComp);
 				InventoryWrapBox->AddChild(SlotWidget);
 			}
 		}

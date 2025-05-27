@@ -8,12 +8,16 @@ class UScrollBox;
 class UButton;
 class USessionEntryWidget;
 
+DECLARE_DELEGATE(FOnBackClickedDelegate);
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API USessionListWidget : public UUserWidget
 {
 	GENERATED_BODY()
 
+public:
+
+	FOnBackClickedDelegate OnBackClickedDelegate;
 protected:
 	virtual void NativeConstruct() override;
 

@@ -4,6 +4,10 @@
 #include "FrameWork/ADInGameState.h"
 #include "ADDroneSeller.h"
 #include "Net/UnrealNetwork.h"
+#include "Gimmic/Spawn/SpawnManager.h"
+#include "Kismet/GameplayStatics.h"
+
+DEFINE_LOG_CATEGORY(DroneLog);
 
 // Sets default values
 AADDrone::AADDrone()
@@ -24,6 +28,11 @@ void AADDrone::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	if (!SpawnManager)
+	{
+		AActor* Found = UGameplayStatics::GetActorOfClass(this, ASpawnManager::StaticClass());
+		SpawnManager = Cast<ASpawnManager>(Found);
+	}
 }
 
 void AADDrone::Tick(float DeltaSeconds)
@@ -68,6 +77,11 @@ void AADDrone::Interact_Implementation(AActor* InstigatorActor)
 	}
 	CurrentSeller->DisableSelling();
 	StartRising();
+	if (SpawnManager)
+	{
+		SpawnManager->SpawnByGroup();
+		LOGD(Log, TEXT("Monster Spawns"));
+	}
 }
 
 void AADDrone::Activate()
@@ -97,7 +111,7 @@ void AADDrone::OnDestroyTimer()
 {
 	if (CurrentSeller && IsValid(CurrentSeller))
 	{
-		UE_LOG(LogTemp, Log, TEXT("[%s] Destroying linked seller %s"), *GetName(), *CurrentSeller->GetName());
+		LOGD(Log, TEXT("[%s] Destroying linked seller %s"), *GetName(), *CurrentSeller->GetName());
 		CurrentSeller->Destroy();
 	}
 	Destroy();
@@ -117,4 +131,9 @@ UADInteractableComponent* AADDrone::GetInteractableComponent() const
 bool AADDrone::IsHoldMode() const
 {
 	return bIsHold;
+}
+
+EInteractionType AADDrone::GetInteractionType() const
+{
+	return EInteractionType::SendDrone;
 }

@@ -75,16 +75,6 @@ struct FInventoryList : public FFastArraySerializer
 	UPROPERTY()
 	TArray<FItemData> Items;
 
-	UADInventoryComponent* OwnerComponent = nullptr;
-
-	UADInventoryComponent* GetOwnerComponent() const { return OwnerComponent; }
-
-	void SetOwningComponent(UADInventoryComponent* InComp)
-	{
-		OwnerComponent = InComp;
-		LOG(TEXT("Component Init"));
-	}
-
 	//Replication을 위한 필수 함수
 	bool NetDeltaSerialize(FNetDeltaSerializeInfo& DeltaParms)
 	{
@@ -120,7 +110,22 @@ struct FInventoryList : public FFastArraySerializer
 		else
 			return false;
 	}
-	void UpdateSlotIndex(int8 ItemIndex, int8 NewIndex)
+
+	void UpdateAmount(int8 ItemIndex, int8 AddAmount)
+	{
+		Items[ItemIndex].Amount += AddAmount;
+		if (Items[ItemIndex].Amount < 0)
+			Items[ItemIndex].Amount = 0;
+		MarkItemDirty(Items[ItemIndex]);
+	}
+
+	void SetAmount(int8 ItemIndex, int8 NewAmount)
+	{
+		Items[ItemIndex].Amount = NewAmount;
+		MarkItemDirty(Items[ItemIndex]);
+	}
+
+	void UpdateSlotIndex(int8 ItemIndex, int16 NewIndex)
 	{
 		Items[ItemIndex].SlotIndex = NewIndex;
 		MarkItemDirty(Items[ItemIndex]);
