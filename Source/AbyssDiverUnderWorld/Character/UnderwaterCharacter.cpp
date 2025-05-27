@@ -833,7 +833,7 @@ void AUnderwaterCharacter::SpawnRadar()
 		return;
 	}
 
-	FVector SpawnLocation = FirstPersonCameraComponent->GetComponentLocation() + RadarOffset;
+	FVector SpawnLocation = FirstPersonCameraComponent->GetComponentTransform().TransformPosition(RadarOffset);
 	FRotator SpawnRotation = FirstPersonCameraComponent->GetComponentRotation() + RadarRotation;
 
 	// @ToDO : Forward Actor에 맞추어서 Radar 회전
