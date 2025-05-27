@@ -75,7 +75,7 @@ private:
 
 	UAudioComponent* GetNewAudio();
 
-	void Create();
+	void CreateAudioComponent();
 
 #pragma endregion
 

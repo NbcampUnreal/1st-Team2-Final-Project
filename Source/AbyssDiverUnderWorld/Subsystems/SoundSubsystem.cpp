@@ -112,7 +112,7 @@ void USoundSubsystem::Init(const int32 InitialPoolCount)
 
 	for (int32 i = 0; i < InitialPoolCount; ++i)
 	{
-		Create();
+		CreateAudioComponent();
 	}
 }
 
@@ -413,7 +413,7 @@ UAudioComponent* USoundSubsystem::GetNewAudio()
 	{
 		if (DeactivatedComponents.IsEmpty())
 		{
-			Create();
+			CreateAudioComponent();
 		}
 
 		DeactivatedComponents.Peek(NewAudio);
@@ -431,7 +431,7 @@ UAudioComponent* USoundSubsystem::GetNewAudio()
 	return NewAudio;
 }
 
-void USoundSubsystem::Create()
+void USoundSubsystem::CreateAudioComponent()
 {
 	TObjectPtr<UAudioComponent> NewAudio = NewObject<UAudioComponent>((UObject*)UGameplayStatics::GetGameState(GetWorld()));
 	if (IsValid(NewAudio) && NewAudio->IsValidLowLevel())
