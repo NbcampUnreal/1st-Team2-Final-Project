@@ -19,10 +19,16 @@ public:
 	void M_SetSkeletalMesh(USkeletalMesh* NewMesh);
 	void M_SetSkeletalMesh_Implementation(USkeletalMesh* NewMesh);
 
+	UFUNCTION(NetMulticast, Reliable)
+	void M_UnEquipMode();
+	void M_UnEquipMode_Implementation();
+	UFUNCTION(NetMulticast, Reliable)
+	void M_EquipMode();
+	void M_EquipMode_Implementation();
+
 	void SetItemInfo(FItemData& ItemInfo, bool bIsEquipMode);
 	void SetVariableValues(int32 InAmount, int32 InCurrentAmmo, int32 InReserveAmmo);
-	void UnEquipMode();
-	void EquipMode();
+
 
 #pragma endregion
 

@@ -36,7 +36,8 @@ void UChargeBatteryWidget::NativeConstruct()
 	BatteryNumText->SetVisibility(ESlateVisibility::Hidden);
 	BatteryAmountText->SetVisibility(ESlateVisibility::Hidden);
 
-	GetWorld()->GetTimerManager().SetTimer(InitialzieTimerHandle, this, &UChargeBatteryWidget::InitializeChargeBatteryWidget, 2.0f, true);
+	float InitializeRepeatDelay = 2.0f;
+	GetWorld()->GetTimerManager().SetTimer(InitialzieTimerHandle, this, &UChargeBatteryWidget::InitializeChargeBatteryWidget, InitializeRepeatDelay, true);
 }
 
 void UChargeBatteryWidget::StartChargeBattery(FName ItemName)
@@ -44,7 +45,8 @@ void UChargeBatteryWidget::StartChargeBattery(FName ItemName)
 	CurrentChargeItem = ItemName;
 	if (CanCharge())
 	{
-		GetWorld()->GetTimerManager().SetTimer(IncreaseTimerHandle, this, &UChargeBatteryWidget::ChargeBatteryAmount, 0.3f, true);
+		float IncreaseRepeatDelay = 0.3f;
+		GetWorld()->GetTimerManager().SetTimer(IncreaseTimerHandle, this, &UChargeBatteryWidget::ChargeBatteryAmount, IncreaseRepeatDelay, true);
 		LOGB(Warning, TEXT("Start Charge Battery"));
 	}
 }
@@ -131,7 +133,8 @@ void UChargeBatteryWidget::UpdateBatteryInfo()
 {
 	FTimerHandle UpdateBatteryInfoTimerHandle;
 
-	GetWorld()->GetTimerManager().SetTimer(UpdateBatteryInfoTimerHandle, this, &UChargeBatteryWidget::UpdateBatteryInfoDelay, 1.0f, false);
+	float UpdateDelay = 1.0f;
+	GetWorld()->GetTimerManager().SetTimer(UpdateBatteryInfoTimerHandle, this, &UChargeBatteryWidget::UpdateBatteryInfoDelay, UpdateDelay, false);
 }
 
 void UChargeBatteryWidget::InitializeChargeBatteryWidget()
@@ -169,7 +172,7 @@ void UChargeBatteryWidget::InitializeChargeBatteryWidget()
 	}
 }
 
-void UChargeBatteryWidget::SetEquipBatteryAmount(FName Name, int32 Amount)
+void UChargeBatteryWidget::SetEquipBatteryAmount(FName Name, int16 Amount)
 {
 	if (Name == "DPV")
 	{

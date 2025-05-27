@@ -61,7 +61,6 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction")
 	uint8 bIsHold : 1;
 
-private:
 	float WaterGravityScale = 0.3f;
 	float WaterDampingFactor = 1.f;
 
