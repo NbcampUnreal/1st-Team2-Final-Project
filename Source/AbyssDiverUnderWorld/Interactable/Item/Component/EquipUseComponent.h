@@ -100,7 +100,7 @@ private:
 	// 보간 완료 확인 함수
 	bool IsInterpolating() const;
 	
-	
+	void SetEquipBatteryAmountText();
 #pragma endregion
 
 #pragma region Variable
