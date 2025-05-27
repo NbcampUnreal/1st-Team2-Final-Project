@@ -12,36 +12,56 @@
 #include "Framework/ADGameInstance.h"
 #include "Subsystems/DataTableSubsystem.h"
 #include "DataRow/FADProjectileDataRow.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraSystem.h"
 
-AADSpearGunBullet::AADSpearGunBullet() : BulletType(ESpearGunType::MAX), AdditionalDamage(0), PoisonDuration(0), bWasHit(false)
+AADSpearGunBullet::AADSpearGunBullet() : 
+	StaticMesh(nullptr),
+	DataTableSubsystem(nullptr),
+    BurstEffect(nullptr),
+    BulletType(ESpearGunType::MAX), 
+    AdditionalDamage(0), 
+    PoisonDuration(0),
+    bWasAdditionalDamage(false)
 {
     StaticMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SkeletalMesh"));
     StaticMesh->SetupAttachment(RootComponent);
     StaticMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision); 
 
-    TrailEffect = CreateDefaultSubobject<UNiagaraComponent>(TEXT("TrailEffect"));
-    TrailEffect->SetupAttachment(RootComponent);
-
-    TrailEffect->bAutoActivate = false;
-
     Damage = 450.0f;
+
+    ConstructorHelpers::FObjectFinder<UNiagaraSystem> BurstEffectFinder(TEXT("/Game/SurvivalFX/Particles/Explosion/PS_Explosion_Smokey_Small"));
+
+    if (BurstEffectFinder.Succeeded())
+    {
+        BurstEffect = BurstEffectFinder.Object;
+    }
 }
 
 void AADSpearGunBullet::OnRep_BulletType()
 {
-    //3가지 타입의 Bullet BP를 만들거면 여기 하나의 BP만 만들고 속성을 바꿀 거면 OnRep
-    FString EnumName = StaticEnum<ESpearGunType>()->GetNameStringByValue((int64)ESpearGunType::Basic);
-    FString RowNameString = EnumName + "SpearGunBullet";
-    FName ProjectileName(*RowNameString);
-    LOG(TEXT("%s"), *RowNameString);
-
+    switch (BulletType)
+    {
+    case ESpearGunType::Basic:
+        ProjectileName = "BasicSpearGunBullet";
+        break;
+    case ESpearGunType::Bomb:
+        ProjectileName = "BombSpearGunBullet";
+        break;
+    case ESpearGunType::Poison:
+        ProjectileName = "PoisonSpearGunBullet";
+        break;
+    default:
+        break;
+    }
+    LOGP(Warning, TEXT("%s"), *ProjectileName.ToString());
     if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
     {
-        DataTableSubsystem = GI->GetSubsystem<UDataTableSubsystem>();
+        DTSubsystem = GI->GetSubsystem<UDataTableSubsystem>();
     }
-    if (DataTableSubsystem)
+    if (DTSubsystem)
     {
-        FFADProjectileDataRow* ProjectileInfo = DataTableSubsystem->GetProjectileDataArrayByName(ProjectileName);
+        FFADProjectileDataRow* ProjectileInfo = DTSubsystem->GetProjectileDataArrayByName(ProjectileName);
         if (ProjectileInfo)
         {
             AdditionalDamage = ProjectileInfo->AdditionalDamage;
@@ -51,38 +71,27 @@ void AADSpearGunBullet::OnRep_BulletType()
             TrailEffect->Activate(true);
         }
     }
-    //TODO : Shoot Sound
-    //TODO : Shoot Effect
-
 }
 
 void AADSpearGunBullet::BeginPlay()
 {
     Super::BeginPlay();
+    //TODO : Shoot Sound
+    //TODO : Shoot Effect
 }
 
 void AADSpearGunBullet::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-    if (!bWasHit)
+    Super::OnOverlapBegin(OverlappedComp, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
+
+    if (!bWasAdditionalDamage)
     {
         if (OtherActor && OtherActor != this && OtherComp && OtherComp->GetOwner() != this)
         {
-            UGameplayStatics::ApplyPointDamage(
-                OtherActor,
-                Damage,
-                GetActorForwardVector(),
-                SweepResult,
-                GetInstigatorController(),
-                GetOwner(),
-                UDamageType::StaticClass()
-            );
-            LOG(TEXT("Hit %s"), *OtherActor->GetName());
-
+            AttachToHitActor(OtherComp, SweepResult, true);
             ApplyAdditionalDamage();
+            bWasAdditionalDamage = true;
         }
-        ProjectileMovementComp->StopMovementImmediately();
-        ProjectileMovementComp->Deactivate();
-        bWasHit = true;
     }
 }
 
@@ -92,20 +101,53 @@ void AADSpearGunBullet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
     DOREPLIFETIME(AADSpearGunBullet, BulletType);
 }
 
+void AADSpearGunBullet::AttachToHitActor(USceneComponent* HitComp, const FHitResult& Hit, bool bAttachOnHit)
+{
+    if (bAttachOnHit)
+    {
+        if (HitComp)
+        {
+            FName HitBone = Hit.BoneName;
+            USkeletalMeshComponent* SkeletalMesh = Cast<USkeletalMeshComponent>(HitComp);
+            if (HitBone != NAME_None && SkeletalMesh)
+            {
+                FAttachmentTransformRules AttachRules(EAttachmentRule::KeepWorld, true);  // 상대 위치로 유지
+                AttachToComponent(SkeletalMesh, AttachRules, HitBone);
+
+                LOGP(Warning, TEXT("Attached to SkeletalMeshComponent at bone: %s HitComp : %s"), *HitBone.ToString(), *HitComp->GetName());
+            }
+            else
+            {
+                // 일반 메시나 컴포넌트에 부착
+                StaticMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+                StaticMesh->SetCollisionProfileName("BlockAllDynamic");
+                StaticMesh->SetSimulatePhysics(true);     // 중력 낙하
+                StaticMesh->WakeAllRigidBodies();
+            }
+        }
+        else
+        {
+            LOGP(Warning, TEXT("Hit Component is NULL"));
+        }
+    }
+}
+
 void AADSpearGunBullet::ApplyAdditionalDamage()
 {
     FTimerHandle BurstTimerHandle;
+    float TimerDuration = 2.5f; // 폭탄이 터지는 시간
     //TODO : Hit Sound
     switch (BulletType)
     {
     case ESpearGunType::Basic:
-        LOG(TEXT("BasicBullet"));
+        LOGP(Warning, TEXT("BasicBullet"));
         break;
     case ESpearGunType::Bomb:
-        LOG(TEXT("BombTimer"));
-        GetWorld()->GetTimerManager().SetTimer(BurstTimerHandle, this, &AADSpearGunBullet::Burst, 2.5f, false);
+        LOGP(Warning, TEXT("BombBullet"));
+        GetWorld()->GetTimerManager().SetTimer(BurstTimerHandle, this, &AADSpearGunBullet::Burst, TimerDuration, false);
         break;
     case ESpearGunType::Poison:
+        LOGP(Warning, TEXT("PoisonBullet"));
         Addict();
         break;
     default:
@@ -115,8 +157,7 @@ void AADSpearGunBullet::ApplyAdditionalDamage()
 
 void AADSpearGunBullet::Burst()
 {
-    //TODO : Hit Effect
-    LOG(TEXT("BombBullet"));
+    LOGP(Warning, TEXT("Burst"));
 
     TArray<FHitResult> HitResults;
     TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
@@ -142,6 +183,7 @@ void AADSpearGunBullet::Burst()
         true
     );
     TSet<AActor*> UniqueActors;
+
     if (bHit)
     {
         for (const FHitResult& Hit : HitResults)
@@ -152,16 +194,37 @@ void AADSpearGunBullet::Burst()
                 {
                     UniqueActors.Add(HitActor);
 
-                    LOGN(TEXT("Unique hit: %s"), *HitActor->GetName());
+                    LOGP(Warning, TEXT("Unique hit: %s"), *HitActor->GetName());
 
                     // 여기에 데미지 주기나 처리 로직 작성
+                    UGameplayStatics::ApplyPointDamage(
+                        HitActor,
+                        AdditionalDamage,
+                        GetActorForwardVector(),
+                        Hit,
+                        GetInstigatorController(),
+                        GetOwner(),
+                        UDamageType::StaticClass()
+                    );
+
+                    UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+		                GetWorld(),
+                        BurstEffect,
+                        Hit.Location,
+		                FRotator::ZeroRotator,
+		                FVector(1.0f),
+		                true,  // bAutoDestroy
+		                true,  // bAutoActivate
+		                ENCPoolMethod::None,
+		                true   // bPreCullCheck
+	                );
                 }
             }
         }
     }
     else 
     {
-        LOG(TEXT("No Hit in Bomb Area"));
+        LOGP(Warning, TEXT("No Hit in Bomb Area"));
     }
 }
 
@@ -169,6 +232,6 @@ void AADSpearGunBullet::Addict()
 {
     //TODO : Hit Effect
     //TODO : 디버프 컴포넌트 함수 호출
-    LOG(TEXT("PoisonBullet"));
+    LOGP(Warning, TEXT("Addict"));
 }
 
