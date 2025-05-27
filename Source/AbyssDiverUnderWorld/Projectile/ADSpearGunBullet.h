@@ -37,6 +37,8 @@ protected:
 	void OnRep_BulletType();
 
 private:
+	void AttachToHitActor(USceneComponent* HitComp, const FHitResult& Hit, bool bAttachOnHit);
+
 	void ApplyAdditionalDamage();
 
 	void Burst();

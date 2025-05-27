@@ -34,8 +34,7 @@ protected:
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
 		bool bFromSweep, const FHitResult& SweepResult);
 	void InitializeStats();
-private:
-	void AttachToHitActor(USceneComponent* HitComp, const FHitResult& Hit, bool bAttachOnHit);
+
 #pragma endregion
 
 #pragma region Variable

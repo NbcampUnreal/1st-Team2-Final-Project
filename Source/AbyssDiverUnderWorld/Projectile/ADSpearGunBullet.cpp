@@ -55,10 +55,13 @@ void AADSpearGunBullet::OnRep_BulletType()
         break;
     }
     LOGP(Warning, TEXT("%s"), *ProjectileName.ToString());
-
+    if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+    {
+        DTSubsystem = GI->GetSubsystem<UDataTableSubsystem>();
+    }
     if (DTSubsystem)
     {
-        FFADProjectileDataRow* ProjectileInfo = DataTableSubsystem->GetProjectileDataArrayByName(ProjectileName);
+        FFADProjectileDataRow* ProjectileInfo = DTSubsystem->GetProjectileDataArrayByName(ProjectileName);
         if (ProjectileInfo)
         {
             AdditionalDamage = ProjectileInfo->AdditionalDamage;
@@ -68,13 +71,13 @@ void AADSpearGunBullet::OnRep_BulletType()
             TrailEffect->Activate(true);
         }
     }
-    //TODO : Shoot Sound
-    //TODO : Shoot Effect
 }
 
 void AADSpearGunBullet::BeginPlay()
 {
     Super::BeginPlay();
+    //TODO : Shoot Sound
+    //TODO : Shoot Effect
 }
 
 void AADSpearGunBullet::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -85,6 +88,7 @@ void AADSpearGunBullet::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AAct
     {
         if (OtherActor && OtherActor != this && OtherComp && OtherComp->GetOwner() != this)
         {
+            AttachToHitActor(OtherComp, SweepResult, true);
             ApplyAdditionalDamage();
             bWasAdditionalDamage = true;
         }
@@ -95,6 +99,37 @@ void AADSpearGunBullet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 {
     Super::GetLifetimeReplicatedProps(OutLifetimeProps);
     DOREPLIFETIME(AADSpearGunBullet, BulletType);
+}
+
+void AADSpearGunBullet::AttachToHitActor(USceneComponent* HitComp, const FHitResult& Hit, bool bAttachOnHit)
+{
+    if (bAttachOnHit)
+    {
+        if (HitComp)
+        {
+            FName HitBone = Hit.BoneName;
+            USkeletalMeshComponent* SkeletalMesh = Cast<USkeletalMeshComponent>(HitComp);
+            if (HitBone != NAME_None && SkeletalMesh)
+            {
+                FAttachmentTransformRules AttachRules(EAttachmentRule::KeepWorld, true);  // 상대 위치로 유지
+                AttachToComponent(SkeletalMesh, AttachRules, HitBone);
+
+                LOGP(Warning, TEXT("Attached to SkeletalMeshComponent at bone: %s HitComp : %s"), *HitBone.ToString(), *HitComp->GetName());
+            }
+            else
+            {
+                // 일반 메시나 컴포넌트에 부착
+                StaticMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+                StaticMesh->SetCollisionProfileName("BlockAllDynamic");
+                StaticMesh->SetSimulatePhysics(true);     // 중력 낙하
+                StaticMesh->WakeAllRigidBodies();
+            }
+        }
+        else
+        {
+            LOGP(Warning, TEXT("Hit Component is NULL"));
+        }
+    }
 }
 
 void AADSpearGunBullet::ApplyAdditionalDamage()
@@ -162,6 +197,15 @@ void AADSpearGunBullet::Burst()
                     LOGP(Warning, TEXT("Unique hit: %s"), *HitActor->GetName());
 
                     // 여기에 데미지 주기나 처리 로직 작성
+                    UGameplayStatics::ApplyPointDamage(
+                        HitActor,
+                        AdditionalDamage,
+                        GetActorForwardVector(),
+                        Hit,
+                        GetInstigatorController(),
+                        GetOwner(),
+                        UDamageType::StaticClass()
+                    );
 
                     UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 		                GetWorld(),

@@ -50,10 +50,7 @@ void AADProjectileBase::BeginPlay()
 {
 	Super::BeginPlay();
 
-    if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
-    {
-        DTSubsystem = GI->GetSubsystem<UDataTableSubsystem>();
-    }
+
 }
 
 void AADProjectileBase::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -72,33 +69,23 @@ void AADProjectileBase::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AAct
                 UDamageType::StaticClass()
             );
             LOGP(Warning, TEXT("Hit %s"), *OtherActor->GetName());
-
-            AttachToHitActor(OtherComp, SweepResult, true);
         }
 		TrailEffect->Deactivate();
         ProjectileMovementComp->StopMovementImmediately();
         ProjectileMovementComp->Deactivate();
         bWasHit = true;
     }
-}
 
-void AADProjectileBase::AttachToHitActor(USceneComponent* HitComp, const FHitResult& Hit, bool bAttachOnHit)
-{
-	if (bAttachOnHit)
-	{
-		if (HitComp)
-		{
-			FAttachmentTransformRules AttachRules(EAttachmentRule::KeepWorld, EAttachmentRule::KeepWorld, EAttachmentRule::KeepWorld, false);
-			AttachToComponent(HitComp, AttachRules, Hit.BoneName);
-            LOGP(Warning, TEXT("Attach To %s"), *Hit.BoneName.ToString());
-		}
-		else
-		{
-            LOGP(Warning, TEXT("Hit Component is NULL"));
-		}
-	}
-}
+    FTimerHandle DestroyTimerHandle;
+    float DestroyDelay = 10.0f;
 
+    FTimerDelegate TimerDel;
+    TimerDel.BindLambda([this]() {
+        Destroy();
+        });
+
+    GetWorld()->GetTimerManager().SetTimer(DestroyTimerHandle, TimerDel, DestroyDelay, false);
+}
 
 void AADProjectileBase::SetProjectileSpeed(float Speed)
 {
