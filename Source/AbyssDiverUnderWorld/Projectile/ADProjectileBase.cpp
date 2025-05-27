@@ -8,9 +8,19 @@
 #include "AbyssDiverUnderWorld.h"
 #include "Boss/Boss.h"
 #include "Monster/Monster.h"
+#include "NiagaraSystem.h"
+#include "NiagaraComponent.h"
+#include "NiagaraFunctionLibrary.h"
+#include "Framework/ADGameInstance.h"
+#include "Subsystems/DataTableSubsystem.h"
+
+DEFINE_LOG_CATEGORY(ProjectileLog);
 
 // Sets default values
-AADProjectileBase::AADProjectileBase() : Damage(100.0f)
+AADProjectileBase::AADProjectileBase() : 
+    TrailEffect(nullptr), 
+    Damage(100.0f), 
+    bWasHit(false)
 {
 	PrimaryActorTick.bCanEverTick = false;
 
@@ -28,6 +38,10 @@ AADProjectileBase::AADProjectileBase() : Damage(100.0f)
 
     CollisionComponent->OnComponentBeginOverlap.AddDynamic(this, &AADProjectileBase::OnOverlapBegin);
 
+    TrailEffect = CreateDefaultSubobject<UNiagaraComponent>(TEXT("TrailEffect"));
+    TrailEffect->SetupAttachment(CollisionComponent);
+    TrailEffect->SetAutoActivate(false);
+
     bReplicates = true;
     SetReplicateMovement(true);
 }
@@ -35,34 +49,66 @@ AADProjectileBase::AADProjectileBase() : Damage(100.0f)
 void AADProjectileBase::BeginPlay()
 {
 	Super::BeginPlay();
+
+    if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+    {
+        DTSubsystem = GI->GetSubsystem<UDataTableSubsystem>();
+    }
 }
 
 void AADProjectileBase::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-    
-    LOG(TEXT("OnHitStart"));
-    if (OtherActor && OtherActor != this && OtherComp)
+    if (!bWasHit)
     {
-        UGameplayStatics::ApplyPointDamage(
-            OtherActor,
-            Damage,
-            GetActorForwardVector(),
-            SweepResult,
-            GetInstigatorController(),
-            GetOwner(),
-            UDamageType::StaticClass()
-        );
-        LOG(TEXT("Hit"));
-        LOG(TEXT("%s"), *OtherActor->GetName());
+        if (OtherActor && OtherActor != this && OtherComp && OtherComp->GetOwner() != this)
+        {
+            UGameplayStatics::ApplyPointDamage(
+                OtherActor,
+                Damage,
+                GetActorForwardVector(),
+                SweepResult,
+                GetInstigatorController(),
+                GetOwner(),
+                UDamageType::StaticClass()
+            );
+            LOGP(Warning, TEXT("Hit %s"), *OtherActor->GetName());
 
-        Destroy();
+            AttachToHitActor(OtherComp, SweepResult, true);
+        }
+		TrailEffect->Deactivate();
+        ProjectileMovementComp->StopMovementImmediately();
+        ProjectileMovementComp->Deactivate();
+        bWasHit = true;
     }
 }
+
+void AADProjectileBase::AttachToHitActor(USceneComponent* HitComp, const FHitResult& Hit, bool bAttachOnHit)
+{
+	if (bAttachOnHit)
+	{
+		if (HitComp)
+		{
+			FAttachmentTransformRules AttachRules(EAttachmentRule::KeepWorld, EAttachmentRule::KeepWorld, EAttachmentRule::KeepWorld, false);
+			AttachToComponent(HitComp, AttachRules, Hit.BoneName);
+            LOGP(Warning, TEXT("Attach To %s"), *Hit.BoneName.ToString());
+		}
+		else
+		{
+            LOGP(Warning, TEXT("Hit Component is NULL"));
+		}
+	}
+}
+
 
 void AADProjectileBase::SetProjectileSpeed(float Speed)
 {
     ProjectileMovementComp->InitialSpeed = Speed;
     ProjectileMovementComp->MaxSpeed = Speed;
+}
+
+void AADProjectileBase::SetProjectileName(FName Name)
+{
+    ProjectileName = Name;
 }
 
 
