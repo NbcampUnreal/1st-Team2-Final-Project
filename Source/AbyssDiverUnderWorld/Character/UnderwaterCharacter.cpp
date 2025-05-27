@@ -308,11 +308,15 @@ void AUnderwaterCharacter::SetEnvState(EEnvState State)
 	case EEnvState::Underwater:
 		GetCharacterMovement()->GravityScale = 0.0f;
 		SetFlipperMeshVisibility(true);
+		FirstPersonCameraArm->bEnableCameraRotationLag = true;
+		Mesh1PSpringArm->bEnableCameraRotationLag = true;
 		break;
 	case EEnvState::Ground:
 		// 지상에서는 이동 방향으로 회전을 하게 한다.
 		GetCharacterMovement()->GravityScale = 1.0f;
 		SetFlipperMeshVisibility(false);
+		FirstPersonCameraArm->bEnableCameraRotationLag = false;
+		Mesh1PSpringArm->bEnableCameraRotationLag = false;
 		break;
 	default:
 		UE_LOG(AbyssDiver, Error, TEXT("Invalid Character State"));
