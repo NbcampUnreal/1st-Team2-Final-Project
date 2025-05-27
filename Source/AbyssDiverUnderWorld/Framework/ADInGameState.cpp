@@ -1,6 +1,7 @@
 #include "Framework/ADInGameState.h"
 #include "ADGameInstance.h"
 #include "Subsystems/DataTableSubsystem.h"
+#include "Subsystems/SoundSubsystem.h"
 #include "Net/UnrealNetwork.h"
 #include "AbyssDiverUnderWorld.h"
 #include "DataRow/PhaseGoalRow.h"
@@ -31,6 +32,9 @@ void AADInGameState::PostInitializeComponents()
 void AADInGameState::BeginPlay()
 {
 	Super::BeginPlay();
+
+	const int32 SoundPoolInitCount = 10;
+	GetGameInstance()->GetSubsystem<USoundSubsystem>()->Init(SoundPoolInitCount);
 
 	if (HasAuthority() == false)
 	{
