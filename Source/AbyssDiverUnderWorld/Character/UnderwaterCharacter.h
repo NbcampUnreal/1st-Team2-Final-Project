@@ -453,6 +453,10 @@ private:
 	/** 캐릭터의 현재 로코모션 상태. Jump인지 그냥 Fall인지를 구분한다. */
 	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	ELocomotionMode LocomotionMode;
+
+	/** Global Gravity Z에 상관 없이 캐릭터가 설정할 Gravity Z 값. 음수값을 지정해야 한다. */
+	UPROPERTY(EditDefaultsOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	float ExpectedGravityZ;
 	
 	/** 오리발이 생성될 왼발 소켓 이름 */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Flipper")

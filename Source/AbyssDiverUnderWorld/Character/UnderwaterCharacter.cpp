@@ -63,6 +63,8 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 
 	StatComponent->Initialize(1000, 1000, 400.0f, 10);
 
+	ExpectedGravityZ = -980.0f;
+	
 	LeftFlipperSocketName = TEXT("foot_l_flipper_socket");
 	RightFlipperSocketName = TEXT("foot_r_flipper_socket");
 	
@@ -313,7 +315,7 @@ void AUnderwaterCharacter::SetEnvState(EEnvState State)
 		break;
 	case EEnvState::Ground:
 		// 지상에서는 이동 방향으로 회전을 하게 한다.
-		GetCharacterMovement()->GravityScale = 1.0f;
+		GetCharacterMovement()->GravityScale = GetWorld()->GetGravityZ() / ExpectedGravityZ;
 		SetFlipperMeshVisibility(false);
 		FirstPersonCameraArm->bEnableCameraRotationLag = false;
 		Mesh1PSpringArm->bEnableCameraRotationLag = false;
