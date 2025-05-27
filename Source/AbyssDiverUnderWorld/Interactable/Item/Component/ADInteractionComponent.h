@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "Interface/IADInteractable.h"
 #include "ADInteractionComponent.generated.h"
 
 class USphereComponent;
@@ -89,6 +90,14 @@ public:
     DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnHoldCancelSignature);
     UPROPERTY(BlueprintAssignable) 
     FOnHoldCancelSignature OnHoldCancel;
+    DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
+        FOnFocusInteractable, AActor*, FocusedActor, EInteractionType, Type);
+    UPROPERTY(BlueprintAssignable) 
+    FOnFocusInteractable OnFocus;
+    DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnFocusLost);
+    UPROPERTY(BlueprintAssignable) 
+    FOnFocusLost OnFocusEnd;
+
 
     UPROPERTY(Replicated)
     uint8 bIsInteractingStart : 1;

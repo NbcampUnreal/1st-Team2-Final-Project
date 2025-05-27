@@ -1,5 +1,6 @@
 #include "Boss/Task/Enhanced/BTTask_MoveToLocation.h"
 #include "AbyssDiverUnderWorld.h"
+#include "NavigationSystem.h"
 #include "Boss/Boss.h"
 #include "Boss/ENum/EBossState.h"
 
@@ -19,12 +20,18 @@ UBTTask_MoveToLocation::UBTTask_MoveToLocation()
 {
 	NodeName = "Move To Location";
 	bNotifyTick = true;
+	bNotifyTaskFinished = true;
 	Boss = nullptr;
 	AIController = nullptr;
 	bIsInitialized = true;
 	TargetLocation = FVector::ZeroVector;
+	bHasBeenTriggeredMoveToLocation = false;
+	bShouldMoveToNearestPoint = false;
 	AccumulatedTime = 0.f;
-	FinishTaskInterval = 3.f;
+	FinishTaskInterval = 0.f;
+	MinFinishTaskInterval = 3.f;
+	MaxFinishTaskInterval = 6.f;
+	CachedLocation = FVector::ZeroVector;
 	DecelerationTriggeredRadius = 2000.0f;
 }
 
@@ -41,12 +48,43 @@ EBTNodeResult::Type UBTTask_MoveToLocation::ExecuteTask(UBehaviorTreeComponent& 
 	const FName KeyName = GetSelectedBlackboardKey();
 	TargetLocation = AIController->GetBlackboardComponent()->GetValueAsVector(KeyName);
 
+	FinishTaskInterval = FMath::RandRange(MinFinishTaskInterval, MaxFinishTaskInterval);
+
+	// AI가 지형에 막힌 경우
+	if (bHasBeenTriggeredMoveToLocation && FVector::Dist(TargetLocation, CachedLocation) <= 1.f)
+	{
+		bShouldMoveToNearestPoint = true;
+	}
+	
+	// 디버그용 구체 출력 (5초 동안, 반지름 50, 빨간색)
+	//DrawDebugSphere(GetWorld(), TargetLocation, 250.0f, 12, FColor::Red, false, 5.0f);
+	
 	Boss->SetDecelerate(false);
 	AccumulatedTime = 0.f;
 
-	AIController->MoveToLocationWithRadius(TargetLocation);
-	
-	return EBTNodeResult::InProgress;
+	EPathFollowingRequestResult::Type Result = AIController->MoveToLocationWithRadius(TargetLocation);
+
+	// AI가 NavMesh를 벗어난 상태인 경우
+	if (Result == EPathFollowingRequestResult::AlreadyAtGoal)
+	{
+		bShouldMoveToNearestPoint = true;
+	}
+
+	// AI가 지형에 막힌 상태이거나 NavMesh를 벗어난 상태인 경우
+	if (bShouldMoveToNearestPoint)
+	{
+		LOG(TEXT("AI is Stuck ! Should Move AI to Nearest NavMesh"));
+
+		return EBTNodeResult::Failed;
+	}
+
+	// 이동 요청이 성공적으로 처리된 경우
+	if (Result == EPathFollowingRequestResult::RequestSuccessful)
+	{
+		return EBTNodeResult::InProgress;
+	}
+
+	return EBTNodeResult::Failed;
 }
 
 void UBTTask_MoveToLocation::TickTask(UBehaviorTreeComponent& Comp, uint8* NodeMemory, float DeltaSeconds)
@@ -64,7 +102,7 @@ void UBTTask_MoveToLocation::TickTask(UBehaviorTreeComponent& Comp, uint8* NodeM
 			{
 				AIController->InitVariables();	
 			}
-		
+			AccumulatedTime = 0.f;
 			FinishLatentTask(Comp, EBTNodeResult::Succeeded);
 			return;
 		}
@@ -83,3 +121,15 @@ void UBTTask_MoveToLocation::TickTask(UBehaviorTreeComponent& Comp, uint8* NodeM
 		return;
 	}
 }
+
+void UBTTask_MoveToLocation::OnTaskFinished(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory,
+	EBTNodeResult::Type TaskResult)
+{
+	Super::OnTaskFinished(OwnerComp, NodeMemory, TaskResult);
+
+	CachedLocation = TargetLocation;
+	bHasBeenTriggeredMoveToLocation = true;
+	bShouldMoveToNearestPoint = false;
+}
+
+

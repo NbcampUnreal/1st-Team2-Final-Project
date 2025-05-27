@@ -37,6 +37,8 @@ protected:
 	void OnRep_BulletType();
 
 private:
+	void AttachToHitActor(USceneComponent* HitComp, const FHitResult& Hit, bool bAttachOnHit);
+
 	void ApplyAdditionalDamage();
 
 	void Burst();
@@ -49,9 +51,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Component")
 	TObjectPtr<UStaticMeshComponent> StaticMesh;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Component")
-	TObjectPtr<UNiagaraComponent> TrailEffect;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Component")
 	TObjectPtr<UDataTableSubsystem> DataTableSubsystem;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effect")
+	TObjectPtr<UNiagaraSystem> BurstEffect;
+
 private:
 	UPROPERTY(ReplicatedUsing = OnRep_BulletType, VisibleAnywhere, Category = "Bullet")
 	ESpearGunType BulletType;
@@ -60,7 +63,7 @@ private:
 	UPROPERTY(VisibleAnywhere, Category = "Bullet")
 	int8 PoisonDuration;
 
-	uint8 bWasHit : 1;
+	uint8 bWasAdditionalDamage : 1;
 
 #pragma endregion
 

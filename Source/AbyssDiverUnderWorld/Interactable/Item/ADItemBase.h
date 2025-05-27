@@ -61,7 +61,6 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction")
 	uint8 bIsHold : 1;
 
-private:
 	float WaterGravityScale = 0.3f;
 	float WaterDampingFactor = 1.f;
 
@@ -73,6 +72,7 @@ public:
 	void SetPrice(int32 InPrice);
 	virtual UADInteractableComponent* GetInteractableComponent() const override;
 	virtual bool IsHoldMode() const override;
+	virtual EInteractionType GetInteractionType() const override;
 #pragma endregion
 
 };

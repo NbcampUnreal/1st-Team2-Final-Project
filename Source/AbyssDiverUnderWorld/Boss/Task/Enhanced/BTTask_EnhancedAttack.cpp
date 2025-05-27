@@ -28,6 +28,8 @@ EBTNodeResult::Type UBTTask_EnhancedAttack::ExecuteTask(UBehaviorTreeComponent& 
 
 	Boss = Cast<ABoss>(AIController->GetCharacter());
 	if (!IsValid(Boss)) return EBTNodeResult::Failed;
+	
+	Boss->SetDecelerate(true);
 
 	BlackboardKeyName = GetSelectedBlackboardKey();
 	
@@ -57,6 +59,8 @@ void UBTTask_EnhancedAttack::FinishPerception(UAnimMontage* Montage, bool bInter
 		AIController->GetBlackboardComponent()->SetValueAsBool("bHasDetectedPlayer", false);
 		AIController->SetBlackboardPerceptionType(EPerceptionType::Finish);	
 	}
+
+	Boss->SetDecelerate(false);
 	
 	// 바인딩 해제 (중복 방지)
 	if (IsValid(AnimInstance))

@@ -47,11 +47,21 @@ protected:
 	UPROPERTY(BlueprintReadOnly)
 	TWeakObjectPtr<class UCharacterMovementComponent> CharacterMovement;
 
+	/** 캐릭터의 현재 환경 상태 */
 	UPROPERTY(BlueprintReadOnly)
 	EEnvState EnvState;
 
+	/** 캐릭터의 현재 상태. Groggy, Dead, Normal */
 	UPROPERTY(BlueprintReadOnly)
 	ECharacterState CharacterState;
+
+	/** 캐릭터의 공중 상태. Fall, Jump를 구분하기 위함 */
+	UPROPERTY(BlueprintReadOnly)
+	ELocomotionMode LocomotionMode;
+	
+	/** 캐릭터가 공중에 있는지 여부, Movement Mode Falling 상태인지 여부 */
+	UPROPERTY(BlueprintReadOnly)
+	uint8 bIsInAir : 1;
 	
 	/** 캐릭터 Should Move에서 Move를 가능하게 하는 임계값 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
@@ -97,7 +107,7 @@ protected:
 	UPROPERTY(BlueprintReadOnly)
 	float ModifyPitch;
 
-	/** 모델의 경우 언리얼의 XYZ 좌표계와 다르기 때문에 Roll에 적용할 경우 Yaw에 적용된다. */
+	/** 모델의 경우 언리얼의 XYZ 좌표계와 다르기 때문에 Yaw에 적용할 경우 Pitch에 적용된다. */
 	UPROPERTY(BlueprintReadOnly)
 	float ModifyYaw;
 	

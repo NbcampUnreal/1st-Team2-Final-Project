@@ -11,6 +11,7 @@
 #include "Character/StatComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "EngineUtils.h"
+#include "Logging/StructuredLogFormat.h"
 
 UPlayerHUDComponent::UPlayerHUDComponent()
 {
@@ -26,6 +27,8 @@ void UPlayerHUDComponent::BeginPlay()
 	{
 		return;
 	}
+
+	PlayerController->OnPossessedPawnChanged.AddDynamic(this, &UPlayerHUDComponent::OnPossessedPawnChanged);
 
 	// 메인 HUD 생성
 	if (HudWidgetClass)
@@ -131,9 +134,25 @@ void UPlayerHUDComponent::OnPossessedPawnChanged(APawn* OldPawn, APawn* NewPawn)
 {
 	if (!NewPawn) return;
 
+	APlayerController* PlayerController = Cast<APlayerController>(GetOwner());
+	
+	if (!IsValid(HudWidget))
+	{
+		HudWidget = CreateWidget<UPlayerHUDWidget>(PlayerController, HudWidgetClass);
+	}
 	if (HudWidget)
 	{
+		HudWidget->AddToViewport();
 		HudWidget->BindWidget(NewPawn);
+	}
+
+	if (!IsValid(PlayerStatusWidget))
+	{
+		PlayerStatusWidget = CreateWidget<UPlayerStatusWidget>(PlayerController, PlayerStatusWidgetClass);
+	}
+	if (PlayerStatusWidget)
+	{
+		PlayerStatusWidget->AddToViewport();
 	}
 
 	if (AUnderwaterCharacter* UWCharacter = Cast<AUnderwaterCharacter>(NewPawn))

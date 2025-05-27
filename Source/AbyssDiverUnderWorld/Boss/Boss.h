@@ -30,6 +30,8 @@ public:
 	void SetBossState(EBossState State);
 	void LaunchPlayer(AUnderwaterCharacter* Player, const float& Power) const;
 
+	void InitializeRotation(const float& InDeltaTime);
+
 	/** 전방을 향해 이동하는 함수 */
 	void MoveForward(const float& InDeltaTime);
 	
@@ -90,8 +92,11 @@ private:
 
 #pragma region Variable
 public:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
+	float RotationInterpSpeed;
+    	
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Stat")
-	float CurrentMoveSpeed = 0.f;
+	float CurrentMoveSpeed;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
 	float Acceleration;

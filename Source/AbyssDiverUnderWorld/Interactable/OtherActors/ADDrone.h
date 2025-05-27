@@ -11,6 +11,7 @@ DECLARE_LOG_CATEGORY_EXTERN(DroneLog, Log, All);
 
 class UADInteractableComponent;
 class AADDroneSeller;
+class ASpawnManager;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADDrone : public AActor,  public IIADInteractable
@@ -61,6 +62,8 @@ public:
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<AADDroneSeller> NextSeller = nullptr;
 	UPROPERTY(EditAnywhere)
+	TObjectPtr<ASpawnManager> SpawnManager = nullptr;
+	UPROPERTY(EditAnywhere)
 	float RaiseSpeed = 200.f;
 	UPROPERTY(EditAnywhere)
 	float DestroyDelay = 5.f;
@@ -82,6 +85,7 @@ public:
 	virtual bool IsHoldMode() const override;
 
 	int32 GetDronePhaseNumber() const { return DronePhaseNumber; }
+	virtual EInteractionType GetInteractionType() const override;
 
 #pragma endregion
 

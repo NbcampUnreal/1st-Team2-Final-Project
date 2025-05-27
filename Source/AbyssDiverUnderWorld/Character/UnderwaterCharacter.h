@@ -30,6 +30,8 @@ DECLARE_LOG_CATEGORY_EXTERN(LogAbyssDiverCharacter, Log, LOG_ABYSS_DIVER_COMPILE
 // 만약에 레벨 전환이 있다고 가정하면 새로 캐릭터를 분리하는 것이 덜 복잡하게 된다.
 // 이 부분을 문의하고 확정된 스펙에 따라 결정한다.
 
+enum class ELocomotionMode : uint8;
+
 /* 캐릭터의 지상, 수중을 결정, Move 로직, Animation이 변경되고 사용 가능 기능이 제한된다. */
 UENUM(BlueprintType)
 enum class EEnvState : uint8
@@ -87,7 +89,6 @@ public:
 	AUnderwaterCharacter();
 
 protected:
-	
 	virtual void BeginPlay() override;
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void PostNetInit() override;
@@ -170,6 +171,9 @@ public:
 	
 protected:
 
+	UFUNCTION()
+	void OnMoveSpeedChanged(float NewMoveSpeed);
+	
 	/** 메시 컴포넌트를 동적으로 생성하고 Parent 에 소켓으로 연결한다.*/
 	UStaticMeshComponent* CreateAndAttachMesh(const FString& ComponentName, UStaticMesh* MeshAsset, USceneComponent* Parent, FName SocketName, bool bIsThirdPerson);
 
@@ -310,6 +314,18 @@ protected:
 	/** 지상 이동 함수 */
 	void MoveGround(FVector MoveInput);
 
+	/** 점프 입력 시작 함수. 지상에서만 작동한다. */
+	void JumpInputStart(const FInputActionValue& InputActionValue);
+
+	/** 점프 입력 중단 함수. 지상에서만 작동한다. */
+	void JumpInputStop(const FInputActionValue& InputActionValue);
+	
+	/** Jump 될 때 호출되는 함수. Jump State를 추적한다. */
+	virtual void OnJumped_Implementation() override;
+
+	/** Land 될 때 호출되는 함수. Jump State를 추적한다. */
+	virtual void Landed(const FHitResult& Hit) override;
+
 	/** 스프린트 시작 함수. Stamina가 감소하기 시작한다. */
 	void StartSprint(const FInputActionValue& InputActionValue);
 
@@ -434,6 +450,10 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	ECharacterState CharacterState;
 
+	/** 캐릭터의 현재 로코모션 상태. Jump인지 그냥 Fall인지를 구분한다. */
+	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	ELocomotionMode LocomotionMode;
+	
 	/** 오리발이 생성될 왼발 소켓 이름 */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Flipper")
 	FName LeftFlipperSocketName;
@@ -466,9 +486,11 @@ private:
 	UPROPERTY()
 	TObjectPtr<UStaticMeshComponent> RightFlipperMesh3PComponent;
 
+	/** 현재 회전 감도. 현재 상태에 따라 변화 한다. */
 	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float LookSensitivity;
 
+	/** Normal 상태에서의 회전 감도. Normal 상태에 진입할 때마다 LookSensitivity를 이 값으로 설정한다. */
 	UPROPERTY(EditDefaultsOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float NormalLookSensitivity;
 	
@@ -495,6 +517,7 @@ private:
 	/** 그로기에서 사망 전이 Timer */
 	FTimerHandle GroggyTimer;
 
+	/** 그로기 상태에서의 LookSensitivity. Groggy 상태에 진입할 때마다 LookSensitivity를 이 값으로 설정한다. */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Groggy")
 	float GroggyLookSensitivity;
 
@@ -544,6 +567,10 @@ private:
 	UPROPERTY(Transient, BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float EffectiveSpeed;
 
+	/** Sprint 시에 적용되는 속도 배율. Sprint가 적용되면 EffectiveSpeed에 곱해진다. */
+	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	float SprintMultiplier;
+	
 	/** Sprint 속도 */
 	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float SprintSpeed;
@@ -564,6 +591,7 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Radar", meta = (AllowPrivateAccess = "true"))
 	FVector RadarOffset;
 
+	/** 레이더가 생성된 회전 오프셋. 카메라 기준으로 부착이 된다. */
 	UPROPERTY(EditAnywhere, Category = "Character|Radar", meta = (AllowPrivateAccess = "true"))
 	FRotator RadarRotation;
 
@@ -587,6 +615,10 @@ private:
 	/** 이동 입력, 3차원 입력을 받는다. 캐릭터의 XYZ 축대로 맵핑을 한다. Forward : X, Right : Y, Up : Z */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> MoveAction;
+
+	/** 점프 입력. 지상에서만 작동한다. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> JumpAction;
 
 	/** 스프린트 입력. 누르고 있는 동안 Sprint가 활성화된다. Sprint가 모자를 경우 활성화가 안 되므로 다시 떼었다가 눌러야 한다. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
@@ -717,6 +749,9 @@ public:
 	/** 캐릭터의 상태를 반환 */
 	FORCEINLINE EEnvState GetEnvState() const { return EnvState; }
 
+	/** 현재 Locomotion Mode를 반환 */
+	FORCEINLINE ELocomotionMode GetLocomotionMode() const { return LocomotionMode; }
+
 	/** 장착 아이템 컴포넌트 반환 */
 	FORCEINLINE UEquipUseComponent* GetEquipUseComponent() const { return EquipUseComponent; }
 
@@ -754,6 +789,8 @@ public:
 
 	/** 3인칭 메시 Strafe 여부 반환 */
 	FORCEINLINE bool Is3PStrafe() const {return bIsAnim3PSyncStateOverride ? AnimSyncState.bIsStrafing : OverrideAnimSyncState.bIsStrafing;}
-		
+	
+	/** 상호작용 타입 반환 */
+	virtual EInteractionType GetInteractionType() const override { return EInteractionType::ReviveCharacter; }
 #pragma endregion
 };

@@ -51,8 +51,6 @@ UADInventoryComponent::UADInventoryComponent() :
 		InventoryIndexMapByType.FindOrAdd(static_cast<EItemType>(i));
 		InventoryIndexMapByType[static_cast<EItemType>(i)].Init(-1, InventorySizeByType[i]);
 	}
-
-	InventoryList.SetOwningComponent(this);
 }
 
 void UADInventoryComponent::BeginPlay()
@@ -75,7 +73,7 @@ void UADInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	DOREPLIFETIME(UADInventoryComponent, CurrentEquipmentInstance);
 }
 
-void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType, int32 SlotIndex)
+void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType, uint8 SlotIndex)
 {
 	if (ItemType == EItemType::Equipment)
 	{
@@ -87,7 +85,8 @@ void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType
 	bCanUseItem = false;
 
 	FTimerHandle UseCoolTimeHandle;
-	GetWorld()->GetTimerManager().SetTimer(UseCoolTimeHandle, this, &UADInventoryComponent::OnUseCoolTimeEnd, 0.3f, false);
+	float CoolTime = 0.3f; // 아이템 사용 쿨타임 설정
+	GetWorld()->GetTimerManager().SetTimer(UseCoolTimeHandle, this, &UADInventoryComponent::OnUseCoolTimeEnd, CoolTime, false);
 
 	int8 InventoryIndex = GetInventoryIndexByTypeAndSlotIndex(ItemType, SlotIndex);
 	if (InventoryIndex == -1) return;
@@ -153,7 +152,7 @@ void UADInventoryComponent::S_RemoveBySlotIndex_Implementation(uint8 SlotIndex, 
 	RemoveBySlotIndex(SlotIndex, ItemType, bIsDropAction);
 }
 
-void UADInventoryComponent::S_EquipmentChargeBattery_Implementation(FName ItemName, int32 Amount)
+void UADInventoryComponent::S_EquipmentChargeBattery_Implementation(FName ItemName, int8 Amount)
 {
 	int8 Index = FindItemIndexByName(ItemName);
 
@@ -176,7 +175,7 @@ void UADInventoryComponent::S_EquipmentChargeBattery_Implementation(FName ItemNa
 
 }
 
-void UADInventoryComponent::S_UseBatteryAmount_Implementation(int32 Amount)
+void UADInventoryComponent::S_UseBatteryAmount_Implementation(int8 Amount)
 {
 	int16 Index = FindItemIndexByName("Battery");
 	if (Index != INDEX_NONE)
@@ -192,7 +191,7 @@ void UADInventoryComponent::S_UseBatteryAmount_Implementation(int32 Amount)
 	}
 }
 
-void UADInventoryComponent::C_SetButtonActive_Implementation(FName CName, bool bCIsActive, int32 CAmount)
+void UADInventoryComponent::C_SetButtonActive_Implementation(FName CName, bool bCIsActive, int16 CAmount)
 {
 	if (ChargeBatteryWidget)
 	{
@@ -235,7 +234,7 @@ void UADInventoryComponent::InventoryInitialize()
 	}
 }
 
-bool UADInventoryComponent::AddInventoryItem(FItemData ItemData)
+bool UADInventoryComponent::AddInventoryItem(const FItemData& ItemData)
 {
 	if (TotalWeight + ItemData.Mass <= WeightMax)
 	{
@@ -249,6 +248,7 @@ bool UADInventoryComponent::AddInventoryItem(FItemData ItemData)
 				if (FoundRow->Stackable)
 				{
 					bIsUpdateSuccess = InventoryList.UpdateQuantity(ItemIndex, ItemData.Quantity);
+					InventoryList.SetAmount(ItemIndex, ItemData.Amount);
 					if (bIsUpdateSuccess)
 					{
 						LOGINVEN(Warning, TEXT("Item Update, ItemName : %s, Id : %d"), *InventoryList.Items[ItemIndex].Name.ToString(), InventoryList.Items[ItemIndex].Id);
@@ -445,6 +445,29 @@ void UADInventoryComponent::InventoryUIUpdate()
 	}
 }
 
+void UADInventoryComponent::CopyInventoryFrom(UADInventoryComponent* Source)
+{
+	if (!Source) return;
+
+	InventoryList.Items.Empty();
+
+	for (const FItemData& Item : Source->InventoryList.Items)
+	{
+		InventoryList.Items.Add(Item);
+	}
+
+	// FastArray는 복사 후 MarkItemDirty 필요
+	InventoryMarkArrayDirty();
+}
+
+void UADInventoryComponent::InventoryMarkArrayDirty()
+{
+	for (int32 i = 0; i < InventoryList.Items.Num(); ++i)
+	{
+		InventoryList.MarkItemDirty(InventoryList.Items[i]);
+	}
+}
+
 int8 UADInventoryComponent::GetTypeInventoryEmptyIndex(EItemType ItemType)
 {
 	RebuildIndexMap();
@@ -525,24 +548,28 @@ void UADInventoryComponent::Equip(FItemData& ItemData, int8 SlotIndex)
 	SpawnParams.Instigator = Pawn;
 	SpawnParams.Owner = Pawn;
 
-	AADUseItem* SpawnedItem = GetWorld()->SpawnActor<AADUseItem>(AADUseItem::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
-	LOGINVEN(Warning, TEXT("SpawnItem")); 
-	if (SpawnedItem)
-	{
-		ACharacter* Character = Cast<ACharacter>(Pawn);
-		USkeletalMeshComponent* MeshComp = Character->GetMesh();
-		if (MeshComp)
-		{
-			SpawnedItem->AttachToComponent(MeshComp, FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("Hand_R"));
-			SpawnedItem->SetItemInfo(ItemData, true);
-			CurrentEquipmentInstance = SpawnedItem;
-			LOGINVEN(Warning, TEXT("ItemToEquip Name: %s, Amount %d"), *ItemData.Name.ToString(), ItemData.Amount);
-			SetEquipInfo(SlotIndex, SpawnedItem);
+	ACharacter* Character = Cast<ACharacter>(Pawn);
+	USkeletalMeshComponent* MeshComp = Character->GetMesh();
 
-			if (UEquipUseComponent* EquipComp = Pawn->FindComponentByClass<UEquipUseComponent>()) // 나중에 Getter로 바꿔야 함
+	if (MeshComp)
+	{
+		if (MeshComp->DoesSocketExist("Hand_R"))
+		{
+			LOGINVEN(Warning, TEXT("SpawnItem")); 
+			AADUseItem* SpawnedItem = GetWorld()->SpawnActor<AADUseItem>(AADUseItem::StaticClass(), MeshComp->GetSocketLocation("Hand_R"), MeshComp->GetSocketRotation("Hand_R"), SpawnParams);
+			if (SpawnedItem)
 			{
-				if(GetCurrentEquipmentItemData())
-					EquipComp->Initialize(*GetCurrentEquipmentItemData());
+				SpawnedItem->SetItemInfo(ItemData, true);
+				SpawnedItem->AttachToComponent(MeshComp, FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("Hand_R"));
+				CurrentEquipmentInstance = SpawnedItem;
+				LOGINVEN(Warning, TEXT("ItemToEquip Name: %s, Amount %d"), *ItemData.Name.ToString(), ItemData.Amount);
+				SetEquipInfo(SlotIndex, SpawnedItem);
+
+				if (UEquipUseComponent* EquipComp = Pawn->FindComponentByClass<UEquipUseComponent>()) // 나중에 Getter로 바꿔야 함
+				{
+					if(GetCurrentEquipmentItemData())
+						EquipComp->Initialize(*GetCurrentEquipmentItemData());
+				}
 			}
 		}
 	}

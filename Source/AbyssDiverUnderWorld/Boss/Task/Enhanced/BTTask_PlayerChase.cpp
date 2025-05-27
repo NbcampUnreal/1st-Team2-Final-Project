@@ -47,10 +47,14 @@ void UBTTask_PlayerChase::TickTask(UBehaviorTreeComponent& Comp, uint8* NodeMemo
 	// 플레이어가 시야에서 사라진 경우
 	if (AIController->GetIsDisappearPlayer())
 	{
-		// 플레이어가 해초 더미 속에 숨은 경우
-		if (Boss->GetTarget()->IsHideInSeaweed())
+		// 타겟이 유효한지 확인
+		if (IsValid(Boss->GetTarget()))
 		{
-			AIController->GetBlackboardComponent()->SetValueAsBool(bIsPlayerHiddenKey, true);
+			// 플레이어가 해초 더미 속에 숨은 경우
+			if (Boss->GetTarget()->IsHideInSeaweed())
+			{
+				AIController->GetBlackboardComponent()->SetValueAsBool(bIsPlayerHiddenKey, true);
+			}	
 		}
 	}
 
