@@ -234,7 +234,7 @@ void UADInventoryComponent::InventoryInitialize()
 	}
 }
 
-bool UADInventoryComponent::AddInventoryItem(FItemData ItemData)
+bool UADInventoryComponent::AddInventoryItem(const FItemData& ItemData)
 {
 	if (TotalWeight + ItemData.Mass <= WeightMax)
 	{
@@ -442,6 +442,29 @@ void UADInventoryComponent::InventoryUIUpdate()
 	if (InventoryUpdateDelegate.IsBound())
 	{
 		InventoryUpdateDelegate.Broadcast();
+	}
+}
+
+void UADInventoryComponent::CopyInventoryFrom(UADInventoryComponent* Source)
+{
+	if (!Source) return;
+
+	InventoryList.Items.Empty();
+
+	for (const FItemData& Item : Source->InventoryList.Items)
+	{
+		InventoryList.Items.Add(Item);
+	}
+
+	// FastArray는 복사 후 MarkItemDirty 필요
+	InventoryMarkArrayDirty();
+}
+
+void UADInventoryComponent::InventoryMarkArrayDirty()
+{
+	for (int32 i = 0; i < InventoryList.Items.Num(); ++i)
+	{
+		InventoryList.MarkItemDirty(InventoryList.Items[i]);
 	}
 }
 

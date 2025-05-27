@@ -35,8 +35,8 @@ void UBTTask_RotateToTarget::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* 
 
 	FRotator CurrentRot = AIPawn->GetActorRotation();
 	FRotator TargetRot = FRotationMatrix::MakeFromX(ToTarget).Rotator();
-	TargetRot.Pitch = 0.f;
 	TargetRot.Roll = 0.f;
+	// TargetRot.Pitch = 0.f;
 
 	// Rotational interpolation
 	FRotator NewRot = FMath::RInterpTo(CurrentRot, TargetRot, DeltaSeconds, 5.f);

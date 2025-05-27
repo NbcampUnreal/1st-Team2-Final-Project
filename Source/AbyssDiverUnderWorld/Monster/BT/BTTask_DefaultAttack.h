@@ -29,6 +29,7 @@ protected:
 private:
 	UPROPERTY()
 	TObjectPtr<UBehaviorTreeComponent> CachedOwnerComp;
+
 #pragma endregion
 	
 };
