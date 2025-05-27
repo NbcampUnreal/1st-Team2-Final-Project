@@ -102,6 +102,20 @@ void USoundSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	LOGV(Warning, TEXT("AmbientData is Initialized, Count : %d"), AmbientDataCount);
 }
 
+void USoundSubsystem::Init(const int32 InitialPoolCount)
+{
+	ActivatedAmbientComponents.Empty(InitialPoolCount);
+	ActivatedBGMComponents.Empty(InitialPoolCount);
+	ActivatedSFXComponents.Empty(InitialPoolCount);
+
+	DeactivatedComponents.Empty();
+
+	for (int32 i = 0; i < InitialPoolCount; ++i)
+	{
+		CreateAudioComponent();
+	}
+}
+
 void USoundSubsystem::Play2D(const ESFX& SFXType, const float& Volume)
 {
 	Play2DInternal(SFXData[int32(SFXType)]->Sound, false, false, Volume);
@@ -214,25 +228,67 @@ void USoundSubsystem::ChangeMasterVolumeInternal()
 
 void USoundSubsystem::ChangeBGMVolumeInternal()
 {
-	for (const auto& BGM : ActivatedBGMComponents)
+	if (::IsValid(this) == false)
 	{
-		BGM.Key->SetVolumeMultiplier(MasterVolume * BGMVolume * BGM.Value);
+		LOGV(Warning, TEXT("Not Valid"));
+		return;
+	}
+
+	for (auto It = ActivatedBGMComponents.CreateIterator(); It; ++It)
+	{
+		if (IsValid(It->Key))
+		{
+			It->Key->SetVolumeMultiplier(MasterVolume * BGMVolume * It->Value);
+		}
+		else
+		{
+			LOGV(Warning, TEXT("Not Valid"));
+			It.RemoveCurrent();
+		}
 	}
 }
 
 void USoundSubsystem::ChangeSFXVolumeInternal()
 {
-	for (const auto& SFX : ActivatedSFXComponents)
+	if (::IsValid(this) == false)
 	{
-		SFX.Key->SetVolumeMultiplier(MasterVolume * SFXVolume * SFX.Value);
+		LOGV(Warning, TEXT("Not Valid"));
+		return;
+	}
+
+	for (auto It = ActivatedSFXComponents.CreateIterator(); It; ++It)
+	{
+		if (IsValid(It->Key))
+		{
+			It->Key->SetVolumeMultiplier(MasterVolume * SFXVolume * It->Value);
+		}
+		else
+		{
+			LOGV(Warning, TEXT("Not Valid"));
+			It.RemoveCurrent();
+		}
 	}
 }
 
 void USoundSubsystem::ChangeAmbientVolumeInternal()
 {
-	for (const auto& Ambient : ActivatedAmbientComponents)
+	if (::IsValid(this) == false)
 	{
-		Ambient.Key->SetVolumeMultiplier(MasterVolume * AmbientVolume * Ambient.Value);
+		LOGV(Warning, TEXT("Not Valid"));
+		return;
+	}
+
+	for (auto It = ActivatedAmbientComponents.CreateIterator(); It; ++It)
+	{
+		if (IsValid(It->Key))
+		{
+			It->Key->SetVolumeMultiplier(MasterVolume * AmbientVolume * It->Value);
+		}
+		else
+		{
+			LOGV(Warning, TEXT("Not Valid"));
+			It.RemoveCurrent();
+		}
 	}
 }
 
@@ -312,7 +368,11 @@ void USoundSubsystem::Play2DInternal(USoundBase* SoundAsset, const bool& bIsBGM,
 void USoundSubsystem::Play3DInternal(USoundBase* SoundAsset, const FVector& Position, USceneComponent* AttachComp, const float& Volume)
 {
 	TObjectPtr<UAudioComponent> NewAudio = GetNewAudio();
-	NewAudio->RegisterComponent();
+	if (NewAudio == nullptr || IsValid(NewAudio) == false || NewAudio->IsValidLowLevel() == false)
+	{
+		LOGV(Error, TEXT("Not Valid"));
+		return;
+	}
 
 	float NewVolume = MasterVolume * Volume;
 
@@ -353,14 +413,32 @@ UAudioComponent* USoundSubsystem::GetNewAudio()
 	{
 		if (DeactivatedComponents.IsEmpty())
 		{
-			NewAudio = NewObject<UAudioComponent>((UObject*)UGameplayStatics::GetGameState(GetWorld()));
-			break;
+			CreateAudioComponent();
 		}
-		else if (DeactivatedComponents.Dequeue(NewAudio) && ::IsValid(NewAudio) && NewAudio->IsValidLowLevel())
+
+		DeactivatedComponents.Peek(NewAudio);
+
+		if (NewAudio == nullptr || IsValid(NewAudio) == false || NewAudio->IsValidLowLevel() == false)
 		{
-			break;
+			LOGV(Error, TEXT("Not Valid"));
+			continue;
 		}
+
+		DeactivatedComponents.Pop();
+		break;
 	}
 
 	return NewAudio;
+}
+
+void USoundSubsystem::CreateAudioComponent()
+{
+	TObjectPtr<UAudioComponent> NewAudio = NewObject<UAudioComponent>((UObject*)UGameplayStatics::GetGameState(GetWorld()));
+	if (IsValid(NewAudio) && NewAudio->IsValidLowLevel())
+	{
+		DeactivatedComponents.Enqueue(NewAudio);
+		NewAudio->RegisterComponent();
+	}
+
+	return;
 }

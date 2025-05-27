@@ -59,10 +59,13 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	Mesh1P->bCastDynamicShadow = false;
 	
 	GetMesh()->SetOwnerNoSee(true);
+	GetMesh()->CastShadow = true;
 	GetMesh()->bCastHiddenShadow = true;
 
 	StatComponent->Initialize(1000, 1000, 400.0f, 10);
 
+	ExpectedGravityZ = -980.0f;
+	
 	LeftFlipperSocketName = TEXT("foot_l_flipper_socket");
 	RightFlipperSocketName = TEXT("foot_r_flipper_socket");
 	
@@ -308,11 +311,15 @@ void AUnderwaterCharacter::SetEnvState(EEnvState State)
 	case EEnvState::Underwater:
 		GetCharacterMovement()->GravityScale = 0.0f;
 		SetFlipperMeshVisibility(true);
+		FirstPersonCameraArm->bEnableCameraRotationLag = true;
+		Mesh1PSpringArm->bEnableCameraRotationLag = true;
 		break;
 	case EEnvState::Ground:
 		// 지상에서는 이동 방향으로 회전을 하게 한다.
-		GetCharacterMovement()->GravityScale = 1.0f;
+		GetCharacterMovement()->GravityScale = GetWorld()->GetGravityZ() / ExpectedGravityZ;
 		SetFlipperMeshVisibility(false);
+		FirstPersonCameraArm->bEnableCameraRotationLag = false;
+		Mesh1PSpringArm->bEnableCameraRotationLag = false;
 		break;
 	default:
 		UE_LOG(AbyssDiver, Error, TEXT("Invalid Character State"));
@@ -541,13 +548,18 @@ void AUnderwaterCharacter::SetFlipperMeshVisibility(const bool bVisible)
 	{
 		RightFlipperMesh1PComponent->SetVisibility(bVisible);
 	}
+
+	// 3인칭 메시의 경우 bCastHiddenShadow 가 true로 설정되어 있기 떄문에 그림자 설정 자체를 꺼야 한다.
 	if (LeftFlipperMesh3PComponent)
 	{
-		LeftFlipperMesh3PComponent->SetVisibility(bVisible);
+		LeftFlipperMesh3PComponent->SetCastShadow(bVisible);
+		LeftFlipperMesh3PComponent->SetHiddenInGame(!bVisible);
 	}
 	if (RightFlipperMesh3PComponent)
 	{
-		RightFlipperMesh3PComponent->SetVisibility(bVisible);
+		// RightFlipperMesh3PComponent->(bVisible);
+		RightFlipperMesh3PComponent->SetCastShadow(bVisible);
+		RightFlipperMesh3PComponent->SetHiddenInGame(!bVisible);
 	}
 }
 
@@ -833,7 +845,7 @@ void AUnderwaterCharacter::SpawnRadar()
 		return;
 	}
 
-	FVector SpawnLocation = FirstPersonCameraComponent->GetComponentLocation() + RadarOffset;
+	FVector SpawnLocation = FirstPersonCameraComponent->GetComponentTransform().TransformPosition(RadarOffset);
 	FRotator SpawnRotation = FirstPersonCameraComponent->GetComponentRotation() + RadarRotation;
 
 	// @ToDO : Forward Actor에 맞추어서 Radar 회전
