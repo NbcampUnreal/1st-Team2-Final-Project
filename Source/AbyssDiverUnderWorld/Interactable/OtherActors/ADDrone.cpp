@@ -32,6 +32,11 @@ void AADDrone::BeginPlay()
 	{
 		AActor* Found = UGameplayStatics::GetActorOfClass(this, ASpawnManager::StaticClass());
 		SpawnManager = Cast<ASpawnManager>(Found);
+
+		if (SpawnManager && DronePhaseNumber == 1)
+		{
+			SpawnManager->SpawnByGroup();
+		}
 	}
 }
 
@@ -77,7 +82,7 @@ void AADDrone::Interact_Implementation(AActor* InstigatorActor)
 	}
 	CurrentSeller->DisableSelling();
 	StartRising();
-	if (SpawnManager)
+	if (SpawnManager && NextSeller)
 	{
 		SpawnManager->SpawnByGroup();
 		LOGD(Log, TEXT("Monster Spawns"));
