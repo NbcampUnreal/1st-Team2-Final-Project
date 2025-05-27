@@ -80,6 +80,11 @@ void AADPlayerState::CopyProperties(APlayerState* PlayerState)
 	{
 		NextUpgradeComponent->CopyProperties(GetUpgradeComp());
 	}
+
+	if (UADInventoryComponent* NextInventoryComp = NextPlayerState->GetInventory())
+	{
+		NextInventoryComp->CopyInventoryFrom(GetInventory());
+	}
 }
 
 void AADPlayerState::SetPlayerInfo( const FString& InNickname)
