@@ -18,7 +18,6 @@ class UChargeBatteryWidget;
 
 DECLARE_LOG_CATEGORY_EXTERN(InventoryLog, Log, All);
 
-
 DECLARE_MULTICAST_DELEGATE(FInventoryUpdateDelegate);
 DECLARE_MULTICAST_DELEGATE(FBatteryUpdateDelegate);
 DECLARE_MULTICAST_DELEGATE_TwoParams(FInventoryInfoUpdateDelegate, int32, int32);
@@ -73,7 +72,7 @@ public:
 	void InventoryInitialize();
 
 	UFUNCTION(BlueprintCallable)
-	bool AddInventoryItem(FItemData ItemData);
+	bool AddInventoryItem(const FItemData& ItemData);
 
 	UFUNCTION(BlueprintCallable)
 	void ShowInventory(); 
@@ -89,6 +88,8 @@ public:
 	void RemoveBySlotIndex(uint8 SlotIndex, EItemType ItemType, bool bIsDropAction);
 	void ClientRequestInventoryInitialize();
 	void InventoryUIUpdate();
+	void CopyInventoryFrom(UADInventoryComponent* Source);
+	void InventoryMarkArrayDirty();
 
 	FInventoryUpdateDelegate InventoryUpdateDelegate;
 	FBatteryUpdateDelegate BatteryUpdateDelegate;
