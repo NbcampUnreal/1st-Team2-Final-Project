@@ -23,7 +23,7 @@ AGFProjectile::AGFProjectile() : Damage(50.0f), LifeSpan(5.0f)
 	CollisionComponent->SetCollisionProfileName(TEXT("Projectile"));
 	CollisionComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	CollisionComponent->SetNotifyRigidBodyCollision(true); // Must be present for OnComponentHit to occur
-	CollisionComponent->OnComponentHit.AddDynamic(this, &AGFProjectile::OnProjectileHit);
+	CollisionComponent->OnComponentBeginOverlap.AddDynamic(this, &AGFProjectile::OnProjectileBeginOverlap);
 
 
 	ProjectileMovementComp = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovementComp"));
@@ -64,12 +64,13 @@ void AGFProjectile::FireDirection(const FVector& ShootDirection)
 	ProjectileMovementComp->Velocity = ShootDirection * ProjectileMovementComp->InitialSpeed;
 }
 
-void AGFProjectile::OnProjectileHit(
-	UPrimitiveComponent* HitComponent,
+void AGFProjectile::OnProjectileBeginOverlap(
+	UPrimitiveComponent* OverlappedComponent,
 	AActor* OtherActor,
 	UPrimitiveComponent* OtherComp,
-	FVector NormalImpulse,
-	const FHitResult& Hit)
+	int32 OtherBodyIndex,
+	bool bFromSweep,
+	const FHitResult& SweepResult)
 {
 	if (OtherActor && OtherActor != this)
 	{
@@ -79,7 +80,7 @@ void AGFProjectile::OnProjectileHit(
 			GetInstigatorController(), // Event Instigator Controller : AController*
 			this, // Damage Causer : AActor*
 			nullptr // Damage Type Class : TSubclassof<UDamageType>
-			);
+		);
 	}
 
 	Destroy();
