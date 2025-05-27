@@ -49,6 +49,9 @@ protected:
 	void OnRep_PhaseGoal();
 
 private:
+
+	void ReceiveDataFromGameInstance();
+
 #pragma endregion
 
 #pragma region Variable

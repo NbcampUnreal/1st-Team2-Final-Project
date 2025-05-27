@@ -134,14 +134,25 @@ void UPlayerHUDComponent::OnPossessedPawnChanged(APawn* OldPawn, APawn* NewPawn)
 {
 	if (!NewPawn) return;
 
+	APlayerController* PlayerController = Cast<APlayerController>(GetOwner());
+	
 	if (!IsValid(HudWidget))
 	{
-		HudWidget = CreateWidget<UPlayerHUDWidget>(GetWorld(), HudWidgetClass);
+		HudWidget = CreateWidget<UPlayerHUDWidget>(PlayerController, HudWidgetClass);
 	}
 	if (HudWidget)
 	{
 		HudWidget->AddToViewport();
 		HudWidget->BindWidget(NewPawn);
+	}
+
+	if (!IsValid(PlayerStatusWidget))
+	{
+		PlayerStatusWidget = CreateWidget<UPlayerStatusWidget>(PlayerController, PlayerStatusWidgetClass);
+	}
+	if (PlayerStatusWidget)
+	{
+		PlayerStatusWidget->AddToViewport();
 	}
 
 	if (AUnderwaterCharacter* UWCharacter = Cast<AUnderwaterCharacter>(NewPawn))
