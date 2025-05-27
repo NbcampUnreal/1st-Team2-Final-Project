@@ -24,17 +24,7 @@ void AADInGameState::PostInitializeComponents()
 
 	if (HasAuthority())
 	{
-		if (UADGameInstance* ADGameInstance = GetGameInstance<UADGameInstance>())
-		{
-			SelectedLevelName = ADGameInstance->SelectedLevelName;
-			TeamCredits = ADGameInstance->TeamCredits;
-			if (const FPhaseGoalRow* GoalData = ADGameInstance->GetSubsystem<UDataTableSubsystem>()->GetPhaseGoalData(SelectedLevelName, CurrentPhase))
-			{
-				CurrentPhaseGoal = GoalData->GoalCredit;
-			}
-		}
-
-		LOGVN(Error, TEXT("SelectedLevelName: %d / TeamCredits: %d / CurrentPhaseGoal : %d"), SelectedLevelName, TeamCredits, CurrentPhaseGoal);
+		ReceiveDataFromGameInstance();
 	}
 }
 
@@ -116,6 +106,21 @@ void AADInGameState::OnRep_PhaseGoal()
 {
 	LOGVN(Error, TEXT("PhaseGoal updated: %d"), CurrentPhaseGoal);
 	CurrentPhaseGoalChangedDelegate.Broadcast(CurrentPhaseGoal);
+}
+
+void AADInGameState::ReceiveDataFromGameInstance()
+{
+	if (UADGameInstance* ADGameInstance = GetGameInstance<UADGameInstance>())
+	{
+		SelectedLevelName = ADGameInstance->SelectedLevelName;
+		TeamCredits = ADGameInstance->TeamCredits;
+		if (const FPhaseGoalRow* GoalData = ADGameInstance->GetSubsystem<UDataTableSubsystem>()->GetPhaseGoalData(SelectedLevelName, CurrentPhase))
+		{
+			CurrentPhaseGoal = GoalData->GoalCredit;
+		}
+	}
+
+	LOGVN(Error, TEXT("SelectedLevelName: %d / TeamCredits: %d / CurrentPhaseGoal : %d"), SelectedLevelName, TeamCredits, CurrentPhaseGoal);
 }
 
 FString AADInGameState::GetMapDisplayName() const
