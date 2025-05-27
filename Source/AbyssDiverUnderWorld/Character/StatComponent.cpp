@@ -115,6 +115,12 @@ bool UStatComponent::IsHealthRegenActive() const
 	return GetWorld()->GetTimerManager().IsTimerActive(HealthRegenTimerHandle);
 }
 
+void UStatComponent::SetMoveSpeed(const float NewMoveSpeed)
+{
+	MoveSpeed = NewMoveSpeed;
+	OnMoveSpeedChanged.Broadcast(MoveSpeed);
+}
+
 void UStatComponent::SetHealthRegenRate(float NewHealthRegenRate)
 {
 	if (GetOwnerRole() != ROLE_Authority)

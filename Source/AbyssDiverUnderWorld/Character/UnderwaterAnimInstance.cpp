@@ -13,6 +13,8 @@ UUnderwaterAnimInstance::UUnderwaterAnimInstance()
 
 	EnvState = EEnvState::Underwater;
 	CharacterState = ECharacterState::Normal;
+
+	bIsInAir = false;
 	
 	Speed = 0.0f;
 	ForwardSpeed = 0.0f;
@@ -64,6 +66,8 @@ void UUnderwaterAnimInstance::UpdateVariables()
 {
 	EnvState = UnderwaterCharacter->GetEnvState();
 	CharacterState = UnderwaterCharacter->GetCharacterState();
+	LocomotionMode = UnderwaterCharacter->GetLocomotionMode();
+	bIsInAir = CharacterMovement->IsFalling();
 	bIsGroggy = CharacterState == ECharacterState::Groggy;
 	bIsDead = CharacterState == ECharacterState::Death;
 	
