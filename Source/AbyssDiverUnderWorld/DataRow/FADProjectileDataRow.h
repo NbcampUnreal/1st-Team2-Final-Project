@@ -15,9 +15,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FName Name;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	uint8 Damage;
+	int32 Damage;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	uint8 AdditionalDamage;
+	int32 AdditionalDamage;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TSoftObjectPtr<UNiagaraSystem> TrailEffect;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)

@@ -72,7 +72,7 @@ private:
 
 #pragma region Getter/Setter
 public:
-	void SetEquipBatteryAmount(FName Name, int32 Amount);
+	void SetEquipBatteryAmount(FName Name, int16 Amount);
 	void SetEquipBatteryButtonActivate(FName Name, bool bActivate);
 #pragma endregion
 };

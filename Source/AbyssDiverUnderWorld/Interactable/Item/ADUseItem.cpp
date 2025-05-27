@@ -5,6 +5,8 @@
 #include "Framework/ADGameInstance.h"
 #include "Subsystems/DataTableSubsystem.h"
 #include <Net/UnrealNetwork.h>
+#include "GameFramework/ProjectileMovementComponent.h"
+#include "AbyssDiverUnderWorld.h"
 
 AADUseItem::AADUseItem()
 {
@@ -12,12 +14,12 @@ AADUseItem::AADUseItem()
 
 	SkeletalMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SkeletalMesh"));
 	RootComponent = SkeletalMesh;
-	SkeletalMesh->SetMobility(EComponentMobility::Movable);
-	SkeletalMesh->SetIsReplicated(true);
+	//SkeletalMesh->SetMobility(EComponentMobility::Movable);
+	//SkeletalMesh->SetIsReplicated(true);
 
-	SkeletalMesh->SetCollisionProfileName("BlockAllDynamic");
 	SkeletalMesh->SetGenerateOverlapEvents(true);
 	SkeletalMesh->SetSimulatePhysics(true);
+	SkeletalMesh->SetCollisionProfileName("BlockAllDynamic");
 
 	bReplicates = true;
 }
@@ -29,6 +31,7 @@ void AADUseItem::M_SetSkeletalMesh_Implementation(USkeletalMesh* NewMesh)
 
 void AADUseItem::SetItemInfo(FItemData& ItemInfo, bool bIsEquipMode)
 {
+
 	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
 	{
 		UDataTableSubsystem* ItemDataTableSubsystem = GI->GetSubsystem<UDataTableSubsystem>();
@@ -51,16 +54,14 @@ void AADUseItem::SetItemInfo(FItemData& ItemInfo, bool bIsEquipMode)
 				M_SetSkeletalMesh(ItemRow->SkeletalMesh);
 			}
 		}
-
 	}
-
 	if (bIsEquipMode)
 	{
-		EquipMode();
+		M_EquipMode();
 	}
 	else
 	{
-		UnEquipMode();
+		M_UnEquipMode();
 	}
 }
 
@@ -71,14 +72,14 @@ void AADUseItem::SetVariableValues(int32 InAmount, int32 InCurrentAmmo, int32 In
 	ItemData.ReserveAmmo = InReserveAmmo;
 }
 
-void AADUseItem::UnEquipMode()
+void AADUseItem::M_UnEquipMode_Implementation()
 {
 	SkeletalMesh->SetGenerateOverlapEvents(true);
 	SkeletalMesh->SetSimulatePhysics(true);
 	SkeletalMesh->SetCollisionProfileName("BlockAllDynamic");
 }
 
-void AADUseItem::EquipMode()
+void AADUseItem::M_EquipMode_Implementation()
 {
 	SkeletalMesh->SetGenerateOverlapEvents(false);
 	SkeletalMesh->SetSimulatePhysics(false);

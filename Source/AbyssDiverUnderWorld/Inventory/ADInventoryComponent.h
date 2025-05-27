@@ -38,8 +38,8 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override; 
 
 	UFUNCTION(Server, Reliable, BlueprintCallable)
-	void S_UseInventoryItem(EItemType ItemType = EItemType::Equipment, int32 SlotIndex = 0);
-	void S_UseInventoryItem_Implementation(EItemType ItemType = EItemType::Equipment, int32 SlotIndex = 0);
+	void S_UseInventoryItem(EItemType ItemType = EItemType::Equipment, uint8 SlotIndex = 0);
+	void S_UseInventoryItem_Implementation(EItemType ItemType = EItemType::Equipment, uint8 SlotIndex = 0);
 
 	UFUNCTION(Server, Reliable)
 	void S_TransferSlots(EItemType SlotType, uint8 FromIndex, uint8 ToIndex);
@@ -50,24 +50,24 @@ public:
 	void S_RemoveBySlotIndex_Implementation(uint8 SlotIndex, EItemType ItemType, bool bIsDropAction);
 
 	UFUNCTION(Server, Reliable)
-	void S_EquipmentChargeBattery(FName ItemName, int32 Amount);
-	void S_EquipmentChargeBattery_Implementation(FName ItemName, int32 Amount);
+	void S_EquipmentChargeBattery(FName ItemName, int8 Amount);
+	void S_EquipmentChargeBattery_Implementation(FName ItemName, int8 Amount);
 
 	UFUNCTION(Server, Reliable)
-	void S_UseBatteryAmount(int32 Amount);
-	void S_UseBatteryAmount_Implementation(int32 Amount);
+	void S_UseBatteryAmount(int8 Amount);
+	void S_UseBatteryAmount_Implementation(int8 Amount);
 
 	UFUNCTION(Client, Reliable)
-	void C_SetButtonActive(FName CName, bool bCIsActive, int32 CAmount);
-	void C_SetButtonActive_Implementation(FName CName, bool bCIsActive, int32 CAmount);
+	void C_SetButtonActive(FName ClientName, bool bClientIsActive, int16 ClientAmount);
+	void C_SetButtonActive_Implementation(FName ClientName, bool bClientIsActive, int16 ClientAmount);
 
 	UFUNCTION(Client, Reliable)
 	void C_UpdateBatteryInfo();
 	void C_UpdateBatteryInfo_Implementation();
 
 	UFUNCTION(Client, Reliable)
-	void C_SetEquipBatteryAmount(FName CItemName);
-	void C_SetEquipBatteryAmount_Implementation(FName CItemName);
+	void C_SetEquipBatteryAmount(FName ClientItemName);
+	void C_SetEquipBatteryAmount_Implementation(FName ClientItemName);
 
 	UFUNCTION(BlueprintCallable)
 	void InventoryInitialize();
