@@ -27,6 +27,8 @@ protected:
 
 public:
 
+	void Init(const int32 InitialPoolCount);
+
 	void Play2D(const ESFX& SFXType, const float& Volume = 1.0f);
 	void Play2D(const ESFX_Monster& SFXType, const float& Volume = 1.0f);
 	void Play2D(const ESFX_UI& SFXType, const float& Volume = 1.0f);
@@ -72,6 +74,8 @@ private:
 	void PlayAudio(UAudioComponent* Audio);
 
 	UAudioComponent* GetNewAudio();
+
+	void Create();
 
 #pragma endregion
 
