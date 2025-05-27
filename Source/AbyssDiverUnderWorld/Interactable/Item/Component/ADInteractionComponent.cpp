@@ -351,6 +351,7 @@ void UADInteractionComponent::OnHoldComplete()
 
 void UADInteractionComponent::HandleInteractPressed(AActor* TargetActor)
 {
+	CachedHoldInteractable = FocusedInteractable;
 
 	if (TargetActor->GetClass()->ImplementsInterface(UIADInteractable::StaticClass()))
 	{
@@ -374,17 +375,18 @@ void UADInteractionComponent::HandleInteractReleased()
 	GetWorld()->GetTimerManager().ClearTimer(HoldTimerHandle);
 	LOGIC(Log, TEXT("Fail Hold!"));
 
-	if (FocusedInteractable && HoldInstigator.Get())
+	if (CachedHoldInteractable.IsValid() && HoldInstigator.Get())
 	{
 		APawn* InstigatorPawn = Cast<APawn>(HoldInstigator.Get());
 		if (InstigatorPawn)
 		{
-			IIADInteractable::Execute_OnHoldStop(FocusedInteractable->GetOwner(), InstigatorPawn);
+			IIADInteractable::Execute_OnHoldStop(CachedHoldInteractable->GetOwner(), InstigatorPawn);
 		}
 		
 	}
 		
 	HoldInstigator = nullptr;
+	CachedHoldInteractable = nullptr;
 }
 
 bool UADInteractionComponent::ShouldHighlight(const UADInteractableComponent* ADIC) const

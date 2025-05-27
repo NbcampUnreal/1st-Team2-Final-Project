@@ -119,6 +119,7 @@ public:
     
     
     TWeakObjectPtr<AActor> HoldInstigator;
+    TWeakObjectPtr<UADInteractableComponent> CachedHoldInteractable;
 
 
 protected:

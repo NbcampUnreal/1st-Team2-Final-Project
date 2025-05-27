@@ -553,7 +553,7 @@ void UEquipUseComponent::FireHarpoon()
 		ProjectileMovementComp->Activate(true);
 
 		--CurrentAmmoInMag;
-		OnRep_Amount(); 
+		OnRep_CurrentAmmoInMag();
 
 		bCanFire = false;
 		const float RefireDelay = 1.0f / RateOfFire;
@@ -677,6 +677,8 @@ void UEquipUseComponent::FinishReload()
 	CurrentAmmoInMag += ToReload;
 	ReserveAmmo -= ToReload;
 	bCanFire = true;
+
+	InitializeAmmoUI();
 }
 
 void UEquipUseComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
