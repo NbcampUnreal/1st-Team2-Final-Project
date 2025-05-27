@@ -61,6 +61,11 @@ public:
 	UPROPERTY(BlueprintAssignable, Category="Stat")
 	FOnHealthChanged OnHealthChanged;
 
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMoveSpeedChanged, float, NewMoveSpeed);
+	/** MoveSpeed가 변경될 때 호출되는 델리게이트 */
+	UPROPERTY(BlueprintAssignable, Category="Stat")
+	FOnMoveSpeedChanged OnMoveSpeedChanged;
+	
 	/** 최대 체력 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, ReplicatedUsing = OnRep_MaxHealth, Category="Stat")
 	int32 MaxHealth;
@@ -107,6 +112,9 @@ public:
 
 	/** 공격력을 반환 */
 	FORCEINLINE int32 GetAttackPower() const { return AttackPower; }
+
+	/** 기준 속도를 설정 */
+	FORCEINLINE void SetMoveSpeed(const float NewMoveSpeed);
 
 	/** 무분별하게 Health Regen Rate에 접근하고 수정을 하면 값을 잃어버릴 수 있다.
 	 * Regen Rate에 접근하는 객체가 많아지면 구조를 변경해야 한다.

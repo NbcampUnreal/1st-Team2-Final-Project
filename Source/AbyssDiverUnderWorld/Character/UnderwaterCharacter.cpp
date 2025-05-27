@@ -5,6 +5,7 @@
 
 #include "AbyssDiverUnderWorld.h"
 #include "EnhancedInputComponent.h"
+#include "LocomotionMode.h"
 #include "PlayerComponent/OxygenComponent.h"
 #include "PlayerComponent/StaminaComponent.h"
 #include "StatComponent.h"
@@ -96,7 +97,7 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 		Movement->BrakingDecelerationSwimming = 500.0f;
 		Movement->GravityScale = 0.0f;
 	}
-	SprintSpeed = StatComponent->MoveSpeed * 1.75f;
+	SprintMultiplier = 1.75f;
 
 	// Debug용 카메라
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
@@ -148,6 +149,7 @@ void AUnderwaterCharacter::BeginPlay()
 	OxygenComponent->OnOxygenDepleted.AddDynamic(this, &AUnderwaterCharacter::OnOxygenDepleted);
 
 	StatComponent->OnHealthChanged.AddDynamic(this, &AUnderwaterCharacter::OnHealthChanged);
+	StatComponent->OnMoveSpeedChanged.AddDynamic(this, &AUnderwaterCharacter::OnMoveSpeedChanged);
 	
 	NoiseEmitterComponent = NewObject<UPawnNoiseEmitterComponent>(this);
 	NoiseEmitterComponent->RegisterComponent();
@@ -452,6 +454,11 @@ void AUnderwaterCharacter::SpawnAndAttachTool(TSubclassOf<AActor> ToolClass)
 		LaserSocketName
 	);
 	
+}
+
+void AUnderwaterCharacter::OnMoveSpeedChanged(float NewMoveSpeed)
+{
+	AdjustSpeed();
 }
 
 UStaticMeshComponent* AUnderwaterCharacter::CreateAndAttachMesh(const FString& ComponentName, UStaticMesh* MeshAsset, USceneComponent* Parent, FName SocketName, bool bIsThirdPerson)
@@ -762,7 +769,7 @@ void AUnderwaterCharacter::M_StopCaptureState_Implementation()
 
 void AUnderwaterCharacter::AdjustSpeed()
 {
-	const float BaseSpeed = StaminaComponent->IsSprinting() ? SprintSpeed : StatComponent->MoveSpeed;
+	const float BaseSpeed = StaminaComponent->IsSprinting() ? StatComponent->MoveSpeed * SprintMultiplier : StatComponent->MoveSpeed;
 
 	// 추후 Multiplier 종류가 늘어나면 Multiplier를 합산하도록 한다.
 	float Multiplier = 1.0f;
@@ -925,6 +932,22 @@ void AUnderwaterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 				ETriggerEvent::Triggered, 
 				this, 
 				&AUnderwaterCharacter::Move
+			);
+		}
+
+		if (JumpAction)
+		{
+			EnhancedInput->BindAction(
+				JumpAction,
+				ETriggerEvent::Triggered,
+				this,
+				&AUnderwaterCharacter::JumpInputStart
+			);
+			EnhancedInput->BindAction(
+				JumpAction,
+				ETriggerEvent::Completed,
+				this,
+				&AUnderwaterCharacter::JumpInputStop
 			);
 		}
 
@@ -1189,6 +1212,42 @@ void AUnderwaterCharacter::MoveGround(FVector MoveInput)
 	{
 		AddMovementInput(RightVector, MoveInput.Y);
 	}
+}
+
+void AUnderwaterCharacter::JumpInputStart(const FInputActionValue& InputActionValue)
+{
+	if (EnvState == EEnvState::Underwater)	
+	{
+		// 수중에서는 점프가 불가능하다.
+		return;
+	}
+
+	Jump();
+}
+
+void AUnderwaterCharacter::JumpInputStop(const FInputActionValue& InputActionValue)
+{
+	if (EnvState == EEnvState::Underwater)
+	{
+		// 수중에서는 점프가 불가능하다.
+		return;
+	}
+
+	StopJumping();
+}
+
+void AUnderwaterCharacter::OnJumped_Implementation()
+{
+	Super::OnJumped_Implementation();
+
+	LocomotionMode = ELocomotionMode::Jumping;
+}
+
+void AUnderwaterCharacter::Landed(const FHitResult& Hit)
+{
+	Super::Landed(Hit);
+
+	LocomotionMode = ELocomotionMode::None;
 }
 
 void AUnderwaterCharacter::StartSprint(const FInputActionValue& InputActionValue)
