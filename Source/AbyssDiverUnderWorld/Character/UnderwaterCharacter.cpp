@@ -59,6 +59,7 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	Mesh1P->bCastDynamicShadow = false;
 	
 	GetMesh()->SetOwnerNoSee(true);
+	GetMesh()->CastShadow = true;
 	GetMesh()->bCastHiddenShadow = true;
 
 	StatComponent->Initialize(1000, 1000, 400.0f, 10);
