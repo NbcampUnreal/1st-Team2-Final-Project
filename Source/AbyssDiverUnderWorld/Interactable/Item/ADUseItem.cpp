@@ -5,6 +5,7 @@
 #include "Framework/ADGameInstance.h"
 #include "Subsystems/DataTableSubsystem.h"
 #include <Net/UnrealNetwork.h>
+#include "GameFramework/ProjectileMovementComponent.h"
 
 AADUseItem::AADUseItem()
 {
@@ -29,6 +30,15 @@ void AADUseItem::M_SetSkeletalMesh_Implementation(USkeletalMesh* NewMesh)
 
 void AADUseItem::SetItemInfo(FItemData& ItemInfo, bool bIsEquipMode)
 {
+	if (bIsEquipMode)
+	{
+		EquipMode();
+	}
+	else
+	{
+		UnEquipMode();
+	}
+
 	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
 	{
 		UDataTableSubsystem* ItemDataTableSubsystem = GI->GetSubsystem<UDataTableSubsystem>();
@@ -51,16 +61,6 @@ void AADUseItem::SetItemInfo(FItemData& ItemInfo, bool bIsEquipMode)
 				M_SetSkeletalMesh(ItemRow->SkeletalMesh);
 			}
 		}
-
-	}
-
-	if (bIsEquipMode)
-	{
-		EquipMode();
-	}
-	else
-	{
-		UnEquipMode();
 	}
 }
 
@@ -83,4 +83,7 @@ void AADUseItem::EquipMode()
 	SkeletalMesh->SetGenerateOverlapEvents(false);
 	SkeletalMesh->SetSimulatePhysics(false);
 	SkeletalMesh->SetCollisionProfileName("NoCollision");
+
+	DropMovement->StopMovementImmediately();
+	DropMovement->Deactivate();
 }

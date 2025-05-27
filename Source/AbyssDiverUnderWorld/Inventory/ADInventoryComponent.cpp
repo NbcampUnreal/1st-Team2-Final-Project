@@ -533,8 +533,8 @@ void UADInventoryComponent::Equip(FItemData& ItemData, int8 SlotIndex)
 		USkeletalMeshComponent* MeshComp = Character->GetMesh();
 		if (MeshComp)
 		{
-			SpawnedItem->AttachToComponent(MeshComp, FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("Hand_R"));
 			SpawnedItem->SetItemInfo(ItemData, true);
+			SpawnedItem->AttachToComponent(MeshComp, FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("Hand_R"));
 			CurrentEquipmentInstance = SpawnedItem;
 			LOGINVEN(Warning, TEXT("ItemToEquip Name: %s, Amount %d"), *ItemData.Name.ToString(), ItemData.Amount);
 			SetEquipInfo(SlotIndex, SpawnedItem);
