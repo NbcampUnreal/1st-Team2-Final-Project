@@ -195,9 +195,17 @@ void UEquipUseComponent::S_LeftClick_Implementation()
 	switch (LeftAction)
 	{
 	case EAction::WeaponFire:      FireHarpoon();       break;
-	case EAction::ToggleBoost:     ToggleBoost();       break;
+	case EAction::ToggleBoost:     BoostOn();			break;
 	case EAction::ToggleNVGToggle: ToggleNightVision(); break;
 	default:                      break;
+	}
+}
+
+void UEquipUseComponent::S_LeftRelease_Implementation()
+{
+	if (bBoostActive)
+	{
+		BoostOff();
 	}
 }
 
@@ -488,6 +496,11 @@ void UEquipUseComponent::HandleLeftClick()
 	S_LeftClick();
 }
 
+void UEquipUseComponent::HandleLeftRelease()
+{
+	S_LeftRelease();
+}
+
 void UEquipUseComponent::HandleRKey()
 {
 	S_RKey();
@@ -582,8 +595,29 @@ void UEquipUseComponent::ToggleBoost()
 	bBoostActive = !bBoostActive;
 	TargetMultiplier = bBoostActive ? BoostMultiplier : 1.f; // 가속 : 감속
 	
-	// Tick 활성 : 비활성
 	const bool bStillNeed = bBoostActive || bNightVisionOn || IsInterpolating();
+	SetComponentTickEnabled(bStillNeed);
+}
+
+void UEquipUseComponent::BoostOn()
+{
+	if (!OwningCharacter.IsValid()) return;
+
+	if (Amount <= 0 || bNightVisionOn) return;
+
+	bBoostActive = true;
+	TargetMultiplier = BoostMultiplier;  
+	SetComponentTickEnabled(true);
+}
+
+void UEquipUseComponent::BoostOff()
+{
+	if (!OwningCharacter.IsValid()) return;
+
+	bBoostActive = false;
+	TargetMultiplier = 1.f;  // 정상 속도로 복귀
+
+	const bool bStillNeed = bNightVisionOn || IsInterpolating();
 	SetComponentTickEnabled(bStillNeed);
 }
 

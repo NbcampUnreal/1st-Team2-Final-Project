@@ -342,6 +342,9 @@ protected:
 	/** 발사 함수. 미구현*/
 	void Fire(const FInputActionValue& InputActionValue);
 
+	/** 발사 중지 함수. 미구현*/
+	void StopFire(const FInputActionValue& InputActionValue);
+
 	/** 조준 함수. 미구현*/
 	void Aim(const FInputActionValue& InputActionValue);
 
