@@ -183,7 +183,7 @@ void UADInventoryComponent::S_UseBatteryAmount_Implementation(int8 Amount)
 		FFADItemDataRow* InItemMeta = DataTableSubsystem ? DataTableSubsystem->GetItemDataByName("Battery") : nullptr;
 		InventoryList.UpdateAmount(Index, Amount);
 
-		if (InventoryList.Items[Index].Amount == 0 && InItemMeta)
+		if (InventoryList.Items[Index].Amount <= 0 && InItemMeta)
 		{
 			InventoryList.SetAmount(Index, InItemMeta->Amount); 
 			RemoveBySlotIndex(InventoryList.Items[Index].SlotIndex, EItemType::Consumable, false);
@@ -281,25 +281,7 @@ bool UADInventoryComponent::AddInventoryItem(const FItemData& ItemData)
 			if (bIsUpdateSuccess)
 			{
 				InventoryUIUpdate();
-				if (ItemData.Name == "NightVisionGoggle" || ItemData.Name == "DPV")
-				{
-					if (ChargeBatteryWidget)
-					{
-						ChargeBatteryWidget->SetEquipBatteryButtonActivate(ItemData.Name, true);
-						ChargeBatteryWidget->SetEquipBatteryAmount(ItemData.Name, ItemData.Amount);
-						LOGVN(Warning, TEXT("Activate %s Button"), *ItemData.Name.ToString());
-					}
-					C_SetButtonActive(ItemData.Name, true, ItemData.Amount);
-				}
-				else if (ItemData.Name == "Battery")
-				{
-					if (ChargeBatteryWidget)
-					{
-						ChargeBatteryWidget->UpdateBatteryInfo();
-						LOGVN(Warning, TEXT("Acquire a battery"));
-					}
-					C_UpdateBatteryInfo();
-				}
+				CheckItemsForBattery();
 				return true;
 			}
 		}
@@ -311,7 +293,7 @@ bool UADInventoryComponent::AddInventoryItem(const FItemData& ItemData)
 void UADInventoryComponent::ShowInventory()
 {
 	APlayerController* PC = Cast<APlayerController>(Cast<AADPlayerState>(GetOwner())->GetPlayerController());
-	if (!PC && !InventoryWidgetInstance) return;
+	if (!PC || !InventoryWidgetInstance) return;
 
 	InventoryWidgetInstance->SetVisibility(ESlateVisibility::Visible);
 	InventoryUIUpdate();
@@ -465,6 +447,32 @@ void UADInventoryComponent::InventoryMarkArrayDirty()
 	for (int32 i = 0; i < InventoryList.Items.Num(); ++i)
 	{
 		InventoryList.MarkItemDirty(InventoryList.Items[i]);
+	}
+}
+
+void UADInventoryComponent::CheckItemsForBattery()
+{
+	for (const FItemData& Item : InventoryList.Items)
+	{
+		if (Item.Name == "NightVisionGoggle" || Item.Name == "DPV")
+		{
+			if (ChargeBatteryWidget)
+			{
+				ChargeBatteryWidget->SetEquipBatteryButtonActivate(Item.Name, true);
+				ChargeBatteryWidget->SetEquipBatteryAmount(Item.Name, Item.Amount);
+				LOGVN(Warning, TEXT("Activate %s Button"), *Item.Name.ToString());
+			}
+			C_SetButtonActive(Item.Name, true, Item.Amount);
+		}
+		else if (Item.Name == "Battery")
+		{
+			if (ChargeBatteryWidget)
+			{
+				ChargeBatteryWidget->UpdateBatteryInfo();
+				LOGVN(Warning, TEXT("Acquire a battery"));
+			}
+			C_UpdateBatteryInfo();
+		}
 	}
 }
 
@@ -677,6 +685,7 @@ void UADInventoryComponent::PrintLogInventoryData()
 void UADInventoryComponent::SetChargeBatteryInstance(UChargeBatteryWidget* BatteryWidget)
 {
 	ChargeBatteryWidget = BatteryWidget;
+	CheckItemsForBattery();
 	LOGINVEN(Warning, TEXT("Allocate BatteryWidget To Inventory"));
 }
 
