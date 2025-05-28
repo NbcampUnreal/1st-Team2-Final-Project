@@ -45,7 +45,7 @@ void UChargeBatteryWidget::StartChargeBattery(FName ItemName)
 	CurrentChargeItem = ItemName;
 	if (CanCharge())
 	{
-		float IncreaseRepeatDelay = 0.3f;
+		float IncreaseRepeatDelay = 0.2f;
 		GetWorld()->GetTimerManager().SetTimer(IncreaseTimerHandle, this, &UChargeBatteryWidget::ChargeBatteryAmount, IncreaseRepeatDelay, true);
 		LOGB(Warning, TEXT("Start Charge Battery"));
 	}
@@ -83,15 +83,20 @@ bool UChargeBatteryWidget::CanCharge()
 
 void UChargeBatteryWidget::ChargeBatteryAmount()
 {
+	if (!CanCharge()) return;
 	if (InventoryComp && EquipUseComp)
 	{
 		FItemData* CurrentEquipment = InventoryComp->GetCurrentEquipmentItemData();
 
 		int32 MaxToCompare = CurrentChargeItem == "DPV" ? DPVBatteryMax : NVBatteryMax;
+		float ChargeRate = 0.01f;
+		int32 IncreaseAmount = FMath::Max(1, FMath::RoundToInt(MaxToCompare * ChargeRate));
+
+
 		if (CurrentEquipment && CurrentEquipment->Name == CurrentChargeItem)
 		{
 			if (EquipUseComp->Amount + 1 > MaxToCompare) return;
-			EquipUseComp->S_IncreaseAmount(1);
+			EquipUseComp->S_IncreaseAmount(IncreaseAmount);
 			LOGB(Warning, TEXT("Amount of EquipUseComp is charged"));
 		}
 		else
@@ -100,10 +105,10 @@ void UChargeBatteryWidget::ChargeBatteryAmount()
 			if (CurrentChargeItem == NAME_None) return;
 			if (ItemInfoToCharge->Amount + 1 > MaxToCompare) return;
 
-			InventoryComp->S_EquipmentChargeBattery(CurrentChargeItem, 1); 
+			InventoryComp->S_EquipmentChargeBattery(CurrentChargeItem, IncreaseAmount);
 			LOGB(Warning, TEXT("Amount of InventoryComp is charged"));
 		}
-		InventoryComp->S_UseBatteryAmount(-1);
+		InventoryComp->S_UseBatteryAmount(-IncreaseAmount);
 		UpdateBatteryInfo();
 	}
 }
