@@ -114,12 +114,10 @@ struct FInventoryList : public FFastArraySerializer
 	void UpdateAmount(int8 ItemIndex, int8 AddAmount)
 	{
 		Items[ItemIndex].Amount += AddAmount;
-		if (Items[ItemIndex].Amount < 0)
-			Items[ItemIndex].Amount = 0;
 		MarkItemDirty(Items[ItemIndex]);
 	}
 
-	void SetAmount(int8 ItemIndex, int8 NewAmount)
+	void SetAmount(int8 ItemIndex, int16 NewAmount)
 	{
 		Items[ItemIndex].Amount = NewAmount;
 		MarkItemDirty(Items[ItemIndex]);

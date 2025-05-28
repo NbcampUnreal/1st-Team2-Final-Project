@@ -89,22 +89,21 @@ void UChargeBatteryWidget::ChargeBatteryAmount()
 		FItemData* CurrentEquipment = InventoryComp->GetCurrentEquipmentItemData();
 
 		int32 MaxToCompare = CurrentChargeItem == "DPV" ? DPVBatteryMax : NVBatteryMax;
+		if (CurrentChargeItem == NAME_None) return;
 		float ChargeRate = 0.01f;
 		int32 IncreaseAmount = FMath::Max(1, FMath::RoundToInt(MaxToCompare * ChargeRate));
 
 
 		if (CurrentEquipment && CurrentEquipment->Name == CurrentChargeItem)
 		{
-			if (EquipUseComp->Amount + 1 > MaxToCompare) return;
+			if (EquipUseComp->Amount >= MaxToCompare) return;
 			EquipUseComp->S_IncreaseAmount(IncreaseAmount);
 			LOGB(Warning, TEXT("Amount of EquipUseComp is charged"));
 		}
 		else
 		{
 			const FItemData* ItemInfoToCharge = InventoryComp->GetInventoryItemData(CurrentChargeItem);
-			if (CurrentChargeItem == NAME_None) return;
-			if (ItemInfoToCharge->Amount + 1 > MaxToCompare) return;
-
+			if (ItemInfoToCharge->Amount >= MaxToCompare) return;
 			InventoryComp->S_EquipmentChargeBattery(CurrentChargeItem, IncreaseAmount);
 			LOGB(Warning, TEXT("Amount of InventoryComp is charged"));
 		}

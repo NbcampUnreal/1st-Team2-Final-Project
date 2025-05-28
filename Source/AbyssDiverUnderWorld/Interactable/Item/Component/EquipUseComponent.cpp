@@ -213,10 +213,6 @@ void UEquipUseComponent::S_RKey_Implementation()
 
 void UEquipUseComponent::S_IncreaseAmount_Implementation(int8 AddAmount)
 {
-	Amount += AddAmount;
-
-	SetEquipBatteryAmountText();
-
 	UGameInstance* GI = GetWorld()->GetGameInstance();
 	if (!GI)
 	{
@@ -226,10 +222,9 @@ void UEquipUseComponent::S_IncreaseAmount_Implementation(int8 AddAmount)
 	UDataTableSubsystem* DataTableSubsystem = GI->GetSubsystem<UDataTableSubsystem>();
 	FFADItemDataRow* InItemMeta = DataTableSubsystem ? DataTableSubsystem->GetItemDataByName(CurrentEquipmentName) : nullptr;
 
-	if (CurrentEquipmentName != NAME_None && InItemMeta)
-	{
-		FMath::Clamp(Amount, 0.0f, InItemMeta->Amount);
-	}
+	Amount = Amount + AddAmount < InItemMeta->Amount ? Amount += AddAmount : InItemMeta->Amount;
+
+	SetEquipBatteryAmountText();
 }
 
 void UEquipUseComponent::OnRep_Amount()

@@ -183,7 +183,7 @@ void UADInventoryComponent::S_UseBatteryAmount_Implementation(int8 Amount)
 		FFADItemDataRow* InItemMeta = DataTableSubsystem ? DataTableSubsystem->GetItemDataByName("Battery") : nullptr;
 		InventoryList.UpdateAmount(Index, Amount);
 
-		if (InventoryList.Items[Index].Amount == 0 && InItemMeta)
+		if (InventoryList.Items[Index].Amount <= 0 && InItemMeta)
 		{
 			InventoryList.SetAmount(Index, InItemMeta->Amount); 
 			RemoveBySlotIndex(InventoryList.Items[Index].SlotIndex, EItemType::Consumable, false);
