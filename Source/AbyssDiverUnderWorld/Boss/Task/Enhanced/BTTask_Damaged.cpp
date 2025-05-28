@@ -9,29 +9,27 @@ UBTTask_Damaged::UBTTask_Damaged()
 {
 	NodeName = "Damaged";
 	bNotifyTick = true;
-	bNotifyTaskFinished = true;
-	Boss = nullptr;
-	AIController = nullptr;
+	bCreateNodeInstance = false;
 
 	MaxRotationTime = 4.0f;
 	MinRotationTime = 2.5f;
 	RotationStartTime = 1.0f;
-	AccumulatedTime = 0.0f;
-	TimeCriteria = 0.0f;
 }
 
 EBTNodeResult::Type UBTTask_Damaged::ExecuteTask(UBehaviorTreeComponent& Comp, uint8* NodeMemory)
 {
-	AIController = Cast<AEnhancedBossAIController>(Comp.GetAIOwner());
-	if (!IsValid(AIController)) return EBTNodeResult::Failed;
+	FBTDamagedTaskMemory* TaskMemory = (FBTDamagedTaskMemory*)NodeMemory;
+	if (!TaskMemory) return EBTNodeResult::Failed;
 
-	Boss = Cast<ABoss>(AIController->GetCharacter());
-	if (!IsValid(Boss)) return EBTNodeResult::Failed;
-
-	Boss->SetBossState(EBossState::Idle);
+	TaskMemory->AIController = Cast<AEnhancedBossAIController>(Comp.GetAIOwner());
+	TaskMemory->Boss = Cast<ABoss>(TaskMemory->AIController->GetCharacter());
 	
-	AccumulatedTime = 0.0f;
-	TimeCriteria = FMath::RandRange(MinRotationTime, MaxRotationTime);
+	if (!TaskMemory->Boss.IsValid() || !TaskMemory->AIController.IsValid()) return EBTNodeResult::Failed;
+
+	TaskMemory->Boss->SetBossState(EBossState::Idle);
+	
+	TaskMemory->AccumulatedTime = 0.0f;
+	TaskMemory->FinishTaskInterval = FMath::RandRange(MinRotationTime, MaxRotationTime);
 	
 	return EBTNodeResult::InProgress;
 }
@@ -40,24 +38,24 @@ void UBTTask_Damaged::TickTask(UBehaviorTreeComponent& Comp, uint8* NodeMemory, 
 {
 	Super::TickTask(Comp, NodeMemory, DeltaSeconds);
 	
-	if (AccumulatedTime > RotationStartTime)
+	FBTDamagedTaskMemory* TaskMemory = (FBTDamagedTaskMemory*)NodeMemory;
+	if (!TaskMemory) return;
+
+	TaskMemory->AIController = Cast<AEnhancedBossAIController>(Comp.GetAIOwner());
+	TaskMemory->Boss = Cast<ABoss>(TaskMemory->AIController->GetCharacter());
+	
+	if (!TaskMemory->Boss.IsValid() || !TaskMemory->AIController.IsValid()) return;
+	
+	if (TaskMemory->AccumulatedTime > RotationStartTime)
 	{
-		Boss->RotationToTarget(Boss->GetDamagedLocation());
+		TaskMemory->Boss->RotationToTarget(TaskMemory->Boss->GetDamagedLocation());
 	}
 
-	if (AccumulatedTime > TimeCriteria)
+	if (TaskMemory->AccumulatedTime > TaskMemory->FinishTaskInterval)
 	{
-		AIController->SetBlackboardPerceptionType(EPerceptionType::None);
+		TaskMemory->AIController->SetBlackboardPerceptionType(EPerceptionType::None);
 		FinishLatentTask(Comp, EBTNodeResult::Succeeded);
 	}
 	
-	AccumulatedTime += FMath::Clamp(DeltaSeconds, 0.f, 0.1f);
-}
-
-void UBTTask_Damaged::OnTaskFinished(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory,
-	EBTNodeResult::Type TaskResult)
-{
-	Super::OnTaskFinished(OwnerComp, NodeMemory, TaskResult);
-
-	//AIController->InitBlackboardVariables();
+	TaskMemory->AccumulatedTime += FMath::Clamp(DeltaSeconds, 0.f, 0.1f);
 }

@@ -11,27 +11,26 @@ UBTTask_PlayerChase::UBTTask_PlayerChase()
 {
 	NodeName = "Player Chase";
 	bNotifyTick = true;
-	Boss = nullptr;
-	AIController = nullptr;
+	bCreateNodeInstance = false;
+	
 	MaxChaseTime = 20.f;
 	MinChaseTime = 10.0f;
-	AccumulatedTime = 0.f;
-	TimeCriteria = 0.f;
 }
 
 EBTNodeResult::Type UBTTask_PlayerChase::ExecuteTask(UBehaviorTreeComponent& Comp, uint8* NodeMemory)
 {
-	AIController = Cast<AEnhancedBossAIController>(Comp.GetAIOwner());
-	if (!IsValid(AIController)) return EBTNodeResult::Failed;
+ 	FBTPlayerChaseTaskMemory* TaskMemory = (FBTPlayerChaseTaskMemory*)NodeMemory;
+	if (!TaskMemory) return EBTNodeResult::Failed;
 
-	Boss = Cast<ABoss>(AIController->GetCharacter());
-	if (!IsValid(Boss)) return EBTNodeResult::Failed;
-
-	Boss->SetBossState(EBossState::Chase);
+	TaskMemory->AIController = Cast<AEnhancedBossAIController>(Comp.GetAIOwner());
+	TaskMemory->Boss = Cast<ABoss>(TaskMemory->AIController->GetCharacter());
 	
-	// 랜덤 시간 추출
-	AccumulatedTime = 0.f;
-	TimeCriteria = FMath::RandRange(MinChaseTime, MaxChaseTime);
+	if (!TaskMemory->Boss.IsValid() || !TaskMemory->AIController.IsValid()) return EBTNodeResult::Failed;
+	
+	TaskMemory->Boss->SetBossState(EBossState::Chase);
+	
+	TaskMemory->AccumulatedTime = 0.f;
+	TaskMemory->FinishTaskInterval = FMath::RandRange(MinChaseTime, MaxChaseTime);
 	
 	return EBTNodeResult::InProgress;
 }
@@ -40,38 +39,46 @@ void UBTTask_PlayerChase::TickTask(UBehaviorTreeComponent& Comp, uint8* NodeMemo
 {
 	Super::TickTask(Comp, NodeMemory, DeltaSeconds);
 
+	FBTPlayerChaseTaskMemory* TaskMemory = (FBTPlayerChaseTaskMemory*)NodeMemory;
+	if (!TaskMemory) return;
+
+	TaskMemory->AIController = Cast<AEnhancedBossAIController>(Comp.GetAIOwner());
+	TaskMemory->Boss = Cast<ABoss>(TaskMemory->AIController->GetCharacter());
+	
+	if (!TaskMemory->Boss.IsValid() || !TaskMemory->AIController.IsValid()) return;
+
 	// 추적 중인 플레이어가 사망 상태인 경우 상태 초기화
-	if (IsValid(Boss->GetTarget()))
+	if (IsValid(TaskMemory->Boss->GetTarget()))
 	{
-		if (Boss->GetTarget()->GetCharacterState() == ECharacterState::Death)
+		if (TaskMemory->Boss->GetTarget()->GetCharacterState() == ECharacterState::Death)
 		{
-			AIController->InitVariables();
+			TaskMemory->AIController->InitVariables();
 			return;
 		}
 	}
 
 	// 추적하는 타겟 방향으로 보스 이동
-	AIController->MoveToActorWithRadius();
+	TaskMemory->AIController->MoveToActorWithRadius();
 
 	// 플레이어가 시야에서 사라진 경우
-	if (AIController->GetIsDisappearPlayer())
+	if (TaskMemory->AIController->GetIsDisappearPlayer())
 	{
 		// 타겟이 유효한지 확인
-		if (IsValid(Boss->GetTarget()))
+		if (IsValid(TaskMemory->Boss->GetTarget()))
 		{
 			// 플레이어가 해초 더미 속에 숨은 경우
-			if (Boss->GetTarget()->IsHideInSeaweed())
+			if (TaskMemory->Boss->GetTarget()->IsHideInSeaweed())
 			{
-				AIController->GetBlackboardComponent()->SetValueAsBool(bIsPlayerHiddenKey, true);
+				TaskMemory->AIController->GetBlackboardComponent()->SetValueAsBool(bIsPlayerHiddenKey, true);
 			}	
 		}
 	}
 
 	// 정해진 시간만큼 경과하면 추적 종료
-	if (AccumulatedTime > TimeCriteria)
+	if (TaskMemory->AccumulatedTime > TaskMemory->FinishTaskInterval)
 	{
-		AIController->SetBlackboardPerceptionType(EPerceptionType::Finish);	
+		TaskMemory->AIController->SetBlackboardPerceptionType(EPerceptionType::Finish);	
 	}
 
-	AccumulatedTime += FMath::Clamp(DeltaSeconds, 0.0f, 0.1f);
+	TaskMemory->AccumulatedTime += FMath::Clamp(DeltaSeconds, 0.0f, 0.1f);
 }

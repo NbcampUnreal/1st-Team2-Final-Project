@@ -8,24 +8,25 @@ UBTTask_EnhancedIdle::UBTTask_EnhancedIdle()
 {
 	NodeName = "Enhanced Idle";
 	bNotifyTick = true;
-	Boss = nullptr;
-	AIController = nullptr;
+	bCreateNodeInstance = false;
+	
 	IdleFinishMaxInterval = 5.0f;
 	IdleFinishMinInterval = 2.0f;
 }
 
 EBTNodeResult::Type UBTTask_EnhancedIdle::ExecuteTask(UBehaviorTreeComponent& Comp, uint8* NodeMemory)
 {
-	AIController = Cast<AEnhancedBossAIController>(Comp.GetAIOwner());
-	if (!IsValid(AIController)) return EBTNodeResult::Failed;
+	FBTIdleTaskMemory* TaskMemory = (FBTIdleTaskMemory*)NodeMemory;
+	if (!TaskMemory) return EBTNodeResult::Failed;
 
-	Boss = Cast<ABoss>(AIController->GetCharacter());
-	if (!IsValid(Boss)) return EBTNodeResult::Failed;
-
-	Boss->SetBossState(EBossState::Idle);
-
-	AccumulatedTime = 0.f;
-	IdleFinishTime = FMath::RandRange(IdleFinishMinInterval, IdleFinishMaxInterval);
+	TaskMemory->AIController = Cast<AEnhancedBossAIController>(Comp.GetAIOwner());
+	TaskMemory->Boss = Cast<ABoss>(TaskMemory->AIController->GetPawn());
+	
+	if (!TaskMemory->Boss.IsValid() || !TaskMemory->AIController.IsValid()) return EBTNodeResult::Failed;
+	
+	TaskMemory->Boss->SetBossState(EBossState::Idle);
+	TaskMemory->AccumulatedTime = 0.f;
+	TaskMemory->IdleFinishTime = FMath::RandRange(IdleFinishMinInterval, IdleFinishMaxInterval);
 	
 	return EBTNodeResult::InProgress;
 }
@@ -34,12 +35,13 @@ void UBTTask_EnhancedIdle::TickTask(UBehaviorTreeComponent& Comp, uint8* NodeMem
 {
 	Super::TickTask(Comp, NodeMemory, DeltaSeconds);
 
-	Boss->InitializeRotation(DeltaSeconds);
-
-	if (AccumulatedTime > IdleFinishTime)
+	FBTIdleTaskMemory* TaskMemory = (FBTIdleTaskMemory*)NodeMemory;
+	if (!TaskMemory) return;
+	
+	if (TaskMemory->AccumulatedTime > TaskMemory->IdleFinishTime)
 	{
 		FinishLatentTask(Comp, EBTNodeResult::Succeeded);
 	}
 	
-	AccumulatedTime += FMath::Clamp(DeltaSeconds, 0.f, 1.f);
+	TaskMemory->AccumulatedTime += FMath::Clamp(DeltaSeconds, 0.f, 0.1f);
 }

@@ -5,6 +5,21 @@
 #include "Boss/EnhancedBossAIController.h"
 #include "BTTask_Damaged.generated.h"
 
+struct FBTDamagedTaskMemory
+{
+	/** 빙의한 AIController에 대한 참조 */
+	TWeakObjectPtr<AEnhancedBossAIController> AIController;
+
+	/** AIController의 주체에 대한 참조 */
+	TWeakObjectPtr<ABoss> Boss;
+
+	/** 현재까지 경과된 시간 */
+	float AccumulatedTime;
+
+	/** Damaged 작업이 끝나는 시간 */
+	float FinishTaskInterval;
+};
+
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API UBTTask_Damaged : public UBTTask_BlackboardBase
 {
@@ -16,15 +31,9 @@ public:
 private:
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& Comp, uint8* NodeMemory) override;
 	virtual void TickTask(UBehaviorTreeComponent& Comp, uint8* NodeMemory, float DeltaSeconds) override;
-	virtual void OnTaskFinished(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, EBTNodeResult::Type TaskResult) override;
+	virtual uint16 GetInstanceMemorySize() const override { return sizeof(FBTDamagedTaskMemory); }
 
 private:
-	UPROPERTY()
-	TObjectPtr<ABoss> Boss;
-
-	UPROPERTY()
-	TObjectPtr<AEnhancedBossAIController> AIController;
-
 	UPROPERTY(EditAnywhere)
 	float MaxRotationTime;
 
@@ -33,11 +42,5 @@ private:
 
 	UPROPERTY(EditAnywhere)
 	float RotationStartTime;
-
-	UPROPERTY()
-	float AccumulatedTime;
-
-	UPROPERTY()
-	float TimeCriteria;
 	
 };

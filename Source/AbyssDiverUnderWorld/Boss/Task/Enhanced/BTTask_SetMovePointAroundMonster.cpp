@@ -15,10 +15,10 @@ UBTTask_SetMovePointAroundMonster::UBTTask_SetMovePointAroundMonster()
 
 EBTNodeResult::Type UBTTask_SetMovePointAroundMonster::ExecuteTask(UBehaviorTreeComponent& Comp, uint8* NodeMemory)
 {
-	AIController = Cast<AEnhancedBossAIController>(Comp.GetAIOwner());
+	AEnhancedBossAIController* AIController = Cast<AEnhancedBossAIController>(Comp.GetAIOwner());
 	if (!IsValid(AIController)) return EBTNodeResult::Failed;
 	
-	Boss = Cast<ABoss>(AIController->GetCharacter());
+	ABoss* Boss = Cast<ABoss>(AIController->GetCharacter());
 	if (!IsValid(Boss)) return EBTNodeResult::Failed;
 
 	const FName BlackboardKeyName = GetSelectedBlackboardKey();
