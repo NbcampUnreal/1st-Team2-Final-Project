@@ -16,25 +16,20 @@ UBTTask_EnhancedAttack::UBTTask_EnhancedAttack()
 {
 	NodeName = "Enhanced Attack";
 	bNotifyTick = true;
-	bNotifyTaskFinished = true;
-	Boss = nullptr;
-	AIController = nullptr;
+	bCreateNodeInstance = false;
 }
 
 EBTNodeResult::Type UBTTask_EnhancedAttack::ExecuteTask(UBehaviorTreeComponent& Comp, uint8* NodeMemory)
 {
-	AIController = Cast<AEnhancedBossAIController>(Comp.GetAIOwner());
-	if (!IsValid(AIController)) return EBTNodeResult::Failed;
+	FBTEnhancedAttackTaskMemory* TaskMemory = (FBTEnhancedAttackTaskMemory*)NodeMemory;
+	if (!TaskMemory) return EBTNodeResult::Failed;
 
-	Boss = Cast<ABoss>(AIController->GetCharacter());
-	if (!IsValid(Boss)) return EBTNodeResult::Failed;
+	TaskMemory->AIController = Cast<AEnhancedBossAIController>(Comp.GetAIOwner());
+	TaskMemory->Boss = Cast<ABoss>(TaskMemory->AIController->GetCharacter());
 	
-	Boss->SetDecelerate(true);
-
-	BlackboardKeyName = GetSelectedBlackboardKey();
+	if (!TaskMemory->Boss.IsValid() || !TaskMemory->AIController.IsValid()) return EBTNodeResult::Failed;
 	
-	AnimInstance = Boss->GetAnimInstance();
-	AnimInstance->OnMontageEnded.AddDynamic(this, &UBTTask_EnhancedAttack::FinishPerception);
+	TaskMemory->BlackboardKeyName = GetSelectedBlackboardKey();
 	
 	return EBTNodeResult::InProgress;
 }
@@ -43,29 +38,19 @@ void UBTTask_EnhancedAttack::TickTask(UBehaviorTreeComponent& Comp, uint8* NodeM
 {
 	Super::TickTask(Comp, NodeMemory, DeltaSeconds);
 	
-	if (AIController->GetBlackboardComponent()->GetValueAsBool(BlackboardKeyName)) return;
+	FBTEnhancedAttackTaskMemory* TaskMemory = (FBTEnhancedAttackTaskMemory*)NodeMemory;
+	if (!TaskMemory) return;
+
+	TaskMemory->AIController = Cast<AEnhancedBossAIController>(Comp.GetAIOwner());
+	TaskMemory->Boss = Cast<ABoss>(TaskMemory->AIController->GetCharacter());
 	
-	if (Boss->GetIsAttackCollisionOverlappedPlayer())
-	{
-		Boss->Attack();
-		AIController->GetBlackboardComponent()->SetValueAsBool(BlackboardKeyName, true);
-	}
-}
-
-void UBTTask_EnhancedAttack::FinishPerception(UAnimMontage* Montage, bool bInterrupted)
-{
-	if (IsValid(AIController))
-	{
-		AIController->GetBlackboardComponent()->SetValueAsBool("bHasDetectedPlayer", false);
-		AIController->SetBlackboardPerceptionType(EPerceptionType::Finish);	
-	}
-
-	Boss->SetDecelerate(false);
+	if (!TaskMemory->Boss.IsValid() || !TaskMemory->AIController.IsValid()) return;
 	
-	// 바인딩 해제 (중복 방지)
-	if (IsValid(AnimInstance))
+	if (TaskMemory->AIController->GetBlackboardComponent()->GetValueAsBool(TaskMemory->BlackboardKeyName)) return;
+	
+	if (TaskMemory->Boss->GetIsAttackCollisionOverlappedPlayer())
 	{
-		AnimInstance->OnMontageEnded.RemoveDynamic(this, &UBTTask_EnhancedAttack::FinishPerception);
+		TaskMemory->Boss->Attack();
+		TaskMemory->AIController->GetBlackboardComponent()->SetValueAsBool(TaskMemory->BlackboardKeyName, true);
 	}
-
 }

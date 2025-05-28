@@ -5,6 +5,21 @@
 #include "Boss/EnhancedBossAIController.h"
 #include "BTTask_PlayerChase.generated.h"
 
+struct FBTPlayerChaseTaskMemory
+{
+	/** 빙의한 AIController에 대한 참조 */
+	TWeakObjectPtr<AEnhancedBossAIController> AIController;
+
+	/** AIController의 주체에 대한 참조 */
+	TWeakObjectPtr<ABoss> Boss;
+
+	/** 현재까지 경과된 시간 */
+	float AccumulatedTime;
+
+	/** Chase 작업이 끝나는 시간 */
+	float FinishTaskInterval;
+};
+
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API UBTTask_PlayerChase : public UBTTask_BlackboardBase
 {
@@ -16,14 +31,9 @@ public:
 private:
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& Comp, uint8* NodeMemory) override;
 	virtual void TickTask(UBehaviorTreeComponent& Comp, uint8* NodeMemory, float DeltaSeconds) override;
+	virtual uint16 GetInstanceMemorySize() const override { return sizeof(FBTPlayerChaseTaskMemory); }
 
 private:
-	UPROPERTY()
-	TObjectPtr<ABoss> Boss;
-
-	UPROPERTY()
-	TObjectPtr<AEnhancedBossAIController> AIController;
-
 	UPROPERTY(EditAnywhere)
 	float MoveSpeedMultiplier = 1.3f;
 
@@ -32,12 +42,6 @@ private:
 
 	UPROPERTY(EditAnywhere)
 	float MinChaseTime;
-
-	UPROPERTY()
-	float AccumulatedTime;
-
-	UPROPERTY()
-	float TimeCriteria;
 
 	static const FName bIsPlayerHiddenKey;
 };

@@ -52,11 +52,15 @@ void AEnhancedBossAIController::InitVariables()
 	Boss->InitTarget();
 	Boss->InitCachedTarget();
 
+	// 타겟 사라짐 변수 초기화
+	bIsDisappearPlayer = false;
+
 	// 블랙보드 값 초기화
 	BlackboardComponent->SetValueAsBool(bIsChasingKey, false);
 	BlackboardComponent->SetValueAsBool(bHasDetectedPlayerKey, false);
 	BlackboardComponent->SetValueAsBool(bHasAttackedKey, false);
 	BlackboardComponent->SetValueAsBool(bIsPlayerHiddenKey, false);
+	BlackboardComponent->SetValueAsBool(bHasSeenPlayerKey, false);
 	SetBlackboardPerceptionType(EPerceptionType::None);
 }
 
@@ -65,10 +69,16 @@ void AEnhancedBossAIController::OnTargetPerceptionUpdatedHandler(AActor* Actor, 
 	// --------------------- 시각 자극 ---------------------
 	// 플레이어가 시야각에 들어오는 경우
 	if (Stimulus.Type == UAISense::GetSenseID<UAISense_Sight>())
-	{
+	{	
 		// 감지한 대상이 플레이어가 아닌 경우 얼리 리턴
 		AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor);
 		if (!IsValid(Player)) return;
+
+		// 플레이어가 사망 상태인 경우 얼리 리턴
+		if (Player->GetCharacterState() == ECharacterState::Death)
+		{
+			return;
+		}
 
 		// 전에 감지한 플레이어와 다른 경우 얼리 리턴
 		if (IsValid(Boss->GetTarget()))

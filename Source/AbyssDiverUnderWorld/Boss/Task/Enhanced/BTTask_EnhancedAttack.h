@@ -5,6 +5,18 @@
 #include "Boss/EnhancedBossAIController.h"
 #include "BTTask_EnhancedAttack.generated.h"
 
+struct FBTEnhancedAttackTaskMemory
+{
+	/** 빙의한 AIController에 대한 참조 */
+	TWeakObjectPtr<AEnhancedBossAIController> AIController;
+
+	/** AIController의 주체에 대한 참조 */
+	TWeakObjectPtr<ABoss> Boss;
+
+	/** 노드에 할당된 블랙보드 키 이름 */
+	FName BlackboardKeyName;
+};
+
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API UBTTask_EnhancedAttack : public UBTTask_BlackboardBase
 {
@@ -16,21 +28,6 @@ public:
 private:
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& Comp, uint8* NodeMemory) override;
 	virtual void TickTask(UBehaviorTreeComponent& Comp, uint8* NodeMemory, float DeltaSeconds) override;
-
-	UFUNCTION()
-	void FinishPerception(UAnimMontage* Montage, bool bInterrupted);
-
-private:
-	UPROPERTY()
-	TObjectPtr<ABoss> Boss;
-
-	UPROPERTY()
-	TObjectPtr<AEnhancedBossAIController> AIController;
-
-	UPROPERTY()
-	TObjectPtr<UAnimInstance> AnimInstance;
-
-	UPROPERTY()
-	FName BlackboardKeyName;
+	virtual uint16 GetInstanceMemorySize() const override { return sizeof(FBTEnhancedAttackTaskMemory); }
 	
 };

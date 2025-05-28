@@ -17,5 +17,4 @@ void AAlienShark::BeginPlay()
 	Super::BeginPlay();
 
 	BiteCollision->OnComponentBeginOverlap.AddDynamic(this, &ABoss::OnMeshOverlapBegin);
-	GetCharacterMovement()->MaxFlySpeed = 0.0f;
 }

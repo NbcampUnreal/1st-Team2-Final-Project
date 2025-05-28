@@ -16,11 +16,4 @@ public:
 private:
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& Comp, uint8* NodeMemory) override;
 
-private:
-	UPROPERTY()
-	TObjectPtr<ABoss> Boss;
-
-	UPROPERTY()
-	TObjectPtr<AEnhancedBossAIController> AIController;
-	
 };
