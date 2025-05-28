@@ -45,7 +45,6 @@ EBTNodeResult::Type UBTTask_MoveToLocation::ExecuteTask(UBehaviorTreeComponent& 
 
 	// 감속을 멈추고 이동 상태로 전이하여 ABP에서 이동 상태임을 인지
 	Boss->SetBossState(EBossState::Move);
-	Boss->SetDecelerate(false);
 	
 	// Task에 할당된 블랙보드 키 값을 추출
 	const FName KeyName = GetSelectedBlackboardKey();
@@ -54,9 +53,6 @@ EBTNodeResult::Type UBTTask_MoveToLocation::ExecuteTask(UBehaviorTreeComponent& 
 	// MoveTask를 종료할 랜덤 시간 추출
 	FinishTaskInterval = FMath::RandRange(MinFinishTaskInterval, MaxFinishTaskInterval);
 	AccumulatedTime = 0.f;
-	
-	// 디버그용 구체 출력 (5초 동안, 반지름 50, 빨간색)
-	//DrawDebugSphere(GetWorld(), TargetLocation, 250.0f, 12, FColor::Red, false, 5.0f);
 
 	const EPathFollowingRequestResult::Type Result = AIController->MoveToLocationWithRadius(TargetLocation);
 	
@@ -94,6 +90,9 @@ void UBTTask_MoveToLocation::TickTask(UBehaviorTreeComponent& Comp, uint8* NodeM
 {
 	Super::TickTask(Comp, NodeMemory, DeltaSeconds);
 
+	// 디버그용 구체 출력 (5초 동안, 반지름 50, 빨간색)
+	DrawDebugSphere(GetWorld(), TargetLocation, 250.0f, 12, FColor::Green, false, 0.1f);
+	
 	// 감속 거리에 도달한 경우 감속 트리거
 	const float Distance = FVector::Dist(Boss->GetActorLocation(), TargetLocation);
 	if (Distance < DecelerationTriggeredRadius)

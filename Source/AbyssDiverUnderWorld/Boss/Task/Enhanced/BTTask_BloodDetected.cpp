@@ -31,7 +31,6 @@ EBTNodeResult::Type UBTTask_BloodDetected::ExecuteTask(UBehaviorTreeComponent& C
 	if (!IsValid(Boss)) return EBTNodeResult::Failed;
 	
 	Boss->SetBossState(EBossState::Idle);
-	Boss->SetDecelerate(true);
 	
 	AccumulatedTime = 0;
 	

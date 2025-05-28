@@ -28,7 +28,6 @@ EBTNodeResult::Type UBTTask_PlayerChase::ExecuteTask(UBehaviorTreeComponent& Com
 	if (!IsValid(Boss)) return EBTNodeResult::Failed;
 
 	Boss->SetBossState(EBossState::Chase);
-	Boss->SetDecelerate(false);
 	
 	// 랜덤 시간 추출
 	AccumulatedTime = 0.f;
@@ -40,6 +39,16 @@ EBTNodeResult::Type UBTTask_PlayerChase::ExecuteTask(UBehaviorTreeComponent& Com
 void UBTTask_PlayerChase::TickTask(UBehaviorTreeComponent& Comp, uint8* NodeMemory, float DeltaSeconds)
 {
 	Super::TickTask(Comp, NodeMemory, DeltaSeconds);
+
+	// 추적 중인 플레이어가 사망 상태인 경우 상태 초기화
+	if (IsValid(Boss->GetTarget()))
+	{
+		if (Boss->GetTarget()->GetCharacterState() == ECharacterState::Death)
+		{
+			AIController->InitVariables();
+			return;
+		}
+	}
 
 	// 추적하는 타겟 방향으로 보스 이동
 	AIController->MoveToActorWithRadius();

@@ -29,7 +29,6 @@ EBTNodeResult::Type UBTTask_Damaged::ExecuteTask(UBehaviorTreeComponent& Comp, u
 	if (!IsValid(Boss)) return EBTNodeResult::Failed;
 
 	Boss->SetBossState(EBossState::Idle);
-	Boss->SetDecelerate(true);
 	
 	AccumulatedTime = 0.0f;
 	TimeCriteria = FMath::RandRange(MinRotationTime, MaxRotationTime);

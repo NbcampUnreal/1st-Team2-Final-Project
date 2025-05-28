@@ -21,7 +21,6 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
-	virtual void Tick(float DeltaSeconds) override;
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 
 #pragma region Method
@@ -183,6 +182,7 @@ private:
 	uint8 bIsBiteAttackSuccess : 1;
 	uint8 bIsAttackCollisionOverlappedPlayer : 1;
 	uint8 bShouldDecelerate : 1;
+	FVector CachedSpawnLocation;
 	
 #pragma endregion
 
@@ -209,6 +209,7 @@ public:
 	FORCEINLINE void InitCachedTarget() { CachedTargetPlayer = nullptr; };
 	FORCEINLINE void InitCurrentMoveSpeed() { CurrentMoveSpeed = 0.f; bShouldDecelerate = false; };
 	FORCEINLINE void SetDecelerate(const uint8 InDecelerate) { bShouldDecelerate = InDecelerate; };
+	FORCEINLINE FVector GetCachedSpawnLocation() const { return CachedSpawnLocation; }
 
 	AActor* GetTargetPoint();
 	const FVector GetTargetPointLocation() const;

@@ -22,7 +22,6 @@ const FName ABoss::BossStateKey = "BossState";
 
 ABoss::ABoss()
 {
-	PrimaryActorTick.bCanEverTick = true;
 	bIsAttackCollisionOverlappedPlayer = false;
 	BlackboardComponent = nullptr;
 	AIController = nullptr;
@@ -37,6 +36,7 @@ ABoss::ABoss()
 	bShouldDecelerate = false;
 	BossPhysicsType = EBossPhysicsType::None;
 	DamagedLocation = FVector::ZeroVector;
+	CachedSpawnLocation = FVector::ZeroVector;
 	Acceleration = 2.f;
 	CurrentMoveSpeed = 0.0f;
 	RotationInterpSpeed = 1.1f;
@@ -73,17 +73,12 @@ void ABoss::BeginPlay()
 		BlackboardComponent = AIController->GetBlackboardComponent();
 	}
 
+	CachedSpawnLocation = GetActorLocation();
+
 	AttackCollision->OnComponentBeginOverlap.AddDynamic(this, &ABoss::OnAttackCollisionOverlapBegin);
 	AttackCollision->OnComponentEndOverlap.AddDynamic(this, &ABoss::OnAttackCollisionOverlapEnd);
 
 	GetCharacterMovement()->MaxFlySpeed = StatComponent->GetMoveSpeed();
-}
-
-void ABoss::Tick(float DeltaSeconds)
-{
-	Super::Tick(DeltaSeconds);
-
-	MoveForward(DeltaSeconds);
 }
 
 void ABoss::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const

@@ -34,7 +34,6 @@ EBTNodeResult::Type UBTTask_PlayerDetected::ExecuteTask(UBehaviorTreeComponent& 
 	if (!IsValid(Boss)) return EBTNodeResult::Failed;
 	
 	Boss->SetBossState(EBossState::Idle);
-	Boss->SetDecelerate(true);
 	
 	AccumulatedTime = 0;
 	

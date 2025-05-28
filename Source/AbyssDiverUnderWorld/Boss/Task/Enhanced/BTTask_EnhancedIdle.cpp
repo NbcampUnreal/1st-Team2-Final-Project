@@ -23,7 +23,6 @@ EBTNodeResult::Type UBTTask_EnhancedIdle::ExecuteTask(UBehaviorTreeComponent& Co
 	if (!IsValid(Boss)) return EBTNodeResult::Failed;
 
 	Boss->SetBossState(EBossState::Idle);
-	Boss->SetDecelerate(true);
 
 	AccumulatedTime = 0.f;
 	IdleFinishTime = FMath::RandRange(IdleFinishMinInterval, IdleFinishMaxInterval);
