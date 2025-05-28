@@ -90,6 +90,7 @@ public:
 	void InventoryUIUpdate();
 	void CopyInventoryFrom(UADInventoryComponent* Source);
 	void InventoryMarkArrayDirty();
+	void CheckItemsForBattery();
 
 	FInventoryUpdateDelegate InventoryUpdateDelegate;
 	FBatteryUpdateDelegate BatteryUpdateDelegate;
