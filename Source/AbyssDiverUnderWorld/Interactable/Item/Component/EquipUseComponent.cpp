@@ -220,10 +220,19 @@ void UEquipUseComponent::S_IncreaseAmount_Implementation(int8 AddAmount)
 			return;
 	}
 	UDataTableSubsystem* DataTableSubsystem = GI->GetSubsystem<UDataTableSubsystem>();
-	FFADItemDataRow* InItemMeta = DataTableSubsystem ? DataTableSubsystem->GetItemDataByName(CurrentEquipmentName) : nullptr;
+	FFADItemDataRow* ItemDataForMaxAmount = DataTableSubsystem ? DataTableSubsystem->GetItemDataByName(CurrentEquipmentName) : nullptr;
+	
+	int16 NewAmount = Amount + AddAmount;
+	int16 MaxAmount = ItemDataForMaxAmount->Amount;
 
-	Amount = Amount + AddAmount < InItemMeta->Amount ? Amount += AddAmount : InItemMeta->Amount;
-
+	if (NewAmount < MaxAmount)
+	{
+		Amount = NewAmount;
+	}
+	else
+	{
+		Amount = MaxAmount;
+	}
 	SetEquipBatteryAmountText();
 }
 
@@ -701,12 +710,12 @@ void UEquipUseComponent::SetEquipBatteryAmountText()
 		NightVisionInstance->SetBatteryAmount(Amount);
 		if (ChargeBatteryInstance)
 		{
-			ChargeBatteryInstance->SetEquipBatteryAmount("NightVisionGoggle", Amount);
+			ChargeBatteryInstance->SetEquipBatteryAmount(EChargeBatteryType::NightVisionGoggle, Amount);
 		}
 	}
 	else if (OwningCharacter->IsLocallyControlled() && (bBoostActive || CurrentEquipmentName == "DPV") && ChargeBatteryInstance)
 	{
-		ChargeBatteryInstance->SetEquipBatteryAmount("DPV", Amount);
+		ChargeBatteryInstance->SetEquipBatteryAmount(EChargeBatteryType::DPV, Amount);
 	}
 }
 

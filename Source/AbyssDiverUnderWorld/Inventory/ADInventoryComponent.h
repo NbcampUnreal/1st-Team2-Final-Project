@@ -13,6 +13,7 @@ class UToggleWidget;
 class UDataTableSubsystem;
 class AADUseItem;
 class UChargeBatteryWidget;
+enum class EChargeBatteryType;
 
 #define LOGINVEN(Verbosity, Format, ...) UE_LOG(InventoryLog, Verbosity, TEXT("%s(%s) %s"), ANSI_TO_TCHAR(__FUNCTION__), *FString::FromInt(__LINE__), *FString::Printf(Format, ##__VA_ARGS__));
 
@@ -49,24 +50,24 @@ public:
 	void S_RemoveBySlotIndex_Implementation(uint8 SlotIndex, EItemType ItemType, bool bIsDropAction);
 
 	UFUNCTION(Server, Reliable)
-	void S_EquipmentChargeBattery(FName ItemName, int8 Amount);
-	void S_EquipmentChargeBattery_Implementation(FName ItemName, int8 Amount);
+	void S_EquipmentChargeBattery(EChargeBatteryType ItemChargeBatteryType, int8 Amount);
+	void S_EquipmentChargeBattery_Implementation(EChargeBatteryType ItemChargeBatteryType, int8 Amount);
 
 	UFUNCTION(Server, Reliable)
 	void S_UseBatteryAmount(int8 Amount);
 	void S_UseBatteryAmount_Implementation(int8 Amount);
 
 	UFUNCTION(Client, Reliable)
-	void C_SetButtonActive(FName ClientName, bool bClientIsActive, int16 ClientAmount);
-	void C_SetButtonActive_Implementation(FName ClientName, bool bClientIsActive, int16 ClientAmount);
+	void C_SetButtonActive(EChargeBatteryType ItemChargeBatteryType, bool bClientIsActive, int16 ClientAmount);
+	void C_SetButtonActive_Implementation(EChargeBatteryType ItemChargeBatteryType, bool bClientIsActive, int16 ClientAmount);
 
 	UFUNCTION(Client, Reliable)
 	void C_UpdateBatteryInfo();
 	void C_UpdateBatteryInfo_Implementation();
 
 	UFUNCTION(Client, Reliable)
-	void C_SetEquipBatteryAmount(FName ClientItemName);
-	void C_SetEquipBatteryAmount_Implementation(FName ClientItemName);
+	void C_SetEquipBatteryAmount(EChargeBatteryType ItemChargeBatteryType);
+	void C_SetEquipBatteryAmount_Implementation(EChargeBatteryType ItemChargeBatteryType);
 
 	UFUNCTION(BlueprintCallable)
 	void InventoryInitialize();
@@ -84,7 +85,8 @@ public:
 	UFUNCTION()
 	void OnRep_CurrentEquipmentSlotIndex();
 
-	int16 FindItemIndexByName(FName ItemID); //아이템 이름으로 InventoryList 인덱스 반환 (빈슬롯이 없으면 -1 반환)
+	int8 FindItemIndexByName(FName ItemName); //아이템 이름으로 InventoryList 인덱스 반환 (빈슬롯이 없으면 -1 반환)
+	int8 FindItemIndexByID(int8 ItemID); //빈슬롯이 없으면 - 1 반환
 	void RemoveBySlotIndex(uint8 SlotIndex, EItemType ItemType, bool bIsDropAction);
 	void ClientRequestInventoryInitialize();
 	void InventoryUIUpdate();

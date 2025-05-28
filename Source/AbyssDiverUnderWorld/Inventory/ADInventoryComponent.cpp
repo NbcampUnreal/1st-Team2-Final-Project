@@ -46,7 +46,7 @@ UADInventoryComponent::UADInventoryComponent() :
 		InventoryWidgetClass = ToggleWidget.Class;
 	}	
 
-	for (int32 i = 0; i < static_cast<int32>(EItemType::Max); ++i)
+	for (int32 i = 0; i < static_cast<int8>(EItemType::Max); ++i)
 	{
 		InventoryIndexMapByType.FindOrAdd(static_cast<EItemType>(i));
 		InventoryIndexMapByType[static_cast<EItemType>(i)].Init(-1, InventorySizeByType[i]);
@@ -152,13 +152,13 @@ void UADInventoryComponent::S_RemoveBySlotIndex_Implementation(uint8 SlotIndex, 
 	RemoveBySlotIndex(SlotIndex, ItemType, bIsDropAction);
 }
 
-void UADInventoryComponent::S_EquipmentChargeBattery_Implementation(FName ItemName, int8 Amount)
+void UADInventoryComponent::S_EquipmentChargeBattery_Implementation(EChargeBatteryType ItemChargeBatteryType, int8 Amount)
 {
-	int8 Index = FindItemIndexByName(ItemName);
+	int8 Index = FindItemIndexByID(static_cast<int8>(ItemChargeBatteryType));
 
 	InventoryList.UpdateAmount(Index, Amount);
 
-	FFADItemDataRow* InItemMeta = DataTableSubsystem ? DataTableSubsystem->GetItemDataByName(ItemName) : nullptr;
+	FFADItemDataRow* InItemMeta = DataTableSubsystem ? DataTableSubsystem->GetItemData(static_cast<int8>(ItemChargeBatteryType)) : nullptr;
 
 	if (InventoryList.Items[Index].Amount >= InItemMeta->Amount)
 	{
@@ -166,11 +166,11 @@ void UADInventoryComponent::S_EquipmentChargeBattery_Implementation(FName ItemNa
 	}
 
 	FTimerHandle TimerHandle;
-	GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this, ItemName]()
+	GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this, ItemChargeBatteryType]()
 		{
 			if (ChargeBatteryWidget)
-				ChargeBatteryWidget->SetEquipBatteryAmount(ItemName, InventoryList.Items[FindItemIndexByName(ItemName)].Amount);
-			C_SetEquipBatteryAmount(ItemName);
+				ChargeBatteryWidget->SetEquipBatteryAmount(ItemChargeBatteryType, InventoryList.Items[FindItemIndexByID(static_cast<int8>(ItemChargeBatteryType))].Amount);
+			C_SetEquipBatteryAmount(ItemChargeBatteryType);
 		}, 1.0f, false);
 
 }
@@ -191,18 +191,18 @@ void UADInventoryComponent::S_UseBatteryAmount_Implementation(int8 Amount)
 	}
 }
 
-void UADInventoryComponent::C_SetButtonActive_Implementation(FName CName, bool bCIsActive, int16 CAmount)
+void UADInventoryComponent::C_SetButtonActive_Implementation(EChargeBatteryType ItemChargeBatteryType, bool bCIsActive, int16 CAmount)
 {
 	if (ChargeBatteryWidget)
 	{
-		ChargeBatteryWidget->SetEquipBatteryButtonActivate(CName, bCIsActive);
-		ChargeBatteryWidget->SetEquipBatteryAmount(CName, CAmount);
+		ChargeBatteryWidget->SetEquipBatteryButtonActivate(ItemChargeBatteryType, bCIsActive);
+		ChargeBatteryWidget->SetEquipBatteryAmount(ItemChargeBatteryType, CAmount);
 		if (bCIsActive)
 		{
-			LOGVN(Warning, TEXT("Activate %s Button"), *CName.ToString());
+			LOGVN(Warning, TEXT("Activate Button"));
 		}
 		else
-			LOGVN(Warning, TEXT("DeActivate %s Button"), *CName.ToString());
+			LOGVN(Warning, TEXT("DeActivate Button"));
 	}
 }
 
@@ -211,10 +211,10 @@ void UADInventoryComponent::C_UpdateBatteryInfo_Implementation()
 	ChargeBatteryWidget->UpdateBatteryInfo();
 }
 
-void UADInventoryComponent::C_SetEquipBatteryAmount_Implementation(FName CItemName)
+void UADInventoryComponent::C_SetEquipBatteryAmount_Implementation(EChargeBatteryType ItemChargeBatteryType)
 {
 	if (ChargeBatteryWidget)
-		ChargeBatteryWidget->SetEquipBatteryAmount(CItemName, InventoryList.Items[FindItemIndexByName(CItemName)].Amount);
+		ChargeBatteryWidget->SetEquipBatteryAmount(ItemChargeBatteryType, InventoryList.Items[FindItemIndexByID(static_cast<int8>(ItemChargeBatteryType))].Amount);
 }
 
 void UADInventoryComponent::InventoryInitialize()
@@ -334,11 +334,23 @@ void UADInventoryComponent::OnRep_CurrentEquipmentSlotIndex()
 
 }
 
-int16 UADInventoryComponent::FindItemIndexByName(FName ItemID) //빈슬롯이 없으면 -1 반환
+int8 UADInventoryComponent::FindItemIndexByName(FName ItemName) //빈슬롯이 없으면 -1 반환
 {
 	for (int i = 0; i < InventoryList.Items.Num(); ++i)
 	{
-		if (InventoryList.Items[i].Name == ItemID)
+		if (InventoryList.Items[i].Name == ItemName)
+		{
+			return i;
+		}
+	}
+	return INDEX_NONE;
+}
+
+int8 UADInventoryComponent::FindItemIndexByID(int8 ItemID)
+{
+	for (int i = 0; i < InventoryList.Items.Num(); ++i)
+	{
+		if (InventoryList.Items[i].Id == ItemID)
 		{
 			return i;
 		}
@@ -374,10 +386,10 @@ void UADInventoryComponent::RemoveBySlotIndex(uint8 SlotIndex, EItemType ItemTyp
 		{
 			if (ChargeBatteryWidget)
 			{
-				ChargeBatteryWidget->SetEquipBatteryButtonActivate(Item.Name, false);
+				ChargeBatteryWidget->SetEquipBatteryButtonActivate(static_cast<EChargeBatteryType>(Item.Id), false);
 				LOGINVEN(Warning, TEXT("DeActivate %s Button"), *Item.Name.ToString());
 			}
-			C_SetButtonActive(Item.Name, false, Item.Amount);
+			C_SetButtonActive(static_cast<EChargeBatteryType>(Item.Id), false, Item.Amount);
 		}
 		else if (Item.Name == "Battery")
 		{
@@ -458,11 +470,11 @@ void UADInventoryComponent::CheckItemsForBattery()
 		{
 			if (ChargeBatteryWidget)
 			{
-				ChargeBatteryWidget->SetEquipBatteryButtonActivate(Item.Name, true);
-				ChargeBatteryWidget->SetEquipBatteryAmount(Item.Name, Item.Amount);
+				ChargeBatteryWidget->SetEquipBatteryButtonActivate(static_cast<EChargeBatteryType>(Item.Id), true);
+				ChargeBatteryWidget->SetEquipBatteryAmount(static_cast<EChargeBatteryType>(Item.Id), Item.Amount);
 				LOGVN(Warning, TEXT("Activate %s Button"), *Item.Name.ToString());
 			}
-			C_SetButtonActive(Item.Name, true, Item.Amount);
+			C_SetButtonActive(static_cast<EChargeBatteryType>(Item.Id), true, Item.Amount);
 		}
 		else if (Item.Name == "Battery")
 		{
