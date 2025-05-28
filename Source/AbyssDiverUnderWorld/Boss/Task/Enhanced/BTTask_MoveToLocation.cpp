@@ -43,29 +43,31 @@ EBTNodeResult::Type UBTTask_MoveToLocation::ExecuteTask(UBehaviorTreeComponent& 
 	Boss = Cast<ABoss>(AIController->GetCharacter());
 	if (!IsValid(Boss)) return EBTNodeResult::Failed;
 
+	// 감속을 멈추고 이동 상태로 전이하여 ABP에서 이동 상태임을 인지
 	Boss->SetBossState(EBossState::Move);
+	Boss->SetDecelerate(false);
 	
+	// Task에 할당된 블랙보드 키 값을 추출
 	const FName KeyName = GetSelectedBlackboardKey();
 	TargetLocation = AIController->GetBlackboardComponent()->GetValueAsVector(KeyName);
 
+	// MoveTask를 종료할 랜덤 시간 추출
 	FinishTaskInterval = FMath::RandRange(MinFinishTaskInterval, MaxFinishTaskInterval);
+	AccumulatedTime = 0.f;
+	
+	// 디버그용 구체 출력 (5초 동안, 반지름 50, 빨간색)
+	//DrawDebugSphere(GetWorld(), TargetLocation, 250.0f, 12, FColor::Red, false, 5.0f);
 
-	// AI가 지형에 막힌 경우
-	if (bHasBeenTriggeredMoveToLocation && FVector::Dist(TargetLocation, CachedLocation) <= 1.f)
+	const EPathFollowingRequestResult::Type Result = AIController->MoveToLocationWithRadius(TargetLocation);
+	
+	// AI가 NavMesh를 벗어난 상태인 경우
+	if (Result == EPathFollowingRequestResult::AlreadyAtGoal)
 	{
 		bShouldMoveToNearestPoint = true;
 	}
 	
-	// 디버그용 구체 출력 (5초 동안, 반지름 50, 빨간색)
-	//DrawDebugSphere(GetWorld(), TargetLocation, 250.0f, 12, FColor::Red, false, 5.0f);
-	
-	Boss->SetDecelerate(false);
-	AccumulatedTime = 0.f;
-
-	EPathFollowingRequestResult::Type Result = AIController->MoveToLocationWithRadius(TargetLocation);
-
-	// AI가 NavMesh를 벗어난 상태인 경우
-	if (Result == EPathFollowingRequestResult::AlreadyAtGoal)
+	// AI가 지형에 막힌 경우
+	if (bHasBeenTriggeredMoveToLocation && FVector::Dist(TargetLocation, CachedLocation) <= 1.f)
 	{
 		bShouldMoveToNearestPoint = true;
 	}
@@ -84,13 +86,15 @@ EBTNodeResult::Type UBTTask_MoveToLocation::ExecuteTask(UBehaviorTreeComponent& 
 		return EBTNodeResult::InProgress;
 	}
 
+	// 위의 요청들이 False인 경우 예외 상황이므로 Fail 처리
 	return EBTNodeResult::Failed;
 }
 
 void UBTTask_MoveToLocation::TickTask(UBehaviorTreeComponent& Comp, uint8* NodeMemory, float DeltaSeconds)
 {
 	Super::TickTask(Comp, NodeMemory, DeltaSeconds);
-	
+
+	// 감속 거리에 도달한 경우 감속 트리거
 	const float Distance = FVector::Dist(Boss->GetActorLocation(), TargetLocation);
 	if (Distance < DecelerationTriggeredRadius)
 	{
@@ -109,7 +113,8 @@ void UBTTask_MoveToLocation::TickTask(UBehaviorTreeComponent& Comp, uint8* NodeM
 
 		AccumulatedTime += FMath::Clamp(DeltaSeconds, 0.f, 1.f);
 	}
-	
+
+	// 해당 지점에 도착한 경우 테스크 종료
 	if (AIController->GetPathFollowingComponent()->GetStatus() == EPathFollowingStatus::Idle)
 	{
 		if (bIsInitialized)
