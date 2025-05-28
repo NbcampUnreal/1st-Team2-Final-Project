@@ -22,7 +22,7 @@
 DEFINE_LOG_CATEGORY(InventoryLog);
 
 UADInventoryComponent::UADInventoryComponent() :
-	InventoryWidgetClass(nullptr),
+	ToggleWidgetClass(nullptr),
 	TotalWeight(0),
 	TotalPrice(0),
 	WeightMax(100),
@@ -31,7 +31,7 @@ UADInventoryComponent::UADInventoryComponent() :
 	bCanUseItem(true),
 	CurrentEquipmentSlotIndex(INDEX_NONE),
 	CurrentEquipmentInstance(nullptr),
-	InventoryWidgetInstance(nullptr),
+	ToggleWidgetInstance(nullptr),
 	DataTableSubsystem(nullptr),
 	ChargeBatteryWidget(nullptr)
 {
@@ -43,7 +43,7 @@ UADInventoryComponent::UADInventoryComponent() :
 	ConstructorHelpers::FClassFinder<UToggleWidget> ToggleWidget(TEXT("/Game/_AbyssDiver/Blueprints/UI/InventoryUI/WBP_ToggleWidget"));
 	if (ToggleWidget.Succeeded())
 	{
-		InventoryWidgetClass = ToggleWidget.Class;
+		ToggleWidgetClass = ToggleWidget.Class;
 	}	
 
 	for (int32 i = 0; i < static_cast<int8>(EItemType::Max); ++i)
@@ -220,16 +220,16 @@ void UADInventoryComponent::C_SetEquipBatteryAmount_Implementation(EChargeBatter
 void UADInventoryComponent::InventoryInitialize()
 {
 	APlayerController* PC = Cast<APlayerController>(Cast<AADPlayerState>(GetOwner())->GetPlayerController());
-	if (InventoryWidgetClass && PC && PC->IsLocalController())
+	if (ToggleWidgetClass && PC && PC->IsLocalController())
 	{
-		InventoryWidgetInstance = CreateWidget<UToggleWidget>(PC, InventoryWidgetClass);
+		ToggleWidgetInstance = CreateWidget<UToggleWidget>(PC, ToggleWidgetClass);
 		LOGINVEN(Warning, TEXT("WidgetCreate!"));
 
-		if (InventoryWidgetInstance)
+		if (ToggleWidgetInstance)
 		{
-			InventoryWidgetInstance->AddToViewport();
-			InventoryWidgetInstance->InitializeInventoriesInfo(this);
-			InventoryWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
+			ToggleWidgetInstance->AddToViewport();
+			ToggleWidgetInstance->InitializeInventoriesInfo(this);
+			ToggleWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
 		}
 	}
 }
@@ -293,15 +293,15 @@ bool UADInventoryComponent::AddInventoryItem(const FItemData& ItemData)
 void UADInventoryComponent::ShowInventory()
 {
 	APlayerController* PC = Cast<APlayerController>(Cast<AADPlayerState>(GetOwner())->GetPlayerController());
-	if (!PC || !InventoryWidgetInstance) return;
+	if (!PC || !ToggleWidgetInstance) return;
 
-	InventoryWidgetInstance->SetVisibility(ESlateVisibility::Visible);
+	ToggleWidgetInstance->SetVisibility(ESlateVisibility::Visible);
 	InventoryUIUpdate();
 	bAlreadyCursorShowed = PC->bShowMouseCursor;
 	PC->bShowMouseCursor = true;
 
 	FInputModeGameAndUI InputMode;
-	InputMode.SetWidgetToFocus(InventoryWidgetInstance->TakeWidget());
+	InputMode.SetWidgetToFocus(ToggleWidgetInstance->TakeWidget());
 
 	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 	InputMode.SetHideCursorDuringCapture(false);
@@ -312,10 +312,10 @@ void UADInventoryComponent::ShowInventory()
 void UADInventoryComponent::HideInventory()
 {
 	APlayerController* PC = Cast<APlayerController>(Cast<AADPlayerState>(GetOwner())->GetPlayerController());
-	if (!PC && !InventoryWidgetInstance) return;
+	if (!PC && !ToggleWidgetInstance) return;
 
 	bInventoryWidgetShowed = false;
-	InventoryWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
+	ToggleWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
 
 	if (!bAlreadyCursorShowed)
 		PC->bShowMouseCursor = false;
