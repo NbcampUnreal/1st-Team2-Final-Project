@@ -1441,6 +1441,11 @@ void AUnderwaterCharacter::SetupMontageCallbacks()
 	}
 }
 
+bool AUnderwaterCharacter::IsAlive() const
+{
+	return CharacterState != ECharacterState::Death && CharacterState != ECharacterState::Groggy;
+}
+
 float AUnderwaterCharacter::GetRemainGroggyTime() const
 {
 	if (GetWorldTimerManager().IsTimerActive(GroggyTimer))
