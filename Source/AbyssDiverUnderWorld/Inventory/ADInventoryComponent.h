@@ -120,7 +120,7 @@ private:
 public:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	TSubclassOf<UToggleWidget> InventoryWidgetClass;
+	TSubclassOf<UToggleWidget> ToggleWidgetClass;
 	
 private:
 	UPROPERTY(ReplicatedUsing = OnRep_InventoryList)
@@ -143,7 +143,7 @@ private:
 	TObjectPtr<AADUseItem> CurrentEquipmentInstance;
 	TArray<int8> InventorySizeByType;
 
-	TObjectPtr<UToggleWidget> InventoryWidgetInstance;
+	TObjectPtr<UToggleWidget> ToggleWidgetInstance;
 	TObjectPtr<UDataTableSubsystem> DataTableSubsystem; 
 	TObjectPtr<UChargeBatteryWidget> ChargeBatteryWidget;
 #pragma endregion
@@ -165,5 +165,7 @@ public:
 	const TArray<int8>& GetInventorySizeByType() const { return InventorySizeByType; } //인벤토리 사이즈 배열 반환
 
 	void SetChargeBatteryInstance(UChargeBatteryWidget* BatteryWidget);
+
+	UToggleWidget* GetInventoryWidgetInstance() const { return ToggleWidgetInstance; } //인벤토리 위젯 인스턴스 반환
 #pragma endregion
 };
