@@ -36,7 +36,7 @@ void ALimadonSpawner::Spawn()
 	{
 		if (IsValid(SpawnPoint))
 		{
-			LimadonSpawnedLocations.Add(SpawnPoint->GetActorLocation());
+			LimadonSpawnedLocations.Add(SpawnPoint);
 		}
 	}
 
@@ -46,6 +46,7 @@ void ALimadonSpawner::Spawn()
 	// 4. 스폰할 Limadon 개체 수만큼 Spawn 로직을 호출한다.
 	// 월드 내에 스폰된 광석의 위치를 랜덤으로 가져온다.
 	// 해당 광석의 위치에서 MaxLimadonSpawnDistance보다 가까운 Limadon SpawnPoint를 찾아 Limadon을 스폰시킨다.
+	// 스폰 성공한 SpawnPoint는 월드 상에서 Destroy 한다. 이는 다음 Limadon Spawn 시의 효율성을 높이기 위함이다.
 	for (int8 i = 0; i < LimadonSpawnCount; ++i)
 	{
 		if (OreSpawnedLocations.Num() == 0 || LimadonSpawnedLocations.Num() == 0)
@@ -56,15 +57,16 @@ void ALimadonSpawner::Spawn()
 
 		for (int32 j = 0; j < LimadonSpawnedLocations.Num(); ++j)
 		{
-			if (FVector::Dist(LimadonSpawnedLocations[j], OreLocation) < MaxLimadonSpawnDistance)
+			if (FVector::Dist(LimadonSpawnedLocations[j]->GetActorLocation(), OreLocation) < MaxLimadonSpawnDistance)
 			{
 				GetWorld()->SpawnActor<ALimadon>(
 					LimadonClass,
-					LimadonSpawnedLocations[j],
-					FRotator::ZeroRotator
+					LimadonSpawnedLocations[j]->GetActorLocation(),
+					LimadonSpawnedLocations[j]->GetActorRotation()
 				);
-				
+				ALimadonSpawnPoint* CachedLimadonSpawnPoint = LimadonSpawnedLocations[j];
 				LimadonSpawnedLocations.RemoveAt(j);
+				CachedLimadonSpawnPoint->Destroy();
 				break;
 			}
 		}

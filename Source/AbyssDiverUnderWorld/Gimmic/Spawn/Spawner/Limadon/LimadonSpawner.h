@@ -4,6 +4,7 @@
 #include "Gimmic/Spawn/Spawner/Spawner.h"
 #include "LimadonSpawner.generated.h"
 
+class ALimadonSpawnPoint;
 class ALimadon;
 
 UCLASS()
@@ -32,7 +33,7 @@ protected:
 
 private:
 	TArray<FVector> OreSpawnedLocations;
-	TArray<FVector> LimadonSpawnedLocations;
+	TArray<TObjectPtr<ALimadonSpawnPoint>> LimadonSpawnedLocations;
 	float MaxLimadonSpawnDistance;
 	
 };
