@@ -20,6 +20,7 @@
 #include "Character/UnderwaterCharacter.h"
 #include "Framework/ADPlayerState.h"
 
+const FName UEquipUseComponent::BASIC_SPEAR_GUN_NAME = TEXT("BasicSpearGun");
 
 
 // Sets default values for this component's properties
@@ -388,7 +389,18 @@ void UEquipUseComponent::Initialize(FItemData& ItemData)
 	{
 		OnRep_CurrentAmmoInMag();
 		OnRep_ReserveAmmo();
-		// TODO : UI를 띄우는 함수
+		//TODO: UI 띄우는 곳
+		if (CurrentEquipmentName == BASIC_SPEAR_GUN_NAME)
+		{
+			if (APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController()))
+			{
+				if (UPlayerHUDComponent* HUD = PC->FindComponentByClass<UPlayerHUDComponent>())
+				{
+					HUD->SetSpearUIVisibility(true);
+					HUD->UpdateSpearCount(CurrentAmmoInMag, ReserveAmmo);
+				}
+			}
+		}
 	}
 	else
 	{
@@ -417,6 +429,8 @@ void UEquipUseComponent::Initialize(FItemData& ItemData)
 
 void UEquipUseComponent::DeinitializeEquip()
 {
+	FName BackupName = CurrentEquipmentName;
+
 	if (CurrentItemData)
 	{
 		CurrentItemData->Amount = Amount;
@@ -455,7 +469,17 @@ void UEquipUseComponent::DeinitializeEquip()
 	ReserveAmmo = 0;
 	Amount = 0;
 
-	// TODO UI를 제거하는 함수
+	//TODO: UI 제거하는 함수
+	if (BackupName == BASIC_SPEAR_GUN_NAME)
+	{
+		if (APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController()))
+		{
+			if (UPlayerHUDComponent* HUD = PC->FindComponentByClass<UPlayerHUDComponent>())
+			{
+				HUD->SetSpearUIVisibility(false);
+			}
+		}
+	}
 
 	// 부스트·야간투시 효과 끄기
 	bBoostActive = false;
@@ -824,4 +848,9 @@ void UEquipUseComponent::InitializeAmmoUI()
 {
 	OnRep_CurrentAmmoInMag();
 	OnRep_ReserveAmmo();
+}
+
+bool UEquipUseComponent::IsSpearGun() const
+{
+	return bIsWeapon && CurrentEquipmentName == "BasicSpearGun";
 }
