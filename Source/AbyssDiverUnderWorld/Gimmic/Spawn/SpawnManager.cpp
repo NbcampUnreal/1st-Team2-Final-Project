@@ -32,8 +32,12 @@ void ASpawnManager::SpawnByGroup()
 	{
 		SpawnerGroups[0].MonsterSpawner->Spawn();
 		SpawnerGroups[0].OreSpawner->Spawn();
-		LimadonSpawner->Spawn();
 		SpawnerGroups.RemoveAt(0);
+		
+		if (IsValid(LimadonSpawner))
+		{
+			LimadonSpawner->Spawn();	
+		}
 
 		LOG(TEXT("Begin Spawn"));
 	}
