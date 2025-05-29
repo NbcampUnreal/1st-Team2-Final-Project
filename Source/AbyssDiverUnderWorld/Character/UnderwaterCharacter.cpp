@@ -1060,6 +1060,12 @@ void AUnderwaterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 				this,
 				&AUnderwaterCharacter::Reload
 			);
+			EnhancedInput->BindAction(
+				ReloadAction,
+				ETriggerEvent::Completed,
+				this,
+				&AUnderwaterCharacter::CompleteReload
+			);
 		}
 
 		if (EquipSlot1Action)
@@ -1325,6 +1331,15 @@ void AUnderwaterCharacter::Reload(const FInputActionValue& InputActionValue)
 		return;
 	}
 	EquipUseComponent->HandleRKey();
+}
+
+void AUnderwaterCharacter::CompleteReload(const FInputActionValue& InputActionValue)
+{
+	if (CharacterState != ECharacterState::Normal)
+	{
+		return;
+	}
+	EquipUseComponent->HandleRKeyRelease();
 }
 
 void AUnderwaterCharacter::Aim(const FInputActionValue& InputActionValue)

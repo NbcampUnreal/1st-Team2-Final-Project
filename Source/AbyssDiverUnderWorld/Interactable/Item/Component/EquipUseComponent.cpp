@@ -213,9 +213,17 @@ void UEquipUseComponent::S_RKey_Implementation()
 {
 	switch (RKeyAction)
 	{
-	case EAction::WeaponReload:   StartReload();     break;
-	case EAction::ApplyChargeUI:  OpenChargeWidget();break;
-	default:                      OpenChargeWidget();break;
+	case EAction::WeaponReload:   StartReload();			  break;
+	case EAction::ApplyChargeUI:  ShowChargeBatteryWidget();  break;
+	default:                      break;
+	}
+}
+
+void UEquipUseComponent::S_RKeyRelease_Implementation()
+{
+	if (bChargeBatteryWidgetVisible)
+	{
+		HideChargeBatteryWidget();
 	}
 }
 
@@ -380,6 +388,7 @@ void UEquipUseComponent::Initialize(FItemData& ItemData)
 	{
 		OnRep_CurrentAmmoInMag();
 		OnRep_ReserveAmmo();
+		// TODO : UI를 띄우는 함수
 	}
 	else
 	{
@@ -446,6 +455,8 @@ void UEquipUseComponent::DeinitializeEquip()
 	ReserveAmmo = 0;
 	Amount = 0;
 
+	// TODO UI를 제거하는 함수
+
 	// 부스트·야간투시 효과 끄기
 	bBoostActive = false;
 	bNightVisionOn = false;
@@ -499,6 +510,11 @@ void UEquipUseComponent::HandleLeftRelease()
 void UEquipUseComponent::HandleRKey()
 {
 	S_RKey();
+}
+
+void UEquipUseComponent::HandleRKeyRelease()
+{
+	S_RKeyRelease();
 }
 
 void UEquipUseComponent::FireHarpoon()
@@ -683,6 +699,57 @@ void UEquipUseComponent::ToggleChargeBatteryWidget()
 	{
 		LOGIC(Log, TEXT("No Owning Character"));
 	}
+}
+
+void UEquipUseComponent::ShowChargeBatteryWidget()
+{
+	if (!OwningCharacter.IsValid() || !OwningCharacter->IsLocallyControlled() || !ChargeBatteryInstance)
+		return;
+
+	bChargeBatteryWidgetVisible = true;
+	LOGIC(Log, TEXT("ShowChargeBatteryWidget: %s"), TEXT("Visible"));
+
+	APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController());
+	if (!PC) return;
+
+	// UI 보이기
+	ChargeBatteryInstance->SetVisibility(ESlateVisibility::Visible);
+
+	// 커서 상태 저장 후 표시
+	bAlreadyCursorShowed = PC->bShowMouseCursor;
+	PC->bShowMouseCursor = true;
+
+	// 입력 모드 전환 (Game+UI)
+	FInputModeGameAndUI InputMode;
+	InputMode.SetWidgetToFocus(ChargeBatteryInstance->TakeWidget());
+	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	InputMode.SetHideCursorDuringCapture(false);
+
+	PC->SetIgnoreLookInput(true);
+	PC->SetInputMode(InputMode);
+}
+
+void UEquipUseComponent::HideChargeBatteryWidget()
+{
+	if (!OwningCharacter.IsValid() || !OwningCharacter->IsLocallyControlled() || !ChargeBatteryInstance)
+		return;
+
+	bChargeBatteryWidgetVisible = false;
+	LOGIC(Log, TEXT("HideChargeBatteryWidget: %s"), TEXT("Hidden"));
+
+	APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController());
+	if (!PC) return;
+
+	// UI 숨기기
+	ChargeBatteryInstance->SetVisibility(ESlateVisibility::Hidden);
+
+	// 커서 복원
+	if (!bAlreadyCursorShowed)
+		PC->bShowMouseCursor = false;
+
+	// 입력 모드 복귀 (Game Only)
+	PC->SetIgnoreLookInput(false);
+	PC->SetInputMode(FInputModeGameOnly());
 }
 
 void UEquipUseComponent::StartReload()
