@@ -366,6 +366,8 @@ protected:
 	/** 재장전 함수 */
 	void Reload(const FInputActionValue& InputActionValue);
 
+	void CompleteReload(const FInputActionValue& InputActionValue);
+
 	/** 1번 슬롯 장착 함수 */
 	void EquipSlot1(const FInputActionValue& InputActionValue);
 
