@@ -462,7 +462,7 @@ void UEquipUseComponent::DeinitializeEquip()
 	Amount = 0;
 
 	//TODO: UI 제거하는 함수
-	if (BackupName == "BasicSpearGun")
+	if (BackupName == BASIC_SPEAR_GUN_NAME)
 	{
 		if (APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController()))
 		{
