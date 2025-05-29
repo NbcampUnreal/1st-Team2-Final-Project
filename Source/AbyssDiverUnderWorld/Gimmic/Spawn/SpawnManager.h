@@ -4,6 +4,7 @@
 #include "GameFramework/Actor.h"
 #include "SpawnManager.generated.h"
 
+class ALimadonSpawner;
 class AMonsterSpawner;
 class AOreSpawner;
 
@@ -20,6 +21,10 @@ public:
 	// 몬스터 스포너
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawner")
 	TObjectPtr<AMonsterSpawner> MonsterSpawner;
+
+	// 리마돈 스포너
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawner")
+	TObjectPtr<ALimadonSpawner> LimadonSpawner;
 };
 
 UCLASS()
