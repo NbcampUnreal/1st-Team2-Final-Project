@@ -200,7 +200,7 @@ void UADInventoryComponent::S_UseBatteryAmount_Implementation(int8 Amount)
 
 void UADInventoryComponent::C_SpawnItemEffect_Implementation()
 {
-	//UObject는 리플리케이트를 지원하지 않으므로, 이펙트 스폰을 클라이언트에서만 실행되는 함수로 구현(추후 고려 필요)
+	//UObject는 리플리케이트를 지원하지 않으므로, 이펙트 스폰을 클라이언트에서만 실행되는 함수로 구현
 	UNiagaraSystem* OxygenRefillEffect = LoadObject<UNiagaraSystem>(
 		nullptr,
 		TEXT("/Game/_AbyssDiver/FX/VFX/Item/NS_RefillOxygen.NS_RefillOxygen")
@@ -389,11 +389,6 @@ void UADInventoryComponent::HideInventory()
 void UADInventoryComponent::OnRep_InventoryList()
 {
 	InventoryUIUpdate();
-}
-
-void UADInventoryComponent::OnRep_CurrentEquipmentSlotIndex()
-{
-
 }
 
 int8 UADInventoryComponent::FindItemIndexByName(FName ItemName) //빈슬롯이 없으면 -1 반환
@@ -772,10 +767,6 @@ void UADInventoryComponent::RebuildIndexMap()
 void UADInventoryComponent::OnUseCoolTimeEnd()
 {
 	bCanUseItem = true;
-}
-
-void UADInventoryComponent::EquipmentChargeBatteryUpdateDelay()
-{
 }
 
 void UADInventoryComponent::PrintLogInventoryData()
