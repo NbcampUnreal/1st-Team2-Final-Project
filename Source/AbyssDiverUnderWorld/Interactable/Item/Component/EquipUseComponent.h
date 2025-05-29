@@ -173,7 +173,9 @@ public:
 	uint8 bChargeBatteryWidgetVisible : 1;
 	uint8 bAlreadyCursorShowed : 1;
 
-	
+	// SpearType 저장
+	TArray<FString> SpearGunTypeNames = { "BasicSpearGun", "PoisonSpearGun", "BombSpearGun" };
+
 	
 protected:
 	UPROPERTY(EditAnywhere)

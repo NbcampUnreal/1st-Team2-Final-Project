@@ -71,19 +71,22 @@ void AADPlayerController::SetPawn(APawn* InPawn)
 
 	Super::SetPawn(InPawn);
 
-	// 상호작용 UI 생성과 함수 바인딩
-	if (InteractionWidgetClass && IsLocalController())
+	if (InPawn)
 	{
-		InteractionWidget = CreateWidget<UInteractionDescriptionWidget>(this, InteractionWidgetClass);
-
-		if (InteractionWidget)
+		// 상호작용 UI 생성과 함수 바인딩
+		if (InteractionWidgetClass && IsLocalController())
 		{
-			if (AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(GetPawn()))
+			InteractionWidget = CreateWidget<UInteractionDescriptionWidget>(this, InteractionWidgetClass);
+
+			if (InteractionWidget)
 			{
-				if (UADInteractionComponent* InteractionComponent = UnderwaterCharacter->GetInteractionComponent())
+				if (AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(GetPawn()))
 				{
-					InteractionComponent->OnFocus.AddDynamic(InteractionWidget, &UInteractionDescriptionWidget::HandleFocus);
-					InteractionComponent->OnFocusEnd.AddDynamic(InteractionWidget, &UInteractionDescriptionWidget::HandleFocusLost);
+					if (UADInteractionComponent* InteractionComponent = UnderwaterCharacter->GetInteractionComponent())
+					{
+						InteractionComponent->OnFocus.AddDynamic(InteractionWidget, &UInteractionDescriptionWidget::HandleFocus);
+						InteractionComponent->OnFocusEnd.AddDynamic(InteractionWidget, &UInteractionDescriptionWidget::HandleFocusLost);
+					}
 				}
 			}
 		}

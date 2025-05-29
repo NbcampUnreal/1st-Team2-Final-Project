@@ -58,7 +58,7 @@ bool ALevelTraveler::IsHoldMode() const
 	return bIsHoldMode;
 }
 
-EInteractionType ALevelTraveler::GetInteractionType() const
+FString ALevelTraveler::GetInteractionDescription() const
 {
-	return EInteractionType::GoToNextLevel;
+	return TEXT("Go to Next Level!");
 }

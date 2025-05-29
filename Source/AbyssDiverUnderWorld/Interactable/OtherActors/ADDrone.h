@@ -85,7 +85,7 @@ public:
 	virtual bool IsHoldMode() const override;
 
 	int32 GetDronePhaseNumber() const { return DronePhaseNumber; }
-	virtual EInteractionType GetInteractionType() const override;
+	virtual FString GetInteractionDescription() const override;
 
 #pragma endregion
 
