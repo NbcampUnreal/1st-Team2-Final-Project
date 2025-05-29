@@ -26,14 +26,6 @@ public:
 
 	UFUNCTION(BlueprintImplementableEvent)
 	void SetEmissiveDown();
-
-	UFUNCTION(NetMulticast, Reliable)
-	void M_SetLimadonHidden();
-	void M_SetLimadonHidden_Implementation();
-
-	UFUNCTION(NetMulticast, Reliable)
-	void M_SetLimadonVisible();
-	void M_SetLimadonVisible_Implementation();
 	
 protected:
 	UFUNCTION(BlueprintCallable)
