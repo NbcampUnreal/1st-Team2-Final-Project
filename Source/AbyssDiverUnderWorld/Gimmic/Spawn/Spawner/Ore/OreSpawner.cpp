@@ -13,7 +13,7 @@ void AOreSpawner::BeginPlay()
 {
 	Super::BeginPlay();
 
-	GetSpawnPoint(AOreSpawnPoint::StaticClass());
+	TotalSpawnPoints = GetSpawnPoint(AOreSpawnPoint::StaticClass());
 }
 
 void AOreSpawner::Spawn()
