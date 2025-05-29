@@ -997,6 +997,12 @@ void AUnderwaterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 				this,
 				&AUnderwaterCharacter::Fire
 			);
+			EnhancedInput->BindAction(
+				FireAction,
+				ETriggerEvent::Completed,
+				this,
+				&AUnderwaterCharacter::StopFire
+			);
 		}
 
 		if (AimAction)
@@ -1301,6 +1307,15 @@ void AUnderwaterCharacter::Fire(const FInputActionValue& InputActionValue)
 		return;
 	}
 	EquipUseComponent->HandleLeftClick();
+}
+
+void AUnderwaterCharacter::StopFire(const FInputActionValue& InputActionValue)
+{
+	if (CharacterState != ECharacterState::Normal)
+	{
+		return;
+	}
+	EquipUseComponent->HandleLeftRelease();
 }
 
 void AUnderwaterCharacter::Reload(const FInputActionValue& InputActionValue)

@@ -46,6 +46,9 @@ public:
 	void S_LeftClick();
 	void S_LeftClick_Implementation();
 	UFUNCTION(Server, Reliable)
+	void S_LeftRelease();
+	void S_LeftRelease_Implementation();
+	UFUNCTION(Server, Reliable)
 	void S_RKey();
 	void S_RKey_Implementation();
 	UFUNCTION(Server, Reliable)
@@ -70,6 +73,10 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void ToggleBoost();
 	UFUNCTION(BlueprintCallable)
+	void BoostOn();
+	UFUNCTION(BlueprintCallable)
+	void BoostOff();
+	UFUNCTION(BlueprintCallable)
 	void ToggleNightVision();
 	UFUNCTION(BlueprintCallable)
 	void ToggleChargeBatteryWidget();
@@ -79,6 +86,8 @@ public:
 	void OpenChargeWidget();
 	UFUNCTION(BlueprintCallable)
 	void HandleLeftClick();
+	UFUNCTION(BlueprintCallable)
+	void HandleLeftRelease();
 	UFUNCTION(BlueprintCallable)
 	void HandleRKey();
 	

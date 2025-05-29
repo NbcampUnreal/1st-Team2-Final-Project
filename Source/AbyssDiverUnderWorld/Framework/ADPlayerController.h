@@ -16,7 +16,7 @@ class ABYSSDIVERUNDERWORLD_API AADPlayerController : public APlayerController
 	
 protected:
 	virtual void BeginPlay() override;
-	virtual void OnPossess(APawn* InPawn) override;
+	virtual void SetPawn(APawn* InPawn) override;
 
 #pragma region Method
 	UFUNCTION(Server, Reliable)
