@@ -43,6 +43,7 @@ public:
     UFUNCTION()
     void UpdateSpearCount(const int32& CurrentSpear, const int32& TotalSpear);
 
+    void SetSpearUIVisibility(bool bVisible);
 private:
 #pragma endregion
 

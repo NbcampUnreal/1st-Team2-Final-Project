@@ -380,6 +380,18 @@ void UEquipUseComponent::Initialize(FItemData& ItemData)
 	{
 		OnRep_CurrentAmmoInMag();
 		OnRep_ReserveAmmo();
+		//TODO: UI 띄우는 곳
+		if (CurrentEquipmentName == "BasicSpearGun")
+		{
+			if (APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController()))
+			{
+				if (UPlayerHUDComponent* HUD = PC->FindComponentByClass<UPlayerHUDComponent>())
+				{
+					HUD->SetSpearUIVisibility(true);
+					HUD->UpdateSpearCount(CurrentAmmoInMag, ReserveAmmo);
+				}
+			}
+		}
 	}
 	else
 	{
@@ -408,6 +420,8 @@ void UEquipUseComponent::Initialize(FItemData& ItemData)
 
 void UEquipUseComponent::DeinitializeEquip()
 {
+	FName BackupName = CurrentEquipmentName;
+
 	if (CurrentItemData)
 	{
 		CurrentItemData->Amount = Amount;
@@ -445,6 +459,18 @@ void UEquipUseComponent::DeinitializeEquip()
 	CurrentAmmoInMag = 0;
 	ReserveAmmo = 0;
 	Amount = 0;
+
+	//TODO: UI 제거하는 함수
+	if (BackupName == "BasicSpearGun")
+	{
+		if (APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController()))
+		{
+			if (UPlayerHUDComponent* HUD = PC->FindComponentByClass<UPlayerHUDComponent>())
+			{
+				HUD->SetSpearUIVisibility(false);
+			}
+		}
+	}
 
 	// 부스트·야간투시 효과 끄기
 	bBoostActive = false;
@@ -757,4 +783,9 @@ void UEquipUseComponent::InitializeAmmoUI()
 {
 	OnRep_CurrentAmmoInMag();
 	OnRep_ReserveAmmo();
+}
+
+bool UEquipUseComponent::IsSpearGun() const
+{
+	return bIsWeapon && CurrentEquipmentName == "BasicSpearGun";
 }

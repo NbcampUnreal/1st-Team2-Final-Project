@@ -102,6 +102,7 @@ public:
 
 	void InitializeAmmoUI();
 
+	bool IsSpearGun() const;
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 

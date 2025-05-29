@@ -213,3 +213,11 @@ void UPlayerHUDComponent::UpdateSpearCount(const int32& CurrentSpear, const int3
 		PlayerStatusWidget->SetSpearCount(CurrentSpear, TotalSpear);
 	}
 }
+
+void UPlayerHUDComponent::SetSpearUIVisibility(bool bVisible)
+{
+	if (PlayerStatusWidget)
+	{
+		PlayerStatusWidget->SetSpearVisibility(bVisible);
+	}
+}
