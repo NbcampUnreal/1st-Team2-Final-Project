@@ -402,6 +402,19 @@ void AUnderwaterCharacter::M_PlayMontageOnBothMesh_Implementation(UAnimMontage* 
 	}
 }
 
+void AUnderwaterCharacter::M_StopAllMontagesOnBothMesh_Implementation(float BlendOUt)
+{
+	if (UAnimInstance* AnimInstance = Mesh1P->GetAnimInstance())
+	{
+		AnimInstance->StopAllMontages(BlendOUt);
+	}
+
+	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+	{
+		AnimInstance->StopAllMontages(BlendOUt);
+	}
+}
+
 void AUnderwaterCharacter::RequestChangeAnimSyncState(FAnimSyncState NewAnimSyncState)
 {
 	if (HasAuthority())

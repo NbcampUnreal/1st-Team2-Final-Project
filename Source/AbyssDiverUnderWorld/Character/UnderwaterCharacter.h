@@ -159,6 +159,11 @@ public:
 	void M_PlayMontageOnBothMesh(UAnimMontage* Montage, float InPlayRate = 1.0f, FName StartSectionName = NAME_None, FAnimSyncState NewAnimSyncState = FAnimSyncState());
 	void M_PlayMontageOnBothMesh_Implementation(UAnimMontage* Montage, float InPlayRate = 1.0f, FName StartSectionName = NAME_None, FAnimSyncState NewAnimSyncState = FAnimSyncState());
 
+	/** 1인칭 메시, 3인칭 메시 모두 애니메이션 몽타주를 정지한다. */
+	UFUNCTION(NetMulticast, Reliable)
+	void M_StopAllMontagesOnBothMesh(float BlendOut);
+	void M_StopAllMontagesOnBothMesh_Implementation(float BlendOut);
+
 	/** Anim State 변경 요청 */
 	void RequestChangeAnimSyncState(FAnimSyncState NewAnimSyncState);
 
