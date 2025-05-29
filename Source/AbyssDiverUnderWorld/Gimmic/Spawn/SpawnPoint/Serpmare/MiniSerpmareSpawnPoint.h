@@ -2,10 +2,10 @@
 
 #include "CoreMinimal.h"
 #include "Gimmic/Spawn/SpawnPoint/SpawnPoint.h"
-#include "LimadonSpawnPoint.generated.h"
+#include "MiniSerpmareSpawnPoint.generated.h"
 
 UCLASS()
-class ABYSSDIVERUNDERWORLD_API ALimadonSpawnPoint : public ASpawnPoint
+class ABYSSDIVERUNDERWORLD_API AMiniSerpmareSpawnPoint : public ASpawnPoint
 {
 	GENERATED_BODY()
 	
