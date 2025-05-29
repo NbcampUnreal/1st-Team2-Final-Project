@@ -59,6 +59,13 @@ void ALimadon::Attack()
 	bIsInvestigate = false;
 }
 
+void ALimadon::OnDeath()
+{
+	Spit();
+	
+	Super::OnDeath();
+}
+
 void ALimadon::Spit()
 {
 	if (!IsValid(GetTarget())) return;

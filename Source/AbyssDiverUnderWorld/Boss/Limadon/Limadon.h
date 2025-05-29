@@ -18,6 +18,7 @@ public:
 	
 public:
 	virtual void Attack() override;
+	virtual void OnDeath() override;
 	
 	void BiteVariableInitialize();
 
