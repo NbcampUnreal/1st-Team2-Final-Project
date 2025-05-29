@@ -828,6 +828,6 @@ public:
 	FORCEINLINE bool Is3PStrafe() const {return bIsAnim3PSyncStateOverride ? AnimSyncState.bIsStrafing : OverrideAnimSyncState.bIsStrafing;}
 	
 	/** 상호작용 타입 반환 */
-	virtual EInteractionType GetInteractionType() const override { return EInteractionType::ReviveCharacter; }
+	virtual FString GetInteractionDescription() const override { return TEXT("Revive Character!"); }
 #pragma endregion
 };

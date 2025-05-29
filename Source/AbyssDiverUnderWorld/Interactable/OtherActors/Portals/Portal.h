@@ -60,7 +60,7 @@ public:
 
 	virtual UADInteractableComponent* GetInteractableComponent() const override;
 	virtual bool IsHoldMode() const override;
-	virtual EInteractionType GetInteractionType() const override;
+	virtual FString GetInteractionDescription() const override;
 
 #pragma endregion
 

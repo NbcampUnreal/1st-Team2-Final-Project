@@ -590,15 +590,16 @@ void UEquipUseComponent::FireHarpoon()
 		return;
 	}
 	
-	if (CurrentItemData->Name == "BasicSpearGun")
+	// FText 변수로 수정
+	if (CurrentItemData->Name == SpearGunTypeNames[0])
 	{
 		Proj->SetBulletType(ESpearGunType::Basic);
 	}
-	else if (CurrentItemData->Name == "BombSpearGun")
+	else if (CurrentItemData->Name == SpearGunTypeNames[1])
 	{
 		Proj->SetBulletType(ESpearGunType::Bomb);
 	}
-	else if (CurrentItemData->Name == "PoisonSpearGun")
+	else if (CurrentItemData->Name == SpearGunTypeNames[2])
 	{
 		Proj->SetBulletType(ESpearGunType::Poison);
 	}

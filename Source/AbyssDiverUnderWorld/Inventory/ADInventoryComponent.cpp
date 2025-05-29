@@ -599,24 +599,68 @@ void UADInventoryComponent::Equip(FItemData& ItemData, int8 SlotIndex)
 
 	if (MeshComp)
 	{
-		if (MeshComp->DoesSocketExist("Hand_R"))
+		if (MeshComp->DoesSocketExist("Harpoon") && MeshComp->DoesSocketExist("DPV"))
 		{
-			LOGINVEN(Warning, TEXT("SpawnItem")); 
-			AADUseItem* SpawnedItem = GetWorld()->SpawnActor<AADUseItem>(AADUseItem::StaticClass(), MeshComp->GetSocketLocation("Hand_R"), MeshComp->GetSocketRotation("Hand_R"), SpawnParams);
-			if (SpawnedItem)
-			{
-				SpawnedItem->SetItemInfo(ItemData, true);
-				SpawnedItem->AttachToComponent(MeshComp, FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("Hand_R"));
-				CurrentEquipmentInstance = SpawnedItem;
-				LOGINVEN(Warning, TEXT("ItemToEquip Name: %s, Amount %d"), *ItemData.Name.ToString(), ItemData.Amount);
-				SetEquipInfo(SlotIndex, SpawnedItem);
 
-				if (UEquipUseComponent* EquipComp = Pawn->FindComponentByClass<UEquipUseComponent>()) // 나중에 Getter로 바꿔야 함
+			AADUseItem* SpawnedItem = GetWorld()->SpawnActor<AADUseItem>(AADUseItem::StaticClass(), MeshComp->GetSocketLocation("Harpoon"), MeshComp->GetSocketRotation("Hand_R"), SpawnParams);
+			if (!SpawnedItem)
+			{
+				LOGINVEN(Warning, TEXT("No SpawnItem"));
+				return;
+			}
+
+			SpawnedItem->SetItemInfo(ItemData, true);
+			CurrentEquipmentInstance = SpawnedItem;
+			LOGINVEN(Warning, TEXT("ItemToEquip Name: %s, Amount %d"), *ItemData.Name.ToString(), ItemData.Amount);
+			SetEquipInfo(SlotIndex, SpawnedItem);
+			
+			if (UEquipUseComponent* EquipComp = Pawn->FindComponentByClass<UEquipUseComponent>()) // 나중에 Getter로 바꿔야 함
+			{
+				if (GetCurrentEquipmentItemData())
 				{
-					if(GetCurrentEquipmentItemData())
-						EquipComp->Initialize(*GetCurrentEquipmentItemData());
+					EquipComp->Initialize(*GetCurrentEquipmentItemData());
+					bIsWeapon = EquipComp->bIsWeapon;
 				}
 			}
+
+			if (bIsWeapon)
+			{
+				SpawnedItem->AttachToComponent(MeshComp, FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("Harpoon"));
+
+			}
+			else
+			{
+				SpawnedItem->AttachToComponent(MeshComp, FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("DPV"));
+			}
+		}
+	}
+	if (AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(Pawn))
+	{
+		if (!HarpoonDrawMontage || !DPVDrawMontage) return;
+
+		FAnimSyncState WeaponSync;
+		WeaponSync.bEnableRightHandIK = true;
+		WeaponSync.bEnableLeftHandIK = false;
+		WeaponSync.bEnableFootIK = true;
+		WeaponSync.bIsStrafing = false;
+
+		if (bIsWeapon)
+		{
+			UnderwaterCharacter->M_PlayMontageOnBothMesh(
+				HarpoonDrawMontage,
+				1.0f,
+				NAME_None,
+				WeaponSync
+			);
+		}
+		else
+		{
+			UnderwaterCharacter->M_PlayMontageOnBothMesh(
+				DPVDrawMontage,
+				1.0f,
+				NAME_None,
+				WeaponSync
+			);
 		}
 	}
 }
