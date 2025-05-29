@@ -21,10 +21,6 @@ public:
 	// 몬스터 스포너
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawner")
 	TObjectPtr<AMonsterSpawner> MonsterSpawner;
-
-	// 리마돈 스포너
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawner")
-	TObjectPtr<ALimadonSpawner> LimadonSpawner;
 };
 
 UCLASS()
@@ -36,11 +32,17 @@ public:
 	ASpawnManager();
 
 public:
+	virtual void BeginPlay() override;
+
+public:
 	UFUNCTION(BlueprintCallable, Category = "Spawn")
 	void SpawnByGroup();
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawner")
 	TArray<FSpawnerGroup> SpawnerGroups;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Spawner")
+	TObjectPtr<ALimadonSpawner> LimadonSpawner;
 
 };
