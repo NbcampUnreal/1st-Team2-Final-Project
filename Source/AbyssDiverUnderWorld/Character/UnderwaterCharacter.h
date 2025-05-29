@@ -463,8 +463,10 @@ private:
 	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	ELocomotionMode LocomotionMode;
 
+	/** 가장 나중에 착지한 시간, 점프를 Block할 수 있는 기점이 된다 */
 	float LastLandedTime;
 
+	/** 캐릭터가 Land 시에 점프를 Block할 시간. 캐릭터가 Land 모션 중에서 점프하는 것을 방지한다. */
 	UPROPERTY(EditDefaultsOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float LandedJumpBlockTime;
 
@@ -729,8 +731,13 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UEquipUseComponent> EquipUseComponent;
 
+	/** Light 컴포넌트. 캐릭터가 라이트를 켜고 끌 수 있다. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class USpotLightComponent> LanternLightComponent;
+
+	/** 발자국 소리 컴포넌트 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UFootstepComponent> FootstepComponent;
 
 	/** 상호작용 대상이 되게 하는 컴포넌트 */
 	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))

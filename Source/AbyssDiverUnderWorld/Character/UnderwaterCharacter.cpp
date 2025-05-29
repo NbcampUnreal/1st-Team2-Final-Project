@@ -15,6 +15,7 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/PawnNoiseEmitterComponent.h"
 #include "Components/SpotLightComponent.h"
+#include "Footstep/FootstepComponent.h"
 #include "Framework/ADPlayerState.h"
 #include "Framework/ADPlayerController.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -133,6 +134,8 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	LanternLightComponent->SetIntensity(200000.0f);
 	bIsLanternOn = false;
 	LanternLightComponent->SetVisibility(bIsLanternOn);
+
+	FootstepComponent = CreateDefaultSubobject<UFootstepComponent>(TEXT("FootstepComponent"));
 	
 	bIsRadarOn = false;
 	RadarOffset = FVector(150.0f, 0.0f, 0.0f);
@@ -1262,7 +1265,6 @@ void AUnderwaterCharacter::JumpInputStart(const FInputActionValue& InputActionVa
 		return;
 	}
 
-	// UE_LOG(LogTemp,Display, TEXT("Is Moving : %s"), (GetCharacterMovement()->IsMovingOnGround() ? TEXT("True") : TEXT("False")));
 	Jump();
 }
 
