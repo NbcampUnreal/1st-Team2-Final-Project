@@ -107,11 +107,14 @@ float AMonster::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, 
 void AMonster::OnDeath()
 {
 	AIController->StopMovement();
-	AnimInstance->StopAllMontages(0.5f);
+	AnimInstance->StopAllMontages(1.0f);
 
 	SetMonsterState(EMonsterState::Death);
 
 	AIController->UnPossess();
+
+	// Auto Destroy after 2seconds.
+	SetLifeSpan(2.0f);
 }
 
 void AMonster::PlayAttackMontage()

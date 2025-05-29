@@ -25,6 +25,7 @@ protected:
 #pragma region Method
 public:
 	void FireDirection(const FVector& ShootDirection);
+	void DestroyProjectile();
 
 private:
 	UFUNCTION()

@@ -6,8 +6,11 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "NiagaraCommon.h"
 #include "NiagaraFunctionLibrary.h"
+#include "NiagaraComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"
+#include "AbyssDiverUnderWorld.h"
+
 
 
 AGFProjectile::AGFProjectile() : Damage(50.0f), LifeSpan(5.0f)
@@ -64,6 +67,23 @@ void AGFProjectile::FireDirection(const FVector& ShootDirection)
 	ProjectileMovementComp->Velocity = ShootDirection * ProjectileMovementComp->InitialSpeed;
 }
 
+void AGFProjectile::DestroyProjectile()
+{
+	if (TrailEffect)
+	{
+		NiagaraComponent->Deactivate();
+		NiagaraComponent->SetVisibility(false);
+	}
+
+	// Disable collision and visual elements
+	SetActorEnableCollision(false);
+	SetActorHiddenInGame(true);
+
+	// AActor::Destroy() ¡æ bPendingKill = true
+	SetLifeSpan(0.1f);
+	LOG(TEXT("Projectile has BeginOverlap!! Destroyed!!"))
+}
+
 void AGFProjectile::OnProjectileBeginOverlap(
 	UPrimitiveComponent* OverlappedComponent,
 	AActor* OtherActor,
@@ -74,6 +94,8 @@ void AGFProjectile::OnProjectileBeginOverlap(
 {
 	if (OtherActor && OtherActor != this)
 	{
+		UE_LOG(LogTemp, Log, TEXT("Projectile overlapped with: %s"), *OtherActor->GetName());
+
 		UGameplayStatics::ApplyDamage(
 			OtherActor, // DamagedActor : AActor*
 			Damage, // BaseDamage : float
@@ -82,8 +104,8 @@ void AGFProjectile::OnProjectileBeginOverlap(
 			nullptr // Damage Type Class : TSubclassof<UDamageType>
 		);
 	}
-
-	Destroy();
+	
+	DestroyProjectile();
 }
 
 
