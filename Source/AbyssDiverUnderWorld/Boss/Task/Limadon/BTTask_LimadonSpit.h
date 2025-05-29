@@ -4,6 +4,15 @@
 #include "BehaviorTree/Tasks/BTTask_BlackboardBase.h"
 #include "BTTask_LimadonSpit.generated.h"
 
+class ABossAIController;
+class ALimadon;
+
+struct FBTLimadonSpitTaskMemory
+{
+	TWeakObjectPtr<ALimadon> Limadon;
+	TWeakObjectPtr<ABossAIController> AIController;
+};
+
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API UBTTask_LimadonSpit : public UBTTask_BlackboardBase
 {

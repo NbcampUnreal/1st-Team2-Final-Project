@@ -9,22 +9,22 @@ const FName UBTTask_LimadonAttack::BossStateKey = "BossState";
 UBTTask_LimadonAttack::UBTTask_LimadonAttack()
 {
 	NodeName = TEXT("Limadon Attack");
+	bNotifyTick = true;
+	bCreateNodeInstance = false;
 }
 
 EBTNodeResult::Type UBTTask_LimadonAttack::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
-	// 컨트롤러 캐스팅 실패하면 얼리 리턴
-	AAIController* Controller = OwnerComp.GetAIOwner();
-	if (!IsValid(Controller)) return EBTNodeResult::Failed;
+	FBTLimadonAttackTaskMemory* TaskMemory = (FBTLimadonAttackTaskMemory*)NodeMemory;
+	if (!TaskMemory) return EBTNodeResult::Failed;
+
+	TaskMemory->AIController = Cast<ABossAIController>(OwnerComp.GetAIOwner());
+	TaskMemory->Limadon = Cast<ALimadon>(TaskMemory->AIController->GetCharacter());
 	
-	// 보스 캐스팅 실패하면 얼리 리턴
-	ALimadon* Limadon = Cast<ALimadon>(OwnerComp.GetAIOwner()->GetPawn());
-	if (!IsValid(Limadon)) return EBTNodeResult::Failed;
+	if (!TaskMemory->Limadon.IsValid() || !TaskMemory->AIController.IsValid()) return EBTNodeResult::Failed;
 	
-	// 리마돈 공격 애니메이션 출력
-	Limadon->Attack();
+	TaskMemory->Limadon->Attack();
 	
-	// 결과 성공 반환
 	return EBTNodeResult::InProgress;
 }
 
@@ -32,8 +32,15 @@ void UBTTask_LimadonAttack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* N
 {
 	Super::TickTask(OwnerComp, NodeMemory, DeltaSeconds);
 
-	// 공격 상태가 끝났다면 결과 반환
-	if (static_cast<EBossState>(OwnerComp.GetBlackboardComponent()->GetValueAsEnum(BossStateKey)) != EBossState::Attack)
+	FBTLimadonAttackTaskMemory* TaskMemory = (FBTLimadonAttackTaskMemory*)NodeMemory;
+	if (!TaskMemory) return;
+
+	TaskMemory->AIController = Cast<ABossAIController>(OwnerComp.GetAIOwner());
+	TaskMemory->Limadon = Cast<ALimadon>(TaskMemory->AIController->GetCharacter());
+	
+	if (!TaskMemory->Limadon.IsValid() || !TaskMemory->AIController.IsValid()) return;
+
+	if (!TaskMemory->AIController->IsStateSame(EBossState::Attack))
 	{
 		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 		return;

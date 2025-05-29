@@ -4,6 +4,17 @@
 #include "BehaviorTree/Tasks/BTTask_BlackboardBase.h"
 #include "BTTask_LimadonIdle.generated.h"
 
+class ABossAIController;
+class ALimadon;
+
+struct FBTLimadonIdleTaskMemory
+{
+	TWeakObjectPtr<ALimadon> Limadon;
+	TWeakObjectPtr<ABossAIController> AIController;
+	FTimerHandle DamageHandle;
+	float AccumulatedTime;
+};
+
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API UBTTask_LimadonIdle : public UBTTask_BlackboardBase
 {
@@ -19,9 +30,5 @@ private:
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|AttackInterval")
 	float AttackInterval;
-
-private:
-	FTimerHandle DamageHandle;
-	float AccumulatedTime;
 	
 };
