@@ -14,11 +14,12 @@
 #include "DataRow/FADProjectileDataRow.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
+#include "AbyssDiverUnderWorld.h"
 
 AADSpearGunBullet::AADSpearGunBullet() : 
 	StaticMesh(nullptr),
 	DataTableSubsystem(nullptr),
-    BurstEffect(nullptr),
+    TrailEffect(nullptr),
     BulletType(ESpearGunType::MAX), 
     AdditionalDamage(0), 
     PoisonDuration(0),
@@ -28,70 +29,82 @@ AADSpearGunBullet::AADSpearGunBullet() :
     StaticMesh->SetupAttachment(RootComponent);
     StaticMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision); 
 
+    TrailEffect = CreateDefaultSubobject<UNiagaraComponent>(TEXT("TrailEffect"));
+    TrailEffect->SetupAttachment(RootComponent);
+    TrailEffect->SetAutoActivate(false);
+
     Damage = 450.0f;
 
-    ConstructorHelpers::FObjectFinder<UNiagaraSystem> BurstEffectFinder(TEXT("/Game/SurvivalFX/Particles/Explosion/PS_Explosion_Smokey_Small"));
+}
 
-    if (BurstEffectFinder.Succeeded())
-    {
-        BurstEffect = BurstEffectFinder.Object;
-    }
+void AADSpearGunBullet::M_SpawnFX_Implementation(UNiagaraSystem* Effect, const FVector& SpawnLocation)
+{
+    UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+        GetWorld(),
+        Effect,
+        SpawnLocation,
+        FRotator::ZeroRotator,
+        FVector(1.0f),
+        true,  // bAutoDestroy
+        true,  // bAutoActivate
+        ENCPoolMethod::None,
+        true   // bPreCullCheck
+    );
 }
 
 void AADSpearGunBullet::OnRep_BulletType()
 {
-    switch (BulletType)
-    {
-    case ESpearGunType::Basic:
-        ProjectileName = "BasicSpearGunBullet";
-        break;
-    case ESpearGunType::Bomb:
-        ProjectileName = "BombSpearGunBullet";
-        break;
-    case ESpearGunType::Poison:
-        ProjectileName = "PoisonSpearGunBullet";
-        break;
-    default:
-        break;
-    }
-    LOGP(Warning, TEXT("%s"), *ProjectileName.ToString());
-    if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
-    {
-        DTSubsystem = GI->GetSubsystem<UDataTableSubsystem>();
-    }
-    if (DTSubsystem)
-    {
-        FFADProjectileDataRow* ProjectileInfo = DTSubsystem->GetProjectileDataArrayByName(ProjectileName);
-        if (ProjectileInfo)
-        {
-            AdditionalDamage = ProjectileInfo->AdditionalDamage;
-            // 로드되어 있으면 가져오고 안 되어 있으면 동기 로드
-            UNiagaraSystem* Effect = ProjectileInfo->TrailEffect.IsValid() ? ProjectileInfo->TrailEffect.Get() : ProjectileInfo->TrailEffect.LoadSynchronous();
-            TrailEffect->SetAsset(Effect);
-            TrailEffect->Activate(true);
-        }
-    }
 }
 
 void AADSpearGunBullet::BeginPlay()
 {
     Super::BeginPlay();
-    //TODO : Shoot Sound
-    //TODO : Shoot Effect
+    TrailEffect->Activate();
+    LOGP(Warning, TEXT("%s"), *ProjectileName.ToString());
+    if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+    {
+        DTSubsystem = GI->GetSubsystem<UDataTableSubsystem>();
+    }
 }
 
 void AADSpearGunBullet::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-    Super::OnOverlapBegin(OverlappedComp, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
-
-    if (!bWasAdditionalDamage)
+    if (!bWasHit)
     {
+        bWasHit = true;
+        TrailEffect->Deactivate();
         if (OtherActor && OtherActor != this && OtherComp && OtherComp->GetOwner() != this)
         {
-            AttachToHitActor(OtherComp, SweepResult, true);
+            UGameplayStatics::ApplyPointDamage(
+                OtherActor,
+                Damage,
+                GetActorForwardVector(),
+                SweepResult,
+                GetInstigatorController(),
+                GetOwner(),
+                UDamageType::StaticClass()
+            );
+            LOGP(Warning, TEXT("Hit Basic Damage To %s"), *OtherActor->GetName());
             ApplyAdditionalDamage();
-            bWasAdditionalDamage = true;
+
+            AttachToHitActor(OtherComp, SweepResult, true);
+            
+            LOGP(Warning, TEXT("It is action of server after this line"));
         }
+        LOGP(Warning, TEXT("SetProjectileMovementAttribute"));
+        ProjectileMovementComp->StopMovementImmediately();
+        ProjectileMovementComp->Deactivate();
+
+        if (!HasAuthority()) return;
+        FTimerHandle DestroyTimerHandle;
+        float DestroyDelay = 10.0f;
+
+        FTimerDelegate TimerDel;
+        TimerDel.BindLambda([this]() {
+            Destroy();
+            });
+        LOGP(Warning, TEXT("StartDeleteTimer"));
+        GetWorld()->GetTimerManager().SetTimer(DestroyTimerHandle, TimerDel, DestroyDelay, false);
     }
 }
 
@@ -158,6 +171,17 @@ void AADSpearGunBullet::ApplyAdditionalDamage()
 void AADSpearGunBullet::Burst()
 {
     LOGP(Warning, TEXT("Burst"));
+	UNiagaraSystem* BurstEffect = nullptr;
+    if (DTSubsystem)
+    {
+        FFADProjectileDataRow* BombProjectileInfo = DTSubsystem->GetProjectileData(static_cast<uint8>(BulletType));
+        if (BombProjectileInfo)
+        {
+            AdditionalDamage = BombProjectileInfo->AdditionalDamage;
+            // 로드되어 있으면 가져오고 안 되어 있으면 동기 로드
+            BurstEffect = BombProjectileInfo->HitEffect.IsValid() ? BombProjectileInfo->HitEffect.Get() : BombProjectileInfo->HitEffect.LoadSynchronous();
+        }
+    }
 
     TArray<FHitResult> HitResults;
     TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
@@ -166,6 +190,8 @@ void AADSpearGunBullet::Burst()
     FVector Start = GetActorLocation();
     FVector End = Start;
     float Radius = 200.0f;
+
+    LOGP(Warning, TEXT("Start : %s, End : %s"), *Start.ToString(), *End.ToString());
 
     TArray<AActor*> IgnoreActors;
     IgnoreActors.Add(this);
@@ -178,13 +204,13 @@ void AADSpearGunBullet::Burst()
         ObjectTypes,
         false,
         IgnoreActors, // 무시할 액터
-        EDrawDebugTrace::ForDuration,
+        EDrawDebugTrace::None,
         HitResults,
         true
     );
     TSet<AActor*> UniqueActors;
 
-    if (bHit)
+    if (bHit && BurstEffect)
     {
         for (const FHitResult& Hit : HitResults)
         {
@@ -206,18 +232,8 @@ void AADSpearGunBullet::Burst()
                         GetOwner(),
                         UDamageType::StaticClass()
                     );
-
-                    UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-		                GetWorld(),
-                        BurstEffect,
-                        Hit.Location,
-		                FRotator::ZeroRotator,
-		                FVector(1.0f),
-		                true,  // bAutoDestroy
-		                true,  // bAutoActivate
-		                ENCPoolMethod::None,
-		                true   // bPreCullCheck
-	                );
+                    if (HasAuthority())
+                        M_SpawnFX(BurstEffect, Hit.Location);
                 }
             }
         }
@@ -232,6 +248,28 @@ void AADSpearGunBullet::Addict()
 {
     //TODO : Hit Effect
     //TODO : 디버프 컴포넌트 함수 호출
+    if (HasAuthority())
+    {
+	    UNiagaraSystem* PoisonEffect = nullptr;
+        if (DTSubsystem)
+        {
+            FFADProjectileDataRow* PoisonProjectileInfo = DTSubsystem->GetProjectileData(static_cast<uint8>(BulletType));
+            if (PoisonProjectileInfo)
+            {
+                AdditionalDamage = PoisonProjectileInfo->AdditionalDamage;
+                // 로드되어 있으면 가져오고 안 되어 있으면 동기 로드
+                PoisonEffect = PoisonProjectileInfo->HitEffect.IsValid() ? PoisonProjectileInfo->HitEffect.Get() : PoisonProjectileInfo->HitEffect.LoadSynchronous();
+            }
+        }
+        if (PoisonEffect)
+        {
+        
+                M_SpawnFX(PoisonEffect, GetActorLocation());
+        }
+
+    }
+
+
     LOGP(Warning, TEXT("Addict"));
 }
 

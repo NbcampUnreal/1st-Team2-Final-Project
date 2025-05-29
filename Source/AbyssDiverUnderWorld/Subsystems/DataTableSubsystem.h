@@ -30,7 +30,7 @@ public:
 
 	FFADItemDataRow* GetItemData(int32 ItemId) const;
 	FFADItemDataRow* GetItemDataByName(FName ItemName) const;
-	FFADProjectileDataRow* GetProjectileDataArrayByName(FName ProjectileName) const;
+	FFADProjectileDataRow* GetProjectileData(int32 ProjectileId) const;
 	FUpgradeDataRow* GetUpgradeDataTableArray(int32 Index) const;
 	FDropEntry* GetOreDropEntryTableArray(int32 Id) const;
 

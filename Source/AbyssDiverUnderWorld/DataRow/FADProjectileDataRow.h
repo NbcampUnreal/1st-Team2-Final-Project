@@ -15,6 +15,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FName Name;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	uint8 Id;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 Damage;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 AdditionalDamage;
