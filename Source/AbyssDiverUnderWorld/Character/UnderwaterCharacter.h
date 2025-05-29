@@ -171,8 +171,12 @@ public:
 	
 protected:
 
+	/** Stat Component의 기본 속도가 변경됬을 때 호출된다. */
 	UFUNCTION()
 	void OnMoveSpeedChanged(float NewMoveSpeed);
+
+    /** Jump 가능 상태를 반환 */
+	virtual bool CanJumpInternal_Implementation() const override;
 	
 	/** 메시 컴포넌트를 동적으로 생성하고 Parent 에 소켓으로 연결한다.*/
 	UStaticMeshComponent* CreateAndAttachMesh(const FString& ComponentName, UStaticMesh* MeshAsset, USceneComponent* Parent, FName SocketName, bool bIsThirdPerson);
@@ -362,6 +366,8 @@ protected:
 	/** 재장전 함수 */
 	void Reload(const FInputActionValue& InputActionValue);
 
+	void CompleteReload(const FInputActionValue& InputActionValue);
+
 	/** 1번 슬롯 장착 함수 */
 	void EquipSlot1(const FInputActionValue& InputActionValue);
 
@@ -456,6 +462,13 @@ private:
 	/** 캐릭터의 현재 로코모션 상태. Jump인지 그냥 Fall인지를 구분한다. */
 	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	ELocomotionMode LocomotionMode;
+
+	/** 가장 나중에 착지한 시간, 점프를 Block할 수 있는 기점이 된다 */
+	float LastLandedTime;
+
+	/** 캐릭터가 Land 시에 점프를 Block할 시간. 캐릭터가 Land 모션 중에서 점프하는 것을 방지한다. */
+	UPROPERTY(EditDefaultsOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	float LandedJumpBlockTime;
 
 	/** Global Gravity Z에 상관 없이 캐릭터가 설정할 Gravity Z 값. 음수값을 지정해야 한다. */
 	UPROPERTY(EditDefaultsOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
@@ -718,8 +731,13 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UEquipUseComponent> EquipUseComponent;
 
+	/** Light 컴포넌트. 캐릭터가 라이트를 켜고 끌 수 있다. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class USpotLightComponent> LanternLightComponent;
+
+	/** 발자국 소리 컴포넌트 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UFootstepComponent> FootstepComponent;
 
 	/** 상호작용 대상이 되게 하는 컴포넌트 */
 	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
@@ -773,6 +791,9 @@ public:
 
 	/** 캐릭터가 Death 상태인지 여부를 반환 */
 	FORCEINLINE bool IsDeath() const { return CharacterState == ECharacterState::Death; }
+
+	/** 캐릭터가 현재 살아있는지 여부를 반환. 살아 있으면 타겟팅될 수 있다. */
+	FORCEINLINE bool IsAlive() const;
 
 	/** 캐릭터의 남은 그로기 시간을 반환 */
 	UFUNCTION(BlueprintCallable)

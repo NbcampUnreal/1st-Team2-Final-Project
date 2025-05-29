@@ -52,21 +52,18 @@ void ALimadon::BiteVariableInitialize()
 	StatComponent->CurrentHealth = StatComponent->MaxHealth;
 }
 
-void ALimadon::M_SetLimadonHidden_Implementation()
-{
-	SetActorHiddenInGame(true);
-}
-
-void ALimadon::M_SetLimadonVisible_Implementation()
-{
-	SetActorHiddenInGame(false);
-}
-
 void ALimadon::Attack()
 {
 	Super::Attack();
 
 	bIsInvestigate = false;
+}
+
+void ALimadon::OnDeath()
+{
+	Spit();
+	
+	Super::OnDeath();
 }
 
 void ALimadon::Spit()

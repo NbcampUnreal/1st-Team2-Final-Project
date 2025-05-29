@@ -97,6 +97,26 @@ public:
 
 #pragma endregion
 
+#pragma region Mission Tables
+
+	UPROPERTY(EditDefaultsOnly, Category = "ADGameInstance|MissionData", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.KillMonsterMissionRow"))
+	TObjectPtr<UDataTable> KillMonsterMissionTable;
+
+	UPROPERTY(EditDefaultsOnly, Category = "ADGameInstance|MissionData", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.ItemUseMissionRow"))
+	TObjectPtr<UDataTable> ItemUseMissionTable;
+
+	UPROPERTY(EditDefaultsOnly, Category = "ADGameInstance|MissionData", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.ItemCollectMissionRow"))
+	TObjectPtr<UDataTable> ItemCollectMissionTable;
+
+	UPROPERTY(EditDefaultsOnly, Category = "ADGameInstance|MissionData", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.InteractionMissionRow"))
+	TObjectPtr<UDataTable> InteractionMissionTable;
+
+	UPROPERTY(EditDefaultsOnly, Category = "ADGameInstance|MissionData", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.AggroTriggerMissionRow"))
+	TObjectPtr<UDataTable> AggroTriggerMissionTable;
+
+#pragma endregion
+
+
 private:
 
 	TMap<FString, int32> PlayerIdMap;

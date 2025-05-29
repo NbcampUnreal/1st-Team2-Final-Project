@@ -11,9 +11,9 @@ class UDataTableSubsystem;
 UENUM(BlueprintType)
 enum class ESpearGunType : uint8
 {
-	Basic,
-	Bomb,
-	Poison,
+	Basic = 0,
+	Poison = 1,
+	Bomb = 2,
 	MAX UMETA(Hidden)
 };
 
@@ -32,6 +32,9 @@ protected:
 		bool bFromSweep, const FHitResult& SweepResult) override;
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	UFUNCTION(NetMulticast, Reliable)
+	void M_SpawnFX(UNiagaraSystem* Effect, const FVector& SpawnLocation);
+	void M_SpawnFX_Implementation(UNiagaraSystem* Effect, const FVector& SpawnLocation);
 
 	UFUNCTION()
 	void OnRep_BulletType();
@@ -48,12 +51,12 @@ private:
 
 #pragma region Variable
 protected:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Component")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Component")
 	TObjectPtr<UStaticMeshComponent> StaticMesh;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Component")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Component")
 	TObjectPtr<UDataTableSubsystem> DataTableSubsystem;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effect")
-	TObjectPtr<UNiagaraSystem> BurstEffect;
+	TObjectPtr<UNiagaraComponent> TrailEffect;
 
 private:
 	UPROPERTY(ReplicatedUsing = OnRep_BulletType, VisibleAnywhere, Category = "Bullet")
