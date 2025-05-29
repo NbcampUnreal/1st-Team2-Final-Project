@@ -1,6 +1,7 @@
 #include "Boss/Boss.h"
 #include "AbyssDiverUnderWorld.h"
 #include "EngineUtils.h"
+#include "EnhancedBossAIController.h"
 #include "Enum/EBossPhysicsType.h"
 #include "Enum/EBossState.h"
 #include "BehaviorTree/BlackboardComponent.h"
@@ -16,13 +17,13 @@
 #include "Net/UnrealNetwork.h"
 #include "NavigationSystem.h"
 #include "NiagaraFunctionLibrary.h"
+#include "Enum/EPerceptionType.h"
 #include "Perception/AISense_Damage.h"
 
 const FName ABoss::BossStateKey = "BossState";
 
 ABoss::ABoss()
 {
-	PrimaryActorTick.bCanEverTick = true;
 	bIsAttackCollisionOverlappedPlayer = false;
 	BlackboardComponent = nullptr;
 	AIController = nullptr;
@@ -34,11 +35,9 @@ ABoss::ABoss()
 	MaxPatrolDistance = 1000.0f;
 	AttackedCameraShakeScale = 1.0f;
 	bIsBiteAttackSuccess = false;
-	bShouldDecelerate = false;
 	BossPhysicsType = EBossPhysicsType::None;
 	DamagedLocation = FVector::ZeroVector;
-	Acceleration = 2.f;
-	CurrentMoveSpeed = 0.0f;
+	CachedSpawnLocation = FVector::ZeroVector;
 	RotationInterpSpeed = 1.1f;
 	
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
@@ -73,17 +72,12 @@ void ABoss::BeginPlay()
 		BlackboardComponent = AIController->GetBlackboardComponent();
 	}
 
+	CachedSpawnLocation = GetActorLocation();
+
 	AttackCollision->OnComponentBeginOverlap.AddDynamic(this, &ABoss::OnAttackCollisionOverlapBegin);
 	AttackCollision->OnComponentEndOverlap.AddDynamic(this, &ABoss::OnAttackCollisionOverlapEnd);
 
 	GetCharacterMovement()->MaxFlySpeed = StatComponent->GetMoveSpeed();
-}
-
-void ABoss::Tick(float DeltaSeconds)
-{
-	Super::Tick(DeltaSeconds);
-
-	MoveForward(DeltaSeconds);
 }
 
 void ABoss::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
@@ -120,33 +114,6 @@ void ABoss::LaunchPlayer(AUnderwaterCharacter* Player, const float& Power) const
 			Player->GetCharacterMovement()->SetMovementMode(MOVE_Swimming);	
 		}
 	}, 0.5f, false);
-}
-
-void ABoss::InitializeRotation(const float& InDeltaTime)
-{
-	FRotator CurrentRotation = GetActorRotation();
-
-	// Pitch와 Roll만 보간하고, Yaw는 유지
-	const FRotator TargetRotation = FRotator(0.f, CurrentRotation.Yaw, 0.f);
-
-	CurrentRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, InDeltaTime, RotationInterpSpeed);
-	
-	SetActorRotation(CurrentRotation);
-}
-
-void ABoss::MoveForward(const float& InDeltaTime)
-{
-	// 목표 속도 계산
-	const float TargetSpeed = bShouldDecelerate ? 100.0f : StatComponent->GetMoveSpeed();
-	
-	// 목표 속도까지 부드럽게 가속
-	CurrentMoveSpeed = FMath::FInterpTo(CurrentMoveSpeed, TargetSpeed, InDeltaTime, Acceleration);
-	
-	// 실제 이동
-	const FVector MoveDelta = GetActorForwardVector() * CurrentMoveSpeed * InDeltaTime;
-	
-	// 충돌 적용
-	SetActorLocation(GetActorLocation() + MoveDelta, true);
 }
 
 float ABoss::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator,
@@ -252,6 +219,7 @@ void ABoss::Attack()
 	
 	if (IsValid(NormalAttackAnimations[AttackType]))
 	{
+		AnimInstance->OnMontageEnded.AddDynamic(this, &ABoss::OnAttackMontageEnded);
 		M_PlayAnimation(NormalAttackAnimations[AttackType]);
 	}
 }
@@ -283,8 +251,25 @@ void ABoss::M_PlayAnimation_Implementation(class UAnimMontage* AnimMontage, floa
 	PlayAnimMontage(AnimMontage, InPlayRate, StartSectionName);
 }
 
+void ABoss::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted)
+{
+	LOG(TEXT("OnAttackMontageEnded: %s"), *Montage->GetName());
+	AEnhancedBossAIController* EnhancedBossAIController = Cast<AEnhancedBossAIController>(GetController());
+	if (IsValid(AIController))
+	{
+		EnhancedBossAIController->GetBlackboardComponent()->SetValueAsBool("bHasDetectedPlayer", false);
+		EnhancedBossAIController->SetBlackboardPerceptionType(EPerceptionType::Finish);	
+	}
+
+	// 자신 제거
+	if (IsValid(AnimInstance))
+	{
+		AnimInstance->OnMontageEnded.RemoveDynamic(this, &ABoss::OnAttackMontageEnded);
+	}
+}
+
 void ABoss::OnMeshOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
-	int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+                               int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	// 사망 상태면 얼리 리턴
 	if (BossState == EBossState::Death) return;

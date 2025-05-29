@@ -11,6 +11,16 @@ class URichTextBlock;
 class UADInventoryComponent;
 class UEquipUseComponent;
 class UButton;
+struct FFADItemDataRow;
+
+UENUM()
+enum class EChargeBatteryType
+{
+	NightVisionGoggle = 2,
+	DPV = 3,
+	Battery = 7,
+	MAX = -1
+};
 
 #define LOGB(Verbosity, Format, ...) UE_LOG(InventoryLog, Verbosity, TEXT("%s(%s) %s"), ANSI_TO_TCHAR(__FUNCTION__), *FString::FromInt(__LINE__), *FString::Printf(Format, ##__VA_ARGS__));
 
@@ -41,6 +51,10 @@ private:
 #pragma endregion
 
 #pragma region Variable
+public:
+	FFADItemDataRow* DPVRow;
+	FFADItemDataRow* NVRow;
+	FFADItemDataRow* BatteryRow;
 private:
 	TObjectPtr<UADInventoryComponent> InventoryComp = nullptr;
 	TObjectPtr<UEquipUseComponent> EquipUseComp = nullptr;
@@ -68,11 +82,19 @@ private:
 
 	FName CurrentChargeItem;
 	FTimerHandle IncreaseTimerHandle;
+
+	TMap<FName, EChargeBatteryType> ChargeBatteryTypeMap = {
+		{FName(TEXT("NightVisionGoggle")), EChargeBatteryType::NightVisionGoggle},
+		{FName(TEXT("DPV")), EChargeBatteryType::DPV},
+		{FName(TEXT("Battery")), EChargeBatteryType::Battery}
+	};
 #pragma endregion
 
 #pragma region Getter/Setter
 public:
-	void SetEquipBatteryAmount(FName Name, int16 Amount);
-	void SetEquipBatteryButtonActivate(FName Name, bool bActivate);
+	void SetEquipBatteryAmount(EChargeBatteryType ChargeBatteryType, int16 Amount);
+	void SetEquipBatteryButtonActivate(EChargeBatteryType ChargeBatteryType, bool bActivate);
+
+	static EChargeBatteryType GetEChargeBatteryTypeByName(FName Name);
 #pragma endregion
 };

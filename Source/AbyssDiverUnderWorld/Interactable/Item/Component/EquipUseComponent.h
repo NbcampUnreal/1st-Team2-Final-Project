@@ -46,6 +46,9 @@ public:
 	void S_LeftClick();
 	void S_LeftClick_Implementation();
 	UFUNCTION(Server, Reliable)
+	void S_LeftRelease();
+	void S_LeftRelease_Implementation();
+	UFUNCTION(Server, Reliable)
 	void S_RKey();
 	void S_RKey_Implementation();
 	UFUNCTION(Server, Reliable)
@@ -70,6 +73,10 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void ToggleBoost();
 	UFUNCTION(BlueprintCallable)
+	void BoostOn();
+	UFUNCTION(BlueprintCallable)
+	void BoostOff();
+	UFUNCTION(BlueprintCallable)
 	void ToggleNightVision();
 	UFUNCTION(BlueprintCallable)
 	void ToggleChargeBatteryWidget();
@@ -79,6 +86,8 @@ public:
 	void OpenChargeWidget();
 	UFUNCTION(BlueprintCallable)
 	void HandleLeftClick();
+	UFUNCTION(BlueprintCallable)
+	void HandleLeftRelease();
 	UFUNCTION(BlueprintCallable)
 	void HandleRKey();
 	
@@ -107,10 +116,10 @@ private:
 public:
 	// ====== Fire =========
 	UPROPERTY(ReplicatedUsing = OnRep_CurrentAmmoInMag, EditAnywhere, BlueprintReadWrite, Category = "Weapon")
-	int32 CurrentAmmoInMag = 5;
+	int32 CurrentAmmoInMag = 0;
 
 	UPROPERTY(ReplicatedUsing = OnRep_ReserveAmmo, EditAnywhere, BlueprintReadWrite, Category = "Weapon")
-	int32 ReserveAmmo = 20;
+	int32 ReserveAmmo = 0;
 
 	UPROPERTY( EditAnywhere, BlueprintReadWrite, Category = "Weapon")
 	int32 MagazineSize = 5;

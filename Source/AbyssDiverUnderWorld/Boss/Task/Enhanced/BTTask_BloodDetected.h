@@ -19,12 +19,6 @@ private:
 
 private:
 	UPROPERTY()
-	TObjectPtr<ABoss> Boss;
-
-	UPROPERTY()
-	TObjectPtr<AEnhancedBossAIController> AIController;
-
-	UPROPERTY()
 	FVector BloodOccurredLocation;
 
 	UPROPERTY()
