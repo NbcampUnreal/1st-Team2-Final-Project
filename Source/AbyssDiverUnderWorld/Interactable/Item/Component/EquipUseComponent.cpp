@@ -230,27 +230,31 @@ void UEquipUseComponent::S_RKeyRelease_Implementation()
 
 void UEquipUseComponent::S_IncreaseAmount_Implementation(int8 AddAmount)
 {
-	UGameInstance* GI = GetWorld()->GetGameInstance();
-	if (!GI)
+	if (CurrentEquipmentName != NAME_None)
 	{
-		LOGIC(Log, TEXT("Initialize: No valid GameInstance"))
-			return;
-	}
-	UDataTableSubsystem* DataTableSubsystem = GI->GetSubsystem<UDataTableSubsystem>();
-	FFADItemDataRow* ItemDataForMaxAmount = DataTableSubsystem ? DataTableSubsystem->GetItemDataByName(CurrentEquipmentName) : nullptr;
-	
-	int16 NewAmount = Amount + AddAmount;
-	int16 MaxAmount = ItemDataForMaxAmount->Amount;
+		if (UGameInstance* GI = GetWorld()->GetGameInstance())
+		{
+			if (UDataTableSubsystem* DataTableSubsystem = GI->GetSubsystem<UDataTableSubsystem>())
+			{
+				FFADItemDataRow* ItemDataForMaxAmount = DataTableSubsystem ? DataTableSubsystem->GetItemDataByName(CurrentEquipmentName) : nullptr;
+				if (ItemDataForMaxAmount)
+				{
+					int16 NewAmount = Amount + AddAmount;
+					int16 MaxAmount = ItemDataForMaxAmount->Amount;
 
-	if (NewAmount < MaxAmount)
-	{
-		Amount = NewAmount;
+					if (NewAmount < MaxAmount)
+					{
+						Amount = NewAmount;
+					}
+					else
+					{
+						Amount = MaxAmount;
+					}
+					SetEquipBatteryAmountText();
+				}
+			}
+		}
 	}
-	else
-	{
-		Amount = MaxAmount;
-	}
-	SetEquipBatteryAmountText();
 }
 
 void UEquipUseComponent::OnRep_Amount()
