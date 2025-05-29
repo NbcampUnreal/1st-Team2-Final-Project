@@ -77,6 +77,7 @@ void AADDrone::Interact_Implementation(AActor* InstigatorActor)
 			if (NextSeller)
 			{
 				NextSeller->Activate();
+				GS->SetCurrentDroneSeller(NextSeller);
 			}
 		}
 	}

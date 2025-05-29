@@ -21,5 +21,15 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     FString UnlockHint;
+
+    FORCEINLINE bool operator==(const FMissionData& Other) const
+    {
+        return Title == Other.Title;
+    }
 #pragma endregion
 };
+
+FORCEINLINE uint32 GetTypeHash(const FMissionData& Data)
+{
+    return GetTypeHash(Data.Title);
+}

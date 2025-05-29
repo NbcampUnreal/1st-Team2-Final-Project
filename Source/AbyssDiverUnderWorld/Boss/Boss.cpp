@@ -253,9 +253,8 @@ void ABoss::M_PlayAnimation_Implementation(class UAnimMontage* AnimMontage, floa
 
 void ABoss::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
-	LOG(TEXT("OnAttackMontageEnded: %s"), *Montage->GetName());
 	AEnhancedBossAIController* EnhancedBossAIController = Cast<AEnhancedBossAIController>(GetController());
-	if (IsValid(AIController))
+	if (IsValid(EnhancedBossAIController))
 	{
 		EnhancedBossAIController->GetBlackboardComponent()->SetValueAsBool("bHasDetectedPlayer", false);
 		EnhancedBossAIController->SetBlackboardPerceptionType(EPerceptionType::Finish);	

@@ -23,9 +23,6 @@ EBTNodeResult::Type UBTTask_LimadonAttack::ExecuteTask(UBehaviorTreeComponent& O
 	
 	// 리마돈 공격 애니메이션 출력
 	Limadon->Attack();
-
-	// 액터 활성화
-	Limadon->M_SetLimadonVisible();
 	
 	// 결과 성공 반환
 	return EBTNodeResult::InProgress;

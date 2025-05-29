@@ -18,6 +18,9 @@
 #include "Interactable/Item/Component/EquipUseComponent.h"
 #include "UI/ChargeBatteryWidget.h"
 #include "Character/UnderwaterCharacter.h"
+#include "Kismet/GameplayStatics.h"
+#include "Interactable/OtherActors/ADDroneSeller.h"
+#include "Framework/ADInGameState.h"
 
 DEFINE_LOG_CATEGORY(InventoryLog);
 
@@ -232,6 +235,29 @@ void UADInventoryComponent::InventoryInitialize()
 			ToggleWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
 		}
 	}
+
+	AADInGameState* GS = Cast<AADInGameState>(UGameplayStatics::GetGameState(GetWorld()));
+	if (GS == nullptr)
+	{
+		LOGV(Warning, TEXT("GS == nullptr"));
+		return;
+	}
+
+	AADDroneSeller* CurrentDroneSeller = GS->GetCurrentDroneSeller();
+	if (CurrentDroneSeller == nullptr)
+	{
+		LOGV(Warning, TEXT("CurrentDroneSeller == nullptr, Server? : %d"), GetOwner()->GetNetMode() != ENetMode::NM_Client);
+		return;
+	}
+
+	ToggleWidgetInstance->SetDroneTargetText(CurrentDroneSeller->GetTargetMoney());
+	ToggleWidgetInstance->SetDroneCurrentText(CurrentDroneSeller->GetCurrentMoney());
+
+	CurrentDroneSeller->OnCurrentMoneyChangedDelegate.RemoveAll(ToggleWidgetInstance);
+	CurrentDroneSeller->OnCurrentMoneyChangedDelegate.AddUObject(ToggleWidgetInstance, &UToggleWidget::SetDroneCurrentText);
+
+	CurrentDroneSeller->OnTargetMoneyChangedDelegate.RemoveAll(ToggleWidgetInstance);
+	CurrentDroneSeller->OnTargetMoneyChangedDelegate.AddUObject(ToggleWidgetInstance, &UToggleWidget::SetDroneTargetText);
 }
 
 bool UADInventoryComponent::AddInventoryItem(const FItemData& ItemData)

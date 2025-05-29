@@ -64,6 +64,8 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 
 	StatComponent->Initialize(1000, 1000, 400.0f, 10);
 
+	LastLandedTime = -1.0f;
+	LandedJumpBlockTime = 0.1f;
 	ExpectedGravityZ = -980.0f;
 	
 	LeftFlipperSocketName = TEXT("foot_l_flipper_socket");
@@ -466,6 +468,20 @@ void AUnderwaterCharacter::SpawnAndAttachTool(TSubclassOf<AActor> ToolClass)
 void AUnderwaterCharacter::OnMoveSpeedChanged(float NewMoveSpeed)
 {
 	AdjustSpeed();
+}
+
+bool AUnderwaterCharacter::CanJumpInternal_Implementation() const
+{
+	// Landed와 마찮가지로 Server, 연관된 Client 모두에서 호출된다.
+
+	// 착지 후 일정 시간 점프 입력을 방지한다.
+	const float Now = GetWorld()->GetTimeSeconds();
+	if (Now - LastLandedTime < LandedJumpBlockTime)
+	{
+		return false;
+	}
+	
+	return Super::CanJumpInternal_Implementation();
 }
 
 UStaticMeshComponent* AUnderwaterCharacter::CreateAndAttachMesh(const FString& ComponentName, UStaticMesh* MeshAsset, USceneComponent* Parent, FName SocketName, bool bIsThirdPerson)
@@ -1060,6 +1076,12 @@ void AUnderwaterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 				this,
 				&AUnderwaterCharacter::Reload
 			);
+			EnhancedInput->BindAction(
+				ReloadAction,
+				ETriggerEvent::Completed,
+				this,
+				&AUnderwaterCharacter::CompleteReload
+			);
 		}
 
 		if (EquipSlot1Action)
@@ -1240,6 +1262,7 @@ void AUnderwaterCharacter::JumpInputStart(const FInputActionValue& InputActionVa
 		return;
 	}
 
+	// UE_LOG(LogTemp,Display, TEXT("Is Moving : %s"), (GetCharacterMovement()->IsMovingOnGround() ? TEXT("True") : TEXT("False")));
 	Jump();
 }
 
@@ -1265,6 +1288,12 @@ void AUnderwaterCharacter::Landed(const FHitResult& Hit)
 {
 	Super::Landed(Hit);
 
+	// Landed 호출 시점
+	// Host : Host만 호출
+	// Client : Host와 Client 모두 호출
+	// 현재로는 Jump, Landed를 이용해서 애니메이션을 설정할 수 없다.
+
+	LastLandedTime = GetWorld()->GetTimeSeconds();
 	LocomotionMode = ELocomotionMode::None;
 }
 
@@ -1325,6 +1354,15 @@ void AUnderwaterCharacter::Reload(const FInputActionValue& InputActionValue)
 		return;
 	}
 	EquipUseComponent->HandleRKey();
+}
+
+void AUnderwaterCharacter::CompleteReload(const FInputActionValue& InputActionValue)
+{
+	if (CharacterState != ECharacterState::Normal)
+	{
+		return;
+	}
+	EquipUseComponent->HandleRKeyRelease();
 }
 
 void AUnderwaterCharacter::Aim(const FInputActionValue& InputActionValue)
@@ -1454,6 +1492,11 @@ void AUnderwaterCharacter::SetupMontageCallbacks()
 		AnimInstance1P->OnMontageStarted.AddDynamic(this, &AUnderwaterCharacter::OnMesh1PMontageStarted);
 		AnimInstance1P->OnMontageEnded.AddDynamic(this, &AUnderwaterCharacter::OnMesh1PMontageEnded);
 	}
+}
+
+bool AUnderwaterCharacter::IsAlive() const
+{
+	return CharacterState != ECharacterState::Death;
 }
 
 float AUnderwaterCharacter::GetRemainGroggyTime() const

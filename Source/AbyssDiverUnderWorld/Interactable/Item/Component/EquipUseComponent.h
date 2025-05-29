@@ -52,6 +52,9 @@ public:
 	void S_RKey();
 	void S_RKey_Implementation();
 	UFUNCTION(Server, Reliable)
+	void S_RKeyRelease();
+	void S_RKeyRelease_Implementation();
+	UFUNCTION(Server, Reliable)
 	void S_IncreaseAmount(int8 AddAmount);
 	void S_IncreaseAmount_Implementation(int8 AddAmount);
 	UFUNCTION()
@@ -81,6 +84,10 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void ToggleChargeBatteryWidget();
 	UFUNCTION(BlueprintCallable)
+	void ShowChargeBatteryWidget();
+	UFUNCTION(BlueprintCallable)
+	void HideChargeBatteryWidget();
+	UFUNCTION(BlueprintCallable)
 	void StartReload();
 	UFUNCTION(BlueprintCallable)
 	void OpenChargeWidget();
@@ -90,6 +97,8 @@ public:
 	void HandleLeftRelease();
 	UFUNCTION(BlueprintCallable)
 	void HandleRKey();
+	UFUNCTION(BlueprintCallable)
+	void HandleRKeyRelease();
 	
 	void FinishReload();
 
