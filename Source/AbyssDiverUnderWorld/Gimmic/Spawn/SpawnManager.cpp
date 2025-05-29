@@ -4,6 +4,7 @@
 #include "Spawner/Limadon/LimadonSpawner.h"
 #include "Spawner/Monster/MonsterSpawner.h"
 #include "Spawner/Ore/OreSpawner.h"
+#include "Spawner/Serpmare/SerpmareSpawner.h"
 
 ASpawnManager::ASpawnManager()
 {
@@ -30,8 +31,9 @@ void ASpawnManager::SpawnByGroup()
 {
 	if (SpawnerGroups.IsValidIndex(0))
 	{
-		SpawnerGroups[0].MonsterSpawner->Spawn();
-		SpawnerGroups[0].OreSpawner->Spawn();
+		if (IsValid(SpawnerGroups[0].MonsterSpawner)) SpawnerGroups[0].MonsterSpawner->Spawn();
+		if (IsValid( SpawnerGroups[0].OreSpawner)) SpawnerGroups[0].OreSpawner->Spawn();
+		if (IsValid( SpawnerGroups[0].SerpmareSpawner)) SpawnerGroups[0].SerpmareSpawner->Spawn();
 		SpawnerGroups.RemoveAt(0);
 		
 		if (IsValid(LimadonSpawner))
