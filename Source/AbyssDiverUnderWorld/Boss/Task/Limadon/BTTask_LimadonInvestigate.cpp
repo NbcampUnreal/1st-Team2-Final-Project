@@ -15,9 +15,6 @@ EBTNodeResult::Type UBTTask_LimadonInvestigate::ExecuteTask(UBehaviorTreeCompone
 	ALimadon* Limadon = Cast<ALimadon>(OwnerComp.GetAIOwner()->GetPawn());
 	if (!IsValid(Limadon)) return EBTNodeResult::Failed;
 
-	// 숨김처리
-	Limadon->M_SetLimadonHidden();
-
 	// TickTask로 전이
 	return EBTNodeResult::InProgress;
 }
