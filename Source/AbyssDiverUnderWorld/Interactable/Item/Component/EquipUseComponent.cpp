@@ -236,7 +236,7 @@ void UEquipUseComponent::S_IncreaseAmount_Implementation(int8 AddAmount)
 			if (UDataTableSubsystem* DataTableSubsystem = GI->GetSubsystem<UDataTableSubsystem>())
 			{
 				FFADItemDataRow* ItemDataForMaxAmount = DataTableSubsystem ? DataTableSubsystem->GetItemDataByName(CurrentEquipmentName) : nullptr;
-				if (!ItemDataForMaxAmount)
+				if (ItemDataForMaxAmount)
 				{
 					int16 NewAmount = Amount + AddAmount;
 					int16 MaxAmount = ItemDataForMaxAmount->Amount;
