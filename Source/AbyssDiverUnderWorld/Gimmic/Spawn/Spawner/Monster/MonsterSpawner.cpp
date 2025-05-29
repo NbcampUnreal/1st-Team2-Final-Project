@@ -41,7 +41,6 @@ void AMonsterSpawner::Spawn()
 		uint8 RandomMonsterIndex = FMath::RandRange(0, MonsterClass.Num() - 1);
 
 		LOG(TEXT("Spawn Success : %s"), *MonsterTypes[RandomMonsterIndex]->GetName());
-		LOG(TEXT("Remain MonsterClass Num : %d"), MonsterClass.Num());
 
 		// 랜덤 몬스터 스폰
 		GetWorld()->SpawnActor<AUnitBase>(
