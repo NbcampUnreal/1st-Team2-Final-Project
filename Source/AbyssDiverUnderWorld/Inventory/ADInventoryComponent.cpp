@@ -21,6 +21,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "Interactable/OtherActors/ADDroneSeller.h"
 #include "Framework/ADInGameState.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraSystem.h"
 
 DEFINE_LOG_CATEGORY(InventoryLog);
 
@@ -113,7 +115,7 @@ void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType
 	}
 	else if (ItemType == EItemType::Consumable)
 	{
-		FFADItemDataRow* FoundRow = DataTableSubsystem->GetItemData(Item.Id); 
+		FFADItemDataRow* FoundRow = DataTableSubsystem->GetItemData(Item.Id);
 		if (!FoundRow->UseFunction) return;
 
 		if (FoundRow && FoundRow->UseFunction)
@@ -122,6 +124,8 @@ void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType
 			if (Strategy)
 			{
 				Strategy->Use(GetOwner());
+				if (Item.Amount > 0)
+					C_SpawnItemEffect();
 				LOGINVEN(Warning, TEXT("Use Consumable Item %s"), *FoundRow->Name.ToString());
 			}
 		}
@@ -192,6 +196,38 @@ void UADInventoryComponent::S_UseBatteryAmount_Implementation(int8 Amount)
 			RemoveBySlotIndex(InventoryList.Items[Index].SlotIndex, EItemType::Consumable, false);
 		}
 	}
+}
+
+void UADInventoryComponent::C_SpawnItemEffect_Implementation()
+{
+	//UObject는 리플리케이트를 지원하지 않으므로, 이펙트 스폰을 클라이언트에서만 실행되는 함수로 구현(추후 고려 필요)
+	UNiagaraSystem* OxygenRefillEffect = LoadObject<UNiagaraSystem>(
+		nullptr,
+		TEXT("/Game/_AbyssDiver/FX/VFX/Item/NS_RefillOxygen.NS_RefillOxygen")
+	);
+
+	if (!OxygenRefillEffect) return;
+	if (APlayerController* PC = Cast<APlayerController>(Cast<AADPlayerState>(GetOwner())->GetPlayerController()))
+	{
+		FVector CamLocation;
+		FRotator CamRotation;
+
+		PC->GetPlayerViewPoint(CamLocation, CamRotation);
+		FVector SpawnLocation = CamLocation + CamRotation.Vector() * 30.f - FVector(0, 0, 20);
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			GetWorld(),
+			OxygenRefillEffect,
+			SpawnLocation,
+			FRotator::ZeroRotator,
+			FVector(1.0f),
+			true,  // bAutoDestroy
+			true,  // bAutoActivate
+			ENCPoolMethod::None,
+			true   // bPreCullCheck
+		);
+	}
+
+	//TODO :: 호흡 사운드
 }
 
 void UADInventoryComponent::C_SetButtonActive_Implementation(EChargeBatteryType ItemChargeBatteryType, bool bCIsActive, int16 CAmount)

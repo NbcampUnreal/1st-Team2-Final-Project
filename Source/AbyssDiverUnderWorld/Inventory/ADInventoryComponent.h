@@ -14,6 +14,7 @@ class UDataTableSubsystem;
 class AADUseItem;
 class UChargeBatteryWidget;
 enum class EChargeBatteryType;
+class UUseStrategy;
 
 #define LOGINVEN(Verbosity, Format, ...) UE_LOG(InventoryLog, Verbosity, TEXT("%s(%s) %s"), ANSI_TO_TCHAR(__FUNCTION__), *FString::FromInt(__LINE__), *FString::Printf(Format, ##__VA_ARGS__));
 
@@ -56,6 +57,10 @@ public:
 	UFUNCTION(Server, Reliable)
 	void S_UseBatteryAmount(int8 Amount);
 	void S_UseBatteryAmount_Implementation(int8 Amount);
+
+	UFUNCTION(Client, Reliable)
+	void C_SpawnItemEffect();
+	void C_SpawnItemEffect_Implementation();
 
 	UFUNCTION(Client, Reliable)
 	void C_SetButtonActive(EChargeBatteryType ItemChargeBatteryType, bool bClientIsActive, int16 ClientAmount);
@@ -130,22 +135,21 @@ private:
 	int32 TotalWeight;
 	UPROPERTY(Replicated)
 	int32 TotalPrice;
-	int32 WeightMax;
+	UPROPERTY(ReplicatedUsing = OnRep_CurrentEquipmentSlotIndex)
+	int8 CurrentEquipmentSlotIndex;
+	UPROPERTY(Replicated)
+	TObjectPtr<AADUseItem> CurrentEquipmentInstance;
+	UPROPERTY()
+	TObjectPtr<UToggleWidget> ToggleWidgetInstance;
 
+	int32 WeightMax;
 	uint8 bInventoryWidgetShowed : 1;
 	uint8 bAlreadyCursorShowed : 1;
 	uint8 bCanUseItem : 1;
 	uint8 bIsWeapon : 1 = false;
 
 	TMap<EItemType, TArray<int8>> InventoryIndexMapByType;
-	UPROPERTY(ReplicatedUsing = OnRep_CurrentEquipmentSlotIndex)
-	int8 CurrentEquipmentSlotIndex;
-	UPROPERTY(Replicated)
-	TObjectPtr<AADUseItem> CurrentEquipmentInstance;
 	TArray<int8> InventorySizeByType;
-
-	UPROPERTY()
-	TObjectPtr<UToggleWidget> ToggleWidgetInstance;
 	TObjectPtr<UDataTableSubsystem> DataTableSubsystem; 
 	TObjectPtr<UChargeBatteryWidget> ChargeBatteryWidget;
 
