@@ -60,11 +60,20 @@ void AADSpearGunBullet::BeginPlay()
 {
     Super::BeginPlay();
     TrailEffect->Activate();
-    LOGP(Warning, TEXT("%s"), *ProjectileName.ToString());
     if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
     {
         DTSubsystem = GI->GetSubsystem<UDataTableSubsystem>();
     }
+
+    FTimerHandle DestroyTimerHandle;
+    float DestroyDelay = 5.0f;
+
+    FTimerDelegate TimerDel;
+    TimerDel.BindLambda([this]() {
+        Destroy();
+        });
+    LOGP(Warning, TEXT("StartDeleteTimer"));
+    GetWorld()->GetTimerManager().SetTimer(DestroyTimerHandle, TimerDel, DestroyDelay, false);
 }
 
 void AADSpearGunBullet::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -89,23 +98,14 @@ void AADSpearGunBullet::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AAct
 
             AttachToHitActor(OtherComp, SweepResult, true);
             
-            LOGP(Warning, TEXT("It is action of server after this line"));
         }
+        LOGP(Warning, TEXT("It is action of server after this line"));
+        if (!HasAuthority()) return;
         LOGP(Warning, TEXT("SetProjectileMovementAttribute"));
         ProjectileMovementComp->StopMovementImmediately();
         ProjectileMovementComp->Deactivate();
-
-        if (!HasAuthority()) return;
-        FTimerHandle DestroyTimerHandle;
-        float DestroyDelay = 10.0f;
-
-        FTimerDelegate TimerDel;
-        TimerDel.BindLambda([this]() {
-            Destroy();
-            });
-        LOGP(Warning, TEXT("StartDeleteTimer"));
-        GetWorld()->GetTimerManager().SetTimer(DestroyTimerHandle, TimerDel, DestroyDelay, false);
     }
+
 }
 
 void AADSpearGunBullet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
