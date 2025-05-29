@@ -25,7 +25,7 @@ public:
 protected:
 	ASpawnPoint* GetPossibleSpawnPoint();
 	void RemoveAllSpawnPoints();
-	void GetSpawnPoint(TSubclassOf<ASpawnPoint> SpawnPointClass);
+	TSet<TObjectPtr<ASpawnPoint>> GetSpawnPoint(TSubclassOf<ASpawnPoint> SpawnPointClass);
 
 protected:
 	/** 스폰 포인트를 포함할 영역 범위 */

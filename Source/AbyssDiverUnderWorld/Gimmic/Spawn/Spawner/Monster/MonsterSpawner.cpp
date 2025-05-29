@@ -14,7 +14,7 @@ void AMonsterSpawner::BeginPlay()
 {
 	Super::BeginPlay();
 
-	GetSpawnPoint(AMonsterSpawnPoint::StaticClass());
+	TotalSpawnPoints = GetSpawnPoint(AMonsterSpawnPoint::StaticClass());
 	RemoveInValidMonsterClass();
 }
 
