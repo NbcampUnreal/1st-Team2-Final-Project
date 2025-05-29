@@ -200,6 +200,8 @@ private:
 	TObjectPtr<class UCameraComponent> CameraComp = nullptr;
 	FPostProcessSettings OriginalPPSettings;
 	uint8 bOriginalExposureCached : 1;
+	static const FName BASIC_SPEAR_GUN_NAME;
+
 
 #pragma endregion
 

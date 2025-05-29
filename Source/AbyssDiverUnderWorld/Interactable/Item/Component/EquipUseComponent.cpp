@@ -20,6 +20,7 @@
 #include "Character/UnderwaterCharacter.h"
 #include "Framework/ADPlayerState.h"
 
+const FName UEquipUseComponent::BASIC_SPEAR_GUN_NAME = TEXT("BasicSpearGun");
 
 
 // Sets default values for this component's properties
@@ -381,7 +382,7 @@ void UEquipUseComponent::Initialize(FItemData& ItemData)
 		OnRep_CurrentAmmoInMag();
 		OnRep_ReserveAmmo();
 		//TODO: UI 띄우는 곳
-		if (CurrentEquipmentName == "BasicSpearGun")
+		if (CurrentEquipmentName == BASIC_SPEAR_GUN_NAME)
 		{
 			if (APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController()))
 			{
