@@ -33,7 +33,6 @@ void UToggleWidget::RefreshExchangableInventoryInfo(int32 Mass, int32 Price)
 
 void UToggleWidget::SetDroneCurrentText(int32 Current)
 {
-
     // 현재 가치 텍스트 갱신
     if (CurrentMoneyText && CurrentMoneyText->IsValidLowLevel())
     {

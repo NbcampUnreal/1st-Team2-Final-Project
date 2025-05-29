@@ -5,6 +5,7 @@
 #include "ADInGameState.generated.h"
 
 enum class EMapName : uint8;
+class AADDroneSeller;
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnGameStatePropertyChangedDelegate, int32 /*Changed Value*/);
 
@@ -48,6 +49,9 @@ protected:
 	UFUNCTION()
 	void OnRep_PhaseGoal();
 
+	UFUNCTION()
+	void OnRep_CurrentDroneSeller();
+
 private:
 
 	void ReceiveDataFromGameInstance();
@@ -61,17 +65,20 @@ protected:
 	UPROPERTY(Replicated)
 	EMapName SelectedLevelName;
 
-	UPROPERTY(Replicated, ReplicatedUsing = OnRep_Money)
+	UPROPERTY(ReplicatedUsing = OnRep_Money)
 	int32 TeamCredits;
 
-	UPROPERTY(Replicated, ReplicatedUsing = OnRep_Phase, BlueprintReadOnly)
+	UPROPERTY(ReplicatedUsing = OnRep_Phase, BlueprintReadOnly)
 	uint8 CurrentPhase;
 
-	UPROPERTY(Replicated, ReplicatedUsing = OnRep_PhaseGoal, BlueprintReadOnly)
+	UPROPERTY(ReplicatedUsing = OnRep_PhaseGoal, BlueprintReadOnly)
 	int32 CurrentPhaseGoal = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	uint8 MaxPhase = 3;
+
+	UPROPERTY(ReplicatedUsing = OnRep_CurrentDroneSeller)
+	TObjectPtr<AADDroneSeller> CurrentDroneSeller;
 
 private:
 
@@ -123,6 +130,19 @@ public:
 
 	void SetSelectedLevel(EMapName LevelName) { SelectedLevelName = LevelName; }
 	EMapName GetSelectedLevel() const { return SelectedLevelName; }
+
+	AADDroneSeller* GetCurrentDroneSeller() const { return CurrentDroneSeller; }
+	FORCEINLINE void SetCurrentDroneSeller(AADDroneSeller* NewDroneSeller)
+	{
+		if (HasAuthority() == false)
+		{
+			return;
+		}
+
+		CurrentDroneSeller = NewDroneSeller;
+		OnRep_CurrentDroneSeller();
+	}
+
 #pragma endregion
 
 };

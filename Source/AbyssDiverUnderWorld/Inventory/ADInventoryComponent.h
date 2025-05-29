@@ -143,6 +143,7 @@ private:
 	TObjectPtr<AADUseItem> CurrentEquipmentInstance;
 	TArray<int8> InventorySizeByType;
 
+	UPROPERTY()
 	TObjectPtr<UToggleWidget> ToggleWidgetInstance;
 	TObjectPtr<UDataTableSubsystem> DataTableSubsystem; 
 	TObjectPtr<UChargeBatteryWidget> ChargeBatteryWidget;

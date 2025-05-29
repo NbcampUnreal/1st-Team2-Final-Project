@@ -30,13 +30,13 @@ void AADInGameMode::BeginPlay()
 		UDataTableSubsystem* DataTableSubsystem = GetGameInstance()->GetSubsystem<UDataTableSubsystem>();
 
 		int32 LastDroneNumber = 0;
-
+		const int32 FirstDroneNumber = 1;
 		for (AADDrone* Drone : TActorRange<AADDrone>(GetWorld()))
 		{
 			int32 DronePhaseNumber = Drone->GetDronePhaseNumber();
 			EMapName MapName = InGameState->GetSelectedLevel();
 			FPhaseGoalRow* PhaseGoalRow = DataTableSubsystem->GetPhaseGoalData(MapName, DronePhaseNumber);
-			
+
 			if (ensureMsgf(PhaseGoalRow, TEXT("Map 이름(%d) 또는 DronePhaseNumber(%d)가 유효하지 않습니다. 제대로 설정되어 있는지 확인하세요."), MapName, DronePhaseNumber) == false)
 			{
 				return;
@@ -50,6 +50,11 @@ void AADInGameMode::BeginPlay()
 			{
 				LastDrone = Drone;
 				LastDroneNumber = DronePhaseNumber;
+			}
+
+			if (DronePhaseNumber == FirstDroneNumber)
+			{
+				InGameState->SetCurrentDroneSeller(Drone->CurrentSeller);
 			}
 		}
 	}
