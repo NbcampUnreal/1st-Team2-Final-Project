@@ -45,7 +45,10 @@ void UFootstepComponent::PlayFootstepSound(const EFootSide FootSide)
 	}
 
 	FVector FootLocation = OwnerCharacter->GetActorLocation();
-	FName FootBoneName = FootSide == EFootSide::Left ? LeftFootSocketName : FootSide == EFootSide::Right ? RightFootSocketName : NAME_None;
+	FName FootBoneName = 
+		FootSide == EFootSide::Left  ? LeftFootSocketName  : 
+		FootSide == EFootSide::Right ? RightFootSocketName : 
+		NAME_None;
 	if (OwnerCharacter->GetMesh()->DoesSocketExist(FootBoneName))
 	{
 		FootLocation = OwnerCharacter->GetMesh()->GetSocketLocation(FootBoneName);
