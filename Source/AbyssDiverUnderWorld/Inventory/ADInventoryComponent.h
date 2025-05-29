@@ -135,7 +135,7 @@ private:
 	uint8 bInventoryWidgetShowed : 1;
 	uint8 bAlreadyCursorShowed : 1;
 	uint8 bCanUseItem : 1;
-	uint8 bIsWeapon : 1 = 0;
+	uint8 bIsWeapon : 1 = false;
 
 	TMap<EItemType, TArray<int8>> InventoryIndexMapByType;
 	UPROPERTY(ReplicatedUsing = OnRep_CurrentEquipmentSlotIndex)
