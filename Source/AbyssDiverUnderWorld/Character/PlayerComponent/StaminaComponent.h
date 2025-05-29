@@ -39,6 +39,7 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 #pragma region Method
 
@@ -65,6 +66,9 @@ protected:
 	/** Sprint 상태 변화가 있을 떄 호출 */
 	UFUNCTION(BlueprintImplementableEvent, Category = "Stat", meta = (DisplayName = "OnSprintStateChanged"))
 	void K2_OnSprintStateChanged(bool bNewSprinting);
+
+	/** 현재 캐릭터가 움직이고 있는지 확인하는 함수 */
+	bool IsCharacterMoving() const;
 	
 private:
 	/** Stamina OnRep 함수 */
@@ -86,13 +90,10 @@ private:
 	void S_StopSprint_Implementation();
 
 	/** Sprint 도중 Stamina를 소모하는 함수 */
-	void ConsumeStamina();
+	void ConsumeStamina(float DeltaTime);
 	
 	/** Timer 중에 Stamina 자연 회복 함수 */
-	void RegenerateStamina();
-	
-	/** Stamina 자연 회복을 시작하는 함수 */
-	void StartRegenerateStamina();
+	void RegenerateStamina(float DeltaTime);
 
 #pragma endregion
 
@@ -109,13 +110,18 @@ public:
 	/** Sprint 상태가 변경되었을 떄 호출되는 델리게이트 */
 	UPROPERTY(BlueprintAssignable, Category = "Stat")
 	FOnSprintStateChanged OnSprintStateChanged;
+
+protected:
+
+	/** Stamina 컴포넌트의 소유자 캐릭터 */
+	UPROPERTY()
+	TObjectPtr<ACharacter> OwnerCharacter;
+
+	/** 가장 최근에 Sprint를 실행한 시간 */
+	float TimeSinceLastSprint;
 	
 private:
 	
-	/** Stamina 업데이트 주기 */
-	UPROPERTY(EditDefaultsOnly, Category = "Stat", meta = (ClampMin = "0.0", AllowPrivateAccess= "true"))
-	float StaminaUpdateInterval;
-
 	/** 현재 Sprint 여부 */
 	UPROPERTY(BlueprintReadOnly, ReplicatedUsing="OnRep_IsSprintingChanged", Category = "Stat", meta = (AllowPrivateAccess = "true"))
 	uint8 bIsSprinting : 1;
@@ -135,18 +141,13 @@ private:
 	/** Sprint 도중 Stamina 회복 대기 시간 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Stat", meta = (ClampMin = "0.0", AllowPrivateAccess= "true"))
 	float StaminaRegenDelay;
-	
-	/** Stamina 컴포넌트에서 통합적으로 사용하는 Timer Handle.
-	* Stamina의 회복, 대기, 소모 상태는 모두 이 Timer Handle을 사용한다.
-	* 이는 Stamina 회복, 대기, 소모는 동시에 이루어질 수 없기 때문이다.
-	*/
-	FTimerHandle StaminaTimeHandle;
 
 #pragma endregion
 
 #pragma region Getter Setter
 
 public:
+	
 	/** Stamina 컴포넌트 초기화 함수 */
 	UFUNCTION(BlueprintCallable, Category = "Stat")
 	void InitStamina(float MaxStamina, float Stamina);
@@ -167,7 +168,6 @@ public:
 	/** Sprint 가능 여부 반환 */
 	UFUNCTION(BlueprintPure)
 	FORCEINLINE bool CanSprint() const { return StaminaStatus.Stamina > 0.f; }
-
 	
 private:
 	/** Stamina 수치를 설정한다. [0, MaxStamina] 범위로 설정된다. Stamina 변화 이벤트를 발생한다. */
