@@ -139,7 +139,7 @@ bool AADDrone::IsHoldMode() const
 	return bIsHold;
 }
 
-EInteractionType AADDrone::GetInteractionType() const
+FString AADDrone::GetInteractionDescription() const
 {
-	return EInteractionType::SendDrone;
+	return TEXT("Send Drone!");
 }

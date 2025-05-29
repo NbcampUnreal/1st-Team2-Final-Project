@@ -135,6 +135,7 @@ private:
 	uint8 bInventoryWidgetShowed : 1;
 	uint8 bAlreadyCursorShowed : 1;
 	uint8 bCanUseItem : 1;
+	uint8 bIsWeapon : 1 = 0;
 
 	TMap<EItemType, TArray<int8>> InventoryIndexMapByType;
 	UPROPERTY(ReplicatedUsing = OnRep_CurrentEquipmentSlotIndex)
@@ -147,6 +148,12 @@ private:
 	TObjectPtr<UToggleWidget> ToggleWidgetInstance;
 	TObjectPtr<UDataTableSubsystem> DataTableSubsystem; 
 	TObjectPtr<UChargeBatteryWidget> ChargeBatteryWidget;
+
+	UPROPERTY(EditAnywhere, Category = "Harpoon")
+	TObjectPtr<UAnimMontage> HarpoonDrawMontage;
+
+	UPROPERTY(EditAnywhere, Category = "DPV")
+	TObjectPtr<UAnimMontage> DPVDrawMontage;
 #pragma endregion
 
 

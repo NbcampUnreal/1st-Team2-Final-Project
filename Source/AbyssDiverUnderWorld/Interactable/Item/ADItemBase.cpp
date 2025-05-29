@@ -97,7 +97,7 @@ bool AADItemBase::IsHoldMode() const
 	return bIsHold;
 }
 
-EInteractionType AADItemBase::GetInteractionType() const
+FString AADItemBase::GetInteractionDescription() const
 {
-	return EInteractionType::Pickup;
+	return TEXT("Pick up!");
 }
