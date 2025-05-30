@@ -851,11 +851,11 @@ void UEquipUseComponent::ConfigureProjectile(AADSpearGunBullet* Proj, const FVec
 	}
 	else if (CurrentItemData->Name == SpearGunTypeNames[1])
 	{
-		Proj->SetBulletType(ESpearGunType::Bomb);
+		Proj->SetBulletType(ESpearGunType::Poison);
 	}
 	else if (CurrentItemData->Name == SpearGunTypeNames[2])
 	{
-		Proj->SetBulletType(ESpearGunType::Poison);
+		Proj->SetBulletType(ESpearGunType::Bomb);
 	}
 
 	UProjectileMovementComponent* ProjectileMovementComp = Proj->GetProjectileMovementComp();
