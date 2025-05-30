@@ -60,8 +60,6 @@ public:
 
 	void ReceiveMissionDataFromUIData(const TArray<FMissionData>& Missions);
 
-	void MakeMissions(const int32& MissionCount);
-
 private:
 
 	void MakeAndAddMissionDataForUI(const FMissionBaseRow* MissionBaseData, const uint8& MissionIndex);

@@ -70,11 +70,6 @@ public:
 
 	UPROPERTY()
 	TArray<FActivatedMissionInfo> MissionInfoList;
-
-public:
-
-	// 유효하지 않으면 INDEX_NONE 반환
-	//uint8 GetId(uint8 InIndex) const;
 };
 
 template<>

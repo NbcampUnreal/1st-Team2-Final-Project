@@ -344,12 +344,6 @@ void UMissionSubsystem::ReceiveMissionDataFromUIData(const TArray<FMissionData>&
 	}
 }
 
-void UMissionSubsystem::MakeMissions(const int32& MissionCount)
-{
-	
-
-}
-
 void UMissionSubsystem::MakeAndAddMissionDataForUI(const FMissionBaseRow* MissionBaseData, const uint8& MissionIndex)
 {
 	FMissionData NewData;

@@ -155,26 +155,6 @@ void AADInGameState::BeginPlay()
 	{
 		ActivatedMissionList.Add(Mission->GetMissionType(), Mission->GetMissionIndex());
 	}
-
-	FTimerHandle TimerHandle;
-	GetWorldTimerManager().SetTimer(TimerHandle, [&]()
-		{
-			const TArray<UMissionBase*>& Missions2 = GetGameInstance()->GetSubsystem<UMissionSubsystem>()->GetActivatedMissions();
-			for (const UMissionBase* Mission : Missions2)
-			{
-				static int32 i = 0;
-				ActivatedMissionList.ModifyProgress(Mission->GetMissionType(), Mission->GetMissionIndex(), ++i);
-			}
-
-		}, 5, false);
-
-	FTimerHandle TimerHandle2;
-	GetWorldTimerManager().SetTimer(TimerHandle2, [&]()
-		{
-			ActivatedMissionList.Clear();
-
-		}, 10, false);
-	
 }
 
 void AADInGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
