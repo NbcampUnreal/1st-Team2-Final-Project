@@ -548,83 +548,22 @@ void UEquipUseComponent::HandleRKeyRelease()
 
 void UEquipUseComponent::FireHarpoon()
 {
-	if (!bCanFire || CurrentAmmoInMag <= 0  || !ProjectileClass || !OwningCharacter.IsValid())
-		return;
+	if (!CanFire()) return;
 
-	FVector   CamLoc = FVector::ZeroVector;;
-	FRotator  CamRot = FRotator::ZeroRotator;;
-	if (AController* PC = OwningCharacter->GetController())
+	// 1) 카메라 뷰
+	FVector CamLoc; FRotator CamRot;
+	GetCameraView(CamLoc, CamRot);
+	const FVector AimDir = CamRot.Vector();
+
+	// 2) 목표점 & 머즐 위치
+	FVector TargetPoint = CalculateTargetPoint(CamLoc, AimDir);
+	FVector MuzzleLoc = GetMuzzleLocation(CamLoc, AimDir);
+
+	// 3) 발사체 스폰 및 초기화
+	const FRotator SpawnRot = (TargetPoint - MuzzleLoc).Rotation();
+	if (auto* Proj = SpawnHarpoon(MuzzleLoc, SpawnRot))
 	{
-		LOGIC(Log, TEXT("Is PlayerController"));
-		PC->GetPlayerViewPoint(CamLoc, CamRot);     
-	}
-	else { return; }
-
-	const FName SocketName(TEXT("FireLocationSocket"));
-	FVector MuzzleLoc = CamLoc + CamRot.Vector() * 30.f;;
-	if (const USkeletalMeshComponent* Mesh = OwningCharacter->GetMesh())
-	{
-		if (Mesh->DoesSocketExist(SocketName))
-		{
-			LOGIC(Log, TEXT("Is Socket"));
-			MuzzleLoc = Mesh->GetSocketLocation(SocketName);
-		}
-	}
-	const FRotator SpawnRot = CamRot;
-	const FVector LaunchDir = SpawnRot.Vector();       
-
-
-	FActorSpawnParameters Params;
-	Params.Owner = GetOwner();
-	Params.Instigator = OwningCharacter.Get();
-	Params.SpawnCollisionHandlingOverride =
-		ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-
-	//AADProjectileBase* Proj = GetWorld()->SpawnActor<AADProjectileBase>(
-	//	ProjectileClass, MuzzleLoc, SpawnRot, Params);
-	AADSpearGunBullet* Proj = GetWorld()->SpawnActor<AADSpearGunBullet>(
-		ProjectileClass, MuzzleLoc, SpawnRot, Params);
-
-	if (!Proj)
-	{
-		LOGIC(Log, TEXT("No Projectile"));
-		return;
-	}
-	
-	// FText 변수로 수정
-	if (CurrentItemData->Name == SpearGunTypeNames[0])
-	{
-		Proj->SetBulletType(ESpearGunType::Basic);
-	}
-	else if (CurrentItemData->Name == SpearGunTypeNames[1])
-	{
-		Proj->SetBulletType(ESpearGunType::Bomb);
-	}
-	else if (CurrentItemData->Name == SpearGunTypeNames[2])
-	{
-		Proj->SetBulletType(ESpearGunType::Poison);
-	}
-
-	UProjectileMovementComponent* ProjectileMovementComp = Proj->GetProjectileMovementComp();
-	if (ProjectileMovementComp)
-	{
-		const float Speed = ProjectileMovementComp->InitialSpeed > 0
-			? ProjectileMovementComp->InitialSpeed
-			: 3000.f;
-
-		ProjectileMovementComp->Velocity = LaunchDir * Speed;      
-		ProjectileMovementComp->Activate(true);
-
-		--CurrentAmmoInMag;
-		OnRep_CurrentAmmoInMag();
-
-		bCanFire = false;
-		const float RefireDelay = 1.0f / RateOfFire;
-		GetWorld()->GetTimerManager().SetTimer(
-			TimerHandle_HandleRefire,
-			[this]() { bCanFire = true; },
-			RefireDelay, false
-		);
+		ConfigureProjectile(Proj, TargetPoint, MuzzleLoc);
 	}
 }
 
@@ -859,4 +798,80 @@ void UEquipUseComponent::InitializeAmmoUI()
 bool UEquipUseComponent::IsSpearGun() const
 {
 	return bIsWeapon && CurrentEquipmentName == "BasicSpearGun";
+}
+
+bool UEquipUseComponent::CanFire() const
+{
+	return bCanFire && CurrentAmmoInMag > 0 && ProjectileClass && OwningCharacter.IsValid();
+}
+
+void UEquipUseComponent::GetCameraView(FVector& OutLoc, FRotator& OutRot) const
+{
+	OwningCharacter->GetController()->GetPlayerViewPoint(OutLoc, OutRot);
+}
+
+FVector UEquipUseComponent::CalculateTargetPoint(const FVector& CamLoc, const FVector& AimDir) const
+{
+	FVector TraceEnd = CamLoc + AimDir * TraceMaxRange;
+	FHitResult Impact;
+	FCollisionQueryParams Params(TEXT("HarpoonTrace"), true, GetOwner());
+	GetWorld()->LineTraceSingleByChannel(Impact, CamLoc, TraceEnd, ECC_Visibility, Params);
+	return Impact.bBlockingHit ? Impact.ImpactPoint : TraceEnd;
+}
+
+FVector UEquipUseComponent::GetMuzzleLocation(const FVector& CamLoc, const FVector& AimDir) const
+{
+	const FName SocketName(TEXT("Muzzle"));
+	if (auto* Mesh = OwningCharacter->GetMesh();
+		Mesh && Mesh->DoesSocketExist(SocketName))
+	{
+		return Mesh->GetSocketLocation(SocketName);
+	}
+	return CamLoc + AimDir * 30.f; // 없을 경우 기본 값
+}
+
+AADSpearGunBullet* UEquipUseComponent::SpawnHarpoon(const FVector& Loc, const FRotator& Rot)
+{
+	FActorSpawnParameters Params;
+	Params.Owner = GetOwner();
+	Params.Instigator = OwningCharacter.Get();
+	Params.SpawnCollisionHandlingOverride =
+		ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+
+	return GetWorld()->SpawnActor<AADSpearGunBullet>(
+		ProjectileClass, Loc, Rot, Params);
+}
+
+void UEquipUseComponent::ConfigureProjectile(AADSpearGunBullet* Proj, const FVector& TargetPoint, const FVector& MuzzleLoc)
+{
+	// FText 변수로 수정
+	if (CurrentItemData->Name == SpearGunTypeNames[0])
+	{
+		Proj->SetBulletType(ESpearGunType::Basic);
+	}
+	else if (CurrentItemData->Name == SpearGunTypeNames[1])
+	{
+		Proj->SetBulletType(ESpearGunType::Bomb);
+	}
+	else if (CurrentItemData->Name == SpearGunTypeNames[2])
+	{
+		Proj->SetBulletType(ESpearGunType::Poison);
+	}
+
+	UProjectileMovementComponent* ProjectileMovementComp = Proj->GetProjectileMovementComp();
+	float Speed = (ProjectileMovementComp->InitialSpeed > 0.f) ? ProjectileMovementComp->InitialSpeed : 3000.f;
+	FVector LaunchDir = (TargetPoint - MuzzleLoc).GetSafeNormal();
+	// ProjectileMovementComp->ProjectileGravityScale = 0.f; // 필요 시 비활성화
+	ProjectileMovementComp->Velocity = LaunchDir * Speed;
+	ProjectileMovementComp->Activate(true);
+
+	// 3) 탄약·쿨다운
+	--CurrentAmmoInMag;
+	OnRep_CurrentAmmoInMag();
+	bCanFire = false;
+	float Delay = 1.f / RateOfFire;
+	GetWorld()->GetTimerManager().SetTimer(
+		TimerHandle_HandleRefire,
+		[this]() { bCanFire = true; },
+		Delay, false);
 }

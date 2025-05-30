@@ -14,6 +14,7 @@ class UDataTableSubsystem;
 class AADUseItem;
 class UChargeBatteryWidget;
 enum class EChargeBatteryType;
+class AUnderwaterCharacter;
 class UUseStrategy;
 
 #define LOGINVEN(Verbosity, Format, ...) UE_LOG(InventoryLog, Verbosity, TEXT("%s(%s) %s"), ANSI_TO_TCHAR(__FUNCTION__), *FString::FromInt(__LINE__), *FString::Printf(Format, ##__VA_ARGS__));
@@ -96,6 +97,10 @@ public:
 	void CopyInventoryFrom(UADInventoryComponent* Source);
 	void InventoryMarkArrayDirty();
 	void CheckItemsForBattery();
+	void PlayEquipAnimation(AUnderwaterCharacter* Character, bool bIsHarpoon);
+	void Equip(FItemData& ItemData, int8 SlotIndex);
+	void UnEquip();
+
 
 	FInventoryUpdateDelegate InventoryUpdateDelegate;
 	FBatteryUpdateDelegate BatteryUpdateDelegate;
@@ -107,8 +112,7 @@ private:
 
 	int8 GetInventoryIndexByTypeAndSlotIndex(EItemType Type, int8 SlotIndex); //못 찾으면 -1 반환
 	void SetEquipInfo(int8 TypeInventoryIndex, AADUseItem* SpawnItem);
-	void Equip(FItemData& ItemData, int8 SlotIndex);
-	void UnEquip();
+	
 	void DropItem(FItemData& ItemData);
 
 	void OnInventoryInfoUpdate(int32 MassInfo, int32 PriceInfo);
@@ -163,6 +167,8 @@ private:
 public:
 	int16 GetTotalWeight() const { return TotalWeight; }
 	int16 GetTotalPrice() const { return TotalPrice; }
+	uint8 GetSlotIndex() const { return CurrentEquipmentSlotIndex; }
+	bool HasEquippedItem()      const { return CurrentEquipmentSlotIndex != INDEX_NONE; }
 
 	const FItemData* GetInventoryItemData(FName ItemNameToFind); //이름으로 아이템 데이터 반환
 	const FItemData& GetEquipmentItemDataByIndex(int8 KeyNum) { return InventoryList.Items[InventoryIndexMapByType[EItemType::Equipment][KeyNum]]; }; //타입별 인벤토리 슬롯 값으로 아이템 데이터 반환

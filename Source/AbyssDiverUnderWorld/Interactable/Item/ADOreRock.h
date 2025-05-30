@@ -129,6 +129,7 @@ private:
 	TArray<FDropEntry*> CachedEntries;
 	TArray<float>  CumulativeWeights;
 	float TotalWeight = 0.f;
+	uint8 PreivousEquipIndex = 0;
 
 
 #pragma endregion

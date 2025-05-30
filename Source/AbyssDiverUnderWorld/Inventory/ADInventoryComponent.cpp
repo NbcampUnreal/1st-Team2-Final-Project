@@ -548,6 +548,27 @@ void UADInventoryComponent::CheckItemsForBattery()
 	}
 }
 
+void UADInventoryComponent::PlayEquipAnimation(AUnderwaterCharacter* Character, bool bIsHarpoon)
+{
+	if (!HarpoonDrawMontage || !DPVDrawMontage)
+		return;
+
+	FAnimSyncState SyncState;
+	SyncState.bEnableRightHandIK = true;
+	SyncState.bEnableLeftHandIK = false;
+	SyncState.bEnableFootIK = true;
+	SyncState.bIsStrafing = false;
+
+	UAnimMontage* Montage = bIsHarpoon ? HarpoonDrawMontage : DPVDrawMontage;
+
+	Character->M_PlayMontageOnBothMesh(
+		Montage,
+		1.0f,
+		NAME_None,
+		SyncState
+	);
+}
+
 int8 UADInventoryComponent::GetTypeInventoryEmptyIndex(EItemType ItemType)
 {
 	RebuildIndexMap();
@@ -670,32 +691,8 @@ void UADInventoryComponent::Equip(FItemData& ItemData, int8 SlotIndex)
 	}
 	if (AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(Pawn))
 	{
-		if (!HarpoonDrawMontage || !DPVDrawMontage) return;
-
-		FAnimSyncState WeaponSync;
-		WeaponSync.bEnableRightHandIK = true;
-		WeaponSync.bEnableLeftHandIK = false;
-		WeaponSync.bEnableFootIK = true;
-		WeaponSync.bIsStrafing = false;
-
-		if (bIsWeapon)
-		{
-			UnderwaterCharacter->M_PlayMontageOnBothMesh(
-				HarpoonDrawMontage,
-				1.0f,
-				NAME_None,
-				WeaponSync
-			);
-		}
-		else
-		{
-			UnderwaterCharacter->M_PlayMontageOnBothMesh(
-				DPVDrawMontage,
-				1.0f,
-				NAME_None,
-				WeaponSync
-			);
-		}
+		LOGINVEN(Log, TEXT("Play Equip Montage!!"));
+		PlayEquipAnimation(UnderwaterCharacter, bIsWeapon);
 	}
 }
 
