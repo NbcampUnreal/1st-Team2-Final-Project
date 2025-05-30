@@ -261,7 +261,7 @@ void UADInteractionComponent::UpdateFocus(UADInteractableComponent* NewFocus)
 		FocusedInteractable->SetHighLight(true);
 		if (IIADInteractable* FocusedActor = Cast<IIADInteractable>(FocusedInteractable->GetOwner()))
 		{
-			OnFocus.Broadcast(FocusedInteractable->GetOwner(), FocusedActor->GetInteractionType());
+			OnFocus.Broadcast(FocusedInteractable->GetOwner(), FocusedActor->GetInteractionDescription());
 		}
 		
 	}

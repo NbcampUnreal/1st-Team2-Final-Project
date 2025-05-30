@@ -64,10 +64,12 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	GetMesh()->bCastHiddenShadow = true;
 
 	StatComponent->Initialize(1000, 1000, 400.0f, 10);
-
+	
 	LastLandedTime = -1.0f;
 	LandedJumpBlockTime = 0.1f;
 	ExpectedGravityZ = -980.0f;
+
+	bCanUseEquipment = true;
 	
 	LeftFlipperSocketName = TEXT("foot_l_flipper_socket");
 	RightFlipperSocketName = TEXT("foot_r_flipper_socket");
@@ -148,9 +150,9 @@ void AUnderwaterCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
-	RootComponent->PhysicsVolumeChangedDelegate.AddDynamic(this, &AUnderwaterCharacter::OnPhysicsVolumeChanged);
-
 	SetDebugCameraMode(bUseDebugCamera);
+	
+	RootComponent->PhysicsVolumeChangedDelegate.AddDynamic(this, &AUnderwaterCharacter::OnPhysicsVolumeChanged);
 
 	StaminaComponent->OnSprintStateChanged.AddDynamic(this, &AUnderwaterCharacter::OnSprintStateChanged);
 	OxygenComponent->OnOxygenLevelChanged.AddDynamic(this, &AUnderwaterCharacter::OnOxygenLevelChanged);
@@ -162,6 +164,7 @@ void AUnderwaterCharacter::BeginPlay()
 	NoiseEmitterComponent = NewObject<UPawnNoiseEmitterComponent>(this);
 	NoiseEmitterComponent->RegisterComponent();
 
+	// @ToDO: Controller 부분으로 분리
 	if (IsLocallyControlled() && HoldWidgetClass)
 	{
 		APlayerController* PC = Cast<APlayerController>(GetController());
@@ -318,6 +321,8 @@ void AUnderwaterCharacter::SetEnvState(EEnvState State)
 		SetFlipperMeshVisibility(true);
 		FirstPersonCameraArm->bEnableCameraRotationLag = true;
 		Mesh1PSpringArm->bEnableCameraRotationLag = true;
+		OxygenComponent->SetShouldConsumeOxygen(true);
+		bCanUseEquipment = true;
 		break;
 	case EEnvState::Ground:
 		// 지상에서는 이동 방향으로 회전을 하게 한다.
@@ -325,6 +330,8 @@ void AUnderwaterCharacter::SetEnvState(EEnvState State)
 		SetFlipperMeshVisibility(false);
 		FirstPersonCameraArm->bEnableCameraRotationLag = false;
 		Mesh1PSpringArm->bEnableCameraRotationLag = false;
+		OxygenComponent->SetShouldConsumeOxygen(false);
+		bCanUseEquipment = false;
 		break;
 	default:
 		UE_LOG(AbyssDiver, Error, TEXT("Invalid Character State"));
@@ -392,6 +399,19 @@ void AUnderwaterCharacter::M_PlayMontageOnBothMesh_Implementation(UAnimMontage* 
 		{
 			AnimInstance->Montage_JumpToSection(StartSectionName, Montage);
 		}
+	}
+}
+
+void AUnderwaterCharacter::M_StopAllMontagesOnBothMesh_Implementation(float BlendOUt)
+{
+	if (UAnimInstance* AnimInstance = Mesh1P->GetAnimInstance())
+	{
+		AnimInstance->StopAllMontages(BlendOUt);
+	}
+
+	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+	{
+		AnimInstance->StopAllMontages(BlendOUt);
 	}
 }
 
@@ -674,11 +694,18 @@ void AUnderwaterCharacter::HandleEnterGroggy()
 			PlayerController->SetIgnoreMoveInput(true);
 		}
 
-
 		LookSensitivity = GroggyLookSensitivity;
-		// @TODO Local Groggy
-		// 1. Groggy UI 출력(남은 시간을 출력)
-		// 2. 캐릭터 회전 적용(캐릭터가 회전해서는 안 된다)
+
+		InteractionComponent->OnInteractReleased();
+	}
+
+	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+	{
+		AnimInstance->StopAllMontages(0.0f);
+	}
+	if (UAnimInstance* AnimInstance = Mesh1P->GetAnimInstance())
+	{
+		AnimInstance->StopAllMontages(0.0f);
 	}
 }
 
@@ -727,6 +754,8 @@ void AUnderwaterCharacter::HandleEnterDeath()
 			PlayerController->SetIgnoreLookInput(true);
 			PlayerController->SetIgnoreMoveInput(true);
 		}
+
+		InteractionComponent->OnInteractReleased();
 	}
 
 	// @TODO 사망 처리
@@ -734,6 +763,15 @@ void AUnderwaterCharacter::HandleEnterDeath()
 	// 2. 사망 시의 UI 출력
 	// 3. 사망 시의 캐릭터 처리 : 충돌 처리라던가 삭제 등
 
+	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+	{
+		AnimInstance->StopAllMontages(0.0f);
+	}
+	if (UAnimInstance* AnimInstance = Mesh1P->GetAnimInstance())
+	{
+		AnimInstance->StopAllMontages(0.0f);
+	}
+	
 	K2_OnDeath();
 	OnDeathDelegate.Broadcast();
 }
@@ -936,7 +974,7 @@ void AUnderwaterCharacter::OnHealthChanged(int32 CurrentHealth, int32 MaxHealth)
 	}
 }
 
-void AUnderwaterCharacter::OnPhysicsVolumeChanged(class APhysicsVolume* NewVolume)
+void AUnderwaterCharacter::OnPhysicsVolumeChanged(class APhysicsVolume* NewVolume) // Delegate에 const가 없기 떄문에 NewVolume 앞에 const를 붙이지 않는다.
 {
 	LOG_NETWORK(LogAbyssDiverCharacter, Display, TEXT("Physics Volume Changed : %s"), *NewVolume->GetName());
 
@@ -1333,7 +1371,7 @@ void AUnderwaterCharacter::Look(const FInputActionValue& InputActionValue)
 
 void AUnderwaterCharacter::Fire(const FInputActionValue& InputActionValue)
 {
-	if (CharacterState != ECharacterState::Normal)
+	if (CharacterState != ECharacterState::Normal || !bCanUseEquipment)
 	{
 		return;
 	}
@@ -1342,7 +1380,7 @@ void AUnderwaterCharacter::Fire(const FInputActionValue& InputActionValue)
 
 void AUnderwaterCharacter::StopFire(const FInputActionValue& InputActionValue)
 {
-	if (CharacterState != ECharacterState::Normal)
+	if (CharacterState != ECharacterState::Normal || !bCanUseEquipment)
 	{
 		return;
 	}
@@ -1351,7 +1389,7 @@ void AUnderwaterCharacter::StopFire(const FInputActionValue& InputActionValue)
 
 void AUnderwaterCharacter::Reload(const FInputActionValue& InputActionValue)
 {
-	if (CharacterState != ECharacterState::Normal)
+	if (CharacterState != ECharacterState::Normal || !bCanUseEquipment)
 	{
 		return;
 	}
@@ -1360,7 +1398,7 @@ void AUnderwaterCharacter::Reload(const FInputActionValue& InputActionValue)
 
 void AUnderwaterCharacter::CompleteReload(const FInputActionValue& InputActionValue)
 {
-	if (CharacterState != ECharacterState::Normal)
+	if (CharacterState != ECharacterState::Normal || !bCanUseEquipment)
 	{
 		return;
 	}
@@ -1411,7 +1449,7 @@ void AUnderwaterCharacter::Radar(const FInputActionValue& InputActionValue)
 
 void AUnderwaterCharacter::EquipSlot1(const FInputActionValue& InputActionValue)
 {
-	if (CharacterState != ECharacterState::Normal)
+	if (CharacterState != ECharacterState::Normal || !bCanUseEquipment)
 	{
 		return;
 	}
@@ -1420,7 +1458,7 @@ void AUnderwaterCharacter::EquipSlot1(const FInputActionValue& InputActionValue)
 
 void AUnderwaterCharacter::EquipSlot2(const FInputActionValue& InputActionValue)
 {
-	if (CharacterState != ECharacterState::Normal)
+	if (CharacterState != ECharacterState::Normal || !bCanUseEquipment)
 	{
 		return;
 	}
@@ -1429,7 +1467,7 @@ void AUnderwaterCharacter::EquipSlot2(const FInputActionValue& InputActionValue)
 
 void AUnderwaterCharacter::EquipSlot3(const FInputActionValue& InputActionValue)
 {
-	if (CharacterState != ECharacterState::Normal)
+	if (CharacterState != ECharacterState::Normal || !bCanUseEquipment)
 	{
 		return;
 	}

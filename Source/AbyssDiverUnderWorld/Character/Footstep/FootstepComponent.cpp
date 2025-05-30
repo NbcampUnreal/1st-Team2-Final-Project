@@ -87,7 +87,6 @@ void UFootstepComponent::PlayFootstepSoundInternal(const FVector& StartLocation)
 	LastFootstepTime = GetWorld()->GetTimeSeconds();
 	
 	const EPhysicalSurface PhysicalSurface = GetSurfaceType(StartLocation);
-
 	if (USoundBase* FootstepSound = FindSound(PhysicalSurface, EFootstepType::Walk))
 	{
 		// @ToDO: SoundSubsystem에 등록

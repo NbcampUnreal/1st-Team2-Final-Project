@@ -951,9 +951,9 @@ bool AShop::IsOpened() const
 	return bIsOpened;
 }
 
-EInteractionType AShop::GetInteractionType() const
+FString AShop::GetInteractionDescription() const
 {
-	return EInteractionType::OpenShop;
+	return TEXT("Open Shop!");
 }
 
 UADInteractableComponent* AShop::GetInteractableComponent() const
