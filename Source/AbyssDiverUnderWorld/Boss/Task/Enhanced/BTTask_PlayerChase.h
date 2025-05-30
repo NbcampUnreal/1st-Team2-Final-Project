@@ -31,11 +31,15 @@ public:
 private:
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& Comp, uint8* NodeMemory) override;
 	virtual void TickTask(UBehaviorTreeComponent& Comp, uint8* NodeMemory, float DeltaSeconds) override;
+	virtual void OnTaskFinished(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, EBTNodeResult::Type TaskResult) override;
 	virtual uint16 GetInstanceMemorySize() const override { return sizeof(FBTPlayerChaseTaskMemory); }
 
 private:
 	UPROPERTY(EditAnywhere)
-	float MoveSpeedMultiplier = 1.3f;
+	float ChaseMoveSpeed;
+
+	UPROPERTY(EditAnywhere)
+	float ChaseDeceleration;
 
 	UPROPERTY(EditAnywhere)
 	float MaxChaseTime;
