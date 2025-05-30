@@ -7,18 +7,13 @@ UBTTask_SerpmareIdle::UBTTask_SerpmareIdle()
 {
 	NodeName = TEXT("Serpmare Idle");
 	bNotifyTick = true;
+	bCreateNodeInstance = false;
+	
 	bIsBigSerpmare = false;
 }
 
 EBTNodeResult::Type UBTTask_SerpmareIdle::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
-	// 캐스팅 실패 시 얼리 리턴
-	ABossAIController* AIController = Cast<ABossAIController>(OwnerComp.GetAIOwner());
-	if (!IsValid(AIController)) return EBTNodeResult::Failed;
-	
-	ASerpmare* Serpmare = Cast<ASerpmare>(AIController->GetCharacter());
-	if (!Serpmare) return EBTNodeResult::Failed;
-	
 	return EBTNodeResult::InProgress;
 }
 
@@ -26,22 +21,25 @@ void UBTTask_SerpmareIdle::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* No
 {
 	Super::TickTask(OwnerComp, NodeMemory, DeltaSeconds);
 
-	// 캐스팅
-	ASerpmare* Serpmare = Cast<ASerpmare>(OwnerComp.GetAIOwner()->GetCharacter());
-	if (!IsValid(Serpmare)) return;
+	FBTSerpmareIdleTaskMemory* TaskMemory = (FBTSerpmareIdleTaskMemory*)NodeMemory;
+	if (!TaskMemory) return;
+
+	TaskMemory->AIController = Cast<ABossAIController>(OwnerComp.GetAIOwner());
+	TaskMemory->Serpmare = Cast<ASerpmare>(TaskMemory->AIController->GetCharacter());
+
+	if (!TaskMemory->AIController.IsValid() || !TaskMemory->Serpmare.IsValid()) return;
 
 	// 공격 범위 내에 플레이어가 들어온 경우
-	if (Serpmare->GetIsAttackCollisionOverlappedPlayer())
+	if (TaskMemory->Serpmare->GetIsAttackCollisionOverlappedPlayer())
 	{
 		if (bIsBigSerpmare)
 		{
-			LOG(TEXT("Begin"));
-			Serpmare->M_PlayAnimation(Serpmare->AppearAnimation);
+			TaskMemory->Serpmare->M_PlayAnimation(TaskMemory->Serpmare->AppearAnimation);
 			FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 		}
 		else
 		{
-			Serpmare->SetBossState(EBossState::Detected);
+			TaskMemory->Serpmare->SetBossState(EBossState::Detected);
 			FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);	
 		}
 	}
