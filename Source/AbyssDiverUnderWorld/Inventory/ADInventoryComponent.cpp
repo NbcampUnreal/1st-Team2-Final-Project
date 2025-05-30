@@ -221,7 +221,7 @@ void UADInventoryComponent::C_SpawnItemEffect_Implementation()
 			GetWorld(),
 			OxygenRefillEffect,
 			SpawnLocation,
-			FRotator::ZeroRotator,
+			CamRotation,
 			FVector(1.0f),
 			true,  // bAutoDestroy
 			true,  // bAutoActivate
