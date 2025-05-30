@@ -804,6 +804,8 @@ void AUnderwaterCharacter::M_StartCaptureState_Implementation()
 				true
 			);
 		}
+
+		bCanUseEquipment = false;
 		// Play SFX
 	}
 
@@ -828,8 +830,11 @@ void AUnderwaterCharacter::M_StopCaptureState_Implementation()
 				false,
 				true
 			);
+
+			bCanUseEquipment = true;
 		}
 	}
+	
 	// Play SFX
 
 	SetActorHiddenInGame(false);

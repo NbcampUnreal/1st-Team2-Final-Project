@@ -299,7 +299,7 @@ protected:
 	UFUNCTION()
 	void OnRep_bIsRadarOn();
 
-	/** 산소 상태가 변경될 떄 호출되는 함수 */
+	/** 산소 상태가 변경될 때 호출되는 함수 */
 	UFUNCTION()
 	void OnOxygenLevelChanged(float CurrentOxygenLevel, float MaxOxygenLevel);
 
@@ -307,7 +307,7 @@ protected:
 	UFUNCTION()
 	void OnOxygenDepleted();
 
-	/** 체력 상태가 변경될 떄 호출되는 함수 */
+	/** 체력 상태가 변경될 때 호출되는 함수 */
 	UFUNCTION()
 	void OnHealthChanged(int32 CurrentHealth, int32 MaxHealth);
 
@@ -479,6 +479,7 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float ExpectedGravityZ;
 
+	/** Normal 상태에서 장비 착용 가능 여부 */
 	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	uint8 bCanUseEquipment : 1;
 	
