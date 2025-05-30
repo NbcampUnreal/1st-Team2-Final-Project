@@ -91,7 +91,7 @@ public:
     UPROPERTY(BlueprintAssignable) 
     FOnHoldCancelSignature OnHoldCancel;
     DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
-        FOnFocusInteractable, AActor*, FocusedActor, EInteractionType, Type);
+        FOnFocusInteractable, AActor*, FocusedActor, FString, Description);
     UPROPERTY(BlueprintAssignable) 
     FOnFocusInteractable OnFocus;
     DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnFocusLost);
@@ -119,6 +119,7 @@ public:
     
     
     TWeakObjectPtr<AActor> HoldInstigator;
+    TWeakObjectPtr<UADInteractableComponent> CachedHoldInteractable;
 
 
 protected:

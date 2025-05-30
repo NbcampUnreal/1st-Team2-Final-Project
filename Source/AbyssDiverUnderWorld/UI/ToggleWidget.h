@@ -19,7 +19,8 @@ class ABYSSDIVERUNDERWORLD_API UToggleWidget : public UUserWidget
 public:
     void InitializeInventoriesInfo(UADInventoryComponent* InventoryComp);
     void RefreshExchangableInventoryInfo(int32 Mass, int32 Price);
-
+    void SetDroneCurrentText(int32 Current);
+    void SetDroneTargetText(int32 Target);
 
 protected:
     // 기존 인벤토리 위젯들
@@ -41,9 +42,11 @@ protected:
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<URichTextBlock> PriceText;
 
+    UPROPERTY(meta = (BindWidget))
+    TObjectPtr<UTextBlock> CurrentMoneyText;
 
-
-
+    UPROPERTY(meta = (BindWidget))
+    TObjectPtr<UTextBlock> TargetMoneyText;
 #pragma endregion
 
 #pragma region Getter/Setter

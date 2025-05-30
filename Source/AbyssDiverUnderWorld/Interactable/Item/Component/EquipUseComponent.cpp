@@ -20,6 +20,7 @@
 #include "Character/UnderwaterCharacter.h"
 #include "Framework/ADPlayerState.h"
 
+const FName UEquipUseComponent::BASIC_SPEAR_GUN_NAME = TEXT("BasicSpearGun");
 
 
 // Sets default values for this component's properties
@@ -195,9 +196,17 @@ void UEquipUseComponent::S_LeftClick_Implementation()
 	switch (LeftAction)
 	{
 	case EAction::WeaponFire:      FireHarpoon();       break;
-	case EAction::ToggleBoost:     ToggleBoost();       break;
+	case EAction::ToggleBoost:     BoostOn();			break;
 	case EAction::ToggleNVGToggle: ToggleNightVision(); break;
 	default:                      break;
+	}
+}
+
+void UEquipUseComponent::S_LeftRelease_Implementation()
+{
+	if (bBoostActive)
+	{
+		BoostOff();
 	}
 }
 
@@ -205,45 +214,52 @@ void UEquipUseComponent::S_RKey_Implementation()
 {
 	switch (RKeyAction)
 	{
-	case EAction::WeaponReload:   StartReload();     break;
-	case EAction::ApplyChargeUI:  OpenChargeWidget();break;
-	default:                      OpenChargeWidget();break;
+	case EAction::WeaponReload:   StartReload();			  break;
+	case EAction::ApplyChargeUI:  ShowChargeBatteryWidget();  break;
+	default:                      break;
+	}
+}
+
+void UEquipUseComponent::S_RKeyRelease_Implementation()
+{
+	if (bChargeBatteryWidgetVisible)
+	{
+		HideChargeBatteryWidget();
 	}
 }
 
 void UEquipUseComponent::S_IncreaseAmount_Implementation(int8 AddAmount)
 {
-	Amount += AddAmount;
-
-	UGameInstance* GI = GetWorld()->GetGameInstance();
-	if (!GI)
+	if (CurrentEquipmentName != NAME_None)
 	{
-		LOGIC(Log, TEXT("Initialize: No valid GameInstance"))
-			return;
-	}
-	UDataTableSubsystem* DataTableSubsystem = GI->GetSubsystem<UDataTableSubsystem>();
-	FFADItemDataRow* InItemMeta = DataTableSubsystem ? DataTableSubsystem->GetItemDataByName(CurrentEquipmentName) : nullptr;
+		if (UGameInstance* GI = GetWorld()->GetGameInstance())
+		{
+			if (UDataTableSubsystem* DataTableSubsystem = GI->GetSubsystem<UDataTableSubsystem>())
+			{
+				FFADItemDataRow* ItemDataForMaxAmount = DataTableSubsystem ? DataTableSubsystem->GetItemDataByName(CurrentEquipmentName) : nullptr;
+				if (ItemDataForMaxAmount)
+				{
+					int16 NewAmount = Amount + AddAmount;
+					int16 MaxAmount = ItemDataForMaxAmount->Amount;
 
-	if (CurrentEquipmentName != NAME_None && InItemMeta)
-	{
-		FMath::Clamp(Amount, 0.0f, InItemMeta->Amount);
+					if (NewAmount < MaxAmount)
+					{
+						Amount = NewAmount;
+					}
+					else
+					{
+						Amount = MaxAmount;
+					}
+					SetEquipBatteryAmountText();
+				}
+			}
+		}
 	}
 }
 
 void UEquipUseComponent::OnRep_Amount()
 {
-	if (OwningCharacter->IsLocallyControlled() && (bNightVisionOn || CurrentEquipmentName == "NightVisionGoggle") && NightVisionInstance)
-	{
-		NightVisionInstance->SetBatteryAmount(Amount);
-		if (ChargeBatteryInstance)
-		{
-			ChargeBatteryInstance->SetEquipBatteryAmount("NightVisionGoggle", Amount);
-		}
-	}
-	else if (OwningCharacter->IsLocallyControlled() && (bBoostActive || CurrentEquipmentName == "DPV") && ChargeBatteryInstance)
-	{
-		ChargeBatteryInstance->SetEquipBatteryAmount("DPV", Amount);
-	}
+	SetEquipBatteryAmountText();
 }
 
 void UEquipUseComponent::OnRep_CurrentAmmoInMag()
@@ -377,6 +393,18 @@ void UEquipUseComponent::Initialize(FItemData& ItemData)
 	{
 		OnRep_CurrentAmmoInMag();
 		OnRep_ReserveAmmo();
+		//TODO: UI 띄우는 곳
+		if (CurrentEquipmentName == BASIC_SPEAR_GUN_NAME)
+		{
+			if (APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController()))
+			{
+				if (UPlayerHUDComponent* HUD = PC->FindComponentByClass<UPlayerHUDComponent>())
+				{
+					HUD->SetSpearUIVisibility(true);
+					HUD->UpdateSpearCount(CurrentAmmoInMag, ReserveAmmo);
+				}
+			}
+		}
 	}
 	else
 	{
@@ -405,6 +433,8 @@ void UEquipUseComponent::Initialize(FItemData& ItemData)
 
 void UEquipUseComponent::DeinitializeEquip()
 {
+	FName BackupName = CurrentEquipmentName;
+
 	if (CurrentItemData)
 	{
 		CurrentItemData->Amount = Amount;
@@ -442,6 +472,18 @@ void UEquipUseComponent::DeinitializeEquip()
 	CurrentAmmoInMag = 0;
 	ReserveAmmo = 0;
 	Amount = 0;
+
+	//TODO: UI 제거하는 함수
+	if (BackupName == BASIC_SPEAR_GUN_NAME)
+	{
+		if (APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController()))
+		{
+			if (UPlayerHUDComponent* HUD = PC->FindComponentByClass<UPlayerHUDComponent>())
+			{
+				HUD->SetSpearUIVisibility(false);
+			}
+		}
+	}
 
 	// 부스트·야간투시 효과 끄기
 	bBoostActive = false;
@@ -488,9 +530,19 @@ void UEquipUseComponent::HandleLeftClick()
 	S_LeftClick();
 }
 
+void UEquipUseComponent::HandleLeftRelease()
+{
+	S_LeftRelease();
+}
+
 void UEquipUseComponent::HandleRKey()
 {
 	S_RKey();
+}
+
+void UEquipUseComponent::HandleRKeyRelease()
+{
+	S_RKeyRelease();
 }
 
 void UEquipUseComponent::FireHarpoon()
@@ -538,15 +590,16 @@ void UEquipUseComponent::FireHarpoon()
 		return;
 	}
 	
-	if (CurrentItemData->Name == "BasicSpearGun")
+	// FText 변수로 수정
+	if (CurrentItemData->Name == SpearGunTypeNames[0])
 	{
 		Proj->SetBulletType(ESpearGunType::Basic);
 	}
-	else if (CurrentItemData->Name == "BombSpearGun")
+	else if (CurrentItemData->Name == SpearGunTypeNames[1])
 	{
 		Proj->SetBulletType(ESpearGunType::Bomb);
 	}
-	else if (CurrentItemData->Name == "PoisonSpearGun")
+	else if (CurrentItemData->Name == SpearGunTypeNames[2])
 	{
 		Proj->SetBulletType(ESpearGunType::Poison);
 	}
@@ -562,7 +615,7 @@ void UEquipUseComponent::FireHarpoon()
 		ProjectileMovementComp->Activate(true);
 
 		--CurrentAmmoInMag;
-		OnRep_Amount(); 
+		OnRep_CurrentAmmoInMag();
 
 		bCanFire = false;
 		const float RefireDelay = 1.0f / RateOfFire;
@@ -582,8 +635,29 @@ void UEquipUseComponent::ToggleBoost()
 	bBoostActive = !bBoostActive;
 	TargetMultiplier = bBoostActive ? BoostMultiplier : 1.f; // 가속 : 감속
 	
-	// Tick 활성 : 비활성
 	const bool bStillNeed = bBoostActive || bNightVisionOn || IsInterpolating();
+	SetComponentTickEnabled(bStillNeed);
+}
+
+void UEquipUseComponent::BoostOn()
+{
+	if (!OwningCharacter.IsValid()) return;
+
+	if (Amount <= 0 || bNightVisionOn) return;
+
+	bBoostActive = true;
+	TargetMultiplier = BoostMultiplier;  
+	SetComponentTickEnabled(true);
+}
+
+void UEquipUseComponent::BoostOff()
+{
+	if (!OwningCharacter.IsValid()) return;
+
+	bBoostActive = false;
+	TargetMultiplier = 1.f;  // 정상 속도로 복귀
+
+	const bool bStillNeed = bNightVisionOn || IsInterpolating();
 	SetComponentTickEnabled(bStillNeed);
 }
 
@@ -656,6 +730,57 @@ void UEquipUseComponent::ToggleChargeBatteryWidget()
 	}
 }
 
+void UEquipUseComponent::ShowChargeBatteryWidget()
+{
+	if (!OwningCharacter.IsValid() || !OwningCharacter->IsLocallyControlled() || !ChargeBatteryInstance)
+		return;
+
+	bChargeBatteryWidgetVisible = true;
+	LOGIC(Log, TEXT("ShowChargeBatteryWidget: %s"), TEXT("Visible"));
+
+	APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController());
+	if (!PC) return;
+
+	// UI 보이기
+	ChargeBatteryInstance->SetVisibility(ESlateVisibility::Visible);
+
+	// 커서 상태 저장 후 표시
+	bAlreadyCursorShowed = PC->bShowMouseCursor;
+	PC->bShowMouseCursor = true;
+
+	// 입력 모드 전환 (Game+UI)
+	FInputModeGameAndUI InputMode;
+	InputMode.SetWidgetToFocus(ChargeBatteryInstance->TakeWidget());
+	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	InputMode.SetHideCursorDuringCapture(false);
+
+	PC->SetIgnoreLookInput(true);
+	PC->SetInputMode(InputMode);
+}
+
+void UEquipUseComponent::HideChargeBatteryWidget()
+{
+	if (!OwningCharacter.IsValid() || !OwningCharacter->IsLocallyControlled() || !ChargeBatteryInstance)
+		return;
+
+	bChargeBatteryWidgetVisible = false;
+	LOGIC(Log, TEXT("HideChargeBatteryWidget: %s"), TEXT("Hidden"));
+
+	APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController());
+	if (!PC) return;
+
+	// UI 숨기기
+	ChargeBatteryInstance->SetVisibility(ESlateVisibility::Hidden);
+
+	// 커서 복원
+	if (!bAlreadyCursorShowed)
+		PC->bShowMouseCursor = false;
+
+	// 입력 모드 복귀 (Game Only)
+	PC->SetIgnoreLookInput(false);
+	PC->SetInputMode(FInputModeGameOnly());
+}
+
 void UEquipUseComponent::StartReload()
 {
 	if (!bIsWeapon || ReserveAmmo <= 0 || CurrentAmmoInMag == MagazineSize)
@@ -686,6 +811,8 @@ void UEquipUseComponent::FinishReload()
 	CurrentAmmoInMag += ToReload;
 	ReserveAmmo -= ToReload;
 	bCanFire = true;
+
+	InitializeAmmoUI();
 }
 
 void UEquipUseComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -706,8 +833,29 @@ bool UEquipUseComponent::IsInterpolating() const
 	return !FMath::IsNearlyEqual(CurrentMultiplier, TargetMultiplier, 0.001f);
 }
 
+void UEquipUseComponent::SetEquipBatteryAmountText()
+{
+	if (OwningCharacter->IsLocallyControlled() && (bNightVisionOn || CurrentEquipmentName == "NightVisionGoggle") && NightVisionInstance)
+	{
+		NightVisionInstance->SetBatteryAmount(Amount);
+		if (ChargeBatteryInstance)
+		{
+			ChargeBatteryInstance->SetEquipBatteryAmount(EChargeBatteryType::NightVisionGoggle, Amount);
+		}
+	}
+	else if (OwningCharacter->IsLocallyControlled() && (bBoostActive || CurrentEquipmentName == "DPV") && ChargeBatteryInstance)
+	{
+		ChargeBatteryInstance->SetEquipBatteryAmount(EChargeBatteryType::DPV, Amount);
+	}
+}
+
 void UEquipUseComponent::InitializeAmmoUI()
 {
 	OnRep_CurrentAmmoInMag();
 	OnRep_ReserveAmmo();
+}
+
+bool UEquipUseComponent::IsSpearGun() const
+{
+	return bIsWeapon && CurrentEquipmentName == "BasicSpearGun";
 }

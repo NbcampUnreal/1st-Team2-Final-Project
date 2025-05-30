@@ -24,6 +24,15 @@ void UDataTableSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 		LOGV(Error, TEXT("ItemDataTable is null"));
 	}
 
+	if (UDataTable* ProjectileDataTable = GI->ProjectileDataTable)
+	{
+		ProjectileDataTable->GetAllRows<FFADProjectileDataRow>(TEXT("ItemDataTable"), ProjectileDataTableArray);
+	}
+	else
+	{
+		LOGV(Error, TEXT("ItemDataTable is null"));
+	}
+
 	if (UDataTable* ShopItemTransformTable = GI->ShopMeshTransformTable)
 	{
 		ShopItemTransformTable->GetAllRows<FShopItemMeshTransformRow>(TEXT("ShopItemMeshTransformRow"), ShopItemMeshTransformTableArray);
@@ -49,6 +58,11 @@ void UDataTableSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 			return A->Id < B->Id;
 		});
 
+	Algo::Sort(ProjectileDataTableArray, [](const FFADProjectileDataRow* A, const FFADProjectileDataRow* B)
+		{
+			return A->Id < B->Id;
+		});
+	
 	Algo::Sort(ShopItemMeshTransformTableArray, [](const FShopItemMeshTransformRow* A, const FShopItemMeshTransformRow* B)
 		{
 			return A->ItemId < B->ItemId;
@@ -81,18 +95,9 @@ FFADItemDataRow* UDataTableSubsystem::GetItemDataByName(FName ItemName) const
 	return nullptr;
 }
 
-FFADProjectileDataRow* UDataTableSubsystem::GetProjectileDataArrayByName(FName ProjectileName) const
+FFADProjectileDataRow* UDataTableSubsystem::GetProjectileData(int32 ProjectileId) const
 {
-	UADGameInstance* GI = CastChecked<UADGameInstance>(GetGameInstance());
-	if (UDataTable* ProjectileDataTable = GI->ProjectileDataTable)
-	{
-		return ProjectileDataTable->FindRow<FFADProjectileDataRow>(ProjectileName, TEXT("LookupItem"));
-	}
-	else
-	{
-		LOGV(Error, TEXT("ProjectileRow is null"));
-	}
-	return nullptr;
+	return ProjectileDataTableArray[ProjectileId];
 }
 
 FUpgradeDataRow* UDataTableSubsystem::GetUpgradeDataTableArray(int32 Index) const

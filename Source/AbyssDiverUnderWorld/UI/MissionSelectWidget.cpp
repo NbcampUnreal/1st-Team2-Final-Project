@@ -8,6 +8,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Framework/ADPlayerState.h"
 #include "Character/UnderwaterCharacter.h"
+#include "Subsystems/MissionSubsystem.h"
 
 void UMissionSelectWidget::NativeConstruct()
 {
@@ -28,15 +29,17 @@ void UMissionSelectWidget::NativeConstruct()
         Button_Start->SetIsEnabled(true); // 항상 활성화
     }
 
-    AllMissions = {
+    /*AllMissions = {
         {TEXT("산소 캡슐 회수"), 1, true, TEXT("")},
         {TEXT("잃어버린 장비 찾기"), 1, true, TEXT("")},
         {TEXT("깊은 수중 탐사"), 2, true, TEXT("")},
         {TEXT("???"), 3, false, TEXT("얕은 해류 클리어 시 해금")},
         {TEXT("???"), 3, false, TEXT("얕은 해류 클리어 시 해금")}
-    };
+    };*/
 
-    for (const FMissionData& Mission : AllMissions)
+    const TSet<FMissionData>& Missions = GetGameInstance()->GetSubsystem<UMissionSubsystem>()->GetMissionDataForUI();
+
+    for (const FMissionData& Mission : Missions)
     {
         AddMissionEntry(Mission);
     }

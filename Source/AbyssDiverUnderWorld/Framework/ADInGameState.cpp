@@ -1,12 +1,15 @@
 #include "Framework/ADInGameState.h"
 #include "ADGameInstance.h"
 #include "Subsystems/DataTableSubsystem.h"
+#include "Subsystems/SoundSubsystem.h"
 #include "Net/UnrealNetwork.h"
 #include "AbyssDiverUnderWorld.h"
 #include "DataRow/PhaseGoalRow.h"
 #include "ADPlayerState.h"
 #include "Kismet/GameplayStatics.h"
 #include "Inventory/ADInventoryComponent.h"
+#include "Interactable/OtherActors/ADDroneSeller.h"
+#include "UI/ToggleWidget.h"
 
 AADInGameState::AADInGameState()
 	: SelectedLevelName(EMapName::Max)
@@ -32,6 +35,9 @@ void AADInGameState::BeginPlay()
 {
 	Super::BeginPlay();
 
+	const int32 SoundPoolInitCount = 10;
+	GetGameInstance()->GetSubsystem<USoundSubsystem>()->Init(SoundPoolInitCount);
+
 	if (HasAuthority() == false)
 	{
 		return;
@@ -50,6 +56,7 @@ void AADInGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME(AADInGameState, SelectedLevelName);
 	DOREPLIFETIME(AADInGameState, TeamCredits);
 	DOREPLIFETIME(AADInGameState, CurrentPhase);
+	DOREPLIFETIME(AADInGameState, CurrentDroneSeller);
 }
 
 void AADInGameState::PostNetInit()
@@ -106,6 +113,39 @@ void AADInGameState::OnRep_PhaseGoal()
 {
 	LOGVN(Error, TEXT("PhaseGoal updated: %d"), CurrentPhaseGoal);
 	CurrentPhaseGoalChangedDelegate.Broadcast(CurrentPhaseGoal);
+}
+
+void AADInGameState::OnRep_CurrentDroneSeller()
+{
+	AADPlayerState* PS = UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetPlayerState<AADPlayerState>();
+	if (PS == nullptr)
+	{
+		LOGVN(Warning, TEXT("PS == nullptr"));
+		return;
+	}
+
+	UADInventoryComponent* Inventory = PS->GetInventory();
+	if (Inventory == nullptr)
+	{
+		LOGVN(Warning, TEXT("Inventory == nullptr"));
+		return;
+	}
+
+	UToggleWidget* ToggleWidget = Inventory->GetToggleWidgetInstance();
+	if (IsValid(ToggleWidget) == false)
+	{
+		LOGVN(Warning, TEXT("ToggleWidget is Invalid"));
+		return;
+	}
+
+	ToggleWidget->SetDroneTargetText(CurrentDroneSeller->GetTargetMoney());
+	ToggleWidget->SetDroneCurrentText(CurrentDroneSeller->GetCurrentMoney());
+
+	CurrentDroneSeller->OnCurrentMoneyChangedDelegate.RemoveAll(ToggleWidget);
+	CurrentDroneSeller->OnCurrentMoneyChangedDelegate.AddUObject(ToggleWidget, &UToggleWidget::SetDroneCurrentText);
+
+	CurrentDroneSeller->OnTargetMoneyChangedDelegate.RemoveAll(ToggleWidget);
+	CurrentDroneSeller->OnTargetMoneyChangedDelegate.AddUObject(ToggleWidget, &UToggleWidget::SetDroneTargetText);
 }
 
 void AADInGameState::ReceiveDataFromGameInstance()

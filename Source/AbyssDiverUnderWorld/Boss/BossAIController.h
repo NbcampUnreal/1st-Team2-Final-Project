@@ -106,7 +106,6 @@ private:
 #pragma region Getter, Setter
 public:
 	void SetDetectedStatePossible();
-	void DrawDebugRangeCircle();
 
 #pragma endregion
 	

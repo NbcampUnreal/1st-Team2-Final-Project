@@ -5,6 +5,9 @@
 #include "Interface/IADInteractable.h"
 #include "ADDroneSeller.generated.h"
 
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnCurrentMoneyChangedDelegate, int32/*Changed Money*/);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnTargetMoneyChangedDelegate, int32/*Changed Money*/);
+
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADDroneSeller : public AActor, public IIADInteractable
 {
@@ -26,10 +29,18 @@ public:
 	void DisableSelling();
 
 	void Activate();
+
 	UFUNCTION()
 	void OnRep_IsActive();
+
 	UFUNCTION()
 	void OnRep_CurrentMoney();
+
+	UFUNCTION()
+	void OnRep_TargetMoney();
+
+	FOnCurrentMoneyChangedDelegate OnCurrentMoneyChangedDelegate;
+	FOnTargetMoneyChangedDelegate OnTargetMoneyChangedDelegate;
 
 protected:
 	int32 SellAllExchangeableItems(AActor* InstigatorActor);
@@ -48,7 +59,7 @@ protected:
 	uint8 bIsActive : 1;
 	UPROPERTY(ReplicatedUsing = OnRep_CurrentMoney)
 	int32 CurrentMoney = 0;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(ReplicatedUsing = OnRep_TargetMoney)
 	int32 TargetMoney = 1000;
 
 	UPROPERTY(EditAnywhere)
@@ -65,10 +76,29 @@ private:
 public:
 	int32 GetCurrentMoney() const { return CurrentMoney; }
 	int32 GetTargetMoney() const { return TargetMoney; }
-	void SetTargetMoney(int32 NewTargetMoney) { TargetMoney = NewTargetMoney; }
+
+	void SetTargetMoney(int32 NewTargetMoney) 
+	{ 
+		TargetMoney = NewTargetMoney; 
+		OnRep_TargetMoney();
+	}
+
 	virtual UADInteractableComponent* GetInteractableComponent() const override;
 	virtual bool IsHoldMode() const override;
-	virtual EInteractionType GetInteractionType() const override;
+	virtual FString GetInteractionDescription() const override;
+
+private:
+
+	void SetCurrentMoeny(const int32& NewCurrentMoney)
+	{
+		if (HasAuthority() == false)
+		{
+			return;
+		}
+
+		CurrentMoney = NewCurrentMoney;
+		OnRep_CurrentMoney();
+	}
 #pragma endregion
 
 };

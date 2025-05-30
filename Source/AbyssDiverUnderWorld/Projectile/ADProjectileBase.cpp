@@ -18,7 +18,6 @@ DEFINE_LOG_CATEGORY(ProjectileLog);
 
 // Sets default values
 AADProjectileBase::AADProjectileBase() : 
-    TrailEffect(nullptr), 
     Damage(100.0f), 
     bWasHit(false)
 {
@@ -31,16 +30,10 @@ AADProjectileBase::AADProjectileBase() :
    
 
     ProjectileMovementComp = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));
-    ProjectileMovementComp->InitialSpeed = 2000.0f;
-    ProjectileMovementComp->MaxSpeed = 2000.0f;
-    ProjectileMovementComp->bRotationFollowsVelocity = true;
+    //ProjectileMovementComp->bRotationFollowsVelocity = true;
     ProjectileMovementComp->bAutoActivate = true;
 
     CollisionComponent->OnComponentBeginOverlap.AddDynamic(this, &AADProjectileBase::OnOverlapBegin);
-
-    TrailEffect = CreateDefaultSubobject<UNiagaraComponent>(TEXT("TrailEffect"));
-    TrailEffect->SetupAttachment(CollisionComponent);
-    TrailEffect->SetAutoActivate(false);
 
     bReplicates = true;
     SetReplicateMovement(true);
@@ -50,41 +43,13 @@ void AADProjectileBase::BeginPlay()
 {
 	Super::BeginPlay();
 
-
+    ProjectileMovementComp->InitialSpeed = 1000.0f;
+    ProjectileMovementComp->MaxSpeed = 1500.0f;
 }
 
 void AADProjectileBase::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-    if (!bWasHit)
-    {
-        if (OtherActor && OtherActor != this && OtherComp && OtherComp->GetOwner() != this)
-        {
-            UGameplayStatics::ApplyPointDamage(
-                OtherActor,
-                Damage,
-                GetActorForwardVector(),
-                SweepResult,
-                GetInstigatorController(),
-                GetOwner(),
-                UDamageType::StaticClass()
-            );
-            LOGP(Warning, TEXT("Hit %s"), *OtherActor->GetName());
-        }
-		TrailEffect->Deactivate();
-        ProjectileMovementComp->StopMovementImmediately();
-        ProjectileMovementComp->Deactivate();
-        bWasHit = true;
-    }
 
-    FTimerHandle DestroyTimerHandle;
-    float DestroyDelay = 10.0f;
-
-    FTimerDelegate TimerDel;
-    TimerDel.BindLambda([this]() {
-        Destroy();
-        });
-
-    GetWorld()->GetTimerManager().SetTimer(DestroyTimerHandle, TimerDel, DestroyDelay, false);
 }
 
 void AADProjectileBase::SetProjectileSpeed(float Speed)

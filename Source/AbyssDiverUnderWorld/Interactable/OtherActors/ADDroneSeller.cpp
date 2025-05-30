@@ -17,6 +17,7 @@ AADDroneSeller::AADDroneSeller()
 
 	bIsActive = true;
 	bIsHold = false;
+	bAlwaysRelevant = true;
 }
 
 // Called when the game starts or when spawned
@@ -38,8 +39,8 @@ void AADDroneSeller::Interact_Implementation(AActor* InstigatorActor)
 		return;
 	}
 	
-
-	CurrentMoney += Gained;
+	SetCurrentMoeny(CurrentMoney + Gained);
+	//CurrentMoney += Gained;
 	LOGD(Log, TEXT("→ 누적 금액: %d / %d"), CurrentMoney, TargetMoney);
 	if (CurrentMoney >= TargetMoney && IsValid(CurrentDrone))
 	{
@@ -70,7 +71,12 @@ void AADDroneSeller::OnRep_IsActive()
 
 void AADDroneSeller::OnRep_CurrentMoney()
 {
-	//TODO : UI 업데이트
+	OnCurrentMoneyChangedDelegate.Broadcast(CurrentMoney);
+}
+
+void AADDroneSeller::OnRep_TargetMoney()
+{
+	OnTargetMoneyChangedDelegate.Broadcast(TargetMoney);
 }
 
 int32 AADDroneSeller::SellAllExchangeableItems(AActor* InstigatorActor)
@@ -108,6 +114,7 @@ void AADDroneSeller::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AADDroneSeller, bIsActive);
 	DOREPLIFETIME(AADDroneSeller, CurrentMoney);
+	DOREPLIFETIME(AADDroneSeller, TargetMoney);
 }
 
 UADInteractableComponent* AADDroneSeller::GetInteractableComponent() const
@@ -120,7 +127,7 @@ bool AADDroneSeller::IsHoldMode() const
 	return bIsHold;
 }
 
-EInteractionType AADDroneSeller::GetInteractionType() const
+FString AADDroneSeller::GetInteractionDescription() const
 {
-	return EInteractionType::GiveOre;
+	return TEXT("Submit Ore!");
 }

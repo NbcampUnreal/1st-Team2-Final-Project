@@ -4,6 +4,8 @@
 #include "GameFramework/Actor.h"
 #include "SpawnManager.generated.h"
 
+class ASerpmareSpawner;
+class ALimadonSpawner;
 class AMonsterSpawner;
 class AOreSpawner;
 
@@ -20,6 +22,10 @@ public:
 	// 몬스터 스포너
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawner")
 	TObjectPtr<AMonsterSpawner> MonsterSpawner;
+
+	// Serpmare 스포너
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawner")
+	TObjectPtr<ASerpmareSpawner> SerpmareSpawner;
 };
 
 UCLASS()
@@ -31,11 +37,17 @@ public:
 	ASpawnManager();
 
 public:
+	virtual void BeginPlay() override;
+
+public:
 	UFUNCTION(BlueprintCallable, Category = "Spawn")
 	void SpawnByGroup();
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawner")
 	TArray<FSpawnerGroup> SpawnerGroups;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Spawner")
+	TObjectPtr<ALimadonSpawner> LimadonSpawner;
 
 };

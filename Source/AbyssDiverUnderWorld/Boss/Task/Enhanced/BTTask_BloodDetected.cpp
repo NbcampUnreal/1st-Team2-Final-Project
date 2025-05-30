@@ -15,8 +15,6 @@ UBTTask_BloodDetected::UBTTask_BloodDetected()
 {
 	NodeName = "Blood Detected";
 	bNotifyTick = true;
-	Boss = nullptr;
-	AIController = nullptr;
 	BloodOccurredLocation = FVector::ZeroVector;
 	AccumulatedTime = 0;
 	DetectedStateInterval = 2.f;
@@ -24,14 +22,13 @@ UBTTask_BloodDetected::UBTTask_BloodDetected()
 
 EBTNodeResult::Type UBTTask_BloodDetected::ExecuteTask(UBehaviorTreeComponent& Comp, uint8* NodeMemory)
 {
-	AIController = Cast<AEnhancedBossAIController>(Comp.GetAIOwner());
+	AEnhancedBossAIController* AIController = Cast<AEnhancedBossAIController>(Comp.GetAIOwner());
 	if (!IsValid(AIController)) return EBTNodeResult::Failed;
 
-	Boss = Cast<ABoss>(AIController->GetCharacter());
+	ABoss* Boss = Cast<ABoss>(AIController->GetCharacter());
 	if (!IsValid(Boss)) return EBTNodeResult::Failed;
 	
 	Boss->SetBossState(EBossState::Idle);
-	Boss->SetDecelerate(true);
 	
 	AccumulatedTime = 0;
 	
@@ -45,6 +42,12 @@ void UBTTask_BloodDetected::TickTask(UBehaviorTreeComponent& Comp, uint8* NodeMe
 {
 	Super::TickTask(Comp, NodeMemory, DeltaSeconds);
 
+	AEnhancedBossAIController* AIController = Cast<AEnhancedBossAIController>(Comp.GetAIOwner());
+	if (!IsValid(AIController)) return;
+
+	ABoss* Boss = Cast<ABoss>(AIController->GetCharacter());
+	if (!IsValid(Boss)) return;
+	
 	Boss->RotationToTarget(BloodOccurredLocation);
 
 	if (AccumulatedTime > DetectedStateInterval)

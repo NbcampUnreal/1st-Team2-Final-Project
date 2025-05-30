@@ -178,25 +178,3 @@ void ABossAIController::SetDetectedStatePossible()
 {
 	bIsDetectedStatePossible = true;
 }
-
-void ABossAIController::DrawDebugRangeCircle()
-{
-	FVector Center = Boss->GetActorLocation();
-	FVector YAxis = FVector(0, 1, 0); // 원의 평면을 정의할 축
-	float Radius = 10000.0f;
-
-	DrawDebugCircle(
-		GetWorld(),
-		Center,
-		Radius,
-		64,                // 세그먼트 개수 (더 많을수록 더 부드러움)
-		FColor::Green,
-		false,             // 영구 여부 (false면 일정 시간 후 사라짐)
-		0.1f,              // 지속 시간 (초)
-		0,                 // DepthPriority
-		5.0f,              // 선 두께
-		FVector(1,0,0),    // 원의 평면을 구성하는 벡터
-		YAxis,             // 원의 평면을 구성하는 벡터
-		false              // Draw axis
-	);
-}

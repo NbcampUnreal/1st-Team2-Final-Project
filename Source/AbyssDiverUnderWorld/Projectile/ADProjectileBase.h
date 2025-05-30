@@ -12,7 +12,7 @@ class UNiagaraComponent;
 class UNiagaraSystem;
 class UDataTableSubsystem;
 
-#define LOGP(Verbosity, Format, ...) UE_LOG(ProjectileLog, Verbosity, TEXT("%s(%s) %s"), ANSI_TO_TCHAR(__FUNCTION__), *FString::FromInt(__LINE__), *FString::Printf(Format, ##__VA_ARGS__));
+#define LOGP(Verbosity, Format, ...) UE_LOG(ProjectileLog, Verbosity, TEXT("[%s] %s(%s) %s"), LOG_NETMODEINFO, ANSI_TO_TCHAR(__FUNCTION__), *FString::FromInt(__LINE__), *FString::Printf(Format, ##__VA_ARGS__));
 
 DECLARE_LOG_CATEGORY_EXTERN(ProjectileLog, Log, All);
 
@@ -45,8 +45,6 @@ protected:
 	TObjectPtr<USceneComponent> Scene;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Component")
 	TObjectPtr<UProjectileMovementComponent> ProjectileMovementComp;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effect")
-	TObjectPtr<UNiagaraComponent> TrailEffect;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TObjectPtr<UDataTableSubsystem> DTSubsystem;
 	int16 Damage;

@@ -19,24 +19,24 @@ UBTTask_PlayerDetected::UBTTask_PlayerDetected()
 	NodeName = "Player Detected";
 	bNotifyTick = true;
 	bNotifyTaskFinished = true;
-	Boss = nullptr;
-	AIController = nullptr;
-	AccumulatedTime = 0;
+	bCreateNodeInstance = false;
+
 	DetectedStateInterval = 2.f;
 }
 
 EBTNodeResult::Type UBTTask_PlayerDetected::ExecuteTask(UBehaviorTreeComponent& Comp, uint8* NodeMemory)
 {
-	AIController = Cast<AEnhancedBossAIController>(Comp.GetAIOwner());
-	if (!IsValid(AIController)) return EBTNodeResult::Failed;
+	FBTPlayerDetectedTaskMemory* TaskMemory = (FBTPlayerDetectedTaskMemory*)NodeMemory;
+	if (!TaskMemory) return EBTNodeResult::Failed;
 
-	Boss = Cast<ABoss>(AIController->GetCharacter());
-	if (!IsValid(Boss)) return EBTNodeResult::Failed;
+	TaskMemory->AIController = Cast<AEnhancedBossAIController>(Comp.GetAIOwner());
+	TaskMemory->Boss = Cast<ABoss>(TaskMemory->AIController->GetCharacter());
 	
-	Boss->SetBossState(EBossState::Idle);
-	Boss->SetDecelerate(true);
+	if (!TaskMemory->Boss.IsValid() || !TaskMemory->AIController.IsValid()) return EBTNodeResult::Failed;
 	
-	AccumulatedTime = 0;
+	TaskMemory->Boss->SetBossState(EBossState::Idle);
+	
+	TaskMemory->AccumulatedTime = 0.f;
 	
 	return EBTNodeResult::InProgress;
 }
@@ -45,19 +45,27 @@ void UBTTask_PlayerDetected::TickTask(UBehaviorTreeComponent& Comp, uint8* NodeM
 {
 	Super::TickTask(Comp, NodeMemory, DeltaSeconds);
 	
-	Boss->RotationToTarget(Boss->GetTarget());
+	FBTPlayerDetectedTaskMemory* TaskMemory = (FBTPlayerDetectedTaskMemory*)NodeMemory;
+	if (!TaskMemory) return;
 
-	if (AIController->GetIsDisappearPlayer())
+	TaskMemory->AIController = Cast<AEnhancedBossAIController>(Comp.GetAIOwner());
+	TaskMemory->Boss = Cast<ABoss>(TaskMemory->AIController->GetCharacter());
+	
+	if (!TaskMemory->Boss.IsValid() || !TaskMemory->AIController.IsValid()) return;
+	
+	TaskMemory->Boss->RotationToTarget(TaskMemory->Boss->GetTarget());
+
+	if (TaskMemory->AIController->GetIsDisappearPlayer())
 	{
 		FinishLatentTask(Comp, EBTNodeResult::Succeeded);
 	}
 
-	if (AccumulatedTime > DetectedStateInterval)
+	if (TaskMemory->AccumulatedTime > DetectedStateInterval)
 	{
 		FinishLatentTask(Comp, EBTNodeResult::Succeeded);
 	}
 
-	AccumulatedTime += FMath::Clamp(DeltaSeconds, 0.f, 0.1f);
+	TaskMemory->AccumulatedTime += FMath::Clamp(DeltaSeconds, 0.f, 0.1f);
 }
 
 void UBTTask_PlayerDetected::OnTaskFinished(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory,
@@ -65,5 +73,13 @@ void UBTTask_PlayerDetected::OnTaskFinished(UBehaviorTreeComponent& OwnerComp, u
 {
 	Super::OnTaskFinished(OwnerComp, NodeMemory, TaskResult);
 
-	AIController->GetBlackboardComponent()->SetValueAsBool("bHasDetectedPlayer", true);
+	FBTPlayerDetectedTaskMemory* TaskMemory = (FBTPlayerDetectedTaskMemory*)NodeMemory;
+	if (!TaskMemory) return;
+
+	TaskMemory->AIController = Cast<AEnhancedBossAIController>(OwnerComp.GetAIOwner());
+	TaskMemory->Boss = Cast<ABoss>(TaskMemory->AIController->GetCharacter());
+	
+	if (!TaskMemory->Boss.IsValid() || !TaskMemory->AIController.IsValid()) return;
+	
+	TaskMemory->AIController->GetBlackboardComponent()->SetValueAsBool("bHasDetectedPlayer", true);
 }

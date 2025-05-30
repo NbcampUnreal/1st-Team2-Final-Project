@@ -31,4 +31,21 @@ void UToggleWidget::RefreshExchangableInventoryInfo(int32 Mass, int32 Price)
     }
 }
 
+void UToggleWidget::SetDroneCurrentText(int32 Current)
+{
+    // 현재 가치 텍스트 갱신
+    if (CurrentMoneyText && CurrentMoneyText->IsValidLowLevel())
+    {
+        CurrentMoneyText->SetText(FText::FromString(FString::Printf(TEXT("%d"), Current)));
+    }
+}
+
+void UToggleWidget::SetDroneTargetText(int32 Target)
+{
+    // 목표 가치 텍스트 갱신
+    if (TargetMoneyText && TargetMoneyText->IsValidLowLevel())
+    {
+        TargetMoneyText->SetText(FText::FromString(FString::Printf(TEXT("%d"), Target)));
+    }
+}
 

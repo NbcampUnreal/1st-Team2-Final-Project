@@ -12,7 +12,7 @@ UPlayerStatusWidget::UPlayerStatusWidget(const FObjectInitializer& ObjectInitial
 void UPlayerStatusWidget::NativeConstruct()
 {
     Super::NativeConstruct();
-
+    SetSpearVisibility(false); 
 }
 
 void UPlayerStatusWidget::SetSpearCount(int32 Current, int32 Total)
@@ -75,5 +75,13 @@ void UPlayerStatusWidget::SetStaminaPercent(float InPercent)
     else
     {
         UE_LOG(LogTemp, Error, TEXT("❌ StaminaBar is nullptr!"));
+    }
+}
+
+void UPlayerStatusWidget::SetSpearVisibility(bool bVisible)
+{
+    if (SpearPanel)
+    {
+        SpearPanel->SetVisibility(bVisible ? ESlateVisibility::Visible : ESlateVisibility::Hidden);
     }
 }

@@ -46,8 +46,14 @@ public:
 	void S_LeftClick();
 	void S_LeftClick_Implementation();
 	UFUNCTION(Server, Reliable)
+	void S_LeftRelease();
+	void S_LeftRelease_Implementation();
+	UFUNCTION(Server, Reliable)
 	void S_RKey();
 	void S_RKey_Implementation();
+	UFUNCTION(Server, Reliable)
+	void S_RKeyRelease();
+	void S_RKeyRelease_Implementation();
 	UFUNCTION(Server, Reliable)
 	void S_IncreaseAmount(int8 AddAmount);
 	void S_IncreaseAmount_Implementation(int8 AddAmount);
@@ -70,9 +76,17 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void ToggleBoost();
 	UFUNCTION(BlueprintCallable)
+	void BoostOn();
+	UFUNCTION(BlueprintCallable)
+	void BoostOff();
+	UFUNCTION(BlueprintCallable)
 	void ToggleNightVision();
 	UFUNCTION(BlueprintCallable)
 	void ToggleChargeBatteryWidget();
+	UFUNCTION(BlueprintCallable)
+	void ShowChargeBatteryWidget();
+	UFUNCTION(BlueprintCallable)
+	void HideChargeBatteryWidget();
 	UFUNCTION(BlueprintCallable)
 	void StartReload();
 	UFUNCTION(BlueprintCallable)
@@ -80,7 +94,11 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void HandleLeftClick();
 	UFUNCTION(BlueprintCallable)
+	void HandleLeftRelease();
+	UFUNCTION(BlueprintCallable)
 	void HandleRKey();
+	UFUNCTION(BlueprintCallable)
+	void HandleRKeyRelease();
 	
 	void FinishReload();
 
@@ -93,6 +111,7 @@ public:
 
 	void InitializeAmmoUI();
 
+	bool IsSpearGun() const;
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
@@ -100,17 +119,17 @@ private:
 	// 보간 완료 확인 함수
 	bool IsInterpolating() const;
 	
-	
+	void SetEquipBatteryAmountText();
 #pragma endregion
 
 #pragma region Variable
 public:
 	// ====== Fire =========
 	UPROPERTY(ReplicatedUsing = OnRep_CurrentAmmoInMag, EditAnywhere, BlueprintReadWrite, Category = "Weapon")
-	int32 CurrentAmmoInMag = 5;
+	int32 CurrentAmmoInMag = 0;
 
 	UPROPERTY(ReplicatedUsing = OnRep_ReserveAmmo, EditAnywhere, BlueprintReadWrite, Category = "Weapon")
-	int32 ReserveAmmo = 20;
+	int32 ReserveAmmo = 0;
 
 	UPROPERTY( EditAnywhere, BlueprintReadWrite, Category = "Weapon")
 	int32 MagazineSize = 5;
@@ -154,7 +173,9 @@ public:
 	uint8 bChargeBatteryWidgetVisible : 1;
 	uint8 bAlreadyCursorShowed : 1;
 
-	
+	// SpearType 저장
+	TArray<FString> SpearGunTypeNames = { "BasicSpearGun", "PoisonSpearGun", "BombSpearGun" };
+
 	
 protected:
 	UPROPERTY(EditAnywhere)
@@ -190,6 +211,8 @@ private:
 	TObjectPtr<class UCameraComponent> CameraComp = nullptr;
 	FPostProcessSettings OriginalPPSettings;
 	uint8 bOriginalExposureCached : 1;
+	static const FName BASIC_SPEAR_GUN_NAME;
+
 
 #pragma endregion
 

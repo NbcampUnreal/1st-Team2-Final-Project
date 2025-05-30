@@ -32,6 +32,11 @@ void AADDrone::BeginPlay()
 	{
 		AActor* Found = UGameplayStatics::GetActorOfClass(this, ASpawnManager::StaticClass());
 		SpawnManager = Cast<ASpawnManager>(Found);
+
+		if (SpawnManager && DronePhaseNumber == 1)
+		{
+			SpawnManager->SpawnByGroup();
+		}
 	}
 }
 
@@ -72,12 +77,13 @@ void AADDrone::Interact_Implementation(AActor* InstigatorActor)
 			if (NextSeller)
 			{
 				NextSeller->Activate();
+				GS->SetCurrentDroneSeller(NextSeller);
 			}
 		}
 	}
 	CurrentSeller->DisableSelling();
 	StartRising();
-	if (SpawnManager)
+	if (SpawnManager && NextSeller)
 	{
 		SpawnManager->SpawnByGroup();
 		LOGD(Log, TEXT("Monster Spawns"));
@@ -133,7 +139,7 @@ bool AADDrone::IsHoldMode() const
 	return bIsHold;
 }
 
-EInteractionType AADDrone::GetInteractionType() const
+FString AADDrone::GetInteractionDescription() const
 {
-	return EInteractionType::SendDrone;
+	return TEXT("Send Drone!");
 }

@@ -52,22 +52,41 @@ void AADPlayerController::BeginPlay()
 		S_SetPlayerInfo(Id, Nickname);
 	}
 
-	// 상호작용 UI 생성과 함수 바인딩
-	if (InteractionWidgetClass && IsLocalController())
-	{
-		InteractionWidget = CreateWidget<UInteractionDescriptionWidget>(this, InteractionWidgetClass);
-		UE_LOG(LogTemp, Error, TEXT("Create Widget!!"));
+	
+}
 
-		if (InteractionWidget)
+void AADPlayerController::SetPawn(APawn* InPawn)
+{
+	if (APawn* PreviousPawn = GetPawn())
+	{
+		if (AUnderwaterCharacter* OldDiver = Cast<AUnderwaterCharacter>(PreviousPawn))
 		{
-			if (AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(GetPawn()))
+			if (UADInteractionComponent* OldInteractionComp = OldDiver->GetInteractionComponent())
 			{
-				UE_LOG(LogTemp, Error, TEXT("Character is UnderwaterCharacter"));
-				if (UADInteractionComponent* InteractionComponent = UnderwaterCharacter->GetInteractionComponent())
+				OldInteractionComp->OnFocus.RemoveAll(InteractionWidget);
+				OldInteractionComp->OnFocusEnd.RemoveAll(InteractionWidget);
+			}
+		}
+	}
+
+	Super::SetPawn(InPawn);
+
+	if (InPawn)
+	{
+		// 상호작용 UI 생성과 함수 바인딩
+		if (InteractionWidgetClass && IsLocalController())
+		{
+			InteractionWidget = CreateWidget<UInteractionDescriptionWidget>(this, InteractionWidgetClass);
+
+			if (InteractionWidget)
+			{
+				if (AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(GetPawn()))
 				{
-					InteractionComponent->OnFocus.AddDynamic(InteractionWidget, &UInteractionDescriptionWidget::HandleFocus);
-					InteractionComponent->OnFocusEnd.AddDynamic(InteractionWidget, &UInteractionDescriptionWidget::HandleFocusLost);
-					UE_LOG(LogTemp, Error, TEXT("Bind!!"));
+					if (UADInteractionComponent* InteractionComponent = UnderwaterCharacter->GetInteractionComponent())
+					{
+						InteractionComponent->OnFocus.AddDynamic(InteractionWidget, &UInteractionDescriptionWidget::HandleFocus);
+						InteractionComponent->OnFocusEnd.AddDynamic(InteractionWidget, &UInteractionDescriptionWidget::HandleFocusLost);
+					}
 				}
 			}
 		}
