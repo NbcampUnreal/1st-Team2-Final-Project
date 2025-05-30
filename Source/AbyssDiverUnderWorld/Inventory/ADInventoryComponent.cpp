@@ -4,16 +4,15 @@
 #include "Engine/EngineTypes.h"
 #include "DataRow/FADItemDataRow.h"
 #include "UI/ToggleWidget.h"
-#include <Net/UnrealNetwork.h>
+#include "Net/UnrealNetwork.h"
 #include "AbyssDiverUnderWorld.h"
-#include <Kismet/KismetMathLibrary.h>
+#include "Kismet/KismetMathLibrary.h"
 #include "DrawDebugHelpers.h"
-#include "Framework/ADGameInstance.h"
 #include "Subsystems/DataTableSubsystem.h"
 #include "Framework/ADPlayerState.h"
 #include "Interactable/Item/ADUseItem.h"
 #include "Interactable/Item/UseFunction/UseStrategy.h"
-#include <Actions/PawnActionsComponent.h>
+#include "Actions/PawnActionsComponent.h"
 #include "GameFramework/Character.h"
 #include "Interactable/Item/Component/EquipUseComponent.h"
 #include "UI/ChargeBatteryWidget.h"
@@ -23,6 +22,8 @@
 #include "Framework/ADInGameState.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
+#include "Subsystems/SoundSubsystem.h"
+#include "Framework/ADGameInstance.h"
 
 DEFINE_LOG_CATEGORY(InventoryLog);
 
@@ -32,10 +33,10 @@ UADInventoryComponent::UADInventoryComponent() :
 	TotalPrice(0),
 	WeightMax(100),
 	bInventoryWidgetShowed(false), 
-	bAlreadyCursorShowed(false),
-	bCanUseItem(true),
 	CurrentEquipmentSlotIndex(INDEX_NONE),
 	CurrentEquipmentInstance(nullptr),
+	bAlreadyCursorShowed(false),
+	bCanUseItem(true),
 	ToggleWidgetInstance(nullptr),
 	DataTableSubsystem(nullptr),
 	ChargeBatteryWidget(nullptr)
@@ -65,6 +66,7 @@ void UADInventoryComponent::BeginPlay()
 	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
 	{
 		DataTableSubsystem = GI->GetSubsystem<UDataTableSubsystem>();
+		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
 	}
 }
 
@@ -126,8 +128,9 @@ void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType
 				Strategy->Use(GetOwner());
 				if (Item.Amount > 0)
 				{
+					C_InventoryPlaySound(ESFX::Sound2);
 					FTimerHandle SpawnEffectDelay;
-					GetWorld()->GetTimerManager().SetTimer(SpawnEffectDelay, this, &UADInventoryComponent::C_SpawnItemEffect, 1.0f, false);
+					GetWorld()->GetTimerManager().SetTimer(SpawnEffectDelay, this, &UADInventoryComponent::C_SpawnItemEffect, 1.5f, false);
 				}
 				LOGINVEN(Warning, TEXT("Use Consumable Item %s"), *FoundRow->Name.ToString());
 			}
@@ -201,6 +204,18 @@ void UADInventoryComponent::S_UseBatteryAmount_Implementation(int8 Amount)
 	}
 }
 
+void UADInventoryComponent::M_PlaySound_Implementation(ESFX SFXType)
+{
+	APlayerController* PC = Cast<APlayerController>(Cast<AADPlayerState>(GetOwner())->GetPlayerController());
+	APawn* OwnerPawn = PC->GetPawn();
+	SoundSubsystem->PlayAt(SFXType, OwnerPawn->GetActorLocation());
+}
+
+void UADInventoryComponent::C_InventoryPlaySound_Implementation(ESFX SFXType)
+{
+	SoundSubsystem->Play2D(SFXType);
+}
+
 void UADInventoryComponent::C_SpawnItemEffect_Implementation()
 {
 	//UObject는 리플리케이트를 지원하지 않으므로, 이펙트 스폰을 클라이언트에서만 실행되는 함수로 구현
@@ -209,6 +224,7 @@ void UADInventoryComponent::C_SpawnItemEffect_Implementation()
 		TEXT("/Game/_AbyssDiver/FX/VFX/Item/NS_RefillOxygen.NS_RefillOxygen")
 	);
 
+	SoundSubsystem->Play2D(ESFX::Sound1);
 	if (!OxygenRefillEffect) return;
 	if (APlayerController* PC = Cast<APlayerController>(Cast<AADPlayerState>(GetOwner())->GetPlayerController()))
 	{
@@ -430,6 +446,7 @@ void UADInventoryComponent::RemoveBySlotIndex(uint8 SlotIndex, EItemType ItemTyp
 
 		if (bIsDropAction)
 		{
+			M_PlaySound(ESFX::Sound3);
 			DropItem(Item);
 		}
 		InventoryList.UpdateQuantity(InventoryIndex, INDEX_NONE);
@@ -664,6 +681,7 @@ void UADInventoryComponent::Equip(FItemData& ItemData, int8 SlotIndex)
 				return;
 			}
 
+			C_InventoryPlaySound(ESFX::Sound8);
 			SpawnedItem->SetItemInfo(ItemData, true);
 			CurrentEquipmentInstance = SpawnedItem;
 			LOGINVEN(Warning, TEXT("ItemToEquip Name: %s, Amount %d"), *ItemData.Name.ToString(), ItemData.Amount);
@@ -712,7 +730,7 @@ void UADInventoryComponent::UnEquip()
 			}
 		}
 	}
-
+	C_InventoryPlaySound(ESFX::Sound9);
 	LOGINVEN(Warning, TEXT("UnEquipItem %s"), *CurrentEquipmentInstance->ItemData.Name.ToString());
 	if(CurrentEquipmentInstance)
 		CurrentEquipmentInstance->Destroy();

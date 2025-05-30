@@ -11,6 +11,7 @@
 #include "NiagaraComponent.h"
 #include "Framework/ADGameInstance.h"
 #include "Subsystems/DataTableSubsystem.h"
+#include "Subsystems/SoundSubsystem.h"
 #include "DataRow/FADProjectileDataRow.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
@@ -37,8 +38,10 @@ AADSpearGunBullet::AADSpearGunBullet() :
 
 }
 
-void AADSpearGunBullet::M_SpawnFX_Implementation(UNiagaraSystem* Effect, const FVector& SpawnLocation)
+void AADSpearGunBullet::M_SpawnFX_Implementation(UNiagaraSystem* Effect, ESFX SFXType, const FVector& SpawnLocation)
 {
+    if(SFXType != ESFX::Max)
+        SoundSubsystem->PlayAt(SFXType, SpawnLocation);
     UNiagaraFunctionLibrary::SpawnSystemAtLocation(
         GetWorld(),
         Effect,
@@ -63,6 +66,7 @@ void AADSpearGunBullet::BeginPlay()
     if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
     {
         DTSubsystem = GI->GetSubsystem<UDataTableSubsystem>();
+        SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
     }
 
     FTimerHandle DestroyTimerHandle;
@@ -84,6 +88,7 @@ void AADSpearGunBullet::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AAct
         TrailEffect->Deactivate();
         if (OtherActor && OtherActor != this && OtherComp && OtherComp->GetOwner() != this)
         {
+            SoundSubsystem->PlayAt(ESFX::Sound5, SweepResult.Location);
             UGameplayStatics::ApplyPointDamage(
                 OtherActor,
                 Damage,
@@ -99,8 +104,6 @@ void AADSpearGunBullet::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AAct
             AttachToHitActor(OtherComp, SweepResult, true);
             
         }
-        LOGP(Warning, TEXT("It is action of server after this line"));
-        if (!HasAuthority()) return;
         LOGP(Warning, TEXT("SetProjectileMovementAttribute"));
         ProjectileMovementComp->StopMovementImmediately();
         ProjectileMovementComp->Deactivate();
@@ -124,6 +127,7 @@ void AADSpearGunBullet::AttachToHitActor(USceneComponent* HitComp, const FHitRes
             USkeletalMeshComponent* SkeletalMesh = Cast<USkeletalMeshComponent>(HitComp);
             if (HitBone != NAME_None && SkeletalMesh)
             {
+
                 FAttachmentTransformRules AttachRules(EAttachmentRule::KeepWorld, true);  // 상대 위치로 유지
                 AttachToComponent(SkeletalMesh, AttachRules, HitBone);
 
@@ -221,7 +225,6 @@ void AADSpearGunBullet::Burst()
                     UniqueActors.Add(HitActor);
 
                     LOGP(Warning, TEXT("Unique hit: %s"), *HitActor->GetName());
-
                     // 여기에 데미지 주기나 처리 로직 작성
                     UGameplayStatics::ApplyPointDamage(
                         HitActor,
@@ -233,7 +236,7 @@ void AADSpearGunBullet::Burst()
                         UDamageType::StaticClass()
                     );
                     if (HasAuthority())
-                        M_SpawnFX(BurstEffect, Hit.Location);
+                        M_SpawnFX(BurstEffect, ESFX::Sound4, Hit.Location);
                 }
             }
         }
@@ -264,9 +267,8 @@ void AADSpearGunBullet::Addict()
         if (PoisonEffect)
         {
         
-                M_SpawnFX(PoisonEffect, GetActorLocation());
+                M_SpawnFX(PoisonEffect, ESFX::Max, GetActorLocation());
         }
-
     }
 
 

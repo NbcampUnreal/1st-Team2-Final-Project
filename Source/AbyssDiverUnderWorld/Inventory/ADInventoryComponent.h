@@ -9,8 +9,10 @@
 
 
 enum class EItemType : uint8;
+enum class ESFX : uint8;
 class UToggleWidget;
 class UDataTableSubsystem;
+class USoundSubsystem;
 class AADUseItem;
 class UChargeBatteryWidget;
 enum class EChargeBatteryType;
@@ -58,6 +60,14 @@ public:
 	UFUNCTION(Server, Reliable)
 	void S_UseBatteryAmount(int8 Amount);
 	void S_UseBatteryAmount_Implementation(int8 Amount);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void M_PlaySound(ESFX SFXType);
+	void M_PlaySound_Implementation(ESFX SFXType);
+
+	UFUNCTION(Client, Reliable)
+	void C_InventoryPlaySound(ESFX SFXType);
+	void C_InventoryPlaySound_Implementation(ESFX SFXType);
 
 	UFUNCTION(Client, Reliable)
 	void C_SpawnItemEffect();
@@ -118,7 +128,6 @@ private:
 	void OnInventoryInfoUpdate(int32 MassInfo, int32 PriceInfo);
 	void RebuildIndexMap();
 	void OnUseCoolTimeEnd(); //아이템 사용 지연
-	void EquipmentChargeBatteryUpdateDelay();
 	void PrintLogInventoryData();
 
 #pragma endregion
@@ -153,6 +162,7 @@ private:
 	TMap<EItemType, TArray<int8>> InventoryIndexMapByType;
 	TArray<int8> InventorySizeByType;
 	TObjectPtr<UDataTableSubsystem> DataTableSubsystem; 
+	TObjectPtr<USoundSubsystem> SoundSubsystem;
 	TObjectPtr<UChargeBatteryWidget> ChargeBatteryWidget;
 
 	UPROPERTY(EditAnywhere, Category = "Harpoon")
