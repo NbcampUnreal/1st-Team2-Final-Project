@@ -14,6 +14,7 @@ class UDataTableSubsystem;
 class AADUseItem;
 class UChargeBatteryWidget;
 enum class EChargeBatteryType;
+class UUseStrategy;
 
 #define LOGINVEN(Verbosity, Format, ...) UE_LOG(InventoryLog, Verbosity, TEXT("%s(%s) %s"), ANSI_TO_TCHAR(__FUNCTION__), *FString::FromInt(__LINE__), *FString::Printf(Format, ##__VA_ARGS__));
 
@@ -58,6 +59,10 @@ public:
 	void S_UseBatteryAmount_Implementation(int8 Amount);
 
 	UFUNCTION(Client, Reliable)
+	void C_SpawnItemEffect();
+	void C_SpawnItemEffect_Implementation();
+
+	UFUNCTION(Client, Reliable)
 	void C_SetButtonActive(EChargeBatteryType ItemChargeBatteryType, bool bClientIsActive, int16 ClientAmount);
 	void C_SetButtonActive_Implementation(EChargeBatteryType ItemChargeBatteryType, bool bClientIsActive, int16 ClientAmount);
 
@@ -82,8 +87,6 @@ public:
 
 	UFUNCTION()
 	void OnRep_InventoryList();
-	UFUNCTION()
-	void OnRep_CurrentEquipmentSlotIndex();
 
 	int8 FindItemIndexByName(FName ItemName); //아이템 이름으로 InventoryList 인덱스 반환 (빈슬롯이 없으면 -1 반환)
 	int8 FindItemIndexByID(int8 ItemID); //빈슬롯이 없으면 - 1 반환
@@ -130,22 +133,21 @@ private:
 	int32 TotalWeight;
 	UPROPERTY(Replicated)
 	int32 TotalPrice;
-	int32 WeightMax;
+	UPROPERTY(Replicated)
+	int8 CurrentEquipmentSlotIndex;
+	UPROPERTY(Replicated)
+	TObjectPtr<AADUseItem> CurrentEquipmentInstance;
+	UPROPERTY()
+	TObjectPtr<UToggleWidget> ToggleWidgetInstance;
 
+	int32 WeightMax;
 	uint8 bInventoryWidgetShowed : 1;
 	uint8 bAlreadyCursorShowed : 1;
 	uint8 bCanUseItem : 1;
 	uint8 bIsWeapon : 1 = false;
 
 	TMap<EItemType, TArray<int8>> InventoryIndexMapByType;
-	UPROPERTY(ReplicatedUsing = OnRep_CurrentEquipmentSlotIndex)
-	int8 CurrentEquipmentSlotIndex;
-	UPROPERTY(Replicated)
-	TObjectPtr<AADUseItem> CurrentEquipmentInstance;
 	TArray<int8> InventorySizeByType;
-
-	UPROPERTY()
-	TObjectPtr<UToggleWidget> ToggleWidgetInstance;
 	TObjectPtr<UDataTableSubsystem> DataTableSubsystem; 
 	TObjectPtr<UChargeBatteryWidget> ChargeBatteryWidget;
 
