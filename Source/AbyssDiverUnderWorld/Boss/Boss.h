@@ -138,8 +138,14 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Collision")
 	TObjectPtr<UCapsuleComponent> AttackCollision;
+
+	UPROPERTY()
+	float ChaseAccumulatedTime = 0.0f;
 	
 protected:
+	UPROPERTY(EditDefaultsOnly, Category = "Boss|Stat")
+	uint8 bIsAttackInfinite : 1;
+	
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Camera")
 	TObjectPtr<UCameraControllerComponent> CameraControllerComponent;
 	

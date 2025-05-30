@@ -39,6 +39,7 @@ ABoss::ABoss()
 	DamagedLocation = FVector::ZeroVector;
 	CachedSpawnLocation = FVector::ZeroVector;
 	RotationInterpSpeed = 1.1f;
+	bIsAttackInfinite = true;
 	
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 
@@ -238,6 +239,7 @@ void ABoss::Attack()
 	
 	if (IsValid(NormalAttackAnimations[AttackType]))
 	{
+		ChaseAccumulatedTime = 0.f;
 		AnimInstance->OnMontageEnded.AddDynamic(this, &ABoss::OnAttackMontageEnded);
 		M_PlayAnimation(NormalAttackAnimations[AttackType]);
 	}
@@ -273,17 +275,19 @@ void ABoss::M_PlayAnimation_Implementation(class UAnimMontage* AnimMontage, floa
 void ABoss::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
 	AEnhancedBossAIController* EnhancedBossAIController = Cast<AEnhancedBossAIController>(GetController());
-	if (IsValid(EnhancedBossAIController))
+	if (!IsValid(EnhancedBossAIController) || !IsValid(AnimInstance)) return;
+
+	if (bIsAttackInfinite)
+	{
+		EnhancedBossAIController->GetBlackboardComponent()->SetValueAsBool("bHasAttacked", false);
+	}
+	else
 	{
 		EnhancedBossAIController->GetBlackboardComponent()->SetValueAsBool("bHasDetectedPlayer", false);
 		EnhancedBossAIController->SetBlackboardPerceptionType(EPerceptionType::Finish);	
 	}
-
-	// 자신 제거
-	if (IsValid(AnimInstance))
-	{
-		AnimInstance->OnMontageEnded.RemoveDynamic(this, &ABoss::OnAttackMontageEnded);
-	}
+	
+	AnimInstance->OnMontageEnded.RemoveDynamic(this, &ABoss::OnAttackMontageEnded);
 }
 
 void ABoss::OnMeshOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
@@ -333,6 +337,7 @@ void ABoss::OnBiteCollisionOverlapBegin(UPrimitiveComponent* OverlappedComp, AAc
 void ABoss::OnAttackCollisionOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
                                           UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
+	LOG(TEXT("OnAttackCollisionOverlapBegin"));
 	// 공격 대상이 플레이어가 아닌 경우 얼리 리턴
 	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(OtherActor);
 	if (!IsValid(Player)) return;
@@ -343,6 +348,7 @@ void ABoss::OnAttackCollisionOverlapBegin(UPrimitiveComponent* OverlappedComp, A
 void ABoss::OnAttackCollisionOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
 							UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
+	LOG(TEXT("OnAttackCollisionOverlapEnd"));
 	// 공격 대상이 플레이어가 아닌 경우 얼리 리턴
 	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(OtherActor);
 	if (!IsValid(Player)) return;
