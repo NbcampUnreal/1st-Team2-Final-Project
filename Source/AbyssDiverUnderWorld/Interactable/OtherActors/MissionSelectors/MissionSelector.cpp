@@ -2,6 +2,7 @@
 
 #include "AbyssDiverUnderWorld.h"
 #include "UI/MissionSelectWidget.h"
+#include "Subsystems/MissionSubsystem.h"
 
 AMissionSelector::AMissionSelector()
 {
@@ -36,6 +37,14 @@ void AMissionSelector::PostInitializeComponents()
 
 	MissionSelectWidget = CreateWidget<UMissionSelectWidget>(GetWorld(), MissionSelectWidgetClass);
 	ensure(MissionSelectWidget);
+
+	UMissionSubsystem* MissionSubsystem = GetGameInstance()->GetSubsystem<UMissionSubsystem>();
+	if (ensure(MissionSubsystem) == false)
+	{
+		return;
+	}
+
+	MissionSelectWidget->OnStartButtonClickedDelegate.BindUObject(MissionSubsystem, &UMissionSubsystem::ReceiveMissionDataFromUIData);
 }
 
 void AMissionSelector::BeginPlay()

@@ -4,6 +4,7 @@
 #include "Boss/ENum/EBossState.h"
 #include "Boss/Enum/EPerceptionType.h"
 #include "Character/UnderwaterCharacter.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 const FName UBTTask_PlayerChase::bIsPlayerHiddenKey = "bIsPlayerHidden";
 
@@ -11,10 +12,13 @@ UBTTask_PlayerChase::UBTTask_PlayerChase()
 {
 	NodeName = "Player Chase";
 	bNotifyTick = true;
+	bNotifyTaskFinished = true;
 	bCreateNodeInstance = false;
 	
 	MaxChaseTime = 20.f;
 	MinChaseTime = 10.0f;
+	ChaseDeceleration = 0.0f;
+	ChaseMoveSpeed = 900.0f;
 }
 
 EBTNodeResult::Type UBTTask_PlayerChase::ExecuteTask(UBehaviorTreeComponent& Comp, uint8* NodeMemory)
@@ -31,6 +35,8 @@ EBTNodeResult::Type UBTTask_PlayerChase::ExecuteTask(UBehaviorTreeComponent& Com
 	
 	TaskMemory->AccumulatedTime = 0.f;
 	TaskMemory->FinishTaskInterval = FMath::RandRange(MinChaseTime, MaxChaseTime);
+
+	TaskMemory->Boss->SetCharacterMovementSetting(ChaseDeceleration ,ChaseMoveSpeed);
 	
 	return EBTNodeResult::InProgress;
 }
@@ -56,9 +62,15 @@ void UBTTask_PlayerChase::TickTask(UBehaviorTreeComponent& Comp, uint8* NodeMemo
 			return;
 		}
 	}
-
-	// 추적하는 타겟 방향으로 보스 이동
-	TaskMemory->AIController->MoveToActorWithRadius();
+	
+	// 추적하는 타겟 방향으로 이동한다.
+	// 만약 추적하는 과정에서 타겟이 NavMesh를 벗어난다면 즉시 스폰 위치 주변으로 이동한다.
+	EPathFollowingRequestResult::Type Result = TaskMemory->AIController->MoveToActorWithRadius();
+	if (Result == EPathFollowingRequestResult::Failed)
+	{
+		TaskMemory->AIController->SetBlackboardPerceptionType(EPerceptionType::Finish);
+		return;
+	}
 
 	// 플레이어가 시야에서 사라진 경우
 	if (TaskMemory->AIController->GetIsDisappearPlayer())
@@ -81,4 +93,20 @@ void UBTTask_PlayerChase::TickTask(UBehaviorTreeComponent& Comp, uint8* NodeMemo
 	}
 
 	TaskMemory->AccumulatedTime += FMath::Clamp(DeltaSeconds, 0.0f, 0.1f);
+}
+
+void UBTTask_PlayerChase::OnTaskFinished(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory,
+	EBTNodeResult::Type TaskResult)
+{
+	Super::OnTaskFinished(OwnerComp, NodeMemory, TaskResult);
+
+	FBTPlayerChaseTaskMemory* TaskMemory = (FBTPlayerChaseTaskMemory*)NodeMemory;
+	if (!TaskMemory) return;
+
+	TaskMemory->AIController = Cast<AEnhancedBossAIController>(OwnerComp.GetAIOwner());
+	TaskMemory->Boss = Cast<ABoss>(TaskMemory->AIController->GetCharacter());
+	
+	if (!TaskMemory->Boss.IsValid() || !TaskMemory->AIController.IsValid()) return;
+	
+	TaskMemory->Boss->InitCharacterMovementSetting();
 }

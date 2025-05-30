@@ -37,7 +37,7 @@ class ABYSSDIVERUNDERWORLD_API UMissionBase : public UObject
 
 public:
 
-	void InitMission(const FMissionInitParams& Params);
+	virtual void InitMission(const FMissionInitParams& Params, const uint8& NewMissionIndex) PURE_VIRTUAL(UMissionBase::InitMission, );
 	virtual void BindDelegates(UObject* TargetForDelegate) PURE_VIRTUAL(UMissionBase::BindDelegates, );
 
 protected:
@@ -49,7 +49,6 @@ protected:
 #pragma region Variables
 
 protected:
-
 
 	EMissionType MissionType;
 
@@ -66,8 +65,14 @@ protected:
 #pragma region Getters / Setters
 
 public:
-	//FORCEINLINE const int32 GetGoalCount() 
+
+	FORCEINLINE const EMissionType& GetMissionType() const { return MissionType; }
+	FORCEINLINE const int32& GetGoalCount() const { return GoalCount; }
+	FORCEINLINE const int32& GetCurrentCount() const { return CurrentCount; }
 	FORCEINLINE const FString& GetMissionName() const { return MissionName; }
+	FORCEINLINE const FString& GetMissionDescription() const { return MissionDescription; }
+	
+	virtual const uint8 GetMissionIndex() const PURE_VIRTUAL(UMissionBase::GetMissionIndex, static uint8 Dummy = 0; return Dummy;);
 
 #pragma endregion
 

@@ -5,6 +5,14 @@
 #include "BehaviorTree/Tasks/BTTask_BlackboardBase.h"
 #include "BTTask_SerpmareDetected.generated.h"
 
+struct FBTSerpmareDetectedTaskMemory
+{
+	TWeakObjectPtr<class ASerpmare> Serpmare;
+	TWeakObjectPtr<class ABossAIController> AIController;
+	float AccumulatedAttackTime;
+	float AccumulatedDetectTime;
+};
+
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API UBTTask_SerpmareDetected : public UBTTask_BlackboardBase
 {
@@ -16,6 +24,7 @@ public:
 private:
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
 	virtual void TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;
+	virtual uint16 GetInstanceMemorySize() const override { return sizeof(FBTSerpmareDetectedTaskMemory); }
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Attack")
@@ -27,7 +36,4 @@ protected:
 	UPROPERTY(EditAnywhere)
 	uint8 bIsBigSerpmare : 1;
 	
-private:
-	float AccumulatedAttackTime;
-	float AccumulatedDetectTime;
 };

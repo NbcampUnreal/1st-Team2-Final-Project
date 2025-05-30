@@ -159,6 +159,11 @@ public:
 	void M_PlayMontageOnBothMesh(UAnimMontage* Montage, float InPlayRate = 1.0f, FName StartSectionName = NAME_None, FAnimSyncState NewAnimSyncState = FAnimSyncState());
 	void M_PlayMontageOnBothMesh_Implementation(UAnimMontage* Montage, float InPlayRate = 1.0f, FName StartSectionName = NAME_None, FAnimSyncState NewAnimSyncState = FAnimSyncState());
 
+	/** 1인칭 메시, 3인칭 메시 모두 애니메이션 몽타주를 정지한다. */
+	UFUNCTION(NetMulticast, Reliable)
+	void M_StopAllMontagesOnBothMesh(float BlendOut);
+	void M_StopAllMontagesOnBothMesh_Implementation(float BlendOut);
+
 	/** Anim State 변경 요청 */
 	void RequestChangeAnimSyncState(FAnimSyncState NewAnimSyncState);
 
@@ -473,6 +478,9 @@ private:
 	/** Global Gravity Z에 상관 없이 캐릭터가 설정할 Gravity Z 값. 음수값을 지정해야 한다. */
 	UPROPERTY(EditDefaultsOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float ExpectedGravityZ;
+
+	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	uint8 bCanUseEquipment : 1;
 	
 	/** 오리발이 생성될 왼발 소켓 이름 */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Flipper")
