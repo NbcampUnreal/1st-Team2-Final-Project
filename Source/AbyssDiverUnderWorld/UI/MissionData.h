@@ -1,6 +1,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
+
+#include "DataRow/MissionDataRow/MissionBaseRow.h"
+
 #include "MissionData.generated.h"
 
 USTRUCT(BlueprintType)
@@ -21,6 +24,10 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     FString UnlockHint;
+
+    EMissionType MissionType;
+
+    int32 MissionIndex;
 
     FORCEINLINE bool operator==(const FMissionData& Other) const
     {
