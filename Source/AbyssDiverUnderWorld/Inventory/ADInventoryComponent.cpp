@@ -128,7 +128,7 @@ void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType
 				Strategy->Use(GetOwner());
 				if (Item.Amount > 0)
 				{
-					C_InventoryPlaySound(ESFX::Sound2);
+					C_InventoryPlaySound(ESFX::Breath);
 					FTimerHandle SpawnEffectDelay;
 					GetWorld()->GetTimerManager().SetTimer(SpawnEffectDelay, this, &UADInventoryComponent::C_SpawnItemEffect, 1.5f, false);
 				}
@@ -224,7 +224,7 @@ void UADInventoryComponent::C_SpawnItemEffect_Implementation()
 		TEXT("/Game/_AbyssDiver/FX/VFX/Item/NS_RefillOxygen.NS_RefillOxygen")
 	);
 
-	SoundSubsystem->Play2D(ESFX::Sound1);
+	SoundSubsystem->Play2D(ESFX::RefillOxygen);
 	if (!OxygenRefillEffect) return;
 	if (APlayerController* PC = Cast<APlayerController>(Cast<AADPlayerState>(GetOwner())->GetPlayerController()))
 	{
@@ -446,7 +446,7 @@ void UADInventoryComponent::RemoveBySlotIndex(uint8 SlotIndex, EItemType ItemTyp
 
 		if (bIsDropAction)
 		{
-			M_PlaySound(ESFX::Sound3);
+			M_PlaySound(ESFX::DropItem);
 			DropItem(Item);
 		}
 		InventoryList.UpdateQuantity(InventoryIndex, INDEX_NONE);
@@ -681,7 +681,7 @@ void UADInventoryComponent::Equip(FItemData& ItemData, int8 SlotIndex)
 				return;
 			}
 
-			C_InventoryPlaySound(ESFX::Sound8);
+			C_InventoryPlaySound(ESFX::Equip);
 			SpawnedItem->SetItemInfo(ItemData, true);
 			CurrentEquipmentInstance = SpawnedItem;
 			LOGINVEN(Warning, TEXT("ItemToEquip Name: %s, Amount %d"), *ItemData.Name.ToString(), ItemData.Amount);
@@ -730,7 +730,7 @@ void UADInventoryComponent::UnEquip()
 			}
 		}
 	}
-	C_InventoryPlaySound(ESFX::Sound9);
+	C_InventoryPlaySound(ESFX::UnEquip);
 	LOGINVEN(Warning, TEXT("UnEquipItem %s"), *CurrentEquipmentInstance->ItemData.Name.ToString());
 	if(CurrentEquipmentInstance)
 		CurrentEquipmentInstance->Destroy();

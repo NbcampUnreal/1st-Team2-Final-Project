@@ -88,7 +88,7 @@ void AADSpearGunBullet::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AAct
         TrailEffect->Deactivate();
         if (OtherActor && OtherActor != this && OtherComp && OtherComp->GetOwner() != this)
         {
-            SoundSubsystem->PlayAt(ESFX::Sound5, SweepResult.Location);
+            SoundSubsystem->PlayAt(ESFX::Hit, SweepResult.Location);
             UGameplayStatics::ApplyPointDamage(
                 OtherActor,
                 Damage,
@@ -236,7 +236,7 @@ void AADSpearGunBullet::Burst()
                         UDamageType::StaticClass()
                     );
                     if (HasAuthority())
-                        M_SpawnFX(BurstEffect, ESFX::Sound4, Hit.Location);
+                        M_SpawnFX(BurstEffect, ESFX::Explosion, Hit.Location);
                 }
             }
         }

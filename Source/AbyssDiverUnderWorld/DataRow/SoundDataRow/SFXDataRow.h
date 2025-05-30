@@ -9,15 +9,15 @@ UENUM(BlueprintType)
 enum class ESFX : uint8
 {
 	Sound0,
-	Sound1,
-	Sound2,
-	Sound3,
-	Sound4,
-	Sound5,
-	Sound6,
-	Sound7,
-	Sound8,
-	Sound9,
+	RefillOxygen,
+	Breath,
+	DropItem,
+	Explosion,
+	Hit,
+	NVOn,
+	NVOff,
+	Equip,
+	UnEquip,
 	Max UMETA(Hidden)
 };
 
