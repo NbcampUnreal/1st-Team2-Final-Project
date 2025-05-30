@@ -100,7 +100,7 @@ void UEquipUseComponent::BeginPlay()
 				NightVisionInstance = CreateWidget<UADNightVisionGoggle>(PC, NightVisionClass);
 				if (NightVisionInstance)
 				{
-					NightVisionInstance->AddToViewport();
+					NightVisionInstance->AddToViewport(-100);
 					NightVisionInstance->SetVisibility(ESlateVisibility::Hidden);
 				}
 			}
@@ -110,6 +110,7 @@ void UEquipUseComponent::BeginPlay()
 				if (ChargeBatteryInstance)
 				{
 					ChargeBatteryInstance->AddToViewport();
+					ChargeBatteryInstance->SetIsFocusable(false);
 					ChargeBatteryInstance->SetVisibility(ESlateVisibility::Hidden);
 				}
 			}
