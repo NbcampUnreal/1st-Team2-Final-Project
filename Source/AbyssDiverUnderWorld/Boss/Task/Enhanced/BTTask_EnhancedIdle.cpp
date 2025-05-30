@@ -10,8 +10,8 @@ UBTTask_EnhancedIdle::UBTTask_EnhancedIdle()
 	bNotifyTick = true;
 	bCreateNodeInstance = false;
 	
-	IdleFinishMaxInterval = 5.0f;
-	IdleFinishMinInterval = 2.0f;
+	IdleFinishMaxInterval = 2.0f;
+	IdleFinishMinInterval = 0.5f;
 }
 
 EBTNodeResult::Type UBTTask_EnhancedIdle::ExecuteTask(UBehaviorTreeComponent& Comp, uint8* NodeMemory)
