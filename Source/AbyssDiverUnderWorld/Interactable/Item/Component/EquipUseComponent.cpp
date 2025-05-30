@@ -1,4 +1,4 @@
-﻿#include "Interactable/Item/Component/EquipUseComponent.h"
+#include "Interactable/Item/Component/EquipUseComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "GameFrameWork/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -851,11 +851,11 @@ void UEquipUseComponent::ConfigureProjectile(AADSpearGunBullet* Proj, const FVec
 	}
 	else if (CurrentItemData->Name == SpearGunTypeNames[1])
 	{
-		Proj->SetBulletType(ESpearGunType::Bomb);
+		Proj->SetBulletType(ESpearGunType::Poison);
 	}
 	else if (CurrentItemData->Name == SpearGunTypeNames[2])
 	{
-		Proj->SetBulletType(ESpearGunType::Poison);
+		Proj->SetBulletType(ESpearGunType::Bomb);
 	}
 
 	UProjectileMovementComponent* ProjectileMovementComp = Proj->GetProjectileMovementComp();
