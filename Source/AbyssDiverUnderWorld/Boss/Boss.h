@@ -25,6 +25,8 @@ protected:
 
 #pragma region Method
 public:
+	void SetCharacterMovementSetting(const float& InBrakingDecelerationSwimming, const float& InMaxSwimSpeed);
+	void InitCharacterMovementSetting();
 	FVector GetNextPatrolPoint();
 	void SetBossState(EBossState State);
 	void LaunchPlayer(AUnderwaterCharacter* Player, const float& Power) const;
@@ -174,6 +176,7 @@ private:
 	uint8 bIsBiteAttackSuccess : 1;
 	uint8 bIsAttackCollisionOverlappedPlayer : 1;
 	FVector CachedSpawnLocation;
+	float OriginDeceleration;
 	
 #pragma endregion
 
