@@ -87,8 +87,6 @@ public:
 
 	UFUNCTION()
 	void OnRep_InventoryList();
-	UFUNCTION()
-	void OnRep_CurrentEquipmentSlotIndex();
 
 	int8 FindItemIndexByName(FName ItemName); //아이템 이름으로 InventoryList 인덱스 반환 (빈슬롯이 없으면 -1 반환)
 	int8 FindItemIndexByID(int8 ItemID); //빈슬롯이 없으면 - 1 반환
@@ -135,7 +133,7 @@ private:
 	int32 TotalWeight;
 	UPROPERTY(Replicated)
 	int32 TotalPrice;
-	UPROPERTY(ReplicatedUsing = OnRep_CurrentEquipmentSlotIndex)
+	UPROPERTY(Replicated)
 	int8 CurrentEquipmentSlotIndex;
 	UPROPERTY(Replicated)
 	TObjectPtr<AADUseItem> CurrentEquipmentInstance;

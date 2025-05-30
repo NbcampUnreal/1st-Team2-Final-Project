@@ -125,7 +125,10 @@ void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType
 			{
 				Strategy->Use(GetOwner());
 				if (Item.Amount > 0)
-					C_SpawnItemEffect();
+				{
+					FTimerHandle SpawnEffectDelay;
+					GetWorld()->GetTimerManager().SetTimer(SpawnEffectDelay, this, &UADInventoryComponent::C_SpawnItemEffect, 1.0f, false);
+				}
 				LOGINVEN(Warning, TEXT("Use Consumable Item %s"), *FoundRow->Name.ToString());
 			}
 		}
@@ -213,7 +216,7 @@ void UADInventoryComponent::C_SpawnItemEffect_Implementation()
 		FRotator CamRotation;
 
 		PC->GetPlayerViewPoint(CamLocation, CamRotation);
-		FVector SpawnLocation = CamLocation + CamRotation.Vector() * 30.f - FVector(0, 0, 20);
+		FVector SpawnLocation = CamLocation + CamRotation.Vector() * 5.f - FVector(0, 0, 10);
 		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 			GetWorld(),
 			OxygenRefillEffect,
