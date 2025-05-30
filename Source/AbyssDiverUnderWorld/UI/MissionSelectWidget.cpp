@@ -23,7 +23,7 @@ void UMissionSelectWidget::NativeConstruct()
         PC->bShowMouseCursor = true;
     }
 
-    if (Button_Start)
+    if (Button_Start && Button_Start->OnClicked.IsBound() == false)
     {
         Button_Start->OnClicked.AddDynamic(this, &UMissionSelectWidget::OnStartButtonClicked);
         Button_Start->SetIsEnabled(true); // 항상 활성화
@@ -37,6 +37,7 @@ void UMissionSelectWidget::NativeConstruct()
         {TEXT("???"), 3, false, TEXT("얕은 해류 클리어 시 해금")}
     };*/
 
+    ScrollBox_MissionList->ClearChildren();
     const TSet<FMissionData>& Missions = GetGameInstance()->GetSubsystem<UMissionSubsystem>()->GetMissionDataForUI();
 
     for (const FMissionData& Mission : Missions)
@@ -100,6 +101,8 @@ void UMissionSelectWidget::OnMissionClicked(const FMissionData& Data, bool bSele
 void UMissionSelectWidget::OnStartButtonClicked()
 {
     RemoveFromParent();  // 👉 미션 선택 UI 닫기
+
+    OnStartButtonClickedDelegate.ExecuteIfBound(SelectedMissions);
 
     if (APlayerController* PC = GetOwningPlayer())
     {

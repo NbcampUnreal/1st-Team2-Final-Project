@@ -3,6 +3,12 @@
 #include "AbyssDiverUnderWorld.h"
 #include "Framework/ADGameInstance.h"
 
+#include "Missions/AggroTriggerMission.h"
+#include "Missions/InteractionMission.h"
+#include "Missions/ItemCollectionMission.h"
+#include "Missions/ItemUseMission.h"
+#include "Missions/KillMonsterMission.h"
+
 #include "Kismet/GameplayStatics.h"
 
 void UMissionSubsystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -55,7 +61,7 @@ void UMissionSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 			return;
 		}
 
-		MakeAndAddMissionDataForUI((FMissionBaseRow*)AggroTriggerMissionData[i]);
+		MakeAndAddMissionDataForUI((FMissionBaseRow*)AggroTriggerMissionData[i], i);
 	}
 
 	GI->InteractionMissionTable->GetAllRows(TEXT("InteractionMission"), InteractionMissionData);
@@ -73,7 +79,7 @@ void UMissionSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 			return;
 		}
 
-		MakeAndAddMissionDataForUI((FMissionBaseRow*)InteractionMissionData[i]);
+		MakeAndAddMissionDataForUI((FMissionBaseRow*)InteractionMissionData[i], i);
 
 	}
 	GI->ItemCollectMissionTable->GetAllRows(TEXT("ItemCollectMission"), ItemCollectMissionData);
@@ -91,7 +97,7 @@ void UMissionSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 			return;
 		}
 
-		MakeAndAddMissionDataForUI((FMissionBaseRow*)ItemCollectMissionData[i]);
+		MakeAndAddMissionDataForUI((FMissionBaseRow*)ItemCollectMissionData[i], i);
 	}
 
 	GI->ItemUseMissionTable->GetAllRows(TEXT("ItemUseMission"), ItemUseMissionData);
@@ -109,7 +115,7 @@ void UMissionSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 			return;
 		}
 
-		MakeAndAddMissionDataForUI((FMissionBaseRow*)ItemUseMissionData[i]);
+		MakeAndAddMissionDataForUI((FMissionBaseRow*)ItemUseMissionData[i], i);
 	}
 
 	GI->KillMonsterMissionTable->GetAllRows(TEXT("KillMonsterMission"), KillMonsterMissionData);
@@ -127,13 +133,13 @@ void UMissionSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 			return;
 		}
 	
-		MakeAndAddMissionDataForUI((FMissionBaseRow*)KillMonsterMissionData[i]);
+		MakeAndAddMissionDataForUI((FMissionBaseRow*)KillMonsterMissionData[i], i);
 	}
 }
 
 void UMissionSubsystem::AddToSelectedMissions(const EAggroTriggerMission& Mission)
 {
-	if (AddToSelectedMissionInternal(EMissionType::AggroTrigger, (uint8)Mission) == false)
+	if (AddToSelectedMissionFromIndex(EMissionType::AggroTrigger, (uint8)Mission) == false)
 	{
 		return;
 	}
@@ -144,7 +150,7 @@ void UMissionSubsystem::AddToSelectedMissions(const EAggroTriggerMission& Missio
 
 void UMissionSubsystem::AddToSelectedMissions(const EInteractionMission& Mission)
 {
-	if (AddToSelectedMissionInternal(EMissionType::Interaction, (uint8)Mission) == false) 
+	if (AddToSelectedMissionFromIndex(EMissionType::Interaction, (uint8)Mission) == false) 
 	{
 		return;
 	}
@@ -155,7 +161,7 @@ void UMissionSubsystem::AddToSelectedMissions(const EInteractionMission& Mission
 
 void UMissionSubsystem::AddToSelectedMissions(const EItemCollectMission& Mission)
 {
-	if(AddToSelectedMissionInternal(EMissionType::ItemCollection, (uint8)Mission) == false)
+	if(AddToSelectedMissionFromIndex(EMissionType::ItemCollection, (uint8)Mission) == false)
 	{
 		return;
 	}
@@ -166,7 +172,7 @@ void UMissionSubsystem::AddToSelectedMissions(const EItemCollectMission& Mission
 
 void UMissionSubsystem::AddToSelectedMissions(const EItemUseMission& Mission)
 {
-	if(AddToSelectedMissionInternal(EMissionType::ItemUse, (uint8)Mission) == false)
+	if(AddToSelectedMissionFromIndex(EMissionType::ItemUse, (uint8)Mission) == false)
 	{
 		return;
 	}
@@ -177,13 +183,29 @@ void UMissionSubsystem::AddToSelectedMissions(const EItemUseMission& Mission)
 
 void UMissionSubsystem::AddToSelectedMissions(const EKillMonsterMission& Mission)
 {
-	if(AddToSelectedMissionInternal(EMissionType::KillMonster, (uint8)Mission) == false)
+	if(AddToSelectedMissionFromIndex(EMissionType::KillMonster, (uint8)Mission) == false)
 	{
 		return;
 	}
 
 	const FKillMonsterMissionRow* Data = GetKillMonsterMissionData(Mission);
 	SelecedMissionNames.Add(Data->MissionName);
+}
+
+bool UMissionSubsystem::AddToSelectedMissionFromIndex(const EMissionType& MissionType, const uint8& MissionIndex)
+{
+	if (SelectedMissions.Num() <= (int32)MissionType)
+	{
+		LOGV(Error, TEXT("Invalid MissionType : %d"), MissionType);
+		return false;
+	}
+	if (IsAlreadySelected(MissionType, MissionIndex))
+	{
+		return false;
+	}
+
+	SelectedMissions[MissionType].Add(MissionIndex);
+	return true;
 }
 
 void UMissionSubsystem::RemoveFromSelectedMissions(const EAggroTriggerMission& Mission)
@@ -266,29 +288,78 @@ void UMissionSubsystem::UnlockMission(const EKillMonsterMission& Mission)
 	UnlockMissionInternal((FMissionBaseRow*)KillMonsterMissionData[int32(Mission)]);
 }
 
-bool UMissionSubsystem::AddToSelectedMissionInternal(const EMissionType& MissionType, const uint8& MissionIndex)
+void UMissionSubsystem::ClearSelectedMissions(const int32& SlackCount)
 {
-	if (SelectedMissions.Num() <= (int32)MissionType)
-	{
-		LOGV(Error, TEXT("Invalid MissionType : %d"), MissionType);
-		return false;
-	}
-	if (IsAlreadySelected(MissionType, MissionIndex))
-	{
-		return false;
-	}
-
-	SelectedMissions[MissionType].Add(MissionIndex);
-	return true;
+	SelectedMissions.Empty(SlackCount);
 }
 
-void UMissionSubsystem::MakeAndAddMissionDataForUI(const FMissionBaseRow* MissionBaseData)
+void UMissionSubsystem::ReceiveMissionDataFromUIData(const TArray<FMissionData>& MissionsFromUI)
+{
+	Missions.Empty(MissionsFromUI.Num());
+
+	for (const FMissionData& MissionFromUI : MissionsFromUI)
+	{
+		UMissionBase* NewMission = nullptr;
+		FMissionBaseRow* MissionData = nullptr;
+
+		switch (MissionFromUI.MissionType)
+		{
+		case EMissionType::AggroTrigger:
+			NewMission = CastChecked<UMissionBase>(NewObject<UAggroTriggerMission>(this));
+			// NewMission->BindDelegates 해야함.
+			MissionData = (FMissionBaseRow*)GetAggroTriggerMissionData(EAggroTriggerMission(MissionFromUI.MissionIndex));
+			break;
+		case EMissionType::KillMonster:
+			NewMission = CastChecked<UMissionBase>(NewObject<UKillMonsterMission>(this));
+			MissionData = (FMissionBaseRow*)GetKillMonsterMissionData(EKillMonsterMission(MissionFromUI.MissionIndex));
+			break;
+		case EMissionType::Interaction:
+			NewMission = CastChecked<UMissionBase>(NewObject<UInteractionMission>(this));
+			MissionData = (FMissionBaseRow*)GetInteractionMissionData(EInteractionMission(MissionFromUI.MissionIndex));
+			break;
+		case EMissionType::ItemCollection:
+			NewMission = CastChecked<UMissionBase>(NewObject<UItemCollectionMission>(this));
+			MissionData = (FMissionBaseRow*)GetItemCollectMissionData(EItemCollectMission(MissionFromUI.MissionIndex));
+			break;
+		case EMissionType::ItemUse:
+			NewMission = CastChecked<UMissionBase>(NewObject<UItemUseMission>(this));
+			MissionData = (FMissionBaseRow*)GetItemUseMissionData(EItemUseMission(MissionFromUI.MissionIndex));
+			break;
+		default:
+			check(false);
+			return;
+		}
+
+		FMissionInitParams Params
+		(
+			MissionData->MissionType,
+			MissionData->GoalCount,
+			MissionData->MissionName,
+			MissionData->MissionDescription,
+			MissionData->ExtraValues
+		);
+
+		NewMission->InitMission(Params, MissionFromUI.MissionIndex);
+		Missions.Add(NewMission);
+	}
+}
+
+void UMissionSubsystem::MakeMissions(const int32& MissionCount)
+{
+	
+
+}
+
+void UMissionSubsystem::MakeAndAddMissionDataForUI(const FMissionBaseRow* MissionBaseData, const uint8& MissionIndex)
 {
 	FMissionData NewData;
 	NewData.Title = MissionBaseData->MissionName;
 	NewData.UnlockHint = MissionBaseData->UnlockHint;
 	NewData.Stage = MissionBaseData->Stage;
 	NewData.bIsUnlocked = (MissionBaseData->bIsLocked == false);
+	NewData.MissionType = MissionBaseData->MissionType;
+	NewData.MissionIndex = MissionIndex;
+
 	MissionDataForUI.Add(NewData);
 }
 
@@ -342,6 +413,11 @@ const TSet<FString>& UMissionSubsystem::GetAllSelectedMissionNames() const
 const TSet<FMissionData>& UMissionSubsystem::GetMissionDataForUI() const
 {
 	return MissionDataForUI;
+}
+
+const TArray<TObjectPtr<UMissionBase>>& UMissionSubsystem::GetActivatedMissions() const
+{
+	return Missions;
 }
 
 const FAggroTriggerMissionRow* UMissionSubsystem::GetAggroTriggerMissionData(const EAggroTriggerMission& Mission) const

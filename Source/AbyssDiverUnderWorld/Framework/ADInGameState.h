@@ -2,12 +2,91 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameState.h"
+
+#include "Net/Serialization/FastArraySerializer.h"
+
 #include "ADInGameState.generated.h"
 
 enum class EMapName : uint8;
+enum class EMissionType : uint8;
+
 class AADDroneSeller;
 
+struct FActivatedMissionInfoList;
+
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnGameStatePropertyChangedDelegate, int32 /*Changed Value*/);
+
+#pragma region FastArraySerializer
+
+USTRUCT(BlueprintType)
+struct FActivatedMissionInfo : public FFastArraySerializerItem
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	EMissionType MissionType;
+
+	UPROPERTY()
+	uint8 MissionIndex;
+
+	UPROPERTY()
+	uint8 bIsCompleted : 1;
+
+	UPROPERTY()
+	uint8 CurrentProgress;
+
+	void PostReplicatedAdd(const FActivatedMissionInfoList& InArraySerializer);
+
+	void PostReplicatedChange(const FActivatedMissionInfoList& InArraySerializer);
+
+	void PreReplicatedRemove(const FActivatedMissionInfoList& InArraySerializer);
+
+	bool operator==(const FActivatedMissionInfo& Other) const
+	{
+		return MissionType == Other.MissionType && MissionIndex == Other.MissionIndex;
+	}
+};
+
+USTRUCT(BlueprintType)
+struct FActivatedMissionInfoList : public FFastArraySerializer
+{
+	GENERATED_BODY()
+
+public:
+
+	bool NetDeltaSerialize(FNetDeltaSerializeInfo& DeltaParams);
+
+	void Add(const EMissionType& MissionType, const uint8& MissionIndex);
+	void Remove(const EMissionType& MissionType, const uint8& MissionIndex);
+	void ModifyProgress(const EMissionType& MissionType, const uint8& MissionIndex, const uint8& NewProgress);
+	void AddOrModity(const EMissionType& MissionType, const uint8& MissionIndex, const uint8& NewProgress);
+
+	//// 인덱스 반환, 없으면 INDEX_NONE 반환
+	int32 Contains(const EMissionType& MissionType, const uint8& MissionIndex);
+	
+	void Clear(const int32 SlackCount = 0);
+
+public:
+
+	UPROPERTY()
+	TArray<FActivatedMissionInfo> MissionInfoList;
+
+public:
+
+	// 유효하지 않으면 INDEX_NONE 반환
+	//uint8 GetId(uint8 InIndex) const;
+};
+
+template<>
+struct TStructOpsTypeTraits<FActivatedMissionInfoList> : public TStructOpsTypeTraitsBase2<FActivatedMissionInfoList>
+{
+	enum
+	{
+		WithNetDeltaSerializer = true,
+	};
+};
+
+#pragma endregion
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADInGameState : public AGameState
@@ -79,6 +158,9 @@ protected:
 
 	UPROPERTY(ReplicatedUsing = OnRep_CurrentDroneSeller)
 	TObjectPtr<AADDroneSeller> CurrentDroneSeller;
+
+	UPROPERTY(Replicated)
+	FActivatedMissionInfoList ActivatedMissionList;
 
 private:
 
