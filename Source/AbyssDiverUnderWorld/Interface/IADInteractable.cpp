@@ -22,3 +22,8 @@ float IIADInteractable::GetHoldDuration_Implementation() const
 {
     return 0.0f;
 }
+
+FString IIADInteractable::GetInteractionDescription() const
+{
+    return TEXT("None");
+}

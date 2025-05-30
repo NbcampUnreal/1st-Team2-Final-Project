@@ -70,9 +70,9 @@ bool AMissionSelector::IsHoldMode() const
 	return false;
 }
 
-EInteractionType AMissionSelector::GetInteractionType() const
+FString AMissionSelector::GetInteractionDescription() const
 {	
 	// 임시
-	return EInteractionType::GiveOre;
+	return TEXT("Select Mission!");
 }
 

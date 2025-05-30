@@ -264,8 +264,8 @@ float AADOreRock::GetHoldDuration_Implementation() const
 	return HoldDuration;
 }
 
-EInteractionType AADOreRock::GetInteractionType() const
+FString AADOreRock::GetInteractionDescription() const
 {
-	return EInteractionType::Mining;
+	return TEXT("Mine!");
 }
 
