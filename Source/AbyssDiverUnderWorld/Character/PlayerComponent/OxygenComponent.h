@@ -42,6 +42,13 @@ struct FOxygenState
 // Require System
 // 현재 수심을 확인할 수 있는 System이 필요하다.
 
+/**
+ * 산소량을 관리하기 위한 컴포넌트이다.
+ * OxygenSystemEnabled : 산소 시스템이 활성화되면 산소를 소모하고 회복할 수 있다. 비활성화 시는 산소를 소모하지 않고 회복도 되지 않는다.
+ * 사망과 같은 상태에서 비활성화 된다.
+ * ShouldConsumeOxygen : 수중에서 산소를 소모할지 여부. 지상에서는 소모하지 않는다. 회복은 가능한 상황이다.
+ * 인게임에서 잠수함으로 이동했을 때 설정한다.
+ */
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class ABYSSDIVERUNDERWORLD_API UOxygenComponent : public UActorComponent
 {
@@ -111,7 +118,8 @@ private:
 	/** 산소 소모 여부 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stat", meta=(AllowPrivateAccess = "true"))
 	uint8 bShouldConsumeOxygen : 1;
-	
+
+	/** 현재 산소 상태, MaxOxygenLevel, OxygenLevel을 포함한다. */
 	UPROPERTY(ReplicatedUsing="OnRep_OxygenStatechanged", EditAnywhere, BlueprintReadOnly, Category = "Stat", meta = (AllowPrivateAccess = "true"))
 	FOxygenState OxygenState;
 
@@ -127,6 +135,8 @@ private:
 #pragma region Getter Setter
 
 public:
+
+	/** 산소 시스템 활성화 설정, 비활성화 되면 산소 회복, 소모를 정지한다. 지상 이동, 잠수함 등에서 사용하기 위함 */
 	void SetOxygenSystemEnabled(bool bNewOxygenSystemEnabled);
 	
 	/** 산소 시스템 활성화 여부, 비활성화 되면 산소 회복, 소모를 정지한다. */

@@ -77,7 +77,8 @@ void ABoss::BeginPlay()
 	AttackCollision->OnComponentBeginOverlap.AddDynamic(this, &ABoss::OnAttackCollisionOverlapBegin);
 	AttackCollision->OnComponentEndOverlap.AddDynamic(this, &ABoss::OnAttackCollisionOverlapEnd);
 
-	GetCharacterMovement()->MaxFlySpeed = StatComponent->GetMoveSpeed();
+	GetCharacterMovement()->MaxSwimSpeed = StatComponent->GetMoveSpeed();
+	OriginDeceleration = GetCharacterMovement()->BrakingDecelerationSwimming;
 }
 
 void ABoss::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
@@ -85,6 +86,24 @@ void ABoss::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifet
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(ABoss, BossState);
+}
+
+void ABoss::SetCharacterMovementSetting(const float& InBrakingDecelerationSwimming, const float& InMaxSwimSpeed)
+{
+	if (!IsValid(GetCharacterMovement())) return;
+
+	if (InBrakingDecelerationSwimming < 0.0f || InMaxSwimSpeed <= 0.0f) return;
+
+	GetCharacterMovement()->BrakingDecelerationSwimming = InBrakingDecelerationSwimming;
+	GetCharacterMovement()->MaxSwimSpeed = InMaxSwimSpeed;
+}
+
+void ABoss::InitCharacterMovementSetting()
+{
+	if (!IsValid(GetCharacterMovement())) return;
+	
+	GetCharacterMovement()->BrakingDecelerationSwimming = OriginDeceleration;
+	GetCharacterMovement()->MaxSwimSpeed = StatComponent->GetMoveSpeed();
 }
 
 void ABoss::SetBossState(EBossState State)

@@ -127,7 +127,7 @@ bool AADDroneSeller::IsHoldMode() const
 	return bIsHold;
 }
 
-EInteractionType AADDroneSeller::GetInteractionType() const
+FString AADDroneSeller::GetInteractionDescription() const
 {
-	return EInteractionType::GiveOre;
+	return TEXT("Submit Ore!");
 }

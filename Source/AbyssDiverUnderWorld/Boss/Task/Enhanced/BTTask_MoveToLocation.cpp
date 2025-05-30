@@ -3,6 +3,7 @@
 #include "NavigationSystem.h"
 #include "Boss/Boss.h"
 #include "Boss/ENum/EBossState.h"
+#include "Boss/Enum/EPerceptionType.h"
 
 // ----- 기능 -----
 // 1. Task에 할당한 Blackboard Key를 FName으로 가져온다.
@@ -39,7 +40,7 @@ EBTNodeResult::Type UBTTask_MoveToLocation::ExecuteTask(UBehaviorTreeComponent& 
 	
 	if (!TaskMemory->Boss.IsValid() || !TaskMemory->AIController.IsValid()) return EBTNodeResult::Failed;
 
-	// 감속을 멈추고 이동 상태로 전이하여 ABP에서 이동 상태임을 인지
+	// 이동 상태로 전이하여 ABP에서 이동 상태임을 인지
 	TaskMemory->Boss->SetBossState(EBossState::Move);
 	
 	// Task에 할당된 블랙보드 키 값을 추출
@@ -53,37 +54,7 @@ EBTNodeResult::Type UBTTask_MoveToLocation::ExecuteTask(UBehaviorTreeComponent& 
 	TaskMemory->FinishTaskInterval = FMath::RandRange(MinFinishTaskInterval, MaxFinishTaskInterval);
 	TaskMemory->AccumulatedTime = 0.f;
 
-	const EPathFollowingRequestResult::Type Result = TaskMemory->AIController->MoveToLocationWithRadius(TaskMemory->TargetLocation);
-	
-	// AI가 NavMesh를 벗어난 상태인 경우
-	if (Result == EPathFollowingRequestResult::AlreadyAtGoal)
-	{
-		TaskMemory->bShouldMoveToNearestPoint = true;
-	}
-	
-	// AI가 지형에 막힌 경우
-	if (TaskMemory->bHasBeenTriggeredMoveToLocation && FVector::Dist(TaskMemory->TargetLocation, TaskMemory->CachedLocation) <= 1.f)
-	{
-		TaskMemory->bShouldMoveToNearestPoint = true;
-	}
-
-	// AI가 지형에 막힌 상태이거나 NavMesh를 벗어난 상태인 경우
-	if (TaskMemory->bShouldMoveToNearestPoint)
-	{
-		LOG(TEXT("AI %s is Stuck ! Should Move AI to Nearest NavMesh"), *TaskMemory->AIController->GetName());
-
-		return EBTNodeResult::Failed;
-	}
-
-	// 이동 요청이 성공적으로 처리된 경우
-	if (Result == EPathFollowingRequestResult::RequestSuccessful)
-	{
-		LOG(TEXT("AI Move Request Successful"));
-		return EBTNodeResult::InProgress;
-	}
-
-	// 위의 요청들이 False인 경우 예외 상황이므로 Fail 처리
-	return EBTNodeResult::Failed;
+	return EBTNodeResult::InProgress;
 }
 
 void UBTTask_MoveToLocation::TickTask(UBehaviorTreeComponent& Comp, uint8* NodeMemory, float DeltaSeconds)
@@ -97,6 +68,18 @@ void UBTTask_MoveToLocation::TickTask(UBehaviorTreeComponent& Comp, uint8* NodeM
 	TaskMemory->Boss = Cast<ABoss>(TaskMemory->AIController->GetCharacter());
 	
 	if (!TaskMemory->Boss.IsValid() || !TaskMemory->AIController.IsValid()) return;
+
+	// ExecuteTask에서 MoveTo를 1회성으로 호출을 해도 PathFollowingComponent 내에서 Tick마다 경로를 탐색하기 때문에
+	// Tick 마다 MoveTo를 호출해도 크게 비용의 차이가 발생하지 않는다.
+	// Tick마다 MoveTo를 호출하면 매 경로를 탐색할 때마다 현재 경로가 잘못된 경로인지 확인이 가능하므로 NavMesh 버그를 최소화할 수 있다.
+	// Tick마다 경로를 탐색하기 때문에 움직임이 Tick마다 교정이 됨으로 1회성 MoveTo에 비해 움직임이 자연스럽다.
+	const EPathFollowingRequestResult::Type Result = TaskMemory->AIController->MoveToLocationWithRadius(TaskMemory->TargetLocation);
+	if (Result == EPathFollowingRequestResult::Failed)
+	{
+		LOG(TEXT("MoveToLocation Failed, Trying to Move to Cached Location"));
+		TaskMemory->TargetLocation = TaskMemory->Boss->GetCachedSpawnLocation();
+		return;
+	}
 	
 	// 해당 지점에 도착한 경우 테스크 종료
 	if (TaskMemory->AIController->GetPathFollowingComponent()->GetStatus() == EPathFollowingStatus::Idle)

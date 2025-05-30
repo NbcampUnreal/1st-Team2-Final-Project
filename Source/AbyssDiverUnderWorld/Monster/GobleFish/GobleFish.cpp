@@ -5,6 +5,7 @@
 #include "Monster/GobleFish/GFProjectile.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "AIController.h"
+#include "AbyssDiverUnderWorld.h"
 
 AGobleFish::AGobleFish()
 {
@@ -36,6 +37,7 @@ void AGobleFish::FireProjectile()
 
 	if (Projectile)
 	{
+		LOG(TEXT("Projectile Spawn Success!!!"))
 		Projectile->FireDirection(ProjectileDirection);
 	}
 }

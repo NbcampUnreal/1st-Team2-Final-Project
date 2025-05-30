@@ -50,7 +50,6 @@ void AEnhancedBossAIController::InitVariables()
 {
 	// 타겟 플레이어 망각
 	Boss->InitTarget();
-	Boss->InitCachedTarget();
 
 	// 타겟 사라짐 변수 초기화
 	bIsDisappearPlayer = false;

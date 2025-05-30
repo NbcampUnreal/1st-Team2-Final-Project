@@ -1,11 +1,11 @@
 #include "UI/InteractionDescriptionWidget.h"
 #include "Components/TextBlock.h"
 
-void UInteractionDescriptionWidget::HandleFocus(AActor* Actor, EInteractionType Type)
+void UInteractionDescriptionWidget::HandleFocus(AActor* Actor, FString Description)
 {
     if (TextAction)
     {
-        FText Label = UEnum::GetDisplayValueAsText(Type);
+        FText Label = FText::FromString(Description);
         TextAction->SetText(Label);
     }
 
