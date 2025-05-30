@@ -9,7 +9,7 @@
 UBTService_CheckTargetDistance::UBTService_CheckTargetDistance()
 {
 	NodeName = TEXT("Check Target Distance");
-
+	bNotifyTick = true;
 	// Tick Interval (Default : 0.5s)
 	Interval = 0.5f;
 	RandomDeviation = 0.1f;

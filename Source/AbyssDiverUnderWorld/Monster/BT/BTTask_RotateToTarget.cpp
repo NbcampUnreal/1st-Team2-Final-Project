@@ -19,7 +19,7 @@ EBTNodeResult::Type UBTTask_RotateToTarget::ExecuteTask(UBehaviorTreeComponent& 
 	ACharacter* AIPawn = Cast<ACharacter>(AIController->GetPawn());
 	if (!AIPawn) return EBTNodeResult::Failed;
 
-	CachedTargetActor = Cast<AActor>(AIController->GetBlackboardComponent()->GetValueAsObject("TargetActor"));
+	CachedTargetActor = Cast<AActor>(AIController->GetBlackboardComponent()->GetValueAsObject("TargetActorTest"));
 	if (!CachedTargetActor || !IsValid(CachedTargetActor)) return EBTNodeResult::Failed;
 
 	return EBTNodeResult::InProgress;
