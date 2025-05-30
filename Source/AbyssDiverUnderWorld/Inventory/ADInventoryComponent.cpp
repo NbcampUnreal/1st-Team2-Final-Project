@@ -57,6 +57,14 @@ UADInventoryComponent::UADInventoryComponent() :
 		InventoryIndexMapByType.FindOrAdd(static_cast<EItemType>(i));
 		InventoryIndexMapByType[static_cast<EItemType>(i)].Init(-1, InventorySizeByType[i]);
 	}
+
+	ConstructorHelpers::FObjectFinder<UNiagaraSystem> OxygenRefillEffectFinder(
+		TEXT("/Game/_AbyssDiver/FX/VFX/Item/NS_RefillOxygen.NS_RefillOxygen")
+	);
+	if (OxygenRefillEffectFinder.Succeeded())
+	{
+		OxygenRefillEffect = OxygenRefillEffectFinder.Object;
+	}
 }
 
 void UADInventoryComponent::BeginPlay()
@@ -219,10 +227,6 @@ void UADInventoryComponent::C_InventoryPlaySound_Implementation(ESFX SFXType)
 void UADInventoryComponent::C_SpawnItemEffect_Implementation()
 {
 	//UObject는 리플리케이트를 지원하지 않으므로, 이펙트 스폰을 클라이언트에서만 실행되는 함수로 구현
-	UNiagaraSystem* OxygenRefillEffect = LoadObject<UNiagaraSystem>(
-		nullptr,
-		TEXT("/Game/_AbyssDiver/FX/VFX/Item/NS_RefillOxygen.NS_RefillOxygen")
-	);
 
 	SoundSubsystem->Play2D(ESFX::RefillOxygen);
 	if (!OxygenRefillEffect) return;
