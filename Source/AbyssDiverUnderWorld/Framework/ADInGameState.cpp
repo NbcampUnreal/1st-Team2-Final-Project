@@ -80,7 +80,7 @@ void FActivatedMissionInfoList::ModifyProgress(const EMissionType& MissionType, 
 	MarkItemDirty(MissionInfoList[Index]);
 }
 
-void FActivatedMissionInfoList::AddOrModity(const EMissionType& MissionType, const uint8& MissionIndex, const uint8& NewProgress)
+void FActivatedMissionInfoList::AddOrModify(const EMissionType& MissionType, const uint8& MissionIndex, const uint8& NewProgress)
 {
 	if (Contains(MissionType, MissionIndex) == INDEX_NONE)
 	{

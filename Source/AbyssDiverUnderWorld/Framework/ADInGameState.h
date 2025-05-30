@@ -59,7 +59,7 @@ public:
 	void Add(const EMissionType& MissionType, const uint8& MissionIndex);
 	void Remove(const EMissionType& MissionType, const uint8& MissionIndex);
 	void ModifyProgress(const EMissionType& MissionType, const uint8& MissionIndex, const uint8& NewProgress);
-	void AddOrModity(const EMissionType& MissionType, const uint8& MissionIndex, const uint8& NewProgress);
+	void AddOrModify(const EMissionType& MissionType, const uint8& MissionIndex, const uint8& NewProgress);
 
 	//// 인덱스 반환, 없으면 INDEX_NONE 반환
 	int32 Contains(const EMissionType& MissionType, const uint8& MissionIndex);
