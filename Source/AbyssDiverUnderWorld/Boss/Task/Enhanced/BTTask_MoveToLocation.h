@@ -20,10 +20,10 @@ struct FBTMoveToLocationTaskMemory
 	float FinishTaskInterval;
 
 	/** 이동해야하는 위치 */
-	FVector TargetLocation;
+	FVector TargetLocation = FVector::ZeroVector;
 
 	/** 이동에 방해받았을 때 차선으로 이동해야하는 위치 */
-	FVector CachedLocation;
+	FVector CachedLocation = FVector::ZeroVector;
 
 	/** 이전 이동 좌표와 현재 이동 좌표의 오차를 확인하기 위한 상태 변수 */
 	uint8 bHasBeenTriggeredMoveToLocation : 1;
