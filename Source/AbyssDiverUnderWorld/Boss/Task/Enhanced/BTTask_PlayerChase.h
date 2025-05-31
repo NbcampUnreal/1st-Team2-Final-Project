@@ -13,9 +13,6 @@ struct FBTPlayerChaseTaskMemory
 	/** AIController의 주체에 대한 참조 */
 	TWeakObjectPtr<ABoss> Boss;
 
-	/** 현재까지 경과된 시간 */
-	float AccumulatedTime;
-
 	/** Chase 작업이 끝나는 시간 */
 	float FinishTaskInterval;
 };

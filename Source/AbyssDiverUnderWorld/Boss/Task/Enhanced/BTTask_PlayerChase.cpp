@@ -33,7 +33,7 @@ EBTNodeResult::Type UBTTask_PlayerChase::ExecuteTask(UBehaviorTreeComponent& Com
 	
 	TaskMemory->Boss->SetBossState(EBossState::Chase);
 	
-	TaskMemory->AccumulatedTime = 0.f;
+	TaskMemory->Boss->ChaseAccumulatedTime = 0.f;
 	TaskMemory->FinishTaskInterval = FMath::RandRange(MinChaseTime, MaxChaseTime);
 
 	TaskMemory->Boss->SetCharacterMovementSetting(ChaseDeceleration ,ChaseMoveSpeed);
@@ -65,9 +65,11 @@ void UBTTask_PlayerChase::TickTask(UBehaviorTreeComponent& Comp, uint8* NodeMemo
 	
 	// 추적하는 타겟 방향으로 이동한다.
 	// 만약 추적하는 과정에서 타겟이 NavMesh를 벗어난다면 즉시 스폰 위치 주변으로 이동한다.
-	EPathFollowingRequestResult::Type Result = TaskMemory->AIController->MoveToActorWithRadius();
+	const EPathFollowingRequestResult::Type Result = TaskMemory->AIController->MoveToActorWithRadius();
+	
 	if (Result == EPathFollowingRequestResult::Failed)
 	{
+		LOG(TEXT("Failed to move to actor. Moving to spawn location instead."));
 		TaskMemory->AIController->SetBlackboardPerceptionType(EPerceptionType::Finish);
 		return;
 	}
@@ -87,12 +89,12 @@ void UBTTask_PlayerChase::TickTask(UBehaviorTreeComponent& Comp, uint8* NodeMemo
 	}
 
 	// 정해진 시간만큼 경과하면 추적 종료
-	if (TaskMemory->AccumulatedTime > TaskMemory->FinishTaskInterval)
+	if (TaskMemory->Boss->ChaseAccumulatedTime > TaskMemory->FinishTaskInterval)
 	{
 		TaskMemory->AIController->SetBlackboardPerceptionType(EPerceptionType::Finish);	
 	}
 
-	TaskMemory->AccumulatedTime += FMath::Clamp(DeltaSeconds, 0.0f, 0.1f);
+	TaskMemory->Boss->ChaseAccumulatedTime += FMath::Clamp(DeltaSeconds, 0.0f, 0.1f);
 }
 
 void UBTTask_PlayerChase::OnTaskFinished(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory,
