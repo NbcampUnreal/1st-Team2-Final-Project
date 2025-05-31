@@ -12,6 +12,8 @@
 #include "Interactable/OtherActors/ADDroneSeller.h"
 #include "UI/ToggleWidget.h"
 #include "Missions/MissionBase.h"
+#include "UI/SelectedMissionListWidget.h"
+#include "Framework/ADCampGameMode.h"
 
 #pragma region FastArraySerializer Methods
 
@@ -20,6 +22,7 @@ void FActivatedMissionInfo::PostReplicatedAdd(const FActivatedMissionInfoList& I
 	const TArray<FActivatedMissionInfo>& Infos = InArraySerializer.MissionInfoList;
 	int32 Index = Infos.IndexOfByKey(*this);
 
+	InArraySerializer.OnMissionInfosChangedDelegate.Broadcast(Index, InArraySerializer);
 	LOGV(Warning, TEXT("Added, Index : %d, MissionType : %d, MissionIndex : %d, Value : %d"), Index, Infos[Index].MissionType, Infos[Index].MissionIndex, Infos[Index].CurrentProgress);
 }
 
@@ -28,6 +31,7 @@ void FActivatedMissionInfo::PostReplicatedChange(const FActivatedMissionInfoList
 	const TArray<FActivatedMissionInfo>& Infos = InArraySerializer.MissionInfoList;
 	int32 Index = Infos.IndexOfByKey(*this);
 
+	InArraySerializer.OnMissionInfosChangedDelegate.Broadcast(Index, InArraySerializer);
 	LOGV(Warning, TEXT("Changed, Index : %d, MissionType : %d, MissionIndex : %d, Value : %d"), Index, Infos[Index].MissionType, Infos[Index].MissionIndex, Infos[Index].CurrentProgress);
 }
 
@@ -36,6 +40,7 @@ void FActivatedMissionInfo::PreReplicatedRemove(const FActivatedMissionInfoList&
 	const TArray<FActivatedMissionInfo>& Infos = InArraySerializer.MissionInfoList;
 	int32 Index = Infos.IndexOfByKey(*this);
 
+	InArraySerializer.OnMissionInfosRemovedDelegate.Broadcast(Index, InArraySerializer);
 	LOGV(Warning, TEXT("Removed, Index : %d, MissionType : %d, MissionIndex : %d, Value : %d"), Index, Infos[Index].MissionType, Infos[Index].MissionIndex, Infos[Index].CurrentProgress);
 }
 
@@ -126,9 +131,19 @@ void AADInGameState::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
 
+	// 게임 중이 아닌 경우 리턴(블루프린트 상일 경우)
+	// PostInitializeComponents는 블루프린트에서도 발동함
+	UWorld* World = GetWorld();
+	if (World == nullptr || World->IsGameWorld() == false)
+	{
+		return;
+	}
+
 	if (HasAuthority())
 	{
 		ReceiveDataFromGameInstance();
+
+		RefreshActivatedMissionList();
 	}
 }
 
@@ -147,14 +162,6 @@ void AADInGameState::BeginPlay()
 	TeamCreditsChangedDelegate.Broadcast(TeamCredits);
 	CurrentPhaseChangedDelegate.Broadcast(CurrentPhase);
 	CurrentPhaseGoalChangedDelegate.Broadcast(CurrentPhaseGoal);
-
-	const TArray<UMissionBase*>& Missions = GetGameInstance()->GetSubsystem<UMissionSubsystem>()->GetActivatedMissions();
-	ActivatedMissionList.Clear(Missions.Num());
-
-	for (const UMissionBase* Mission : Missions)
-	{
-		ActivatedMissionList.Add(Mission->GetMissionType(), Mission->GetMissionIndex());
-	}
 }
 
 void AADInGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -285,4 +292,22 @@ FString AADInGameState::GetMapDisplayName() const
 
 	return DisplayName;
 
+}
+
+void AADInGameState::RefreshActivatedMissionList()
+{
+	if (HasAuthority() == false)
+	{
+		return;
+	}
+
+	const TArray<UMissionBase*>& Missions = GetGameInstance()->GetSubsystem<UMissionSubsystem>()->GetActivatedMissions();
+	ActivatedMissionList.Clear(Missions.Num());
+
+	for (const UMissionBase* Mission : Missions)
+	{
+		ActivatedMissionList.Add(Mission->GetMissionType(), Mission->GetMissionIndex());
+	}
+
+	OnMissionListRefreshedDelegate.Broadcast();
 }
