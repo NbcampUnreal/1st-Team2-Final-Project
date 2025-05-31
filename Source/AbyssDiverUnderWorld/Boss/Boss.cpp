@@ -250,18 +250,6 @@ void ABoss::OnAttackEnded()
 	AttackedPlayers.Empty();
 }
 
-void ABoss::AddPatrolPoint()
-{
-	if (CurrentPatrolPointIndex >= PatrolPoints.Num())
-	{
-		CurrentPatrolPointIndex = 0;
-	}
-	else
-	{
-		++CurrentPatrolPointIndex;
-	}
-}
-
 void ABoss::SetMoveSpeed(const float& SpeedMultiplier)
 {
 	GetCharacterMovement()->MaxFlySpeed = StatComponent->MoveSpeed * SpeedMultiplier;
