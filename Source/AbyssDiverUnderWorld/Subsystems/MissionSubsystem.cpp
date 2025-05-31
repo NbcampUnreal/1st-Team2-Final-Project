@@ -2,6 +2,7 @@
 
 #include "AbyssDiverUnderWorld.h"
 #include "Framework/ADGameInstance.h"
+#include "Framework/ADInGameState.h"
 
 #include "Missions/AggroTriggerMission.h"
 #include "Missions/InteractionMission.h"
@@ -295,6 +296,12 @@ void UMissionSubsystem::ClearSelectedMissions(const int32& SlackCount)
 
 void UMissionSubsystem::ReceiveMissionDataFromUIData(const TArray<FMissionData>& MissionsFromUI)
 {
+	if (CheckIfGameStateIsValid() == false)
+	{
+		LOGV(Warning, TEXT("GameState Is Invalid"));
+		return;
+	}
+
 	Missions.Empty(MissionsFromUI.Num());
 
 	for (const FMissionData& MissionFromUI : MissionsFromUI)
@@ -342,6 +349,8 @@ void UMissionSubsystem::ReceiveMissionDataFromUIData(const TArray<FMissionData>&
 		NewMission->InitMission(Params, MissionFromUI.MissionIndex);
 		Missions.Add(NewMission);
 	}
+
+	InGameState->RefreshActivatedMissionList();
 }
 
 void UMissionSubsystem::MakeAndAddMissionDataForUI(const FMissionBaseRow* MissionBaseData, const uint8& MissionIndex)
@@ -397,6 +406,24 @@ bool UMissionSubsystem::IsServer() const
 void UMissionSubsystem::UnlockMissionInternal(FMissionBaseRow* MissionData)
 {
 	MissionData->bIsLocked = false;
+}
+
+bool UMissionSubsystem::CheckIfGameStateIsValid()
+{
+	if (IsValid(InGameState))
+	{
+		return true;
+	}
+
+	AADInGameState* GS = Cast<AADInGameState>(UGameplayStatics::GetGameState(GetWorld()));
+	if (GS == nullptr)
+	{
+		return false;
+	}
+
+	InGameState = GS;
+
+	return !!InGameState;
 }
 
 const TSet<FString>& UMissionSubsystem::GetAllSelectedMissionNames() const

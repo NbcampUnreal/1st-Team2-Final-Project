@@ -51,7 +51,6 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category = "UI")
     TSubclassOf<USelectedMissionListWidget> WBP_SelectedMissionListClass;
 
-
 private:
     // 미션 데이터
     TArray<FMissionData> AllMissions;
