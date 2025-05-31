@@ -11,6 +11,9 @@
 #include "Interactable/Item/Component/ADInteractableComponent.h"
 #include "Interactable/OtherActors/Radars/RadarReturnComponent.h"
 #include "Character/UnderwaterCharacter.h"
+#include "Framework/ADPlayerState.h"
+#include "Inventory/ADInventoryComponent.h"
+#include "DataRow/FADItemDataRow.h"
 
 // Sets default values
 AADOreRock::AADOreRock()
@@ -62,6 +65,23 @@ void AADOreRock::OnHoldStart_Implementation(APawn* InstigatorPawn)
 	LOGI(Log, TEXT("Mining Starts"));
 	if (AUnderwaterCharacter* Diver = Cast<AUnderwaterCharacter>(InstigatorPawn))
 	{
+		if (AADPlayerState* ADPlayerState = InstigatorPawn->GetPlayerState<AADPlayerState>())
+		{
+			if (UADInventoryComponent* InventoryComp = ADPlayerState->GetInventory())
+			{
+				// 무기를 장착하고 있다면
+				if (InventoryComp->HasEquippedItem())
+				{
+					PreivousEquipIndex = InventoryComp->GetSlotIndex();
+					InventoryComp->S_UseInventoryItem_Implementation(EItemType::Equipment, PreivousEquipIndex);
+				}
+				else
+				{
+					PreivousEquipIndex = INDEX_NONE;
+				}
+			}
+		}
+
 		Diver->SpawnAndAttachTool(MiningToolClass);
 		PlayMiningAnim(InstigatorPawn);
 	}
@@ -69,8 +89,27 @@ void AADOreRock::OnHoldStart_Implementation(APawn* InstigatorPawn)
 
 void AADOreRock::OnHoldStop_Implementation(APawn* InstigatorPawn)
 {
+	AUnderwaterCharacter* Diver = Cast<AUnderwaterCharacter>(InstigatorPawn);
+	if (!Diver) return;
+
+	if (PreivousEquipIndex != INDEX_NONE)
+	{
+		if (AADPlayerState* ADPlayerState = InstigatorPawn->GetPlayerState<AADPlayerState>())
+		{
+			if (UADInventoryComponent* InventoryComp = ADPlayerState->GetInventory())
+			{
+				InventoryComp->S_UseInventoryItem_Implementation(EItemType::Equipment, PreivousEquipIndex);
+				Diver->CleanupToolAndEffects();
+				LOGI(Log, TEXT("Skip Mining Stops"));
+				return;
+			}
+		}
+	}
+
 	LOGI(Log, TEXT("Mining Stops"));
 	PlayStowAnim(InstigatorPawn);
+
+	
 }
 
 void AADOreRock::HandleMineRequest(APawn* InstigatorPawn)
@@ -99,7 +138,7 @@ void AADOreRock::HandleMineRequest(APawn* InstigatorPawn)
 			SpawnDrops();
 		}
 	}
-	PlayStowAnim(InstigatorPawn);
+	OnHoldStop(InstigatorPawn);
 }
 
 void AADOreRock::SpawnDrops()

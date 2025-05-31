@@ -6,6 +6,8 @@
 #include "UI/SelectedMissionListWidget.h"
 #include "MissionSelectWidget.generated.h"
 
+DECLARE_DELEGATE_OneParam(FOnStartButtonClickedDelegate, const TArray<FMissionData>&/*SelectedMissions*/);
+
 class UButton;
 class UScrollBox;
 class UMissionEntryWidget;
@@ -29,6 +31,8 @@ public:
 
     // 내부 함수
     void AddMissionEntry(const FMissionData& Data);
+
+    FOnStartButtonClickedDelegate OnStartButtonClickedDelegate;
 #pragma endregion
 
 #pragma region Variable

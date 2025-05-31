@@ -9,11 +9,15 @@
 
 
 enum class EItemType : uint8;
+enum class ESFX : uint8;
 class UToggleWidget;
 class UDataTableSubsystem;
+class USoundSubsystem;
 class AADUseItem;
 class UChargeBatteryWidget;
 enum class EChargeBatteryType;
+class AUnderwaterCharacter;
+class UUseStrategy;
 
 #define LOGINVEN(Verbosity, Format, ...) UE_LOG(InventoryLog, Verbosity, TEXT("%s(%s) %s"), ANSI_TO_TCHAR(__FUNCTION__), *FString::FromInt(__LINE__), *FString::Printf(Format, ##__VA_ARGS__));
 
@@ -57,6 +61,18 @@ public:
 	void S_UseBatteryAmount(int8 Amount);
 	void S_UseBatteryAmount_Implementation(int8 Amount);
 
+	UFUNCTION(NetMulticast, Reliable)
+	void M_PlaySound(ESFX SFXType);
+	void M_PlaySound_Implementation(ESFX SFXType);
+
+	UFUNCTION(Client, Reliable)
+	void C_InventoryPlaySound(ESFX SFXType);
+	void C_InventoryPlaySound_Implementation(ESFX SFXType);
+
+	UFUNCTION(Client, Reliable)
+	void C_SpawnItemEffect();
+	void C_SpawnItemEffect_Implementation();
+
 	UFUNCTION(Client, Reliable)
 	void C_SetButtonActive(EChargeBatteryType ItemChargeBatteryType, bool bClientIsActive, int16 ClientAmount);
 	void C_SetButtonActive_Implementation(EChargeBatteryType ItemChargeBatteryType, bool bClientIsActive, int16 ClientAmount);
@@ -82,8 +98,6 @@ public:
 
 	UFUNCTION()
 	void OnRep_InventoryList();
-	UFUNCTION()
-	void OnRep_CurrentEquipmentSlotIndex();
 
 	int8 FindItemIndexByName(FName ItemName); //아이템 이름으로 InventoryList 인덱스 반환 (빈슬롯이 없으면 -1 반환)
 	int8 FindItemIndexByID(int8 ItemID); //빈슬롯이 없으면 - 1 반환
@@ -93,6 +107,10 @@ public:
 	void CopyInventoryFrom(UADInventoryComponent* Source);
 	void InventoryMarkArrayDirty();
 	void CheckItemsForBattery();
+	void PlayEquipAnimation(AUnderwaterCharacter* Character, bool bIsHarpoon);
+	void Equip(FItemData& ItemData, int8 SlotIndex);
+	void UnEquip();
+
 
 	FInventoryUpdateDelegate InventoryUpdateDelegate;
 	FBatteryUpdateDelegate BatteryUpdateDelegate;
@@ -104,14 +122,12 @@ private:
 
 	int8 GetInventoryIndexByTypeAndSlotIndex(EItemType Type, int8 SlotIndex); //못 찾으면 -1 반환
 	void SetEquipInfo(int8 TypeInventoryIndex, AADUseItem* SpawnItem);
-	void Equip(FItemData& ItemData, int8 SlotIndex);
-	void UnEquip();
+	
 	void DropItem(FItemData& ItemData);
 
 	void OnInventoryInfoUpdate(int32 MassInfo, int32 PriceInfo);
 	void RebuildIndexMap();
 	void OnUseCoolTimeEnd(); //아이템 사용 지연
-	void EquipmentChargeBatteryUpdateDelay();
 	void PrintLogInventoryData();
 
 #pragma endregion
@@ -130,23 +146,23 @@ private:
 	int32 TotalWeight;
 	UPROPERTY(Replicated)
 	int32 TotalPrice;
-	int32 WeightMax;
+	UPROPERTY(Replicated)
+	int8 CurrentEquipmentSlotIndex;
+	UPROPERTY(Replicated)
+	TObjectPtr<AADUseItem> CurrentEquipmentInstance;
+	UPROPERTY()
+	TObjectPtr<UToggleWidget> ToggleWidgetInstance;
 
+	int32 WeightMax;
 	uint8 bInventoryWidgetShowed : 1;
 	uint8 bAlreadyCursorShowed : 1;
 	uint8 bCanUseItem : 1;
 	uint8 bIsWeapon : 1 = false;
 
 	TMap<EItemType, TArray<int8>> InventoryIndexMapByType;
-	UPROPERTY(ReplicatedUsing = OnRep_CurrentEquipmentSlotIndex)
-	int8 CurrentEquipmentSlotIndex;
-	UPROPERTY(Replicated)
-	TObjectPtr<AADUseItem> CurrentEquipmentInstance;
 	TArray<int8> InventorySizeByType;
-
-	UPROPERTY()
-	TObjectPtr<UToggleWidget> ToggleWidgetInstance;
 	TObjectPtr<UDataTableSubsystem> DataTableSubsystem; 
+	TObjectPtr<USoundSubsystem> SoundSubsystem;
 	TObjectPtr<UChargeBatteryWidget> ChargeBatteryWidget;
 
 	UPROPERTY(EditAnywhere, Category = "Harpoon")
@@ -161,6 +177,8 @@ private:
 public:
 	int16 GetTotalWeight() const { return TotalWeight; }
 	int16 GetTotalPrice() const { return TotalPrice; }
+	uint8 GetSlotIndex() const { return CurrentEquipmentSlotIndex; }
+	bool HasEquippedItem()      const { return CurrentEquipmentSlotIndex != INDEX_NONE; }
 
 	const FItemData* GetInventoryItemData(FName ItemNameToFind); //이름으로 아이템 데이터 반환
 	const FItemData& GetEquipmentItemDataByIndex(int8 KeyNum) { return InventoryList.Items[InventoryIndexMapByType[EItemType::Equipment][KeyNum]]; }; //타입별 인벤토리 슬롯 값으로 아이템 데이터 반환

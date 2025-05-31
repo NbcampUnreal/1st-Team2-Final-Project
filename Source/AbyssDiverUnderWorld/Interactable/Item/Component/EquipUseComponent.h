@@ -112,6 +112,16 @@ public:
 	void InitializeAmmoUI();
 
 	bool IsSpearGun() const;
+
+	// 헬퍼 함수
+	bool CanFire() const;
+	void GetCameraView(FVector& OutLoc, FRotator& OutRot) const;
+	FVector CalculateTargetPoint(const FVector& CamLoc, const FVector& AimDir) const;
+	FVector GetMuzzleLocation(const FVector& CamLoc, const FVector& AimDir) const;
+	AADSpearGunBullet* SpawnHarpoon(const FVector& Loc, const FRotator& Rot);
+	void ConfigureProjectile(AADSpearGunBullet* Proj, const FVector& TargetPoint, const FVector& MuzzleLoc);
+
+
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
@@ -139,6 +149,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Weapon")
 	float ReloadDuration = 3.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Weapon|Trace")
+	float TraceMaxRange = 20000.f;
 
 	uint8 bCanFire : 1;
 	uint8 bIsWeapon : 1;
