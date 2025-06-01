@@ -59,14 +59,13 @@ protected:
 	TObjectPtr<UDataTableSubsystem> DataTableSubsystem;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Component")
 	TObjectPtr<USoundSubsystem> SoundSubsystem;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effect")
-	TObjectPtr<UNiagaraComponent> TrailEffect;
+
 
 private:
 	UPROPERTY(ReplicatedUsing = OnRep_BulletType, VisibleAnywhere, Category = "Bullet")
 	ESpearGunType BulletType;
 	UPROPERTY(VisibleAnywhere, Category = "Bullet")
-	int8 AdditionalDamage;
+	int16 AdditionalDamage;
 	UPROPERTY(VisibleAnywhere, Category = "Bullet")
 	int8 PoisonDuration;
 

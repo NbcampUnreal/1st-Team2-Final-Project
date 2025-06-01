@@ -13,11 +13,14 @@
 #include "NiagaraFunctionLibrary.h"
 #include "Framework/ADGameInstance.h"
 #include "Subsystems/DataTableSubsystem.h"
+#include "Projectile/GenericPool.h"
+#include "Net/UnrealNetwork.h"
 
 DEFINE_LOG_CATEGORY(ProjectileLog);
 
 // Sets default values
 AADProjectileBase::AADProjectileBase() : 
+    TrailEffect(nullptr),
     Damage(100.0f), 
     bWasHit(false)
 {
@@ -28,10 +31,12 @@ AADProjectileBase::AADProjectileBase() :
     CollisionComponent->SetCollisionProfileName(TEXT("Projectile"));
     RootComponent = CollisionComponent;
    
+    TrailEffect = CreateDefaultSubobject<UNiagaraComponent>(TEXT("TrailEffect"));
+    TrailEffect->SetupAttachment(RootComponent);
+    TrailEffect->SetAutoActivate(false);
 
     ProjectileMovementComp = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));
-    //ProjectileMovementComp->bRotationFollowsVelocity = true;
-    ProjectileMovementComp->bAutoActivate = true;
+    ProjectileMovementComp->bAutoActivate = false;
 
     CollisionComponent->OnComponentBeginOverlap.AddDynamic(this, &AADProjectileBase::OnOverlapBegin);
 
@@ -39,28 +44,45 @@ AADProjectileBase::AADProjectileBase() :
     SetReplicateMovement(true);
 }
 
-void AADProjectileBase::BeginPlay()
-{
-	Super::BeginPlay();
-
-    ProjectileMovementComp->InitialSpeed = 4000.0f;
-    ProjectileMovementComp->MaxSpeed = 4500.0f;
-}
-
 void AADProjectileBase::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 
 }
 
-void AADProjectileBase::SetProjectileSpeed(float Speed)
+void AADProjectileBase::Activate()
+{
+	Super::Activate();
+    LOGP(Warning, TEXT("Activate"));
+	GetWorld()->GetTimerManager().SetTimer(LifeTimerHandle, this, &AADProjectileBase::Deactivate, 10.0f, false);
+    ProjectileMovementComp->SetActive(true);
+    TrailEffect->Activate();
+}
+
+void AADProjectileBase::Deactivate()
+{
+	Super::Deactivate();
+    LOGP(Warning, TEXT("Deactivate"));
+    if(ObjectPool)
+        ObjectPool->ReturnObject();
+	GetWorld()->GetTimerManager().ClearTimer(LifeTimerHandle);
+    SetOwner(nullptr);
+    ProjectileMovementComp->SetActive(false);
+    TrailEffect->Deactivate();
+}
+
+void AADProjectileBase::InitializeTransform(const FVector& Location, const FRotator& Rotation)
+{
+	SetActorLocation(Location);
+	SetActorRotation(Rotation);
+}
+
+void AADProjectileBase::InitializeSpeed(const FVector& ShootDirection, const uint32 Speed)
 {
     ProjectileMovementComp->InitialSpeed = Speed;
     ProjectileMovementComp->MaxSpeed = Speed;
+    ProjectileMovementComp->Velocity = ShootDirection * Speed;
+    ProjectileMovementComp->Activate(true);
 }
 
-void AADProjectileBase::SetProjectileName(FName Name)
-{
-    ProjectileName = Name;
-}
 
 
