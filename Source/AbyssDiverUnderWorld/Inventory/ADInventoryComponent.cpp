@@ -24,6 +24,8 @@
 #include "NiagaraSystem.h"
 #include "Subsystems/SoundSubsystem.h"
 #include "Framework/ADGameInstance.h"
+#include "GameFramework/Pawn.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 DEFINE_LOG_CATEGORY(InventoryLog);
 
@@ -214,9 +216,13 @@ void UADInventoryComponent::S_UseBatteryAmount_Implementation(int8 Amount)
 
 void UADInventoryComponent::M_PlaySound_Implementation(ESFX SFXType)
 {
-	APlayerController* PC = Cast<APlayerController>(Cast<AADPlayerState>(GetOwner())->GetPlayerController());
-	APawn* OwnerPawn = PC->GetPawn();
-	SoundSubsystem->PlayAt(SFXType, OwnerPawn->GetActorLocation());
+	if (APlayerController* PC = Cast<APlayerController>(Cast<AADPlayerState>(GetOwner())->GetPlayerController()))
+	{
+		if (APawn* OwnerPawn = PC->GetPawn())
+		{
+			SoundSubsystem->PlayAt(SFXType, OwnerPawn->GetActorLocation());
+		}
+	}
 }
 
 void UADInventoryComponent::C_InventoryPlaySound_Implementation(ESFX SFXType)
@@ -232,11 +238,21 @@ void UADInventoryComponent::C_SpawnItemEffect_Implementation()
 	if (!OxygenRefillEffect) return;
 	if (APlayerController* PC = Cast<APlayerController>(Cast<AADPlayerState>(GetOwner())->GetPlayerController()))
 	{
+		FVector Velocity;
+		if (APawn* OwnerPawn = PC->GetPawn())
+		{
+			UCharacterMovementComponent* MoveComp = Cast<UCharacterMovementComponent>(OwnerPawn->GetMovementComponent());
+			Velocity = MoveComp->Velocity;
+		}
 		FVector CamLocation;
 		FRotator CamRotation;
 
 		PC->GetPlayerViewPoint(CamLocation, CamRotation);
 		FVector SpawnLocation = CamLocation + CamRotation.Vector() * 5.f - FVector(0, 0, 10);
+		if (!Velocity.IsNearlyZero())
+		{
+			SpawnLocation = SpawnLocation + CamRotation.Vector() * 30.f;
+		}
 		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 			GetWorld(),
 			OxygenRefillEffect,
@@ -249,8 +265,6 @@ void UADInventoryComponent::C_SpawnItemEffect_Implementation()
 			true   // bPreCullCheck
 		);
 	}
-
-	//TODO :: 호흡 사운드
 }
 
 void UADInventoryComponent::C_SetButtonActive_Implementation(EChargeBatteryType ItemChargeBatteryType, bool bCIsActive, int16 CAmount)
