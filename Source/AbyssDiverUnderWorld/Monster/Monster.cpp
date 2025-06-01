@@ -99,6 +99,8 @@ float AMonster::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, 
 		if (StatComponent->GetCurrentHealth() <= 0)
 		{
 			OnDeath();
+			// Delegate Broadcasts for Achievements
+			OnMonsterDead.Broadcast(DamageCauser, this);
 		}
 	}
 	return Damage;

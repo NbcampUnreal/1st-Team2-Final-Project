@@ -7,12 +7,14 @@
 #include "MonsterAIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Components/SphereComponent.h"
+#include "Delegates/DelegateCombinations.h"
 #include "Monster/EMonsterState.h"
 #include "Monster.generated.h"
 
-
 class ASplinePathActor;
 class USphereComponent;
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnMonsterDeadSignature, AActor*, Killer, AMonster*, DeadMonster);
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AMonster : public AUnitBase
@@ -43,6 +45,9 @@ public:
 #pragma endregion
 
 #pragma region Variable
+public:
+	UPROPERTY(BlueprintAssignable, Category = "Event")
+	FOnMonsterDeadSignature OnMonsterDead;
 protected:
 	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "AI|Patrol")
 	TObjectPtr<ASplinePathActor> AssignedSplineActor;
@@ -68,5 +73,5 @@ public:
 	// Virtual function to get collision components for attack range determination externally
 	virtual USphereComponent* GetAttackHitComponent() const { return nullptr; }
 
-	void SetMonsterState(EMonsterState State);
+	virtual void SetMonsterState(EMonsterState State);
 };
