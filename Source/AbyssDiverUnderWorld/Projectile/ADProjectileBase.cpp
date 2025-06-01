@@ -49,13 +49,46 @@ void AADProjectileBase::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AAct
 
 }
 
+void AADProjectileBase::M_EffectActivate_Implementation(bool bActivate)
+{
+    LOGP(Warning, TEXT("bReplicates : %d"), GetIsReplicated());
+    if (!TrailEffect)
+    {
+        LOGP(Warning, TEXT("TrailEffect is Null"));
+        return;
+    }
+    if (bActivate)
+    {
+        TrailEffect->Activate();
+        LOGP(Warning, TEXT("TrailEffectActivate"));
+    }
+    else
+    {
+        TrailEffect->Deactivate();
+        LOGP(Warning, TEXT("TrailEffectDeactivate"));
+    }
+}
+
 void AADProjectileBase::Activate()
 {
 	Super::Activate();
     LOGP(Warning, TEXT("Activate"));
-	GetWorld()->GetTimerManager().SetTimer(LifeTimerHandle, this, &AADProjectileBase::Deactivate, 10.0f, false);
+    float DeactivateDelay = 10.0f;
+	GetWorld()->GetTimerManager().SetTimer(LifeTimerHandle, this, &AADProjectileBase::Deactivate, DeactivateDelay, false);
     ProjectileMovementComp->SetActive(true);
-    TrailEffect->Activate();
+    if (HasAuthority())
+    {
+        FTimerHandle FXDelayHandle;
+        float FXActivateDelay = 0.1f;
+        GetWorld()->GetTimerManager().SetTimer(FXDelayHandle, [this]() {
+            if (HasAuthority()) M_EffectActivate(true);
+            }, FXActivateDelay, false);
+
+        float TrailDeactivateDelay = 9.0f;
+        GetWorld()->GetTimerManager().SetTimer(TrailDeactivateTimerHandle, [this]() {
+            if (HasAuthority()) M_EffectActivate(false);
+            }, 9.0f, false);
+    }
 }
 
 void AADProjectileBase::Deactivate()
@@ -65,9 +98,9 @@ void AADProjectileBase::Deactivate()
     if(ObjectPool)
         ObjectPool->ReturnObject();
 	GetWorld()->GetTimerManager().ClearTimer(LifeTimerHandle);
+    GetWorld()->GetTimerManager().ClearTimer(TrailDeactivateTimerHandle);
     SetOwner(nullptr);
     ProjectileMovementComp->SetActive(false);
-    TrailEffect->Deactivate();
 }
 
 void AADProjectileBase::InitializeTransform(const FVector& Location, const FRotator& Rotation)

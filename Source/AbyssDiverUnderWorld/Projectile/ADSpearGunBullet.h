@@ -38,6 +38,10 @@ protected:
 	void M_SpawnFX(UNiagaraSystem* Effect, ESFX SFXType, const FVector& SpawnLocation);
 	void M_SpawnFX_Implementation(UNiagaraSystem* Effect, ESFX SFXType, const FVector& SpawnLocation);
 
+	UFUNCTION(NetMulticast, Reliable)
+	void M_AdjustTransform(FTransform WorldTransform);
+	void M_AdjustTransform_Implementation(FTransform WorldTransform);
+
 	UFUNCTION()
 	void OnRep_BulletType();
 

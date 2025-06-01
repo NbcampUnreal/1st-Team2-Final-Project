@@ -26,6 +26,10 @@ public:
 
 #pragma region Method
 public:
+	UFUNCTION(NetMulticast, Reliable)
+	void M_EffectActivate(bool bActivate);
+	void M_EffectActivate_Implementation(bool bActivate);
+
 	void Activate() override;
 	void Deactivate() override;
 
@@ -57,6 +61,7 @@ protected:
 	uint8 bWasHit : 1;
 private:
 	FTimerHandle LifeTimerHandle;
+	FTimerHandle TrailDeactivateTimerHandle;
 #pragma endregion
 
 #pragma region Getter, Setter
