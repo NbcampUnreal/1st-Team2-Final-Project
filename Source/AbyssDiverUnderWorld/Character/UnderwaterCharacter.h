@@ -243,6 +243,10 @@ protected:
 	UFUNCTION(BlueprintImplementableEvent)
 	void K2_OnDeath();
 
+	/** 캐릭터의 환경이 변경됬을 시에 Blueprint에서 호출될 함수 */
+	UFUNCTION(BlueprintImplementableEvent)
+	void K2_OnEnvStateChanged(EEnvState OldEnvState, EEnvState NewEnvState);
+
 	/** Player State 정보를 초기화 */
 	void InitFromPlayerState(class AADPlayerState* ADPlayerState);
 	
@@ -429,6 +433,11 @@ public:
 	/** 캐릭터 상태가 변경되었을 때 호출되는 델리게이트 */
 	UPROPERTY(BlueprintAssignable)
 	FOnCharacterStateChanged OnCharacterStateChangedDelegate;
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnEnvStateChanged, EEnvState, OldEnvState, EEnvState, NewEnvState);
+	/** 캐릭터의 환경 상태가 변경되었을 때 호출되는 델리게이트 */
+	UPROPERTY(BlueprintAssignable)
+	FOnEnvStateChanged OnEnvStateChangedDelegate;
 
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnMontageEnd, UAnimMontage*, Montage, bool, bInterrupted);
 	/** 1인칭 메시 몽타주 종료 시 호출되는 델리게이트 */

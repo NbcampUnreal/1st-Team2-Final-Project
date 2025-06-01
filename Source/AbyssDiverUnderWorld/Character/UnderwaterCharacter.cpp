@@ -312,6 +312,7 @@ void AUnderwaterCharacter::SetEnvState(EEnvState State)
 	{
 		return;
 	}
+	const EEnvState OldState = EnvState;
 	EnvState = State;
 
 	switch (EnvState)
@@ -337,6 +338,9 @@ void AUnderwaterCharacter::SetEnvState(EEnvState State)
 		UE_LOG(AbyssDiver, Error, TEXT("Invalid Character State"));
 		break;
 	}
+
+	OnEnvStateChangedDelegate.Broadcast(OldState, EnvState);
+	K2_OnEnvStateChanged(OldState, EnvState);
 }
 
 void AUnderwaterCharacter::StartCaptureState()
