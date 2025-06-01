@@ -733,6 +733,10 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UStaminaComponent> StaminaComponent;
 
+	/** 캐릭터의 실드를 관리하는 Component */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UShieldComponent> ShieldComponent;
+
 	/** 캐릭터 출혈을 시뮬레이션을 하는 Noise Emitter Component */
 	UPROPERTY()
 	TObjectPtr<class UPawnNoiseEmitterComponent> NoiseEmitterComponent;
@@ -782,6 +786,9 @@ public:
 	
 	/** 캐릭터의 Oxygen Component를 반환 */
 	FORCEINLINE class UOxygenComponent* GetOxygenComponent() const { return OxygenComponent; }
+
+	/** 캐릭터의 Shield Component를 반환 */
+	FORCEINLINE class UShieldComponent* GetShieldComponent() const { return ShieldComponent; }
 
 	/** Interaction Component를 반환 */
 	FORCEINLINE UADInteractionComponent* GetInteractionComponent() const { return InteractionComponent; }

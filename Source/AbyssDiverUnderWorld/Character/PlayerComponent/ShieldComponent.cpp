@@ -3,6 +3,7 @@
 
 #include "ShieldComponent.h"
 
+#include "Character/UnderwaterCharacter.h"
 #include "Net/UnrealNetwork.h"
 
 
@@ -31,17 +32,22 @@ void UShieldComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty
 	DOREPLIFETIME(UShieldComponent, ShieldValue);
 }
 
-float UShieldComponent::TakeDamage(const float DamageAmount)
+FShieldAbsorbResult UShieldComponent::AbsorbDamage(const float DamageAmount)
 {
+	FShieldAbsorbResult Result;
+	
 	if (GetOwnerRole() != ROLE_Authority || DamageAmount <= 0.0f || ShieldValue <= 0.0f)
 	{
-		return 0.0f;
+		Result.RemainingDamage = DamageAmount;
+		return Result;
 	}
 
-	const float PostShieldValue = ShieldValue - DamageAmount;
-	SetShieldValue(ShieldValue - DamageAmount);
-	// 남은 데미지가 0보다 작으면 남은 데미지를 반환
-	return PostShieldValue > 0.0f ? 0.0f : -PostShieldValue;
+	
+	Result.AbsorbedDamage = FMath::Min(ShieldValue, DamageAmount);
+	SetShieldValue(ShieldValue - Result.AbsorbedDamage);
+	Result.RemainingDamage = DamageAmount - Result.AbsorbedDamage;
+	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Shield Absorb Damage : %f, Remaining Damage : %f"), Result.AbsorbedDamage, Result.RemainingDamage);
+	return Result;
 }
 
 void UShieldComponent::GainShield(const float GainAmount)

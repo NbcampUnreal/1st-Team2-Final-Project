@@ -7,6 +7,24 @@
 #include "Components/ActorComponent.h"
 #include "ShieldComponent.generated.h"
 
+/** AbsorbDamage 함수의 반환값 */
+USTRUCT(BlueprintType)
+struct FShieldAbsorbResult
+{
+	GENERATED_BODY()
+
+	FShieldAbsorbResult() 
+		: AbsorbedDamage(0.0f), RemainingDamage(0.0f) {}
+	
+	/** 실드엣더 흡수한 데미지 */
+	UPROPERTY(BlueprintReadOnly)
+	float AbsorbedDamage;
+	
+	/** 실드가 흡수하고 남은 데미지 */
+	UPROPERTY(BlueprintReadOnly)
+	float RemainingDamage;
+};
+
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class ABYSSDIVERUNDERWORLD_API UShieldComponent : public UActorComponent
 {
@@ -25,7 +43,7 @@ public:
 
 	/** 실드 데미지 계산. 실드가 파괴되면 남은 데미지를 반환한다. */
 	UFUNCTION(BlueprintCallable)
-	float TakeDamage(const float DamageAmount);
+	FShieldAbsorbResult AbsorbDamage(const float DamageAmount);
 
 	/** 실드를 획득 */
 	UFUNCTION(BlueprintCallable)
@@ -35,7 +53,7 @@ protected:
 
 	/** 실드 값이 변경됬을 때 호출되는 블루프린트 함수 */
 	UFUNCTION(BlueprintImplementableEvent, meta=(DisplayName = "OnShieldValueChanged"))
-	void K2_OnShieldValueChanged(float ShieldValue);
+	void K2_OnShieldValueChanged(float NewShieldValue);
 
 	/** 실드가 파괴되었을 때 호출되는 블루프린트 함수 */
 	UFUNCTION(BlueprintImplementableEvent, meta=(DisplayName = "OnShieldBroken"))
@@ -46,6 +64,7 @@ protected:
 	void K2_OnShieldGained();	
 
 	/** 실드 값이 변경되었을 때 호출되는 Replicated 함수 */
+	UFUNCTION()
 	virtual void OnRep_ShieldValueChanged();
 	
 private:
@@ -91,6 +110,8 @@ private:
 
 #pragma region Getter Setter
 
+public:
+	
 	/** 실드 획득 가능한 여부를 반환 */
 	FORCEINLINE bool CanGainShield() const { return bCanGainShield; }
 
