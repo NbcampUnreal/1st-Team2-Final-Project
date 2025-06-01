@@ -1,4 +1,4 @@
-#pragma once
+Ôªø#pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameState.h"
@@ -15,6 +15,9 @@ class AADDroneSeller;
 struct FActivatedMissionInfoList;
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnGameStatePropertyChangedDelegate, int32 /*Changed Value*/);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnMissionInfosChangedDelegate, int32 /*Changed Index*/, const FActivatedMissionInfoList& /*Changed Value*/);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnMissionInfosRemovedDelegate, int32 /*Changed Index*/, const FActivatedMissionInfoList& /*Changed Value*/);
+DECLARE_MULTICAST_DELEGATE(FOnMissionListRefreshedDelegate);
 
 #pragma region FastArraySerializer
 
@@ -61,11 +64,14 @@ public:
 	void ModifyProgress(const EMissionType& MissionType, const uint8& MissionIndex, const uint8& NewProgress);
 	void AddOrModify(const EMissionType& MissionType, const uint8& MissionIndex, const uint8& NewProgress);
 
-	//// ¿Œµ¶Ω∫ π›»Ø, æ¯¿∏∏È INDEX_NONE π›»Ø
+	// Ïù∏Îç±Ïä§ Î∞òÌôò, ÏóÜÏúºÎ©¥ INDEX_NONE Î∞òÌôò
 	int32 Contains(const EMissionType& MissionType, const uint8& MissionIndex);
 	
 	void Clear(const int32 SlackCount = 0);
 
+	FOnMissionInfosChangedDelegate OnMissionInfosChangedDelegate;
+	FOnMissionInfosRemovedDelegate OnMissionInfosRemovedDelegate;
+	
 public:
 
 	UPROPERTY()
@@ -91,16 +97,22 @@ class ABYSSDIVERUNDERWORLD_API AADInGameState : public AGameState
 public:
 	AADInGameState();
 
-#pragma region Method
-public:
+protected:
+
 	virtual void PostInitializeComponents() override;
+
 	virtual void BeginPlay() override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void PostNetInit() override;
 
-	UFUNCTION(BlueprintCallable, Exec)
+#pragma region Method
+
+public:
+
+	UFUNCTION(BlueprintCallable)
 	void AddTeamCredit(int32 Credit);
-	UFUNCTION(BlueprintCallable, Exec)
+
+	UFUNCTION(BlueprintCallable)
 	void IncrementPhase();
 
 	UFUNCTION(BlueprintCallable)
@@ -108,9 +120,12 @@ public:
 
 	FString GetMapDisplayName() const;
 
+	void RefreshActivatedMissionList();
+
 	FOnGameStatePropertyChangedDelegate TeamCreditsChangedDelegate;
 	FOnGameStatePropertyChangedDelegate CurrentPhaseChangedDelegate;
 	FOnGameStatePropertyChangedDelegate CurrentPhaseGoalChangedDelegate;
+	FOnMissionListRefreshedDelegate OnMissionListRefreshedDelegate;
 
 protected:
 
@@ -219,6 +234,8 @@ public:
 		CurrentDroneSeller = NewDroneSeller;
 		OnRep_CurrentDroneSeller();
 	}
+
+	FActivatedMissionInfoList& GetActivatedMissionList() { return ActivatedMissionList; }
 
 #pragma endregion
 

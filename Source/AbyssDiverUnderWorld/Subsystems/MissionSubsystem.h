@@ -19,6 +19,7 @@ class UItemUseMission;
 class UKillMonsterMission;
 class UMissionBase;
 
+class AADInGameState;
 /**
  * 
  */
@@ -72,6 +73,8 @@ private:
 
 	void UnlockMissionInternal(FMissionBaseRow* MissionsFromUI);
 
+	bool CheckIfGameStateIsValid();
+
 #pragma endregion
 
 #pragma region Variables
@@ -100,6 +103,8 @@ private:
 	int32 ItemCollectMissionCount = 0;
 	int32 ItemUseMissionCount = 0;
 	int32 KillMonsterMissionCount = 0;
+
+	TObjectPtr<AADInGameState> InGameState;
 
 #pragma endregion
 
