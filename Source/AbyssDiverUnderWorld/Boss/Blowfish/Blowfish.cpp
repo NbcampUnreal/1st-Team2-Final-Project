@@ -25,6 +25,7 @@ ABlowfish::ABlowfish()
 	ExplosionHealthRatio = 0.3f;
 	bIsExplosionTriggered = false;
 	ExplosionDelayTime = 2.0f;
+	ExplosionTriggeredMovementMultiplier = 3.5f;
 }
 
 void ABlowfish::BeginPlay()
@@ -62,15 +63,11 @@ void ABlowfish::M_TriggerExplosion_Implementation()
 	// 복어 스케일 커지는 타임라인 트리거
 	ScaleUpTriggered();
 
+	// 이동 속도를 ExplosionTriggeredMovementMultiplier만큼 곱한 값으로 증가
+	SetCharacterMovementSetting(0.0f, StatComponent->GetMoveSpeed() * ExplosionTriggeredMovementMultiplier);
+
 	// Explosion을 1회성으로 호출하기 위한 bool 값 활성화
 	bIsExplosionTriggered = true;
-	
-	// 몬스터의 움직임 정지
-	if (IsValid(AIController))
-	{
-		AIController->StopMovement();
-		AIController->UnPossess();
-	}
 
 	// ExplosionDelayTime이 경과 후 폭발 로직 수행
 	GetWorldTimerManager().SetTimer(ExplosionTimerHandle, this, &ABlowfish::Explosion, ExplosionDelayTime, false);
