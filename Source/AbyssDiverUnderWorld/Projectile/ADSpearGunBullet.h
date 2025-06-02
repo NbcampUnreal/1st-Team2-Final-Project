@@ -38,6 +38,10 @@ protected:
 	void M_SpawnFX(UNiagaraSystem* Effect, ESFX SFXType, const FVector& SpawnLocation);
 	void M_SpawnFX_Implementation(UNiagaraSystem* Effect, ESFX SFXType, const FVector& SpawnLocation);
 
+	UFUNCTION(NetMulticast, Reliable)
+	void M_AdjustTransform(FTransform WorldTransform);
+	void M_AdjustTransform_Implementation(FTransform WorldTransform);
+
 	UFUNCTION()
 	void OnRep_BulletType();
 
@@ -59,14 +63,13 @@ protected:
 	TObjectPtr<UDataTableSubsystem> DataTableSubsystem;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Component")
 	TObjectPtr<USoundSubsystem> SoundSubsystem;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effect")
-	TObjectPtr<UNiagaraComponent> TrailEffect;
+
 
 private:
 	UPROPERTY(ReplicatedUsing = OnRep_BulletType, VisibleAnywhere, Category = "Bullet")
 	ESpearGunType BulletType;
 	UPROPERTY(VisibleAnywhere, Category = "Bullet")
-	int8 AdditionalDamage;
+	int16 AdditionalDamage;
 	UPROPERTY(VisibleAnywhere, Category = "Bullet")
 	int8 PoisonDuration;
 
