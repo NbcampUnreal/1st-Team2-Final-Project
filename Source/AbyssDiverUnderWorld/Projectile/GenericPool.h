@@ -79,7 +79,7 @@ public:
 
 private:
 	UPROPERTY(VisibleAnywhere, Category = "Pool")
-	TArray<APoolableItem*> ObjectPool;
+	TArray<TObjectPtr<APoolableItem>> ObjectPool;
 
 	TSubclassOf<APoolableItem> PoolableClass;
 

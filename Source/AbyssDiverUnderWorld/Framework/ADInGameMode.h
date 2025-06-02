@@ -50,6 +50,7 @@ private:
 	TObjectPtr<class AADDrone> LastDrone;
 
 	TSubclassOf<class AADSpearGunBullet> BulletClass;
+	UPROPERTY()
 	TObjectPtr<AGenericPool> SpearGunBulletPool = nullptr;
 
 #pragma endregion

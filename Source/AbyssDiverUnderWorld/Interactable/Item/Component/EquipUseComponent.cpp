@@ -563,7 +563,7 @@ void UEquipUseComponent::FireHarpoon()
 
 	// 3) 발사체 스폰 및 초기화
 	const FRotator SpawnRot = (TargetPoint - MuzzleLoc).Rotation();
-	auto* Proj = SpawnHarpoon(MuzzleLoc, SpawnRot);
+	AADSpearGunBullet* Proj = SpawnHarpoon(MuzzleLoc, SpawnRot);
 	if (Proj)
 	{
 		ConfigureProjectile(Proj, TargetPoint, MuzzleLoc);
