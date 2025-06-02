@@ -46,6 +46,8 @@ public:
 
 	void UpdateBatteryInfoDelay();
 	void UpdateBatteryInfo();
+
+	void PlayVisibleAnimation(bool bIsVisible);
 private:
 	void InitializeChargeBatteryWidget();
 #pragma endregion
@@ -60,9 +62,10 @@ public:
 	TObjectPtr<USoundBase> SoundCue = nullptr;
 	TObjectPtr<UAudioComponent> ChargeBatterySound = nullptr;
 private:
-	TObjectPtr<UADInventoryComponent> InventoryComp = nullptr;
-	TObjectPtr<UEquipUseComponent> EquipUseComp = nullptr;
-
+	UPROPERTY(meta = (BindWidgetAnim), Transient)
+	TObjectPtr<UWidgetAnimation> FadeIn;
+	UPROPERTY(meta = (BindWidgetAnim), Transient)
+	TObjectPtr<UWidgetAnimation> FadeOut;
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<URichTextBlock> BatteryAmountText;
 	UPROPERTY(meta = (BindWidget))
@@ -77,7 +80,8 @@ private:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> NVButton;
 
-	FTimerHandle InitialzieTimerHandle;
+	TObjectPtr<UADInventoryComponent> InventoryComp = nullptr;
+	TObjectPtr<UEquipUseComponent> EquipUseComp = nullptr;
 
 	int32 DPVBatteryMax = 0;
 	int32 NVBatteryMax = 0;
@@ -86,6 +90,7 @@ private:
 
 	FName CurrentChargeItem;
 	FTimerHandle IncreaseTimerHandle;
+	FTimerHandle InitialzieTimerHandle;
 
 	TMap<FName, EChargeBatteryType> ChargeBatteryTypeMap = {
 		{FName(TEXT("NightVisionGoggle")), EChargeBatteryType::NightVisionGoggle},

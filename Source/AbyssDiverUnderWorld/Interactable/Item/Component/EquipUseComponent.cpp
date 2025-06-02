@@ -685,7 +685,7 @@ void UEquipUseComponent::ShowChargeBatteryWidget()
 	if (!PC) return;
 
 	// UI 보이기
-	ChargeBatteryInstance->SetVisibility(ESlateVisibility::Visible);
+	ChargeBatteryInstance->PlayVisibleAnimation(true);
 
 	// 커서 상태 저장 후 표시
 	bAlreadyCursorShowed = PC->bShowMouseCursor;
@@ -713,7 +713,7 @@ void UEquipUseComponent::HideChargeBatteryWidget()
 	if (!PC) return;
 
 	// UI 숨기기
-	ChargeBatteryInstance->SetVisibility(ESlateVisibility::Hidden);
+	ChargeBatteryInstance->PlayVisibleAnimation(false);
 
 	// 커서 복원
 	if (!bAlreadyCursorShowed)
