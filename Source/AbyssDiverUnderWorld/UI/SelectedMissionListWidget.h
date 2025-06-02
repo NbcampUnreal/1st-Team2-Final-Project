@@ -7,6 +7,9 @@
 
 class UVerticalBox;
 class UMissionEntryWidget;
+class UTextBlock;
+
+struct FActivatedMissionInfoList;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API USelectedMissionListWidget : public UUserWidget
@@ -16,6 +19,18 @@ class ABYSSDIVERUNDERWORLD_API USelectedMissionListWidget : public UUserWidget
 public:
     // 생성자, 생명주기 함수
     virtual void NativeConstruct() override;
+
+public:
+
+    void AddElement(const FString& ElementText);
+    void RemoveElementAt(const int32& Index);
+    void ModifyElementAt(const FString& NewText, const int32& Index);
+
+    void AddOrModifyElement(int32 ChangedIndex, const FActivatedMissionInfoList& ChangedValue);
+
+private:
+
+    void Refresh();
 
 protected:
 #pragma region Variable

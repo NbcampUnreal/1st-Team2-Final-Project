@@ -23,16 +23,11 @@ protected:
     virtual void BeginPlay() override;
     virtual void PostNetInit() override;
 
-#pragma region Method
-public:
-    // 미션 관련 함수
-    const TArray<FMissionData>& GetSelectedMissions() const { return SelectedMissions; }
-    void SetSelectedMissions(const TArray<FMissionData>& NewMissions) { SelectedMissions = NewMissions; }
-#pragma endregion
-
-
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void CopyProperties(APlayerState* PlayerState) override;
+
+#pragma region Method
+
 public:
 	void SetPlayerInfo(const FString& InNickname);
 
@@ -43,13 +38,10 @@ public:
 	UFUNCTION()
 	void OnRep_Nickname();
 
+#pragma endregion
 
 #pragma region Variable
 protected:
-
-    // 선택된 미션 목록
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mission")
-    TArray<FMissionData> SelectedMissions;
 
 	// persistent Data
 	UPROPERTY(Replicated)

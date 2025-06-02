@@ -1,10 +1,11 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Missions/MissionBase.h"
+
 #include "ItemUseMission.generated.h"
+
+enum class EItemUseMission : uint8;
 
 /**
  * 
@@ -14,4 +15,39 @@ class ABYSSDIVERUNDERWORLD_API UItemUseMission : public UMissionBase
 {
 	GENERATED_BODY()
 	
+public:
+
+	UItemUseMission();
+
+#pragma region Methods
+
+public:
+
+	virtual void InitMission(const FMissionInitParams& Params, const uint8& NewMissionIndex) override;
+	void InitMission(const FMissionInitParams& Params, const EItemUseMission& NewMissionIndex);
+
+	virtual void BindDelegates(UObject* TargetForDelegate) override;
+
+protected:
+
+	virtual void OnConditionMet() override;
+
+#pragma endregion
+
+#pragma region Variables
+
+protected:
+
+	EItemUseMission MissionIndex;
+
+#pragma endregion
+
+
+#pragma region Getters / Setters
+
+public:
+
+	virtual const uint8 GetMissionIndex() const override;
+
+#pragma endregion
 };
