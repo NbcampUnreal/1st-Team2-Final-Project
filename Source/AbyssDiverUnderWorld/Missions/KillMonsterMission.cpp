@@ -16,6 +16,7 @@ void UKillMonsterMission::InitMission(const FMissionInitParams& Params, const EK
 {
 	MissionType = Params.MissionType;
 	GoalCount = Params.GoalCount;
+	ConditionType = Params.ConditionType;
 
 	MissionName = Params.MissionName;
 	MissionDescription = Params.MissionDescription;
@@ -33,7 +34,20 @@ void UKillMonsterMission::UnbindDelegates(UObject* TargetForDelegate)
 {
 }
 
+bool UKillMonsterMission::IsConditionMet()
+{
+	return false;
+}
+
 void UKillMonsterMission::OnConditionMet()
+{
+}
+
+void UKillMonsterMission::OnDamaged(AActor* DamagedActor, AActor* DamageCauser, const float& ReceivedDamage)
+{
+}
+
+void UKillMonsterMission::OnDead(AActor* DamageCauser, AActor* DeadActor)
 {
 }
 

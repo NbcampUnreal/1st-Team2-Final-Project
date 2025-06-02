@@ -30,6 +30,7 @@ public:
 
 protected:
 
+	virtual bool IsConditionMet() override;
 	virtual void OnConditionMet() override;
 
 #pragma endregion

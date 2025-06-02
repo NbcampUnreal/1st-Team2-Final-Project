@@ -30,7 +30,10 @@ public:
 
 protected:
 
+	virtual bool IsConditionMet() override;
 	virtual void OnConditionMet() override;
+	virtual void OnDamaged(AActor* DamagedActor, AActor* DamageCauser, const float& ReceivedDamage);
+	virtual void OnDead(AActor* DamageCauser, AActor* DeadActor);
 
 #pragma endregion
 

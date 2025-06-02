@@ -6,13 +6,15 @@
 #include "MissionBase.generated.h"
 
 enum class EMissionType : uint8;
+enum class EMissionConditionType : uint8;
 
 struct FMissionInitParams
 {
-	FMissionInitParams(const EMissionType& InMissionType, const int32& InGoalCount, const FString& InMissionName, const FString& InMissionDescription, const TArray<int32>& InExtraValues)
+	FMissionInitParams(const EMissionType& InMissionType, const int32& InGoalCount, const EMissionConditionType& InConditionType, const FString& InMissionName, const FString& InMissionDescription, const TArray<int32>& InExtraValues)
 	{
 		MissionType = InMissionType;
 		GoalCount = InGoalCount;
+		ConditionType = InConditionType;
 		MissionName = InMissionName;
 		MissionDescription = InMissionDescription;
 		ExtraValues = InExtraValues;
@@ -20,6 +22,7 @@ struct FMissionInitParams
 
 	EMissionType MissionType;
 	int32 GoalCount;
+	EMissionConditionType ConditionType;
 	FString MissionName;
 	FString MissionDescription;
 	TArray<int32> ExtraValues;
@@ -44,6 +47,7 @@ public:
 protected:
 
 	virtual void OnConditionMet() PURE_VIRTUAL(UMissionBase::OnConditionMet, );
+	virtual bool IsConditionMet() PURE_VIRTUAL(UMissionBase::IsConditionMet, return false; );
 
 #pragma endregion
 
@@ -55,6 +59,8 @@ protected:
 
 	int32 GoalCount;
 	int32 CurrentCount;
+
+	EMissionConditionType ConditionType;
 
 	FString MissionName;
 	FString MissionDescription;

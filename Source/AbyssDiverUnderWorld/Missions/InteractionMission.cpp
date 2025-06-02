@@ -17,6 +17,7 @@ void UInteractionMission::InitMission(const FMissionInitParams& Params, const EI
 {
 	MissionType = Params.MissionType;
 	GoalCount = Params.GoalCount;
+	ConditionType = Params.ConditionType;
 
 	MissionName = Params.MissionName;
 	MissionDescription = Params.MissionDescription;
@@ -32,6 +33,11 @@ void UInteractionMission::BindDelegates(UObject* TargetForDelegate)
 
 void UInteractionMission::UnbindDelegates(UObject* TargetForDelegate)
 {
+}
+
+bool UInteractionMission::IsConditionMet()
+{
+	return false;
 }
 
 void UInteractionMission::OnConditionMet()

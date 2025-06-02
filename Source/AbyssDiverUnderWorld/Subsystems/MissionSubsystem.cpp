@@ -341,6 +341,7 @@ void UMissionSubsystem::ReceiveMissionDataFromUIData(const TArray<FMissionData>&
 		(
 			MissionData->MissionType,
 			MissionData->GoalCount,
+			MissionData->ConditionType,
 			MissionData->MissionName,
 			MissionData->MissionDescription,
 			MissionData->ExtraValues
