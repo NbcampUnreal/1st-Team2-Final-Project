@@ -14,6 +14,9 @@
 #include "Framework/ADPlayerState.h"
 #include "Inventory/ADInventoryComponent.h"
 #include "DataRow/FADItemDataRow.h"
+#include "DataRow/SoundDataRow/SFXDataRow.h"
+#include "Framework/ADGameInstance.h"
+#include "Subsystems/SoundSubsystem.h"
 
 // Sets default values
 AADOreRock::AADOreRock()
@@ -26,6 +29,8 @@ AADOreRock::AADOreRock()
 	InteractableComp = CreateDefaultSubobject<UADInteractableComponent>(TEXT("InteractableComp"));
 
 	bIsHold = true;
+
+
 }
 
 // Called when the game starts or when spawned
@@ -43,6 +48,10 @@ void AADOreRock::BeginPlay()
 			TotalWeight += E->SpawnWeight;
 			CumulativeWeights.Add(TotalWeight);
 		}
+	}
+	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+	{
+		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
 	}
 }
 
@@ -72,12 +81,12 @@ void AADOreRock::OnHoldStart_Implementation(APawn* InstigatorPawn)
 				// 무기를 장착하고 있다면
 				if (InventoryComp->HasEquippedItem())
 				{
-					PreivousEquipIndex = InventoryComp->GetSlotIndex();
-					InventoryComp->S_UseInventoryItem_Implementation(EItemType::Equipment, PreivousEquipIndex);
+					PreviousEquipIndex = InventoryComp->GetSlotIndex();
+					InventoryComp->S_UseInventoryItem_Implementation(EItemType::Equipment, PreviousEquipIndex);
 				}
 				else
 				{
-					PreivousEquipIndex = INDEX_NONE;
+					PreviousEquipIndex = INDEX_NONE;
 				}
 			}
 		}
@@ -92,13 +101,13 @@ void AADOreRock::OnHoldStop_Implementation(APawn* InstigatorPawn)
 	AUnderwaterCharacter* Diver = Cast<AUnderwaterCharacter>(InstigatorPawn);
 	if (!Diver) return;
 
-	if (PreivousEquipIndex != INDEX_NONE)
+	if (PreviousEquipIndex != INDEX_NONE)
 	{
 		if (AADPlayerState* ADPlayerState = InstigatorPawn->GetPlayerState<AADPlayerState>())
 		{
 			if (UADInventoryComponent* InventoryComp = ADPlayerState->GetInventory())
 			{
-				InventoryComp->S_UseInventoryItem_Implementation(EItemType::Equipment, PreivousEquipIndex);
+				InventoryComp->S_UseInventoryItem_Implementation(EItemType::Equipment, PreviousEquipIndex);
 				Diver->CleanupToolAndEffects();
 				LOGI(Log, TEXT("Skip Mining Stops"));
 				return;
@@ -138,7 +147,10 @@ void AADOreRock::HandleMineRequest(APawn* InstigatorPawn)
 			SpawnDrops();
 		}
 	}
-	OnHoldStop(InstigatorPawn);
+	if (this->GetClass()->ImplementsInterface(UIADInteractable::StaticClass()))
+	{
+		IIADInteractable::Execute_OnHoldStop(this, InstigatorPawn);
+	}
 }
 
 void AADOreRock::SpawnDrops()
@@ -210,9 +222,10 @@ void AADOreRock::PlayFractureFX()
 		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 			GetWorld(), RockFragmentsFX, GetActorLocation());
 
-	if (FractureSound)
-		UGameplayStatics::PlaySoundAtLocation(
-			this, FractureSound, GetActorLocation());
+	//if (FractureSound)
+	//	UGameplayStatics::PlaySoundAtLocation(
+	//		this, FractureSound, GetActorLocation());
+	SoundSubsystem->PlayAt(ESFX::CompleteMine, GetActorLocation(), 2.0f);
 }
 
 int32 AADOreRock::SampleDropMass(int32 MinMass, int32 MaxMass) const

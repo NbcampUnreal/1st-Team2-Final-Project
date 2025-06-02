@@ -19,6 +19,8 @@
 #include "Character/PlayerComponent/PlayerHUDComponent.h"
 #include "Character/UnderwaterCharacter.h"
 #include "Framework/ADPlayerState.h"
+#include "Framework/ADGameInstance.h"
+#include "Subsystems/SoundSubsystem.h"
 #include "Framework/ADInGameMode.h"
 #include "Projectile/GenericPool.h"
 
@@ -73,6 +75,11 @@ void UEquipUseComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+	{
+		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
+	}
+
 	// DPV
 	CurrentMultiplier = 1.f;
 	TargetMultiplier = 1.f;
@@ -92,8 +99,10 @@ void UEquipUseComponent::BeginPlay()
 	OriginalPPSettings = CameraComp->PostProcessSettings;
 
 	// 위젯 추가
+	LOGN(TEXT("OwningCharacter : %s"), *OwningCharacter->GetName());
 	if (OwningCharacter->IsLocallyControlled())
 	{
+		LOGN(TEXT("OwningCharacter : %s && Is Local Character"), *OwningCharacter->GetName());
 		APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController());
 		if (PC)
 		{
@@ -260,6 +269,11 @@ void UEquipUseComponent::S_IncreaseAmount_Implementation(int8 AddAmount)
 	}
 }
 
+void UEquipUseComponent::M_PlayFireHarpoonSound_Implementation()
+{
+	SoundSubsystem->PlayAt(ESFX::FireHarpoon, OwningCharacter->GetActorLocation());
+}
+
 void UEquipUseComponent::OnRep_Amount()
 {
 	SetEquipBatteryAmountText();
@@ -356,7 +370,27 @@ void UEquipUseComponent::OnRep_NightVisionUIVisible()
 
 void UEquipUseComponent::OnRep_ChargeBatteryUIVisible()
 {
-	ToggleChargeBatteryWidget();
+	if (bChargeBatteryWidgetVisible)
+	{
+		ShowChargeBatteryWidget();
+	}
+	else
+	{
+		HideChargeBatteryWidget();
+	}
+	
+}
+
+void UEquipUseComponent::OnRep_BoostActive()
+{
+	if (bBoostActive)
+	{
+		SoundSubsystem->PlayAt(ESFX::DPVOn, OwningCharacter->GetActorLocation());
+	}
+	else
+	{
+		SoundSubsystem->PlayAt(ESFX::DPVOff, OwningCharacter->GetActorLocation());
+	}
 }
 
 void UEquipUseComponent::Initialize(FItemData& ItemData)
@@ -552,6 +586,9 @@ void UEquipUseComponent::FireHarpoon()
 {
 	if (!CanFire()) return;
 
+	// 0) 발사 사운드 스폰
+	M_PlayFireHarpoonSound();
+
 	// 1) 카메라 뷰
 	FVector CamLoc; FRotator CamRot;
 	GetCameraView(CamLoc, CamRot);
@@ -588,6 +625,7 @@ void UEquipUseComponent::BoostOn()
 
 	if (Amount <= 0 || bNightVisionOn) return;
 
+	SoundSubsystem->PlayAt(ESFX::DPVOn, OwningCharacter->GetActorLocation());
 	bBoostActive = true;
 	TargetMultiplier = BoostMultiplier;  
 	SetComponentTickEnabled(true);
@@ -597,6 +635,7 @@ void UEquipUseComponent::BoostOff()
 {
 	if (!OwningCharacter.IsValid()) return;
 
+	SoundSubsystem->PlayAt(ESFX::DPVOff, OwningCharacter->GetActorLocation());
 	bBoostActive = false;
 	TargetMultiplier = 1.f;  // 정상 속도로 복귀
 
@@ -675,10 +714,11 @@ void UEquipUseComponent::ToggleChargeBatteryWidget()
 
 void UEquipUseComponent::ShowChargeBatteryWidget()
 {
+	bChargeBatteryWidgetVisible = true;
+
 	if (!OwningCharacter.IsValid() || !OwningCharacter->IsLocallyControlled() || !ChargeBatteryInstance)
 		return;
 
-	bChargeBatteryWidgetVisible = true;
 	LOGIC(Log, TEXT("ShowChargeBatteryWidget: %s"), TEXT("Visible"));
 
 	APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController());
@@ -703,10 +743,11 @@ void UEquipUseComponent::ShowChargeBatteryWidget()
 
 void UEquipUseComponent::HideChargeBatteryWidget()
 {
+	bChargeBatteryWidgetVisible = false;
+	
 	if (!OwningCharacter.IsValid() || !OwningCharacter->IsLocallyControlled() || !ChargeBatteryInstance)
 		return;
 
-	bChargeBatteryWidgetVisible = false;
 	LOGIC(Log, TEXT("HideChargeBatteryWidget: %s"), TEXT("Hidden"));
 
 	APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController());
