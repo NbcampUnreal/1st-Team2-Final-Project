@@ -44,5 +44,7 @@ private:
 	UPROPERTY(EditAnywhere)
 	float MinChaseTime;
 
+	EPathFollowingRequestResult::Type Result;
+	
 	static const FName bIsPlayerHiddenKey;
 };
