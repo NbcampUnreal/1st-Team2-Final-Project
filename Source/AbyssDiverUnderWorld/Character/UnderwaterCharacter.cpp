@@ -29,6 +29,8 @@
 #include "Subsystems/DataTableSubsystem.h"
 #include "UI/HoldInteractionWidget.h"
 #include "Laser/ADLaserCutter.h"
+#include "PlayerComponent/LanternComponent.h"
+#include "PlayerComponent/ShieldComponent.h"
 
 DEFINE_LOG_CATEGORY(LogAbyssDiverCharacter);
 
@@ -122,21 +124,14 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 
 	OxygenComponent = CreateDefaultSubobject<UOxygenComponent>(TEXT("OxygenComponent"));
 	StaminaComponent = CreateDefaultSubobject<UStaminaComponent>(TEXT("StaminaComponent"));
+	ShieldComponent = CreateDefaultSubobject<UShieldComponent>(TEXT("ShieldComponent"));
 
 	InteractionComponent = CreateDefaultSubobject<UADInteractionComponent>(TEXT("InteractionComponent"));
 	InteractableComponent = CreateDefaultSubobject<UADInteractableComponent>(TEXT("InteractableComponent"));
 	ShopInteractionComponent = CreateDefaultSubobject<UShopInteractionComponent>(TEXT("ShopInteractionComponent"));
 	EquipUseComponent = CreateDefaultSubobject<UEquipUseComponent>(TEXT("EquipUseComponent"));
 
-	LanternLightComponent = CreateDefaultSubobject<USpotLightComponent>(TEXT("LanternLightComponent"));
-	LanternLightComponent->SetupAttachment(Mesh1P);
-	LanternLightComponent->SetRelativeLocation(FVector(20.0f, 0.0f, 0.0f));
-	LanternLightComponent->SetOuterConeAngle(25.0f);
-	LanternLightComponent->SetAttenuationRadius(2000.0f); // 거리에 영향을 준다.
-	LanternLightComponent->SetIntensity(200000.0f);
-	bIsLanternOn = false;
-	LanternLightComponent->SetVisibility(bIsLanternOn);
-
+	LanternComponent = CreateDefaultSubobject<ULanternComponent>(TEXT("LanternComponent"));
 	FootstepComponent = CreateDefaultSubobject<UFootstepComponent>(TEXT("FootstepComponent"));
 	
 	bIsRadarOn = false;
@@ -177,6 +172,7 @@ void AUnderwaterCharacter::BeginPlay()
 
 	SpawnRadar();
 	SpawnFlipperMesh();
+	LanternComponent->SpawnLight(GetMesh1PSpringArm(), 2000.0f);
 }
 
 void AUnderwaterCharacter::InitFromPlayerState(AADPlayerState* ADPlayerState)
@@ -302,7 +298,6 @@ void AUnderwaterCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProp
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(AUnderwaterCharacter, bIsLanternOn);
 	DOREPLIFETIME(AUnderwaterCharacter, bIsRadarOn);
 }
 
@@ -312,6 +307,7 @@ void AUnderwaterCharacter::SetEnvState(EEnvState State)
 	{
 		return;
 	}
+	const EEnvState OldState = EnvState;
 	EnvState = State;
 
 	switch (EnvState)
@@ -337,6 +333,9 @@ void AUnderwaterCharacter::SetEnvState(EEnvState State)
 		UE_LOG(AbyssDiver, Error, TEXT("Invalid Character State"));
 		break;
 	}
+
+	OnEnvStateChangedDelegate.Broadcast(OldState, EnvState);
+	K2_OnEnvStateChanged(OldState, EnvState);
 }
 
 void AUnderwaterCharacter::StartCaptureState()
@@ -804,6 +803,8 @@ void AUnderwaterCharacter::M_StartCaptureState_Implementation()
 				true
 			);
 		}
+
+		bCanUseEquipment = false;
 		// Play SFX
 	}
 
@@ -828,8 +829,11 @@ void AUnderwaterCharacter::M_StopCaptureState_Implementation()
 				false,
 				true
 			);
+
+			bCanUseEquipment = true;
 		}
 	}
+	
 	// Play SFX
 
 	SetActorHiddenInGame(false);
@@ -862,31 +866,6 @@ void AUnderwaterCharacter::AdjustSpeed()
 	{
 		LOGVN(Error, TEXT("Invalid Character State"));
 	}
-}
-
-void AUnderwaterCharacter::RequestToggleLanternLight()
-{
-	// @TODO: 서버에서의 빛과 클라이언트에서의 빛의 방향이 서로 다르다.
-	
-	if (HasAuthority())
-	{
-		bIsLanternOn = !bIsLanternOn;
-		OnRep_bIsLanternOn();
-	}
-	else
-	{
-		S_ToggleLanternLight();
-	}
-}
-
-void AUnderwaterCharacter::S_ToggleLanternLight_Implementation()
-{
-	RequestToggleLanternLight();
-}
-
-void AUnderwaterCharacter::OnRep_bIsLanternOn()
-{
-	LanternLightComponent->SetVisibility(bIsLanternOn);
 }
 
 void AUnderwaterCharacter::SpawnRadar()
@@ -1164,8 +1143,13 @@ void AUnderwaterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 float AUnderwaterCharacter::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent,
 	class AController* EventInstigator, AActor* DamageCauser)
 {
-	float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+	// 정해져야 할 것
+	// 1. EmitBloodNoise를 Shield만 소모됬을 때 호출할 것인지
 
+	const FShieldAbsorbResult ShieldAbsorbResult = ShieldComponent->AbsorbDamage(DamageAmount);
+	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Take Damage : %f, Remaining Damage : %f"), DamageAmount, ShieldAbsorbResult.RemainingDamage);
+
+	const float ActualDamage = Super::TakeDamage(ShieldAbsorbResult.RemainingDamage, DamageEvent, EventInstigator, DamageCauser);
 	if (ActualDamage > 0.0f)
 	{
 		EmitBloodNoise();
@@ -1435,7 +1419,7 @@ void AUnderwaterCharacter::Light(const FInputActionValue& InputActionValue)
 	}
 
 	// @TODO : Lantern Light 몬스터 인지 기능 추가
-	RequestToggleLanternLight();
+	LanternComponent->RequestToggleLanternLight();
 }
 
 void AUnderwaterCharacter::Radar(const FInputActionValue& InputActionValue)

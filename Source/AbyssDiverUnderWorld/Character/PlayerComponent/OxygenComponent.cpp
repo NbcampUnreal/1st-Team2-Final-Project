@@ -155,14 +155,14 @@ void UOxygenComponent::SetOxygenLevel(const float NextOxygenLevel, const bool bA
 	OxygenState.OxygenLevel  = FMath::Clamp(NextOxygenLevel, 0.0f, OxygenState.MaxOxygenLevel);
 	OnOxygenLevelChanged.Broadcast(OxygenState.OxygenLevel, OxygenState.MaxOxygenLevel);
 	K2_OnOxygenLevelChanged(OxygenState.OxygenLevel, OxygenState.MaxOxygenLevel);
-	
-	if (OxygenState.OxygenLevel <= 0)
+
+	// bAlwaysUpdate가 있기 때문에 OldOxygenLevel를 확인해야 한다.
+	if (OxygenState.OxygenLevel <= 0 && OldOxygenLevel > 0)
 	{
 		OnOxygenDepleted.Broadcast();
 		K2_OnOxygenDepleted();
 	}
-
-	if (OldOxygenLevel <= 0 && OxygenState.OxygenLevel > 0)
+	if (OxygenState.OxygenLevel > 0 && OldOxygenLevel <= 0)
 	{
 		OnOxygenRestored.Broadcast();
 		K2_OnOxygenRestored();
