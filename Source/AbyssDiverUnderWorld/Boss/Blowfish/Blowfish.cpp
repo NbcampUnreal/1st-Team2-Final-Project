@@ -1,5 +1,6 @@
 #include "Boss/Blowfish/Blowfish.h"
 #include "AbyssDiverUnderWorld.h"
+#include "NiagaraFunctionLibrary.h"
 #include "Character/StatComponent.h"
 #include "Character/UnderwaterCharacter.h"
 #include "Components/CapsuleComponent.h"
@@ -75,6 +76,9 @@ void ABlowfish::M_TriggerExplosion_Implementation()
 
 void ABlowfish::Explosion()
 {
+	UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+	GetWorld(), BloodEffect, GetActorLocation(), FRotator::ZeroRotator, FVector(1), true, true );
+	
 	// 폭발 디버그 구체 그리기 (파란색, 1초 동안 표시)
 	DrawDebugSphere(
 		GetWorld(),
