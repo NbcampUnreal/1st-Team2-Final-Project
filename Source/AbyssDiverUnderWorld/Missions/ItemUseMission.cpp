@@ -29,6 +29,10 @@ void UItemUseMission::BindDelegates(UObject* TargetForDelegate)
 {
 }
 
+void UItemUseMission::UnbindDelegates(UObject* TargetForDelegate)
+{
+}
+
 void UItemUseMission::OnConditionMet()
 {
 }

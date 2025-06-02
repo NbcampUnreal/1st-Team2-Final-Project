@@ -29,6 +29,10 @@ void UAggroTriggerMission::BindDelegates(UObject* TargetForDelegate)
 {
 }
 
+void UAggroTriggerMission::UnbindDelegates(UObject* TargetForDelegate)
+{
+}
+
 void UAggroTriggerMission::OnConditionMet()
 {
 }

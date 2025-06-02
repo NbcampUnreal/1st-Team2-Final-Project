@@ -30,6 +30,10 @@ void UInteractionMission::BindDelegates(UObject* TargetForDelegate)
 {
 }
 
+void UInteractionMission::UnbindDelegates(UObject* TargetForDelegate)
+{
+}
+
 void UInteractionMission::OnConditionMet()
 {
 }

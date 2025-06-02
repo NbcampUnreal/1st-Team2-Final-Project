@@ -29,6 +29,10 @@ void UItemCollectionMission::BindDelegates(UObject* TargetForDelegate)
 {
 }
 
+void UItemCollectionMission::UnbindDelegates(UObject* TargetForDelegate)
+{
+}
+
 void UItemCollectionMission::OnConditionMet()
 {
 }

@@ -27,6 +27,7 @@ public:
 	void InitMission(const FMissionInitParams& Params, const EAggroTriggerMission& NewMissionIndex);
 
 	virtual void BindDelegates(UObject* TargetForDelegate) override;
+	virtual void UnbindDelegates(UObject* TargetForDelegate) override;
 
 protected:
 

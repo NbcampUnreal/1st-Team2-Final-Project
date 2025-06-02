@@ -29,6 +29,10 @@ void UKillMonsterMission::BindDelegates(UObject* TargetForDelegate)
 {
 }
 
+void UKillMonsterMission::UnbindDelegates(UObject* TargetForDelegate)
+{
+}
+
 void UKillMonsterMission::OnConditionMet()
 {
 }

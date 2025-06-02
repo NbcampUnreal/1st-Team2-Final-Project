@@ -39,6 +39,7 @@ public:
 
 	virtual void InitMission(const FMissionInitParams& Params, const uint8& NewMissionIndex) PURE_VIRTUAL(UMissionBase::InitMission, );
 	virtual void BindDelegates(UObject* TargetForDelegate) PURE_VIRTUAL(UMissionBase::BindDelegates, );
+	virtual void UnbindDelegates(UObject* TargetForDelegate) PURE_VIRTUAL(UMissionBase::BindDelegates, );
 
 protected:
 
