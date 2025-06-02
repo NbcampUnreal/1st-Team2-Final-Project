@@ -57,6 +57,7 @@ public:
 	UFUNCTION(Server, Reliable)
 	void S_IncreaseAmount(int8 AddAmount);
 	void S_IncreaseAmount_Implementation(int8 AddAmount);
+
 	UFUNCTION()
 	void OnRep_Amount();
 	UFUNCTION()

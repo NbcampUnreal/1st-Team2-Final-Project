@@ -90,8 +90,10 @@ void UEquipUseComponent::BeginPlay()
 	OriginalPPSettings = CameraComp->PostProcessSettings;
 
 	// 위젯 추가
+	LOGN(TEXT("OwningCharacter : %s"), *OwningCharacter->GetName());
 	if (OwningCharacter->IsLocallyControlled())
 	{
+		LOGN(TEXT("OwningCharacter : %s && Is Local Character"), *OwningCharacter->GetName());
 		APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController());
 		if (PC)
 		{
@@ -354,7 +356,15 @@ void UEquipUseComponent::OnRep_NightVisionUIVisible()
 
 void UEquipUseComponent::OnRep_ChargeBatteryUIVisible()
 {
-	ToggleChargeBatteryWidget();
+	if (bChargeBatteryWidgetVisible)
+	{
+		ShowChargeBatteryWidget();
+	}
+	else
+	{
+		HideChargeBatteryWidget();
+	}
+	
 }
 
 void UEquipUseComponent::Initialize(FItemData& ItemData)
@@ -672,10 +682,11 @@ void UEquipUseComponent::ToggleChargeBatteryWidget()
 
 void UEquipUseComponent::ShowChargeBatteryWidget()
 {
+	bChargeBatteryWidgetVisible = true;
+
 	if (!OwningCharacter.IsValid() || !OwningCharacter->IsLocallyControlled() || !ChargeBatteryInstance)
 		return;
 
-	bChargeBatteryWidgetVisible = true;
 	LOGIC(Log, TEXT("ShowChargeBatteryWidget: %s"), TEXT("Visible"));
 
 	APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController());
@@ -700,10 +711,11 @@ void UEquipUseComponent::ShowChargeBatteryWidget()
 
 void UEquipUseComponent::HideChargeBatteryWidget()
 {
+	bChargeBatteryWidgetVisible = false;
+	
 	if (!OwningCharacter.IsValid() || !OwningCharacter->IsLocallyControlled() || !ChargeBatteryInstance)
 		return;
 
-	bChargeBatteryWidgetVisible = false;
 	LOGIC(Log, TEXT("HideChargeBatteryWidget: %s"), TEXT("Hidden"));
 
 	APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController());

@@ -72,12 +72,12 @@ void AADOreRock::OnHoldStart_Implementation(APawn* InstigatorPawn)
 				// 무기를 장착하고 있다면
 				if (InventoryComp->HasEquippedItem())
 				{
-					PreivousEquipIndex = InventoryComp->GetSlotIndex();
-					InventoryComp->S_UseInventoryItem_Implementation(EItemType::Equipment, PreivousEquipIndex);
+					PreviousEquipIndex = InventoryComp->GetSlotIndex();
+					InventoryComp->S_UseInventoryItem_Implementation(EItemType::Equipment, PreviousEquipIndex);
 				}
 				else
 				{
-					PreivousEquipIndex = INDEX_NONE;
+					PreviousEquipIndex = INDEX_NONE;
 				}
 			}
 		}
@@ -92,13 +92,13 @@ void AADOreRock::OnHoldStop_Implementation(APawn* InstigatorPawn)
 	AUnderwaterCharacter* Diver = Cast<AUnderwaterCharacter>(InstigatorPawn);
 	if (!Diver) return;
 
-	if (PreivousEquipIndex != INDEX_NONE)
+	if (PreviousEquipIndex != INDEX_NONE)
 	{
 		if (AADPlayerState* ADPlayerState = InstigatorPawn->GetPlayerState<AADPlayerState>())
 		{
 			if (UADInventoryComponent* InventoryComp = ADPlayerState->GetInventory())
 			{
-				InventoryComp->S_UseInventoryItem_Implementation(EItemType::Equipment, PreivousEquipIndex);
+				InventoryComp->S_UseInventoryItem_Implementation(EItemType::Equipment, PreviousEquipIndex);
 				Diver->CleanupToolAndEffects();
 				LOGI(Log, TEXT("Skip Mining Stops"));
 				return;
