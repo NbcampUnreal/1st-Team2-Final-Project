@@ -31,6 +31,7 @@
 #include "Laser/ADLaserCutter.h"
 #include "PlayerComponent/LanternComponent.h"
 #include "PlayerComponent/ShieldComponent.h"
+#include "EngineUtils.h"
 
 DEFINE_LOG_CATEGORY(LogAbyssDiverCharacter);
 
@@ -889,6 +890,8 @@ void AUnderwaterCharacter::SpawnRadar()
 	RadarObject->AttachToComponent(FirstPersonCameraComponent, FAttachmentTransformRules::KeepWorldTransform);
 	RadarObject->UpdateRadarSourceComponent(GetRootComponent(), GetRootComponent());
 	SetRadarVisibility(false);
+
+	FindPostProcessVolume();
 }
 
 void AUnderwaterCharacter::RequestToggleRadar()
@@ -897,10 +900,33 @@ void AUnderwaterCharacter::RequestToggleRadar()
 	{
 		bIsRadarOn = !bIsRadarOn;
 		SetRadarVisibility(bIsRadarOn);
+
+		float BlurAmount = (bIsRadarOn) ? 0 : OriginalBlurAmount;
+		if (CachedPostProcessVolume == nullptr)
+		{
+			FindPostProcessVolume();
+		}
+
+		CachedPostProcessVolume->Settings.MotionBlurAmount = BlurAmount;
 	}
 	else
 	{
 		S_ToggleRadar();
+	}
+}
+
+void AUnderwaterCharacter::FindPostProcessVolume()
+{
+	for (APostProcessVolume* PostProcessVolume : TActorRange<APostProcessVolume>(GetWorld()))
+	{
+		if (PostProcessVolume->Settings.bOverride_MotionBlurAmount == false)
+		{
+			continue;
+		}
+
+		CachedPostProcessVolume = PostProcessVolume;
+		OriginalBlurAmount = CachedPostProcessVolume->Settings.MotionBlurAmount;
+		break;
 	}
 }
 
