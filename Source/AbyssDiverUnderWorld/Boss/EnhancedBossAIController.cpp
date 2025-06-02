@@ -24,6 +24,9 @@ AEnhancedBossAIController::AEnhancedBossAIController()
 	bIsDamagedByPlayer = false;
 	bCanTransitionToDamagedState = false;
 	bIsDisappearPlayer = false;
+	bIsPerceptionDamage = true;
+	bIsPerceptionHearing = true;
+	bIsPerceptionSight = true;
 }
 
 void AEnhancedBossAIController::BeginPlay()
@@ -68,7 +71,9 @@ void AEnhancedBossAIController::OnTargetPerceptionUpdatedHandler(AActor* Actor, 
 	// --------------------- 시각 자극 ---------------------
 	// 플레이어가 시야각에 들어오는 경우
 	if (Stimulus.Type == UAISense::GetSenseID<UAISense_Sight>())
-	{	
+	{
+		if (!bIsPerceptionSight) return;
+		
 		// 감지한 대상이 플레이어가 아닌 경우 얼리 리턴
 		AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor);
 		if (!IsValid(Player)) return;
@@ -99,6 +104,8 @@ void AEnhancedBossAIController::OnTargetPerceptionUpdatedHandler(AActor* Actor, 
 	// 데미지를 받는 경우
 	else if (Stimulus.Type == UAISense::GetSenseID<UAISense_Damage>())
 	{
+		if (!bIsPerceptionDamage) return;
+		
 		if (Stimulus.WasSuccessfullySensed())
 		{
 			OnDamagePerceptionSuccess();
@@ -109,6 +116,8 @@ void AEnhancedBossAIController::OnTargetPerceptionUpdatedHandler(AActor* Actor, 
 	// 플레이어가 피를 흘리는 경우
 	else if (Stimulus.Type == UAISense::GetSenseID<UAISense_Hearing>())
 	{
+		if (!bIsPerceptionHearing) return;
+		
 		if (Stimulus.WasSuccessfullySensed())
 		{
 			OnHearingPerceptionSuccess(Stimulus);

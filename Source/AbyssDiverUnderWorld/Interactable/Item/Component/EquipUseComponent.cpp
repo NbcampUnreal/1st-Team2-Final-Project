@@ -21,6 +21,8 @@
 #include "Framework/ADPlayerState.h"
 #include "Framework/ADGameInstance.h"
 #include "Subsystems/SoundSubsystem.h"
+#include "Framework/ADInGameMode.h"
+#include "Projectile/GenericPool.h"
 
 const FName UEquipUseComponent::BASIC_SPEAR_GUN_NAME = TEXT("BasicSpearGun");
 
@@ -598,7 +600,8 @@ void UEquipUseComponent::FireHarpoon()
 
 	// 3) 발사체 스폰 및 초기화
 	const FRotator SpawnRot = (TargetPoint - MuzzleLoc).Rotation();
-	if (auto* Proj = SpawnHarpoon(MuzzleLoc, SpawnRot))
+	AADSpearGunBullet* Proj = SpawnHarpoon(MuzzleLoc, SpawnRot);
+	if (Proj)
 	{
 		ConfigureProjectile(Proj, TargetPoint, MuzzleLoc);
 	}
@@ -722,7 +725,7 @@ void UEquipUseComponent::ShowChargeBatteryWidget()
 	if (!PC) return;
 
 	// UI 보이기
-	ChargeBatteryInstance->SetVisibility(ESlateVisibility::Visible);
+	ChargeBatteryInstance->PlayVisibleAnimation(true);
 
 	// 커서 상태 저장 후 표시
 	bAlreadyCursorShowed = PC->bShowMouseCursor;
@@ -751,7 +754,7 @@ void UEquipUseComponent::HideChargeBatteryWidget()
 	if (!PC) return;
 
 	// UI 숨기기
-	ChargeBatteryInstance->SetVisibility(ESlateVisibility::Hidden);
+	ChargeBatteryInstance->PlayVisibleAnimation(false);
 
 	// 커서 복원
 	if (!bAlreadyCursorShowed)
@@ -873,14 +876,31 @@ FVector UEquipUseComponent::GetMuzzleLocation(const FVector& CamLoc, const FVect
 
 AADSpearGunBullet* UEquipUseComponent::SpawnHarpoon(const FVector& Loc, const FRotator& Rot)
 {
-	FActorSpawnParameters Params;
-	Params.Owner = GetOwner();
-	Params.Instigator = OwningCharacter.Get();
-	Params.SpawnCollisionHandlingOverride =
-		ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-
-	return GetWorld()->SpawnActor<AADSpearGunBullet>(
-		ProjectileClass, Loc, Rot, Params);
+	//FActorSpawnParameters Params;
+	//Params.Owner = GetOwner();
+	//Params.Instigator = OwningCharacter.Get();
+	//Params.SpawnCollisionHandlingOverride =
+	//	ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+	APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController());
+	if (GetWorld())
+	{
+		AADInGameMode* GM = Cast<AADInGameMode>(GetWorld()->GetAuthGameMode());
+		if (GM)
+		{
+			AADSpearGunBullet* SpawnedBullet = nullptr;
+			SpawnedBullet = GM->GetGenericPool()->GetObject<AADSpearGunBullet>();
+			if (SpawnedBullet)
+			{
+				SpawnedBullet->SetOwner(PC);
+				SpawnedBullet->InitializeTransform(Loc, Rot);
+			}
+			LOGIC(Log, TEXT("Projectile Id : %d"), SpawnedBullet->GetProjectileId());
+			return SpawnedBullet;
+		}
+	}
+	return nullptr;
+	//return GetWorld()->SpawnActor<AADSpearGunBullet>(
+	//	ProjectileClass, Loc, Rot, Params);
 }
 
 void UEquipUseComponent::ConfigureProjectile(AADSpearGunBullet* Proj, const FVector& TargetPoint, const FVector& MuzzleLoc)
@@ -899,12 +919,13 @@ void UEquipUseComponent::ConfigureProjectile(AADSpearGunBullet* Proj, const FVec
 		Proj->SetBulletType(ESpearGunType::Bomb);
 	}
 
-	UProjectileMovementComponent* ProjectileMovementComp = Proj->GetProjectileMovementComp();
-	float Speed = (ProjectileMovementComp->InitialSpeed > 0.f) ? ProjectileMovementComp->InitialSpeed : 3000.f;
 	FVector LaunchDir = (TargetPoint - MuzzleLoc).GetSafeNormal();
-	// ProjectileMovementComp->ProjectileGravityScale = 0.f; // 필요 시 비활성화
-	ProjectileMovementComp->Velocity = LaunchDir * Speed;
-	ProjectileMovementComp->Activate(true);
+	Proj->InitializeSpeed(LaunchDir, 4000.0f);
+	//UProjectileMovementComponent* ProjectileMovementComp = Proj->GetProjectileMovementComp();
+	//float Speed = (ProjectileMovementComp->InitialSpeed > 0.f) ? ProjectileMovementComp->InitialSpeed : 3000.f;
+	//// ProjectileMovementComp->ProjectileGravityScale = 0.f; // 필요 시 비활성화
+	//ProjectileMovementComp->Velocity = LaunchDir * Speed;
+	//ProjectileMovementComp->Activate(true);
 
 	// 3) 탄약·쿨다운
 	--CurrentAmmoInMag;

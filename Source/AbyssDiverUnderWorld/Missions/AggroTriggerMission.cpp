@@ -7,20 +7,14 @@ UAggroTriggerMission::UAggroTriggerMission()
     MissionType = EMissionType::AggroTrigger;
 }
 
-void UAggroTriggerMission::InitMission(const FMissionInitParams& Params, const uint8& NewMissionIndex)
+void UAggroTriggerMission::InitMission(const FMissionInitParams& Params)
 {
-	InitMission(Params, (EAggroTriggerMission)NewMissionIndex);
+	Super::InitMission(Params);
 }
 
-void UAggroTriggerMission::InitMission(const FMissionInitParams& Params, const EAggroTriggerMission& NewMissionIndex)
+void UAggroTriggerMission::InitMission(const FAggroMissionInitParams& Params, const EAggroTriggerMission& NewMissionIndex)
 {
-	MissionType = Params.MissionType;
-	GoalCount = Params.GoalCount;
-
-	MissionName = Params.MissionName;
-	MissionDescription = Params.MissionDescription;
-
-	ExtraValues = Params.ExtraValues;
+	InitMission((const FMissionInitParams&)Params);
 
 	MissionIndex = NewMissionIndex;
 }
@@ -29,8 +23,13 @@ void UAggroTriggerMission::BindDelegates(UObject* TargetForDelegate)
 {
 }
 
-void UAggroTriggerMission::OnConditionMet()
+void UAggroTriggerMission::UnbindDelegates(UObject* TargetForDelegate)
 {
+}
+
+bool UAggroTriggerMission::IsConditionMet()
+{
+	return false;
 }
 
 const uint8 UAggroTriggerMission::GetMissionIndex() const

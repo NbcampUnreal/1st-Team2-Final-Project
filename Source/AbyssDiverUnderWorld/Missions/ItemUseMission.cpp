@@ -7,20 +7,14 @@ UItemUseMission::UItemUseMission()
 	MissionType = EMissionType::ItemUse;
 }
 
-void UItemUseMission::InitMission(const FMissionInitParams& Params, const uint8& NewMissionIndex)
+void UItemUseMission::InitMission(const FMissionInitParams& Params)
 {
-	InitMission(Params, (EItemUseMission)NewMissionIndex);
+	Super::InitMission(Params);
 }
 
-void UItemUseMission::InitMission(const FMissionInitParams& Params, const EItemUseMission& NewMissionIndex)
+void UItemUseMission::InitMission(const FItemUseMissionInitParams& Params, const EItemUseMission& NewMissionIndex)
 {
-	MissionType = Params.MissionType;
-	GoalCount = Params.GoalCount;
-
-	MissionName = Params.MissionName;
-	MissionDescription = Params.MissionDescription;
-
-	ExtraValues = Params.ExtraValues;
+	InitMission((const FMissionInitParams&)Params);
 
 	MissionIndex = NewMissionIndex;
 }
@@ -29,8 +23,13 @@ void UItemUseMission::BindDelegates(UObject* TargetForDelegate)
 {
 }
 
-void UItemUseMission::OnConditionMet()
+void UItemUseMission::UnbindDelegates(UObject* TargetForDelegate)
 {
+}
+
+bool UItemUseMission::IsConditionMet()
+{
+	return false;
 }
 
 const uint8 UItemUseMission::GetMissionIndex() const
