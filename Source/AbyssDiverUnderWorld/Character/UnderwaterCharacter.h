@@ -273,17 +273,6 @@ protected:
 	UFUNCTION()
 	void AdjustSpeed();
 
-	/** Lantern Toggle 요청 */
-	void RequestToggleLanternLight();
-
-	/** Request Toggle Lantern Light를 서버에서 처리한다. */
-	UFUNCTION(Server, Reliable)
-	void S_ToggleLanternLight();
-	void S_ToggleLanternLight_Implementation();
-
-	UFUNCTION()
-	void OnRep_bIsLanternOn();
-
 	/** 레이더 Actor를 생성한다. */
 	void SpawnRadar();
 
@@ -366,10 +355,10 @@ protected:
 
 	void CompleteInteraction(const FInputActionValue& InputActionValue);
 
-	/** 라이트 함수. 미구현*/
+	/** 라이트 토글 함수*/
 	void Light(const FInputActionValue& InputActionValue);
 
-	/** 레이더 함수. 미구현*/
+	/** 레이더 토글 함수 */
 	void Radar(const FInputActionValue& InputActionValue);
 
 	/** 재장전 함수 */
@@ -613,10 +602,6 @@ private:
 	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float SprintSpeed;
 
-	/** 현재 라이트 활성화 여부 */
-	UPROPERTY(BlueprintReadOnly, ReplicatedUsing=OnRep_bIsLanternOn, Category = Character, meta = (AllowPrivateAccess = "true"))
-	uint8 bIsLanternOn : 1;
-
 	/** 생성할 레이더 BP */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Radar", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<class ARadar> RadarClass;
@@ -753,9 +738,9 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UEquipUseComponent> EquipUseComponent;
 
-	/** Light 컴포넌트. 캐릭터가 라이트를 켜고 끌 수 있다. */
+	/** Lantern 컴포넌트. 캐릭터가 라이트를 켜고 끌 수 있다. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<class USpotLightComponent> LanternLightComponent;
+	TObjectPtr<class ULanternComponent> LanternComponent;
 
 	/** 발자국 소리 컴포넌트 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
@@ -795,6 +780,11 @@ public:
 
 	/** Shop Interaction Component를 반환 */
 	FORCEINLINE UShopInteractionComponent* GetShopInteractionComponent() const { return ShopInteractionComponent; }
+
+	/** 1인칭 Camera Component를 반환 */
+	FORCEINLINE UCameraComponent* GetFirstPersonCameraComponent() const { return FirstPersonCameraComponent; }
+
+	FORCEINLINE USpringArmComponent* GetMesh1PSpringArm() const { return Mesh1PSpringArm; }
 
 	/** 캐릭터의 상태를 반환 */
 	FORCEINLINE EEnvState GetEnvState() const { return EnvState; }

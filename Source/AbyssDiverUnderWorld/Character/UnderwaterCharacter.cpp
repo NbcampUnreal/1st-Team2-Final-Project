@@ -29,6 +29,7 @@
 #include "Subsystems/DataTableSubsystem.h"
 #include "UI/HoldInteractionWidget.h"
 #include "Laser/ADLaserCutter.h"
+#include "PlayerComponent/LanternComponent.h"
 #include "PlayerComponent/ShieldComponent.h"
 
 DEFINE_LOG_CATEGORY(LogAbyssDiverCharacter);
@@ -130,15 +131,7 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	ShopInteractionComponent = CreateDefaultSubobject<UShopInteractionComponent>(TEXT("ShopInteractionComponent"));
 	EquipUseComponent = CreateDefaultSubobject<UEquipUseComponent>(TEXT("EquipUseComponent"));
 
-	LanternLightComponent = CreateDefaultSubobject<USpotLightComponent>(TEXT("LanternLightComponent"));
-	LanternLightComponent->SetupAttachment(Mesh1P);
-	LanternLightComponent->SetRelativeLocation(FVector(20.0f, 0.0f, 0.0f));
-	LanternLightComponent->SetOuterConeAngle(25.0f);
-	LanternLightComponent->SetAttenuationRadius(2000.0f); // 거리에 영향을 준다.
-	LanternLightComponent->SetIntensity(200000.0f);
-	bIsLanternOn = false;
-	LanternLightComponent->SetVisibility(bIsLanternOn);
-
+	LanternComponent = CreateDefaultSubobject<ULanternComponent>(TEXT("LanternComponent"));
 	FootstepComponent = CreateDefaultSubobject<UFootstepComponent>(TEXT("FootstepComponent"));
 	
 	bIsRadarOn = false;
@@ -304,7 +297,6 @@ void AUnderwaterCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProp
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(AUnderwaterCharacter, bIsLanternOn);
 	DOREPLIFETIME(AUnderwaterCharacter, bIsRadarOn);
 }
 
@@ -875,31 +867,6 @@ void AUnderwaterCharacter::AdjustSpeed()
 	}
 }
 
-void AUnderwaterCharacter::RequestToggleLanternLight()
-{
-	// @TODO: 서버에서의 빛과 클라이언트에서의 빛의 방향이 서로 다르다.
-	
-	if (HasAuthority())
-	{
-		bIsLanternOn = !bIsLanternOn;
-		OnRep_bIsLanternOn();
-	}
-	else
-	{
-		S_ToggleLanternLight();
-	}
-}
-
-void AUnderwaterCharacter::S_ToggleLanternLight_Implementation()
-{
-	RequestToggleLanternLight();
-}
-
-void AUnderwaterCharacter::OnRep_bIsLanternOn()
-{
-	LanternLightComponent->SetVisibility(bIsLanternOn);
-}
-
 void AUnderwaterCharacter::SpawnRadar()
 {
 	if (RadarClass == nullptr)
@@ -1451,7 +1418,7 @@ void AUnderwaterCharacter::Light(const FInputActionValue& InputActionValue)
 	}
 
 	// @TODO : Lantern Light 몬스터 인지 기능 추가
-	RequestToggleLanternLight();
+	LanternComponent->RequestToggleLanternLight();
 }
 
 void AUnderwaterCharacter::Radar(const FInputActionValue& InputActionValue)
