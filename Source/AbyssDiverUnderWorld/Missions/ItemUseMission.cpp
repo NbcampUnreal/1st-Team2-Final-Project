@@ -16,6 +16,7 @@ void UItemUseMission::InitMission(const FMissionInitParams& Params, const EItemU
 {
 	MissionType = Params.MissionType;
 	GoalCount = Params.GoalCount;
+	ConditionType = Params.ConditionType;
 
 	MissionName = Params.MissionName;
 	MissionDescription = Params.MissionDescription;
@@ -27,6 +28,15 @@ void UItemUseMission::InitMission(const FMissionInitParams& Params, const EItemU
 
 void UItemUseMission::BindDelegates(UObject* TargetForDelegate)
 {
+}
+
+void UItemUseMission::UnbindDelegates(UObject* TargetForDelegate)
+{
+}
+
+bool UItemUseMission::IsConditionMet()
+{
+	return false;
 }
 
 void UItemUseMission::OnConditionMet()

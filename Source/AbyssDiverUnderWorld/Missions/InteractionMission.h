@@ -26,9 +26,11 @@ public:
 	void InitMission(const FMissionInitParams& Params, const EInteractionMission& NewMissionIndex);
 
 	virtual void BindDelegates(UObject* TargetForDelegate) override;
+	virtual void UnbindDelegates(UObject* TargetForDelegate) override;
 
 protected:
 
+	virtual bool IsConditionMet() override;
 	virtual void OnConditionMet() override;
 
 #pragma endregion

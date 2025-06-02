@@ -61,6 +61,9 @@ public:
 
 	void ReceiveMissionDataFromUIData(const TArray<FMissionData>& Missions);
 
+	void RequestBinding(UObject* Requester);
+	void RequestUnbinding(UObject* Requester);
+
 private:
 
 	void MakeAndAddMissionDataForUI(const FMissionBaseRow* MissionBaseData, const uint8& MissionIndex);

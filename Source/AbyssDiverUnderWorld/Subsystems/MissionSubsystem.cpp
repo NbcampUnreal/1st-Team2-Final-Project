@@ -341,6 +341,7 @@ void UMissionSubsystem::ReceiveMissionDataFromUIData(const TArray<FMissionData>&
 		(
 			MissionData->MissionType,
 			MissionData->GoalCount,
+			MissionData->ConditionType,
 			MissionData->MissionName,
 			MissionData->MissionDescription,
 			MissionData->ExtraValues
@@ -351,6 +352,22 @@ void UMissionSubsystem::ReceiveMissionDataFromUIData(const TArray<FMissionData>&
 	}
 
 	InGameState->RefreshActivatedMissionList();
+}
+
+void UMissionSubsystem::RequestBinding(UObject* Requester)
+{
+	for (TObjectPtr<UMissionBase> Mission : Missions)
+	{
+		Mission->BindDelegates(Requester);
+	}
+}
+
+void UMissionSubsystem::RequestUnbinding(UObject* Requester)
+{
+	for (TObjectPtr<UMissionBase> Mission : Missions)
+	{
+		Mission->UnbindDelegates(Requester);
+	}
 }
 
 void UMissionSubsystem::MakeAndAddMissionDataForUI(const FMissionBaseRow* MissionBaseData, const uint8& MissionIndex)

@@ -16,6 +16,7 @@ void UAggroTriggerMission::InitMission(const FMissionInitParams& Params, const E
 {
 	MissionType = Params.MissionType;
 	GoalCount = Params.GoalCount;
+	ConditionType = Params.ConditionType;
 
 	MissionName = Params.MissionName;
 	MissionDescription = Params.MissionDescription;
@@ -27,6 +28,15 @@ void UAggroTriggerMission::InitMission(const FMissionInitParams& Params, const E
 
 void UAggroTriggerMission::BindDelegates(UObject* TargetForDelegate)
 {
+}
+
+void UAggroTriggerMission::UnbindDelegates(UObject* TargetForDelegate)
+{
+}
+
+bool UAggroTriggerMission::IsConditionMet()
+{
+	return false;
 }
 
 void UAggroTriggerMission::OnConditionMet()

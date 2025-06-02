@@ -26,10 +26,14 @@ public:
 	void InitMission(const FMissionInitParams& Params, const EKillMonsterMission& NewMissionIndex);
 
 	virtual void BindDelegates(UObject* TargetForDelegate) override;
+	virtual void UnbindDelegates(UObject* TargetForDelegate) override;
 
 protected:
 
+	virtual bool IsConditionMet() override;
 	virtual void OnConditionMet() override;
+	virtual void OnDamaged(AActor* DamagedActor, AActor* DamageCauser, const float& ReceivedDamage);
+	virtual void OnDead(AActor* DamageCauser, AActor* DeadActor);
 
 #pragma endregion
 
