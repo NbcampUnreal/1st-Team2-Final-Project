@@ -14,7 +14,6 @@
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/PawnNoiseEmitterComponent.h"
-#include "Components/SpotLightComponent.h"
 #include "Footstep/FootstepComponent.h"
 #include "Framework/ADPlayerState.h"
 #include "Framework/ADPlayerController.h"
@@ -138,7 +137,7 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	RadarOffset = FVector(150.0f, 0.0f, 0.0f);
 	RadarRotation = FRotator(90.0f, 0.0f, 0.0f);
 
-	EnvState = EEnvState::Underwater;
+	EnvironmentState = EEnvironmentState::Underwater;
 }
 
 void AUnderwaterCharacter::BeginPlay()
@@ -301,18 +300,18 @@ void AUnderwaterCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProp
 	DOREPLIFETIME(AUnderwaterCharacter, bIsRadarOn);
 }
 
-void AUnderwaterCharacter::SetEnvState(EEnvState State)
+void AUnderwaterCharacter::SetEnvironmentState(EEnvironmentState State)
 {
-	if (EnvState == State)
+	if (EnvironmentState == State)
 	{
 		return;
 	}
-	const EEnvState OldState = EnvState;
-	EnvState = State;
+	const EEnvironmentState OldState = EnvironmentState;
+	EnvironmentState = State;
 
-	switch (EnvState)
+	switch (EnvironmentState)
 	{
-	case EEnvState::Underwater:
+	case EEnvironmentState::Underwater:
 		GetCharacterMovement()->GravityScale = 0.0f;
 		SetFlipperMeshVisibility(true);
 		FirstPersonCameraArm->bEnableCameraRotationLag = true;
@@ -320,7 +319,7 @@ void AUnderwaterCharacter::SetEnvState(EEnvState State)
 		OxygenComponent->SetShouldConsumeOxygen(true);
 		bCanUseEquipment = true;
 		break;
-	case EEnvState::Ground:
+	case EEnvironmentState::Ground:
 		// 지상에서는 이동 방향으로 회전을 하게 한다.
 		GetCharacterMovement()->GravityScale = GetWorld()->GetGravityZ() / ExpectedGravityZ;
 		SetFlipperMeshVisibility(false);
@@ -334,8 +333,8 @@ void AUnderwaterCharacter::SetEnvState(EEnvState State)
 		break;
 	}
 
-	OnEnvStateChangedDelegate.Broadcast(OldState, EnvState);
-	K2_OnEnvStateChanged(OldState, EnvState);
+	OnEnvironmentStateChangedDelegate.Broadcast(OldState, EnvironmentState);
+	K2_OnEnvronmentStateChanged(OldState, EnvironmentState);
 }
 
 void AUnderwaterCharacter::StartCaptureState()
@@ -854,11 +853,11 @@ void AUnderwaterCharacter::AdjustSpeed()
 	
 
 	EffectiveSpeed = BaseSpeed * Multiplier;
-	if (EnvState == EEnvState::Underwater)
+	if (EnvironmentState == EEnvironmentState::Underwater)
 	{
 		GetCharacterMovement()->MaxSwimSpeed = EffectiveSpeed;
 	}
-	else if (EnvState == EEnvState::Ground)
+	else if (EnvironmentState == EEnvironmentState::Ground)
 	{
 		GetCharacterMovement()->MaxWalkSpeed = EffectiveSpeed;
 	}
@@ -957,8 +956,8 @@ void AUnderwaterCharacter::OnPhysicsVolumeChanged(class APhysicsVolume* NewVolum
 {
 	LOG_NETWORK(LogAbyssDiverCharacter, Display, TEXT("Physics Volume Changed : %s"), *NewVolume->GetName());
 
-	const EEnvState NewEnvState = NewVolume->bWaterVolume ? EEnvState::Underwater : EEnvState::Ground;
-	SetEnvState(NewEnvState);
+	const EEnvironmentState NewEnvironmentState = NewVolume->bWaterVolume ? EEnvironmentState::Underwater : EEnvironmentState::Ground;
+	SetEnvironmentState(NewEnvironmentState);
 }
 
 void AUnderwaterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -1225,11 +1224,11 @@ void AUnderwaterCharacter::Move(const FInputActionValue& InputActionValue)
 	// 캐릭터의 XYZ 축을 기준으로 입력을 받는다.
 	const FVector MoveInput = InputActionValue.Get<FVector>();
 
-	if (EnvState == EEnvState::Ground)
+	if (EnvironmentState == EEnvironmentState::Ground)
 	{
 		MoveGround(MoveInput);
 	}
-	else if (EnvState == EEnvState::Underwater)
+	else if (EnvironmentState == EEnvironmentState::Underwater)
 	{
 		MoveUnderwater(MoveInput);
 	}
@@ -1281,7 +1280,7 @@ void AUnderwaterCharacter::MoveGround(FVector MoveInput)
 
 void AUnderwaterCharacter::JumpInputStart(const FInputActionValue& InputActionValue)
 {
-	if (EnvState == EEnvState::Underwater)	
+	if (EnvironmentState == EEnvironmentState::Underwater)	
 	{
 		// 수중에서는 점프가 불가능하다.
 		return;
@@ -1292,7 +1291,7 @@ void AUnderwaterCharacter::JumpInputStart(const FInputActionValue& InputActionVa
 
 void AUnderwaterCharacter::JumpInputStop(const FInputActionValue& InputActionValue)
 {
-	if (EnvState == EEnvState::Underwater)
+	if (EnvironmentState == EEnvironmentState::Underwater)
 	{
 		// 수중에서는 점프가 불가능하다.
 		return;

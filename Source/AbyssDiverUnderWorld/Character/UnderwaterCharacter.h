@@ -34,7 +34,7 @@ enum class ELocomotionMode : uint8;
 
 /* 캐릭터의 지상, 수중을 결정, Move 로직, Animation이 변경되고 사용 가능 기능이 제한된다. */
 UENUM(BlueprintType)
-enum class EEnvState : uint8
+enum class EEnvironmentState : uint8
 {
 	Underwater,
 	Ground,
@@ -133,7 +133,7 @@ public:
 
 	/** 현재 캐릭터의 상태를 전환. 수중, 지상 */
 	UFUNCTION(BlueprintCallable)
-	void SetEnvState(EEnvState State);
+	void SetEnvironmentState(EEnvironmentState State);
 
 	/** 빠른 구현을 위해 Captrue를 현재 Multicast로 구현한다.
 	 * 이후 변경 모델
@@ -245,7 +245,7 @@ protected:
 
 	/** 캐릭터의 환경이 변경됬을 시에 Blueprint에서 호출될 함수 */
 	UFUNCTION(BlueprintImplementableEvent)
-	void K2_OnEnvStateChanged(EEnvState OldEnvState, EEnvState NewEnvState);
+	void K2_OnEnvronmentStateChanged(EEnvironmentState OldEnvironmentState, EEnvironmentState NewEnvironmentState);
 
 	/** Player State 정보를 초기화 */
 	void InitFromPlayerState(class AADPlayerState* ADPlayerState);
@@ -423,10 +423,10 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FOnCharacterStateChanged OnCharacterStateChangedDelegate;
 
-	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnEnvStateChanged, EEnvState, OldEnvState, EEnvState, NewEnvState);
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnEnvironmentStateChanged, EEnvironmentState, OldEnvironmentState, EEnvironmentState, NewEnvironmentState);
 	/** 캐릭터의 환경 상태가 변경되었을 때 호출되는 델리게이트 */
 	UPROPERTY(BlueprintAssignable)
-	FOnEnvStateChanged OnEnvStateChangedDelegate;
+	FOnEnvironmentStateChanged OnEnvironmentStateChangedDelegate;
 
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnMontageEnd, UAnimMontage*, Montage, bool, bInterrupted);
 	/** 1인칭 메시 몽타주 종료 시 호출되는 델리게이트 */
@@ -564,7 +564,7 @@ private:
 
 	/** 캐릭터의 현재 상태. 지상 혹은 수중 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
-	EEnvState EnvState;
+	EEnvironmentState EnvironmentState;
 
 	/** Capture 상태 여부. 추후 상태가 많아지면 상태 패턴 이용을 고려 */
 	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
@@ -788,7 +788,7 @@ public:
 	FORCEINLINE USpringArmComponent* GetMesh1PSpringArm() const { return Mesh1PSpringArm; }
 
 	/** 캐릭터의 상태를 반환 */
-	FORCEINLINE EEnvState GetEnvState() const { return EnvState; }
+	FORCEINLINE EEnvironmentState GetEnvironmentState() const { return EnvironmentState; }
 
 	/** 현재 Locomotion Mode를 반환 */
 	FORCEINLINE ELocomotionMode GetLocomotionMode() const { return LocomotionMode; }
