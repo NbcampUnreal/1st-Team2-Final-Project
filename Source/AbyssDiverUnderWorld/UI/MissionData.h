@@ -27,7 +27,7 @@ public:
 
     EMissionType MissionType;
 
-    int32 MissionIndex;
+    uint8 MissionIndex;
 
     FORCEINLINE bool operator==(const FMissionData& Other) const
     {

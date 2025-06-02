@@ -11,4 +11,4 @@
 #define LOGV(Verbosity, Format, ...) UE_LOG(AbyssDiver, Verbosity, TEXT("%s(%s) %s"), LOG_CALLINFO, *FString::FromInt(__LINE__), *FString::Printf(Format, ##__VA_ARGS__));
 #define LOGVN(Verbosity, Format, ...) UE_LOG(AbyssDiver, Verbosity, TEXT("[%s] %s(%s) %s"), LOG_NETMODEINFO, LOG_CALLINFO, *FString::FromInt(__LINE__), *FString::Printf(Format, ##__VA_ARGS__));
 
-DECLARE_LOG_CATEGORY_EXTERN(AbyssDiver, Warning, All);
+DECLARE_LOG_CATEGORY_EXTERN(AbyssDiver, Log, All);

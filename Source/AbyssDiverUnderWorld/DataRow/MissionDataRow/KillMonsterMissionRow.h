@@ -10,6 +10,8 @@ enum class EKillMonsterMission : uint8
 	Mission1
 };
 
+enum class EUnitId : uint8;
+
 USTRUCT(BlueprintType)
 struct FKillMonsterMissionRow : public FMissionBaseRow
 {
@@ -22,4 +24,7 @@ struct FKillMonsterMissionRow : public FMissionBaseRow
 	
 	UPROPERTY(EditDefaultsOnly, Category = "KillMonsterMission")
 	EKillMonsterMission Mission;
+
+	UPROPERTY(EditDefaultsOnly, Category = "KillMonsterMission")
+	EUnitId UnitId;
 };

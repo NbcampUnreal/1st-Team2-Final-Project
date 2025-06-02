@@ -8,22 +8,14 @@ UInteractionMission::UInteractionMission()
 	
 }
 
-void UInteractionMission::InitMission(const FMissionInitParams& Params, const uint8& NewMissionIndex)
+void UInteractionMission::InitMission(const FMissionInitParams& Params)
 {
-	InitMission(Params, (EInteractionMission)NewMissionIndex);
+	Super::InitMission(Params);
 }
 
-void UInteractionMission::InitMission(const FMissionInitParams& Params, const EInteractionMission& NewMissionIndex)
+void UInteractionMission::InitMission(const FInteractiontMissionInitParams& Params, const EInteractionMission& NewMissionIndex)
 {
-	MissionType = Params.MissionType;
-	GoalCount = Params.GoalCount;
-	ConditionType = Params.ConditionType;
-
-	MissionName = Params.MissionName;
-	MissionDescription = Params.MissionDescription;
-
-	ExtraValues = Params.ExtraValues;
-
+	InitMission((const FMissionInitParams&)Params);
 	MissionIndex = NewMissionIndex;
 }
 
@@ -38,10 +30,6 @@ void UInteractionMission::UnbindDelegates(UObject* TargetForDelegate)
 bool UInteractionMission::IsConditionMet()
 {
 	return false;
-}
-
-void UInteractionMission::OnConditionMet()
-{
 }
 
 const uint8 UInteractionMission::GetMissionIndex() const
