@@ -3,7 +3,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "EngineUtils.h"
 #include "Components/ActorComponent.h"
 #include "ShieldComponent.generated.h"
 
@@ -16,7 +15,7 @@ struct FShieldAbsorbResult
 	FShieldAbsorbResult() 
 		: AbsorbedDamage(0.0f), RemainingDamage(0.0f) {}
 	
-	/** 실드엣더 흡수한 데미지 */
+	/** 실드가 흡수한 데미지 */
 	UPROPERTY(BlueprintReadOnly)
 	float AbsorbedDamage;
 	
@@ -45,7 +44,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	FShieldAbsorbResult AbsorbDamage(const float DamageAmount);
 
-	/** 실드를 획득 */
+	/** 실드를 획득. GainAmount > 0 */
 	UFUNCTION(BlueprintCallable)
 	void GainShield(const float GainAmount);
 	

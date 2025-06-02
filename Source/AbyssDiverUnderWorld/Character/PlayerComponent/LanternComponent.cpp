@@ -112,7 +112,8 @@ void ULanternComponent::SpawnLight(USceneComponent* AttachToComponent, const flo
 		const float ConeRadius = ConeHeight * FMath::Tan(FMath::DegreesToRadians(LanternLightComponent->OuterConeAngle));
 		const float CapsuleHalfHeight = ConeHeight * 0.5f + ConeRadius; // 캡슐의 반지름 + 캡슐의 높이 절반
 
-		const FVector CapsuleCenter = Origin + Direction * ConeHeight * 0.5f; // 캡슐의 중심 위치는 라이트 위치에서 방향으로 ConeHeight의 절반만큼 이동한 위치
+		// 캡슐의 중심 위치는 라이트 위치에서 방향으로 ConeHeight의 절반만큼 이동한 위치
+		const FVector CapsuleCenter = Origin + Direction * ConeHeight * 0.5f;
 		// Z축이 Direction 방향이 되도록 회전 행렬을 생성
 		// const FQuat CapsuleRotation = FRotationMatrix::MakeFromZ(Direction).ToQuat();
 		const FQuat CapsuleRotation = FQuat::FindBetweenVectors(FVector::UpVector, Direction);

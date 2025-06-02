@@ -784,6 +784,7 @@ public:
 	/** 1인칭 Camera Component를 반환 */
 	FORCEINLINE UCameraComponent* GetFirstPersonCameraComponent() const { return FirstPersonCameraComponent; }
 
+	/** 1인칭 Camera Arm을 반환 */
 	FORCEINLINE USpringArmComponent* GetMesh1PSpringArm() const { return Mesh1PSpringArm; }
 
 	/** 캐릭터의 상태를 반환 */
