@@ -86,6 +86,7 @@ void ULanternComponent::SpawnLight(USceneComponent* AttachToComponent, const flo
 	LanternLightComponent->SetIntensity(200000.0f);
 	LanternLightComponent->SetVisibility(bIsLanternOn);
 	LanternLightComponent->RegisterComponent();
+	LanternLightComponent->SetLightingChannels(true, false, true);
 	LanternLightComponent->AttachToComponent(AttachToComponent,FAttachmentTransformRules::SnapToTargetIncludingScale);
 
 	const FVector ForwardVector = GetOwner()->GetActorForwardVector();

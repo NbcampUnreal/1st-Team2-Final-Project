@@ -6,6 +6,18 @@
 #include "Components/ActorComponent.h"
 #include "LanternComponent.generated.h"
 
+/*
+ * Light Channel
+ * Local 3인칭 메시 : Channel 1
+ * Other 3인칭 메시 : Channel 1, 2
+ * Lantern Light : Channel 0, 2
+ * Directional Light : Channel 0, 1
+ * Other Mesh : Channel 0
+ *
+ * Self Character Mesh : Lantern X, Directional Light O
+ * Other Character Mesh : Lantern O, Directional Light O
+ * Other Mesh : Lantern O, Directional Light O
+ */
 
 /**
  * 플레이어의 랜턴 컴포넌트
