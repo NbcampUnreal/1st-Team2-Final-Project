@@ -14,6 +14,9 @@
 #include "Framework/ADPlayerState.h"
 #include "Inventory/ADInventoryComponent.h"
 #include "DataRow/FADItemDataRow.h"
+#include "DataRow/SoundDataRow/SFXDataRow.h"
+#include "Framework/ADGameInstance.h"
+#include "Subsystems/SoundSubsystem.h"
 
 // Sets default values
 AADOreRock::AADOreRock()
@@ -26,6 +29,8 @@ AADOreRock::AADOreRock()
 	InteractableComp = CreateDefaultSubobject<UADInteractableComponent>(TEXT("InteractableComp"));
 
 	bIsHold = true;
+
+
 }
 
 // Called when the game starts or when spawned
@@ -43,6 +48,10 @@ void AADOreRock::BeginPlay()
 			TotalWeight += E->SpawnWeight;
 			CumulativeWeights.Add(TotalWeight);
 		}
+	}
+	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+	{
+		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
 	}
 }
 
@@ -138,7 +147,10 @@ void AADOreRock::HandleMineRequest(APawn* InstigatorPawn)
 			SpawnDrops();
 		}
 	}
-	OnHoldStop(InstigatorPawn);
+	if (this->GetClass()->ImplementsInterface(UIADInteractable::StaticClass()))
+	{
+		IIADInteractable::Execute_OnHoldStop(this, InstigatorPawn);
+	}
 }
 
 void AADOreRock::SpawnDrops()
@@ -210,9 +222,10 @@ void AADOreRock::PlayFractureFX()
 		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 			GetWorld(), RockFragmentsFX, GetActorLocation());
 
-	if (FractureSound)
-		UGameplayStatics::PlaySoundAtLocation(
-			this, FractureSound, GetActorLocation());
+	//if (FractureSound)
+	//	UGameplayStatics::PlaySoundAtLocation(
+	//		this, FractureSound, GetActorLocation());
+	SoundSubsystem->PlayAt(ESFX::CompleteMine, GetActorLocation(), 2.0f);
 }
 
 int32 AADOreRock::SampleDropMass(int32 MinMass, int32 MaxMass) const

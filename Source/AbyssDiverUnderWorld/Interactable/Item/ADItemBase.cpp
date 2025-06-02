@@ -6,6 +6,8 @@
 #include "Inventory/ADInventoryComponent.h"
 #include "Framework/ADPlayerState.h"
 #include "GameFramework/ProjectileMovementComponent.h"
+#include "Framework/ADGameInstance.h"
+#include "Subsystems/SoundSubsystem.h"
 
 DEFINE_LOG_CATEGORY(ItemLog);
 
@@ -37,6 +39,11 @@ AADItemBase::AADItemBase()
 void AADItemBase::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+	{
+		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
+	}
 }
 
 void AADItemBase::Interact_Implementation(AActor* InstigatorActor)
@@ -60,6 +67,7 @@ void AADItemBase::HandlePickup(APawn* InstigatorPawn)
 		LOGI(Log, TEXT("Find Inventory"));
 		if (Inventory->AddInventoryItem(ItemData))
 		{
+			SoundSubsystem->PlayAt(ESFX::Pickup, GetActorLocation(), 2.0f);
 			Destroy();
 		}
 	}

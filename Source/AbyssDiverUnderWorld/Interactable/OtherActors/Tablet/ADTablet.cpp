@@ -5,6 +5,8 @@
 #include "AbyssDiverUnderWorld.h"
 #include "Net/UnrealNetwork.h"
 #include "UI/TabletBaseWidget.h"
+#include "Framework/ADGameInstance.h"
+#include "Subsystems/SoundSubsystem.h"
 
 // Sets default values
 AADTablet::AADTablet()
@@ -39,6 +41,16 @@ AADTablet::AADTablet()
 
 }
 
+void AADTablet::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+	{
+		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
+	}
+}
+
 void AADTablet::Interact_Implementation(AActor* InstigatorActor)
 {
 	AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(InstigatorActor);
@@ -58,6 +70,7 @@ void AADTablet::Interact_Implementation(AActor* InstigatorActor)
 
 void AADTablet::Pickup(AUnderwaterCharacter* UnderwaterCharacter)
 {
+
 	if (!UnderwaterCharacter) return;
 
 
@@ -87,14 +100,15 @@ void AADTablet::Pickup(AUnderwaterCharacter* UnderwaterCharacter)
 		{
 			if (TabletWidget->Start)
 			{
+				SoundSubsystem->PlayAt(ESFX::OpenTablet, GetActorLocation());
 				// PlayAnimation(애니메이션, 시작 시간, LoopCount, 플레이 모드)
 				TabletWidget->PlayAnimation(TabletWidget->Start, 0.f, 1, EUMGSequencePlayMode::Forward, 1.f);
-				LOG(TEXT("TabletUI Animation Start"))
+				LOG(TEXT("TabletUI Animation Start"));
 			}
 		}
 	}
 
-	LOG(TEXT("Tablet attached to Mesh1P at TabletSocket"));
+	LOG(TEXT("Tablet attached to Mesh at TabletSocket"));
 	
 	HeldBy = UnderwaterCharacter;
 }
