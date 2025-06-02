@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "AbyssDiverUnderWorld.h"
 #include "BossAIController.h"
 #include "Character/UnitBase.h"
 #include "Boss.generated.h"
@@ -49,9 +50,6 @@ public:
 	 * AnimNotify_BossAttack 호출 후 일정 시간 후 호출
 	 */
 	virtual void OnAttackEnded();
-	
-	/** 다음 순찰 지점으로 변환 */ 
-	void AddPatrolPoint();
 
 	/** 보스의 이동속도를 설정하는 함수 */
 	void SetMoveSpeed(const float& SpeedMultiplier);
@@ -138,8 +136,14 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Collision")
 	TObjectPtr<UCapsuleComponent> AttackCollision;
+
+	UPROPERTY()
+	float ChaseAccumulatedTime = 0.0f;
 	
 protected:
+	UPROPERTY(EditDefaultsOnly, Category = "Boss|Stat")
+	uint8 bIsAttackInfinite : 1;
+	
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Camera")
 	TObjectPtr<UCameraControllerComponent> CameraControllerComponent;
 	
