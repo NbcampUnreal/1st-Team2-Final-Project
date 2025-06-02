@@ -325,7 +325,6 @@ void ABoss::OnBiteCollisionOverlapBegin(UPrimitiveComponent* OverlappedComp, AAc
 void ABoss::OnAttackCollisionOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
                                           UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	LOG(TEXT("OnAttackCollisionOverlapBegin"));
 	// 공격 대상이 플레이어가 아닌 경우 얼리 리턴
 	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(OtherActor);
 	if (!IsValid(Player)) return;
@@ -336,7 +335,6 @@ void ABoss::OnAttackCollisionOverlapBegin(UPrimitiveComponent* OverlappedComp, A
 void ABoss::OnAttackCollisionOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
 							UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-	LOG(TEXT("OnAttackCollisionOverlapEnd"));
 	// 공격 대상이 플레이어가 아닌 경우 얼리 리턴
 	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(OtherActor);
 	if (!IsValid(Player)) return;
