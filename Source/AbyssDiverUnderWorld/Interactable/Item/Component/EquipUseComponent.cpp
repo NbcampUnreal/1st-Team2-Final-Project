@@ -19,6 +19,8 @@
 #include "Character/PlayerComponent/PlayerHUDComponent.h"
 #include "Character/UnderwaterCharacter.h"
 #include "Framework/ADPlayerState.h"
+#include "Framework/ADGameInstance.h"
+#include "Subsystems/SoundSubsystem.h"
 
 const FName UEquipUseComponent::BASIC_SPEAR_GUN_NAME = TEXT("BasicSpearGun");
 
@@ -70,6 +72,11 @@ UEquipUseComponent::UEquipUseComponent()
 void UEquipUseComponent::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+	{
+		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
+	}
 
 	// DPV
 	CurrentMultiplier = 1.f;
@@ -260,6 +267,11 @@ void UEquipUseComponent::S_IncreaseAmount_Implementation(int8 AddAmount)
 	}
 }
 
+void UEquipUseComponent::M_PlayFireHarpoonSound_Implementation()
+{
+	SoundSubsystem->PlayAt(ESFX::FireHarpoon, OwningCharacter->GetActorLocation());
+}
+
 void UEquipUseComponent::OnRep_Amount()
 {
 	SetEquipBatteryAmountText();
@@ -365,6 +377,18 @@ void UEquipUseComponent::OnRep_ChargeBatteryUIVisible()
 		HideChargeBatteryWidget();
 	}
 	
+}
+
+void UEquipUseComponent::OnRep_BoostActive()
+{
+	if (bBoostActive)
+	{
+		SoundSubsystem->PlayAt(ESFX::DPVOn, OwningCharacter->GetActorLocation());
+	}
+	else
+	{
+		SoundSubsystem->PlayAt(ESFX::DPVOff, OwningCharacter->GetActorLocation());
+	}
 }
 
 void UEquipUseComponent::Initialize(FItemData& ItemData)
@@ -560,6 +584,9 @@ void UEquipUseComponent::FireHarpoon()
 {
 	if (!CanFire()) return;
 
+	// 0) 발사 사운드 스폰
+	M_PlayFireHarpoonSound();
+
 	// 1) 카메라 뷰
 	FVector CamLoc; FRotator CamRot;
 	GetCameraView(CamLoc, CamRot);
@@ -595,6 +622,7 @@ void UEquipUseComponent::BoostOn()
 
 	if (Amount <= 0 || bNightVisionOn) return;
 
+	SoundSubsystem->PlayAt(ESFX::DPVOn, OwningCharacter->GetActorLocation());
 	bBoostActive = true;
 	TargetMultiplier = BoostMultiplier;  
 	SetComponentTickEnabled(true);
@@ -604,6 +632,7 @@ void UEquipUseComponent::BoostOff()
 {
 	if (!OwningCharacter.IsValid()) return;
 
+	SoundSubsystem->PlayAt(ESFX::DPVOff, OwningCharacter->GetActorLocation());
 	bBoostActive = false;
 	TargetMultiplier = 1.f;  // 정상 속도로 복귀
 

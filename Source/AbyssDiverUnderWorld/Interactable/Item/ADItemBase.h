@@ -35,6 +35,9 @@ public:
 	
 
 protected:
+	UFUNCTION(NetMulticast, Reliable)
+	void M_PlayPickupSound();
+	void M_PlayPickupSound_Implementation();
 	UFUNCTION()
 	void OnRep_ItemData();
 

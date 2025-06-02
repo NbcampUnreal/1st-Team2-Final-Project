@@ -67,10 +67,15 @@ void AADItemBase::HandlePickup(APawn* InstigatorPawn)
 		LOGI(Log, TEXT("Find Inventory"));
 		if (Inventory->AddInventoryItem(ItemData))
 		{
-			SoundSubsystem->PlayAt(ESFX::Pickup, GetActorLocation(), 2.0f);
+			M_PlayPickupSound();
 			Destroy();
 		}
 	}
+}
+
+void AADItemBase::M_PlayPickupSound_Implementation()
+{
+	SoundSubsystem->PlayAt(ESFX::Pickup, GetActorLocation(), 2.0f);
 }
 
 void AADItemBase::OnRep_ItemData()

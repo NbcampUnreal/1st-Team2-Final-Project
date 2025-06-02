@@ -14,6 +14,7 @@ class UUserWidget;
 class AADSpearGunBullet;
 class UADNightVisionGoggle;
 class UChargeBatteryWidget;
+class USoundSubsystem;
 
 enum class EAction : uint8
 {
@@ -57,6 +58,10 @@ public:
 	UFUNCTION(Server, Reliable)
 	void S_IncreaseAmount(int8 AddAmount);
 	void S_IncreaseAmount_Implementation(int8 AddAmount);
+	UFUNCTION(NetMulticast, Unreliable)
+	void M_PlayFireHarpoonSound();
+	void M_PlayFireHarpoonSound_Implementation();
+
 
 	UFUNCTION()
 	void OnRep_Amount();
@@ -70,6 +75,8 @@ public:
 	void OnRep_NightVisionUIVisible();
 	UFUNCTION()
 	void OnRep_ChargeBatteryUIVisible();
+	UFUNCTION()
+	void OnRep_BoostActive();
 
 	// 내부 실행 함수
 	UFUNCTION(BlueprintCallable)
@@ -142,7 +149,7 @@ public:
 	UPROPERTY(ReplicatedUsing = OnRep_ReserveAmmo, EditAnywhere, BlueprintReadWrite, Category = "Weapon")
 	int32 ReserveAmmo = 0;
 
-	UPROPERTY( EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
 	int32 MagazineSize = 5;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Weapon")
@@ -164,7 +171,7 @@ public:
 	int32 Amount = 0;
 	UPROPERTY(Replicated)
 	FName CurrentEquipmentName;
-	UPROPERTY(Replicated)
+	UPROPERTY(ReplicatedUsing = OnRep_BoostActive)
 	uint8 bBoostActive : 1;
 	UPROPERTY(ReplicatedUsing = OnRep_NightVisionOn)
 	uint8 bNightVisionOn : 1;
@@ -208,6 +215,10 @@ protected:
 	TObjectPtr<UADInventoryComponent> Inventory = nullptr;
 	UPROPERTY(EditAnywhere, Category = "Projectile")
 	TSubclassOf<AADSpearGunBullet> ProjectileClass = nullptr;
+	UPROPERTY()
+	TObjectPtr<USoundSubsystem> SoundSubsystem;
+
+
 	FItemData* CurrentItemData = nullptr;
 
 	TWeakObjectPtr<class ACharacter> OwningCharacter;
