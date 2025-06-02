@@ -1,29 +1,25 @@
-#include "Missions/KillMonsterMission.h"
+﻿#include "Missions/KillMonsterMission.h"
 
 #include "DataRow/MissionDataRow/KillMonsterMissionRow.h"
+#include "Character/UnderwaterCharacter.h"
 
 UKillMonsterMission::UKillMonsterMission()
 {
 	MissionType = EMissionType::KillMonster;
 }
 
-void UKillMonsterMission::InitMission(const FMissionInitParams& Params, const uint8& NewMissionIndex)
+void UKillMonsterMission::InitMission(const FMissionInitParams& Params)
 {
-	InitMission(Params, (EKillMonsterMission)NewMissionIndex);
+	Super::InitMission(Params);
 }
 
-void UKillMonsterMission::InitMission(const FMissionInitParams& Params, const EKillMonsterMission& NewMissionIndex)
+void UKillMonsterMission::InitMission(const FKillMissionInitParams& Params, const EKillMonsterMission& NewMissionIndex)
 {
-	MissionType = Params.MissionType;
-	GoalCount = Params.GoalCount;
-	ConditionType = Params.ConditionType;
-
-	MissionName = Params.MissionName;
-	MissionDescription = Params.MissionDescription;
-
-	ExtraValues = Params.ExtraValues;
+	InitMission((const FMissionInitParams&)Params);
 
 	MissionIndex = NewMissionIndex;
+
+	UnitId = Params.UnitId;
 }
 
 void UKillMonsterMission::BindDelegates(UObject* TargetForDelegate)
@@ -36,11 +32,26 @@ void UKillMonsterMission::UnbindDelegates(UObject* TargetForDelegate)
 
 bool UKillMonsterMission::IsConditionMet()
 {
-	return false;
-}
+	bool bConditionMet = false;
+	
+	switch (ConditionType)
+	{
+	case EMissionConditionType::AtLeast:
+		bConditionMet = (GoalCount <= CurrentCount);
+		break;
+	case EMissionConditionType::AtMost:
+		bConditionMet = (GoalCount >= CurrentCount);
+		break;
+	case EMissionConditionType::EqualTo:
+		bConditionMet = (GoalCount == CurrentCount);
+		break;
+	case EMissionConditionType::Custom:
+		break;
+	default:
+		break;
+	}
 
-void UKillMonsterMission::OnConditionMet()
-{
+	return bConditionMet;
 }
 
 void UKillMonsterMission::OnDamaged(AActor* DamagedActor, AActor* DamageCauser, const float& ReceivedDamage)
@@ -49,6 +60,35 @@ void UKillMonsterMission::OnDamaged(AActor* DamagedActor, AActor* DamageCauser, 
 
 void UKillMonsterMission::OnDead(AActor* DamageCauser, AActor* DeadActor)
 {
+
+	AUnderwaterCharacter* Causer = Cast<AUnderwaterCharacter>(DamageCauser);
+	if (Causer == nullptr)
+	{
+		LOGV(Log, TEXT("Causer == nullptr, Name : %s"), *DamageCauser->GetName());
+		return;
+	}
+
+	AUnitBase* DeadUnit = Cast<AUnitBase>(DeadActor);
+	if (DeadUnit == nullptr)
+	{
+		LOGV(Log, TEXT("DeadUnit == nullptr, Name : %s"), *DeadActor->GetName());
+		return;
+	}
+
+	const EUnitId DeadUnitId = DeadUnit->GetUnitId();
+
+	if (DeadUnitId != UnitId)
+	{
+		return;
+	}
+
+	CurrentCount++;
+	if (IsConditionMet() == false)
+	{
+		return;
+	}
+
+	OnConditionMet();
 }
 
 const uint8 UKillMonsterMission::GetMissionIndex() const
