@@ -1,5 +1,50 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "Missions/InteractionMission.h"
 
+#include "DataRow/MissionDataRow/InteractionMissionRow.h"
+
+UInteractionMission::UInteractionMission()
+{
+	MissionType = EMissionType::Interaction;
+	
+}
+
+void UInteractionMission::InitMission(const FMissionInitParams& Params, const uint8& NewMissionIndex)
+{
+	InitMission(Params, (EInteractionMission)NewMissionIndex);
+}
+
+void UInteractionMission::InitMission(const FMissionInitParams& Params, const EInteractionMission& NewMissionIndex)
+{
+	MissionType = Params.MissionType;
+	GoalCount = Params.GoalCount;
+	ConditionType = Params.ConditionType;
+
+	MissionName = Params.MissionName;
+	MissionDescription = Params.MissionDescription;
+
+	ExtraValues = Params.ExtraValues;
+
+	MissionIndex = NewMissionIndex;
+}
+
+void UInteractionMission::BindDelegates(UObject* TargetForDelegate)
+{
+}
+
+void UInteractionMission::UnbindDelegates(UObject* TargetForDelegate)
+{
+}
+
+bool UInteractionMission::IsConditionMet()
+{
+	return false;
+}
+
+void UInteractionMission::OnConditionMet()
+{
+}
+
+const uint8 UInteractionMission::GetMissionIndex() const
+{
+	return (uint8)MissionIndex;
+}

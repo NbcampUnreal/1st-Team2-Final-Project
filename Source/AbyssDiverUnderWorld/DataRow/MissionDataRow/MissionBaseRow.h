@@ -15,6 +15,15 @@ enum class EMissionType : uint8
 	KillMonster
 };
 
+UENUM(BlueprintType)
+enum class EMissionConditionType : uint8
+{
+	AtLeast, // GoalCount 이상일 경우 조건 만족
+	AtMost, // GoalCount 이하일 경우 조건 만족
+	EqualTo, // GoalCount와 같은 경우 조건 만족
+	Custom, // 자율
+};
+
 USTRUCT(BlueprintType)
 struct FMissionBaseRow : public FTableRowBase
 {
@@ -25,6 +34,11 @@ struct FMissionBaseRow : public FTableRowBase
 
 	UPROPERTY(EditDefaultsOnly, Category = "MissionBase")
 	int32 GoalCount;
+
+	// AtLeast : GoalCount 이상일 경우 조건 만족, AtMost : GoalCount 이하일 경우 조건 만족
+	// EqualTo : GoalCount와 같은 경우 조건 만족, Custom : 자율
+	UPROPERTY(EditDefaultsOnly, Category = "MissionBase")
+	EMissionConditionType ConditionType;
 
 	UPROPERTY(EditDefaultsOnly, Category = "MissionBase")
 	FString MissionName;

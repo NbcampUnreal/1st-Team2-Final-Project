@@ -6,16 +6,20 @@
 UBTTask_LimadonSpit::UBTTask_LimadonSpit()
 {
 	NodeName = TEXT("Limadon Spit");
+	bCreateNodeInstance = false;
 }
 
 EBTNodeResult::Type UBTTask_LimadonSpit::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
-	// 캐스팅 실패 시 얼리 리턴
-	ALimadon* Limadon = Cast<ALimadon>(OwnerComp.GetAIOwner()->GetPawn());
-	if (!IsValid(Limadon)) return EBTNodeResult::Failed;
-
-	// 뱉는 로직 및 애니메이션 재생
-	Limadon->M_PlayAnimation(Limadon->SpitAnimation);
-
+	FBTLimadonSpitTaskMemory* TaskMemory = (FBTLimadonSpitTaskMemory*)NodeMemory;
+	if (!TaskMemory) return EBTNodeResult::Failed;
+	
+	TaskMemory->AIController = Cast<ABossAIController>(OwnerComp.GetAIOwner());
+	TaskMemory->Limadon = Cast<ALimadon>(TaskMemory->AIController->GetCharacter());
+	
+	if (!TaskMemory->Limadon.IsValid() || !TaskMemory->AIController.IsValid()) return EBTNodeResult::Failed;
+	
+	TaskMemory->Limadon->M_PlayAnimation(TaskMemory->Limadon->SpitAnimation);
+	
 	return EBTNodeResult::Succeeded;
 }

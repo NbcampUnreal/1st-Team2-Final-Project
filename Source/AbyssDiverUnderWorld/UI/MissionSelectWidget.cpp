@@ -23,7 +23,7 @@ void UMissionSelectWidget::NativeConstruct()
         PC->bShowMouseCursor = true;
     }
 
-    if (Button_Start)
+    if (Button_Start && Button_Start->OnClicked.IsBound() == false)
     {
         Button_Start->OnClicked.AddDynamic(this, &UMissionSelectWidget::OnStartButtonClicked);
         Button_Start->SetIsEnabled(true); // 항상 활성화
@@ -37,6 +37,7 @@ void UMissionSelectWidget::NativeConstruct()
         {TEXT("???"), 3, false, TEXT("얕은 해류 클리어 시 해금")}
     };*/
 
+    ScrollBox_MissionList->ClearChildren();
     const TSet<FMissionData>& Missions = GetGameInstance()->GetSubsystem<UMissionSubsystem>()->GetMissionDataForUI();
 
     for (const FMissionData& Mission : Missions)
@@ -101,36 +102,14 @@ void UMissionSelectWidget::OnStartButtonClicked()
 {
     RemoveFromParent();  // 👉 미션 선택 UI 닫기
 
+    OnStartButtonClickedDelegate.ExecuteIfBound(SelectedMissions);
+
     if (APlayerController* PC = GetOwningPlayer())
     {
-        if (AADPlayerState* PS = PC->GetPlayerState<AADPlayerState>())
-        {
-            PS->SetSelectedMissions(SelectedMissions);
-            UE_LOG(LogTemp, Warning, TEXT("✅ [MissionSelectWidget] 선택된 미션 수: %d"), SelectedMissions.Num());
-        }
-
+        UE_LOG(LogTemp, Warning, TEXT("✅ [MissionSelectWidget] 선택된 미션 수: %d"), SelectedMissions.Num());
         // 입력 모드 원복
         FInputModeGameOnly InputMode;
         PC->SetInputMode(InputMode);
         PC->bShowMouseCursor = false;
-
-        // ✅ 미션 리스트 위젯 생성 및 화면에 추가
-        if (WBP_SelectedMissionListClass) // UPROPERTY로 받은 위젯 클래스
-        {
-            USelectedMissionListWidget* MissionListWidget = CreateWidget<USelectedMissionListWidget>(GetWorld(), WBP_SelectedMissionListClass);
-            if (MissionListWidget)
-            {
-                MissionListWidget->AddToViewport();
-                UE_LOG(LogTemp, Warning, TEXT("✅ 선택된 미션 리스트 위젯 AddToViewport 완료"));
-            }
-            else
-            {
-                UE_LOG(LogTemp, Error, TEXT("❌ 선택된 미션 리스트 위젯 생성 실패"));
-            }
-        }
-        else
-        {
-            UE_LOG(LogTemp, Error, TEXT("❌ WBP_SelectedMissionListClass가 설정되지 않음"));
-        }
     }
 }

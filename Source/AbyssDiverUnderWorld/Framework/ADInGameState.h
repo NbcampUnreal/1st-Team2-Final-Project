@@ -1,13 +1,93 @@
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameState.h"
+
+#include "Net/Serialization/FastArraySerializer.h"
+
 #include "ADInGameState.generated.h"
 
 enum class EMapName : uint8;
+enum class EMissionType : uint8;
+
 class AADDroneSeller;
 
+struct FActivatedMissionInfoList;
+
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnGameStatePropertyChangedDelegate, int32 /*Changed Value*/);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnMissionInfosChangedDelegate, int32 /*Changed Index*/, const FActivatedMissionInfoList& /*Changed Value*/);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnMissionInfosRemovedDelegate, int32 /*Changed Index*/, const FActivatedMissionInfoList& /*Changed Value*/);
+DECLARE_MULTICAST_DELEGATE(FOnMissionListRefreshedDelegate);
+
+#pragma region FastArraySerializer
+
+USTRUCT(BlueprintType)
+struct FActivatedMissionInfo : public FFastArraySerializerItem
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	EMissionType MissionType;
+
+	UPROPERTY()
+	uint8 MissionIndex;
+
+	UPROPERTY()
+	uint8 bIsCompleted : 1;
+
+	UPROPERTY()
+	uint8 CurrentProgress;
+
+	void PostReplicatedAdd(const FActivatedMissionInfoList& InArraySerializer);
+
+	void PostReplicatedChange(const FActivatedMissionInfoList& InArraySerializer);
+
+	void PreReplicatedRemove(const FActivatedMissionInfoList& InArraySerializer);
+
+	bool operator==(const FActivatedMissionInfo& Other) const
+	{
+		return MissionType == Other.MissionType && MissionIndex == Other.MissionIndex;
+	}
+};
+
+USTRUCT(BlueprintType)
+struct FActivatedMissionInfoList : public FFastArraySerializer
+{
+	GENERATED_BODY()
+
+public:
+
+	bool NetDeltaSerialize(FNetDeltaSerializeInfo& DeltaParams);
+
+	void Add(const EMissionType& MissionType, const uint8& MissionIndex);
+	void Remove(const EMissionType& MissionType, const uint8& MissionIndex);
+	void ModifyProgress(const EMissionType& MissionType, const uint8& MissionIndex, const uint8& NewProgress);
+	void AddOrModify(const EMissionType& MissionType, const uint8& MissionIndex, const uint8& NewProgress);
+
+	// 인덱스 반환, 없으면 INDEX_NONE 반환
+	int32 Contains(const EMissionType& MissionType, const uint8& MissionIndex);
+	
+	void Clear(const int32 SlackCount = 0);
+
+	FOnMissionInfosChangedDelegate OnMissionInfosChangedDelegate;
+	FOnMissionInfosRemovedDelegate OnMissionInfosRemovedDelegate;
+	
+public:
+
+	UPROPERTY()
+	TArray<FActivatedMissionInfo> MissionInfoList;
+};
+
+template<>
+struct TStructOpsTypeTraits<FActivatedMissionInfoList> : public TStructOpsTypeTraitsBase2<FActivatedMissionInfoList>
+{
+	enum
+	{
+		WithNetDeltaSerializer = true,
+	};
+};
+
+#pragma endregion
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADInGameState : public AGameState
@@ -17,16 +97,22 @@ class ABYSSDIVERUNDERWORLD_API AADInGameState : public AGameState
 public:
 	AADInGameState();
 
-#pragma region Method
-public:
+protected:
+
 	virtual void PostInitializeComponents() override;
+
 	virtual void BeginPlay() override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void PostNetInit() override;
 
-	UFUNCTION(BlueprintCallable, Exec)
+#pragma region Method
+
+public:
+
+	UFUNCTION(BlueprintCallable)
 	void AddTeamCredit(int32 Credit);
-	UFUNCTION(BlueprintCallable, Exec)
+
+	UFUNCTION(BlueprintCallable)
 	void IncrementPhase();
 
 	UFUNCTION(BlueprintCallable)
@@ -34,9 +120,12 @@ public:
 
 	FString GetMapDisplayName() const;
 
+	void RefreshActivatedMissionList();
+
 	FOnGameStatePropertyChangedDelegate TeamCreditsChangedDelegate;
 	FOnGameStatePropertyChangedDelegate CurrentPhaseChangedDelegate;
 	FOnGameStatePropertyChangedDelegate CurrentPhaseGoalChangedDelegate;
+	FOnMissionListRefreshedDelegate OnMissionListRefreshedDelegate;
 
 protected:
 
@@ -79,6 +168,9 @@ protected:
 
 	UPROPERTY(ReplicatedUsing = OnRep_CurrentDroneSeller)
 	TObjectPtr<AADDroneSeller> CurrentDroneSeller;
+
+	UPROPERTY(Replicated)
+	FActivatedMissionInfoList ActivatedMissionList;
 
 private:
 
@@ -142,6 +234,8 @@ public:
 		CurrentDroneSeller = NewDroneSeller;
 		OnRep_CurrentDroneSeller();
 	}
+
+	FActivatedMissionInfoList& GetActivatedMissionList() { return ActivatedMissionList; }
 
 #pragma endregion
 

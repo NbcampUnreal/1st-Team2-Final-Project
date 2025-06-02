@@ -6,13 +6,15 @@
 #include "MissionBase.generated.h"
 
 enum class EMissionType : uint8;
+enum class EMissionConditionType : uint8;
 
 struct FMissionInitParams
 {
-	FMissionInitParams(const EMissionType& InMissionType, const int32& InGoalCount, const FString& InMissionName, const FString& InMissionDescription, const TArray<int32>& InExtraValues)
+	FMissionInitParams(const EMissionType& InMissionType, const int32& InGoalCount, const EMissionConditionType& InConditionType, const FString& InMissionName, const FString& InMissionDescription, const TArray<int32>& InExtraValues)
 	{
 		MissionType = InMissionType;
 		GoalCount = InGoalCount;
+		ConditionType = InConditionType;
 		MissionName = InMissionName;
 		MissionDescription = InMissionDescription;
 		ExtraValues = InExtraValues;
@@ -20,6 +22,7 @@ struct FMissionInitParams
 
 	EMissionType MissionType;
 	int32 GoalCount;
+	EMissionConditionType ConditionType;
 	FString MissionName;
 	FString MissionDescription;
 	TArray<int32> ExtraValues;
@@ -37,12 +40,14 @@ class ABYSSDIVERUNDERWORLD_API UMissionBase : public UObject
 
 public:
 
-	void InitMission(const FMissionInitParams& Params);
+	virtual void InitMission(const FMissionInitParams& Params, const uint8& NewMissionIndex) PURE_VIRTUAL(UMissionBase::InitMission, );
 	virtual void BindDelegates(UObject* TargetForDelegate) PURE_VIRTUAL(UMissionBase::BindDelegates, );
+	virtual void UnbindDelegates(UObject* TargetForDelegate) PURE_VIRTUAL(UMissionBase::UnbindDelegates, );
 
 protected:
 
 	virtual void OnConditionMet() PURE_VIRTUAL(UMissionBase::OnConditionMet, );
+	virtual bool IsConditionMet() PURE_VIRTUAL(UMissionBase::IsConditionMet, return false; );
 
 #pragma endregion
 
@@ -50,11 +55,12 @@ protected:
 
 protected:
 
-
 	EMissionType MissionType;
 
 	int32 GoalCount;
 	int32 CurrentCount;
+
+	EMissionConditionType ConditionType;
 
 	FString MissionName;
 	FString MissionDescription;
@@ -66,8 +72,14 @@ protected:
 #pragma region Getters / Setters
 
 public:
-	//FORCEINLINE const int32 GetGoalCount() 
+
+	FORCEINLINE const EMissionType& GetMissionType() const { return MissionType; }
+	FORCEINLINE const int32& GetGoalCount() const { return GoalCount; }
+	FORCEINLINE const int32& GetCurrentCount() const { return CurrentCount; }
 	FORCEINLINE const FString& GetMissionName() const { return MissionName; }
+	FORCEINLINE const FString& GetMissionDescription() const { return MissionDescription; }
+	
+	virtual const uint8 GetMissionIndex() const PURE_VIRTUAL(UMissionBase::GetMissionIndex, static uint8 Dummy = 0; return Dummy;);
 
 #pragma endregion
 

@@ -55,6 +55,10 @@ public:
 	FFADItemDataRow* DPVRow;
 	FFADItemDataRow* NVRow;
 	FFADItemDataRow* BatteryRow;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
+	TObjectPtr<USoundBase> SoundCue = nullptr;
+	TObjectPtr<UAudioComponent> ChargeBatterySound = nullptr;
 private:
 	TObjectPtr<UADInventoryComponent> InventoryComp = nullptr;
 	TObjectPtr<UEquipUseComponent> EquipUseComp = nullptr;
@@ -95,6 +99,5 @@ public:
 	void SetEquipBatteryAmount(EChargeBatteryType ChargeBatteryType, int16 Amount);
 	void SetEquipBatteryButtonActivate(EChargeBatteryType ChargeBatteryType, bool bActivate);
 
-	static EChargeBatteryType GetEChargeBatteryTypeByName(FName Name);
 #pragma endregion
 };

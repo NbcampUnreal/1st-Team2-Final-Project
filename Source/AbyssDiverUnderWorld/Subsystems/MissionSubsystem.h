@@ -12,6 +12,14 @@
 
 #include "MissionSubsystem.generated.h"
 
+class UAggroTriggerMission;
+class UInteractionMission;
+class UItemCollectionMission;
+class UItemUseMission;
+class UKillMonsterMission;
+class UMissionBase;
+
+class AADInGameState;
 /**
  * 
  */
@@ -20,7 +28,7 @@ class ABYSSDIVERUNDERWORLD_API UMissionSubsystem : public UGameInstanceSubsystem
 {
 	GENERATED_BODY()
 	
-public:
+protected:
 
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 
@@ -34,6 +42,9 @@ public:
 	void AddToSelectedMissions(const EItemUseMission& Mission);
 	void AddToSelectedMissions(const EKillMonsterMission& Mission);
 
+	// return : Succeeded?
+	bool AddToSelectedMissionFromIndex(const EMissionType& MissionType, const uint8& MissionIndex);
+
 	void RemoveFromSelectedMissions(const EAggroTriggerMission& Mission);
 	void RemoveFromSelectedMissions(const EInteractionMission& Mission);
 	void RemoveFromSelectedMissions(const EItemCollectMission& Mission);
@@ -46,11 +57,16 @@ public:
 	void UnlockMission(const EItemUseMission& Mission);
 	void UnlockMission(const EKillMonsterMission& Mission);
 
+	void ClearSelectedMissions(const int32& SlackCount = 0);
+
+	void ReceiveMissionDataFromUIData(const TArray<FMissionData>& Missions);
+
+	void RequestBinding(UObject* Requester);
+	void RequestUnbinding(UObject* Requester);
+
 private:
 
-	// return : Succeeded?
-	bool AddToSelectedMissionInternal(const EMissionType& MissionType, const uint8& MissionIndex);
-	void MakeAndAddMissionDataForUI(const FMissionBaseRow* MissionBaseData);
+	void MakeAndAddMissionDataForUI(const FMissionBaseRow* MissionBaseData, const uint8& MissionIndex);
 
 	// return : Succeeded?
 	bool RemoveFromSelectedMissionsInternal(const EMissionType& MissionType, const uint8& MissionIndex);
@@ -58,13 +74,18 @@ private:
 	bool IsAlreadySelected(const EMissionType& MissionType, const uint8& MissionIndex) const;
 	bool IsServer() const;
 
-	void UnlockMissionInternal(FMissionBaseRow* MissionData);
+	void UnlockMissionInternal(FMissionBaseRow* MissionsFromUI);
+
+	bool CheckIfGameStateIsValid();
 
 #pragma endregion
 
 #pragma region Variables
 
 private:
+
+	UPROPERTY()
+	TArray<TObjectPtr<UMissionBase>> Missions;
 
 	// 미션 타입에 맞게 uint8을 Enum으로 캐스팅하여 사용
 	// 이것을 토대로 미션 생성할 예정
@@ -86,6 +107,8 @@ private:
 	int32 ItemUseMissionCount = 0;
 	int32 KillMonsterMissionCount = 0;
 
+	TObjectPtr<AADInGameState> InGameState;
+
 #pragma endregion
 
 #pragma region Getters / Setters
@@ -94,6 +117,7 @@ public:
 	const TSet<FString>& GetAllSelectedMissionNames() const;
 
 	const TSet<FMissionData>& GetMissionDataForUI() const;
+	const TArray<TObjectPtr<UMissionBase>>& GetActivatedMissions() const;
 
 	const FAggroTriggerMissionRow* GetAggroTriggerMissionData(const EAggroTriggerMission& Mission) const;
 	const FInteractionMissionRow* GetInteractionMissionData(const EInteractionMission& Mission) const;

@@ -11,6 +11,8 @@
 #include "Inventory/ADInventoryComponent.h"
 #include "Character/UnderwaterCharacter.h"
 #include "Interactable/Item/Component/EquipUseComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "Components/AudioComponent.h"
 
 
 
@@ -45,6 +47,17 @@ void UChargeBatteryWidget::NativeConstruct()
 void UChargeBatteryWidget::StartChargeBattery(FName ItemName)
 {
 	CurrentChargeItem = ItemName;
+
+	if (SoundCue)
+	{
+		UAudioComponent* Sound = UGameplayStatics::SpawnSound2D(this, SoundCue, 1.0f, 1.0f, 0.0f, nullptr, true);
+		if (Sound)
+		{
+			Sound->Play();
+			ChargeBatterySound = Sound;
+		}
+	}
+
 	if (CanCharge())
 	{
 		float IncreaseRepeatDelay = 0.2f;
@@ -56,6 +69,11 @@ void UChargeBatteryWidget::StartChargeBattery(FName ItemName)
 void UChargeBatteryWidget::StopChargeBattery()
 {
 	CurrentChargeItem = NAME_None;
+
+	if (ChargeBatterySound && ChargeBatterySound->IsPlaying())
+	{
+		ChargeBatterySound->Stop();
+	}
 
 	GetWorld()->GetTimerManager().ClearTimer(IncreaseTimerHandle);
 	LOGB(Warning, TEXT("Stop Charge Battery"));
@@ -97,14 +115,22 @@ void UChargeBatteryWidget::ChargeBatteryAmount()
 
 		if (CurrentEquipment && CurrentEquipment->Name == CurrentChargeItem)
 		{
-			if (EquipUseComp->Amount >= MaxToCompare) return;
+			if (EquipUseComp->Amount >= MaxToCompare)
+			{
+				StopChargeBattery();
+				return;
+			}
 			EquipUseComp->S_IncreaseAmount(IncreaseAmount);
 			LOGB(Warning, TEXT("Amount of EquipUseComp is charged"));
 		}
 		else
 		{
 			const FItemData* ItemInfoToCharge = InventoryComp->GetInventoryItemData(CurrentChargeItem);
-			if (ItemInfoToCharge->Amount >= MaxToCompare) return;
+			if (ItemInfoToCharge->Amount >= MaxToCompare)
+			{
+				StopChargeBattery();
+				return;
+			}
 			InventoryComp->S_EquipmentChargeBattery(ChargeBatteryTypeMap[CurrentChargeItem], IncreaseAmount);
 			LOGB(Warning, TEXT("Amount of InventoryComp is charged"));
 		}

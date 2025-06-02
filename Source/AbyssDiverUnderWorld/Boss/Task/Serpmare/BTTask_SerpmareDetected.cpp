@@ -6,64 +6,68 @@ UBTTask_SerpmareDetected::UBTTask_SerpmareDetected()
 {
 	NodeName = TEXT("Serpmare Detected");
 	bNotifyTick = true;
+	bCreateNodeInstance = false;
 
 	AttackInterval = 3.0f;
-	AccumulatedAttackTime = 0.0f;
-
 	DetectInterval = 2.0f;
-	AccumulatedDetectTime = 0.0f;
-
 	bIsBigSerpmare = false;
 }
 
 EBTNodeResult::Type UBTTask_SerpmareDetected::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
+	FBTSerpmareDetectedTaskMemory* TaskMemory = (FBTSerpmareDetectedTaskMemory*)NodeMemory;
+	if (!TaskMemory) return EBTNodeResult::Failed;
+	
+	TaskMemory->AccumulatedAttackTime = 0.0f;
+	TaskMemory->AccumulatedDetectTime = 0.0f;
+	
 	return EBTNodeResult::InProgress;
 }
 
 void UBTTask_SerpmareDetected::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
 {
 	Super::TickTask(OwnerComp, NodeMemory, DeltaSeconds);
+
+	FBTSerpmareDetectedTaskMemory* TaskMemory = (FBTSerpmareDetectedTaskMemory*)NodeMemory;
+	if (!TaskMemory) return;
+
+	TaskMemory->AIController = Cast<ABossAIController>(OwnerComp.GetAIOwner());
+	TaskMemory->Serpmare = Cast<ASerpmare>(TaskMemory->AIController->GetCharacter());
+
+	if (!TaskMemory->AIController.IsValid() || !TaskMemory->Serpmare.IsValid()) return;
 	
-	// 캐스팅
-	ASerpmare* Serpmare = Cast<ASerpmare>(OwnerComp.GetAIOwner()->GetCharacter());
-
-	//@TODO: 감지한 플레이어 방향으로 회전
-
 	// 플레이어가 공격 범위 내에 있는 경우
-	if (Serpmare->GetIsAttackCollisionOverlappedPlayer())
+	if (TaskMemory->Serpmare->GetIsAttackCollisionOverlappedPlayer())
 	{
-		if (AccumulatedAttackTime >= AttackInterval)
+		if (TaskMemory->AccumulatedAttackTime >= AttackInterval)
 		{
-			Serpmare->SetBossState(EBossState::Attack);
-			AccumulatedAttackTime = 0.0f;
+			TaskMemory->Serpmare->SetBossState(EBossState::Attack);
 			FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 		}
 		else
 		{
-			AccumulatedAttackTime += DeltaSeconds;
+			TaskMemory->AccumulatedAttackTime += DeltaSeconds;
 		}	
 	}
 	// 플레이어가 공격 범위에서 벗어난 경우
 	else
 	{
-		if (AccumulatedDetectTime >= DetectInterval)
+		if (TaskMemory->AccumulatedDetectTime >= DetectInterval)
 		{
 			if (bIsBigSerpmare)
 			{
-				Serpmare->M_PlayAnimation(Serpmare->DisappearAnimation);
+				TaskMemory->Serpmare->M_PlayAnimation(TaskMemory->Serpmare->DisappearAnimation);
 				FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 			}
 			else
 			{
-				Serpmare->SetBossState(EBossState::Idle);
-				AccumulatedDetectTime = 0.0f;
+				TaskMemory->Serpmare->SetBossState(EBossState::Idle);
 				FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);	
 			}
 		}
 		else
 		{
-			AccumulatedDetectTime += DeltaSeconds;
+			TaskMemory->AccumulatedDetectTime += DeltaSeconds;
 		}
 	}
 }

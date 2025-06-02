@@ -409,23 +409,31 @@ UAudioComponent* USoundSubsystem::GetNewAudio()
 {
 	TObjectPtr<UAudioComponent> NewAudio = nullptr;
 
-	while (true)
+	static const int32 SafetyLimit = 100;
+	int32 Iteration = 0;
+	for (; Iteration < SafetyLimit; ++Iteration)
 	{
 		if (DeactivatedComponents.IsEmpty())
 		{
 			CreateAudioComponent();
 		}
 
-		DeactivatedComponents.Peek(NewAudio);
+		DeactivatedComponents.Dequeue(NewAudio);
 
 		if (NewAudio == nullptr || IsValid(NewAudio) == false || NewAudio->IsValidLowLevel() == false)
 		{
 			LOGV(Error, TEXT("Not Valid"));
 			continue;
 		}
+		else
+		{
+			break;
+		}
+	}
 
-		DeactivatedComponents.Pop();
-		break;
+	if (Iteration >= SafetyLimit)
+	{
+		LOGV(Error, TEXT("Fail to Get New Audio"));
 	}
 
 	return NewAudio;
