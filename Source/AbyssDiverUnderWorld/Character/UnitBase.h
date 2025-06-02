@@ -5,7 +5,7 @@
 
 #include "UnitBase.generated.h"
 
-UENUM()
+UENUM(BlueprintType)
 enum class EUnitId : uint8
 {
 	PlayerCharacter,
