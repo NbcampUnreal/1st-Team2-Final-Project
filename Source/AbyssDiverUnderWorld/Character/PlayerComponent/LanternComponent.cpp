@@ -3,15 +3,11 @@
 
 #include "LanternComponent.h"
 
-#include "Character/UnderwaterCharacter.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SpotLightComponent.h"
-#include "GameFramework/SpringArmComponent.h"
 #include "Monster/Monster.h"
 #include "Net/UnrealNetwork.h"
 
-
-// Sets default values for this component's properties
 ULanternComponent::ULanternComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
@@ -21,13 +17,9 @@ ULanternComponent::ULanternComponent()
 	LanternForwardOffset = 10.0f; // 라이트가 캐릭터 앞에 위치하도록 설정
 }
 
-
-// Called when the game starts
 void ULanternComponent::BeginPlay()
 {
 	Super::BeginPlay();
-
-	SpawnLight();
 }
 
 void ULanternComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -44,7 +36,7 @@ void ULanternComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	if (GetOwnerRole() == ROLE_Authority && bIsLanternOn && LightDetectionComponent)
+	if (GetOwnerRole() == ROLE_Authority && bIsLanternOn && LanternLightComponent)
 	{
 		TArray<AActor*> Candidates;
 		LightDetectionComponent->GetOverlappingActors(Candidates, AMonster::StaticClass());
@@ -80,24 +72,25 @@ void ULanternComponent::RequestToggleLanternLight()
 
 void ULanternComponent::OnRep_bIsLanternOn()
 {
-	LanternLightComponent->SetVisibility(bIsLanternOn);
+	if (LanternLightComponent)
+	{
+		LanternLightComponent->SetVisibility(bIsLanternOn);
+	}
 }
 
-void ULanternComponent::SpawnLight()
+void ULanternComponent::SpawnLight(USceneComponent* AttachToComponent, const float LightLength)
 {
-	AUnderwaterCharacter* CharacterOwner = Cast<AUnderwaterCharacter>(GetOwner());
-	
 	LanternLightComponent = NewObject<USpotLightComponent>(this, USpotLightComponent::StaticClass(), TEXT("LanternLightComponent"));
 	LanternLightComponent->SetOuterConeAngle(25.0f);
-	LanternLightComponent->SetAttenuationRadius(2000.0f); // 거리에 영향을 준다.
+	LanternLightComponent->SetAttenuationRadius(LightLength); // 거리에 영향을 준다.
 	LanternLightComponent->SetIntensity(200000.0f);
 	LanternLightComponent->SetVisibility(bIsLanternOn);
 	LanternLightComponent->RegisterComponent();
-	LanternLightComponent->AttachToComponent(CharacterOwner->GetMesh1PSpringArm(),FAttachmentTransformRules::SnapToTargetIncludingScale);
+	LanternLightComponent->AttachToComponent(AttachToComponent,FAttachmentTransformRules::SnapToTargetIncludingScale);
 
-	const FVector ForwardVector = CharacterOwner->GetActorForwardVector();
+	const FVector ForwardVector = GetOwner()->GetActorForwardVector();
 	const FRotator LightRotation = ForwardVector.Rotation();
-	const FVector LightLocation = CharacterOwner->GetMesh1PSpringArm()->GetComponentLocation() + (ForwardVector * LanternForwardOffset);
+	const FVector LightLocation = AttachToComponent->GetComponentLocation() + (ForwardVector * LanternForwardOffset);
 	LanternLightComponent->SetWorldLocationAndRotation(LightLocation, LightRotation);
 
 	if (GetOwnerRole() == ROLE_Authority)

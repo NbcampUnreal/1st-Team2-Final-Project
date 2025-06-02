@@ -7,6 +7,12 @@
 #include "LanternComponent.generated.h"
 
 
+/**
+ * 플레이어의 랜턴 컴포넌트
+ * 내부에서 SpotLightComponent를 생성하여 캐릭터 앞에 랜턴을 비춘다.
+ * Monster가 랜턴에 노출되었는지 확인하기 위해 CapsuleComponent를 사용한다.
+ * 따라서 SpotLightComponent를 외부에서 변경해서는 안 된다.
+ */
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class ABYSSDIVERUNDERWORLD_API ULanternComponent : public UActorComponent
 {
@@ -29,15 +35,14 @@ public:
 	/** Lantern Toggle 요청 */
 	void RequestToggleLanternLight();
 	
+	/** 라이트를 생성한다. */
+	void SpawnLight(USceneComponent* AttachToComponent, const float LightLength = 2000.0f);
+
 protected:
 
 	/** bIsLanternOn Replicate 함수 */
 	UFUNCTION()
 	void OnRep_bIsLanternOn();
-
-	// @To-Do : 업그레이드 상태에 맞추어서 라이트 컴포넌트를 생성한다.
-	/** 라이트를 생성한다. */
-	void SpawnLight();
 
 	/** Request Toggle Lantern Light를 서버에서 처리한다. */
 	UFUNCTION(Server, Reliable)
