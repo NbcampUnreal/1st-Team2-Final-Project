@@ -22,6 +22,10 @@ public:
 	void M_TriggerExplosion_Implementation();
 
 	void Explosion();
+
+protected:
+	UFUNCTION(BlueprintImplementableEvent)
+	void ScaleUpTriggered();
 	
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")

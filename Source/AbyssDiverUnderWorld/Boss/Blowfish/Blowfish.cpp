@@ -41,7 +41,8 @@ float ABlowfish::TakeDamage(float DamageAmount, struct FDamageEvent const& Damag
 	float Damage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
 	if (StatComponent->CurrentHealth <= StatComponent->MaxHealth * ExplosionHealthRatio
-		&& StatComponent->CurrentHealth > 0.0f)
+		&& StatComponent->CurrentHealth > 0.0f
+		&& !bIsExplosionTriggered)
 	{
 		M_TriggerExplosion();
 	}
@@ -58,6 +59,12 @@ void ABlowfish::OnDeath()
 
 void ABlowfish::M_TriggerExplosion_Implementation()
 {
+	// 복어 스케일 커지는 타임라인 트리거
+	ScaleUpTriggered();
+
+	// Explosion을 1회성으로 호출하기 위한 bool 값 활성화
+	bIsExplosionTriggered = true;
+	
 	// 몬스터의 움직임 정지
 	if (IsValid(AIController))
 	{
