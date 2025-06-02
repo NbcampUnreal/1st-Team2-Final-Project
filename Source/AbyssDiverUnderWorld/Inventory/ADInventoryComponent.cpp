@@ -408,7 +408,7 @@ void UADInventoryComponent::ShowInventory()
 	APlayerController* PC = Cast<APlayerController>(Cast<AADPlayerState>(GetOwner())->GetPlayerController());
 	if (!PC || !ToggleWidgetInstance) return;
 
-	ToggleWidgetInstance->SetVisibility(ESlateVisibility::Visible);
+	ToggleWidgetInstance->PlaySlideAnimation(true);
 	InventoryUIUpdate();
 	bAlreadyCursorShowed = PC->bShowMouseCursor;
 	PC->bShowMouseCursor = true;
@@ -428,7 +428,7 @@ void UADInventoryComponent::HideInventory()
 	if (!PC && !ToggleWidgetInstance) return;
 
 	bInventoryWidgetShowed = false;
-	ToggleWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
+	ToggleWidgetInstance->PlaySlideAnimation(false);
 
 	if (!bAlreadyCursorShowed)
 		PC->bShowMouseCursor = false;
