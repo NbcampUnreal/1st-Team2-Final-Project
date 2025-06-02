@@ -40,7 +40,8 @@ float ABlowfish::TakeDamage(float DamageAmount, struct FDamageEvent const& Damag
 {
 	float Damage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
-	if (StatComponent->CurrentHealth <= StatComponent->MaxHealth * ExplosionHealthRatio)
+	if (StatComponent->CurrentHealth <= StatComponent->MaxHealth * ExplosionHealthRatio
+		&& StatComponent->CurrentHealth > 0.0f)
 	{
 		M_TriggerExplosion();
 	}
@@ -50,7 +51,7 @@ float ABlowfish::TakeDamage(float DamageAmount, struct FDamageEvent const& Damag
 
 void ABlowfish::OnDeath()
 {
-	if (bIsExplosionTriggered) return;
+	GetWorldTimerManager().ClearTimer(ExplosionTimerHandle);
 	
 	Super::OnDeath();
 }
