@@ -172,7 +172,7 @@ void AUnderwaterCharacter::BeginPlay()
 
 	SpawnRadar();
 	SpawnFlipperMesh();
-	LanternComponent->SpawnLight(GetMesh1P(), 2000.0f);
+	LanternComponent->SpawnLight(GetMesh1PSpringArm(), 2000.0f);
 }
 
 void AUnderwaterCharacter::InitFromPlayerState(AADPlayerState* ADPlayerState)
