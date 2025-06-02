@@ -63,8 +63,8 @@ public:
 	void S_UseBatteryAmount_Implementation(int8 Amount);
 
 	UFUNCTION(NetMulticast, Reliable)
-	void M_PlaySound(ESFX SFXType);
-	void M_PlaySound_Implementation(ESFX SFXType);
+	void M_SpawnItemEffect(ESFX SFXType, UNiagaraSystem* VFX, FVector SpawnLocation);
+	void M_SpawnItemEffect_Implementation(ESFX SFXType, UNiagaraSystem* VFX, FVector SpawnLocation);
 
 	UFUNCTION(Client, Reliable)
 	void C_InventoryPlaySound(ESFX SFXType);
@@ -166,6 +166,7 @@ private:
 	TObjectPtr<USoundSubsystem> SoundSubsystem;
 	TObjectPtr<UChargeBatteryWidget> ChargeBatteryWidget;
 	TObjectPtr <UNiagaraSystem> OxygenRefillEffect;
+	TObjectPtr <UNiagaraSystem> DropItemEffect;
 
 	UPROPERTY(EditAnywhere, Category = "Harpoon")
 	TObjectPtr<UAnimMontage> HarpoonDrawMontage;
