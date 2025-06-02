@@ -21,8 +21,15 @@ public:
     void RefreshExchangableInventoryInfo(int32 Mass, int32 Price);
     void SetDroneCurrentText(int32 Current);
     void SetDroneTargetText(int32 Target);
+    void PlaySlideAnimation(bool bIsVisible);
 
 protected:
+
+    UPROPERTY(meta = (BindWidgetAnim), Transient)
+    TObjectPtr <UWidgetAnimation> SlideIn;
+    UPROPERTY(meta = (BindWidgetAnim), Transient)
+    TObjectPtr <UWidgetAnimation> SlideOUt;
+
     // 기존 인벤토리 위젯들
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UInventoryWidget> EquipmentInventory;

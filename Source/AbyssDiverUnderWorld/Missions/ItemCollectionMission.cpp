@@ -7,21 +7,14 @@ UItemCollectionMission::UItemCollectionMission()
 	MissionType = EMissionType::ItemCollection;
 }
 
-void UItemCollectionMission::InitMission(const FMissionInitParams& Params, const uint8& NewMissionIndex)
+void UItemCollectionMission::InitMission(const FMissionInitParams& Params)
 {
-	InitMission(Params, (EItemCollectMission)NewMissionIndex);
+	Super::InitMission(Params);
 }
 
-void UItemCollectionMission::InitMission(const FMissionInitParams& Params, const EItemCollectMission& NewMissionIndex)
+void UItemCollectionMission::InitMission(const FItemCollectMissionInitParams& Params, const EItemCollectMission& NewMissionIndex)
 {
-	MissionType = Params.MissionType;
-	GoalCount = Params.GoalCount;
-	ConditionType = Params.ConditionType;
-
-	MissionName = Params.MissionName;
-	MissionDescription = Params.MissionDescription;
-
-	ExtraValues = Params.ExtraValues;
+	InitMission((const FMissionInitParams&)Params);
 
 	MissionIndex = NewMissionIndex;
 }
@@ -37,10 +30,6 @@ void UItemCollectionMission::UnbindDelegates(UObject* TargetForDelegate)
 bool UItemCollectionMission::IsConditionMet()
 {
 	return false;
-}
-
-void UItemCollectionMission::OnConditionMet()
-{
 }
 
 const uint8 UItemCollectionMission::GetMissionIndex() const

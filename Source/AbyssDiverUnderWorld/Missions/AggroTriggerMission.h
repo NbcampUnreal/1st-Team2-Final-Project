@@ -7,6 +7,23 @@
 
 enum class EAggroTriggerMission : uint8;
 
+struct FAggroMissionInitParams : public FMissionInitParams
+{
+	FAggroMissionInitParams
+	(
+		const EMissionType& InMissionType,
+		const int32& InGoalCount,
+		const EMissionConditionType& InConditionType,
+		const FString& InMissionName,
+		const FString& InMissionDescription,
+		const TArray<int32>& InExtraValues
+	)
+		: FMissionInitParams(InMissionType, InGoalCount, InConditionType, InMissionName, InMissionDescription, InExtraValues)
+	{
+	}
+
+};
+
 /**
  * 
  */
@@ -23,8 +40,8 @@ public:
 
 public:
 
-	virtual void InitMission(const FMissionInitParams& Params, const uint8& NewMissionIndex) override;
-	void InitMission(const FMissionInitParams& Params, const EAggroTriggerMission& NewMissionIndex);
+	virtual void InitMission(const FMissionInitParams& Params) override;
+	void InitMission(const FAggroMissionInitParams& Params, const EAggroTriggerMission& NewMissionIndex);
 
 	virtual void BindDelegates(UObject* TargetForDelegate) override;
 	virtual void UnbindDelegates(UObject* TargetForDelegate) override;
@@ -32,7 +49,6 @@ public:
 protected:
 
 	virtual bool IsConditionMet() override;
-	virtual void OnConditionMet() override;
 
 #pragma endregion
 

@@ -13,7 +13,7 @@
 #include "Interactable/Item/Component/EquipUseComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/AudioComponent.h"
-
+#include "Animation/WidgetAnimation.h"
 
 
 DEFINE_LOG_CATEGORY(BatteryLog);
@@ -166,6 +166,25 @@ void UChargeBatteryWidget::UpdateBatteryInfo()
 
 	float UpdateDelay = 1.0f;
 	GetWorld()->GetTimerManager().SetTimer(UpdateBatteryInfoTimerHandle, this, &UChargeBatteryWidget::UpdateBatteryInfoDelay, UpdateDelay, false);
+}
+
+void UChargeBatteryWidget::PlayVisibleAnimation(bool bIsVisible)
+{
+	if (bIsVisible)
+	{
+		SetVisibility(ESlateVisibility::Visible);
+		PlayAnimation(FadeIn);
+	}
+	else
+	{
+		PlayAnimation(FadeOut);
+
+		FTimerHandle HiddenTimerHandle;
+		float HiddenDelay = FadeOut->GetEndTime();
+		GetWorld()->GetTimerManager().SetTimer(HiddenTimerHandle, 
+			FTimerDelegate::CreateLambda([this]() { SetVisibility(ESlateVisibility::Hidden); 
+		}), HiddenDelay, false);
+	}
 }
 
 void UChargeBatteryWidget::InitializeChargeBatteryWidget()
