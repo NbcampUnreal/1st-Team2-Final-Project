@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
@@ -121,10 +121,19 @@ public:
 	void RemoveReturn(URadarReturnComponent* RadarReturn, int32 InIndex);
 	void RemoveAllReturns();
 
-	// ���̴��� ǥ�õǴ� ���ϵ� ũ�� ����
+	// 레이더에 표시되는 리턴들 크기 조절
 	void ChangeReturnsSize(float NewSize);
-	// ���̴� �ݰ��� ������ �׸�ŭ ���̴� ���ϵ鵵 ũ�Ⱑ �۾�����
+	// 레이더 반경을 넓히면 그만큼 레이더 리턴들도 크기가 작아진다
 	void ChangeRadarRadius(float NewRadius);
+
+	// 레이더 리턴 밝기 변화시키기
+	void ChangeRadarReturnMaterialEmissive(const float& NewEmissive);
+
+	// 레이더 메쉬 밝기 변화시키기
+	void ChangeRadarMeshMaterialEmissive(const float& NewEmissive);
+
+	// 레이더 메쉬 가장자리(동서남북) 밝기 변화시키기
+	void ChangeRadarMeshEdgeMaterialEmissive(const float& NewEmissive);
 
 private:
 
@@ -324,6 +333,12 @@ protected:
 	FTransform CurrentStandTransform;
 
 	int32 FoundReturnsCount = 0;
+
+	static const FName MeshEmissiveParamName;
+	static const FName MeshEdgeEmissiveParamName;
+	static const FName ReturnEmissiveParamName;
+
+	float CurrentReturnEmissiveIntensity = 1.0f;
 
 #pragma endregion
 
