@@ -551,6 +551,11 @@ int32 USoundSubsystem::CreateNewId()
 		}
 	}
 
+	if (Iteration >= SafetyLimit)
+	{
+		LOGV(Error, TEXT("Fail to Get New Id"));
+	}
+
 	return NewId;
 }
 
