@@ -15,6 +15,7 @@ UADInteractionComponent::UADInteractionComponent()
 	bHoldTriggered = false;
 	bIsFocusing = false;
 	bIsInteractingStart = false;
+	HeldInteractable = nullptr;
 }
 
 
@@ -238,36 +239,48 @@ UADInteractableComponent* UADInteractionComponent::PerformLineTrace(const FVecto
 
 void UADInteractionComponent::UpdateFocus(UADInteractableComponent* NewFocus)
 {
-//	if (!IsLocallyControlled()) return;
-	if (NewFocus == FocusedInteractable) 
+
+	if (NewFocus == FocusedInteractable)
 	{
-		if (!ShouldHighlight(NewFocus))
+		const bool bNeedHighlight = ShouldHighlight(NewFocus);
+		if (bNeedHighlight != NewFocus->IsHighlighted())
 		{
-			ClearFocus();
+			NewFocus->SetHighLight(bNeedHighlight);
+
+			if (!bNeedHighlight)
+			{
+				OnFocusEnd.Broadcast();          // 설명 숨김
+			}
+			else
+			{
+				if (IIADInteractable* IADInteractable = Cast<IIADInteractable>(NewFocus->GetOwner()))
+				{
+					OnFocus.Broadcast(NewFocus->GetOwner(), IADInteractable->GetInteractionDescription());
+				}
+			}
 		}
 		return;
 	}
+
 
 	if (FocusedInteractable)
 	{
 		FocusedInteractable->SetHighLight(false);
 		OnFocusEnd.Broadcast();
 	}
-		
+
+
+	FocusedInteractable = NewFocus;
+
 
 	if (ShouldHighlight(NewFocus))
 	{
-		FocusedInteractable = NewFocus;
 		FocusedInteractable->SetHighLight(true);
-		if (IIADInteractable* FocusedActor = Cast<IIADInteractable>(FocusedInteractable->GetOwner()))
+
+		if (IIADInteractable* IADInteractable = Cast<IIADInteractable>(NewFocus->GetOwner()))
 		{
-			OnFocus.Broadcast(FocusedInteractable->GetOwner(), FocusedActor->GetInteractionDescription());
+			OnFocus.Broadcast(NewFocus->GetOwner(), IADInteractable->GetInteractionDescription());
 		}
-		
-	}
-	else
-	{
-		FocusedInteractable = nullptr;
 	}
 }
 

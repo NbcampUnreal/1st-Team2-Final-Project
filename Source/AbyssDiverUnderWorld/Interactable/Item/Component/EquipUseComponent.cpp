@@ -19,6 +19,10 @@
 #include "Character/PlayerComponent/PlayerHUDComponent.h"
 #include "Character/UnderwaterCharacter.h"
 #include "Framework/ADPlayerState.h"
+#include "Framework/ADGameInstance.h"
+#include "Subsystems/SoundSubsystem.h"
+#include "Framework/ADInGameMode.h"
+#include "Projectile/GenericPool.h"
 
 const FName UEquipUseComponent::BASIC_SPEAR_GUN_NAME = TEXT("BasicSpearGun");
 
@@ -71,6 +75,11 @@ void UEquipUseComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+	{
+		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
+	}
+
 	// DPV
 	CurrentMultiplier = 1.f;
 	TargetMultiplier = 1.f;
@@ -90,8 +99,10 @@ void UEquipUseComponent::BeginPlay()
 	OriginalPPSettings = CameraComp->PostProcessSettings;
 
 	// 위젯 추가
+	LOGN(TEXT("OwningCharacter : %s"), *OwningCharacter->GetName());
 	if (OwningCharacter->IsLocallyControlled())
 	{
+		LOGN(TEXT("OwningCharacter : %s && Is Local Character"), *OwningCharacter->GetName());
 		APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController());
 		if (PC)
 		{
@@ -258,6 +269,11 @@ void UEquipUseComponent::S_IncreaseAmount_Implementation(int8 AddAmount)
 	}
 }
 
+void UEquipUseComponent::M_PlayFireHarpoonSound_Implementation()
+{
+	SoundSubsystem->PlayAt(ESFX::FireHarpoon, OwningCharacter->GetActorLocation());
+}
+
 void UEquipUseComponent::OnRep_Amount()
 {
 	SetEquipBatteryAmountText();
@@ -354,7 +370,27 @@ void UEquipUseComponent::OnRep_NightVisionUIVisible()
 
 void UEquipUseComponent::OnRep_ChargeBatteryUIVisible()
 {
-	ToggleChargeBatteryWidget();
+	if (bChargeBatteryWidgetVisible)
+	{
+		ShowChargeBatteryWidget();
+	}
+	else
+	{
+		HideChargeBatteryWidget();
+	}
+	
+}
+
+void UEquipUseComponent::OnRep_BoostActive()
+{
+	if (bBoostActive)
+	{
+		SoundSubsystem->PlayAt(ESFX::DPVOn, OwningCharacter->GetActorLocation());
+	}
+	else
+	{
+		SoundSubsystem->PlayAt(ESFX::DPVOff, OwningCharacter->GetActorLocation());
+	}
 }
 
 void UEquipUseComponent::Initialize(FItemData& ItemData)
@@ -550,6 +586,9 @@ void UEquipUseComponent::FireHarpoon()
 {
 	if (!CanFire()) return;
 
+	// 0) 발사 사운드 스폰
+	M_PlayFireHarpoonSound();
+
 	// 1) 카메라 뷰
 	FVector CamLoc; FRotator CamRot;
 	GetCameraView(CamLoc, CamRot);
@@ -561,7 +600,8 @@ void UEquipUseComponent::FireHarpoon()
 
 	// 3) 발사체 스폰 및 초기화
 	const FRotator SpawnRot = (TargetPoint - MuzzleLoc).Rotation();
-	if (auto* Proj = SpawnHarpoon(MuzzleLoc, SpawnRot))
+	AADSpearGunBullet* Proj = SpawnHarpoon(MuzzleLoc, SpawnRot);
+	if (Proj)
 	{
 		ConfigureProjectile(Proj, TargetPoint, MuzzleLoc);
 	}
@@ -585,6 +625,7 @@ void UEquipUseComponent::BoostOn()
 
 	if (Amount <= 0 || bNightVisionOn) return;
 
+	SoundSubsystem->PlayAt(ESFX::DPVOn, OwningCharacter->GetActorLocation());
 	bBoostActive = true;
 	TargetMultiplier = BoostMultiplier;  
 	SetComponentTickEnabled(true);
@@ -594,6 +635,7 @@ void UEquipUseComponent::BoostOff()
 {
 	if (!OwningCharacter.IsValid()) return;
 
+	SoundSubsystem->PlayAt(ESFX::DPVOff, OwningCharacter->GetActorLocation());
 	bBoostActive = false;
 	TargetMultiplier = 1.f;  // 정상 속도로 복귀
 
@@ -672,17 +714,18 @@ void UEquipUseComponent::ToggleChargeBatteryWidget()
 
 void UEquipUseComponent::ShowChargeBatteryWidget()
 {
+	bChargeBatteryWidgetVisible = true;
+
 	if (!OwningCharacter.IsValid() || !OwningCharacter->IsLocallyControlled() || !ChargeBatteryInstance)
 		return;
 
-	bChargeBatteryWidgetVisible = true;
 	LOGIC(Log, TEXT("ShowChargeBatteryWidget: %s"), TEXT("Visible"));
 
 	APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController());
 	if (!PC) return;
 
 	// UI 보이기
-	ChargeBatteryInstance->SetVisibility(ESlateVisibility::Visible);
+	ChargeBatteryInstance->PlayVisibleAnimation(true);
 
 	// 커서 상태 저장 후 표시
 	bAlreadyCursorShowed = PC->bShowMouseCursor;
@@ -700,17 +743,18 @@ void UEquipUseComponent::ShowChargeBatteryWidget()
 
 void UEquipUseComponent::HideChargeBatteryWidget()
 {
+	bChargeBatteryWidgetVisible = false;
+	
 	if (!OwningCharacter.IsValid() || !OwningCharacter->IsLocallyControlled() || !ChargeBatteryInstance)
 		return;
 
-	bChargeBatteryWidgetVisible = false;
 	LOGIC(Log, TEXT("HideChargeBatteryWidget: %s"), TEXT("Hidden"));
 
 	APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController());
 	if (!PC) return;
 
 	// UI 숨기기
-	ChargeBatteryInstance->SetVisibility(ESlateVisibility::Hidden);
+	ChargeBatteryInstance->PlayVisibleAnimation(false);
 
 	// 커서 복원
 	if (!bAlreadyCursorShowed)
@@ -832,14 +876,31 @@ FVector UEquipUseComponent::GetMuzzleLocation(const FVector& CamLoc, const FVect
 
 AADSpearGunBullet* UEquipUseComponent::SpawnHarpoon(const FVector& Loc, const FRotator& Rot)
 {
-	FActorSpawnParameters Params;
-	Params.Owner = GetOwner();
-	Params.Instigator = OwningCharacter.Get();
-	Params.SpawnCollisionHandlingOverride =
-		ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-
-	return GetWorld()->SpawnActor<AADSpearGunBullet>(
-		ProjectileClass, Loc, Rot, Params);
+	//FActorSpawnParameters Params;
+	//Params.Owner = GetOwner();
+	//Params.Instigator = OwningCharacter.Get();
+	//Params.SpawnCollisionHandlingOverride =
+	//	ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+	APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController());
+	if (GetWorld())
+	{
+		AADInGameMode* GM = Cast<AADInGameMode>(GetWorld()->GetAuthGameMode());
+		if (GM)
+		{
+			AADSpearGunBullet* SpawnedBullet = nullptr;
+			SpawnedBullet = GM->GetGenericPool()->GetObject<AADSpearGunBullet>();
+			if (SpawnedBullet)
+			{
+				SpawnedBullet->SetOwner(PC);
+				SpawnedBullet->InitializeTransform(Loc, Rot);
+			}
+			LOGIC(Log, TEXT("Projectile Id : %d"), SpawnedBullet->GetProjectileId());
+			return SpawnedBullet;
+		}
+	}
+	return nullptr;
+	//return GetWorld()->SpawnActor<AADSpearGunBullet>(
+	//	ProjectileClass, Loc, Rot, Params);
 }
 
 void UEquipUseComponent::ConfigureProjectile(AADSpearGunBullet* Proj, const FVector& TargetPoint, const FVector& MuzzleLoc)
@@ -858,12 +919,13 @@ void UEquipUseComponent::ConfigureProjectile(AADSpearGunBullet* Proj, const FVec
 		Proj->SetBulletType(ESpearGunType::Bomb);
 	}
 
-	UProjectileMovementComponent* ProjectileMovementComp = Proj->GetProjectileMovementComp();
-	float Speed = (ProjectileMovementComp->InitialSpeed > 0.f) ? ProjectileMovementComp->InitialSpeed : 3000.f;
 	FVector LaunchDir = (TargetPoint - MuzzleLoc).GetSafeNormal();
-	// ProjectileMovementComp->ProjectileGravityScale = 0.f; // 필요 시 비활성화
-	ProjectileMovementComp->Velocity = LaunchDir * Speed;
-	ProjectileMovementComp->Activate(true);
+	Proj->InitializeSpeed(LaunchDir, 4000.0f);
+	//UProjectileMovementComponent* ProjectileMovementComp = Proj->GetProjectileMovementComp();
+	//float Speed = (ProjectileMovementComp->InitialSpeed > 0.f) ? ProjectileMovementComp->InitialSpeed : 3000.f;
+	//// ProjectileMovementComp->ProjectileGravityScale = 0.f; // 필요 시 비활성화
+	//ProjectileMovementComp->Velocity = LaunchDir * Speed;
+	//ProjectileMovementComp->Activate(true);
 
 	// 3) 탄약·쿨다운
 	--CurrentAmmoInMag;

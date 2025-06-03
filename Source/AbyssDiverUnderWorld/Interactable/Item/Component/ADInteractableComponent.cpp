@@ -35,6 +35,7 @@ void UADInteractableComponent::SetHighLight(bool bEnable)
 			Mesh->SetRenderCustomDepth(bEnable);
 		}
 	}
+	bHighlighted = bEnable;
 }
 
 void UADInteractableComponent::Interact(AActor* InstigatorActor)

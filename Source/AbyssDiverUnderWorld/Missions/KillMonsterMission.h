@@ -6,6 +6,29 @@
 #include "KillMonsterMission.generated.h"
 
 enum class EKillMonsterMission : uint8;
+enum class EUnitId : uint8;
+
+struct FKillMissionInitParams : public FMissionInitParams
+{
+	FKillMissionInitParams
+	(
+		const EMissionType& InMissionType,
+		const int32& InGoalCount, 
+		const EMissionConditionType& InConditionType,
+		const FString& InMissionName, 
+		const FString& InMissionDescription, 
+		const TArray<int32>& InExtraValues,
+		const EUnitId& InUnitId
+	)
+		: FMissionInitParams(InMissionType, InGoalCount, InConditionType, InMissionName, InMissionDescription, InExtraValues)
+	{
+		UnitId = InUnitId;
+	}
+
+	EUnitId UnitId;
+
+};
+
 /**
  * 
  */
@@ -22,14 +45,18 @@ public:
 
 public:
 
-	virtual void InitMission(const FMissionInitParams& Params, const uint8& NewMissionIndex) override;
-	void InitMission(const FMissionInitParams& Params, const EKillMonsterMission& NewMissionIndex);
+	virtual void InitMission(const FMissionInitParams& Params) override;
+	void InitMission(const FKillMissionInitParams& Params, const EKillMonsterMission& NewMissionIndex);
 
 	virtual void BindDelegates(UObject* TargetForDelegate) override;
+	virtual void UnbindDelegates(UObject* TargetForDelegate) override;
 
 protected:
 
-	virtual void OnConditionMet() override;
+	virtual bool IsConditionMet() override;
+
+	virtual void OnDamaged(AActor* DamagedActor, AActor* DamageCauser, const float& ReceivedDamage);
+	virtual void OnDead(AActor* DamageCauser, AActor* DeadActor);
 
 #pragma endregion
 
@@ -38,6 +65,7 @@ protected:
 protected:
 
 	EKillMonsterMission MissionIndex;
+	EUnitId UnitId;
 
 #pragma endregion
 

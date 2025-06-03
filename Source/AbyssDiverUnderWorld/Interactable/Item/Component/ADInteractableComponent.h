@@ -46,11 +46,13 @@ protected:
 	
 private:
 	int32 CustomStencilValue = 1;
+	uint8 bHighlighted : 1 = false;
 
 #pragma endregion
 
 #pragma region Getter, Setteer
 public:
+	bool IsHighlighted() const { return bHighlighted; }
 
 #pragma endregion
 	

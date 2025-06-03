@@ -18,6 +18,15 @@ enum class ESFX : uint8
 	NVOff,
 	Equip,
 	UnEquip,
+	CompleteMine,
+	Pickup,
+	OpenTablet,
+	SubmitOre,
+	SendDrone,
+	FireHarpoon,
+	DPVOn,
+	DPVOff,
+	ActivateDrone,
 	Max UMETA(Hidden)
 };
 

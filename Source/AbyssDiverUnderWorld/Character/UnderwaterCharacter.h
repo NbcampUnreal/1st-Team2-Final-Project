@@ -243,6 +243,10 @@ protected:
 	UFUNCTION(BlueprintImplementableEvent)
 	void K2_OnDeath();
 
+	/** 캐릭터의 환경이 변경됬을 시에 Blueprint에서 호출될 함수 */
+	UFUNCTION(BlueprintImplementableEvent)
+	void K2_OnEnvStateChanged(EEnvState OldEnvState, EEnvState NewEnvState);
+
 	/** Player State 정보를 초기화 */
 	void InitFromPlayerState(class AADPlayerState* ADPlayerState);
 	
@@ -269,23 +273,14 @@ protected:
 	UFUNCTION()
 	void AdjustSpeed();
 
-	/** Lantern Toggle 요청 */
-	void RequestToggleLanternLight();
-
-	/** Request Toggle Lantern Light를 서버에서 처리한다. */
-	UFUNCTION(Server, Reliable)
-	void S_ToggleLanternLight();
-	void S_ToggleLanternLight_Implementation();
-
-	UFUNCTION()
-	void OnRep_bIsLanternOn();
-
 	/** 레이더 Actor를 생성한다. */
 	void SpawnRadar();
 
 	/** Radar Toggle을 요청한다. */
 	UFUNCTION(BlueprintCallable)
 	void RequestToggleRadar();
+
+	void FindPostProcessVolume();
 
 	/** Radar 보이는 것을 설정 */
 	void SetRadarVisibility(bool bRadarVisible);
@@ -299,7 +294,7 @@ protected:
 	UFUNCTION()
 	void OnRep_bIsRadarOn();
 
-	/** 산소 상태가 변경될 떄 호출되는 함수 */
+	/** 산소 상태가 변경될 때 호출되는 함수 */
 	UFUNCTION()
 	void OnOxygenLevelChanged(float CurrentOxygenLevel, float MaxOxygenLevel);
 
@@ -307,7 +302,7 @@ protected:
 	UFUNCTION()
 	void OnOxygenDepleted();
 
-	/** 체력 상태가 변경될 떄 호출되는 함수 */
+	/** 체력 상태가 변경될 때 호출되는 함수 */
 	UFUNCTION()
 	void OnHealthChanged(int32 CurrentHealth, int32 MaxHealth);
 
@@ -362,10 +357,10 @@ protected:
 
 	void CompleteInteraction(const FInputActionValue& InputActionValue);
 
-	/** 라이트 함수. 미구현*/
+	/** 라이트 토글 함수*/
 	void Light(const FInputActionValue& InputActionValue);
 
-	/** 레이더 함수. 미구현*/
+	/** 레이더 토글 함수 */
 	void Radar(const FInputActionValue& InputActionValue);
 
 	/** 재장전 함수 */
@@ -430,6 +425,11 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FOnCharacterStateChanged OnCharacterStateChangedDelegate;
 
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnEnvStateChanged, EEnvState, OldEnvState, EEnvState, NewEnvState);
+	/** 캐릭터의 환경 상태가 변경되었을 때 호출되는 델리게이트 */
+	UPROPERTY(BlueprintAssignable)
+	FOnEnvStateChanged OnEnvStateChangedDelegate;
+
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnMontageEnd, UAnimMontage*, Montage, bool, bInterrupted);
 	/** 1인칭 메시 몽타주 종료 시 호출되는 델리게이트 */
 	UPROPERTY(BlueprintAssignable, Category = Animation)
@@ -479,6 +479,7 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float ExpectedGravityZ;
 
+	/** Normal 상태에서 장비 착용 가능 여부 */
 	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	uint8 bCanUseEquipment : 1;
 	
@@ -603,10 +604,6 @@ private:
 	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float SprintSpeed;
 
-	/** 현재 라이트 활성화 여부 */
-	UPROPERTY(BlueprintReadOnly, ReplicatedUsing=OnRep_bIsLanternOn, Category = Character, meta = (AllowPrivateAccess = "true"))
-	uint8 bIsLanternOn : 1;
-
 	/** 생성할 레이더 BP */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Radar", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<class ARadar> RadarClass;
@@ -723,6 +720,10 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UStaminaComponent> StaminaComponent;
 
+	/** 캐릭터의 실드를 관리하는 Component */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UShieldComponent> ShieldComponent;
+
 	/** 캐릭터 출혈을 시뮬레이션을 하는 Noise Emitter Component */
 	UPROPERTY()
 	TObjectPtr<class UPawnNoiseEmitterComponent> NoiseEmitterComponent;
@@ -739,9 +740,9 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UEquipUseComponent> EquipUseComponent;
 
-	/** Light 컴포넌트. 캐릭터가 라이트를 켜고 끌 수 있다. */
+	/** Lantern 컴포넌트. 캐릭터가 라이트를 켜고 끌 수 있다. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<class USpotLightComponent> LanternLightComponent;
+	TObjectPtr<class ULanternComponent> LanternComponent;
 
 	/** 발자국 소리 컴포넌트 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
@@ -761,6 +762,12 @@ private:
 	UPROPERTY(EditAnywhere, Category = "UI", meta = (AllowPrivateAccess = "true"))
 	class UHoldInteractionWidget* HoldWidgetInstance;
 
+	UPROPERTY()
+	TObjectPtr<APostProcessVolume> CachedPostProcessVolume;
+
+	/** 원래의 모션 블러 가중치 */
+	float OriginalBlurAmount = 1.0f;
+
 	/** Tool 소켓 명 (1P/3P 공용) */
 	FName LaserSocketName = TEXT("Laser");
 
@@ -773,11 +780,20 @@ public:
 	/** 캐릭터의 Oxygen Component를 반환 */
 	FORCEINLINE class UOxygenComponent* GetOxygenComponent() const { return OxygenComponent; }
 
+	/** 캐릭터의 Shield Component를 반환 */
+	FORCEINLINE class UShieldComponent* GetShieldComponent() const { return ShieldComponent; }
+
 	/** Interaction Component를 반환 */
 	FORCEINLINE UADInteractionComponent* GetInteractionComponent() const { return InteractionComponent; }
 
 	/** Shop Interaction Component를 반환 */
 	FORCEINLINE UShopInteractionComponent* GetShopInteractionComponent() const { return ShopInteractionComponent; }
+
+	/** 1인칭 Camera Component를 반환 */
+	FORCEINLINE UCameraComponent* GetFirstPersonCameraComponent() const { return FirstPersonCameraComponent; }
+
+	/** 1인칭 Camera Arm을 반환 */
+	FORCEINLINE USpringArmComponent* GetMesh1PSpringArm() const { return Mesh1PSpringArm; }
 
 	/** 캐릭터의 상태를 반환 */
 	FORCEINLINE EEnvState GetEnvState() const { return EnvState; }
