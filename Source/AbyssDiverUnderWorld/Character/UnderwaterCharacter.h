@@ -483,6 +483,10 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float ExpectedGravityZ;
 
+	/** 플레이어 무적 설정. 무적이 되면 피해를 입지 않는다. */
+	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	uint8 bIsInvincible : 1;
+	
 	/** Normal 상태에서 장비 착용 가능 여부 */
 	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	uint8 bCanUseEquipment : 1;
@@ -808,6 +812,12 @@ public:
 
 	/** 캐릭터의 현재 상태를 반환 */
 	FORCEINLINE ECharacterState GetCharacterState() const { return CharacterState; }
+
+	/** 캐릭터 무적 상태를 반환. 현재는 Server에서만 유효하다. */
+	FORCEINLINE bool IsInvincible() const { return bIsInvincible; }
+
+	/** 캐릭터 무적 상태를 설정. 현재는 Server에서만 유효하다. */
+	FORCEINLINE void SetInvincible(const bool bNewInvincible) { bIsInvincible = bNewInvincible; }
 
 	/** 캐릭터가 일반 상태인지 여부를 반환 */
 	FORCEINLINE bool IsNormal() const { return CharacterState == ECharacterState::Normal; }

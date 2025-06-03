@@ -71,6 +71,8 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	LandedJumpBlockTime = 0.1f;
 	ExpectedGravityZ = -980.0f;
 
+	bIsInvincible = false;
+
 	bCanUseEquipment = true;
 
 	LanternLength = 2000.0f;
@@ -1181,6 +1183,11 @@ void AUnderwaterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 float AUnderwaterCharacter::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent,
 	class AController* EventInstigator, AActor* DamageCauser)
 {
+	if (bIsInvincible)
+	{
+		return 0.0f;
+	}
+	
 	// 정해져야 할 것
 	// 1. EmitBloodNoise를 Shield만 소모됬을 때 호출할 것인지
 
