@@ -82,6 +82,11 @@ void ABoss::BeginPlay()
 	OriginDeceleration = GetCharacterMovement()->BrakingDecelerationSwimming;
 }
 
+void ABoss::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+}
+
 void ABoss::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
