@@ -838,8 +838,10 @@ void AUnderwaterCharacter::M_StopCaptureState_Implementation()
 	{
 		if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
 		{
-			PlayerController->ResetIgnoreLookInput();
-			PlayerController->ResetIgnoreMoveInput();
+			// SetIgnoreLookInput, SetIgnoreMoveInput은 내부적으로 Stack 같이 사용된다.
+			// 도중에 Start Captrue, Stop Capture에서 순서를 맞추면 Character State에 관계없이 작동한다.
+			PlayerController->SetIgnoreLookInput(false);
+			PlayerController->SetIgnoreMoveInput(false);
 
 			PlayerController->PlayerCameraManager->StartCameraFade(
 				1.0f,
