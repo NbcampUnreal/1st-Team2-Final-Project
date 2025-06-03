@@ -1,4 +1,4 @@
-#include "Interactable/OtherActors/EventTriggers/EventTrigger.h"
+ï»¿#include "Interactable/OtherActors/EventTriggers/EventTrigger.h"
 
 #include "AbyssDiverUnderWorld.h"
 
@@ -20,10 +20,20 @@ void AEventTrigger::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
 
-	// °ÔÀÓ ÁßÀÌ ¾Æ´Ñ °æ¿ì ¸®ÅÏ(ºí·çÇÁ¸°Æ® »óÀÏ °æ¿ì)
-	// PostInitializeComponents´Â ºí·çÇÁ¸°Æ®¿¡¼­µµ ¹ßµ¿ÇÔ
+#if WITH_EDITOR
+
+	// ê²Œìž„ ì¤‘ì´ ì•„ë‹Œ ê²½ìš° ë¦¬í„´(ë¸”ë£¨í”„ë¦°íŠ¸ ìƒì¼ ê²½ìš°)
+	// PostInitializeComponentsëŠ” ë¸”ë£¨í”„ë¦°íŠ¸ì—ì„œë„ ë°œë™í•¨
 	UWorld* World = GetWorld();
 	if (World == nullptr || World->IsGameWorld() == false)
+	{
+		return;
+	}
+
+#endif
+
+	// í˜¸ìŠ¤íŠ¸ë§Œ ì‚¬ìš©
+	if (HasAuthority() == false)
 	{
 		return;
 	}
