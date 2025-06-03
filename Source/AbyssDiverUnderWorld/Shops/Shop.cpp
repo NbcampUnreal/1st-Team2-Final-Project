@@ -326,16 +326,25 @@ void AShop::CloseShop(AUnderwaterCharacter* Requester)
 	{
 		return;
 	}
+	ShopWidget->PlayCloseAnimation();
 
-	ShopWidget->RemoveFromParent();
+	FTimerHandle RemoveWidgetTimerHandle;
+	float RemoveDelay = ShopWidget->GetCloseShopAnimEndTime();
+	GetWorld()->GetTimerManager().SetTimer(RemoveWidgetTimerHandle,
+		FTimerDelegate::CreateLambda([this]() 
+			{ 
+				ShopWidget->RemoveFromParent();
 
-	APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
-	PC->SetInputMode(FInputModeGameOnly());
-	PC->SetShowMouseCursor(false);
-	bIsOpened = false;
-	PC->SetIgnoreMoveInput(false);
+				APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+				PC->SetInputMode(FInputModeGameOnly());
+				PC->SetShowMouseCursor(false);
+				bIsOpened = false;
+				PC->SetIgnoreMoveInput(false);
 
-	ItemMeshCaptureComp->bCaptureEveryFrame = false;
+				ItemMeshCaptureComp->bCaptureEveryFrame = false;
+
+			}), RemoveDelay, false);
+
 }
 
 EBuyResult AShop::BuyItem(uint8 ItemId, uint8 Quantity, AUnderwaterCharacter* Buyer)
