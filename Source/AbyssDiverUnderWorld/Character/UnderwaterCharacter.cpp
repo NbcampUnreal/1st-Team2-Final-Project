@@ -72,6 +72,8 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	ExpectedGravityZ = -980.0f;
 
 	bCanUseEquipment = true;
+
+	LanternLength = 2000.0f;
 	
 	LeftFlipperSocketName = TEXT("foot_l_flipper_socket");
 	RightFlipperSocketName = TEXT("foot_r_flipper_socket");
@@ -181,7 +183,7 @@ void AUnderwaterCharacter::BeginPlay()
 
 	SpawnRadar();
 	SpawnFlipperMesh();
-	LanternComponent->SpawnLight(GetMesh1PSpringArm(), 2000.0f);
+	LanternComponent->SpawnLight(GetMesh1PSpringArm(), LanternLength);
 }
 
 void AUnderwaterCharacter::InitFromPlayerState(AADPlayerState* ADPlayerState)
@@ -257,7 +259,11 @@ void AUnderwaterCharacter::ApplyUpgradeFactor(UUpgradeComponent* UpgradeComponen
 	    		StatComponent->MoveSpeed += StatFactor;
 	    		break;
 			case EUpgradeType::Light:
-	    		// @TODO Apply Light Component Upgrade 
+	    		if (Grade > 1)
+	    		{
+	    			LanternLength *= StatFactor / 100.0f;
+	    			LanternComponent->SetLightLength(LanternLength);
+	    		}
 	    		break;
 		    default: ;
 	    		break;

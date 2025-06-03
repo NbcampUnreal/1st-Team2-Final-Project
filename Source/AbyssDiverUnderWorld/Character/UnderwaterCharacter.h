@@ -486,6 +486,10 @@ private:
 	/** Normal 상태에서 장비 착용 가능 여부 */
 	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	uint8 bCanUseEquipment : 1;
+
+	/** 캐릭터 랜턴의 거리 */
+	UPROPERTY(EditDefaultsOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	float LanternLength;
 	
 	/** 오리발이 생성될 왼발 소켓 이름 */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Flipper")

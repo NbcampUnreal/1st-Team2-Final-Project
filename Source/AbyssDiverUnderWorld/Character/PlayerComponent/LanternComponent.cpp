@@ -3,6 +3,7 @@
 
 #include "LanternComponent.h"
 
+#include "Character/UnderwaterCharacter.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SpotLightComponent.h"
 #include "Monster/Monster.h"
@@ -46,7 +47,6 @@ void ULanternComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 
 void ULanternComponent::RequestToggleLanternLight()
 {
-	UE_LOG(LogTemp,Display, TEXT("Request Toggle Lantern Light : %s"), bIsLanternOn ? TEXT("On") : TEXT("Off"));
 	if (GetOwnerRole() == ROLE_Authority)
 	{
 		bIsLanternOn = !bIsLanternOn;
@@ -78,11 +78,39 @@ void ULanternComponent::OnRep_bIsLanternOn()
 	}
 }
 
-void ULanternComponent::SpawnLight(USceneComponent* AttachToComponent, const float LightLength)
+void ULanternComponent::UpdateDetectionShape(float ConeHeight, float ConeAngle)
 {
+	const FVector Direction = LanternLightComponent->GetForwardVector().GetSafeNormal();
+	const FVector Origin = LanternLightComponent->GetComponentLocation();
+		
+	// 원뿔이 높이 : 삼각형의 밑변 : Capsule Height : AttenuationRadius
+	// 원뿔의 반지름 : 삼각형의 높이 : Capsule Radius : AttenuationRadius * tan(OuterConeAngle)
+	const float ConeRadius = ConeHeight * FMath::Tan(FMath::DegreesToRadians(ConeAngle));
+	const float CapsuleHalfHeight = ConeHeight * 0.5f + ConeRadius; // 캡슐의 반지름 + 캡슐의 높이 절반
+
+	// 캡슐의 중심 위치는 라이트 위치에서 방향으로 ConeHeight의 절반만큼 이동한 위치
+	const FVector CapsuleCenter = Origin + Direction * ConeHeight * 0.5f;
+	// Z축이 Direction 방향이 되도록 회전 행렬을 생성
+	// const FQuat CapsuleRotation = FRotationMatrix::MakeFromZ(Direction).ToQuat();
+	const FQuat CapsuleRotation = FQuat::FindBetweenVectors(FVector::UpVector, Direction);
+		
+	LightDetectionComponent->InitCapsuleSize(ConeRadius, CapsuleHalfHeight);
+	LightDetectionComponent->SetWorldLocationAndRotation(CapsuleCenter, CapsuleRotation);
+}
+
+void ULanternComponent::SpawnLight(USceneComponent* AttachToComponent, const float NewLightLength)
+{
+	// 이미 존재하면 더 이상 생성하지 않는다.
+	if (LanternLightComponent)
+	{
+		return;
+	}
+	
+	LightLength = NewLightLength;
+	
 	LanternLightComponent = NewObject<USpotLightComponent>(this, USpotLightComponent::StaticClass(), TEXT("LanternLightComponent"));
 	LanternLightComponent->SetOuterConeAngle(25.0f);
-	LanternLightComponent->SetAttenuationRadius(LightLength); // 거리에 영향을 준다.
+	LanternLightComponent->SetAttenuationRadius(NewLightLength); // 거리에 영향을 준다.
 	LanternLightComponent->SetIntensity(200000.0f);
 	LanternLightComponent->SetVisibility(bIsLanternOn);
 	LanternLightComponent->RegisterComponent();
@@ -104,23 +132,26 @@ void ULanternComponent::SpawnLight(USceneComponent* AttachToComponent, const flo
 		LightDetectionComponent->AttachToComponent(LanternLightComponent, FAttachmentTransformRules::SnapToTargetIncludingScale);
 		LightDetectionComponent->RegisterComponent();
 
-		const FVector Direction = LanternLightComponent->GetForwardVector().GetSafeNormal();
-		const FVector Origin = LanternLightComponent->GetComponentLocation();
-		
-		// 원뿔이 높이 : 삼각형의 밑변 : Capsule Height : AttenuationRadius
-		// 원뿔의 반지름 : 삼각형의 높이 : Capsule Radius : AttenuationRadius * tan(OuterConeAngle)
-		const float ConeHeight = LanternLightComponent->AttenuationRadius;
-		const float ConeRadius = ConeHeight * FMath::Tan(FMath::DegreesToRadians(LanternLightComponent->OuterConeAngle));
-		const float CapsuleHalfHeight = ConeHeight * 0.5f + ConeRadius; // 캡슐의 반지름 + 캡슐의 높이 절반
+		UpdateDetectionShape(LanternLightComponent->AttenuationRadius, LanternLightComponent->OuterConeAngle);
+	}
+}
 
-		// 캡슐의 중심 위치는 라이트 위치에서 방향으로 ConeHeight의 절반만큼 이동한 위치
-		const FVector CapsuleCenter = Origin + Direction * ConeHeight * 0.5f;
-		// Z축이 Direction 방향이 되도록 회전 행렬을 생성
-		// const FQuat CapsuleRotation = FRotationMatrix::MakeFromZ(Direction).ToQuat();
-		const FQuat CapsuleRotation = FQuat::FindBetweenVectors(FVector::UpVector, Direction);
-		
-		LightDetectionComponent->InitCapsuleSize(ConeRadius, CapsuleHalfHeight);
-		LightDetectionComponent->SetWorldLocationAndRotation(CapsuleCenter, CapsuleRotation);
+void ULanternComponent::SetLightLength(float NewLightLength)
+{
+	if (LightLength == NewLightLength)
+	{
+		return; // 길이가 변경되지 않았다면 아무것도 하지 않음
+	}
+
+	LightLength = NewLightLength;
+	if (LanternLightComponent)
+	{
+		LanternLightComponent->SetAttenuationRadius(LightLength);
+		UpdateDetectionShape(LightLength, LanternLightComponent->OuterConeAngle);
+	}
+	else
+	{
+		UE_LOG(LogAbyssDiverCharacter, Warning, TEXT("LanternLightComponent is not valid. Should Spawn Light first."));
 	}
 }
 
