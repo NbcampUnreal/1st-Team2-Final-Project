@@ -54,7 +54,7 @@ public:
 	virtual bool IsHoldMode() const override;
 	virtual FString GetInteractionDescription() const override;
 
-	FName GetLevelID() const { return LevelID; }
+	EMapName GetLevelID() const { return LevelID; }
 	bool IsSelectedLevel() const { return bSelectLevel; }
 
 #pragma endregion
