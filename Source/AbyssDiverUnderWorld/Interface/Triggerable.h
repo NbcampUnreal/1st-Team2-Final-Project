@@ -23,6 +23,10 @@ class ABYSSDIVERUNDERWORLD_API ITriggerable
 public:
 
 	UFUNCTION(BlueprintImplementableEvent)
-	void TriggerEvent(AActor* Instigator);
-	virtual void TriggerEvent_Implementation(AActor* Instigator) = 0;
+	void TriggerEventBeginOverlap(AActor* Instigator, AActor* ActingEventTrigger);
+	virtual void TriggerEventBeginOverlap_Implementation(AActor* Instigator, AActor* ActingEventTrigger) = 0;
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void TriggerEventEndOverlap(AActor* Instigator, AActor* ActingEventTrigger);
+	virtual void TriggerEventEndOverlap_Implementation(AActor* Instigator, AActor* ActingEventTrigger) = 0;
 };
