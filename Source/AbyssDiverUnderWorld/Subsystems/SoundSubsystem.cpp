@@ -108,6 +108,7 @@ void USoundSubsystem::Init(const int32 InitialPoolCount)
 	ActivatedSFXComponents.Empty(InitialPoolCount);
 
 	AudioComponentWithIdMap.Empty(InitialPoolCount);
+	AudioIdWithComponentMap.Empty(InitialPoolCount);
 
 	DeactivatedComponents.Empty();
 
