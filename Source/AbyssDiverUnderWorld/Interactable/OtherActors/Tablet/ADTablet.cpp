@@ -47,7 +47,7 @@ void AADTablet::BeginPlay()
 
 	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
 	{
-		GetSoundSubsystem() = GI->GetSubsystem<USoundSubsystem>();
+		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
 	}
 }
 

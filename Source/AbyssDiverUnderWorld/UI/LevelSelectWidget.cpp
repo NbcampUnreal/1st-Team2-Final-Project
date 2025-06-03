@@ -6,7 +6,7 @@ void ULevelSelectWidget::NativeOnInitialized()
 {
     LevelButtons = { ShallowLevelButton,  AbyssLevelButton };
     LevelDescriptions = { ShallowDescription,  AbyssDescription };
-    LevelIDs = { TEXT("Shallow"),     TEXT("DeepAbyss") };
+    LevelIDs = { EMapName::test1, EMapName::test2 };
 
     for (int32 i = 0; i < LevelButtons.Num(); ++i)
     {
