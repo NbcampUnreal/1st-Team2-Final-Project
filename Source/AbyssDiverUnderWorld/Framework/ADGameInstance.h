@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Engine/GameInstance.h"
 #include "UI/MissionData.h"
+#include "Framework/SettingsManager.h"
 #include "ADGameInstance.generated.h"
 
 enum class EMapName : uint8;
@@ -116,6 +117,9 @@ public:
 
 #pragma endregion
 
+	//Settings
+	UPROPERTY(BlueprintReadOnly)
+	TObjectPtr<USettingsManager> SettingsManager;
 
 private:
 
@@ -123,6 +127,7 @@ private:
 	TArray<bool> ValidPlayerIndexArray;
 
 	const int32 MAX_PLAYER_NUMBER = 4;
+	
 
 #pragma region Getters / Setters
 
@@ -137,6 +142,9 @@ private:
 
 	UFUNCTION(BlueprintPure, Category = "ADGameInstance")
 	const float GetCurrentAmbientVolume() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Settings")
+	USettingsManager* GetSettingsManager() const { return SettingsManager; }
 
 #pragma endregion
 

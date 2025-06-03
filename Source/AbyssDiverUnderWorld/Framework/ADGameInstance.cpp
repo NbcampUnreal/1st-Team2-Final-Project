@@ -16,6 +16,9 @@ void UADGameInstance::Init()
 	bIsHost = false;
     PlayerIdMap.Empty(MAX_PLAYER_NUMBER);
     ValidPlayerIndexArray.Init(false, MAX_PLAYER_NUMBER);
+
+    SettingsManager = NewObject<USettingsManager>(this);
+    SettingsManager->LoadAllSettings(GetFirstLocalPlayerController());
 }
 
 bool UADGameInstance::TryGetPlayerIndex(const FString& NetId, int32& OutPlayerIndex)
