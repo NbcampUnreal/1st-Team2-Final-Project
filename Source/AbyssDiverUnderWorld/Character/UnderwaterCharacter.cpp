@@ -328,6 +328,7 @@ void AUnderwaterCharacter::SetEnvironmentState(EEnvironmentState State)
 		Mesh1PSpringArm->bEnableCameraRotationLag = true;
 		OxygenComponent->SetShouldConsumeOxygen(true);
 		bCanUseEquipment = true;
+		UpdateBlurEffect();
 		break;
 	case EEnvironmentState::Ground:
 		// 지상에서는 이동 방향으로 회전을 하게 한다.
@@ -337,6 +338,7 @@ void AUnderwaterCharacter::SetEnvironmentState(EEnvironmentState State)
 		Mesh1PSpringArm->bEnableCameraRotationLag = false;
 		OxygenComponent->SetShouldConsumeOxygen(false);
 		bCanUseEquipment = false;
+		UpdateBlurEffect();
 		break;
 	default:
 		UE_LOG(AbyssDiver, Error, TEXT("Invalid Character State"));
@@ -898,8 +900,6 @@ void AUnderwaterCharacter::SpawnRadar()
 	RadarObject->AttachToComponent(FirstPersonCameraComponent, FAttachmentTransformRules::KeepWorldTransform);
 	RadarObject->UpdateRadarSourceComponent(GetRootComponent(), GetRootComponent());
 	SetRadarVisibility(false);
-
-	FindPostProcessVolume();
 }
 
 void AUnderwaterCharacter::RequestToggleRadar()
@@ -907,15 +907,7 @@ void AUnderwaterCharacter::RequestToggleRadar()
 	if (HasAuthority())
 	{
 		bIsRadarOn = !bIsRadarOn;
-		SetRadarVisibility(bIsRadarOn);
-
-		float BlurAmount = (bIsRadarOn) ? 0 : OriginalBlurAmount;
-		if (CachedPostProcessVolume == nullptr)
-		{
-			FindPostProcessVolume();
-		}
-
-		CachedPostProcessVolume->Settings.MotionBlurAmount = BlurAmount;
+		OnRep_bIsRadarOn();
 	}
 	else
 	{
@@ -923,19 +915,24 @@ void AUnderwaterCharacter::RequestToggleRadar()
 	}
 }
 
-void AUnderwaterCharacter::FindPostProcessVolume()
+void AUnderwaterCharacter::UpdateBlurEffect()
 {
-	for (APostProcessVolume* PostProcessVolume : TActorRange<APostProcessVolume>(GetWorld()))
-	{
-		if (PostProcessVolume->Settings.bOverride_MotionBlurAmount == false)
-		{
-			continue;
-		}
+	// 레이더가 켜져 있으면 Blur 효과를 꺼야 한다.
+	// 레이더가 꺼져 있으면 수중일 경우 Blur 효과를 켜고 지상일 경우 Blur 효과를 끈다.
+	const bool bShouldEnableBlur = EnvironmentState == EEnvironmentState::Underwater && !bIsRadarOn;
+	SetBlurEffect(bShouldEnableBlur);
+}
 
-		CachedPostProcessVolume = PostProcessVolume;
-		OriginalBlurAmount = CachedPostProcessVolume->Settings.MotionBlurAmount;
-		break;
+void AUnderwaterCharacter::SetBlurEffect(const bool bEnable)
+{
+	// Post Effect 효과는 Local Player에서만 적용한다.
+	if (!IsLocallyControlled())
+	{
+		return;
 	}
+
+	FirstPersonCameraComponent->PostProcessSettings.bOverride_MotionBlurAmount = !bEnable;
+	FirstPersonCameraComponent->PostProcessSettings.MotionBlurAmount = 0.0f;
 }
 
 void AUnderwaterCharacter::SetRadarVisibility(bool bRadarVisible)
@@ -957,6 +954,7 @@ void AUnderwaterCharacter::S_ToggleRadar_Implementation()
 void AUnderwaterCharacter::OnRep_bIsRadarOn()
 {
 	SetRadarVisibility(bIsRadarOn);
+	UpdateBlurEffect();
 }
 
 void AUnderwaterCharacter::OnOxygenLevelChanged(float CurrentOxygenLevel, float MaxOxygenLevel)

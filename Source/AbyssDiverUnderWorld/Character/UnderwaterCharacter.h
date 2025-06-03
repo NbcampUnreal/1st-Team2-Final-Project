@@ -280,7 +280,11 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void RequestToggleRadar();
 
-	void FindPostProcessVolume();
+	/** 현재 상태에 맞춰서 Blur 효과를 업데이트한다. */
+	void UpdateBlurEffect();
+	
+	/** Blur 효과 적용 여부를 설정한다. */
+	void SetBlurEffect(const bool bEnable);
 
 	/** Radar 보이는 것을 설정 */
 	void SetRadarVisibility(bool bRadarVisible);
@@ -761,12 +765,6 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "UI", meta = (AllowPrivateAccess = "true"))
 	class UHoldInteractionWidget* HoldWidgetInstance;
-
-	UPROPERTY()
-	TObjectPtr<APostProcessVolume> CachedPostProcessVolume;
-
-	/** 원래의 모션 블러 가중치 */
-	float OriginalBlurAmount = 1.0f;
 
 	/** Tool 소켓 명 (1P/3P 공용) */
 	FName LaserSocketName = TEXT("Laser");
