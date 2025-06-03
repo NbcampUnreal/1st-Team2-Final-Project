@@ -230,6 +230,8 @@ void AShop::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
 
+#if WITH_EDITOR
+
 	// 게임 중이 아닌 경우 리턴(블루프린트 상일 경우)
 	// PostInitializeComponents는 블루프린트에서도 발동함
 	UWorld* World = GetWorld();
@@ -237,6 +239,8 @@ void AShop::PostInitializeComponents()
 	{
 		return;
 	}
+
+#endif
 
 	InitShopWidget();
 	InitData();

@@ -40,6 +40,7 @@ public:
 	ASerpmareSpawner();
 
 public:
+	virtual void PostInitializeComponents() override;
 	virtual void BeginPlay() override;
 
 public:

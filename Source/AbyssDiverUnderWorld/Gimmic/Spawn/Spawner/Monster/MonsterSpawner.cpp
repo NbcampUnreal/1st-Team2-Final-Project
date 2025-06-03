@@ -10,12 +10,36 @@ AMonsterSpawner::AMonsterSpawner()
 	MaxMonsterSpawnCount = 10;
 }
 
+void AMonsterSpawner::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+
+#if WITH_EDITOR
+
+	// 게임 중이 아닌 경우 리턴(블루프린트 상일 경우)
+	// PostInitializeComponents는 블루프린트에서도 발동함
+	UWorld* World = GetWorld();
+	if (World == nullptr || World->IsGameWorld() == false)
+	{
+		return;
+	}
+
+#endif
+
+	// 호스트만 사용
+	if (HasAuthority() == false)
+	{
+		return;
+	}
+
+	TotalSpawnPoints = GetSpawnPoint(AMonsterSpawnPoint::StaticClass());
+
+	RemoveInValidMonsterClass();
+}
+
 void AMonsterSpawner::BeginPlay()
 {
 	Super::BeginPlay();
-
-	TotalSpawnPoints = GetSpawnPoint(AMonsterSpawnPoint::StaticClass());
-	RemoveInValidMonsterClass();
 }
 
 void AMonsterSpawner::Spawn()
