@@ -232,17 +232,22 @@ private:
 	float CurrentMultiplier = 1.f;
 	float TargetMultiplier = 1.f;
 	float DrainAcc = 0.f;
+	int32 DPVAudioID = 0;
 	// NVG 설정 변수
 	TObjectPtr<class UCameraComponent> CameraComp = nullptr;
 	FPostProcessSettings OriginalPPSettings;
 	uint8 bOriginalExposureCached : 1;
 	static const FName BASIC_SPEAR_GUN_NAME;
 
+	
 
 #pragma endregion
 
 #pragma region Getter, Setteer
 public:
 	uint8 IsBoost() const { return bBoostActive; }
+
+private:
+	USoundSubsystem* GetSoundSubsystem();
 #pragma endregion		
 };

@@ -48,6 +48,8 @@ public:
 
 	void SetTeamMoneyText(int32 NewTeamMoney);
 
+	void PlayCloseAnimation();
+
 	FOnShopCloseButtonClickedDelegate OnShopCloseButtonClickedDelegate;
 
 private:
@@ -88,6 +90,9 @@ private:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<class URichTextBlock> TeamMoneyText;
 
+	UPROPERTY(meta = (BindWidgetAnim), Transient)
+	TObjectPtr<class UWidgetAnimation> CloseShopAnim;
+
 	UPROPERTY()
 	TArray<TObjectPtr<UShopItemEntryData>> ConsumableTabEntryDataList;
 
@@ -117,6 +122,7 @@ public:
 
 	TArray<TObjectPtr<UShopItemEntryData>>& GetUpgradeTabEntryDataList();
 	
+	float GetCloseShopAnimEndTime() const;
 #pragma endregion
 	
 };

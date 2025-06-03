@@ -75,7 +75,7 @@ void AADItemBase::HandlePickup(APawn* InstigatorPawn)
 
 void AADItemBase::M_PlayPickupSound_Implementation()
 {
-	SoundSubsystem->PlayAt(ESFX::Pickup, GetActorLocation(), 2.0f);
+	GetSoundSubsystem()->PlayAt(ESFX::Pickup, GetActorLocation(), 2.0f);
 }
 
 void AADItemBase::OnRep_ItemData()
@@ -113,4 +113,19 @@ bool AADItemBase::IsHoldMode() const
 FString AADItemBase::GetInteractionDescription() const
 {
 	return TEXT("Pick up!");
+}
+
+USoundSubsystem* AADItemBase::GetSoundSubsystem()
+{
+	if (SoundSubsystem)
+	{
+		return SoundSubsystem;
+	}
+
+	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+	{
+		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
+		return SoundSubsystem;
+	}
+	return nullptr;
 }

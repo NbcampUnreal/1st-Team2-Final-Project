@@ -52,11 +52,11 @@ void AADDroneSeller::Interact_Implementation(AActor* InstigatorActor)
 	{
 		LOGD(Log, TEXT("목표 달성! Drone 활성화 호출"))
 		CurrentDrone->Activate();
-		SoundSubsystem->PlayAt(ESFX::ActivateDrone, GetActorLocation());
+		GetSoundSubsystem()->PlayAt(ESFX::ActivateDrone, GetActorLocation());
 	}
 	else
 	{
-		SoundSubsystem->PlayAt(ESFX::SubmitOre, GetActorLocation());
+		GetSoundSubsystem()->PlayAt(ESFX::SubmitOre, GetActorLocation());
 	}
 	
 }
@@ -85,11 +85,11 @@ void AADDroneSeller::OnRep_CurrentMoney()
 	OnCurrentMoneyChangedDelegate.Broadcast(CurrentMoney);
 	if (CurrentMoney >= TargetMoney)
 	{
-		SoundSubsystem->PlayAt(ESFX::ActivateDrone, GetActorLocation());
+		GetSoundSubsystem()->PlayAt(ESFX::ActivateDrone, GetActorLocation());
 	}
 	else
 	{
-		SoundSubsystem->PlayAt(ESFX::SubmitOre, GetActorLocation());
+		GetSoundSubsystem()->PlayAt(ESFX::SubmitOre, GetActorLocation());
 	}
 }
 
@@ -148,4 +148,19 @@ bool AADDroneSeller::IsHoldMode() const
 FString AADDroneSeller::GetInteractionDescription() const
 {
 	return TEXT("Submit Ore!");
+}
+
+USoundSubsystem* AADDroneSeller::GetSoundSubsystem()
+{
+	if (SoundSubsystem)
+	{
+		return SoundSubsystem;
+	}
+
+	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+	{
+		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
+		return SoundSubsystem;
+	}
+	return nullptr;
 }

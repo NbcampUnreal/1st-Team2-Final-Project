@@ -6,6 +6,18 @@
 #include "Components/ActorComponent.h"
 #include "LanternComponent.generated.h"
 
+/*
+ * Light Channel
+ * Local 3인칭 메시 : Channel 1
+ * Other 3인칭 메시 : Channel 1, 2
+ * Lantern Light : Channel 0, 2
+ * Directional Light : Channel 0, 1
+ * Other Mesh : Channel 0
+ *
+ * Self Character Mesh : Lantern X, Directional Light O
+ * Other Character Mesh : Lantern O, Directional Light O
+ * Other Mesh : Lantern O, Directional Light O
+ */
 
 /**
  * 플레이어의 랜턴 컴포넌트
@@ -36,13 +48,19 @@ public:
 	void RequestToggleLanternLight();
 	
 	/** 라이트를 생성한다. */
-	void SpawnLight(USceneComponent* AttachToComponent, const float LightLength = 2000.0f);
+	void SpawnLight(USceneComponent* AttachToComponent, const float NewLightLength = 2000.0f);
 
+	/** 빛이 닿는 거리를 변경. Lantern이 생성되어 있지 않으면 아무 것도 하지 않는다. */
+	void SetLightLength(float NewLightLength);
+	
 protected:
 
 	/** bIsLanternOn Replicate 함수 */
 	UFUNCTION()
 	void OnRep_bIsLanternOn();
+
+	/** 빛이 닿는 거리에 따라서 LightDetectionComponent 모양을 변경 */
+	void UpdateDetectionShape(float ConeHeight, float ConeAngle);
 
 	/** Request Toggle Lantern Light를 서버에서 처리한다. */
 	UFUNCTION(Server, Reliable)
@@ -69,6 +87,10 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Lantern")
 	float LanternForwardOffset;
 
+	/** 빛이 닿는 거리 */
+	UPROPERTY(EditDefaultsOnly, Category = "Character|Lantern", meta = (AllowPrivateAccess = "true"))
+	float LightLength;
+	
 	/** 랜턴의 라이트 컴포넌트 */
 	UPROPERTY()
 	TObjectPtr<class USpotLightComponent> LanternLightComponent;

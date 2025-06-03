@@ -79,6 +79,9 @@ public:
 	virtual UADInteractableComponent* GetInteractableComponent() const override;
 	virtual bool IsHoldMode() const override;
 	virtual FString GetInteractionDescription() const override;
+
+private:
+	USoundSubsystem* GetSoundSubsystem();
 #pragma endregion
 
 };

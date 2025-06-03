@@ -100,7 +100,7 @@ void AADTablet::Pickup(AUnderwaterCharacter* UnderwaterCharacter)
 		{
 			if (TabletWidget->Start)
 			{
-				SoundSubsystem->PlayAt(ESFX::OpenTablet, GetActorLocation());
+				GetSoundSubsystem()->PlayAt(ESFX::OpenTablet, GetActorLocation());
 				// PlayAnimation(애니메이션, 시작 시간, LoopCount, 플레이 모드)
 				TabletWidget->PlayAnimation(TabletWidget->Start, 0.f, 1, EUMGSequencePlayMode::Forward, 1.f);
 				LOG(TEXT("TabletUI Animation Start"));
@@ -154,6 +154,21 @@ void AADTablet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetim
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AADTablet, bIsHeld);
 	DOREPLIFETIME(AADTablet, HeldBy);
+}
+
+USoundSubsystem* AADTablet::GetSoundSubsystem()
+{
+	if (SoundSubsystem)
+	{
+		return SoundSubsystem;
+	}
+
+	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+	{
+		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
+		return SoundSubsystem;
+	}
+	return nullptr;
 }
 
 

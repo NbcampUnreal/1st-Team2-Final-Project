@@ -39,13 +39,22 @@ void AEventTrigger::PostInitializeComponents()
 	}
 
 	CollisionBox->OnComponentBeginOverlap.AddDynamic(this, &AEventTrigger::OnBeginOverlap);
+	CollisionBox->OnComponentEndOverlap.AddDynamic(this, &AEventTrigger::OnEndOverlap);
 }
 
 void AEventTrigger::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	for (const auto& TriggerableActor : TriggerableActors)
 	{
-		ITriggerable::Execute_TriggerEvent(TriggerableActor, OtherActor);
+		ITriggerable::Execute_TriggerEventBeginOverlap(TriggerableActor, OtherActor, this);
+	}
+}
+
+void AEventTrigger::OnEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	for (const auto& TriggerableActor : TriggerableActors)
+	{
+		ITriggerable::Execute_TriggerEventEndOverlap(TriggerableActor, OtherActor, this);
 	}
 }
 

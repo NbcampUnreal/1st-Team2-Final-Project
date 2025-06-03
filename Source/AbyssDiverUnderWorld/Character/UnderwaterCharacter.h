@@ -34,7 +34,7 @@ enum class ELocomotionMode : uint8;
 
 /* 캐릭터의 지상, 수중을 결정, Move 로직, Animation이 변경되고 사용 가능 기능이 제한된다. */
 UENUM(BlueprintType)
-enum class EEnvState : uint8
+enum class EEnvironmentState : uint8
 {
 	Underwater,
 	Ground,
@@ -133,7 +133,7 @@ public:
 
 	/** 현재 캐릭터의 상태를 전환. 수중, 지상 */
 	UFUNCTION(BlueprintCallable)
-	void SetEnvState(EEnvState State);
+	void SetEnvironmentState(EEnvironmentState State);
 
 	/** 빠른 구현을 위해 Captrue를 현재 Multicast로 구현한다.
 	 * 이후 변경 모델
@@ -245,7 +245,7 @@ protected:
 
 	/** 캐릭터의 환경이 변경됬을 시에 Blueprint에서 호출될 함수 */
 	UFUNCTION(BlueprintImplementableEvent)
-	void K2_OnEnvStateChanged(EEnvState OldEnvState, EEnvState NewEnvState);
+	void K2_OnEnvronmentStateChanged(EEnvironmentState OldEnvironmentState, EEnvironmentState NewEnvironmentState);
 
 	/** Player State 정보를 초기화 */
 	void InitFromPlayerState(class AADPlayerState* ADPlayerState);
@@ -280,7 +280,11 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void RequestToggleRadar();
 
-	void FindPostProcessVolume();
+	/** 현재 상태에 맞춰서 Blur 효과를 업데이트한다. */
+	void UpdateBlurEffect();
+	
+	/** Blur 효과 적용 여부를 설정한다. */
+	void SetBlurEffect(const bool bEnable);
 
 	/** Radar 보이는 것을 설정 */
 	void SetRadarVisibility(bool bRadarVisible);
@@ -425,10 +429,10 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FOnCharacterStateChanged OnCharacterStateChangedDelegate;
 
-	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnEnvStateChanged, EEnvState, OldEnvState, EEnvState, NewEnvState);
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnEnvironmentStateChanged, EEnvironmentState, OldEnvironmentState, EEnvironmentState, NewEnvironmentState);
 	/** 캐릭터의 환경 상태가 변경되었을 때 호출되는 델리게이트 */
 	UPROPERTY(BlueprintAssignable)
-	FOnEnvStateChanged OnEnvStateChangedDelegate;
+	FOnEnvironmentStateChanged OnEnvironmentStateChangedDelegate;
 
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnMontageEnd, UAnimMontage*, Montage, bool, bInterrupted);
 	/** 1인칭 메시 몽타주 종료 시 호출되는 델리게이트 */
@@ -479,9 +483,17 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float ExpectedGravityZ;
 
+	/** 플레이어 무적 설정. 무적이 되면 피해를 입지 않는다. */
+	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	uint8 bIsInvincible : 1;
+	
 	/** Normal 상태에서 장비 착용 가능 여부 */
 	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	uint8 bCanUseEquipment : 1;
+
+	/** 캐릭터 랜턴의 거리 */
+	UPROPERTY(EditDefaultsOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	float LanternLength;
 	
 	/** 오리발이 생성될 왼발 소켓 이름 */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Flipper")
@@ -527,6 +539,10 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true"))
 	float GroggyDuration;
 
+	/** 그로기 상태에서 공격 받았을 경우 줄어드는 Groggy 시간. 초 단위이다. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true", ClampMin = "0.0"))
+	float GroggyHitPenalty;
+
 	/** 그로기 상태에 진입될 떄마다 감소하는 Groggy Duration 비율. [0, 1]의 범위로 설정한다. 0.3일 경우 0.7배로 감소한다. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true", ClampMin = "0.0", ClampMax = "1.0"))
 	float GroggyReductionRate;
@@ -566,7 +582,7 @@ private:
 
 	/** 캐릭터의 현재 상태. 지상 혹은 수중 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
-	EEnvState EnvState;
+	EEnvironmentState EnvironmentState;
 
 	/** Capture 상태 여부. 추후 상태가 많아지면 상태 패턴 이용을 고려 */
 	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
@@ -762,12 +778,6 @@ private:
 	UPROPERTY(EditAnywhere, Category = "UI", meta = (AllowPrivateAccess = "true"))
 	class UHoldInteractionWidget* HoldWidgetInstance;
 
-	UPROPERTY()
-	TObjectPtr<APostProcessVolume> CachedPostProcessVolume;
-
-	/** 원래의 모션 블러 가중치 */
-	float OriginalBlurAmount = 1.0f;
-
 	/** Tool 소켓 명 (1P/3P 공용) */
 	FName LaserSocketName = TEXT("Laser");
 
@@ -796,7 +806,7 @@ public:
 	FORCEINLINE USpringArmComponent* GetMesh1PSpringArm() const { return Mesh1PSpringArm; }
 
 	/** 캐릭터의 상태를 반환 */
-	FORCEINLINE EEnvState GetEnvState() const { return EnvState; }
+	FORCEINLINE EEnvironmentState GetEnvironmentState() const { return EnvironmentState; }
 
 	/** 현재 Locomotion Mode를 반환 */
 	FORCEINLINE ELocomotionMode GetLocomotionMode() const { return LocomotionMode; }
@@ -806,6 +816,12 @@ public:
 
 	/** 캐릭터의 현재 상태를 반환 */
 	FORCEINLINE ECharacterState GetCharacterState() const { return CharacterState; }
+
+	/** 캐릭터 무적 상태를 반환. 현재는 Server에서만 유효하다. */
+	FORCEINLINE bool IsInvincible() const { return bIsInvincible; }
+
+	/** 캐릭터 무적 상태를 설정. 현재는 Server에서만 유효하다. */
+	FORCEINLINE void SetInvincible(const bool bNewInvincible) { bIsInvincible = bNewInvincible; }
 
 	/** 캐릭터가 일반 상태인지 여부를 반환 */
 	FORCEINLINE bool IsNormal() const { return CharacterState == ECharacterState::Normal; }

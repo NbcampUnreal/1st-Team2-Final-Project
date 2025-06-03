@@ -8,6 +8,7 @@
 #include "UnderwaterCharacter.h"
 #include "Components/RichTextBlock.h"
 #include "PlayerComponent/OxygenComponent.h"
+#include "PlayerComponent/ShieldComponent.h"
 #include "PlayerComponent/StaminaComponent.h"
 
 void UPlayerHUDWidget::NativeConstruct()
@@ -44,6 +45,11 @@ void UPlayerHUDWidget::BindWidget(APawn* PlayerPawn)
 		StatComponent->OnHealthChanged.AddDynamic(this, &UPlayerHUDWidget::UpdateHealthText);
 		UpdateHealthText(StatComponent->GetCurrentHealth(), StatComponent->GetMaxHealth());
 	}
+	if (UShieldComponent* ShieldComponent = PlayerPawn->FindComponentByClass<UShieldComponent>())
+	{
+		ShieldComponent->OnShieldValueChangedDelegate.AddDynamic(this, &UPlayerHUDWidget::UpdateShieldText);
+		UpdateShieldText(ShieldComponent->GetShieldValue());
+	}
 	if (UOxygenComponent* OxygenComponent = PlayerPawn->FindComponentByClass<UOxygenComponent>())
 	{
 		OxygenComponent->OnOxygenLevelChanged.AddDynamic(this, &UPlayerHUDWidget::UpdateOxygenText);
@@ -74,6 +80,19 @@ void UPlayerHUDWidget::UpdateHealthText(int32 Health, int32 MaxHealth)
 	}
 }
 
+void UPlayerHUDWidget::UpdateShieldText(float ShieldValue)
+{
+	if (ShieldTextBlock)
+	{
+		FText ShieldText = FText::Format(FText::FromString(TEXT("Shield : {0}")), FText::AsNumber(ShieldValue));
+		ShieldTextBlock->SetText(ShieldText);
+	}
+	else
+	{
+		LOGV(Warning, TEXT("Shield : ShieldTextBlock is nullptr"));
+	}
+}
+
 void UPlayerHUDWidget::UpdateOxygenText(float Oxygen, float MaxOxygen)
 {
 	if (OxygenTextBlock)
@@ -85,8 +104,8 @@ void UPlayerHUDWidget::UpdateOxygenText(float Oxygen, float MaxOxygen)
 		FText OxygenText = FText::Format(
 			FText::FromString(TEXT("Oxygen : {0} / {1}")),
 			FText::AsNumber(Oxygen, &FormatOptions),
-			FText::AsNumber(MaxOxygen, &FormatOptions))
-		;
+			FText::AsNumber(MaxOxygen, &FormatOptions)
+		);
 		OxygenTextBlock->SetText(OxygenText);
 	}
 	else
@@ -106,8 +125,8 @@ void UPlayerHUDWidget::UpdateStaminaText(float Stamina, float MaxStamina)
 		FText StaminaText = FText::Format(
 			FText::FromString(TEXT("Stamina : {0} / {1}")),
 			FText::AsNumber(Stamina, &FormatOptions),
-			FText::AsNumber(MaxStamina, &FormatOptions))
-		;
+			FText::AsNumber(MaxStamina, &FormatOptions)
+		);
 		StaminaTextBlock->SetText(StaminaText);
 	}
 	else
