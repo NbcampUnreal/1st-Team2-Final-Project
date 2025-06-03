@@ -54,8 +54,8 @@ private:
 	const int32 MaxIterations = 6;
 	const float AngleStep = 30.0f;
 	const float FourDirectionTraceDistance = 200.0f;
-	uint8 bHasTarget : 1 = 0;
-	uint8 bIsTurning : 1 = 0;
+	uint8 bHasTarget : 1 = false;
+	uint8 bIsTurning : 1 = false;
 	FVector TurnDirection;
 	float AcceptanceRadius = 10.f;
 	float TurnTimer = 0.0f;
