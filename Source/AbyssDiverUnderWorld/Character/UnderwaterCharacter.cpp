@@ -14,7 +14,6 @@
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/PawnNoiseEmitterComponent.h"
-#include "Components/SpotLightComponent.h"
 #include "Footstep/FootstepComponent.h"
 #include "Framework/ADPlayerState.h"
 #include "Framework/ADPlayerController.h"
@@ -72,7 +71,11 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	LandedJumpBlockTime = 0.1f;
 	ExpectedGravityZ = -980.0f;
 
+	bIsInvincible = false;
+
 	bCanUseEquipment = true;
+
+	LanternLength = 2000.0f;
 	
 	LeftFlipperSocketName = TEXT("foot_l_flipper_socket");
 	RightFlipperSocketName = TEXT("foot_r_flipper_socket");
@@ -86,6 +89,7 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	GroggyCount = 0;
 	GroggyLookSensitivity = 0.25f;
 	RescueRequireTime = 6.0f;
+	GroggyHitPenalty = 5.0f;
 	RecoveryHealthPercentage = 1.0f;
 	
 	GatherMultiplier = 1.0f;
@@ -139,13 +143,22 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	RadarOffset = FVector(150.0f, 0.0f, 0.0f);
 	RadarRotation = FRotator(90.0f, 0.0f, 0.0f);
 
-	EnvState = EEnvState::Underwater;
+	EnvironmentState = EEnvironmentState::Underwater;
 }
 
 void AUnderwaterCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (IsLocallyControlled())
+	{
+		GetMesh()->SetLightingChannels(false, true, false);
+	}
+	else
+	{
+		GetMesh()->SetLightingChannels(false, true, true);
+	}
+	
 	SetDebugCameraMode(bUseDebugCamera);
 	
 	RootComponent->PhysicsVolumeChangedDelegate.AddDynamic(this, &AUnderwaterCharacter::OnPhysicsVolumeChanged);
@@ -173,7 +186,7 @@ void AUnderwaterCharacter::BeginPlay()
 
 	SpawnRadar();
 	SpawnFlipperMesh();
-	LanternComponent->SpawnLight(GetMesh1PSpringArm(), 2000.0f);
+	LanternComponent->SpawnLight(GetMesh1PSpringArm(), LanternLength);
 }
 
 void AUnderwaterCharacter::InitFromPlayerState(AADPlayerState* ADPlayerState)
@@ -249,7 +262,11 @@ void AUnderwaterCharacter::ApplyUpgradeFactor(UUpgradeComponent* UpgradeComponen
 	    		StatComponent->MoveSpeed += StatFactor;
 	    		break;
 			case EUpgradeType::Light:
-	    		// @TODO Apply Light Component Upgrade 
+	    		if (Grade > 1)
+	    		{
+	    			LanternLength *= StatFactor / 100.0f;
+	    			LanternComponent->SetLightLength(LanternLength);
+	    		}
 	    		break;
 		    default: ;
 	    		break;
@@ -302,26 +319,27 @@ void AUnderwaterCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProp
 	DOREPLIFETIME(AUnderwaterCharacter, bIsRadarOn);
 }
 
-void AUnderwaterCharacter::SetEnvState(EEnvState State)
+void AUnderwaterCharacter::SetEnvironmentState(EEnvironmentState State)
 {
-	if (EnvState == State)
+	if (EnvironmentState == State)
 	{
 		return;
 	}
-	const EEnvState OldState = EnvState;
-	EnvState = State;
+	const EEnvironmentState OldState = EnvironmentState;
+	EnvironmentState = State;
 
-	switch (EnvState)
+	switch (EnvironmentState)
 	{
-	case EEnvState::Underwater:
+	case EEnvironmentState::Underwater:
 		GetCharacterMovement()->GravityScale = 0.0f;
 		SetFlipperMeshVisibility(true);
 		FirstPersonCameraArm->bEnableCameraRotationLag = true;
 		Mesh1PSpringArm->bEnableCameraRotationLag = true;
 		OxygenComponent->SetShouldConsumeOxygen(true);
 		bCanUseEquipment = true;
+		UpdateBlurEffect();
 		break;
-	case EEnvState::Ground:
+	case EEnvironmentState::Ground:
 		// 지상에서는 이동 방향으로 회전을 하게 한다.
 		GetCharacterMovement()->GravityScale = GetWorld()->GetGravityZ() / ExpectedGravityZ;
 		SetFlipperMeshVisibility(false);
@@ -329,14 +347,15 @@ void AUnderwaterCharacter::SetEnvState(EEnvState State)
 		Mesh1PSpringArm->bEnableCameraRotationLag = false;
 		OxygenComponent->SetShouldConsumeOxygen(false);
 		bCanUseEquipment = false;
+		UpdateBlurEffect();
 		break;
 	default:
 		UE_LOG(AbyssDiver, Error, TEXT("Invalid Character State"));
 		break;
 	}
 
-	OnEnvStateChangedDelegate.Broadcast(OldState, EnvState);
-	K2_OnEnvStateChanged(OldState, EnvState);
+	OnEnvironmentStateChangedDelegate.Broadcast(OldState, EnvironmentState);
+	K2_OnEnvronmentStateChanged(OldState, EnvironmentState);
 }
 
 void AUnderwaterCharacter::StartCaptureState()
@@ -819,8 +838,10 @@ void AUnderwaterCharacter::M_StopCaptureState_Implementation()
 	{
 		if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
 		{
-			PlayerController->ResetIgnoreLookInput();
-			PlayerController->ResetIgnoreMoveInput();
+			// SetIgnoreLookInput, SetIgnoreMoveInput은 내부적으로 Stack 같이 사용된다.
+			// 도중에 Start Captrue, Stop Capture에서 순서를 맞추면 Character State에 관계없이 작동한다.
+			PlayerController->SetIgnoreLookInput(false);
+			PlayerController->SetIgnoreMoveInput(false);
 
 			PlayerController->PlayerCameraManager->StartCameraFade(
 				1.0f,
@@ -855,11 +876,11 @@ void AUnderwaterCharacter::AdjustSpeed()
 	
 
 	EffectiveSpeed = BaseSpeed * Multiplier;
-	if (EnvState == EEnvState::Underwater)
+	if (EnvironmentState == EEnvironmentState::Underwater)
 	{
 		GetCharacterMovement()->MaxSwimSpeed = EffectiveSpeed;
 	}
-	else if (EnvState == EEnvState::Ground)
+	else if (EnvironmentState == EEnvironmentState::Ground)
 	{
 		GetCharacterMovement()->MaxWalkSpeed = EffectiveSpeed;
 	}
@@ -890,8 +911,6 @@ void AUnderwaterCharacter::SpawnRadar()
 	RadarObject->AttachToComponent(FirstPersonCameraComponent, FAttachmentTransformRules::KeepWorldTransform);
 	RadarObject->UpdateRadarSourceComponent(GetRootComponent(), GetRootComponent());
 	SetRadarVisibility(false);
-
-	FindPostProcessVolume();
 }
 
 void AUnderwaterCharacter::RequestToggleRadar()
@@ -899,15 +918,7 @@ void AUnderwaterCharacter::RequestToggleRadar()
 	if (HasAuthority())
 	{
 		bIsRadarOn = !bIsRadarOn;
-		SetRadarVisibility(bIsRadarOn);
-
-		float BlurAmount = (bIsRadarOn) ? 0 : OriginalBlurAmount;
-		if (CachedPostProcessVolume == nullptr)
-		{
-			FindPostProcessVolume();
-		}
-
-		CachedPostProcessVolume->Settings.MotionBlurAmount = BlurAmount;
+		OnRep_bIsRadarOn();
 	}
 	else
 	{
@@ -915,19 +926,24 @@ void AUnderwaterCharacter::RequestToggleRadar()
 	}
 }
 
-void AUnderwaterCharacter::FindPostProcessVolume()
+void AUnderwaterCharacter::UpdateBlurEffect()
 {
-	for (APostProcessVolume* PostProcessVolume : TActorRange<APostProcessVolume>(GetWorld()))
-	{
-		if (PostProcessVolume->Settings.bOverride_MotionBlurAmount == false)
-		{
-			continue;
-		}
+	// 레이더가 켜져 있으면 Blur 효과를 꺼야 한다.
+	// 레이더가 꺼져 있으면 수중일 경우 Blur 효과를 켜고 지상일 경우 Blur 효과를 끈다.
+	const bool bShouldEnableBlur = EnvironmentState == EEnvironmentState::Underwater && !bIsRadarOn;
+	SetBlurEffect(bShouldEnableBlur);
+}
 
-		CachedPostProcessVolume = PostProcessVolume;
-		OriginalBlurAmount = CachedPostProcessVolume->Settings.MotionBlurAmount;
-		break;
+void AUnderwaterCharacter::SetBlurEffect(const bool bEnable)
+{
+	// Post Effect 효과는 Local Player에서만 적용한다.
+	if (!IsLocallyControlled())
+	{
+		return;
 	}
+
+	FirstPersonCameraComponent->PostProcessSettings.bOverride_MotionBlurAmount = !bEnable;
+	FirstPersonCameraComponent->PostProcessSettings.MotionBlurAmount = 0.0f;
 }
 
 void AUnderwaterCharacter::SetRadarVisibility(bool bRadarVisible)
@@ -949,6 +965,7 @@ void AUnderwaterCharacter::S_ToggleRadar_Implementation()
 void AUnderwaterCharacter::OnRep_bIsRadarOn()
 {
 	SetRadarVisibility(bIsRadarOn);
+	UpdateBlurEffect();
 }
 
 void AUnderwaterCharacter::OnOxygenLevelChanged(float CurrentOxygenLevel, float MaxOxygenLevel)
@@ -983,8 +1000,8 @@ void AUnderwaterCharacter::OnPhysicsVolumeChanged(class APhysicsVolume* NewVolum
 {
 	LOG_NETWORK(LogAbyssDiverCharacter, Display, TEXT("Physics Volume Changed : %s"), *NewVolume->GetName());
 
-	const EEnvState NewEnvState = NewVolume->bWaterVolume ? EEnvState::Underwater : EEnvState::Ground;
-	SetEnvState(NewEnvState);
+	const EEnvironmentState NewEnvironmentState = NewVolume->bWaterVolume ? EEnvironmentState::Underwater : EEnvironmentState::Ground;
+	SetEnvironmentState(NewEnvironmentState);
 }
 
 void AUnderwaterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -1169,11 +1186,35 @@ void AUnderwaterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 float AUnderwaterCharacter::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent,
 	class AController* EventInstigator, AActor* DamageCauser)
 {
+	if (bIsInvincible)
+	{
+		return 0.0f;
+	}
+
+	if (CharacterState == ECharacterState::Groggy)
+	{
+		const float NewRemainGroggyTime = GetRemainGroggyTime() - GroggyHitPenalty;
+		if (NewRemainGroggyTime <= 0.0f)
+		{
+			SetCharacterState(ECharacterState::Death);
+			return 0.0f;
+		}
+		else
+		{
+			GetWorldTimerManager().SetTimer(GroggyTimer, FTimerDelegate::CreateUObject(this, &AUnderwaterCharacter::SetCharacterState, ECharacterState::Death), NewRemainGroggyTime, false);
+			return 0.0f;
+		}
+	}
+	else if (CharacterState == ECharacterState::Death)
+	{
+		return 0.0f;
+	}
+	
 	// 정해져야 할 것
 	// 1. EmitBloodNoise를 Shield만 소모됬을 때 호출할 것인지
 
 	const FShieldAbsorbResult ShieldAbsorbResult = ShieldComponent->AbsorbDamage(DamageAmount);
-	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Take Damage : %f, Remaining Damage : %f"), DamageAmount, ShieldAbsorbResult.RemainingDamage);
+	// UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Take Damage : %f, Remaining Damage : %f"), DamageAmount, ShieldAbsorbResult.RemainingDamage);
 
 	const float ActualDamage = Super::TakeDamage(ShieldAbsorbResult.RemainingDamage, DamageEvent, EventInstigator, DamageCauser);
 	if (ActualDamage > 0.0f)
@@ -1251,11 +1292,11 @@ void AUnderwaterCharacter::Move(const FInputActionValue& InputActionValue)
 	// 캐릭터의 XYZ 축을 기준으로 입력을 받는다.
 	const FVector MoveInput = InputActionValue.Get<FVector>();
 
-	if (EnvState == EEnvState::Ground)
+	if (EnvironmentState == EEnvironmentState::Ground)
 	{
 		MoveGround(MoveInput);
 	}
-	else if (EnvState == EEnvState::Underwater)
+	else if (EnvironmentState == EEnvironmentState::Underwater)
 	{
 		MoveUnderwater(MoveInput);
 	}
@@ -1307,7 +1348,7 @@ void AUnderwaterCharacter::MoveGround(FVector MoveInput)
 
 void AUnderwaterCharacter::JumpInputStart(const FInputActionValue& InputActionValue)
 {
-	if (EnvState == EEnvState::Underwater)	
+	if (EnvironmentState == EEnvironmentState::Underwater)	
 	{
 		// 수중에서는 점프가 불가능하다.
 		return;
@@ -1318,7 +1359,7 @@ void AUnderwaterCharacter::JumpInputStart(const FInputActionValue& InputActionVa
 
 void AUnderwaterCharacter::JumpInputStop(const FInputActionValue& InputActionValue)
 {
-	if (EnvState == EEnvState::Underwater)
+	if (EnvironmentState == EEnvironmentState::Underwater)
 	{
 		// 수중에서는 점프가 불가능하다.
 		return;

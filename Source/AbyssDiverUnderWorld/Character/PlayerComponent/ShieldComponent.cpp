@@ -46,7 +46,7 @@ FShieldAbsorbResult UShieldComponent::AbsorbDamage(const float DamageAmount)
 	Result.AbsorbedDamage = FMath::Min(ShieldValue, DamageAmount);
 	SetShieldValue(ShieldValue - Result.AbsorbedDamage);
 	Result.RemainingDamage = DamageAmount - Result.AbsorbedDamage;
-	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Shield Absorb Damage : %f, Remaining Damage : %f"), Result.AbsorbedDamage, Result.RemainingDamage);
+	// UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Shield Absorb Damage : %f, Remaining Damage : %f"), Result.AbsorbedDamage, Result.RemainingDamage);
 	return Result;
 }
 
