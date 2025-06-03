@@ -102,6 +102,8 @@ private:
 		CurrentMoney = NewCurrentMoney;
 		OnRep_CurrentMoney();
 	}
+	
+	USoundSubsystem* GetSoundSubsystem();
 #pragma endregion
 
 };

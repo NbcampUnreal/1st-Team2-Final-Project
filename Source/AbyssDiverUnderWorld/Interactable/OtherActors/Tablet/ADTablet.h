@@ -80,6 +80,9 @@ public:
 	virtual UADInteractableComponent* GetInteractableComponent() const override { return InteractableComp; }
 	virtual bool IsHoldMode() const override { return false; }
 	virtual FString GetInteractionDescription() const override { return TEXT("Pick up!"); }
+
+private:
+	USoundSubsystem* GetSoundSubsystem();
 #pragma endregion
 
 

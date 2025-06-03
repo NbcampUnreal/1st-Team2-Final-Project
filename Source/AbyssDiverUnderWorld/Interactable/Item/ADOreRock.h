@@ -143,5 +143,8 @@ public:
 	virtual float GetHoldDuration_Implementation() const override;
 	virtual FString GetInteractionDescription() const override;
 
+private:
+	USoundSubsystem* GetSoundSubsystem();
+
 #pragma endregion
 };
