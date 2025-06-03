@@ -6,6 +6,8 @@
 #include "Net/UnrealNetwork.h"
 #include "Gimmic/Spawn/SpawnManager.h"
 #include "Kismet/GameplayStatics.h"
+#include "Framework/ADGameInstance.h"
+#include "Subsystems/SoundSubsystem.h"
 
 DEFINE_LOG_CATEGORY(DroneLog);
 
@@ -37,6 +39,11 @@ void AADDrone::BeginPlay()
 		{
 			SpawnManager->SpawnByGroup();
 		}
+	}
+
+	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+	{
+		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
 	}
 }
 
@@ -90,6 +97,11 @@ void AADDrone::Interact_Implementation(AActor* InstigatorActor)
 	}
 }
 
+void AADDrone::M_PlayDroneRisingSound_Implementation()
+{
+	SoundSubsystem->PlayAt(ESFX::SendDrone, GetActorLocation());
+}
+
 void AADDrone::Activate()
 {
 	if (bIsActive) return;
@@ -111,6 +123,7 @@ void AADDrone::StartRising()
 			&AADDrone::OnDestroyTimer,
 			DestroyDelay, false
 		);
+	M_PlayDroneRisingSound();
 }
 
 void AADDrone::OnDestroyTimer()
