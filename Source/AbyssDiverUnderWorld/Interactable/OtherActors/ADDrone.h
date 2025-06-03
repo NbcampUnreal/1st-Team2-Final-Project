@@ -94,6 +94,8 @@ public:
 	int32 GetDronePhaseNumber() const { return DronePhaseNumber; }
 	virtual FString GetInteractionDescription() const override;
 
+private:
+	USoundSubsystem* GetSoundSubsystem();
 #pragma endregion
 
 	

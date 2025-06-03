@@ -225,7 +225,7 @@ void AADOreRock::PlayFractureFX()
 	//if (FractureSound)
 	//	UGameplayStatics::PlaySoundAtLocation(
 	//		this, FractureSound, GetActorLocation());
-	SoundSubsystem->PlayAt(ESFX::CompleteMine, GetActorLocation(), 2.0f);
+	GetSoundSubsystem()->PlayAt(ESFX::CompleteMine, GetActorLocation(), 2.0f);
 }
 
 int32 AADOreRock::SampleDropMass(int32 MinMass, int32 MaxMass) const
@@ -319,5 +319,20 @@ float AADOreRock::GetHoldDuration_Implementation() const
 FString AADOreRock::GetInteractionDescription() const
 {
 	return TEXT("Mine!");
+}
+
+USoundSubsystem* AADOreRock::GetSoundSubsystem()
+{
+	if (SoundSubsystem)
+	{
+		return SoundSubsystem;
+	}
+
+	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+	{
+		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
+		return SoundSubsystem;
+	}
+	return nullptr;
 }
 

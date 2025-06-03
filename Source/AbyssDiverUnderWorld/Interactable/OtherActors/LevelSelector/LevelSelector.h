@@ -1,0 +1,61 @@
+#pragma once
+
+#include "CoreMinimal.h"
+#include "GameFramework/Actor.h"
+#include "Interface/IADInteractable.h"
+#include "LevelSelector.generated.h"
+
+class ULevelSelectWidget;
+
+UCLASS()
+class ABYSSDIVERUNDERWORLD_API ALevelSelector : public AActor, public IIADInteractable
+{
+	GENERATED_BODY()
+	
+public:	
+	ALevelSelector();
+
+protected:
+
+	virtual void BeginPlay() override;
+
+#pragma region Methods
+
+public:
+
+	virtual void Interact_Implementation(AActor* InstigatorActor) override;
+
+	void HandleMapChosen(FName InLevelID);
+
+#pragma endregion
+
+#pragma region Variables
+private:
+	UPROPERTY(EditDefaultsOnly, Category = "LevelSelectWidget")
+	TSubclassOf<ULevelSelectWidget> LevelSelectWidgetClass;
+
+	UPROPERTY()
+	TObjectPtr<ULevelSelectWidget> LevelSelectWidget;
+
+	UPROPERTY()
+	TObjectPtr<UADInteractableComponent> InteractableComp;
+
+	uint8 bSelectLevel : 1 = false;
+	FName LevelID;
+#pragma endregion
+
+
+
+#pragma region Getters / Setters
+public:
+
+	virtual UADInteractableComponent* GetInteractableComponent() const override;
+	virtual bool IsHoldMode() const override;
+	virtual FString GetInteractionDescription() const override;
+
+	FName GetLevelID() const { return LevelID; }
+	bool IsSelectedLevel() const { return bSelectLevel; }
+
+#pragma endregion
+
+};
