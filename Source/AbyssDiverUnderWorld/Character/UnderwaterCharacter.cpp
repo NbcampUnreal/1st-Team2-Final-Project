@@ -1533,12 +1533,14 @@ void AUnderwaterCharacter::SetDebugCameraMode(bool bDebugCameraEnable)
 		FirstPersonCameraComponent->SetActive(false);
 		ThirdPersonCameraComponent->SetActive(true);
 		GetMesh()->SetOwnerNoSee(false);
+		GetMesh1P()->SetOwnerNoSee(true);
 	}
 	else
 	{
 		FirstPersonCameraComponent->SetActive(true);
 		ThirdPersonCameraComponent->SetActive(false);
 		GetMesh()->SetOwnerNoSee(true);
+		GetMesh1P()->SetOwnerNoSee(false);
 	}
 }
 
