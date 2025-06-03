@@ -89,6 +89,7 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	GroggyCount = 0;
 	GroggyLookSensitivity = 0.25f;
 	RescueRequireTime = 6.0f;
+	GroggyHitPenalty = 5.0f;
 	RecoveryHealthPercentage = 1.0f;
 	
 	GatherMultiplier = 1.0f;
@@ -1184,6 +1185,25 @@ float AUnderwaterCharacter::TakeDamage(float DamageAmount, struct FDamageEvent c
 	class AController* EventInstigator, AActor* DamageCauser)
 {
 	if (bIsInvincible)
+	{
+		return 0.0f;
+	}
+
+	if (CharacterState == ECharacterState::Groggy)
+	{
+		const float NewRemainGroggyTime = GetRemainGroggyTime() - GroggyHitPenalty;
+		if (NewRemainGroggyTime <= 0.0f)
+		{
+			SetCharacterState(ECharacterState::Death);
+			return 0.0f;
+		}
+		else
+		{
+			GetWorldTimerManager().SetTimer(GroggyTimer, FTimerDelegate::CreateUObject(this, &AUnderwaterCharacter::SetCharacterState, ECharacterState::Death), NewRemainGroggyTime, false);
+			return 0.0f;
+		}
+	}
+	else if (CharacterState == ECharacterState::Death)
 	{
 		return 0.0f;
 	}

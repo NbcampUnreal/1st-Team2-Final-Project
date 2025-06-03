@@ -539,6 +539,10 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true"))
 	float GroggyDuration;
 
+	/** 그로기 상태에서 공격 받았을 경우 줄어드는 Groggy 시간. 초 단위이다. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true", ClampMin = "0.0"))
+	float GroggyHitPenalty;
+
 	/** 그로기 상태에 진입될 떄마다 감소하는 Groggy Duration 비율. [0, 1]의 범위로 설정한다. 0.3일 경우 0.7배로 감소한다. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true", ClampMin = "0.0", ClampMax = "1.0"))
 	float GroggyReductionRate;
