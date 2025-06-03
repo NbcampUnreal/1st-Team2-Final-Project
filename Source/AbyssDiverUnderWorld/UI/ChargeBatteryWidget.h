@@ -60,6 +60,7 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
 	TObjectPtr<USoundBase> SoundCue = nullptr;
+	UPROPERTY()
 	TObjectPtr<UAudioComponent> ChargeBatterySound = nullptr;
 private:
 	UPROPERTY(meta = (BindWidgetAnim), Transient)
@@ -80,7 +81,9 @@ private:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> NVButton;
 
+	UPROPERTY()
 	TObjectPtr<UADInventoryComponent> InventoryComp = nullptr;
+	UPROPERTY()
 	TObjectPtr<UEquipUseComponent> EquipUseComp = nullptr;
 
 	int32 DPVBatteryMax = 0;
