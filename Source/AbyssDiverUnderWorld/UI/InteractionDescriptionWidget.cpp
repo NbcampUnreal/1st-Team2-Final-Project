@@ -1,5 +1,6 @@
 #include "UI/InteractionDescriptionWidget.h"
 #include "Components/TextBlock.h"
+#include "Animation/WidgetAnimation.h"
 
 void UInteractionDescriptionWidget::HandleFocus(AActor* Actor, FString Description)
 {
@@ -9,6 +10,7 @@ void UInteractionDescriptionWidget::HandleFocus(AActor* Actor, FString Descripti
         TextAction->SetText(Label);
     }
 
+    PlayAnimation(InAnim);
 
     if (!IsInViewport())
     {
@@ -19,9 +21,18 @@ void UInteractionDescriptionWidget::HandleFocus(AActor* Actor, FString Descripti
 
 void UInteractionDescriptionWidget::HandleFocusLost()
 {
-    if (IsInViewport())
-    {
-        RemoveFromParent();
-        UE_LOG(LogTemp, Log, TEXT("Remove from ViewPort"));
-    }
+    PlayAnimation(OutAnim);
+
+
+    FTimerHandle RemoveTimerHandle;
+    float RemoveDelay = OutAnim->GetEndTime();
+    GetWorld()->GetTimerManager().SetTimer(RemoveTimerHandle,
+        FTimerDelegate::CreateLambda([this]() { 
+            if (IsInViewport())
+            {
+                RemoveFromParent();
+                UE_LOG(LogTemp, Log, TEXT("Remove from ViewPort"));
+            }
+            }), RemoveDelay, false);
+
 }

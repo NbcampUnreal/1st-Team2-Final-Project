@@ -16,6 +16,7 @@
 #include "Components/Button.h"
 #include "Components/RichTextBlock.h"
 #include "Kismet/GameplayStatics.h"
+#include "Animation/WidgetAnimation.h"
 
 void UShopWidget::NativeOnInitialized()
 {
@@ -259,6 +260,11 @@ void UShopWidget::SetTeamMoneyText(int32 NewTeamMoney)
 	TeamMoneyText->SetText(FText::FromString(NewTeamMoneyText));
 }
 
+void UShopWidget::PlayCloseAnimation()
+{
+	PlayAnimation(CloseShopAnim);
+}
+
 void UShopWidget::OnCategoryTabClicked(EShopCategoryTab CategoryTab)
 {
 	if (CategoryTab >= EShopCategoryTab::Max)
@@ -334,4 +340,9 @@ UShopElementInfoWidget* UShopWidget::GetInfoWidget() const
 TArray<TObjectPtr<UShopItemEntryData>>& UShopWidget::GetUpgradeTabEntryDataList()
 {
 	return UpgradeTabEntryDataList;
+}
+
+float UShopWidget::GetCloseShopAnimEndTime() const
+{
+	return CloseShopAnim->GetEndTime();
 }
