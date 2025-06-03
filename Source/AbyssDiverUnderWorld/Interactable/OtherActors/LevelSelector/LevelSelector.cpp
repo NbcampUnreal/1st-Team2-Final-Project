@@ -38,7 +38,7 @@ void ALevelSelector::Interact_Implementation(AActor* InstigatorActor)
     }
 }
 
-void ALevelSelector::HandleMapChosen(FName InLevelID)
+void ALevelSelector::HandleMapChosen(EMapName InLevelID)
 {
     LevelID = InLevelID;
 

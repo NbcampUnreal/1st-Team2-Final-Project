@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Interface/IADInteractable.h"
+#include "DataRow/PhaseGoalRow.h"
 #include "LevelSelector.generated.h"
 
 class ULevelSelectWidget;
@@ -25,7 +26,7 @@ public:
 
 	virtual void Interact_Implementation(AActor* InstigatorActor) override;
 
-	void HandleMapChosen(FName InLevelID);
+	void HandleMapChosen(EMapName InLevelID);
 
 #pragma endregion
 
@@ -41,7 +42,7 @@ private:
 	TObjectPtr<UADInteractableComponent> InteractableComp;
 
 	uint8 bSelectLevel : 1 = false;
-	FName LevelID;
+	EMapName LevelID;
 #pragma endregion
 
 

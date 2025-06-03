@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "DataRow/PhaseGoalRow.h"
 #include "LevelSelectWidget.generated.h"
 
 class UButton;
@@ -32,7 +33,7 @@ public:
 
 #pragma region Variables
 public:
-	DECLARE_MULTICAST_DELEGATE_OneParam(FOnMapChosen, FName);
+	DECLARE_MULTICAST_DELEGATE_OneParam(FOnMapChosen, EMapName);
 	FOnMapChosen OnMapChosen;
 
 private:
@@ -50,12 +51,15 @@ private:
 	UPROPERTY(meta = (BindWidgetAnim), Transient)
 	TObjectPtr<UWidgetAnimation> StartUI;
 	
+
 	FName ShallowLevelName = TEXT("Shallow");
 	FName AbyssLevelName = TEXT("DeepAbyss");
 
+
+
 	TArray<TObjectPtr<UButton>>				  LevelButtons;
 	TArray<TObjectPtr<UTextBlock>>			  LevelDescriptions;
-	TArray<FName>						      LevelIDs;          // 각 인덱스에 대응하는 LevelID
+	TArray<EMapName>						  LevelIDs;         // 각 인덱스에 대응하는 LevelID
 	TMap<TObjectPtr<UButton>, int32>          ButtonToIndexMap;  // Button* → 인덱스
 
 #pragma endregion
