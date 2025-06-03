@@ -1179,7 +1179,7 @@ float AUnderwaterCharacter::TakeDamage(float DamageAmount, struct FDamageEvent c
 	// 1. EmitBloodNoise를 Shield만 소모됬을 때 호출할 것인지
 
 	const FShieldAbsorbResult ShieldAbsorbResult = ShieldComponent->AbsorbDamage(DamageAmount);
-	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Take Damage : %f, Remaining Damage : %f"), DamageAmount, ShieldAbsorbResult.RemainingDamage);
+	// UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Take Damage : %f, Remaining Damage : %f"), DamageAmount, ShieldAbsorbResult.RemainingDamage);
 
 	const float ActualDamage = Super::TakeDamage(ShieldAbsorbResult.RemainingDamage, DamageEvent, EventInstigator, DamageCauser);
 	if (ActualDamage > 0.0f)
