@@ -84,6 +84,7 @@ void UADInventoryComponent::BeginPlay()
 		DataTableSubsystem = GI->GetSubsystem<UDataTableSubsystem>();
 		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
 	}
+
 }
 
 void UADInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -142,7 +143,7 @@ void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType
 			if (Strategy)
 			{
 				Strategy->Use(GetOwner());
-				if (Item.Amount > 0)
+				if (Item.Amount <= 100)
 				{
 					C_InventoryPlaySound(ESFX::Breath);
 					FTimerHandle SpawnEffectDelay;
@@ -349,6 +350,8 @@ void UADInventoryComponent::InventoryInitialize()
 
 	CurrentDroneSeller->OnTargetMoneyChangedDelegate.RemoveAll(ToggleWidgetInstance);
 	CurrentDroneSeller->OnTargetMoneyChangedDelegate.AddUObject(ToggleWidgetInstance, &UToggleWidget::SetDroneTargetText);
+
+
 }
 
 bool UADInventoryComponent::AddInventoryItem(const FItemData& ItemData)
@@ -359,6 +362,11 @@ bool UADInventoryComponent::AddInventoryItem(const FItemData& ItemData)
 		if (FoundRow)
 		{
 			int8 ItemIndex = FindItemIndexByName(ItemData.Name);
+			if (ItemData.ItemType == EItemType::Equipment)
+			{
+				if (ItemIndex != -1)
+					return false;
+			}
 			LOGINVEN(Warning, TEXT("AddInventoryItem ItemIndex : %d"), ItemIndex);
 			bool bIsUpdateSuccess = false;
 
@@ -478,7 +486,6 @@ void UADInventoryComponent::RemoveBySlotIndex(uint8 SlotIndex, EItemType ItemTyp
 
 		if (bIsDropAction)
 		{
-			/*M_PlaySound(ESFX::DropItem);*/
 			DropItem(Item);
 		}
 		InventoryList.UpdateQuantity(InventoryIndex, INDEX_NONE);
@@ -562,6 +569,11 @@ void UADInventoryComponent::CopyInventoryFrom(UADInventoryComponent* Source)
 	Source->TotalWeight = TotalWeight;
 	// FastArray는 복사 후 MarkItemDirty 필요
 	InventoryMarkArrayDirty();
+
+	FTimerHandle UpdateDelayTimerHandle;
+	float UpdateDelay = 0.2f;
+	GetWorld()->GetTimerManager().SetTimer(UpdateDelayTimerHandle, this, &UADInventoryComponent::InventoryUIUpdate, UpdateDelay, false);
+
 }
 
 void UADInventoryComponent::InventoryMarkArrayDirty()
