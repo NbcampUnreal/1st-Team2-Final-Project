@@ -2,15 +2,36 @@
 
 
 #include "Interactable/Item/UseFunction/EnableShield.h"
+#include "AbyssDiverUnderWorld.h"
 #include "Framework/ADPlayerState.h"
-#include "Inventory/ADInventoryComponent.h"
+#include "Character/UnderwaterCharacter.h"
+#include "Character/PlayerComponent/ShieldComponent.h"
+#include "Framework/ADGameInstance.h"
+#include "Subsystems/DataTableSubsystem.h"
+#include "DataRow/FADItemDataRow.h"
 
 void UEnableShield::Use(AActor* Target)
 {
-	//AADPlayerState* PS = Cast<AADPlayerState>(Target);
-	//if (PS)
-	//{
-	// 
-	//}
-	//캐릭터 쪽에서 bool이 있다면 그걸 여기서 활성화시키고 hp가 달면 비활성화시키는 걸 캐릭터쪽에서 해야할 것 같다.
+
+	LOG(TEXT("UseShield"));
+
+	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+	{
+		UDataTableSubsystem* DataTableSubsystem = GI->GetSubsystem<UDataTableSubsystem>();
+		FFADItemDataRow* Row = DataTableSubsystem->GetItemData(0);
+		APlayerController* PC = Cast<APlayerController>(Cast<AADPlayerState>(Target)->GetPlayerController());
+		if (Row && PC)
+		{
+			APawn* OwnerPawn = PC->GetPawn();
+			if (OwnerPawn)
+			{
+				AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(OwnerPawn);
+				UShieldComponent* ShieldComp = UnderwaterCharacter->GetShieldComponent();
+				if (ShieldComp)
+				{
+					ShieldComp->GainShield(Row->Amount);
+				}
+			}
+		}
+	}
 }

@@ -143,7 +143,7 @@ void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType
 			if (Strategy)
 			{
 				Strategy->Use(GetOwner());
-				if (Item.Amount > 0)
+				if (Item.Amount <= 100)
 				{
 					C_InventoryPlaySound(ESFX::Breath);
 					FTimerHandle SpawnEffectDelay;
