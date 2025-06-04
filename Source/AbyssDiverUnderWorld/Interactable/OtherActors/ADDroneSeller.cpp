@@ -5,6 +5,8 @@
 #include "Net/UnrealNetwork.h"
 #include "Interactable/Item/Component/ADInteractableComponent.h"
 #include "Framework/ADPlayerState.h"
+#include "Framework/ADGameInstance.h"
+#include "Subsystems/SoundSubsystem.h"
 
 // Sets default values
 AADDroneSeller::AADDroneSeller()
@@ -25,6 +27,10 @@ void AADDroneSeller::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+	{
+		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
+	}
 }
 
 void AADDroneSeller::Interact_Implementation(AActor* InstigatorActor)
@@ -46,6 +52,11 @@ void AADDroneSeller::Interact_Implementation(AActor* InstigatorActor)
 	{
 		LOGD(Log, TEXT("목표 달성! Drone 활성화 호출"))
 		CurrentDrone->Activate();
+		GetSoundSubsystem()->PlayAt(ESFX::ActivateDrone, GetActorLocation());
+	}
+	else
+	{
+		GetSoundSubsystem()->PlayAt(ESFX::SubmitOre, GetActorLocation());
 	}
 	
 }
@@ -72,6 +83,14 @@ void AADDroneSeller::OnRep_IsActive()
 void AADDroneSeller::OnRep_CurrentMoney()
 {
 	OnCurrentMoneyChangedDelegate.Broadcast(CurrentMoney);
+	if (CurrentMoney >= TargetMoney)
+	{
+		GetSoundSubsystem()->PlayAt(ESFX::ActivateDrone, GetActorLocation());
+	}
+	else
+	{
+		GetSoundSubsystem()->PlayAt(ESFX::SubmitOre, GetActorLocation());
+	}
 }
 
 void AADDroneSeller::OnRep_TargetMoney()
@@ -92,7 +111,6 @@ int32 AADDroneSeller::SellAllExchangeableItems(AActor* InstigatorActor)
 				if (UADInventoryComponent* Inv = PS->GetInventory())
 				{
 					int32 Price = Inv->GetTotalPrice();
-					// TODO : 인벤토리 비우는 함수 구현 필요
 					TArray<int8> TypeArray = Inv->GetInventoryIndexesByType(EItemType::Exchangable);
 					for (int i = 0; i<TypeArray.Num(); ++i)
 					{
@@ -130,4 +148,19 @@ bool AADDroneSeller::IsHoldMode() const
 FString AADDroneSeller::GetInteractionDescription() const
 {
 	return TEXT("Submit Ore!");
+}
+
+USoundSubsystem* AADDroneSeller::GetSoundSubsystem()
+{
+	if (SoundSubsystem)
+	{
+		return SoundSubsystem;
+	}
+
+	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+	{
+		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
+		return SoundSubsystem;
+	}
+	return nullptr;
 }

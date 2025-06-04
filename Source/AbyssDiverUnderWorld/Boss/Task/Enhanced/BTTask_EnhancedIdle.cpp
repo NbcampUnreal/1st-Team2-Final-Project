@@ -3,6 +3,7 @@
 #include "Boss/Boss.h"
 #include "Boss/EnhancedBossAIController.h"
 #include "Boss/ENum/EBossState.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 UBTTask_EnhancedIdle::UBTTask_EnhancedIdle()
 {
@@ -10,8 +11,8 @@ UBTTask_EnhancedIdle::UBTTask_EnhancedIdle()
 	bNotifyTick = true;
 	bCreateNodeInstance = false;
 	
-	IdleFinishMaxInterval = 5.0f;
-	IdleFinishMinInterval = 2.0f;
+	IdleFinishMaxInterval = 2.0f;
+	IdleFinishMinInterval = 0.5f;
 }
 
 EBTNodeResult::Type UBTTask_EnhancedIdle::ExecuteTask(UBehaviorTreeComponent& Comp, uint8* NodeMemory)
@@ -27,6 +28,9 @@ EBTNodeResult::Type UBTTask_EnhancedIdle::ExecuteTask(UBehaviorTreeComponent& Co
 	TaskMemory->Boss->SetBossState(EBossState::Idle);
 	TaskMemory->AccumulatedTime = 0.f;
 	TaskMemory->IdleFinishTime = FMath::RandRange(IdleFinishMinInterval, IdleFinishMaxInterval);
+
+	TaskMemory->AIController->StopMovement();
+	TaskMemory->Boss->GetCharacterMovement()->Velocity = FVector::ZeroVector;
 	
 	return EBTNodeResult::InProgress;
 }

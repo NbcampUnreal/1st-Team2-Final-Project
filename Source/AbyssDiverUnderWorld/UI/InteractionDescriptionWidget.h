@@ -36,6 +36,12 @@ public:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UImage> ImageKeyE;
 
+	UPROPERTY(meta = (BindWidgetAnim), Transient)
+	TObjectPtr<UWidgetAnimation> InAnim;
+
+	UPROPERTY(meta = (BindWidgetAnim), Transient)
+	TObjectPtr<UWidgetAnimation> OutAnim;
+
 private:
 	FTimerHandle TimerHandle;
 	float Elapsed = 0.f;

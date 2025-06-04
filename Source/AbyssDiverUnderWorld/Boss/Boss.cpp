@@ -39,6 +39,7 @@ ABoss::ABoss()
 	DamagedLocation = FVector::ZeroVector;
 	CachedSpawnLocation = FVector::ZeroVector;
 	RotationInterpSpeed = 1.1f;
+	bIsAttackInfinite = true;
 	
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 
@@ -79,6 +80,11 @@ void ABoss::BeginPlay()
 
 	GetCharacterMovement()->MaxSwimSpeed = StatComponent->GetMoveSpeed();
 	OriginDeceleration = GetCharacterMovement()->BrakingDecelerationSwimming;
+}
+
+void ABoss::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
 }
 
 void ABoss::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
@@ -238,6 +244,7 @@ void ABoss::Attack()
 	
 	if (IsValid(NormalAttackAnimations[AttackType]))
 	{
+		ChaseAccumulatedTime = 0.f;
 		AnimInstance->OnMontageEnded.AddDynamic(this, &ABoss::OnAttackMontageEnded);
 		M_PlayAnimation(NormalAttackAnimations[AttackType]);
 	}
@@ -246,18 +253,6 @@ void ABoss::Attack()
 void ABoss::OnAttackEnded()
 {
 	AttackedPlayers.Empty();
-}
-
-void ABoss::AddPatrolPoint()
-{
-	if (CurrentPatrolPointIndex >= PatrolPoints.Num())
-	{
-		CurrentPatrolPointIndex = 0;
-	}
-	else
-	{
-		++CurrentPatrolPointIndex;
-	}
 }
 
 void ABoss::SetMoveSpeed(const float& SpeedMultiplier)
@@ -273,17 +268,19 @@ void ABoss::M_PlayAnimation_Implementation(class UAnimMontage* AnimMontage, floa
 void ABoss::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
 	AEnhancedBossAIController* EnhancedBossAIController = Cast<AEnhancedBossAIController>(GetController());
-	if (IsValid(EnhancedBossAIController))
+	if (!IsValid(EnhancedBossAIController) || !IsValid(AnimInstance)) return;
+
+	if (bIsAttackInfinite)
+	{
+		EnhancedBossAIController->GetBlackboardComponent()->SetValueAsBool("bHasAttacked", false);
+	}
+	else
 	{
 		EnhancedBossAIController->GetBlackboardComponent()->SetValueAsBool("bHasDetectedPlayer", false);
 		EnhancedBossAIController->SetBlackboardPerceptionType(EPerceptionType::Finish);	
 	}
-
-	// 자신 제거
-	if (IsValid(AnimInstance))
-	{
-		AnimInstance->OnMontageEnded.RemoveDynamic(this, &ABoss::OnAttackMontageEnded);
-	}
+	
+	AnimInstance->OnMontageEnded.RemoveDynamic(this, &ABoss::OnAttackMontageEnded);
 }
 
 void ABoss::OnMeshOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,

@@ -20,7 +20,6 @@
 AADSpearGunBullet::AADSpearGunBullet() : 
 	StaticMesh(nullptr),
 	DataTableSubsystem(nullptr),
-    TrailEffect(nullptr),
     BulletType(ESpearGunType::MAX), 
     AdditionalDamage(0), 
     PoisonDuration(0),
@@ -29,10 +28,6 @@ AADSpearGunBullet::AADSpearGunBullet() :
     StaticMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SkeletalMesh"));
     StaticMesh->SetupAttachment(RootComponent);
     StaticMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision); 
-
-    TrailEffect = CreateDefaultSubobject<UNiagaraComponent>(TEXT("TrailEffect"));
-    TrailEffect->SetupAttachment(RootComponent);
-    TrailEffect->SetAutoActivate(false);
 
     Damage = 450.0f;
 
@@ -55,6 +50,11 @@ void AADSpearGunBullet::M_SpawnFX_Implementation(UNiagaraSystem* Effect, ESFX SF
     );
 }
 
+void AADSpearGunBullet::M_AdjustTransform_Implementation(FTransform WorldTransform)
+{
+    SetActorTransform(WorldTransform);
+}
+
 void AADSpearGunBullet::OnRep_BulletType()
 {
 }
@@ -62,22 +62,18 @@ void AADSpearGunBullet::OnRep_BulletType()
 void AADSpearGunBullet::BeginPlay()
 {
     Super::BeginPlay();
-    TrailEffect->Activate();
     if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
     {
         DTSubsystem = GI->GetSubsystem<UDataTableSubsystem>();
         SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
     }
 
-    FTimerHandle DestroyTimerHandle;
-    float DestroyDelay = 5.0f;
-
-    FTimerDelegate TimerDel;
-    TimerDel.BindLambda([this]() {
-        Destroy();
-        });
-    LOGP(Warning, TEXT("StartDeleteTimer"));
-    GetWorld()->GetTimerManager().SetTimer(DestroyTimerHandle, TimerDel, DestroyDelay, false);
+    if (HasAuthority())
+    {
+        UE_LOG(LogTemp, Warning, TEXT("[SERVER] Bullet spawned. Bullet Id : %d"), GetProjectileId());
+    }
+    else
+        UE_LOG(LogTemp, Warning, TEXT("[CLIENT] Bullet replicated. Bullet Id : %d"), GetProjectileId());
 }
 
 void AADSpearGunBullet::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -89,20 +85,22 @@ void AADSpearGunBullet::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AAct
         if (OtherActor && OtherActor != this && OtherComp && OtherComp->GetOwner() != this)
         {
             SoundSubsystem->PlayAt(ESFX::Hit, SweepResult.Location);
-            UGameplayStatics::ApplyPointDamage(
-                OtherActor,
-                Damage,
-                GetActorForwardVector(),
-                SweepResult,
-                GetInstigatorController(),
-                GetOwner(),
-                UDamageType::StaticClass()
-            );
+            if (HasAuthority())
+            {
+                UGameplayStatics::ApplyPointDamage(
+                    OtherActor,
+                    Damage,
+                    GetActorForwardVector(),
+                    SweepResult,
+                    GetInstigatorController(),
+                    GetOwner(),
+                    UDamageType::StaticClass()
+                );
+                AttachToHitActor(OtherComp, SweepResult, true);
+                M_AdjustTransform(GetActorTransform()); //위치 보정
+            }
             LOGP(Warning, TEXT("Hit Basic Damage To %s"), *OtherActor->GetName());
             ApplyAdditionalDamage();
-
-            AttachToHitActor(OtherComp, SweepResult, true);
-            
         }
         LOGP(Warning, TEXT("SetProjectileMovementAttribute"));
         ProjectileMovementComp->StopMovementImmediately();
@@ -226,17 +224,20 @@ void AADSpearGunBullet::Burst()
 
                     LOGP(Warning, TEXT("Unique hit: %s"), *HitActor->GetName());
                     // 여기에 데미지 주기나 처리 로직 작성
-                    UGameplayStatics::ApplyPointDamage(
-                        HitActor,
-                        AdditionalDamage,
-                        GetActorForwardVector(),
-                        Hit,
-                        GetInstigatorController(),
-                        GetOwner(),
-                        UDamageType::StaticClass()
-                    );
                     if (HasAuthority())
-                        M_SpawnFX(BurstEffect, ESFX::Explosion, Hit.Location);
+                    {
+                        UGameplayStatics::ApplyPointDamage(
+                            HitActor,
+                            AdditionalDamage,
+                            GetActorForwardVector(),
+                            Hit,
+                            GetInstigatorController(),
+                            GetOwner(),
+                            UDamageType::StaticClass()
+                        );
+                        LOGP(Warning, TEXT("AdditionalDamage By Bomb : %d"), AdditionalDamage);
+                            M_SpawnFX(BurstEffect, ESFX::Explosion, Hit.Location);
+                    }
                 }
             }
         }
@@ -249,7 +250,6 @@ void AADSpearGunBullet::Burst()
 
 void AADSpearGunBullet::Addict()
 {
-    //TODO : Hit Effect
     //TODO : 디버프 컴포넌트 함수 호출
     if (HasAuthority())
     {

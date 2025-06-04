@@ -46,6 +46,8 @@ public:
 
 	void UpdateBatteryInfoDelay();
 	void UpdateBatteryInfo();
+
+	void PlayVisibleAnimation(bool bIsVisible);
 private:
 	void InitializeChargeBatteryWidget();
 #pragma endregion
@@ -55,10 +57,16 @@ public:
 	FFADItemDataRow* DPVRow;
 	FFADItemDataRow* NVRow;
 	FFADItemDataRow* BatteryRow;
-private:
-	TObjectPtr<UADInventoryComponent> InventoryComp = nullptr;
-	TObjectPtr<UEquipUseComponent> EquipUseComp = nullptr;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
+	TObjectPtr<USoundBase> SoundCue = nullptr;
+	UPROPERTY()
+	TObjectPtr<UAudioComponent> ChargeBatterySound = nullptr;
+private:
+	UPROPERTY(meta = (BindWidgetAnim), Transient)
+	TObjectPtr<UWidgetAnimation> FadeIn;
+	UPROPERTY(meta = (BindWidgetAnim), Transient)
+	TObjectPtr<UWidgetAnimation> FadeOut;
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<URichTextBlock> BatteryAmountText;
 	UPROPERTY(meta = (BindWidget))
@@ -73,7 +81,10 @@ private:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> NVButton;
 
-	FTimerHandle InitialzieTimerHandle;
+	UPROPERTY()
+	TObjectPtr<UADInventoryComponent> InventoryComp = nullptr;
+	UPROPERTY()
+	TObjectPtr<UEquipUseComponent> EquipUseComp = nullptr;
 
 	int32 DPVBatteryMax = 0;
 	int32 NVBatteryMax = 0;
@@ -82,6 +93,7 @@ private:
 
 	FName CurrentChargeItem;
 	FTimerHandle IncreaseTimerHandle;
+	FTimerHandle InitialzieTimerHandle;
 
 	TMap<FName, EChargeBatteryType> ChargeBatteryTypeMap = {
 		{FName(TEXT("NightVisionGoggle")), EChargeBatteryType::NightVisionGoggle},
@@ -95,6 +107,5 @@ public:
 	void SetEquipBatteryAmount(EChargeBatteryType ChargeBatteryType, int16 Amount);
 	void SetEquipBatteryButtonActivate(EChargeBatteryType ChargeBatteryType, bool bActivate);
 
-	static EChargeBatteryType GetEChargeBatteryTypeByName(FName Name);
 #pragma endregion
 };

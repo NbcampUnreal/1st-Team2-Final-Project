@@ -1,4 +1,4 @@
-#include "Interactable/OtherActors/EventTriggers/EventTrigger.h"
+ï»¿#include "Interactable/OtherActors/EventTriggers/EventTrigger.h"
 
 #include "AbyssDiverUnderWorld.h"
 
@@ -20,22 +20,41 @@ void AEventTrigger::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
 
-	// °ÔÀÓ ÁßÀÌ ¾Æ´Ñ °æ¿ì ¸®ÅÏ(ºí·çÇÁ¸°Æ® »óÀÏ °æ¿ì)
-	// PostInitializeComponents´Â ºí·çÇÁ¸°Æ®¿¡¼­µµ ¹ßµ¿ÇÔ
+#if WITH_EDITOR
+
+	// ê²Œìž„ ì¤‘ì´ ì•„ë‹Œ ê²½ìš° ë¦¬í„´(ë¸”ë£¨í”„ë¦°íŠ¸ ìƒì¼ ê²½ìš°)
+	// PostInitializeComponentsëŠ” ë¸”ë£¨í”„ë¦°íŠ¸ì—ì„œë„ ë°œë™í•¨
 	UWorld* World = GetWorld();
 	if (World == nullptr || World->IsGameWorld() == false)
 	{
 		return;
 	}
 
+#endif
+
+	// í˜¸ìŠ¤íŠ¸ë§Œ ì‚¬ìš©
+	if (HasAuthority() == false)
+	{
+		return;
+	}
+
 	CollisionBox->OnComponentBeginOverlap.AddDynamic(this, &AEventTrigger::OnBeginOverlap);
+	CollisionBox->OnComponentEndOverlap.AddDynamic(this, &AEventTrigger::OnEndOverlap);
 }
 
 void AEventTrigger::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	for (const auto& TriggerableActor : TriggerableActors)
 	{
-		ITriggerable::Execute_TriggerEvent(TriggerableActor, OtherActor);
+		ITriggerable::Execute_TriggerEventBeginOverlap(TriggerableActor, OtherActor, this);
+	}
+}
+
+void AEventTrigger::OnEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	for (const auto& TriggerableActor : TriggerableActors)
+	{
+		ITriggerable::Execute_TriggerEventEndOverlap(TriggerableActor, OtherActor, this);
 	}
 }
 

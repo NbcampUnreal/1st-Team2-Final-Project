@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Actor.h"
+#include "Projectile/PoolableItem.h"
 #include "ADProjectileBase.generated.h"
 
 class USphereComponent;
@@ -17,23 +17,30 @@ class UDataTableSubsystem;
 DECLARE_LOG_CATEGORY_EXTERN(ProjectileLog, Log, All);
 
 UCLASS()
-class ABYSSDIVERUNDERWORLD_API AADProjectileBase : public AActor
+class ABYSSDIVERUNDERWORLD_API AADProjectileBase : public APoolableItem
 {
 	GENERATED_BODY()
 	
 public:	
 	AADProjectileBase();
 
-protected:
-	virtual void BeginPlay() override;
-
 #pragma region Method
+public:
+	UFUNCTION(NetMulticast, Reliable)
+	void M_EffectActivate(bool bActivate);
+	void M_EffectActivate_Implementation(bool bActivate);
+
+	void Activate() override;
+	void Deactivate() override;
+
+	void InitializeTransform(const FVector& Location, const FRotator& Rotation);
+	void InitializeSpeed(const FVector& ShootDirection, const uint32 Speed);
+
 protected:
 	UFUNCTION()
 	virtual void OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
 		bool bFromSweep, const FHitResult& SweepResult);
-	void InitializeStats();
 
 #pragma endregion
 
@@ -47,17 +54,20 @@ protected:
 	TObjectPtr<UProjectileMovementComponent> ProjectileMovementComp;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TObjectPtr<UDataTableSubsystem> DTSubsystem;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effect")
+	TObjectPtr<UNiagaraComponent> TrailEffect;
+
 	int16 Damage;
-	FName ProjectileName;
 	uint8 bWasHit : 1;
+private:
+	FTimerHandle LifeTimerHandle;
+	FTimerHandle TrailDeactivateTimerHandle;
 #pragma endregion
 
 #pragma region Getter, Setter
 public:
 	UProjectileMovementComponent* GetProjectileMovementComp() const { return ProjectileMovementComp; }
 	void SetDamage(int8 DamageAmount) { Damage = DamageAmount; };
-	void SetProjectileSpeed(float Speed);
-	void SetProjectileName(FName Name);
 
 #pragma endregion
 };

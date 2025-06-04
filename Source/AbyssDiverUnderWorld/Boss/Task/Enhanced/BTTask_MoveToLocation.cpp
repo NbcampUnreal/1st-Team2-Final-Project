@@ -25,9 +25,7 @@ UBTTask_MoveToLocation::UBTTask_MoveToLocation()
 	bCreateNodeInstance = false;
 	
 	bIsInitialized = true;
-	MinFinishTaskInterval = 3.f;
-	MaxFinishTaskInterval = 6.f;
-	DecelerationTriggeredRadius = 2000.0f;
+	MinFinishTaskInterval = 15.f;
 }
 
 EBTNodeResult::Type UBTTask_MoveToLocation::ExecuteTask(UBehaviorTreeComponent& Comp, uint8* NodeMemory)
@@ -49,10 +47,11 @@ EBTNodeResult::Type UBTTask_MoveToLocation::ExecuteTask(UBehaviorTreeComponent& 
 
 	// 디버그용 구체 출력 (5초 동안, 반지름 50, 빨간색)
 	DrawDebugSphere(GetWorld(), TaskMemory->TargetLocation, 250.0f, 12, FColor::Green, false, 3.f);
-
+	
 	// MoveTask를 종료할 랜덤 시간 추출
-	TaskMemory->FinishTaskInterval = FMath::RandRange(MinFinishTaskInterval, MaxFinishTaskInterval);
 	TaskMemory->AccumulatedTime = 0.f;
+
+	Result = TaskMemory->AIController->MoveToLocationWithRadius(TaskMemory->TargetLocation);
 
 	return EBTNodeResult::InProgress;
 }
@@ -69,17 +68,40 @@ void UBTTask_MoveToLocation::TickTask(UBehaviorTreeComponent& Comp, uint8* NodeM
 	
 	if (!TaskMemory->Boss.IsValid() || !TaskMemory->AIController.IsValid()) return;
 
-	// ExecuteTask에서 MoveTo를 1회성으로 호출을 해도 PathFollowingComponent 내에서 Tick마다 경로를 탐색하기 때문에
-	// Tick 마다 MoveTo를 호출해도 크게 비용의 차이가 발생하지 않는다.
-	// Tick마다 MoveTo를 호출하면 매 경로를 탐색할 때마다 현재 경로가 잘못된 경로인지 확인이 가능하므로 NavMesh 버그를 최소화할 수 있다.
-	// Tick마다 경로를 탐색하기 때문에 움직임이 Tick마다 교정이 됨으로 1회성 MoveTo에 비해 움직임이 자연스럽다.
-	const EPathFollowingRequestResult::Type Result = TaskMemory->AIController->MoveToLocationWithRadius(TaskMemory->TargetLocation);
+
+	
+	// 만약 MoveToLocation Task 노드의 점유 시간이 MinFinishTaskInterval 이상이 된다면
+	// 현재 Task에 이상이 있다는 의미이므로 주변 NavMesh 지점으로 이동한다.
+	TaskMemory->AccumulatedTime += FMath::Clamp(DeltaSeconds, 0.f, 0.1f);
+	if (TaskMemory->AccumulatedTime >= MinFinishTaskInterval)
+	{
+		LOG(TEXT("AI Name %s : MoveToLocation Task has been running for too long, Teleporting to Cached Location"), *TaskMemory->Boss->GetName());
+		TeleportToNearestNavMeshLocation(TaskMemory);
+	}
+
+
+	
+	// MoveTo의 결과가 Fail인 것은 NavMesh를 벗어났다는 의미이다.
+	// 주변에 이동 가능한 NavMesh 지점으로 이동한 후 다시 Patrol Point를 할당 받는다.
 	if (Result == EPathFollowingRequestResult::Failed)
 	{
-		LOG(TEXT("MoveToLocation Failed, Trying to Move to Cached Location"));
-		TaskMemory->TargetLocation = TaskMemory->Boss->GetCachedSpawnLocation();
+		LOG(TEXT("AI Name %s : MoveToLocation Failed, Trying to Move to Cached Location"), *TaskMemory->Boss->GetName());
+		TeleportToNearestNavMeshLocation(TaskMemory);
 		return;
 	}
+
+
+	
+	// 이전에 이동한 지점과 거리가 0.0001f 만큼 차이가 난다는 것은 벽에 끼었다는 것이다.
+	// 따라서 주변의 이동 가능한 NavMesh 지점으로 이동한다.
+	if (FVector::Dist(TaskMemory->TargetLocation, TaskMemory->CachedLocation) < KINDA_SMALL_NUMBER)
+	{
+		LOG(TEXT("AI Stuck, Trying to Move to Cached Location"));
+		TeleportToNearestNavMeshLocation(TaskMemory);
+		return;
+	}
+
+
 	
 	// 해당 지점에 도착한 경우 테스크 종료
 	if (TaskMemory->AIController->GetPathFollowingComponent()->GetStatus() == EPathFollowingStatus::Idle)
@@ -89,7 +111,6 @@ void UBTTask_MoveToLocation::TickTask(UBehaviorTreeComponent& Comp, uint8* NodeM
 		{
 			TaskMemory->AIController->InitVariables();	
 		}
-		
 		FinishLatentTask(Comp, EBTNodeResult::Succeeded);
 		return;
 	}
@@ -109,8 +130,38 @@ void UBTTask_MoveToLocation::OnTaskFinished(UBehaviorTreeComponent& OwnerComp, u
 	if (!TaskMemory->Boss.IsValid() || !TaskMemory->AIController.IsValid()) return;
 
 	TaskMemory->CachedLocation = TaskMemory->TargetLocation;
-	TaskMemory->bHasBeenTriggeredMoveToLocation = true;
-	TaskMemory->bShouldMoveToNearestPoint = false;
+}
+
+void UBTTask_MoveToLocation::TeleportToNearestNavMeshLocation(FBTMoveToLocationTaskMemory* TaskMemory)
+{
+	// 주변의 가장 가까운 NavMesh 점을 찾아서 로그 출력
+	UNavigationSystemV1* NavSys = UNavigationSystemV1::GetCurrent(TaskMemory->Boss->GetWorld());
+	if (NavSys)
+	{
+		FNavLocation NearestNavLocation;
+		const FVector CurrentLocation = TaskMemory->Boss->GetActorLocation();
+		
+		bool bFound = NavSys->ProjectPointToNavigation(
+			CurrentLocation,                   // 검색 기준 위치
+			NearestNavLocation,               // 결과
+			FVector(100.f, 100.f, 100.f)      // 탐색 반경
+		);
+
+		if (bFound)
+		{
+			LOG(TEXT("Nearest NavMesh Location: %s"), *NearestNavLocation.Location.ToString());
+		}
+		else
+		{
+			LOG(TEXT("Failed to find nearest NavMesh location."));
+		}
+
+		TaskMemory->Boss->SetActorLocation(NearestNavLocation.Location);
+	}
+
+	TaskMemory->CachedLocation = FVector::ZeroVector;
+	TaskMemory->AccumulatedTime = 0.f;
+	TaskMemory->TargetLocation = TaskMemory->Boss->GetNextPatrolPoint();
 }
 
 

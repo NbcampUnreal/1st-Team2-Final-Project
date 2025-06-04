@@ -49,7 +49,7 @@ protected:
 
 	/** 캐릭터의 현재 환경 상태 */
 	UPROPERTY(BlueprintReadOnly)
-	EEnvState EnvState;
+	EEnvironmentState EnvironmentState;
 
 	/** 캐릭터의 현재 상태. Groggy, Dead, Normal */
 	UPROPERTY(BlueprintReadOnly)

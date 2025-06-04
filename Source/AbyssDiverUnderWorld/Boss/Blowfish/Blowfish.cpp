@@ -1,5 +1,6 @@
 #include "Boss/Blowfish/Blowfish.h"
 #include "AbyssDiverUnderWorld.h"
+#include "NiagaraFunctionLibrary.h"
 #include "Character/StatComponent.h"
 #include "Character/UnderwaterCharacter.h"
 #include "Components/CapsuleComponent.h"
@@ -25,6 +26,7 @@ ABlowfish::ABlowfish()
 	ExplosionHealthRatio = 0.3f;
 	bIsExplosionTriggered = false;
 	ExplosionDelayTime = 2.0f;
+	ExplosionTriggeredMovementMultiplier = 3.5f;
 }
 
 void ABlowfish::BeginPlay()
@@ -40,7 +42,9 @@ float ABlowfish::TakeDamage(float DamageAmount, struct FDamageEvent const& Damag
 {
 	float Damage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
-	if (StatComponent->CurrentHealth <= StatComponent->MaxHealth * ExplosionHealthRatio)
+	if (StatComponent->CurrentHealth <= StatComponent->MaxHealth * ExplosionHealthRatio
+		&& StatComponent->CurrentHealth > 0.0f
+		&& !bIsExplosionTriggered)
 	{
 		M_TriggerExplosion();
 	}
@@ -50,19 +54,21 @@ float ABlowfish::TakeDamage(float DamageAmount, struct FDamageEvent const& Damag
 
 void ABlowfish::OnDeath()
 {
-	if (bIsExplosionTriggered) return;
+	GetWorldTimerManager().ClearTimer(ExplosionTimerHandle);
 	
 	Super::OnDeath();
 }
 
 void ABlowfish::M_TriggerExplosion_Implementation()
 {
-	// 몬스터의 움직임 정지
-	if (IsValid(AIController))
-	{
-		AIController->StopMovement();
-		AIController->UnPossess();
-	}
+	// 복어 스케일 커지는 타임라인 트리거
+	ScaleUpTriggered();
+
+	// 이동 속도를 ExplosionTriggeredMovementMultiplier만큼 곱한 값으로 증가
+	SetCharacterMovementSetting(0.0f, StatComponent->GetMoveSpeed() * ExplosionTriggeredMovementMultiplier);
+
+	// Explosion을 1회성으로 호출하기 위한 bool 값 활성화
+	bIsExplosionTriggered = true;
 
 	// ExplosionDelayTime이 경과 후 폭발 로직 수행
 	GetWorldTimerManager().SetTimer(ExplosionTimerHandle, this, &ABlowfish::Explosion, ExplosionDelayTime, false);
@@ -70,6 +76,9 @@ void ABlowfish::M_TriggerExplosion_Implementation()
 
 void ABlowfish::Explosion()
 {
+	UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+	GetWorld(), BloodEffect, GetActorLocation(), FRotator::ZeroRotator, FVector(1), true, true );
+	
 	// 폭발 디버그 구체 그리기 (파란색, 1초 동안 표시)
 	DrawDebugSphere(
 		GetWorld(),

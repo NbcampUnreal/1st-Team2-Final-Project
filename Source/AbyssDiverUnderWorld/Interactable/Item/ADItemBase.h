@@ -12,6 +12,7 @@ DECLARE_LOG_CATEGORY_EXTERN(ItemLog, Log, All);
 
 class UADInteractableComponent;
 class UProjectileMovementComponent;
+class USoundSubsystem;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADItemBase : public AActor, public IIADInteractable
@@ -34,6 +35,9 @@ public:
 	
 
 protected:
+	UFUNCTION(NetMulticast, Reliable)
+	void M_PlayPickupSound();
+	void M_PlayPickupSound_Implementation();
 	UFUNCTION()
 	void OnRep_ItemData();
 
@@ -54,6 +58,8 @@ public:
 	FItemData ItemData;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction")
 	TObjectPtr<UADInteractableComponent> InteractableComp;
+	UPROPERTY()
+	TObjectPtr<USoundSubsystem> SoundSubsystem;
 
 	// TODO : 인벤토리 컴포넌트 참조
 	// TODO : PickupSound 등 획득 시 효과 추가
@@ -73,6 +79,9 @@ public:
 	virtual UADInteractableComponent* GetInteractableComponent() const override;
 	virtual bool IsHoldMode() const override;
 	virtual FString GetInteractionDescription() const override;
+
+private:
+	USoundSubsystem* GetSoundSubsystem();
 #pragma endregion
 
 };

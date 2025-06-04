@@ -18,6 +18,7 @@ class UChargeBatteryWidget;
 enum class EChargeBatteryType;
 class AUnderwaterCharacter;
 class UUseStrategy;
+class UNiagaraSystem;
 
 #define LOGINVEN(Verbosity, Format, ...) UE_LOG(InventoryLog, Verbosity, TEXT("%s(%s) %s"), ANSI_TO_TCHAR(__FUNCTION__), *FString::FromInt(__LINE__), *FString::Printf(Format, ##__VA_ARGS__));
 
@@ -62,8 +63,8 @@ public:
 	void S_UseBatteryAmount_Implementation(int8 Amount);
 
 	UFUNCTION(NetMulticast, Reliable)
-	void M_PlaySound(ESFX SFXType);
-	void M_PlaySound_Implementation(ESFX SFXType);
+	void M_SpawnItemEffect(ESFX SFXType, UNiagaraSystem* VFX, FVector SpawnLocation);
+	void M_SpawnItemEffect_Implementation(ESFX SFXType, UNiagaraSystem* VFX, FVector SpawnLocation);
 
 	UFUNCTION(Client, Reliable)
 	void C_InventoryPlaySound(ESFX SFXType);
@@ -164,6 +165,8 @@ private:
 	TObjectPtr<UDataTableSubsystem> DataTableSubsystem; 
 	TObjectPtr<USoundSubsystem> SoundSubsystem;
 	TObjectPtr<UChargeBatteryWidget> ChargeBatteryWidget;
+	TObjectPtr <UNiagaraSystem> OxygenRefillEffect;
+	TObjectPtr <UNiagaraSystem> DropItemEffect;
 
 	UPROPERTY(EditAnywhere, Category = "Harpoon")
 	TObjectPtr<UAnimMontage> HarpoonDrawMontage;

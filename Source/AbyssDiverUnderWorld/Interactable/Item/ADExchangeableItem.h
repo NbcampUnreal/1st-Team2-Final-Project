@@ -28,6 +28,7 @@ public:
 
 	virtual void HandlePickup(APawn* InstigatorPawn) override;
 
+
 protected:
 
 
@@ -38,6 +39,14 @@ private:
 
 #pragma region Variable
 public:
+	// 미션 관련 델리게이트
+	DECLARE_MULTICAST_DELEGATE_TwoParams(
+		FOnItemPickedDelegate,
+		uint8, 
+		APawn*
+	);
+	FOnItemPickedDelegate OnItemPicked;
+
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Exchange")
@@ -48,6 +57,8 @@ protected:
 	int32 ValuePerUnit = 10;
 	UPROPERTY(ReplicatedUsing = OnRep_TotalPrice, EditAnywhere, BlueprintReadWrite, Category = "Exchange")
 	int32 TotalPrice = 0;
+
+	
 
 
 private:

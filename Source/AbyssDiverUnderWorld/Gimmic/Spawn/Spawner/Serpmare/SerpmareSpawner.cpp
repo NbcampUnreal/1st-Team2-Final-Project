@@ -25,12 +25,35 @@ ASerpmareSpawner::ASerpmareSpawner()
 	BigSerpmareGroup.MaxSerpmareSpawnCount = 3;
 }
 
-void ASerpmareSpawner::BeginPlay()
+void ASerpmareSpawner::PostInitializeComponents()
 {
-	Super::BeginPlay();
+	Super::PostInitializeComponents();
+
+#if WITH_EDITOR
+
+	// 게임 중이 아닌 경우 리턴(블루프린트 상일 경우)
+	// PostInitializeComponents는 블루프린트에서도 발동함
+	UWorld* World = GetWorld();
+	if (World == nullptr || World->IsGameWorld() == false)
+	{
+		return;
+	}
+
+#endif
+
+	// 호스트만 사용
+	if (HasAuthority() == false)
+	{
+		return;
+	}
 
 	MiniSerpmareGroup.SerpmareSpawnPoints = GetSpawnPoint(AMiniSerpmareSpawnPoint::StaticClass());
 	BigSerpmareGroup.SerpmareSpawnPoints = GetSpawnPoint(ABigSerpmareSpawnPoint::StaticClass());
+}
+
+void ASerpmareSpawner::BeginPlay()
+{
+	Super::BeginPlay();
 }
 
 void ASerpmareSpawner::Spawn()

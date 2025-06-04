@@ -61,6 +61,9 @@ public:
 
 	void ReceiveMissionDataFromUIData(const TArray<FMissionData>& Missions);
 
+	void RequestBinding(UObject* Requester);
+	void RequestUnbinding(UObject* Requester);
+
 private:
 
 	void MakeAndAddMissionDataForUI(const FMissionBaseRow* MissionBaseData, const uint8& MissionIndex);
@@ -74,6 +77,8 @@ private:
 	void UnlockMissionInternal(FMissionBaseRow* MissionsFromUI);
 
 	bool CheckIfGameStateIsValid();
+
+	void OnMissionComplete(const EMissionType& InMissionType, const uint8& InMissionIndex);
 
 #pragma endregion
 
@@ -92,11 +97,11 @@ private:
 
 	TSet<FMissionData> MissionDataForUI;
 
-	TArray<FAggroTriggerMissionRow*> AggroTriggerMissionData;
-	TArray<FInteractionMissionRow*> InteractionMissionData;
-	TArray<FItemCollectMissionRow*> ItemCollectMissionData;
-	TArray<FItemUseMissionRow*> ItemUseMissionData;
-	TArray<FKillMonsterMissionRow*> KillMonsterMissionData;
+	TArray<FAggroTriggerMissionRow*> AggroTriggerMissionDataArray;
+	TArray<FInteractionMissionRow*> InteractionMissionDataArray;
+	TArray<FItemCollectMissionRow*> ItemCollectMissionDataArray;
+	TArray<FItemUseMissionRow*> ItemUseMissionDataArray;
+	TArray<FKillMonsterMissionRow*> KillMonsterMissionDataArray;
 
 	int32 AggroTriggerMissionCount = 0;
 	int32 InteractionMissionCount = 0;

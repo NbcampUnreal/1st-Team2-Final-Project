@@ -13,6 +13,7 @@ class UNiagaraComponent;
 class UADInteractableComponent;
 class URadarReturnComponent;
 class AUnderwaterCharacter;
+class USoundSubsystem;
 
 USTRUCT(BlueprintType)
 struct FDropEntry : public FTableRowBase
@@ -104,7 +105,8 @@ public:
 	// 암석 파편 이펙트
 	UPROPERTY(EditDefaultsOnly, Category = "Mining")
 	TObjectPtr<UNiagaraSystem> RockFragmentsFX;
-	
+	UPROPERTY()
+	TObjectPtr<USoundSubsystem> SoundSubsystem;
 
 protected:
 	// 무게 샘플링 강도 (1.0 : 균등, 2.0 : 중간 편향, 클수록 편향이 강해짐)
@@ -124,12 +126,12 @@ protected:
 	TObjectPtr<UAnimMontage> MiningMontage;
 	UPROPERTY(EditAnywhere, Category = "Mining")
 	TObjectPtr<UAnimMontage> StowMontage;
-
+	
 private:
 	TArray<FDropEntry*> CachedEntries;
 	TArray<float>  CumulativeWeights;
 	float TotalWeight = 0.f;
-	uint8 PreivousEquipIndex = 0;
+	int32 PreviousEquipIndex = 0;
 
 
 #pragma endregion
@@ -140,6 +142,9 @@ public:
 	virtual bool IsHoldMode() const;
 	virtual float GetHoldDuration_Implementation() const override;
 	virtual FString GetInteractionDescription() const override;
+
+private:
+	USoundSubsystem* GetSoundSubsystem();
 
 #pragma endregion
 };

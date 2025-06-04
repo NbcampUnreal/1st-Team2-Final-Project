@@ -7,6 +7,7 @@
 #include "Components/VerticalBoxSlot.h"
 #include "Components/RichTextBlock.h"
 #include "Kismet/GameplayStatics.h"
+#include "Animation/WidgetAnimation.h"
 
 void UToggleWidget::InitializeInventoriesInfo(UADInventoryComponent* InventoryComp)
 {
@@ -46,6 +47,24 @@ void UToggleWidget::SetDroneTargetText(int32 Target)
     if (TargetMoneyText && TargetMoneyText->IsValidLowLevel())
     {
         TargetMoneyText->SetText(FText::FromString(FString::Printf(TEXT("%d"), Target)));
+    }
+}
+
+void UToggleWidget::PlaySlideAnimation(bool bIsVisible)
+{
+    if (bIsVisible)
+    {
+        SetVisibility(ESlateVisibility::Visible);
+        PlayAnimation(SlideIn);
+    }
+    else
+    {
+        PlayAnimation(SlideOUt);
+        FTimerHandle HiddenTimerHandle;
+        float HiddenDelay = SlideOUt->GetEndTime();
+        GetWorld()->GetTimerManager().SetTimer(HiddenTimerHandle,
+            FTimerDelegate::CreateLambda([this]() { SetVisibility(ESlateVisibility::Hidden);
+                }), HiddenDelay, false);
     }
 }
 
