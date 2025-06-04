@@ -93,6 +93,11 @@ void ULanternComponent::OnRep_bIsLanternOn()
 
 void ULanternComponent::UpdateDetectionShape(float ConeHeight, float ConeAngle)
 {
+	if (GetOwnerRole() != ROLE_Authority)
+	{
+		return;
+	}
+	
 	const FVector Direction = LanternLightComponent->GetForwardVector().GetSafeNormal();
 	const FVector Origin = LanternLightComponent->GetComponentLocation();
 		
