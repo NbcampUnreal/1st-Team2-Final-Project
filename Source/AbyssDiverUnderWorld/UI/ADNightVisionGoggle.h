@@ -26,6 +26,7 @@ public:
 public:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UProgressBar> BatteryAmount;
+	UPROPERTY()
 	TObjectPtr<USoundSubsystem> SoundSubsystem;
 private:
 	int32 BatteryMax;
@@ -35,6 +36,8 @@ private:
 public:
 	UFUNCTION(BlueprintCallable)
 	void SetBatteryAmount(int32 Amount);
+
+	USoundSubsystem* GetSoundSubsystem();
 #pragma endregion
 
 };
