@@ -271,7 +271,7 @@ void UEquipUseComponent::S_IncreaseAmount_Implementation(int8 AddAmount)
 
 void UEquipUseComponent::M_PlayFireHarpoonSound_Implementation()
 {
-	SoundSubsystem->PlayAt(ESFX::FireHarpoon, OwningCharacter->GetActorLocation());
+	GetSoundSubsystem()->PlayAt(ESFX::FireHarpoon, OwningCharacter->GetActorLocation());
 }
 
 void UEquipUseComponent::OnRep_Amount()
@@ -385,11 +385,11 @@ void UEquipUseComponent::OnRep_BoostActive()
 {
 	if (bBoostActive)
 	{
-		SoundSubsystem->PlayAt(ESFX::DPVOn, OwningCharacter->GetActorLocation());
+		GetSoundSubsystem()->PlayAt(ESFX::DPVOn, OwningCharacter->GetActorLocation());
 	}
 	else
 	{
-		SoundSubsystem->PlayAt(ESFX::DPVOff, OwningCharacter->GetActorLocation());
+		GetSoundSubsystem()->PlayAt(ESFX::DPVOff, OwningCharacter->GetActorLocation());
 	}
 }
 
@@ -624,8 +624,7 @@ void UEquipUseComponent::BoostOn()
 	if (!OwningCharacter.IsValid()) return;
 
 	if (Amount <= 0 || bNightVisionOn) return;
-
-	SoundSubsystem->PlayAt(ESFX::DPVOn, OwningCharacter->GetActorLocation());
+	DPVAudioID = GetSoundSubsystem()->PlayAt(ESFX::DPVOn, OwningCharacter->GetActorLocation(), 1.0f, true, 0.2f);
 	bBoostActive = true;
 	TargetMultiplier = BoostMultiplier;  
 	SetComponentTickEnabled(true);
@@ -635,7 +634,7 @@ void UEquipUseComponent::BoostOff()
 {
 	if (!OwningCharacter.IsValid()) return;
 
-	SoundSubsystem->PlayAt(ESFX::DPVOff, OwningCharacter->GetActorLocation());
+	GetSoundSubsystem()->StopAudio(DPVAudioID, true, 0.2f);
 	bBoostActive = false;
 	TargetMultiplier = 1.f;  // 정상 속도로 복귀
 
@@ -831,6 +830,21 @@ void UEquipUseComponent::SetEquipBatteryAmountText()
 	{
 		ChargeBatteryInstance->SetEquipBatteryAmount(EChargeBatteryType::DPV, Amount);
 	}
+}
+
+USoundSubsystem* UEquipUseComponent::GetSoundSubsystem()
+{
+	if (SoundSubsystem)
+	{
+		return SoundSubsystem;
+	}
+
+	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+	{
+		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
+		return SoundSubsystem;
+	}
+	return nullptr;
 }
 
 void UEquipUseComponent::InitializeAmmoUI()

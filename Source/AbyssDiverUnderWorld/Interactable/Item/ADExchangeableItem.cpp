@@ -37,11 +37,13 @@ void AADExchangeableItem::CalculateTotalPrice()
 	TotalPrice = ItemData.Mass * ValuePerUnit;
 }
 
-void AADExchangeableItem::HandlePickup(APawn* InstigatgorPawn)
+void AADExchangeableItem::HandlePickup(APawn* InstigatorPawn)
 {
-	Super::HandlePickup(InstigatgorPawn);
+	Super::HandlePickup(InstigatorPawn);
 
-	// TODO 개별 획득 사운드가 필요하다면 추가하는 것이 좋아보임
+	// 델리게이트
+	const int32 PickedItemID = ItemData.Id;
+	OnItemPicked.Broadcast(PickedItemID, InstigatorPawn);
 }
 
 void AADExchangeableItem::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

@@ -19,6 +19,7 @@
 #include "NiagaraFunctionLibrary.h"
 #include "Enum/EPerceptionType.h"
 #include "Perception/AISense_Damage.h"
+#include "Interactable/OtherActors/Radars/RadarReturnComponent.h"
 
 const FName ABoss::BossStateKey = "BossState";
 
@@ -58,6 +59,8 @@ ABoss::ABoss()
 		BloodEffect = BloodNiagara.Object;
 	}
 	bReplicates = true;
+
+	RadarReturnComponent->FactionTags.Init(TEXT("Hostile"), 1);
 }
 
 void ABoss::BeginPlay()
@@ -80,6 +83,11 @@ void ABoss::BeginPlay()
 
 	GetCharacterMovement()->MaxSwimSpeed = StatComponent->GetMoveSpeed();
 	OriginDeceleration = GetCharacterMovement()->BrakingDecelerationSwimming;
+}
+
+void ABoss::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
 }
 
 void ABoss::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const

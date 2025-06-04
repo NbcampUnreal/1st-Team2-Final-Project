@@ -94,7 +94,7 @@ void UBTTask_MoveToLocation::TickTask(UBehaviorTreeComponent& Comp, uint8* NodeM
 	
 	// 이전에 이동한 지점과 거리가 0.0001f 만큼 차이가 난다는 것은 벽에 끼었다는 것이다.
 	// 따라서 주변의 이동 가능한 NavMesh 지점으로 이동한다.
-	if (FVector::Dist(TaskMemory->TargetLocation, TaskMemory->CachedLocation) < 0.0001f)
+	if (FVector::Dist(TaskMemory->TargetLocation, TaskMemory->CachedLocation) < KINDA_SMALL_NUMBER)
 	{
 		LOG(TEXT("AI Stuck, Trying to Move to Cached Location"));
 		TeleportToNearestNavMeshLocation(TaskMemory);

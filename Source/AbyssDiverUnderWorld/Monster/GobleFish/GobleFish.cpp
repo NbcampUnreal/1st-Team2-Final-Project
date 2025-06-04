@@ -21,11 +21,11 @@ void AGobleFish::FireProjectile()
 	if (!ProjectileClass) return;
 
 	if (!AIController || !BlackboardComponent) return;
-	AActor* TargetActor = Cast<AActor>(BlackboardComponent->GetValueAsObject("TargetActor"));
-	if (!TargetActor) return;
+	AActor* LockOnActor = Cast<AActor>(BlackboardComponent->GetValueAsObject("TargetActor"));
+	if (!LockOnActor) return;
 
 	FVector FireLocation = GetMesh()->GetSocketLocation("ProjectileSocket");
-	FVector TargetLocation = TargetActor->GetActorLocation();
+	FVector TargetLocation = LockOnActor->GetActorLocation();
 	FVector ProjectileDirection = (TargetLocation - FireLocation).GetSafeNormal();
 	FRotator FireRotation = ProjectileDirection.Rotation();
 

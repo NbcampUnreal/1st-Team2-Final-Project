@@ -14,7 +14,84 @@ URadarReturnComponent::URadarReturnComponent()
 
 	bIsPrimaryReturn = true;
 	bIsActivated = true;
+
+	static const ConstructorHelpers::FObjectFinder<UStaticMesh> ReturnMesh(TEXT("/Engine/BasicShapes/Sphere.Sphere"));
+	if (ReturnMesh.Succeeded())
+	{
+		FriendlyMesh = ReturnMesh.Object;
+		HostileMesh = ReturnMesh.Object;
+		NeutralMesh = ReturnMesh.Object;
+	}
 	
+	static const ConstructorHelpers::FObjectFinder<UMaterialInterface> ReturnFriendlyMaterial(TEXT("/Game/z3D_Radar/Materials/Green_Glow_Inst.Green_Glow_Inst"));
+	if (ReturnFriendlyMaterial.Succeeded())
+	{
+		FriendlyMaterial = ReturnFriendlyMaterial.Object;
+	}
+
+	static const ConstructorHelpers::FObjectFinder<UMaterialInterface> ReturnHostileMaterial(TEXT("/Game/z3D_Radar/Materials/Red_Glow_Inst.Red_Glow_Inst"));
+	if (ReturnFriendlyMaterial.Succeeded())
+	{
+		HostileMaterial = ReturnHostileMaterial.Object;
+	}
+
+	static const ConstructorHelpers::FObjectFinder<UMaterialInterface> ReturnNeutralMaterial(TEXT("/Game/z3D_Radar/Materials/White_Glow_Inst.White_Glow_Inst"));
+	if (ReturnFriendlyMaterial.Succeeded())
+	{
+		NeutralMaterial = ReturnNeutralMaterial.Object;
+	}
+
+	static const ConstructorHelpers::FObjectFinder<UStaticMesh> ReturnStandMesh(TEXT("/Game/z3D_Radar/Meshes/Cylinder_Base_SM.Cylinder_Base_SM"));
+	if (ReturnMesh.Succeeded())
+	{
+		FriendlyStandMesh = ReturnStandMesh.Object;
+		HostileStandMesh = ReturnStandMesh.Object;
+		NeutralStandMesh = ReturnStandMesh.Object;
+	}
+
+	static const ConstructorHelpers::FObjectFinder<UMaterialInterface> ReturnFriendlyStandMaterial(TEXT("/Game/z3D_Radar/Materials/Green_Glow_Inst.Green_Glow_Inst"));
+	if (ReturnFriendlyMaterial.Succeeded())
+	{
+		FriendlyStandMaterial = ReturnFriendlyStandMaterial.Object;
+	}
+
+	static const ConstructorHelpers::FObjectFinder<UMaterialInterface> ReturnHostileStandMaterial(TEXT("/Game/z3D_Radar/Materials/Red_Glow_Inst.Red_Glow_Inst"));
+	if (ReturnFriendlyMaterial.Succeeded())
+	{
+		HostileStandMaterial = ReturnHostileStandMaterial.Object;
+	}
+
+	static const ConstructorHelpers::FObjectFinder<UMaterialInterface> ReturnNeutralStandMaterial(TEXT("/Game/z3D_Radar/Materials/White_Glow_Inst.White_Glow_Inst"));
+	if (ReturnFriendlyMaterial.Succeeded())
+	{
+		NeutralStandMaterial = ReturnNeutralStandMaterial.Object;
+	}
+
+	static const ConstructorHelpers::FObjectFinder<UStaticMesh> ReturnPingMesh(TEXT("/Game/z3D_Radar/Meshes/Plane_SM.Plane_SM"));
+	if (ReturnMesh.Succeeded())
+	{
+		FriendlyPingMesh = ReturnPingMesh.Object;
+		HostilePingMesh = ReturnPingMesh.Object;
+		NeutralPingMesh = ReturnPingMesh.Object;
+	}
+
+	static const ConstructorHelpers::FObjectFinder<UMaterialInterface> ReturnFriendlyPingMaterial(TEXT("/Game/z3D_Radar/Materials/Green_Ping_Inst.Green_Ping_Inst"));
+	if (ReturnFriendlyMaterial.Succeeded())
+	{
+		FriendlyPingMaterial = ReturnFriendlyPingMaterial.Object;
+	}
+
+	static const ConstructorHelpers::FObjectFinder<UMaterialInterface> ReturnHostilePingMaterial(TEXT("/Game/z3D_Radar/Materials/Red_Ping_Inst.Red_Ping_Inst"));
+	if (ReturnFriendlyMaterial.Succeeded())
+	{
+		HostilePingMaterial = ReturnHostilePingMaterial.Object;
+	}
+
+	static const ConstructorHelpers::FObjectFinder<UMaterialInterface> ReturnNeutralPingMaterial(TEXT("/Game/z3D_Radar/Materials/White_Ping_Inst.White_Ping_Inst"));
+	if (ReturnFriendlyMaterial.Succeeded())
+	{
+		NeutralPingMaterial = ReturnNeutralPingMaterial.Object;
+	}
 }
 
 void URadarReturnComponent::BeginPlay()

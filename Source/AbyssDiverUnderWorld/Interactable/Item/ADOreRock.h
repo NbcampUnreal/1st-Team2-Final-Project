@@ -116,6 +116,10 @@ protected:
 	float SpawnHeight = 150.f;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction")
 	TObjectPtr<UADInteractableComponent> InteractableComp;
+
+	UPROPERTY(EditAnywhere, Category = "Radar Settings")
+	TObjectPtr<URadarReturnComponent> RadarReturnComponent;
+
 	UPROPERTY(EditAnywhere, Category = "Mining")
 	int32 DefaultMiningStrength = 25;
 
@@ -142,6 +146,9 @@ public:
 	virtual bool IsHoldMode() const;
 	virtual float GetHoldDuration_Implementation() const override;
 	virtual FString GetInteractionDescription() const override;
+
+private:
+	USoundSubsystem* GetSoundSubsystem();
 
 #pragma endregion
 };

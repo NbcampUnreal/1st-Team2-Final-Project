@@ -196,5 +196,8 @@ public:
 	void SetChargeBatteryInstance(UChargeBatteryWidget* BatteryWidget);
 
 	UToggleWidget* GetToggleWidgetInstance() const { return ToggleWidgetInstance; } //인벤토리 위젯 인스턴스 반환
+
+private:
+	USoundSubsystem* GetSoundSubsystem();
 #pragma endregion
 };
