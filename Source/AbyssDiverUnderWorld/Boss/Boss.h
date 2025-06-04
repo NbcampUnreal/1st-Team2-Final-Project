@@ -27,13 +27,38 @@ protected:
 
 #pragma region Method
 public:
-	/** 매개변수로 전달받은 InLocation이 NavMesh위에 있는지 확인하는 함수 */
+	/** 현재 액터가 NavMesh 상에 존재하는지 확인하는 함수
+	 * @param InLocation - 검사할 위치
+	 * @return NavMesh 상에 존재하는 경우 true, 그렇지 않은 경우 false 반환
+	 */
 	bool IsLocationOnNavMesh(const FVector& InLocation) const;
-	
+
+	/** 캐릭터의 이동 설정을 변경하는 함수
+	 * @param InBrakingDecelerationSwimming: 수영 중 감속값
+	 * @param InMaxSwimSpeed: 최대 수영 속도
+	 */
 	void SetCharacterMovementSetting(const float& InBrakingDecelerationSwimming, const float& InMaxSwimSpeed);
+
+	/** 캐릭터의 이동 설정을 초기화하는 함수
+	 * 
+	 * 기본값으로 설정된 수영 중 감속값과 최대 수영 속도로 초기화한다.
+	 */
 	void InitCharacterMovementSetting();
+
+	/** NavMesh 기반으로 랜덤 위치를 찾는 함수
+	 * @return NavMesh 상의 랜덤 위치 반환
+	 */
 	FVector GetNextPatrolPoint();
+
+	/** 보스의 상태를 초기화하는 함수
+	 * @param State: 초기화할 상태
+	 */
 	void SetBossState(EBossState State);
+
+	/** 플레이어를 밀치는 함수
+	 * @param Player: 밀칠 플레이어
+	 * @param Power: 밀치는 힘
+	 */
 	void LaunchPlayer(AUnderwaterCharacter* Player, const float& Power) const;
 	
 	/** 데미지를 받을 때 호출하는 함수 */
