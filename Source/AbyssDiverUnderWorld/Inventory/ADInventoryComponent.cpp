@@ -35,9 +35,7 @@ UADInventoryComponent::UADInventoryComponent() :
 	TotalPrice(0),
 	WeightMax(100),
 	CurrentEquipmentSlotIndex(INDEX_NONE),
-	bInventoryWidgetShowed(false), 
 	CurrentEquipmentInstance(nullptr),
-	bAlreadyCursorShowed(false),
 	ToggleWidgetInstance(nullptr),
 	bCanUseItem(true),
 	DataTableSubsystem(nullptr),
@@ -86,6 +84,7 @@ void UADInventoryComponent::BeginPlay()
 		DataTableSubsystem = GI->GetSubsystem<UDataTableSubsystem>();
 		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
 	}
+
 }
 
 void UADInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -144,7 +143,7 @@ void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType
 			if (Strategy)
 			{
 				Strategy->Use(GetOwner());
-				if (Item.Amount > 0)
+				if (Item.Amount <= 100)
 				{
 					C_InventoryPlaySound(ESFX::Breath);
 					FTimerHandle SpawnEffectDelay;
@@ -225,7 +224,7 @@ void UADInventoryComponent::S_UseBatteryAmount_Implementation(int8 Amount)
 void UADInventoryComponent::M_SpawnItemEffect_Implementation(ESFX SFXType, UNiagaraSystem* VFX, FVector SpawnLocation)
 {
 	if (!VFX) return;
-	SoundSubsystem->PlayAt(SFXType, SpawnLocation);
+	GetSoundSubsystem()->PlayAt(SFXType, SpawnLocation);
 	
 	UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 		GetWorld(),
@@ -242,14 +241,14 @@ void UADInventoryComponent::M_SpawnItemEffect_Implementation(ESFX SFXType, UNiag
 
 void UADInventoryComponent::C_InventoryPlaySound_Implementation(ESFX SFXType)
 {
-	SoundSubsystem->Play2D(SFXType);
+	GetSoundSubsystem()->Play2D(SFXType);
 }
 
 void UADInventoryComponent::C_SpawnItemEffect_Implementation()
 {
 	//UObject는 리플리케이트를 지원하지 않으므로, 이펙트 스폰을 클라이언트에서만 실행되는 함수로 구현
 
-	SoundSubsystem->Play2D(ESFX::RefillOxygen);
+	GetSoundSubsystem()->Play2D(ESFX::RefillOxygen);
 	if (!OxygenRefillEffect) return;
 	if (APlayerController* PC = Cast<APlayerController>(Cast<AADPlayerState>(GetOwner())->GetPlayerController()))
 	{
@@ -311,30 +310,35 @@ void UADInventoryComponent::C_SetEquipBatteryAmount_Implementation(EChargeBatter
 void UADInventoryComponent::InventoryInitialize()
 {
 	APlayerController* PC = Cast<APlayerController>(Cast<AADPlayerState>(GetOwner())->GetPlayerController());
-	if (ToggleWidgetClass && PC && PC->IsLocalController())
+	if (!ToggleWidgetClass || !PC || !PC->IsLocalController())
 	{
-		ToggleWidgetInstance = CreateWidget<UToggleWidget>(PC, ToggleWidgetClass);
-		LOGINVEN(Warning, TEXT("WidgetCreate!"));
-
-		if (ToggleWidgetInstance)
-		{
-			ToggleWidgetInstance->AddToViewport();
-			ToggleWidgetInstance->InitializeInventoriesInfo(this);
-			ToggleWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
-		}
+		return;
 	}
+
+	ToggleWidgetInstance = CreateWidget<UToggleWidget>(PC, ToggleWidgetClass);
+	LOGINVEN(Warning, TEXT("WidgetCreate!"));
+
+	if (!ToggleWidgetInstance)
+	{
+		LOGINVEN(Warning, TEXT("!ToggleWidgetInstance"));
+		return;
+	}
+
+	ToggleWidgetInstance->AddToViewport();
+	ToggleWidgetInstance->InitializeInventoriesInfo(this);
+	ToggleWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
 
 	AADInGameState* GS = Cast<AADInGameState>(UGameplayStatics::GetGameState(GetWorld()));
 	if (GS == nullptr)
 	{
-		LOGV(Warning, TEXT("GS == nullptr"));
+		LOGINVEN(Warning, TEXT("GS == nullptr"));
 		return;
 	}
 
 	AADDroneSeller* CurrentDroneSeller = GS->GetCurrentDroneSeller();
 	if (CurrentDroneSeller == nullptr)
 	{
-		LOGV(Warning, TEXT("CurrentDroneSeller == nullptr, Server? : %d"), GetOwner()->GetNetMode() != ENetMode::NM_Client);
+		LOGINVEN(Warning, TEXT("CurrentDroneSeller == nullptr, Server? : %d"), GetOwner()->GetNetMode() != ENetMode::NM_Client);
 		return;
 	}
 
@@ -346,6 +350,8 @@ void UADInventoryComponent::InventoryInitialize()
 
 	CurrentDroneSeller->OnTargetMoneyChangedDelegate.RemoveAll(ToggleWidgetInstance);
 	CurrentDroneSeller->OnTargetMoneyChangedDelegate.AddUObject(ToggleWidgetInstance, &UToggleWidget::SetDroneTargetText);
+
+
 }
 
 bool UADInventoryComponent::AddInventoryItem(const FItemData& ItemData)
@@ -356,6 +362,11 @@ bool UADInventoryComponent::AddInventoryItem(const FItemData& ItemData)
 		if (FoundRow)
 		{
 			int8 ItemIndex = FindItemIndexByName(ItemData.Name);
+			if (ItemData.ItemType == EItemType::Equipment)
+			{
+				if (ItemIndex != -1)
+					return false;
+			}
 			LOGINVEN(Warning, TEXT("AddInventoryItem ItemIndex : %d"), ItemIndex);
 			bool bIsUpdateSuccess = false;
 
@@ -410,7 +421,6 @@ void UADInventoryComponent::ShowInventory()
 
 	ToggleWidgetInstance->PlaySlideAnimation(true);
 	InventoryUIUpdate();
-	bAlreadyCursorShowed = PC->bShowMouseCursor;
 	PC->bShowMouseCursor = true;
 
 	FInputModeGameAndUI InputMode;
@@ -425,13 +435,11 @@ void UADInventoryComponent::ShowInventory()
 void UADInventoryComponent::HideInventory()
 {
 	APlayerController* PC = Cast<APlayerController>(Cast<AADPlayerState>(GetOwner())->GetPlayerController());
-	if (!PC && !ToggleWidgetInstance) return;
+	if (!PC || !ToggleWidgetInstance) return;
 
-	bInventoryWidgetShowed = false;
 	ToggleWidgetInstance->PlaySlideAnimation(false);
 
-	if (!bAlreadyCursorShowed)
-		PC->bShowMouseCursor = false;
+	PC->bShowMouseCursor = false;
 	PC->SetIgnoreLookInput(false);
 	PC->SetInputMode(FInputModeGameOnly());
 	
@@ -478,7 +486,6 @@ void UADInventoryComponent::RemoveBySlotIndex(uint8 SlotIndex, EItemType ItemTyp
 
 		if (bIsDropAction)
 		{
-			/*M_PlaySound(ESFX::DropItem);*/
 			DropItem(Item);
 		}
 		InventoryList.UpdateQuantity(InventoryIndex, INDEX_NONE);
@@ -558,9 +565,15 @@ void UADInventoryComponent::CopyInventoryFrom(UADInventoryComponent* Source)
 	{
 		InventoryList.Items.Add(Item);
 	}
-
+	Source->TotalPrice = TotalPrice;
+	Source->TotalWeight = TotalWeight;
 	// FastArray는 복사 후 MarkItemDirty 필요
 	InventoryMarkArrayDirty();
+
+	FTimerHandle UpdateDelayTimerHandle;
+	float UpdateDelay = 0.2f;
+	GetWorld()->GetTimerManager().SetTimer(UpdateDelayTimerHandle, this, &UADInventoryComponent::InventoryUIUpdate, UpdateDelay, false);
+
 }
 
 void UADInventoryComponent::InventoryMarkArrayDirty()
@@ -850,7 +863,20 @@ void UADInventoryComponent::SetChargeBatteryInstance(UChargeBatteryWidget* Batte
 	LOGINVEN(Warning, TEXT("Allocate BatteryWidget To Inventory"));
 }
 
+USoundSubsystem* UADInventoryComponent::GetSoundSubsystem()
+{
+	if (SoundSubsystem)
+	{
+		return SoundSubsystem;
+	}
 
+	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+	{
+		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
+		return SoundSubsystem;
+	}
+	return nullptr;
+}
 
 
 

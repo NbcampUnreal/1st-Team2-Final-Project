@@ -7,12 +7,14 @@
 #include "MonsterAIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Components/SphereComponent.h"
+#include "Delegates/DelegateCombinations.h"
 #include "Monster/EMonsterState.h"
 #include "Monster.generated.h"
 
-
 class ASplinePathActor;
 class USphereComponent;
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnMonsterDeadSignature, AActor*, Killer, AMonster*, DeadMonster);
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AMonster : public AUnitBase
@@ -39,10 +41,22 @@ public:
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 	virtual void OnDeath();
 	virtual void PlayAttackMontage();
+	void StopMovement();
+	void NotifyLightExposure(float DeltaTime, float TotalExposedTime, const FVector& PlayerLocation, AActor* PlayerActor);
+	void AddDetection(AActor* Actor);
+	void RemoveDetection(AActor* Actor);
 
 #pragma endregion
 
 #pragma region Variable
+public:
+	UPROPERTY(BlueprintAssignable, Category = "Event")
+	FOnMonsterDeadSignature OnMonsterDead;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	uint8 bIsChasing : 1;
+	UPROPERTY()
+	TObjectPtr<AActor> TargetActor;
+
 protected:
 	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "AI|Patrol")
 	TObjectPtr<ASplinePathActor> AssignedSplineActor;
@@ -56,17 +70,33 @@ protected:
 	EMonsterState MonsterState;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AI|AttackAnimation")
 	TArray<TObjectPtr<UAnimMontage>> AttackAnimations;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AI|DetectedAnimation")
+	TObjectPtr<UAnimMontage> DetectedAnimations;
+	UPROPERTY(EditAnywhere, Category = "AI")
+	float ChaseTriggerTime;
+	UPROPERTY(EditAnywhere, Category = "AI")
+	float ChaseSpeed;
+	UPROPERTY(EditAnywhere, Category = "AI")
+	float PatrolSpeed;
+	UPROPERTY(EditAnywhere, Category = "AI")
+	float InvestigateSpeed;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	TMap<AActor*, int32> DetectionRefCounts;
 
-private:
 	static const FName MonsterStateKey;
+	static const FName InvestigateLocationKey;
+	static const FName TargetActorKey;
+	
 #pragma endregion
 
 #pragma region Getter. Setter
 public:
 	TArray<UAnimMontage*> GetAttackAnimations() { return AttackAnimations; }
+	EMonsterState GetMonsterState() { return MonsterState; }
+	virtual void SetMonsterState(EMonsterState NewState);
+	void SetMaxSwimSpeed(float Speed);
 
 	// Virtual function to get collision components for attack range determination externally
 	virtual USphereComponent* GetAttackHitComponent() const { return nullptr; }
-
-	void SetMonsterState(EMonsterState State);
+	
 };

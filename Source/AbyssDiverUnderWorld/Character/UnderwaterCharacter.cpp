@@ -22,6 +22,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Interactable/Item/Component/EquipUseComponent.h"
 #include "Interactable/OtherActors/Radars/Radar.h"
+#include "Interactable/OtherActors/Radars/RadarReturnComponent.h"
 #include "Inventory/ADInventoryComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Shops/ShopInteractionComponent.h"
@@ -30,7 +31,7 @@
 #include "Laser/ADLaserCutter.h"
 #include "PlayerComponent/LanternComponent.h"
 #include "PlayerComponent/ShieldComponent.h"
-#include "EngineUtils.h"
+#include "PlayerComponent/UnderwaterEffectComponent.h"
 
 DEFINE_LOG_CATEGORY(LogAbyssDiverCharacter);
 
@@ -137,6 +138,8 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	EquipUseComponent = CreateDefaultSubobject<UEquipUseComponent>(TEXT("EquipUseComponent"));
 
 	LanternComponent = CreateDefaultSubobject<ULanternComponent>(TEXT("LanternComponent"));
+
+	UnderwaterEffectComponent = CreateDefaultSubobject<UUnderwaterEffectComponent>(TEXT("UnderwaterEffectComponent"));
 	FootstepComponent = CreateDefaultSubobject<UFootstepComponent>(TEXT("FootstepComponent"));
 	
 	bIsRadarOn = false;
@@ -144,6 +147,8 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	RadarRotation = FRotator(90.0f, 0.0f, 0.0f);
 
 	EnvironmentState = EEnvironmentState::Underwater;
+
+	RadarReturnComponent->FactionTags.Init(TEXT("Friendly"), 1);
 }
 
 void AUnderwaterCharacter::BeginPlay()
@@ -1533,12 +1538,14 @@ void AUnderwaterCharacter::SetDebugCameraMode(bool bDebugCameraEnable)
 		FirstPersonCameraComponent->SetActive(false);
 		ThirdPersonCameraComponent->SetActive(true);
 		GetMesh()->SetOwnerNoSee(false);
+		GetMesh1P()->SetOwnerNoSee(true);
 	}
 	else
 	{
 		FirstPersonCameraComponent->SetActive(true);
 		ThirdPersonCameraComponent->SetActive(false);
 		GetMesh()->SetOwnerNoSee(true);
+		GetMesh1P()->SetOwnerNoSee(false);
 	}
 }
 

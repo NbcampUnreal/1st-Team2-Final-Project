@@ -23,12 +23,12 @@ void UADNightVisionGoggle::NativeConstruct()
 
 void UADNightVisionGoggle::NightVigionUnUse_Implementation()
 {
-	SoundSubsystem->Play2D(ESFX::NVOn);
+	GetSoundSubsystem()->Play2D(ESFX::NVOn);
 }
 
 void UADNightVisionGoggle::NightVigionUse_Implementation()
 {
-	SoundSubsystem->Play2D(ESFX::NVOff);
+	GetSoundSubsystem()->Play2D(ESFX::NVOff);
 }
 
 void UADNightVisionGoggle::SetBatteryAmount(int32 Amount)
@@ -37,4 +37,19 @@ void UADNightVisionGoggle::SetBatteryAmount(int32 Amount)
 	{
 		BatteryAmount->SetPercent(static_cast<float>(Amount) / BatteryMax);
 	}
+}
+
+USoundSubsystem* UADNightVisionGoggle::GetSoundSubsystem()
+{
+	if (SoundSubsystem)
+	{
+		return SoundSubsystem;
+	}
+
+	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+	{
+		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
+		return SoundSubsystem;
+	}
+	return nullptr;
 }

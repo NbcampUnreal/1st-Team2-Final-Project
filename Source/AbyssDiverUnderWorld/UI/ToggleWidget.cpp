@@ -15,6 +15,8 @@ void UToggleWidget::InitializeInventoriesInfo(UADInventoryComponent* InventoryCo
     InventoryComp->InventoryInfoUpdateDelegate.AddUObject(this, &UToggleWidget::RefreshExchangableInventoryInfo);
     RefreshExchangableInventoryInfo(0, 0);
 
+    bInventoryWidgetShowed = false;
+
     if (EquipmentInventory && ConsumableInventory && ExchangableInventory)
     {
         EquipmentInventory->SetInventoryInfo(InventorySizeByType[static_cast<int8>(EItemType::Equipment)], EItemType::Equipment, InventoryComp);
@@ -54,17 +56,28 @@ void UToggleWidget::PlaySlideAnimation(bool bIsVisible)
 {
     if (bIsVisible)
     {
-        SetVisibility(ESlateVisibility::Visible);
-        PlayAnimation(SlideIn);
+        if (!bInventoryWidgetShowed)
+        {
+            GetWorld()->GetTimerManager().ClearTimer(HiddenTimerHandle);
+            SetVisibility(ESlateVisibility::Visible);
+            bInventoryWidgetShowed = true;
+            if (SlideIn && !IsAnimationPlaying(SlideIn))
+                PlayAnimation(SlideIn);
+        }
     }
     else
     {
-        PlayAnimation(SlideOUt);
-        FTimerHandle HiddenTimerHandle;
-        float HiddenDelay = SlideOUt->GetEndTime();
-        GetWorld()->GetTimerManager().SetTimer(HiddenTimerHandle,
-            FTimerDelegate::CreateLambda([this]() { SetVisibility(ESlateVisibility::Hidden);
-                }), HiddenDelay, false);
+        if (bInventoryWidgetShowed)
+        {
+            if (SlideOUt && !IsAnimationPlaying(SlideOUt))
+                PlayAnimation(SlideOUt);
+            float HiddenDelay = SlideOUt->GetEndTime();
+            GetWorld()->GetTimerManager().SetTimer(HiddenTimerHandle,
+                FTimerDelegate::CreateLambda([this]() { 
+                    SetVisibility(ESlateVisibility::Hidden);
+                    bInventoryWidgetShowed = false;
+                    }), HiddenDelay, false);
+        }
     }
 }
 

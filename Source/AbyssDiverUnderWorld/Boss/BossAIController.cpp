@@ -14,6 +14,8 @@ const FName ABossAIController::BossStateKey = "BossState";
 
 ABossAIController::ABossAIController()
 {
+	PrimaryActorTick.bCanEverTick = false;
+	
 	AIPerceptionComponent = CreateDefaultSubobject<UAIPerceptionComponent>("PerceptionComponent");
 	SightConfig = CreateDefaultSubobject<UAISenseConfig_Sight>("SightConfig");
 	DamageConfig = CreateDefaultSubobject<UAISenseConfig_Damage>("DamageConfig");
@@ -64,12 +66,6 @@ void ABossAIController::BeginPlay()
 	}
 }
 
-void ABossAIController::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-	//DrawDebugRangeCircle();
-}
 
 void ABossAIController::OnPossess(APawn* InPawn)
 {

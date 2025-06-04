@@ -54,6 +54,10 @@ protected:
 
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UTextBlock> TargetMoneyText;
+
+    FTimerHandle HiddenTimerHandle;
+
+    uint8 bInventoryWidgetShowed : 1;
 #pragma endregion
 
 #pragma region Getter/Setter

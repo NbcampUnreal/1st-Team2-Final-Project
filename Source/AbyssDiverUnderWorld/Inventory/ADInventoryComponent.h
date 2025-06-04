@@ -155,8 +155,6 @@ private:
 	TObjectPtr<UToggleWidget> ToggleWidgetInstance;
 
 	int32 WeightMax;
-	uint8 bInventoryWidgetShowed : 1;
-	uint8 bAlreadyCursorShowed : 1;
 	uint8 bCanUseItem : 1;
 	uint8 bIsWeapon : 1 = false;
 
@@ -196,5 +194,8 @@ public:
 	void SetChargeBatteryInstance(UChargeBatteryWidget* BatteryWidget);
 
 	UToggleWidget* GetToggleWidgetInstance() const { return ToggleWidgetInstance; } //인벤토리 위젯 인스턴스 반환
+
+private:
+	USoundSubsystem* GetSoundSubsystem();
 #pragma endregion
 };

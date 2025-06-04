@@ -9,6 +9,7 @@
 UBTTask_DefaultAttack::UBTTask_DefaultAttack()
 {
 	NodeName = "DefaultAttack";
+	bCreateNodeInstance = true;
 	bNotifyTick = false;
 }
 

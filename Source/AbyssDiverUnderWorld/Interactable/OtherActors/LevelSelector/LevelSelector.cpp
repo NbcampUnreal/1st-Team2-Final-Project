@@ -16,6 +16,8 @@ void ALevelSelector::Interact_Implementation(AActor* InstigatorActor)
 {
     if (APlayerController* PC = Cast<APlayerController>(InstigatorActor->GetInstigatorController()))
     {
+        if (!PC->IsLocalController())
+
         if (!LevelSelectWidget && LevelSelectWidgetClass)
         {
             LevelSelectWidget = CreateWidget<ULevelSelectWidget>(PC, LevelSelectWidgetClass);

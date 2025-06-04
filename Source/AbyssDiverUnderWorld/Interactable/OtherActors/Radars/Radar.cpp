@@ -90,11 +90,6 @@ void ARadar::BeginPlay()
 	{
 		RadarSourceRotationComponent = DefaultRadarSourceComponent;
 	}
-
-	// 임시로 각각 0.1로 줄여놓음. 아마 맵에 따라 다른 밝기를 가져야 할 것.
-	ChangeRadarMeshEdgeMaterialEmissive(0.1f);
-	ChangeRadarMeshMaterialEmissive(0.1f);
-	ChangeRadarReturnMaterialEmissive(0.1f);
 }
 
 void ARadar::Tick(float DeltaTime)
@@ -530,7 +525,7 @@ void ARadar::FindIfReturnsInVisibleRange()
 		CurrentRangeMultiplier = CurrentRadarReturnSearched->GetVisibleRangeMultiplier() * CurrentRadarReturnSearched->GetNeutralVisibleRangeMultiplier();
 		break;
 	default:
-		return;;
+		return;
 	}
 
 	for (const auto& TempFactionTag : CurrentFactionTags)
@@ -553,8 +548,14 @@ void ARadar::FindIfReturnsInVisibleRange()
 		CurrentRangeMultiplier *= UnitTypeRangeMulitpliers[TempUnitTypeTag];
 	}
 
+	// 높이는 고려 하지 않음
 	FVector AppliesToComponentLocation = CurrentRadarReturnSearched->GetAppliesToComponent()->GetComponentLocation();
+	AppliesToComponentLocation.Z = 0;
+
+	// 높이는 고려 하지 않음
 	FVector RadarSourceLocation = RadarSourceLocationComponent->GetComponentLocation();
+	RadarSourceLocation.Z = 0;
+
 	FVector VectorToRadarSourceLocation = AppliesToComponentLocation - RadarSourceLocation;
 
 	float PercentMultiplier = 100.0f;
@@ -893,7 +894,7 @@ void ARadar::FindRadarReturnTransformFromGrid()
 
 			NewScale /= CurrentRadarWidth;
 		}
-
+		NewLocation.Z = 0;
 		CurrentMeshTransform = FTransform(NewRotation, NewLocation, NewScale);
 
 		if (FoundReturnsCount == 0)

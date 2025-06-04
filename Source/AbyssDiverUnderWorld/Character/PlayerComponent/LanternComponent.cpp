@@ -61,6 +61,19 @@ void ULanternComponent::RequestToggleLanternLight()
 		
 		if (!bIsLanternOn)
 		{
+			for (auto It = MonsterExposeTimeMap.CreateIterator(); It; ++It)
+			{
+				AMonster* Monster = Cast<AMonster>(It.Key());
+				if (!IsValid(It.Key()))
+				{
+					// Handling Unexposed Monsters
+					if (IsValid(Monster) && Monster->GetMonsterState() == EMonsterState::Investigate)
+					{
+						Monster->SetMonsterState(EMonsterState::Patrol);
+					}
+					It.RemoveCurrent();
+				}
+			}
 			MonsterExposeTimeMap.Empty();
 		}
 	}
@@ -80,6 +93,11 @@ void ULanternComponent::OnRep_bIsLanternOn()
 
 void ULanternComponent::UpdateDetectionShape(float ConeHeight, float ConeAngle)
 {
+	if (GetOwnerRole() != ROLE_Authority)
+	{
+		return;
+	}
+	
 	const FVector Direction = LanternLightComponent->GetForwardVector().GetSafeNormal();
 	const FVector Origin = LanternLightComponent->GetComponentLocation();
 		
@@ -176,7 +194,7 @@ void ULanternComponent::UpdateExposureTimes(TArray<AActor*> OverlappedActors, co
 		{
 			float& ExposureTime = MonsterExposeTimeMap.FindOrAdd(Monster);
 			ExposureTime += DeltaTime;
-			// Notify Monster
+			Monster->NotifyLightExposure(DeltaTime, ExposureTime, GetOwner()->GetActorLocation(), GetOwner());
 		}
 		// Cone 바깥이라면 노출 시간을 초기화
 		else if (MonsterExposeTimeMap.Contains(Monster))
@@ -188,8 +206,14 @@ void ULanternComponent::UpdateExposureTimes(TArray<AActor*> OverlappedActors, co
 	// 노출된 Actor가 더 이상 OverlappedActors에 없거나 유효하지 않으면 제거
 	for (auto It = MonsterExposeTimeMap.CreateIterator(); It; ++It)
 	{
+		AMonster* Monster = Cast<AMonster>(It.Key());
 		if (!IsValid(It.Key()) || !OverlappedActors.Contains(It.Key()))
 		{
+			// Handling Unexposed Monsters
+			if (IsValid(Monster) && Monster->GetMonsterState() == EMonsterState::Investigate)
+			{
+				Monster->SetMonsterState(EMonsterState::Patrol);
+			}
 			It.RemoveCurrent();
 		}
 	}
@@ -211,13 +235,16 @@ bool ULanternComponent::HasActorExposedByLight(const AActor* TargetActor, const 
 	}
 
 	FHitResult HitResult;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(GetOwner());
 	const bool bHit = GetWorld()->LineTraceSingleByChannel(
 		HitResult,
 		ConeOrigin,
 		TargetActor->GetActorLocation(),
-		ECC_Visibility
+		ECC_Visibility,
+		Params
 	);
 
 	// 몬스터와 라이트 사이에 장애물이 없고, 몬스터가 라이트의 범위 안에 있다면 노출
-	return bHit && HitResult.GetActor() == TargetActor;
+	return bHit && HitResult.GetActor()->IsA(AMonster::StaticClass());
 }

@@ -4,6 +4,7 @@
 #include "UnitBase.h"
 
 #include "StatComponent.h"
+#include "Interactable/OtherActors/Radars/RadarReturnComponent.h"
 
 AUnitBase::AUnitBase()
 {
@@ -12,6 +13,7 @@ AUnitBase::AUnitBase()
 	bReplicates = true;
 
 	StatComponent = CreateDefaultSubobject<UStatComponent>(TEXT("StatComponent"));
+	RadarReturnComponent = CreateDefaultSubobject<URadarReturnComponent>(TEXT("RardarReturn"));
 
 	Tags.Add(FName("Radar"));
 }
