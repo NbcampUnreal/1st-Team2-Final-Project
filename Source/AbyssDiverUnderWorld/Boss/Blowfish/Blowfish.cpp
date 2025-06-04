@@ -91,8 +91,6 @@ void ABlowfish::Explosion()
 	);
 
 	TArray<FOverlapResult> Overlaps;
-	FCollisionQueryParams Params;
-	Params.AddIgnoredActor(this); // 자기 자신은 제외
 
 	// 충돌 설정: Pawn 채널 탐지
 	GetWorld()->OverlapMultiByChannel(
