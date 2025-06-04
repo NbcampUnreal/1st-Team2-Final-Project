@@ -11,6 +11,7 @@
  * Local 3인칭 메시 : Channel 1
  * Other 3인칭 메시 : Channel 1, 2
  * Lantern Light : Channel 0, 2
+ * Other Lantern Light : Channel 0, 2
  * Directional Light : Channel 0, 1
  * Other Mesh : Channel 0
  *
