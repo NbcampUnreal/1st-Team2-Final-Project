@@ -264,9 +264,6 @@ protected:
 	FVector DamagedLocation;
 
 	FCollisionQueryParams Params;
-	FVector TargetLocation;
-	FVector TurnDirection;
-	float TurnTimer = 0.0f;
 	uint8 bIsTurning : 1 = false;
 
 private:
@@ -274,9 +271,12 @@ private:
 	uint8 CurrentPatrolPointIndex = 0;
 	uint8 bIsBiteAttackSuccess : 1;
 	uint8 bIsAttackCollisionOverlappedPlayer : 1;
-	FVector CachedSpawnLocation;
+	float TurnTimer = 0.0f;
 	float OriginDeceleration;
 	const float FourDirectionTraceDistance = 200.0f;
+	FVector TargetLocation;
+	FVector CachedSpawnLocation;
+	FVector TurnDirection;
 
 #pragma endregion
 
