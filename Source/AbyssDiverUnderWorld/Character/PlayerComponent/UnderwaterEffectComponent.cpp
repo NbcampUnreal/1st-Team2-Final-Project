@@ -7,6 +7,7 @@
 #include "Character/UnderwaterCharacter.h"
 #include "Components/AudioComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Logging/LogMacros.h"
 
 UUnderwaterEffectComponent::UUnderwaterEffectComponent()
 {
@@ -36,7 +37,7 @@ void UUnderwaterEffectComponent::BeginPlay()
 		
 		OwnerCharacter->OnEnvironmentStateChangedDelegate.AddDynamic(this, &UUnderwaterEffectComponent::OnEnvironmentStateChanged);
 
-		if (OwnerCharacter->IsLocallyControlled())
+		if (OwnerCharacter->IsLocallyControlled() && MovementSound)
 		{
 			MovementAudioComponent = UGameplayStatics::SpawnSoundAttached(
 				MovementSound,
@@ -45,6 +46,12 @@ void UUnderwaterEffectComponent::BeginPlay()
 				FVector::ZeroVector,
 				FRotator::ZeroRotator,
 				EAttachLocation::KeepRelativeOffset,
+				false,
+				0.0f,
+				1.0f,
+				0.0f,
+				nullptr,
+				nullptr,
 				false
 			);
 			MovementAudioComponent->SetAutoActivate(false);
@@ -54,7 +61,7 @@ void UUnderwaterEffectComponent::BeginPlay()
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("UUnderwaterFXComponent: Owner is not an AUnderwaterCharacter"));
+		UE_LOG(LogAbyssDiverCharacter, Error, TEXT("UUnderwaterFXComponent: Owner is not an AUnderwaterCharacter"));
 	}
 }
 
@@ -69,7 +76,10 @@ void UUnderwaterEffectComponent::TickComponent(float DeltaTime, ELevelTick TickT
 		return;
 	}
 
-	UpdateMovementEffects(DeltaTime);
+	if (OwnerCharacter && OwnerCharacter->IsLocallyControlled())
+	{
+		UpdateMovementEffects(DeltaTime);
+	}
 }
 
 void UUnderwaterEffectComponent::SetEnableEffect(bool bNewEnabled)
@@ -133,7 +143,6 @@ void UUnderwaterEffectComponent::PlayBreathEffects()
 	// @ToDo : Bubble Spawn 시점을 숨을 내쉬고 이후로 변경
 	if (BreathBubbleEffect)
 	{
-		UE_LOG(LogTemp,Display, TEXT("UUnderwaterEffectComponent::PlayBreathEffects - Spawning Breath Bubble Effect"));
 		const FVector SpawnLocation = OwnerCharacter->GetMesh1P()->GetSocketLocation(TEXT("head_bubble_socket"));
 		const FRotator SpawnRotation = OwnerCharacter->GetActorRotation();
 
@@ -164,9 +173,13 @@ void UUnderwaterEffectComponent::UpdateMovementEffects(float DeltaTime)
 
 	if (bCurrentMoving && MoveTimeAccumulator > MoveRequireTime)
 	{
-		if (!MovementAudioComponent->IsPlaying())
+		if (MovementAudioComponent && !MovementAudioComponent->IsPlaying())
 		{
 			MovementAudioComponent->Play();
+		}
+		else if (!IsValid(MovementAudioComponent))
+		{
+			UE_LOG(LogAbyssDiverCharacter, Error, TEXT("MovementAudioComponent is not valid"));
 		}
 	}
 }
