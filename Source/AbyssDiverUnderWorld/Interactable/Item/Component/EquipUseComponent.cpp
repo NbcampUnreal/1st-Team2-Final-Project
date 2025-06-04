@@ -292,7 +292,7 @@ void UEquipUseComponent::OnRep_CurrentAmmoInMag()
 	UPlayerStatusWidget* StatusWidget = HUDComp->GetPlayerStatusWidget();
 	if (!StatusWidget)
 	{
-		UE_LOG(LogTemp, Error, TEXT("❌ StatusWidget is NULL"));
+		LOGVN(Error, TEXT("❌ StatusWidget is NULL"));
 		return;
 	}
 
@@ -723,21 +723,24 @@ void UEquipUseComponent::ShowChargeBatteryWidget()
 	APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController());
 	if (!PC) return;
 
+
 	// UI 보이기
 	ChargeBatteryInstance->PlayVisibleAnimation(true);
 
 	// 커서 상태 저장 후 표시
-	bAlreadyCursorShowed = PC->bShowMouseCursor;
 	PC->bShowMouseCursor = true;
 
 	// 입력 모드 전환 (Game+UI)
-	FInputModeGameAndUI InputMode;
-	InputMode.SetWidgetToFocus(ChargeBatteryInstance->TakeWidget());
-	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-	InputMode.SetHideCursorDuringCapture(false);
+	if (!bBoostActive)
+	{
+		FInputModeGameAndUI InputMode;
+		InputMode.SetWidgetToFocus(ChargeBatteryInstance->TakeWidget());
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		InputMode.SetHideCursorDuringCapture(false);
 
-	PC->SetIgnoreLookInput(true);
-	PC->SetInputMode(InputMode);
+		PC->SetIgnoreLookInput(true);
+		PC->SetInputMode(InputMode);
+	}
 }
 
 void UEquipUseComponent::HideChargeBatteryWidget()
@@ -756,8 +759,7 @@ void UEquipUseComponent::HideChargeBatteryWidget()
 	ChargeBatteryInstance->PlayVisibleAnimation(false);
 
 	// 커서 복원
-	if (!bAlreadyCursorShowed)
-		PC->bShowMouseCursor = false;
+	PC->bShowMouseCursor = false;
 
 	// 입력 모드 복귀 (Game Only)
 	PC->SetIgnoreLookInput(false);
@@ -902,14 +904,18 @@ AADSpearGunBullet* UEquipUseComponent::SpawnHarpoon(const FVector& Loc, const FR
 		if (GM)
 		{
 			AADSpearGunBullet* SpawnedBullet = nullptr;
-			SpawnedBullet = GM->GetGenericPool()->GetObject<AADSpearGunBullet>();
-			if (SpawnedBullet)
+			AGenericPool* GenericPool = GM->GetGenericPool();
+			if (GenericPool)
 			{
-				SpawnedBullet->SetOwner(PC);
-				SpawnedBullet->InitializeTransform(Loc, Rot);
+				SpawnedBullet = GenericPool->GetObject<AADSpearGunBullet>();
+				if (SpawnedBullet)
+				{
+					SpawnedBullet->SetOwner(PC);
+					SpawnedBullet->InitializeTransform(Loc, Rot);
+				}
+				LOGIC(Log, TEXT("Projectile Id : %d"), SpawnedBullet->GetProjectileId());
+				return SpawnedBullet;
 			}
-			LOGIC(Log, TEXT("Projectile Id : %d"), SpawnedBullet->GetProjectileId());
-			return SpawnedBullet;
 		}
 	}
 	return nullptr;

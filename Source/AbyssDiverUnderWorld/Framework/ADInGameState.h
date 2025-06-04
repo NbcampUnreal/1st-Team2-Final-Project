@@ -223,6 +223,7 @@ public:
 	void SetSelectedLevel(EMapName LevelName) { SelectedLevelName = LevelName; }
 	EMapName GetSelectedLevel() const { return SelectedLevelName; }
 
+	UFUNCTION(BlueprintPure, Category = "ADInGameState")
 	AADDroneSeller* GetCurrentDroneSeller() const { return CurrentDroneSeller; }
 	FORCEINLINE void SetCurrentDroneSeller(AADDroneSeller* NewDroneSeller)
 	{

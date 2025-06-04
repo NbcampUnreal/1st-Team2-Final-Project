@@ -37,6 +37,9 @@ public:
 	UFUNCTION(NetMulticast, Unreliable)
 	void M_PlayDroneRisingSound();
 	void M_PlayDroneRisingSound_Implementation();
+	UFUNCTION(NetMulticast, Unreliable)
+	void M_PlayPhaseBGM(int32 PhaseNumber);
+	void M_PlayPhaseBGM_Implementation(int32 PhaseNumber);
 	
 	UFUNCTION()
 	void Activate();
@@ -83,6 +86,7 @@ protected:
 
 private:
 	FTimerHandle DestroyHandle;
+	int32 CachedSoundNumber;
 
 #pragma endregion
 
