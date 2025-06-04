@@ -79,7 +79,7 @@ private:
 
 	/** 수중에서 이동 소리 재생을 위한 오디오 컴포넌트. 이 컴포넌트는 MovementSoundThreshold보다 큰 속도로 이동할 때만 소리를 재생한다. */
 	UPROPERTY()
-	UAudioComponent* MovementAudioComponent;
+	TObjectPtr<UAudioComponent> MovementAudioComponent;
 
 	/** 수중에서 이동 소리 재생을 위한 사운드. 이 사운드는 MovementSoundThreshold보다 큰 속도로 이동할 때만 재생된다. */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|UnderwaterEffect")
