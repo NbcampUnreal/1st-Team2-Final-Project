@@ -86,6 +86,10 @@ void AADDrone::Interact_Implementation(AActor* InstigatorActor)
 				NextSeller->Activate();
 				GS->SetCurrentDroneSeller(NextSeller);
 			}
+			else
+			{
+				GS->SetCurrentDroneSeller(nullptr);
+			}
 		}
 	}
 	CurrentSeller->DisableSelling();
