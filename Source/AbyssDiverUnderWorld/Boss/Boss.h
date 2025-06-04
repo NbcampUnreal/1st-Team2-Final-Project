@@ -6,6 +6,7 @@
 #include "Character/UnitBase.h"
 #include "Boss.generated.h"
 
+class AEnhancedBossAIController;
 class UNiagaraSystem;
 enum class EBossPhysicsType : uint8;
 class UCameraControllerComponent;
@@ -22,7 +23,6 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
-	virtual void Tick(float DeltaTime) override;
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 
 #pragma region Method
@@ -263,6 +263,9 @@ protected:
 	UPROPERTY()
 	FVector DamagedLocation;
 
+	UPROPERTY()
+	TObjectPtr<AEnhancedBossAIController> EnhancedAIController;
+
 	FCollisionQueryParams Params;
 	uint8 bIsTurning : 1 = false;
 
@@ -302,6 +305,8 @@ public:
 	FORCEINLINE void SetCachedTarget(AUnderwaterCharacter* Target) { CachedTargetPlayer = Target; };
 	FORCEINLINE void InitCachedTarget() { CachedTargetPlayer = nullptr; };
 	FORCEINLINE FVector GetCachedSpawnLocation() const { return CachedSpawnLocation; }
+
+	FORCEINLINE void SetTargetLocation(const FVector& InTargetLocation) { TargetLocation = InTargetLocation; }
 
 #pragma endregion
 	

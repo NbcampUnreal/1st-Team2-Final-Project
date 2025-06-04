@@ -26,6 +26,8 @@ const FName ABoss::BossStateKey = "BossState";
 #pragma region 초기화 함수
 ABoss::ABoss()
 {
+	PrimaryActorTick.bCanEverTick = false;
+	
 	bIsAttackCollisionOverlappedPlayer = false;
 	BlackboardComponent = nullptr;
 	AIController = nullptr;
@@ -70,7 +72,9 @@ void ABoss::BeginPlay()
 	
 	AnimInstance = GetMesh()->GetAnimInstance();
 
+	// @TODO: 캐스팅하는 AIController 최소화 필요
 	AIController = Cast<ABossAIController>(GetController());
+	EnhancedAIController = Cast<AEnhancedBossAIController>(GetController());
 
 	if (IsValid(AIController))
 	{
@@ -86,11 +90,6 @@ void ABoss::BeginPlay()
 	OriginDeceleration = GetCharacterMovement()->BrakingDecelerationSwimming;
 
 	Params.AddIgnoredActor(this);
-}
-
-void ABoss::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
 }
 
 void ABoss::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
@@ -148,6 +147,24 @@ void ABoss::SetNewTargetLocation()
         {
             continue;
         }
+
+    	// 경로상의 중간 지점들도 NavMesh 내에 있는지 확인
+    	bool bPathClear = true;
+    	const int32 CheckPoints = 5;
+    	for (int32 i = 1; i <= CheckPoints; i++)
+    	{
+    		FVector CheckPoint = FMath::Lerp(CurrentLocation, PotentialTarget, (float)i / CheckPoints);
+    		if (!IsLocationOnNavMesh(CheckPoint))
+    		{
+    			bPathClear = false;
+    			break;
+    		}
+    	}
+        
+    	if (!bPathClear)
+    	{
+    		continue;
+    	}
         
         FHitResult HitResult;
         const bool bHit = GetWorld()->LineTraceSingleByChannel(
@@ -197,14 +214,29 @@ void ABoss::SetNewTargetLocation()
         return;
     }
     
-    // 모든 시도가 실패하면 NavMesh 내에서 가까운 점으로 지정한다.
+    /*// 모든 시도가 실패하면 NavMesh 내에서 가까운 점으로 지정한다.
     // 만약 재설정에 실패한 경우 강제로 재설정 지점을 지정한다.
     TargetLocation = GetRandomNavMeshLocation(CurrentLocation, MinTargetDistance * 3.0f);
     if (FVector::Dist(TargetLocation, CurrentLocation) <= KINDA_SMALL_NUMBER)
     {
         TargetLocation = CurrentLocation + Forward * MinTargetDistance;
-    }
-    
+    }*/
+
+	// 최후의 수단으로 가까운 NavMesh 지점 설정
+	TargetLocation = GetRandomNavMeshLocation(CurrentLocation, MinTargetDistance * 3.0f);
+	if (FVector::Dist(TargetLocation, CurrentLocation) <= KINDA_SMALL_NUMBER)
+	{
+		// NavMesh에서 안전한 지점 찾기
+		UNavigationSystemV1* NavSystem = UNavigationSystemV1::GetCurrent(GetWorld());
+		if (IsValid(NavSystem))
+		{
+			FNavLocation SafeLocation;
+			if (NavSystem->ProjectPointToNavigation(CurrentLocation, SafeLocation, FVector(500.0f, 500.0f, 500.0f)))
+			{
+				TargetLocation = SafeLocation.Location + Forward * MinTargetDistance;
+			}
+		}
+	}
     LOG(TEXT("Fallback target set: %s"), *TargetLocation.ToString());
 
 #if WITH_EDITOR
@@ -362,7 +394,7 @@ void ABoss::PerformNormalMovement(const float& InDeltaTime)
 
 void ABoss::StartTurn()
 {
-	bIsTurning = true;
+	EnhancedAIController->GetBlackboardComponent()->SetValueAsBool("bIsTurning", true);
     TurnTimer = 0.0f;
     
     // 3D 공간에서 가능한 방향들 탐색
@@ -394,51 +426,38 @@ void ABoss::StartTurn()
     // NavMesh를 벗어나지 않았고, 충돌이 발생하지 않는 방향을 목표 회전 값으로 저장한다.
     for (const FVector& Direction : PossibleDirections)
     {
-        const FVector Start = GetActorLocation();
+    	const FVector Start = GetActorLocation();
+    	const FVector End = Start + Direction * TraceDistance;
         
-        // 더 멀리까지 체크해서 지속적으로 이동 가능한 방향인지 확인
-        bool bDirectionViable = true;
-        for (float CheckDistance = TraceDistance; CheckDistance <= TraceDistance * 2.0f; CheckDistance += TraceDistance * 0.5f)
-        {
-            const FVector End = Start + Direction * CheckDistance;
-            
-            FHitResult HitResult;
-            const bool bPhysicalHit = GetWorld()->LineTraceSingleByChannel(
-                HitResult,
-                Start,
-                End,
-                ECC_Visibility,
-                Params
-            );
-            
-            const bool bNavMeshBlocked = !IsLocationOnNavMesh(End);
-            
-            if (bPhysicalHit || bNavMeshBlocked)
-            {
-                bDirectionViable = false;
-                break;
-            }
-        }
+    	FHitResult HitResult;
+    	bool bHit = GetWorld()->LineTraceSingleByChannel(
+			HitResult,
+			Start,
+			End,
+			ECC_Visibility,
+			Params
+		);
+    	
         
-        const FVector End = Start + Direction * TraceDistance;
-
-#if WITH_EDITOR
-        FColor DebugColor = bDirectionViable ? FColor::Green : FColor::Red;
-        DrawDebugLine(GetWorld(), Start, End, DebugColor, false, 1.0f, 0, 2.0f);
-#endif
+    	// 디버그 라인 표시 (더 오래 표시)
+    	DrawDebugLine(GetWorld(), Start, End, bHit ? FColor::Red : FColor::Green, false, 5.0f, 0, 5.0f);
         
-        if (bDirectionViable)
-        {
-            TurnDirection = Direction;
-            LOG(TEXT("Turn direction found: %s"), *Direction.ToString());
-            return;
-        }
+    	if (!bHit)
+    	{
+    		TurnDirection = Direction;
+    		
+    		// 즉시 한 번 회전 시도 (디버깅용)
+    		LOG(TEXT("Attempting immediate turn..."));
+    		
+    		return;
+    	}
     }
     
     // 모든 방향이 막혔으면 Nav Mesh 내에서 랜덤한 방향으로 목표 회전 값을 추출한다.
-    const FVector RandomNavMeshPoint = GetRandomNavMeshLocation(GetActorLocation(), WanderRadius);
-    TurnDirection = (RandomNavMeshPoint - GetActorLocation()).GetSafeNormal();
-    
+    /*const FVector RandomNavMeshPoint = GetRandomNavMeshLocation(GetActorLocation(), WanderRadius);
+    TurnDirection = (RandomNavMeshPoint - GetActorLocation()).GetSafeNormal();*/
+	// 모든 방향이 막혔으면 뒤로 돌기
+	TurnDirection = -GetActorForwardVector();
     LOG(TEXT("All directions blocked, turning toward random NavMesh point"));
 }
 
@@ -470,22 +489,45 @@ void ABoss::PerformTurn(const float& InDeltaTime)
 	TurnTimer += InDeltaTime;
     
 	// 목표 방향으로 회전
+	const FVector CurrentLocation = GetActorLocation();
 	const FRotator CurrentRotation = GetActorRotation();
 	const FRotator TargetRotation = TurnDirection.Rotation();
 	const FRotator NewRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, InDeltaTime, RotationInterpSpeed);
     
 	SetActorRotation(NewRotation);
-    
-	// 회전 중일 때에도 느린 이동속도로 이동한다. 자연스러운 연출을 위함이다.
-	const FVector NewLocation = GetActorLocation() + GetActorForwardVector() * StatComponent->MoveSpeed * 0.4f * InDeltaTime;
-	SetActorLocation(NewLocation, true);
+
+	// 회전 중 이동할 위치 검증
+	const float TurnMoveSpeed = StatComponent->MoveSpeed * 0.4f;
+	const FVector NextLocation = CurrentLocation + GetActorForwardVector() * TurnMoveSpeed * InDeltaTime;
+	
+	// 이동할 위치가 NavMesh 내에 있고 장애물이 없는지 확인
+	if (IsLocationOnNavMesh(NextLocation))
+	{
+		FHitResult HitResult;
+		const bool bHit = GetWorld()->LineTraceSingleByChannel(
+			HitResult,
+			CurrentLocation,
+			NextLocation,
+			ECC_Visibility,
+			Params
+		);
+        
+		if (!bHit)
+		{
+			const bool bLocationSet = SetActorLocation(NextLocation, true);
+			if (!bLocationSet)
+			{
+				LOG(TEXT("Failed to move during turn"));
+			}
+		}
+	}
     
 	// 목표 회전 값과 현재 회전 값의 차이가 15도 미만이거나
 	// 회전을 시작한 지 2.0초를 초과했다면 회전을 종료하고 목표 지점을 재설정한다.
 	const float AngleDifference = FMath::Abs(FMath::FindDeltaAngleDegrees(CurrentRotation.Yaw, TargetRotation.Yaw));
 	if (AngleDifference < 15.0f || TurnTimer > 2.0f)
 	{
-		bIsTurning = false;
+		EnhancedAIController->GetBlackboardComponent()->SetValueAsBool("bIsTurning", false);
 		TurnTimer = 0.0f;
         
 		SetNewTargetLocation();
@@ -539,13 +581,28 @@ bool ABoss::HasObstacleAhead()
 
 bool ABoss::IsLocationOnNavMesh(const FVector& InLocation) const
 {
-	UNavigationSystemV1* NavSystem = UNavigationSystemV1::GetCurrent(GetWorld());
+	/*UNavigationSystemV1* NavSystem = UNavigationSystemV1::GetCurrent(GetWorld());
 	if (!IsValid(NavSystem)) return false;
     
 	FNavLocation NavLocation;
 
 	// 액터가 NavMesh 상에 존재하는지에 대한 여부를 반환한다.
-	return NavSystem->ProjectPointToNavigation(InLocation, NavLocation, FVector(100.0f, 100.0f, 100.0f));
+	return NavSystem->ProjectPointToNavigation(InLocation, NavLocation, FVector(100.0f, 100.0f, 100.0f));*/
+	UNavigationSystemV1* NavSystem = UNavigationSystemV1::GetCurrent(GetWorld());
+	if (!IsValid(NavSystem)) return false;
+    
+	FNavLocation NavLocation;
+    
+	// 더 작은 검색 범위로 정확한 NavMesh 검증
+	const bool bOnNavMesh = NavSystem->ProjectPointToNavigation(InLocation, NavLocation, FVector(50.0f, 50.0f, 50.0f));
+    
+	if (!bOnNavMesh) return false;
+    
+	// 투영된 지점과 원래 지점의 거리가 너무 크면 NavMesh를 벗어난 것으로 판단
+	const float DistanceToProjected = FVector::Dist(InLocation, NavLocation.Location);
+	const float MaxAllowedDistance = 100.0f; // 허용 가능한 최대 거리
+    
+	return DistanceToProjected <= MaxAllowedDistance;
 }
 #pragma endregion
 

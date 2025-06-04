@@ -51,6 +51,11 @@ void UPlayerHUDComponent::BeginPlay()
 		}
 	}
 
+	if (ResultScreenWidgetClass)
+	{
+		ResultScreenWidget = CreateWidget<UResultScreen>(PlayerController, ResultScreenWidgetClass);
+	}
+
 	// 올바른 수정
 	if (APawn* Pawn = PlayerController->GetPawn())
 	{
@@ -153,6 +158,11 @@ void UPlayerHUDComponent::OnPossessedPawnChanged(APawn* OldPawn, APawn* NewPawn)
 	if (PlayerStatusWidget)
 	{
 		PlayerStatusWidget->AddToViewport();
+	}
+
+	if (ResultScreenWidgetClass && IsValid(ResultScreenWidget) == false)
+	{
+		ResultScreenWidget = CreateWidget<UResultScreen>(PlayerController, ResultScreenWidgetClass);
 	}
 
 	if (AUnderwaterCharacter* UWCharacter = Cast<AUnderwaterCharacter>(NewPawn))

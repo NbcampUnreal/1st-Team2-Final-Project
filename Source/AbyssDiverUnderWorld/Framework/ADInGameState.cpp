@@ -254,14 +254,23 @@ void AADInGameState::OnRep_CurrentDroneSeller()
 		return;
 	}
 
-	ToggleWidget->SetDroneTargetText(CurrentDroneSeller->GetTargetMoney());
-	ToggleWidget->SetDroneCurrentText(CurrentDroneSeller->GetCurrentMoney());
+	int32 TargetMoney = 0;
+	int32 CurrentMoney = 0;
 
-	CurrentDroneSeller->OnCurrentMoneyChangedDelegate.RemoveAll(ToggleWidget);
-	CurrentDroneSeller->OnCurrentMoneyChangedDelegate.AddUObject(ToggleWidget, &UToggleWidget::SetDroneCurrentText);
+	if (CurrentDroneSeller)
+	{
+		TargetMoney = CurrentDroneSeller->GetTargetMoney();
+		CurrentMoney = CurrentDroneSeller->GetCurrentMoney();
 
-	CurrentDroneSeller->OnTargetMoneyChangedDelegate.RemoveAll(ToggleWidget);
-	CurrentDroneSeller->OnTargetMoneyChangedDelegate.AddUObject(ToggleWidget, &UToggleWidget::SetDroneTargetText);
+		CurrentDroneSeller->OnCurrentMoneyChangedDelegate.RemoveAll(ToggleWidget);
+		CurrentDroneSeller->OnCurrentMoneyChangedDelegate.AddUObject(ToggleWidget, &UToggleWidget::SetDroneCurrentText);
+
+		CurrentDroneSeller->OnTargetMoneyChangedDelegate.RemoveAll(ToggleWidget);
+		CurrentDroneSeller->OnTargetMoneyChangedDelegate.AddUObject(ToggleWidget, &UToggleWidget::SetDroneTargetText);
+	}
+
+	ToggleWidget->SetDroneTargetText(TargetMoney);
+	ToggleWidget->SetDroneCurrentText(CurrentMoney);
 }
 
 void AADInGameState::ReceiveDataFromGameInstance()
