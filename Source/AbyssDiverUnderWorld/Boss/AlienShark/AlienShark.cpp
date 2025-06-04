@@ -62,23 +62,6 @@ void AAlienShark::Tick(float DeltaTime)
     SmoothMoveAlongSurface(DeltaTime);
 }
 
-FVector AAlienShark::GetRandomNavMeshLocation(const FVector& Origin, const float& Radius) const
-{
-    UNavigationSystemV1* NavSystem = UNavigationSystemV1::GetCurrent(GetWorld());
-    if (!IsValid(NavSystem))
-    {
-        return Origin;
-    }
-
-    FNavLocation NavLocation;
-    if (NavSystem->GetRandomReachablePointInRadius(Origin, Radius, NavLocation))
-    {
-        return NavLocation.Location;
-    }
-    
-    return Origin;
-}
-
 void AAlienShark::ReturnToNavMeshArea()
 {
     LOG(TEXT("Outside NavMesh! Returning to valid area"));
@@ -96,7 +79,7 @@ void AAlienShark::ReturnToNavMeshArea()
         SetActorLocation(ClosestNavLocation.Location, true);
         
         TargetLocation = FVector::ZeroVector;
-        SetNewTarget();
+        SetNewTargetLocation();
         
         LOG(TEXT("Returned to NavMesh at: %s"), *ClosestNavLocation.Location.ToString());
     }
@@ -228,98 +211,6 @@ void AAlienShark::StartTurn()
     LOG(TEXT("All directions blocked, turning toward random NavMesh point"));
 }
 
-void AAlienShark::SetNewTarget()
-{
-    const FVector CurrentLocation = GetActorLocation();
-    
-    // 현재 전방 방향을 기준으로 먼저 목표를 찾아보기 (자연스러운 이동을 위해)
-    const FVector Forward = GetActorForwardVector();
-    const FVector Right = GetActorRightVector();
-    const FVector Up = GetActorUpVector();
-    
-    // 전방 위주의 각도 범위로 제한하여 급격한 방향 전환 방지
-    for (uint8 Attempts = 0; Attempts < 15; Attempts++)
-    {
-        // 전방 위주로 각도 범위 제한 (-60도 ~ +60도)
-        const float HorizontalAngle = FMath::RandRange(-60.0f, 60.0f);
-        const float VerticalAngle = FMath::RandRange(-30.0f, 30.0f);
-
-        // Horizontal 및 Vertical 각도를 적용하여 새로운 방향 벡터를 생성한다.
-        FVector NewDirection = Forward.RotateAngleAxis(HorizontalAngle, Up);
-        NewDirection = NewDirection.RotateAngleAxis(VerticalAngle, Right);
-        NewDirection.Normalize();
-        
-        const float RandomDistance = FMath::RandRange(WanderRadius * 0.7f, WanderRadius * 1.3f);
-        FVector PotentialTarget = CurrentLocation + NewDirection * RandomDistance;
-        
-        // 생성한 지점이 NavMesh 지점이 아니라면 새로 생성한다.
-        if (!IsLocationOnNavMesh(PotentialTarget))
-        {
-            continue;
-        }
-        
-        FHitResult HitResult;
-        const bool bHit = GetWorld()->LineTraceSingleByChannel(
-            HitResult,
-            CurrentLocation,
-            PotentialTarget,
-            ECC_Visibility,
-            Params
-        );
-        
-        if (!bHit)
-        {
-            TargetLocation = PotentialTarget;
-            
-            LOG(TEXT("Forward-biased target set (Attempt %d): %s (Distance: %f)"), 
-                   Attempts + 1,
-                   *TargetLocation.ToString(), 
-                   FVector::Dist(CurrentLocation, TargetLocation));
-
-#if WITH_EDITOR
-            DrawDebugSphere(GetWorld(), TargetLocation, 50.0f, 12, FColor::Yellow, false, 3.0f, 0, 5.0f);
-            DrawDebugLine(GetWorld(), CurrentLocation, TargetLocation, FColor::Yellow, false, 3.0f, 0, 3.0f);
-#endif
-            
-            return;
-        }
-    }
-    
-    // 전방 우선 탐색 실패시 NavMesh 기반 탐색
-    const FVector NavMeshTarget = GetRandomNavMeshLocation(CurrentLocation, WanderRadius);
-
-    // NavMesh 목표지점 할당에 성공한 경우 얼리 리턴한다.
-    if (!(FVector::Dist(NavMeshTarget, CurrentLocation) <= KINDA_SMALL_NUMBER))
-    {
-        TargetLocation = NavMeshTarget;
-
-        LOG(TEXT("NavMesh target set: %s (Distance: %f)"), 
-               *TargetLocation.ToString(), 
-               FVector::Dist(CurrentLocation, TargetLocation));
-        
-#if WITH_EDITOR
-        // 디버그용 목표점 표시
-        DrawDebugSphere(GetWorld(), TargetLocation, 50.0f, 12, FColor::Cyan, false, 3.0f, 0, 5.0f);
-        DrawDebugLine(GetWorld(), CurrentLocation, TargetLocation, FColor::Cyan, false, 3.0f, 0, 3.0f);
-#endif
-        
-        return;
-    }
-    
-    // 모든 시도가 실패하면 NavMesh 내에서 가까운 점으로 지정한다.
-    // 만약 재설정에 실패한 경우 강제로 재설정 지점을 지정한다.
-    TargetLocation = GetRandomNavMeshLocation(CurrentLocation, MinTargetDistance * 3.0f);
-    if (FVector::Dist(TargetLocation, CurrentLocation) <= KINDA_SMALL_NUMBER)
-    {
-        TargetLocation = CurrentLocation + Forward * MinTargetDistance;
-    }
-    
-    LOG(TEXT("Fallback target set: %s"), *TargetLocation.ToString());
-
-#if WITH_EDITOR
-    DrawDebugSphere(GetWorld(), TargetLocation, 50.0f, 12, FColor::Red, false, 3.0f, 0, 5.0f);
-#endif
-}
 
 void AAlienShark::PerformNormalMovement(float DeltaTime)
 {
@@ -329,7 +220,7 @@ void AAlienShark::PerformNormalMovement(float DeltaTime)
     if (TargetLocation.IsZero() || !IsLocationOnNavMesh(TargetLocation))
     {
         LOG(TEXT("Target invalid or outside NavMesh, setting new target"));
-        SetNewTarget();
+        SetNewTargetLocation();
         return;
     }
     
@@ -339,7 +230,7 @@ void AAlienShark::PerformNormalMovement(float DeltaTime)
     if (DistanceToTarget < MinTargetDistance)
     {
         LOG(TEXT("Reached target (Distance: %f), setting new target"), DistanceToTarget);
-        SetNewTarget();
+        SetNewTargetLocation();
         return;
     }
     
@@ -358,7 +249,7 @@ void AAlienShark::PerformNormalMovement(float DeltaTime)
     if (AngleDifference > 120.0f || DistanceToTarget > WanderRadius * 2.0f)
     {
         LOG(TEXT("Target too far or behind, setting new target"));
-        SetNewTarget();
+        SetNewTargetLocation();
         return;
     }
     
@@ -492,7 +383,7 @@ void AAlienShark::PerformTurn(const float& DeltaTime)
         bIsTurning = false;
         TurnTimer = 0.0f;
         
-        SetNewTarget();
+        SetNewTargetLocation();
         
         LOG(TEXT("Turn completed, setting new target"));
     }

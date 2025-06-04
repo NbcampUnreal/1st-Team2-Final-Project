@@ -22,6 +22,7 @@
 
 const FName ABoss::BossStateKey = "BossState";
 
+#pragma region 초기화 함수
 ABoss::ABoss()
 {
 	bIsAttackCollisionOverlappedPlayer = false;
@@ -93,6 +94,118 @@ void ABoss::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifet
 
 	DOREPLIFETIME(ABoss, BossState);
 }
+#pragma endregion
+
+#pragma region 수중생물 AI 자체구현 함수
+FVector ABoss::GetRandomNavMeshLocation(const FVector& Origin, const float& Radius) const
+{
+	UNavigationSystemV1* NavSystem = UNavigationSystemV1::GetCurrent(GetWorld());
+	if (!IsValid(NavSystem))
+	{
+		return Origin;
+	}
+
+	FNavLocation NavLocation;
+	if (NavSystem->GetRandomReachablePointInRadius(Origin, Radius, NavLocation))
+	{
+		return NavLocation.Location;
+	}
+    
+	return Origin;
+}
+
+void ABoss::SetNewTargetLocation()
+{
+	const FVector CurrentLocation = GetActorLocation();
+    
+    // 현재 전방 방향을 기준으로 먼저 목표를 찾아보기 (자연스러운 이동을 위해)
+    const FVector Forward = GetActorForwardVector();
+    const FVector Right = GetActorRightVector();
+    const FVector Up = GetActorUpVector();
+    
+    // 전방 위주의 각도 범위로 제한하여 급격한 방향 전환 방지
+    for (uint8 Attempts = 0; Attempts < 15; Attempts++)
+    {
+        // 전방 위주로 각도 범위 제한 (-60도 ~ +60도)
+        const float HorizontalAngle = FMath::RandRange(-60.0f, 60.0f);
+        const float VerticalAngle = FMath::RandRange(-30.0f, 30.0f);
+
+        // Horizontal 및 Vertical 각도를 적용하여 새로운 방향 벡터를 생성한다.
+        FVector NewDirection = Forward.RotateAngleAxis(HorizontalAngle, Up);
+        NewDirection = NewDirection.RotateAngleAxis(VerticalAngle, Right);
+        NewDirection.Normalize();
+        
+        const float RandomDistance = FMath::RandRange(WanderRadius * 0.7f, WanderRadius * 1.3f);
+        FVector PotentialTarget = CurrentLocation + NewDirection * RandomDistance;
+        
+        // 생성한 지점이 NavMesh 지점이 아니라면 새로 생성한다.
+        if (!IsLocationOnNavMesh(PotentialTarget))
+        {
+            continue;
+        }
+        
+        FHitResult HitResult;
+        const bool bHit = GetWorld()->LineTraceSingleByChannel(
+            HitResult,
+            CurrentLocation,
+            PotentialTarget,
+            ECC_Visibility,
+            Params
+        );
+        
+        if (!bHit)
+        {
+            TargetLocation = PotentialTarget;
+            
+            LOG(TEXT("Forward-biased target set (Attempt %d): %s (Distance: %f)"), 
+                   Attempts + 1,
+                   *TargetLocation.ToString(), 
+                   FVector::Dist(CurrentLocation, TargetLocation));
+
+#if WITH_EDITOR
+            DrawDebugSphere(GetWorld(), TargetLocation, 50.0f, 12, FColor::Yellow, false, 3.0f, 0, 5.0f);
+            DrawDebugLine(GetWorld(), CurrentLocation, TargetLocation, FColor::Yellow, false, 3.0f, 0, 3.0f);
+#endif
+            
+            return;
+        }
+    }
+    
+    // 전방 우선 탐색 실패시 NavMesh 기반 탐색
+    const FVector NavMeshTarget = GetRandomNavMeshLocation(CurrentLocation, WanderRadius);
+
+    // NavMesh 목표지점 할당에 성공한 경우 얼리 리턴한다.
+    if (!(FVector::Dist(NavMeshTarget, CurrentLocation) <= KINDA_SMALL_NUMBER))
+    {
+        TargetLocation = NavMeshTarget;
+
+        LOG(TEXT("NavMesh target set: %s (Distance: %f)"), 
+               *TargetLocation.ToString(), 
+               FVector::Dist(CurrentLocation, TargetLocation));
+        
+#if WITH_EDITOR
+        // 디버그용 목표점 표시
+        DrawDebugSphere(GetWorld(), TargetLocation, 50.0f, 12, FColor::Cyan, false, 3.0f, 0, 5.0f);
+        DrawDebugLine(GetWorld(), CurrentLocation, TargetLocation, FColor::Cyan, false, 3.0f, 0, 3.0f);
+#endif
+        
+        return;
+    }
+    
+    // 모든 시도가 실패하면 NavMesh 내에서 가까운 점으로 지정한다.
+    // 만약 재설정에 실패한 경우 강제로 재설정 지점을 지정한다.
+    TargetLocation = GetRandomNavMeshLocation(CurrentLocation, MinTargetDistance * 3.0f);
+    if (FVector::Dist(TargetLocation, CurrentLocation) <= KINDA_SMALL_NUMBER)
+    {
+        TargetLocation = CurrentLocation + Forward * MinTargetDistance;
+    }
+    
+    LOG(TEXT("Fallback target set: %s"), *TargetLocation.ToString());
+
+#if WITH_EDITOR
+    DrawDebugSphere(GetWorld(), TargetLocation, 50.0f, 12, FColor::Red, false, 3.0f, 0, 5.0f);
+#endif
+}
 
 bool ABoss::IsLocationOnNavMesh(const FVector& InLocation) const
 {
@@ -104,7 +217,9 @@ bool ABoss::IsLocationOnNavMesh(const FVector& InLocation) const
 	// 액터가 NavMesh 상에 존재하는지에 대한 여부를 반환한다.
 	return NavSystem->ProjectPointToNavigation(InLocation, NavLocation, FVector(100.0f, 100.0f, 100.0f));
 }
+#pragma endregion
 
+#pragma region 보스 상태 관련 함수
 void ABoss::SetCharacterMovementSetting(const float& InBrakingDecelerationSwimming, const float& InMaxSwimSpeed)
 {
 	if (!IsValid(GetCharacterMovement())) return;
@@ -130,28 +245,9 @@ void ABoss::SetBossState(EBossState State)
 	BossState = State;
 	BlackboardComponent->SetValueAsEnum(BossStateKey, static_cast<uint8>(BossState));
 }
+#pragma endregion
 
-void ABoss::LaunchPlayer(AUnderwaterCharacter* Player, const float& Power) const
-{
-	// 플레이어를 밀치는 로직
-	const FVector PushDirection = (Player->GetActorLocation() - GetActorLocation()).GetSafeNormal();
-	const float PushStrength = Power;
-	const FVector PushForce = PushDirection * PushStrength;
-	
-	// 물리 시뮬레이션이 아닌 경우 LaunchCharacter 사용
-	Player->LaunchCharacter(PushForce, false, false);
-
-	// 0.5초 후 캐릭터의 원래 움직임 복구
-	FTimerHandle TimerHandle;
-	GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this, Player]()
-	{
-		if (IsValid(Player))
-		{
-			Player->GetCharacterMovement()->SetMovementMode(MOVE_Swimming);	
-		}
-	}, 0.5f, false);
-}
-
+#pragma region  TakeDamage, Death
 float ABoss::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator,
                         AActor* DamageCauser)
 {
@@ -227,7 +323,29 @@ void ABoss::OnDeath()
 	// AIController 작동 중지
 	AIController->UnPossess();
 }
+#pragma endregion
 
+#pragma region 보스 유틸 함수
+void ABoss::LaunchPlayer(AUnderwaterCharacter* Player, const float& Power) const
+{
+	// 플레이어를 밀치는 로직
+	const FVector PushDirection = (Player->GetActorLocation() - GetActorLocation()).GetSafeNormal();
+	const float PushStrength = Power;
+	const FVector PushForce = PushDirection * PushStrength;
+	
+	// 물리 시뮬레이션이 아닌 경우 LaunchCharacter 사용
+	Player->LaunchCharacter(PushForce, false, false);
+
+	// 0.5초 후 캐릭터의 원래 움직임 복구
+	FTimerHandle TimerHandle;
+	GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this, Player]()
+	{
+		if (IsValid(Player))
+		{
+			Player->GetCharacterMovement()->SetMovementMode(MOVE_Swimming);	
+		}
+	}, 0.5f, false);
+}
 
 void ABoss::RotationToTarget(AActor* Target)
 {
@@ -240,10 +358,10 @@ void ABoss::RotationToTarget(AActor* Target)
 	SetActorRotation(NewRotation);
 }
 
-void ABoss::RotationToTarget(const FVector& TargetLocation)
+void ABoss::RotationToTarget(const FVector& InTargetLocation)
 {
 	const FRotator CurrentRotation = GetActorRotation();
-	const FRotator TargetRotation = (TargetLocation - GetActorLocation()).Rotation();
+	const FRotator TargetRotation = (InTargetLocation - GetActorLocation()).Rotation();
 	const FRotator NewRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, GetWorld()->GetDeltaSeconds(), RotationInterpSpeed);
 	
 	SetActorRotation(NewRotation);
@@ -391,35 +509,19 @@ FVector ABoss::GetNextPatrolPoint()
 
 	for (uint8 i = 0; i < MaxTries; ++i)
 	{
-		bool bFound = NavSys->GetRandomReachablePointInRadius(CurrentLocation, MaxPatrolDistance, RandomNavLocation);
+		const bool bFound = NavSys->GetRandomReachablePointInRadius(CurrentLocation, MaxPatrolDistance, RandomNavLocation);
 
 		if (bFound)
 		{
-			const FVector TargetLocation = RandomNavLocation.Location;
+			const FVector NewTargetLocation = RandomNavLocation.Location;
 
-			if (FVector::Distance(CurrentLocation, TargetLocation) > MinPatrolDistance)
+			if (FVector::Distance(CurrentLocation, NewTargetLocation) > MinPatrolDistance)
 			{
-				return TargetLocation;
+				return NewTargetLocation;
 			}
 		}	
 	}
 
 	return GetActorLocation();
-}
-
-#pragma region Getter, Setter
-
-const FVector ABoss::GetTargetPointLocation() const
-{
-	if (!PatrolPoints.IsValidIndex(CurrentPatrolPointIndex)) return FVector::ZeroVector;
-	
-	return PatrolPoints[CurrentPatrolPointIndex]->GetActorLocation();
-}
-
-AActor* ABoss::GetTargetPoint()
-{
-	if (!PatrolPoints.IsValidIndex(CurrentPatrolPointIndex)) return nullptr;
-	
-	return PatrolPoints[CurrentPatrolPointIndex];
 }
 #pragma endregion

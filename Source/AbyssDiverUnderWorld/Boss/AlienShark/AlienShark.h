@@ -21,9 +21,7 @@ public:
 	void StartTurn();
 	void PerformTurn(const float& DeltaTime);
 	void PerformNormalMovement(float DeltaTime);
-	void SetNewTarget();
 	void SmoothMoveAlongSurface(const float& InDeltaTime);
-	FVector GetRandomNavMeshLocation(const FVector& Origin, const float& Radius) const;
 	void ReturnToNavMeshArea();
 	
 protected:
@@ -35,21 +33,11 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Stat")
 	float RotationSpeed = 1.f; 
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
-	FVector TargetLocation;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
-	float WanderRadius = 1300.0f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
-	float MinTargetDistance = 100.0f;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Navigation")
 	float NavMeshCheckInterval = 0.5f;
 
 private:
-	FCollisionQueryParams Params;
 	const int32 MaxIterations = 6;
 	const float AngleStep = 30.0f;
 	const float FourDirectionTraceDistance = 200.0f;

@@ -27,6 +27,9 @@ protected:
 
 #pragma region Method
 public:
+	FVector GetRandomNavMeshLocation(const FVector& Origin, const float& Radius) const;
+	void SetNewTargetLocation();
+	
 	/** 현재 액터가 NavMesh 상에 존재하는지 확인하는 함수
 	 * @param InLocation - 검사할 위치
 	 * @return NavMesh 상에 존재하는 경우 true, 그렇지 않은 경우 false 반환
@@ -69,7 +72,7 @@ public:
 
 	/** 보스를 타겟 방향으로 회전시키는 함수 */
 	virtual void RotationToTarget(AActor* Target);
-	virtual void RotationToTarget(const FVector& TargetLocation);
+	virtual void RotationToTarget(const FVector& InTargetLocation);
 
 	/** 보스의 공격 시 애니메이션 재생*/
 	virtual void Attack();
@@ -170,6 +173,12 @@ public:
 	float ChaseAccumulatedTime = 0.0f;
 	
 protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	float MinTargetDistance = 100.0f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	float WanderRadius = 1300.0f;
+	
 	UPROPERTY(EditDefaultsOnly, Category = "Boss|Stat")
 	uint8 bIsAttackInfinite : 1;
 	
@@ -203,6 +212,9 @@ protected:
 	UPROPERTY()
 	FVector DamagedLocation;
 
+	FCollisionQueryParams Params;
+	FVector TargetLocation;
+	
 private:
 	static const FName BossStateKey;
 	uint8 CurrentPatrolPointIndex = 0;
@@ -236,9 +248,6 @@ public:
 	FORCEINLINE void InitCachedTarget() { CachedTargetPlayer = nullptr; };
 	FORCEINLINE FVector GetCachedSpawnLocation() const { return CachedSpawnLocation; }
 
-	AActor* GetTargetPoint();
-	const FVector GetTargetPointLocation() const;
-	
 #pragma endregion
 	
 };
