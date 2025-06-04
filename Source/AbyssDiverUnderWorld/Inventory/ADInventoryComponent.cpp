@@ -84,6 +84,7 @@ void UADInventoryComponent::BeginPlay()
 		DataTableSubsystem = GI->GetSubsystem<UDataTableSubsystem>();
 		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
 	}
+
 }
 
 void UADInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -344,6 +345,8 @@ void UADInventoryComponent::InventoryInitialize()
 
 	CurrentDroneSeller->OnTargetMoneyChangedDelegate.RemoveAll(ToggleWidgetInstance);
 	CurrentDroneSeller->OnTargetMoneyChangedDelegate.AddUObject(ToggleWidgetInstance, &UToggleWidget::SetDroneTargetText);
+
+
 }
 
 bool UADInventoryComponent::AddInventoryItem(const FItemData& ItemData)
@@ -557,6 +560,11 @@ void UADInventoryComponent::CopyInventoryFrom(UADInventoryComponent* Source)
 	Source->TotalWeight = TotalWeight;
 	// FastArray는 복사 후 MarkItemDirty 필요
 	InventoryMarkArrayDirty();
+
+	FTimerHandle UpdateDelayTimerHandle;
+	float UpdateDelay = 0.2f;
+	GetWorld()->GetTimerManager().SetTimer(UpdateDelayTimerHandle, this, &UADInventoryComponent::InventoryUIUpdate, UpdateDelay, false);
+
 }
 
 void UADInventoryComponent::InventoryMarkArrayDirty()
