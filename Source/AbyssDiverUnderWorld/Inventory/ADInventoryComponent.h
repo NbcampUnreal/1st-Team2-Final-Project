@@ -155,7 +155,6 @@ private:
 	TObjectPtr<UToggleWidget> ToggleWidgetInstance;
 
 	int32 WeightMax;
-	uint8 bInventoryWidgetShowed : 1;
 	uint8 bCanUseItem : 1;
 	uint8 bIsWeapon : 1 = false;
 

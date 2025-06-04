@@ -40,6 +40,8 @@ void UChargeBatteryWidget::NativeConstruct()
 	BatteryNumText->SetVisibility(ESlateVisibility::Hidden);
 	BatteryAmountText->SetVisibility(ESlateVisibility::Hidden);
 
+	bChargeBatteryWidgetShowed = false;
+
 	float InitializeRepeatDelay = 2.0f;
 	GetWorld()->GetTimerManager().SetTimer(InitialzieTimerHandle, this, &UChargeBatteryWidget::InitializeChargeBatteryWidget, InitializeRepeatDelay, true);
 }
@@ -47,8 +49,7 @@ void UChargeBatteryWidget::NativeConstruct()
 void UChargeBatteryWidget::NativeDestruct()
 {
 	Super::NativeDestruct();
-	GetWorld()->GetTimerManager().ClearTimer(IncreaseTimerHandle);
-	GetWorld()->GetTimerManager().ClearTimer(InitialzieTimerHandle);
+	GetWorld()->GetTimerManager().ClearAllTimersForObject(this);
 	LOGB(Warning, TEXT("ChargeBatteryWidget Destruct"));
 }
 
@@ -187,18 +188,29 @@ void UChargeBatteryWidget::PlayVisibleAnimation(bool bIsVisible)
 {
 	if (bIsVisible)
 	{
-		SetVisibility(ESlateVisibility::Visible);
-		PlayAnimation(FadeIn);
+		if (!bChargeBatteryWidgetShowed)
+		{
+			GetWorld()->GetTimerManager().ClearTimer(HiddenTimerHandle);
+			SetVisibility(ESlateVisibility::Visible);
+			bChargeBatteryWidgetShowed = true;
+			if (FadeIn && !IsAnimationPlaying(FadeIn))
+				PlayAnimation(FadeIn);
+		}
 	}
 	else
 	{
-		PlayAnimation(FadeOut);
+		if (bChargeBatteryWidgetShowed)
+		{
+			if (FadeOut && !IsAnimationPlaying(FadeOut))
+				PlayAnimation(FadeOut);
 
-		FTimerHandle HiddenTimerHandle;
-		float HiddenDelay = FadeOut->GetEndTime();
-		GetWorld()->GetTimerManager().SetTimer(HiddenTimerHandle, 
-			FTimerDelegate::CreateLambda([this]() { SetVisibility(ESlateVisibility::Hidden); 
-		}), HiddenDelay, false);
+			float HiddenDelay = FadeOut->GetEndTime();
+			GetWorld()->GetTimerManager().SetTimer(HiddenTimerHandle, 
+				FTimerDelegate::CreateLambda([this]() { 
+					SetVisibility(ESlateVisibility::Hidden); 
+					bChargeBatteryWidgetShowed = false;
+			}), HiddenDelay, false);
+		}
 	}
 }
 

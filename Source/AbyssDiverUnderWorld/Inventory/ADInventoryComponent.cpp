@@ -35,9 +35,7 @@ UADInventoryComponent::UADInventoryComponent() :
 	TotalPrice(0),
 	WeightMax(100),
 	CurrentEquipmentSlotIndex(INDEX_NONE),
-	bInventoryWidgetShowed(false), 
 	CurrentEquipmentInstance(nullptr),
-	bAlreadyCursorShowed(false),
 	ToggleWidgetInstance(nullptr),
 	bCanUseItem(true),
 	DataTableSubsystem(nullptr),
@@ -426,7 +424,6 @@ void UADInventoryComponent::HideInventory()
 	APlayerController* PC = Cast<APlayerController>(Cast<AADPlayerState>(GetOwner())->GetPlayerController());
 	if (!PC || !ToggleWidgetInstance) return;
 
-	bInventoryWidgetShowed = false;
 	ToggleWidgetInstance->PlaySlideAnimation(false);
 
 	PC->bShowMouseCursor = false;
