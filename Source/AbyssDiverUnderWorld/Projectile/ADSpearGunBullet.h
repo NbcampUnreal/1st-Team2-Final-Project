@@ -83,6 +83,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SetBulletType(ESpearGunType NewBulletType) { BulletType = NewBulletType; }; 
 
+	USoundSubsystem* GetSoundSubsystem();
+
 #pragma endregion
 	
 };
