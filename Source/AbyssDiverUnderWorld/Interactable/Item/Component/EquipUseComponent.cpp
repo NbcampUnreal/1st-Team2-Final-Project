@@ -902,14 +902,18 @@ AADSpearGunBullet* UEquipUseComponent::SpawnHarpoon(const FVector& Loc, const FR
 		if (GM)
 		{
 			AADSpearGunBullet* SpawnedBullet = nullptr;
-			SpawnedBullet = GM->GetGenericPool()->GetObject<AADSpearGunBullet>();
-			if (SpawnedBullet)
+			AGenericPool* GenericPool = GM->GetGenericPool();
+			if (GenericPool)
 			{
-				SpawnedBullet->SetOwner(PC);
-				SpawnedBullet->InitializeTransform(Loc, Rot);
+				SpawnedBullet = GenericPool->GetObject<AADSpearGunBullet>();
+				if (SpawnedBullet)
+				{
+					SpawnedBullet->SetOwner(PC);
+					SpawnedBullet->InitializeTransform(Loc, Rot);
+				}
+				LOGIC(Log, TEXT("Projectile Id : %d"), SpawnedBullet->GetProjectileId());
+				return SpawnedBullet;
 			}
-			LOGIC(Log, TEXT("Projectile Id : %d"), SpawnedBullet->GetProjectileId());
-			return SpawnedBullet;
 		}
 	}
 	return nullptr;

@@ -37,6 +37,10 @@ void AADInGameMode::BeginPlay()
 	{
 		UDataTableSubsystem* DataTableSubsystem = GetGameInstance()->GetSubsystem<UDataTableSubsystem>();
 
+		SpearGunBulletPool = GetWorld()->SpawnActor<AGenericPool>();
+		SpearGunBulletPool->InitPool<AADSpearGunBullet>(10, BulletClass);
+		LOGVN(Warning, TEXT("SpawnSpearGunBulletPool"));
+
 		int32 LastDroneNumber = 0;
 		const int32 FirstDroneNumber = 1;
 		for (AADDrone* Drone : TActorRange<AADDrone>(GetWorld()))
@@ -66,9 +70,6 @@ void AADInGameMode::BeginPlay()
 			}
 		}
 	}
-	SpearGunBulletPool = GetWorld()->SpawnActor<AGenericPool>();
-	SpearGunBulletPool->InitPool<AADSpearGunBullet>(10, BulletClass);
-	LOGVN(Warning, TEXT("SpawnSpearGunBulletPool"));
 }
 
 void AADInGameMode::PostLogin(APlayerController* NewPlayer)
