@@ -3,7 +3,6 @@
 #include "AbyssDiverUnderWorld.h"
 #include "Framework/ADGameInstance.h"
 
-#include "Components/AudioComponent.h"
 #include "Kismet/GameplayStatics.h"
 
 void USoundSubsystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -108,6 +107,9 @@ void USoundSubsystem::Init(const int32 InitialPoolCount)
 	ActivatedBGMComponents.Empty(InitialPoolCount);
 	ActivatedSFXComponents.Empty(InitialPoolCount);
 
+	AudioComponentWithIdMap.Empty(InitialPoolCount);
+	AudioIdWithComponentMap.Empty(InitialPoolCount);
+
 	DeactivatedComponents.Empty();
 
 	for (int32 i = 0; i < InitialPoolCount; ++i)
@@ -116,59 +118,59 @@ void USoundSubsystem::Init(const int32 InitialPoolCount)
 	}
 }
 
-void USoundSubsystem::Play2D(const ESFX& SFXType, const float& Volume)
+int32 USoundSubsystem::Play2D(const ESFX& SFXType, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve)
 {
-	Play2DInternal(SFXData[int32(SFXType)]->Sound, false, false, Volume);
+	return Play2DInternal(SFXData[int32(SFXType)]->Sound, false, false, Volume, bShouldUseFadeIn, FadeInDuration, FadeInCurve);
 }
 
-void USoundSubsystem::Play2D(const ESFX_Monster& SFXType, const float& Volume)
+int32 USoundSubsystem::Play2D(const ESFX_Monster& SFXType, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve)
 {
-	Play2DInternal(SFXMonsterData[int32(SFXType)]->Sound, false, false, Volume);
+	return Play2DInternal(SFXMonsterData[int32(SFXType)]->Sound, false, false, Volume, bShouldUseFadeIn, FadeInDuration, FadeInCurve);
 }
 
-void USoundSubsystem::Play2D(const ESFX_UI& SFXType, const float& Volume)
+int32 USoundSubsystem::Play2D(const ESFX_UI& SFXType, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve)
 {
-	Play2DInternal(SFXUIData[int32(SFXType)]->Sound, false, false, Volume);
+	return Play2DInternal(SFXUIData[int32(SFXType)]->Sound, false, false, Volume, bShouldUseFadeIn, FadeInDuration, FadeInCurve);
 }
 
-void USoundSubsystem::PlayBGM(const ESFX_BGM& SFXType, const float& Volume)
+int32 USoundSubsystem::PlayBGM(const ESFX_BGM& SFXType, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve)
 {
-	Play2DInternal(SFXBGMData[int32(SFXType)]->Sound, true, false, Volume);
+	return Play2DInternal(SFXBGMData[int32(SFXType)]->Sound, true, false, Volume, bShouldUseFadeIn, FadeInDuration, FadeInCurve);
 }
 
-void USoundSubsystem::PlayAmbient(const ESFX_Ambient& SFXType, const float& Volume)
+int32 USoundSubsystem::PlayAmbient(const ESFX_Ambient& SFXType, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve)
 {
-	Play2DInternal(SFXBGMData[int32(SFXType)]->Sound, false, true, Volume);
+	return Play2DInternal(SFXBGMData[int32(SFXType)]->Sound, false, true, Volume, bShouldUseFadeIn, FadeInDuration, FadeInCurve);
 }
 
-void USoundSubsystem::PlayAt(const ESFX& SFXType, const FVector& Position, const float& Volume)
+int32 USoundSubsystem::PlayAt(const ESFX& SFXType, const FVector& Position, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve)
 {
-	Play3DInternal(SFXData[int32(SFXType)]->Sound, Position, nullptr, Volume);
+	return Play3DInternal(SFXData[int32(SFXType)]->Sound, Position, nullptr, Volume, bShouldUseFadeIn, FadeInDuration, FadeInCurve);
 }
 
-void USoundSubsystem::PlayAt(const ESFX_Monster& SFXType, const FVector& Position, const float& Volume)
+int32 USoundSubsystem::PlayAt(const ESFX_Monster& SFXType, const FVector& Position, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve)
 {
-	Play3DInternal(SFXMonsterData[int32(SFXType)]->Sound, Position, nullptr, Volume);
+	return Play3DInternal(SFXMonsterData[int32(SFXType)]->Sound, Position, nullptr, Volume, bShouldUseFadeIn, FadeInDuration, FadeInCurve);
 }
 
-void USoundSubsystem::PlayAt(const ESFX_UI& SFXType, const FVector& Position, const float& Volume)
+int32 USoundSubsystem::PlayAt(const ESFX_UI& SFXType, const FVector& Position, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve)
 {
-	Play3DInternal(SFXUIData[int32(SFXType)]->Sound, Position, nullptr, Volume);
+	return Play3DInternal(SFXUIData[int32(SFXType)]->Sound, Position, nullptr, Volume, bShouldUseFadeIn, FadeInDuration, FadeInCurve);
 }
 
-void USoundSubsystem::PlayAttach(const ESFX& SFXType, USceneComponent* AttachComp, const float& Volume)
+int32 USoundSubsystem::PlayAttach(const ESFX& SFXType, USceneComponent* AttachComp, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve)
 {
-	Play3DInternal(SFXData[int32(SFXType)]->Sound, FVector::ZeroVector, AttachComp, Volume);
+	return Play3DInternal(SFXData[int32(SFXType)]->Sound, FVector::ZeroVector, AttachComp, Volume, bShouldUseFadeIn, FadeInDuration, FadeInCurve);
 }
 
-void USoundSubsystem::PlayAttach(const ESFX_Monster& SFXType, USceneComponent* AttachComp, const float& Volume)
+int32 USoundSubsystem::PlayAttach(const ESFX_Monster& SFXType, USceneComponent* AttachComp, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve)
 {
-	Play3DInternal(SFXMonsterData[int32(SFXType)]->Sound, FVector::ZeroVector, AttachComp, Volume);
+	return Play3DInternal(SFXMonsterData[int32(SFXType)]->Sound, FVector::ZeroVector, AttachComp, Volume, bShouldUseFadeIn, FadeInDuration, FadeInCurve);
 }
 
-void USoundSubsystem::PlayAttach(const ESFX_UI& SFXType, USceneComponent* AttachComp, const float& Volume)
+int32 USoundSubsystem::PlayAttach(const ESFX_UI& SFXType, USceneComponent* AttachComp, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve)
 {
-	Play3DInternal(SFXUIData[int32(SFXType)]->Sound, FVector::ZeroVector, AttachComp, Volume);
+	return Play3DInternal(SFXUIData[int32(SFXType)]->Sound, FVector::ZeroVector, AttachComp, Volume, bShouldUseFadeIn, FadeInDuration, FadeInCurve);
 }
 
 void USoundSubsystem::StopAllBGM()
@@ -193,6 +195,50 @@ void USoundSubsystem::StopAllAmbient()
 	{
 		ActivatedAmbient.Key->Stop();
 	}
+}
+
+void USoundSubsystem::StopAudio(const int32& AudioId, const bool& bShouldUseFadeOut, const float& FadeOutDuration, const float& FadeOutGoalVolume, const EAudioFaderCurve& FadeOutCurve)
+{
+	if (AudioComponentWithIdMap.Contains(AudioId) == false)
+	{
+		return;
+	}
+
+	UAudioComponent* AudioComponentWithId = AudioComponentWithIdMap[AudioId];
+	if (IsValid(AudioComponentWithId) == false)
+	{
+		return;
+	}
+
+	if (bShouldUseFadeOut)
+	{
+		AudioComponentWithId->FadeOut(FadeOutDuration, FadeOutGoalVolume, FadeOutCurve);
+	}
+	else
+	{
+		AudioComponentWithId->Stop();
+	}
+}
+
+bool USoundSubsystem::IsPlaying(const int32& AudioId)
+{
+	if (AudioComponentWithIdMap.Contains(AudioId) == false)
+	{
+		return false;
+	}
+	
+	return AudioComponentWithIdMap[AudioId]->IsPlaying();;
+}
+
+float USoundSubsystem::GetAudioTotalDuration(const int32& AudioId) const
+{
+	if (AudioComponentWithIdMap.Contains(AudioId) == false)
+	{
+		return 0.0f;
+	}
+
+	return AudioComponentWithIdMap[AudioId]->Sound->GetDuration();
+
 }
 
 void USoundSubsystem::ChangeMasterVolume(const float& NewMasterVolume)
@@ -313,6 +359,11 @@ void USoundSubsystem::OnAudioFinished(UAudioComponent* FinishedAudio)
 	if (::IsValid(FinishedAudio) == false || FinishedAudio->IsValidLowLevel() == false)
 	{
 		LOGV(Warning, TEXT("Trying to Deactivated, But Not Valid"));
+
+		int32 OldId = AudioIdWithComponentMap[FinishedAudio];
+		AudioComponentWithIdMap.Remove(OldId);
+		AudioIdWithComponentMap.Remove(FinishedAudio);
+
 		return;
 	}
 	
@@ -328,9 +379,14 @@ void USoundSubsystem::OnAudioFinished(UAudioComponent* FinishedAudio)
 	FinishedAudio->UnregisterComponent();
 }
 
-void USoundSubsystem::Play2DInternal(USoundBase* SoundAsset, const bool& bIsBGM, const bool& bIsAmbient, const float& Volume)
+int32 USoundSubsystem::Play2DInternal(USoundBase* SoundAsset, const bool& bIsBGM, const bool& bIsAmbient, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve)
 {
 	TObjectPtr<UAudioComponent> NewAudio = GetNewAudio();
+	if (NewAudio == nullptr)
+	{
+		return INDEX_NONE;
+	}
+
 	NewAudio->RegisterComponent();
 
 	float NewVolume = MasterVolume * Volume;
@@ -362,16 +418,16 @@ void USoundSubsystem::Play2DInternal(USoundBase* SoundAsset, const bool& bIsBGM,
 	NewAudio->bAllowSpatialization = false;
 	NewAudio->SetUISound(true);
 
-	PlayAudio(NewAudio);
+	return PlayAudio(NewAudio, bShouldUseFadeIn, FadeInDuration, FadeInCurve);
 }
 
-void USoundSubsystem::Play3DInternal(USoundBase* SoundAsset, const FVector& Position, USceneComponent* AttachComp, const float& Volume)
+int32 USoundSubsystem::Play3DInternal(USoundBase* SoundAsset, const FVector& Position, USceneComponent* AttachComp, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve)
 {
 	TObjectPtr<UAudioComponent> NewAudio = GetNewAudio();
 	if (NewAudio == nullptr || IsValid(NewAudio) == false || NewAudio->IsValidLowLevel() == false)
 	{
 		LOGV(Error, TEXT("Not Valid"));
-		return;
+		return INDEX_NONE;
 	}
 
 	float NewVolume = MasterVolume * Volume;
@@ -396,36 +452,67 @@ void USoundSubsystem::Play3DInternal(USoundBase* SoundAsset, const FVector& Posi
 		LOGV(Warning, TEXT("Attached to : %s"), *AttachComp->GetName());
 	}
 
-	PlayAudio(NewAudio);
+	return PlayAudio(NewAudio, bShouldUseFadeIn, FadeInDuration, FadeInCurve);
 }
 
-void USoundSubsystem::PlayAudio(UAudioComponent* Audio)
+int32 USoundSubsystem::PlayAudio(UAudioComponent* Audio, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve)
 {
+	if (AudioIdWithComponentMap.Contains(Audio) == false)
+	{
+		return INDEX_NONE;
+	}
+
 	Audio->OnAudioFinishedNative.AddUObject(this, &USoundSubsystem::OnAudioFinished);
-	Audio->Play();
+
+	if (bShouldUseFadeIn)
+	{
+		Audio->FadeIn(FadeInDuration, 1.0f, 0.0f, FadeInCurve);
+	}
+	else
+	{
+		Audio->Play();
+	}
+
+	return AudioIdWithComponentMap[Audio];
 }
 
 UAudioComponent* USoundSubsystem::GetNewAudio()
 {
 	TObjectPtr<UAudioComponent> NewAudio = nullptr;
 
-	while (true)
+	static const int32 SafetyLimit = 100;
+	int32 Iteration = 0;
+	for (; Iteration < SafetyLimit; ++Iteration)
 	{
 		if (DeactivatedComponents.IsEmpty())
 		{
 			CreateAudioComponent();
 		}
 
-		DeactivatedComponents.Peek(NewAudio);
+		DeactivatedComponents.Dequeue(NewAudio);
 
 		if (NewAudio == nullptr || IsValid(NewAudio) == false || NewAudio->IsValidLowLevel() == false)
 		{
 			LOGV(Error, TEXT("Not Valid"));
+
+			if (AudioIdWithComponentMap.Contains(NewAudio))
+			{
+				int32 OldId = AudioIdWithComponentMap[NewAudio];
+				AudioComponentWithIdMap.Remove(OldId);
+				AudioIdWithComponentMap.Remove(NewAudio);
+			}
+
 			continue;
 		}
+		else
+		{
+			break;
+		}
+	}
 
-		DeactivatedComponents.Pop();
-		break;
+	if (Iteration >= SafetyLimit)
+	{
+		LOGV(Error, TEXT("Fail to Get New Audio"));
 	}
 
 	return NewAudio;
@@ -438,7 +525,37 @@ void USoundSubsystem::CreateAudioComponent()
 	{
 		DeactivatedComponents.Enqueue(NewAudio);
 		NewAudio->RegisterComponent();
+
+		int32 NewId = CreateNewId();
+		AudioComponentWithIdMap.Add(NewId, NewAudio);
+		AudioIdWithComponentMap.Add(NewAudio, NewId);
 	}
 
 	return;
 }
+
+int32 USoundSubsystem::CreateNewId()
+{
+	int32 NewId = INDEX_NONE;
+
+	static const int32 SafetyLimit = 100;
+	int32 Iteration = 0;
+	for (; Iteration < SafetyLimit; ++Iteration)
+	{
+		int32 TempId = FMath::Rand32();
+
+		if (AudioComponentWithIdMap.Contains(NewId) == false)
+		{
+			NewId = TempId;
+			break;
+		}
+	}
+
+	if (Iteration >= SafetyLimit)
+	{
+		LOGV(Error, TEXT("Fail to Get New Id"));
+	}
+
+	return NewId;
+}
+

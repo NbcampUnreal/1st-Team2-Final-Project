@@ -43,17 +43,19 @@ void UStatComponent::Initialize(int32 InitMaxHealth, int32 InitCurrentHealth, fl
 	AttackPower = InitAttackPower;
 }
 
-void UStatComponent::TakeDamage(const float DamageAmount)
+float UStatComponent::TakeDamage(const float DamageAmount)
 {
-	if (GetOwnerRole() != ROLE_Authority)
+	if (GetOwnerRole() != ROLE_Authority || DamageAmount <= 0.0f || CurrentHealth <= 0)
 	{
-		return;
+		return 0.0f;
 	}
-	
-	CurrentHealth -= DamageAmount;
-	CurrentHealth = FMath::Clamp(CurrentHealth, 0, MaxHealth);
+
+	const float ActualDamage = FMath::Clamp(DamageAmount, 0.0f, static_cast<float>(CurrentHealth));
+	CurrentHealth -= ActualDamage;
 
 	OnHealthChanged.Broadcast(CurrentHealth, MaxHealth);
+
+	return ActualDamage;
 }
 
 void UStatComponent::RestoreHealth(const float RestoreAmount)

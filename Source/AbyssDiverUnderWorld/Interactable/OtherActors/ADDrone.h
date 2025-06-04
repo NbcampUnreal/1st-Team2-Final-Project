@@ -12,6 +12,7 @@ DECLARE_LOG_CATEGORY_EXTERN(DroneLog, Log, All);
 class UADInteractableComponent;
 class AADDroneSeller;
 class ASpawnManager;
+class USoundSubsystem;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADDrone : public AActor,  public IIADInteractable
@@ -33,6 +34,10 @@ public:
 	virtual void Interact_Implementation(AActor* InstigatorActor) override;
 
 	virtual bool CanHighlight_Implementation() const override { return bIsActive; }
+	UFUNCTION(NetMulticast, Unreliable)
+	void M_PlayDroneRisingSound();
+	void M_PlayDroneRisingSound_Implementation();
+	
 	UFUNCTION()
 	void Activate();
 	UFUNCTION()
@@ -67,6 +72,8 @@ public:
 	float RaiseSpeed = 200.f;
 	UPROPERTY(EditAnywhere)
 	float DestroyDelay = 5.f;
+	UPROPERTY()
+	TObjectPtr<USoundSubsystem> SoundSubsystem;
 
 protected:
 
@@ -87,6 +94,8 @@ public:
 	int32 GetDronePhaseNumber() const { return DronePhaseNumber; }
 	virtual FString GetInteractionDescription() const override;
 
+private:
+	USoundSubsystem* GetSoundSubsystem();
 #pragma endregion
 
 	

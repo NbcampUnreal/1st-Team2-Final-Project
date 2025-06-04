@@ -15,10 +15,18 @@
 
 #include "Kismet/GameplayStatics.h"
 #include "EngineUtils.h"
+#include "Projectile/GenericPool.h"
+#include "Projectile/ADSpearGunBullet.h"
 
 AADInGameMode::AADInGameMode()
 {
 	bUseSeamlessTravel = true;
+
+	ConstructorHelpers::FClassFinder<AADSpearGunBullet> SpearGunBulletFinder(TEXT("/Game/_AbyssDiver/Blueprints/Projectile/BP_ADSpearGunBullet"));
+	if (SpearGunBulletFinder.Succeeded())
+	{
+		BulletClass = SpearGunBulletFinder.Class;
+	}
 }
 
 void AADInGameMode::BeginPlay()
@@ -58,6 +66,9 @@ void AADInGameMode::BeginPlay()
 			}
 		}
 	}
+	SpearGunBulletPool = GetWorld()->SpawnActor<AGenericPool>();
+	SpearGunBulletPool->InitPool<AADSpearGunBullet>(10, BulletClass);
+	LOGVN(Warning, TEXT("SpawnSpearGunBulletPool"));
 }
 
 void AADInGameMode::PostLogin(APlayerController* NewPlayer)

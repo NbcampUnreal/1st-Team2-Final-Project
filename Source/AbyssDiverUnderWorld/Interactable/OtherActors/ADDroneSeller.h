@@ -5,6 +5,8 @@
 #include "Interface/IADInteractable.h"
 #include "ADDroneSeller.generated.h"
 
+class USoundSubsystem;
+
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnCurrentMoneyChangedDelegate, int32/*Changed Money*/);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnTargetMoneyChangedDelegate, int32/*Changed Money*/);
 
@@ -66,7 +68,8 @@ protected:
 	TObjectPtr<class AADDrone> CurrentDrone = nullptr;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction")
 	TObjectPtr<class UADInteractableComponent> InteractableComp;
-	
+	UPROPERTY()
+	TObjectPtr<USoundSubsystem> SoundSubsystem;
 
 private:
 
@@ -99,6 +102,8 @@ private:
 		CurrentMoney = NewCurrentMoney;
 		OnRep_CurrentMoney();
 	}
+	
+	USoundSubsystem* GetSoundSubsystem();
 #pragma endregion
 
 };

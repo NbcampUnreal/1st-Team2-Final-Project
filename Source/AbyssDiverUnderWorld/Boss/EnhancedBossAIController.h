@@ -33,6 +33,16 @@ private:
 	void OnHearingPerceptionSuccess(const FAIStimulus& Stimulus);
 	void OnDamagePerceptionSuccess();
 
+protected:
+	UPROPERTY(EditAnywhere)
+	uint8 bIsPerceptionSight : 1;
+
+	UPROPERTY(EditAnywhere)
+	uint8 bIsPerceptionHearing : 1;
+
+	UPROPERTY(EditAnywhere)
+	uint8 bIsPerceptionDamage : 1;
+
 private:
 	/** 플레이어를 감지한 경우 true 반환 */
 	uint8 bIsDetectedPlayer : 1;

@@ -1,4 +1,4 @@
-﻿#include "Interactable/Item/Component/EquipUseComponent.h"
+#include "Interactable/Item/Component/EquipUseComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "GameFrameWork/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -19,6 +19,10 @@
 #include "Character/PlayerComponent/PlayerHUDComponent.h"
 #include "Character/UnderwaterCharacter.h"
 #include "Framework/ADPlayerState.h"
+#include "Framework/ADGameInstance.h"
+#include "Subsystems/SoundSubsystem.h"
+#include "Framework/ADInGameMode.h"
+#include "Projectile/GenericPool.h"
 
 const FName UEquipUseComponent::BASIC_SPEAR_GUN_NAME = TEXT("BasicSpearGun");
 
@@ -71,6 +75,11 @@ void UEquipUseComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+	{
+		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
+	}
+
 	// DPV
 	CurrentMultiplier = 1.f;
 	TargetMultiplier = 1.f;
@@ -90,8 +99,10 @@ void UEquipUseComponent::BeginPlay()
 	OriginalPPSettings = CameraComp->PostProcessSettings;
 
 	// 위젯 추가
+	LOGN(TEXT("OwningCharacter : %s"), *OwningCharacter->GetName());
 	if (OwningCharacter->IsLocallyControlled())
 	{
+		LOGN(TEXT("OwningCharacter : %s && Is Local Character"), *OwningCharacter->GetName());
 		APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController());
 		if (PC)
 		{
@@ -100,7 +111,7 @@ void UEquipUseComponent::BeginPlay()
 				NightVisionInstance = CreateWidget<UADNightVisionGoggle>(PC, NightVisionClass);
 				if (NightVisionInstance)
 				{
-					NightVisionInstance->AddToViewport();
+					NightVisionInstance->AddToViewport(-100);
 					NightVisionInstance->SetVisibility(ESlateVisibility::Hidden);
 				}
 			}
@@ -110,6 +121,7 @@ void UEquipUseComponent::BeginPlay()
 				if (ChargeBatteryInstance)
 				{
 					ChargeBatteryInstance->AddToViewport();
+					ChargeBatteryInstance->SetIsFocusable(false);
 					ChargeBatteryInstance->SetVisibility(ESlateVisibility::Hidden);
 				}
 			}
@@ -257,6 +269,11 @@ void UEquipUseComponent::S_IncreaseAmount_Implementation(int8 AddAmount)
 	}
 }
 
+void UEquipUseComponent::M_PlayFireHarpoonSound_Implementation()
+{
+	GetSoundSubsystem()->PlayAt(ESFX::FireHarpoon, OwningCharacter->GetActorLocation());
+}
+
 void UEquipUseComponent::OnRep_Amount()
 {
 	SetEquipBatteryAmountText();
@@ -353,7 +370,27 @@ void UEquipUseComponent::OnRep_NightVisionUIVisible()
 
 void UEquipUseComponent::OnRep_ChargeBatteryUIVisible()
 {
-	ToggleChargeBatteryWidget();
+	if (bChargeBatteryWidgetVisible)
+	{
+		ShowChargeBatteryWidget();
+	}
+	else
+	{
+		HideChargeBatteryWidget();
+	}
+	
+}
+
+void UEquipUseComponent::OnRep_BoostActive()
+{
+	if (bBoostActive)
+	{
+		GetSoundSubsystem()->PlayAt(ESFX::DPVOn, OwningCharacter->GetActorLocation());
+	}
+	else
+	{
+		GetSoundSubsystem()->PlayAt(ESFX::DPVOff, OwningCharacter->GetActorLocation());
+	}
 }
 
 void UEquipUseComponent::Initialize(FItemData& ItemData)
@@ -547,83 +584,26 @@ void UEquipUseComponent::HandleRKeyRelease()
 
 void UEquipUseComponent::FireHarpoon()
 {
-	if (!bCanFire || CurrentAmmoInMag <= 0  || !ProjectileClass || !OwningCharacter.IsValid())
-		return;
+	if (!CanFire()) return;
 
-	FVector   CamLoc = FVector::ZeroVector;;
-	FRotator  CamRot = FRotator::ZeroRotator;;
-	if (AController* PC = OwningCharacter->GetController())
+	// 0) 발사 사운드 스폰
+	M_PlayFireHarpoonSound();
+
+	// 1) 카메라 뷰
+	FVector CamLoc; FRotator CamRot;
+	GetCameraView(CamLoc, CamRot);
+	const FVector AimDir = CamRot.Vector();
+
+	// 2) 목표점 & 머즐 위치
+	FVector TargetPoint = CalculateTargetPoint(CamLoc, AimDir);
+	FVector MuzzleLoc = GetMuzzleLocation(CamLoc, AimDir);
+
+	// 3) 발사체 스폰 및 초기화
+	const FRotator SpawnRot = (TargetPoint - MuzzleLoc).Rotation();
+	AADSpearGunBullet* Proj = SpawnHarpoon(MuzzleLoc, SpawnRot);
+	if (Proj)
 	{
-		LOGIC(Log, TEXT("Is PlayerController"));
-		PC->GetPlayerViewPoint(CamLoc, CamRot);     
-	}
-	else { return; }
-
-	const FName SocketName(TEXT("FireLocationSocket"));
-	FVector MuzzleLoc = CamLoc + CamRot.Vector() * 30.f;;
-	if (const USkeletalMeshComponent* Mesh = OwningCharacter->GetMesh())
-	{
-		if (Mesh->DoesSocketExist(SocketName))
-		{
-			LOGIC(Log, TEXT("Is Socket"));
-			MuzzleLoc = Mesh->GetSocketLocation(SocketName);
-		}
-	}
-	const FRotator SpawnRot = CamRot;
-	const FVector LaunchDir = SpawnRot.Vector();       
-
-
-	FActorSpawnParameters Params;
-	Params.Owner = GetOwner();
-	Params.Instigator = OwningCharacter.Get();
-	Params.SpawnCollisionHandlingOverride =
-		ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-
-	//AADProjectileBase* Proj = GetWorld()->SpawnActor<AADProjectileBase>(
-	//	ProjectileClass, MuzzleLoc, SpawnRot, Params);
-	AADSpearGunBullet* Proj = GetWorld()->SpawnActor<AADSpearGunBullet>(
-		ProjectileClass, MuzzleLoc, SpawnRot, Params);
-
-	if (!Proj)
-	{
-		LOGIC(Log, TEXT("No Projectile"));
-		return;
-	}
-	
-	// FText 변수로 수정
-	if (CurrentItemData->Name == SpearGunTypeNames[0])
-	{
-		Proj->SetBulletType(ESpearGunType::Basic);
-	}
-	else if (CurrentItemData->Name == SpearGunTypeNames[1])
-	{
-		Proj->SetBulletType(ESpearGunType::Bomb);
-	}
-	else if (CurrentItemData->Name == SpearGunTypeNames[2])
-	{
-		Proj->SetBulletType(ESpearGunType::Poison);
-	}
-
-	UProjectileMovementComponent* ProjectileMovementComp = Proj->GetProjectileMovementComp();
-	if (ProjectileMovementComp)
-	{
-		const float Speed = ProjectileMovementComp->InitialSpeed > 0
-			? ProjectileMovementComp->InitialSpeed
-			: 3000.f;
-
-		ProjectileMovementComp->Velocity = LaunchDir * Speed;      
-		ProjectileMovementComp->Activate(true);
-
-		--CurrentAmmoInMag;
-		OnRep_CurrentAmmoInMag();
-
-		bCanFire = false;
-		const float RefireDelay = 1.0f / RateOfFire;
-		GetWorld()->GetTimerManager().SetTimer(
-			TimerHandle_HandleRefire,
-			[this]() { bCanFire = true; },
-			RefireDelay, false
-		);
+		ConfigureProjectile(Proj, TargetPoint, MuzzleLoc);
 	}
 }
 
@@ -644,7 +624,7 @@ void UEquipUseComponent::BoostOn()
 	if (!OwningCharacter.IsValid()) return;
 
 	if (Amount <= 0 || bNightVisionOn) return;
-
+	DPVAudioID = GetSoundSubsystem()->PlayAt(ESFX::DPVOn, OwningCharacter->GetActorLocation(), 1.0f, true, 0.2f);
 	bBoostActive = true;
 	TargetMultiplier = BoostMultiplier;  
 	SetComponentTickEnabled(true);
@@ -654,6 +634,7 @@ void UEquipUseComponent::BoostOff()
 {
 	if (!OwningCharacter.IsValid()) return;
 
+	GetSoundSubsystem()->StopAudio(DPVAudioID, true, 0.2f);
 	bBoostActive = false;
 	TargetMultiplier = 1.f;  // 정상 속도로 복귀
 
@@ -732,17 +713,18 @@ void UEquipUseComponent::ToggleChargeBatteryWidget()
 
 void UEquipUseComponent::ShowChargeBatteryWidget()
 {
+	bChargeBatteryWidgetVisible = true;
+
 	if (!OwningCharacter.IsValid() || !OwningCharacter->IsLocallyControlled() || !ChargeBatteryInstance)
 		return;
 
-	bChargeBatteryWidgetVisible = true;
 	LOGIC(Log, TEXT("ShowChargeBatteryWidget: %s"), TEXT("Visible"));
 
 	APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController());
 	if (!PC) return;
 
 	// UI 보이기
-	ChargeBatteryInstance->SetVisibility(ESlateVisibility::Visible);
+	ChargeBatteryInstance->PlayVisibleAnimation(true);
 
 	// 커서 상태 저장 후 표시
 	bAlreadyCursorShowed = PC->bShowMouseCursor;
@@ -760,17 +742,18 @@ void UEquipUseComponent::ShowChargeBatteryWidget()
 
 void UEquipUseComponent::HideChargeBatteryWidget()
 {
+	bChargeBatteryWidgetVisible = false;
+	
 	if (!OwningCharacter.IsValid() || !OwningCharacter->IsLocallyControlled() || !ChargeBatteryInstance)
 		return;
 
-	bChargeBatteryWidgetVisible = false;
 	LOGIC(Log, TEXT("HideChargeBatteryWidget: %s"), TEXT("Hidden"));
 
 	APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController());
 	if (!PC) return;
 
 	// UI 숨기기
-	ChargeBatteryInstance->SetVisibility(ESlateVisibility::Hidden);
+	ChargeBatteryInstance->PlayVisibleAnimation(false);
 
 	// 커서 복원
 	if (!bAlreadyCursorShowed)
@@ -849,6 +832,21 @@ void UEquipUseComponent::SetEquipBatteryAmountText()
 	}
 }
 
+USoundSubsystem* UEquipUseComponent::GetSoundSubsystem()
+{
+	if (SoundSubsystem)
+	{
+		return SoundSubsystem;
+	}
+
+	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+	{
+		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
+		return SoundSubsystem;
+	}
+	return nullptr;
+}
+
 void UEquipUseComponent::InitializeAmmoUI()
 {
 	OnRep_CurrentAmmoInMag();
@@ -858,4 +856,98 @@ void UEquipUseComponent::InitializeAmmoUI()
 bool UEquipUseComponent::IsSpearGun() const
 {
 	return bIsWeapon && CurrentEquipmentName == "BasicSpearGun";
+}
+
+bool UEquipUseComponent::CanFire() const
+{
+	return bCanFire && CurrentAmmoInMag > 0 && ProjectileClass && OwningCharacter.IsValid();
+}
+
+void UEquipUseComponent::GetCameraView(FVector& OutLoc, FRotator& OutRot) const
+{
+	OwningCharacter->GetController()->GetPlayerViewPoint(OutLoc, OutRot);
+}
+
+FVector UEquipUseComponent::CalculateTargetPoint(const FVector& CamLoc, const FVector& AimDir) const
+{
+	FVector TraceEnd = CamLoc + AimDir * TraceMaxRange;
+	FHitResult Impact;
+	FCollisionQueryParams Params(TEXT("HarpoonTrace"), true, GetOwner());
+	GetWorld()->LineTraceSingleByChannel(Impact, CamLoc, TraceEnd, ECC_Visibility, Params);
+	return Impact.bBlockingHit ? Impact.ImpactPoint : TraceEnd;
+}
+
+FVector UEquipUseComponent::GetMuzzleLocation(const FVector& CamLoc, const FVector& AimDir) const
+{
+	const FName SocketName(TEXT("Muzzle"));
+	if (auto* Mesh = OwningCharacter->GetMesh();
+		Mesh && Mesh->DoesSocketExist(SocketName))
+	{
+		return Mesh->GetSocketLocation(SocketName);
+	}
+	return CamLoc + AimDir * 30.f; // 없을 경우 기본 값
+}
+
+AADSpearGunBullet* UEquipUseComponent::SpawnHarpoon(const FVector& Loc, const FRotator& Rot)
+{
+	//FActorSpawnParameters Params;
+	//Params.Owner = GetOwner();
+	//Params.Instigator = OwningCharacter.Get();
+	//Params.SpawnCollisionHandlingOverride =
+	//	ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+	APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController());
+	if (GetWorld())
+	{
+		AADInGameMode* GM = Cast<AADInGameMode>(GetWorld()->GetAuthGameMode());
+		if (GM)
+		{
+			AADSpearGunBullet* SpawnedBullet = nullptr;
+			SpawnedBullet = GM->GetGenericPool()->GetObject<AADSpearGunBullet>();
+			if (SpawnedBullet)
+			{
+				SpawnedBullet->SetOwner(PC);
+				SpawnedBullet->InitializeTransform(Loc, Rot);
+			}
+			LOGIC(Log, TEXT("Projectile Id : %d"), SpawnedBullet->GetProjectileId());
+			return SpawnedBullet;
+		}
+	}
+	return nullptr;
+	//return GetWorld()->SpawnActor<AADSpearGunBullet>(
+	//	ProjectileClass, Loc, Rot, Params);
+}
+
+void UEquipUseComponent::ConfigureProjectile(AADSpearGunBullet* Proj, const FVector& TargetPoint, const FVector& MuzzleLoc)
+{
+	// FText 변수로 수정
+	if (CurrentItemData->Name == SpearGunTypeNames[0])
+	{
+		Proj->SetBulletType(ESpearGunType::Basic);
+	}
+	else if (CurrentItemData->Name == SpearGunTypeNames[1])
+	{
+		Proj->SetBulletType(ESpearGunType::Poison);
+	}
+	else if (CurrentItemData->Name == SpearGunTypeNames[2])
+	{
+		Proj->SetBulletType(ESpearGunType::Bomb);
+	}
+
+	FVector LaunchDir = (TargetPoint - MuzzleLoc).GetSafeNormal();
+	Proj->InitializeSpeed(LaunchDir, 4000.0f);
+	//UProjectileMovementComponent* ProjectileMovementComp = Proj->GetProjectileMovementComp();
+	//float Speed = (ProjectileMovementComp->InitialSpeed > 0.f) ? ProjectileMovementComp->InitialSpeed : 3000.f;
+	//// ProjectileMovementComp->ProjectileGravityScale = 0.f; // 필요 시 비활성화
+	//ProjectileMovementComp->Velocity = LaunchDir * Speed;
+	//ProjectileMovementComp->Activate(true);
+
+	// 3) 탄약·쿨다운
+	--CurrentAmmoInMag;
+	OnRep_CurrentAmmoInMag();
+	bCanFire = false;
+	float Delay = 1.f / RateOfFire;
+	GetWorld()->GetTimerManager().SetTimer(
+		TimerHandle_HandleRefire,
+		[this]() { bCanFire = true; },
+		Delay, false);
 }

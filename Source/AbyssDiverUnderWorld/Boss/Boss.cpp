@@ -19,6 +19,7 @@
 #include "NiagaraFunctionLibrary.h"
 #include "Enum/EPerceptionType.h"
 #include "Perception/AISense_Damage.h"
+#include "Interactable/OtherActors/Radars/RadarReturnComponent.h"
 
 const FName ABoss::BossStateKey = "BossState";
 
@@ -39,6 +40,7 @@ ABoss::ABoss()
 	DamagedLocation = FVector::ZeroVector;
 	CachedSpawnLocation = FVector::ZeroVector;
 	RotationInterpSpeed = 1.1f;
+	bIsAttackInfinite = true;
 	
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 
@@ -57,6 +59,8 @@ ABoss::ABoss()
 		BloodEffect = BloodNiagara.Object;
 	}
 	bReplicates = true;
+
+	RadarReturnComponent->FactionTags.Init(TEXT("Hostile"), 1);
 }
 
 void ABoss::BeginPlay()
@@ -77,7 +81,13 @@ void ABoss::BeginPlay()
 	AttackCollision->OnComponentBeginOverlap.AddDynamic(this, &ABoss::OnAttackCollisionOverlapBegin);
 	AttackCollision->OnComponentEndOverlap.AddDynamic(this, &ABoss::OnAttackCollisionOverlapEnd);
 
-	GetCharacterMovement()->MaxFlySpeed = StatComponent->GetMoveSpeed();
+	GetCharacterMovement()->MaxSwimSpeed = StatComponent->GetMoveSpeed();
+	OriginDeceleration = GetCharacterMovement()->BrakingDecelerationSwimming;
+}
+
+void ABoss::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
 }
 
 void ABoss::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
@@ -85,6 +95,24 @@ void ABoss::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifet
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(ABoss, BossState);
+}
+
+void ABoss::SetCharacterMovementSetting(const float& InBrakingDecelerationSwimming, const float& InMaxSwimSpeed)
+{
+	if (!IsValid(GetCharacterMovement())) return;
+
+	if (InBrakingDecelerationSwimming < 0.0f || InMaxSwimSpeed <= 0.0f) return;
+
+	GetCharacterMovement()->BrakingDecelerationSwimming = InBrakingDecelerationSwimming;
+	GetCharacterMovement()->MaxSwimSpeed = InMaxSwimSpeed;
+}
+
+void ABoss::InitCharacterMovementSetting()
+{
+	if (!IsValid(GetCharacterMovement())) return;
+	
+	GetCharacterMovement()->BrakingDecelerationSwimming = OriginDeceleration;
+	GetCharacterMovement()->MaxSwimSpeed = StatComponent->GetMoveSpeed();
 }
 
 void ABoss::SetBossState(EBossState State)
@@ -219,6 +247,7 @@ void ABoss::Attack()
 	
 	if (IsValid(NormalAttackAnimations[AttackType]))
 	{
+		ChaseAccumulatedTime = 0.f;
 		AnimInstance->OnMontageEnded.AddDynamic(this, &ABoss::OnAttackMontageEnded);
 		M_PlayAnimation(NormalAttackAnimations[AttackType]);
 	}
@@ -227,18 +256,6 @@ void ABoss::Attack()
 void ABoss::OnAttackEnded()
 {
 	AttackedPlayers.Empty();
-}
-
-void ABoss::AddPatrolPoint()
-{
-	if (CurrentPatrolPointIndex >= PatrolPoints.Num())
-	{
-		CurrentPatrolPointIndex = 0;
-	}
-	else
-	{
-		++CurrentPatrolPointIndex;
-	}
 }
 
 void ABoss::SetMoveSpeed(const float& SpeedMultiplier)
@@ -254,17 +271,19 @@ void ABoss::M_PlayAnimation_Implementation(class UAnimMontage* AnimMontage, floa
 void ABoss::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
 	AEnhancedBossAIController* EnhancedBossAIController = Cast<AEnhancedBossAIController>(GetController());
-	if (IsValid(EnhancedBossAIController))
+	if (!IsValid(EnhancedBossAIController) || !IsValid(AnimInstance)) return;
+
+	if (bIsAttackInfinite)
+	{
+		EnhancedBossAIController->GetBlackboardComponent()->SetValueAsBool("bHasAttacked", false);
+	}
+	else
 	{
 		EnhancedBossAIController->GetBlackboardComponent()->SetValueAsBool("bHasDetectedPlayer", false);
 		EnhancedBossAIController->SetBlackboardPerceptionType(EPerceptionType::Finish);	
 	}
-
-	// 자신 제거
-	if (IsValid(AnimInstance))
-	{
-		AnimInstance->OnMontageEnded.RemoveDynamic(this, &ABoss::OnAttackMontageEnded);
-	}
+	
+	AnimInstance->OnMontageEnded.RemoveDynamic(this, &ABoss::OnAttackMontageEnded);
 }
 
 void ABoss::OnMeshOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,

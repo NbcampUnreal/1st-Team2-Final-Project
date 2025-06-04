@@ -4,16 +4,15 @@
 #include "Engine/EngineTypes.h"
 #include "DataRow/FADItemDataRow.h"
 #include "UI/ToggleWidget.h"
-#include <Net/UnrealNetwork.h>
+#include "Net/UnrealNetwork.h"
 #include "AbyssDiverUnderWorld.h"
-#include <Kismet/KismetMathLibrary.h>
+#include "Kismet/KismetMathLibrary.h"
 #include "DrawDebugHelpers.h"
-#include "Framework/ADGameInstance.h"
 #include "Subsystems/DataTableSubsystem.h"
 #include "Framework/ADPlayerState.h"
 #include "Interactable/Item/ADUseItem.h"
 #include "Interactable/Item/UseFunction/UseStrategy.h"
-#include <Actions/PawnActionsComponent.h>
+#include "Actions/PawnActionsComponent.h"
 #include "GameFramework/Character.h"
 #include "Interactable/Item/Component/EquipUseComponent.h"
 #include "UI/ChargeBatteryWidget.h"
@@ -21,6 +20,12 @@
 #include "Kismet/GameplayStatics.h"
 #include "Interactable/OtherActors/ADDroneSeller.h"
 #include "Framework/ADInGameState.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraSystem.h"
+#include "Subsystems/SoundSubsystem.h"
+#include "Framework/ADGameInstance.h"
+#include "GameFramework/Pawn.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 DEFINE_LOG_CATEGORY(InventoryLog);
 
@@ -29,12 +34,12 @@ UADInventoryComponent::UADInventoryComponent() :
 	TotalWeight(0),
 	TotalPrice(0),
 	WeightMax(100),
-	bInventoryWidgetShowed(false), 
-	bAlreadyCursorShowed(false),
-	bCanUseItem(true),
 	CurrentEquipmentSlotIndex(INDEX_NONE),
+	bInventoryWidgetShowed(false), 
 	CurrentEquipmentInstance(nullptr),
+	bAlreadyCursorShowed(false),
 	ToggleWidgetInstance(nullptr),
+	bCanUseItem(true),
 	DataTableSubsystem(nullptr),
 	ChargeBatteryWidget(nullptr)
 {
@@ -54,6 +59,22 @@ UADInventoryComponent::UADInventoryComponent() :
 		InventoryIndexMapByType.FindOrAdd(static_cast<EItemType>(i));
 		InventoryIndexMapByType[static_cast<EItemType>(i)].Init(-1, InventorySizeByType[i]);
 	}
+
+	ConstructorHelpers::FObjectFinder<UNiagaraSystem> OxygenRefillEffectFinder(
+		TEXT("/Game/_AbyssDiver/FX/VFX/Item/NS_RefillOxygen.NS_RefillOxygen")
+	);
+	if (OxygenRefillEffectFinder.Succeeded())
+	{
+		OxygenRefillEffect = OxygenRefillEffectFinder.Object;
+	}
+	
+	ConstructorHelpers::FObjectFinder<UNiagaraSystem> DropItemEffectFinder(
+		TEXT("/Game/_AbyssDiver/FX/VFX/Item/NS_DropItemBubble.NS_DropItemBubble")
+	);
+	if (DropItemEffectFinder.Succeeded())
+	{
+		DropItemEffect = DropItemEffectFinder.Object;
+	}
 }
 
 void UADInventoryComponent::BeginPlay()
@@ -63,6 +84,7 @@ void UADInventoryComponent::BeginPlay()
 	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
 	{
 		DataTableSubsystem = GI->GetSubsystem<UDataTableSubsystem>();
+		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
 	}
 }
 
@@ -113,7 +135,7 @@ void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType
 	}
 	else if (ItemType == EItemType::Consumable)
 	{
-		FFADItemDataRow* FoundRow = DataTableSubsystem->GetItemData(Item.Id); 
+		FFADItemDataRow* FoundRow = DataTableSubsystem->GetItemData(Item.Id);
 		if (!FoundRow->UseFunction) return;
 
 		if (FoundRow && FoundRow->UseFunction)
@@ -122,6 +144,12 @@ void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType
 			if (Strategy)
 			{
 				Strategy->Use(GetOwner());
+				if (Item.Amount > 0)
+				{
+					C_InventoryPlaySound(ESFX::Breath);
+					FTimerHandle SpawnEffectDelay;
+					GetWorld()->GetTimerManager().SetTimer(SpawnEffectDelay, this, &UADInventoryComponent::C_SpawnItemEffect, 1.5f, false);
+				}
 				LOGINVEN(Warning, TEXT("Use Consumable Item %s"), *FoundRow->Name.ToString());
 			}
 		}
@@ -194,6 +222,66 @@ void UADInventoryComponent::S_UseBatteryAmount_Implementation(int8 Amount)
 	}
 }
 
+void UADInventoryComponent::M_SpawnItemEffect_Implementation(ESFX SFXType, UNiagaraSystem* VFX, FVector SpawnLocation)
+{
+	if (!VFX) return;
+	GetSoundSubsystem()->PlayAt(SFXType, SpawnLocation);
+	
+	UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+		GetWorld(),
+		VFX,
+		SpawnLocation,
+		FRotator::ZeroRotator,
+		FVector(1.0f),
+		true,  // bAutoDestroy
+		true,  // bAutoActivate
+		ENCPoolMethod::None,
+		true   // bPreCullCheck
+	);
+}
+
+void UADInventoryComponent::C_InventoryPlaySound_Implementation(ESFX SFXType)
+{
+	GetSoundSubsystem()->Play2D(SFXType);
+}
+
+void UADInventoryComponent::C_SpawnItemEffect_Implementation()
+{
+	//UObject는 리플리케이트를 지원하지 않으므로, 이펙트 스폰을 클라이언트에서만 실행되는 함수로 구현
+
+	GetSoundSubsystem()->Play2D(ESFX::RefillOxygen);
+	if (!OxygenRefillEffect) return;
+	if (APlayerController* PC = Cast<APlayerController>(Cast<AADPlayerState>(GetOwner())->GetPlayerController()))
+	{
+		FVector Velocity;
+		if (APawn* OwnerPawn = PC->GetPawn())
+		{
+			UCharacterMovementComponent* MoveComp = Cast<UCharacterMovementComponent>(OwnerPawn->GetMovementComponent());
+			Velocity = MoveComp->Velocity;
+		}
+		FVector CamLocation;
+		FRotator CamRotation;
+
+		PC->GetPlayerViewPoint(CamLocation, CamRotation);
+		FVector SpawnLocation = CamLocation + CamRotation.Vector() * 5.f - FVector(0, 0, 10);
+		if (!Velocity.IsNearlyZero())
+		{
+			SpawnLocation = SpawnLocation + CamRotation.Vector() * 30.f;
+		}
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			GetWorld(),
+			OxygenRefillEffect,
+			SpawnLocation,
+			CamRotation,
+			FVector(1.0f),
+			true,  // bAutoDestroy
+			true,  // bAutoActivate
+			ENCPoolMethod::None,
+			true   // bPreCullCheck
+		);
+	}
+}
+
 void UADInventoryComponent::C_SetButtonActive_Implementation(EChargeBatteryType ItemChargeBatteryType, bool bCIsActive, int16 CAmount)
 {
 	if (ChargeBatteryWidget)
@@ -202,10 +290,10 @@ void UADInventoryComponent::C_SetButtonActive_Implementation(EChargeBatteryType 
 		ChargeBatteryWidget->SetEquipBatteryAmount(ItemChargeBatteryType, CAmount);
 		if (bCIsActive)
 		{
-			LOGVN(Warning, TEXT("Activate Button"));
+			LOGINVEN(Warning, TEXT("Activate Button"));
 		}
 		else
-			LOGVN(Warning, TEXT("DeActivate Button"));
+			LOGINVEN(Warning, TEXT("DeActivate Button"));
 	}
 }
 
@@ -267,21 +355,20 @@ bool UADInventoryComponent::AddInventoryItem(const FItemData& ItemData)
 		FFADItemDataRow* FoundRow = DataTableSubsystem->GetItemDataByName(ItemData.Name); 
 		if (FoundRow)
 		{
-			int8 ItemIndex = ItemData.ItemType == EItemType::Exchangable ? -1 : FindItemIndexByName(ItemData.Name);
+			int8 ItemIndex = FindItemIndexByName(ItemData.Name);
+			LOGINVEN(Warning, TEXT("AddInventoryItem ItemIndex : %d"), ItemIndex);
 			bool bIsUpdateSuccess = false;
-			if (ItemIndex > -1) 
+
+			if (FoundRow->Stackable && ItemIndex != -1)
 			{
-				if (FoundRow->Stackable)
+				bIsUpdateSuccess = InventoryList.UpdateQuantity(ItemIndex, ItemData.Quantity);
+				InventoryList.SetAmount(ItemIndex, ItemData.Amount);
+				if (bIsUpdateSuccess)
 				{
-					bIsUpdateSuccess = InventoryList.UpdateQuantity(ItemIndex, ItemData.Quantity);
-					InventoryList.SetAmount(ItemIndex, ItemData.Amount);
-					if (bIsUpdateSuccess)
-					{
-						LOGINVEN(Warning, TEXT("Item Update, ItemName : %s, Id : %d"), *InventoryList.Items[ItemIndex].Name.ToString(), InventoryList.Items[ItemIndex].Id);
-					}
-					else
-						LOGINVEN(Warning, TEXT("Update fail"));
+					LOGINVEN(Warning, TEXT("Item Update, ItemName : %s, Id : %d"), *InventoryList.Items[ItemIndex].Name.ToString(), InventoryList.Items[ItemIndex].Id);
 				}
+				else
+					LOGINVEN(Warning, TEXT("Update fail"));
 			}
 			else
 			{
@@ -321,7 +408,7 @@ void UADInventoryComponent::ShowInventory()
 	APlayerController* PC = Cast<APlayerController>(Cast<AADPlayerState>(GetOwner())->GetPlayerController());
 	if (!PC || !ToggleWidgetInstance) return;
 
-	ToggleWidgetInstance->SetVisibility(ESlateVisibility::Visible);
+	ToggleWidgetInstance->PlaySlideAnimation(true);
 	InventoryUIUpdate();
 	bAlreadyCursorShowed = PC->bShowMouseCursor;
 	PC->bShowMouseCursor = true;
@@ -341,7 +428,7 @@ void UADInventoryComponent::HideInventory()
 	if (!PC && !ToggleWidgetInstance) return;
 
 	bInventoryWidgetShowed = false;
-	ToggleWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
+	ToggleWidgetInstance->PlaySlideAnimation(false);
 
 	if (!bAlreadyCursorShowed)
 		PC->bShowMouseCursor = false;
@@ -353,11 +440,6 @@ void UADInventoryComponent::HideInventory()
 void UADInventoryComponent::OnRep_InventoryList()
 {
 	InventoryUIUpdate();
-}
-
-void UADInventoryComponent::OnRep_CurrentEquipmentSlotIndex()
-{
-
 }
 
 int8 UADInventoryComponent::FindItemIndexByName(FName ItemName) //빈슬롯이 없으면 -1 반환
@@ -396,6 +478,7 @@ void UADInventoryComponent::RemoveBySlotIndex(uint8 SlotIndex, EItemType ItemTyp
 
 		if (bIsDropAction)
 		{
+			/*M_PlaySound(ESFX::DropItem);*/
 			DropItem(Item);
 		}
 		InventoryList.UpdateQuantity(InventoryIndex, INDEX_NONE);
@@ -514,6 +597,27 @@ void UADInventoryComponent::CheckItemsForBattery()
 	}
 }
 
+void UADInventoryComponent::PlayEquipAnimation(AUnderwaterCharacter* Character, bool bIsHarpoon)
+{
+	if (!HarpoonDrawMontage || !DPVDrawMontage)
+		return;
+
+	FAnimSyncState SyncState;
+	SyncState.bEnableRightHandIK = true;
+	SyncState.bEnableLeftHandIK = false;
+	SyncState.bEnableFootIK = true;
+	SyncState.bIsStrafing = false;
+
+	UAnimMontage* Montage = bIsHarpoon ? HarpoonDrawMontage : DPVDrawMontage;
+
+	Character->M_PlayMontageOnBothMesh(
+		Montage,
+		1.0f,
+		NAME_None,
+		SyncState
+	);
+}
+
 int8 UADInventoryComponent::GetTypeInventoryEmptyIndex(EItemType ItemType)
 {
 	RebuildIndexMap();
@@ -609,6 +713,7 @@ void UADInventoryComponent::Equip(FItemData& ItemData, int8 SlotIndex)
 				return;
 			}
 
+			C_InventoryPlaySound(ESFX::Equip);
 			SpawnedItem->SetItemInfo(ItemData, true);
 			CurrentEquipmentInstance = SpawnedItem;
 			LOGINVEN(Warning, TEXT("ItemToEquip Name: %s, Amount %d"), *ItemData.Name.ToString(), ItemData.Amount);
@@ -636,32 +741,8 @@ void UADInventoryComponent::Equip(FItemData& ItemData, int8 SlotIndex)
 	}
 	if (AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(Pawn))
 	{
-		if (!HarpoonDrawMontage || !DPVDrawMontage) return;
-
-		FAnimSyncState WeaponSync;
-		WeaponSync.bEnableRightHandIK = true;
-		WeaponSync.bEnableLeftHandIK = false;
-		WeaponSync.bEnableFootIK = true;
-		WeaponSync.bIsStrafing = false;
-
-		if (bIsWeapon)
-		{
-			UnderwaterCharacter->M_PlayMontageOnBothMesh(
-				HarpoonDrawMontage,
-				1.0f,
-				NAME_None,
-				WeaponSync
-			);
-		}
-		else
-		{
-			UnderwaterCharacter->M_PlayMontageOnBothMesh(
-				DPVDrawMontage,
-				1.0f,
-				NAME_None,
-				WeaponSync
-			);
-		}
+		LOGINVEN(Log, TEXT("Play Equip Montage!!"));
+		PlayEquipAnimation(UnderwaterCharacter, bIsWeapon);
 	}
 }
 
@@ -681,7 +762,7 @@ void UADInventoryComponent::UnEquip()
 			}
 		}
 	}
-
+	C_InventoryPlaySound(ESFX::UnEquip);
 	LOGINVEN(Warning, TEXT("UnEquipItem %s"), *CurrentEquipmentInstance->ItemData.Name.ToString());
 	if(CurrentEquipmentInstance)
 		CurrentEquipmentInstance->Destroy();
@@ -703,7 +784,9 @@ void UADInventoryComponent::DropItem(FItemData& ItemData)
 			}
 		}
 	}
-	AADUseItem* SpawnItem = GetWorld()->SpawnActor<AADUseItem>(AADUseItem::StaticClass(), GetDropLocation(), FRotator::ZeroRotator);
+	FVector DropLocation = GetDropLocation();
+	AADUseItem* SpawnItem = GetWorld()->SpawnActor<AADUseItem>(AADUseItem::StaticClass(), DropLocation, FRotator::ZeroRotator);
+	M_SpawnItemEffect(ESFX::DropItem, DropItemEffect, DropLocation);
 	SpawnItem->SetItemInfo(ItemData, false);
 	LOGINVEN(Warning, TEXT("Spawn Item To Drop : %s"), *ItemData.Name.ToString());
 }
@@ -738,10 +821,6 @@ void UADInventoryComponent::OnUseCoolTimeEnd()
 	bCanUseItem = true;
 }
 
-void UADInventoryComponent::EquipmentChargeBatteryUpdateDelay()
-{
-}
-
 void UADInventoryComponent::PrintLogInventoryData()
 {
 	for (int i = 0; i<InventoryList.Items.Num(); ++i)
@@ -771,7 +850,20 @@ void UADInventoryComponent::SetChargeBatteryInstance(UChargeBatteryWidget* Batte
 	LOGINVEN(Warning, TEXT("Allocate BatteryWidget To Inventory"));
 }
 
+USoundSubsystem* UADInventoryComponent::GetSoundSubsystem()
+{
+	if (SoundSubsystem)
+	{
+		return SoundSubsystem;
+	}
 
+	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+	{
+		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
+		return SoundSubsystem;
+	}
+	return nullptr;
+}
 
 
 

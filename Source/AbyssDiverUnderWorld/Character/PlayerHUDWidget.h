@@ -6,8 +6,10 @@
 #include "Blueprint/UserWidget.h"
 #include "PlayerHUDWidget.generated.h"
 
+enum class ECharacterState : uint8;
+
 /**
- * Player HUD를 표시하는 Widget입니다. 임시 UI를 출력하고 있습니다.
+ * Player HUD를 표시하는 Widget입니다. 태스트 UI를 출력하고 있습니다.
  */
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API UPlayerHUDWidget : public UUserWidget
@@ -22,9 +24,14 @@ class ABYSSDIVERUNDERWORLD_API UPlayerHUDWidget : public UUserWidget
 
 public:
 	void BindWidget(APawn* PlayerPawn);
-	
+
+	/** 체력 택스트를 갱신 */
 	UFUNCTION(BlueprintCallable)
 	void UpdateHealthText(int32 Health, int32 MaxHealth);
+
+	/** 실드 택스트를 갱신 */
+	UFUNCTION(BlueprintCallable)
+	void UpdateShieldText(float ShieldValue);
 
 	/** 산소 택스트를 갱신 */
 	UFUNCTION(BlueprintCallable)
@@ -57,6 +64,9 @@ private:
 	/** 체력 택스트, 임시용이고 디버깅용으로 수정 예정 */
 	UPROPERTY(meta = (BindWidget))
 	class URichTextBlock* HealthTextBlock;
+
+	UPROPERTY(meta = (BindWidget))
+	class URichTextBlock* ShieldTextBlock;
 
 	/** 산소 택스트, 임시용이고 디버깅용으로 수정 예정 */
 	UPROPERTY(meta = (BindWidget))

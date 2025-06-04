@@ -230,6 +230,8 @@ void AShop::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
 
+#if WITH_EDITOR
+
 	// 게임 중이 아닌 경우 리턴(블루프린트 상일 경우)
 	// PostInitializeComponents는 블루프린트에서도 발동함
 	UWorld* World = GetWorld();
@@ -237,6 +239,8 @@ void AShop::PostInitializeComponents()
 	{
 		return;
 	}
+
+#endif
 
 	InitShopWidget();
 	InitData();
@@ -322,16 +326,25 @@ void AShop::CloseShop(AUnderwaterCharacter* Requester)
 	{
 		return;
 	}
+	ShopWidget->PlayCloseAnimation();
 
-	ShopWidget->RemoveFromParent();
+	FTimerHandle RemoveWidgetTimerHandle;
+	float RemoveDelay = ShopWidget->GetCloseShopAnimEndTime();
+	GetWorld()->GetTimerManager().SetTimer(RemoveWidgetTimerHandle,
+		FTimerDelegate::CreateLambda([this]() 
+			{ 
+				ShopWidget->RemoveFromParent();
 
-	APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
-	PC->SetInputMode(FInputModeGameOnly());
-	PC->SetShowMouseCursor(false);
-	bIsOpened = false;
-	PC->SetIgnoreMoveInput(false);
+				APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+				PC->SetInputMode(FInputModeGameOnly());
+				PC->SetShowMouseCursor(false);
+				bIsOpened = false;
+				PC->SetIgnoreMoveInput(false);
 
-	ItemMeshCaptureComp->bCaptureEveryFrame = false;
+				ItemMeshCaptureComp->bCaptureEveryFrame = false;
+
+			}), RemoveDelay, false);
+
 }
 
 EBuyResult AShop::BuyItem(uint8 ItemId, uint8 Quantity, AUnderwaterCharacter* Buyer)

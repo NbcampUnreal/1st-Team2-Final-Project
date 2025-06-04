@@ -7,6 +7,7 @@
 #include "ADNightVisionGoggle.generated.h"
 
 class UProgressBar;
+class USoundSubsystem;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API UADNightVisionGoggle : public UUserWidget
@@ -25,6 +26,8 @@ public:
 public:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UProgressBar> BatteryAmount;
+	UPROPERTY()
+	TObjectPtr<USoundSubsystem> SoundSubsystem;
 private:
 	int32 BatteryMax;
 #pragma endregion
@@ -33,6 +36,8 @@ private:
 public:
 	UFUNCTION(BlueprintCallable)
 	void SetBatteryAmount(int32 Amount);
+
+	USoundSubsystem* GetSoundSubsystem();
 #pragma endregion
 
 };

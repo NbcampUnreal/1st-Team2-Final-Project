@@ -6,6 +6,8 @@
 #include "Net/UnrealNetwork.h"
 #include "Gimmic/Spawn/SpawnManager.h"
 #include "Kismet/GameplayStatics.h"
+#include "Framework/ADGameInstance.h"
+#include "Subsystems/SoundSubsystem.h"
 
 DEFINE_LOG_CATEGORY(DroneLog);
 
@@ -32,11 +34,16 @@ void AADDrone::BeginPlay()
 	{
 		AActor* Found = UGameplayStatics::GetActorOfClass(this, ASpawnManager::StaticClass());
 		SpawnManager = Cast<ASpawnManager>(Found);
+	
+	}
+	if (SpawnManager && DronePhaseNumber == 1)
+	{
+		SpawnManager->SpawnByGroup();
+	}
 
-		if (SpawnManager && DronePhaseNumber == 1)
-		{
-			SpawnManager->SpawnByGroup();
-		}
+	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+	{
+		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
 	}
 }
 
@@ -90,6 +97,11 @@ void AADDrone::Interact_Implementation(AActor* InstigatorActor)
 	}
 }
 
+void AADDrone::M_PlayDroneRisingSound_Implementation()
+{
+	GetSoundSubsystem()->PlayAt(ESFX::SendDrone, GetActorLocation());
+}
+
 void AADDrone::Activate()
 {
 	if (bIsActive) return;
@@ -111,6 +123,7 @@ void AADDrone::StartRising()
 			&AADDrone::OnDestroyTimer,
 			DestroyDelay, false
 		);
+	M_PlayDroneRisingSound();
 }
 
 void AADDrone::OnDestroyTimer()
@@ -142,4 +155,19 @@ bool AADDrone::IsHoldMode() const
 FString AADDrone::GetInteractionDescription() const
 {
 	return TEXT("Send Drone!");
+}
+
+USoundSubsystem* AADDrone::GetSoundSubsystem()
+{
+	if (SoundSubsystem)
+	{
+		return SoundSubsystem;
+	}
+
+	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+	{
+		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
+		return SoundSubsystem;
+	}
+	return nullptr;
 }

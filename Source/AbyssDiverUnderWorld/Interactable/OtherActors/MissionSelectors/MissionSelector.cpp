@@ -2,6 +2,7 @@
 
 #include "AbyssDiverUnderWorld.h"
 #include "UI/MissionSelectWidget.h"
+#include "Subsystems/MissionSubsystem.h"
 
 AMissionSelector::AMissionSelector()
 {
@@ -15,6 +16,8 @@ void AMissionSelector::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
 
+#if WITH_EDITOR
+
 	// 게임 중이 아닌 경우 리턴(블루프린트 상일 경우)
 	// PostInitializeComponents는 블루프린트에서도 발동함
 	UWorld* World = GetWorld();
@@ -22,6 +25,8 @@ void AMissionSelector::PostInitializeComponents()
 	{
 		return;
 	}
+
+#endif
 
 	// 호스트만 사용
 	if (HasAuthority() == false)
@@ -36,6 +41,14 @@ void AMissionSelector::PostInitializeComponents()
 
 	MissionSelectWidget = CreateWidget<UMissionSelectWidget>(GetWorld(), MissionSelectWidgetClass);
 	ensure(MissionSelectWidget);
+
+	UMissionSubsystem* MissionSubsystem = GetGameInstance()->GetSubsystem<UMissionSubsystem>();
+	if (ensure(MissionSubsystem) == false)
+	{
+		return;
+	}
+
+	MissionSelectWidget->OnStartButtonClickedDelegate.BindUObject(MissionSubsystem, &UMissionSubsystem::ReceiveMissionDataFromUIData);
 }
 
 void AMissionSelector::BeginPlay()

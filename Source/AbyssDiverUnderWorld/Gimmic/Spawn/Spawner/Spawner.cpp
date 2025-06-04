@@ -92,6 +92,6 @@ TSet<TObjectPtr<ASpawnPoint>> ASpawner::GetSpawnPoint(TSubclassOf<ASpawnPoint> S
 		}
 	}
 
-	return SpawnPointArray;
+	return MoveTemp(SpawnPointArray);
 }
 

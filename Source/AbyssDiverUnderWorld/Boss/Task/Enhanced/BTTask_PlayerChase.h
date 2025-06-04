@@ -13,9 +13,6 @@ struct FBTPlayerChaseTaskMemory
 	/** AIController의 주체에 대한 참조 */
 	TWeakObjectPtr<ABoss> Boss;
 
-	/** 현재까지 경과된 시간 */
-	float AccumulatedTime;
-
 	/** Chase 작업이 끝나는 시간 */
 	float FinishTaskInterval;
 };
@@ -31,11 +28,15 @@ public:
 private:
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& Comp, uint8* NodeMemory) override;
 	virtual void TickTask(UBehaviorTreeComponent& Comp, uint8* NodeMemory, float DeltaSeconds) override;
+	virtual void OnTaskFinished(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, EBTNodeResult::Type TaskResult) override;
 	virtual uint16 GetInstanceMemorySize() const override { return sizeof(FBTPlayerChaseTaskMemory); }
 
 private:
 	UPROPERTY(EditAnywhere)
-	float MoveSpeedMultiplier = 1.3f;
+	float ChaseMoveSpeed;
+
+	UPROPERTY(EditAnywhere)
+	float ChaseDeceleration;
 
 	UPROPERTY(EditAnywhere)
 	float MaxChaseTime;
@@ -43,5 +44,7 @@ private:
 	UPROPERTY(EditAnywhere)
 	float MinChaseTime;
 
+	EPathFollowingRequestResult::Type Result;
+	
 	static const FName bIsPlayerHiddenKey;
 };

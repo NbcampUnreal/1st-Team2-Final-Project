@@ -7,19 +7,20 @@ UBTTask_SerpmareAttack::UBTTask_SerpmareAttack()
 {
 	NodeName = TEXT("Serpmare Attack");
 	bNotifyTick = true;
+	bCreateNodeInstance = false;
 }
 
 EBTNodeResult::Type UBTTask_SerpmareAttack::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
-	// 캐스팅
-	ABossAIController* AIController = Cast<ABossAIController>(OwnerComp.GetAIOwner());
-	if (!IsValid(AIController)) return EBTNodeResult::Failed;
-	
-	ASerpmare* Serpmare = Cast<ASerpmare>(AIController->GetCharacter());
-	if (!IsValid(Serpmare)) return EBTNodeResult::Failed;
+	FBTSerpmareAttackTaskMemory* TaskMemory = (FBTSerpmareAttackTaskMemory*)NodeMemory;
+	if (!TaskMemory) return EBTNodeResult::Failed;
 
-	// 공격 애니메이션 재생
-	Serpmare->Attack();
+	TaskMemory->AIController = Cast<ABossAIController>(OwnerComp.GetAIOwner());
+	TaskMemory->Serpmare = Cast<ASerpmare>(TaskMemory->AIController->GetCharacter());
+
+	if (!TaskMemory->AIController.IsValid() || !TaskMemory->Serpmare.IsValid()) return EBTNodeResult::Failed;
+
+	TaskMemory->Serpmare->Attack();
 	
 	return EBTNodeResult::InProgress;
 }
@@ -28,10 +29,15 @@ void UBTTask_SerpmareAttack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* 
 {
 	Super::TickTask(OwnerComp, NodeMemory, DeltaSeconds);
 
-	// 캐스팅
-	ABossAIController* AIController = Cast<ABossAIController>(OwnerComp.GetAIOwner());
+	FBTSerpmareAttackTaskMemory* TaskMemory = (FBTSerpmareAttackTaskMemory*)NodeMemory;
+	if (!TaskMemory) return;
 
-	if (!AIController->IsStateSame(EBossState::Attack))
+	TaskMemory->AIController = Cast<ABossAIController>(OwnerComp.GetAIOwner());
+	TaskMemory->Serpmare = Cast<ASerpmare>(TaskMemory->AIController->GetCharacter());
+
+	if (!TaskMemory->AIController.IsValid() || !TaskMemory->Serpmare.IsValid()) return;
+
+	if (!TaskMemory->AIController->IsStateSame(EBossState::Attack))
 	{
 		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 	}

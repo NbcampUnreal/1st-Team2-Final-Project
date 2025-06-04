@@ -132,8 +132,10 @@ bool UStaminaComponent::IsCharacterMoving() const
 	// Fall 상태에서는 Stamina를 소모해서는 안 된다.
 	const bool bIsMoving = MovementComponent->IsSwimming() || MovementComponent->IsMovingOnGround();
 	
-	// 그로기 상태, 사망 상태 등에서는 Input을 Block하므로 캐릭터의 상태를 검사할 필요는 없다.
-	const bool bInputMove = MovementComponent->GetLastInputVector().SizeSquared() > KINDA_SMALL_NUMBER;
+	// LastInputVector는 Server에 전파가 안 된다.
+	// 대신 Acceleration을 이용해서 판단한다.
+	// Acceleration은 저항 등의 감속값은 계산하지 않기 때문에 입력 대용으로 사용할 수 있다.
+	const bool bInputMove = MovementComponent->GetCurrentAcceleration().SizeSquared() > KINDA_SMALL_NUMBER;
 	
 	// 현재 캐릭터 애니메이션이 실제 속도에 비례해서 작동하기 때문에 실제 속도의 값도 계산해야 한다.
 	// 가령, 캐릭터가 벽을 향해 달릴 경우 달리는 모션이 나오지 않기 때문에 스태미너를 소모해서는 안 된다.

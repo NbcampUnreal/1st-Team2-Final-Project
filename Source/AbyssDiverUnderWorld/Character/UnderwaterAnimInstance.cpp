@@ -11,7 +11,7 @@ UUnderwaterAnimInstance::UUnderwaterAnimInstance()
 {
 	ShouldMoveThresholdSpeed = 3.0f;
 
-	EnvState = EEnvState::Underwater;
+	EnvironmentState = EEnvironmentState::Underwater;
 	CharacterState = ECharacterState::Normal;
 
 	bIsInAir = false;
@@ -64,7 +64,7 @@ void UUnderwaterAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 
 void UUnderwaterAnimInstance::UpdateVariables()
 {
-	EnvState = UnderwaterCharacter->GetEnvState();
+	EnvironmentState = UnderwaterCharacter->GetEnvironmentState();
 	CharacterState = UnderwaterCharacter->GetCharacterState();
 	LocomotionMode = UnderwaterCharacter->GetLocomotionMode();
 	bIsInAir = CharacterMovement->IsFalling();

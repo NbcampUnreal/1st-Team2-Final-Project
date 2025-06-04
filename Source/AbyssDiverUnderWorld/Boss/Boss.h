@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "AbyssDiverUnderWorld.h"
 #include "BossAIController.h"
 #include "Character/UnitBase.h"
 #include "Boss.generated.h"
@@ -21,10 +22,13 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaTime) override;
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 
 #pragma region Method
 public:
+	void SetCharacterMovementSetting(const float& InBrakingDecelerationSwimming, const float& InMaxSwimSpeed);
+	void InitCharacterMovementSetting();
 	FVector GetNextPatrolPoint();
 	void SetBossState(EBossState State);
 	void LaunchPlayer(AUnderwaterCharacter* Player, const float& Power) const;
@@ -47,9 +51,6 @@ public:
 	 * AnimNotify_BossAttack 호출 후 일정 시간 후 호출
 	 */
 	virtual void OnAttackEnded();
-	
-	/** 다음 순찰 지점으로 변환 */ 
-	void AddPatrolPoint();
 
 	/** 보스의 이동속도를 설정하는 함수 */
 	void SetMoveSpeed(const float& SpeedMultiplier);
@@ -136,8 +137,14 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Collision")
 	TObjectPtr<UCapsuleComponent> AttackCollision;
+
+	UPROPERTY()
+	float ChaseAccumulatedTime = 0.0f;
 	
 protected:
+	UPROPERTY(EditDefaultsOnly, Category = "Boss|Stat")
+	uint8 bIsAttackInfinite : 1;
+	
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Camera")
 	TObjectPtr<UCameraControllerComponent> CameraControllerComponent;
 	
@@ -174,6 +181,7 @@ private:
 	uint8 bIsBiteAttackSuccess : 1;
 	uint8 bIsAttackCollisionOverlappedPlayer : 1;
 	FVector CachedSpawnLocation;
+	float OriginDeceleration;
 	
 #pragma endregion
 
