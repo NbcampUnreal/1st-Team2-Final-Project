@@ -156,7 +156,6 @@ private:
 
 	int32 WeightMax;
 	uint8 bInventoryWidgetShowed : 1;
-	uint8 bAlreadyCursorShowed : 1;
 	uint8 bCanUseItem : 1;
 	uint8 bIsWeapon : 1 = false;
 
