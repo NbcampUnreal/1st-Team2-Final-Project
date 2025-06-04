@@ -5,6 +5,8 @@
 
 #include "UnitBase.generated.h"
 
+class URadarReturnComponent;
+
 UENUM(BlueprintType)
 enum class EUnitId : uint8
 {
@@ -35,6 +37,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category="Stat")
 	TObjectPtr<class UStatComponent> StatComponent;
+
+	UPROPERTY(EditAnywhere, Category = "Radar Settings")
+	TObjectPtr<URadarReturnComponent> RadarReturnComponent;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Id")
 	EUnitId UnitId;

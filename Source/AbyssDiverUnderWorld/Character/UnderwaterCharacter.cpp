@@ -22,6 +22,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Interactable/Item/Component/EquipUseComponent.h"
 #include "Interactable/OtherActors/Radars/Radar.h"
+#include "Interactable/OtherActors/Radars/RadarReturnComponent.h"
 #include "Inventory/ADInventoryComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Shops/ShopInteractionComponent.h"
@@ -144,6 +145,8 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	RadarRotation = FRotator(90.0f, 0.0f, 0.0f);
 
 	EnvironmentState = EEnvironmentState::Underwater;
+
+	RadarReturnComponent->FactionTags.Init(TEXT("Friendly"), 1);
 }
 
 void AUnderwaterCharacter::BeginPlay()

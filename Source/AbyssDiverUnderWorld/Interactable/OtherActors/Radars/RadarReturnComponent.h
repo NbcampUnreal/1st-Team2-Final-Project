@@ -36,6 +36,11 @@ public:
 
 #pragma region Variables
 
+public:
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RadarReturn")
+	TArray<FName> FactionTags;
+
 protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RadarReturn")
@@ -146,8 +151,8 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RadarReturn")
 	FString ApplyToComponentName;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RadarReturn")
-	TArray<FName> FactionTags;
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RadarReturn")
+	//TArray<FName> FactionTags;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RadarReturn")
 	TArray<FName> UnitsTypeTags;
