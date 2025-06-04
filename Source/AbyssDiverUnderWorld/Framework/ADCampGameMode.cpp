@@ -61,8 +61,25 @@ void AADCampGameMode::TryStartGame()
 	TravelToInGameLevel();
 }
 
+void AADCampGameMode::GetMoney()
+{
+	AADInGameState* GS = GetGameState<AADInGameState>();
+	if (GS == nullptr)
+	{
+		LOGVN(Error, TEXT("Cheat Failed : GS == nullptr"));
+		return;
+	}
+
+	GS->SetTotalTeamCredit(GS->GetTotalTeamCredit() + 10000);
+}
+
 void AADCampGameMode::TravelToInGameLevel()
 {
+	if (HasAuthority() == false)
+	{
+		return;
+	}
+
 	if (AADInGameState* ADInGameState = GetGameState<AADInGameState>())
 	{
 		EMapName MapName = ADInGameState->GetSelectedLevel();
