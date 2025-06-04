@@ -62,17 +62,6 @@ void AAlienShark::Tick(float DeltaTime)
     SmoothMoveAlongSurface(DeltaTime);
 }
 
-bool AAlienShark::IsLocationOnNavMesh(const FVector& InLocation) const
-{
-    UNavigationSystemV1* NavSystem = UNavigationSystemV1::GetCurrent(GetWorld());
-    if (!IsValid(NavSystem)) return false;
-    
-    FNavLocation NavLocation;
-
-    // 액터가 NavMesh 상에 존재하는지에 대한 여부를 반환한다.
-    return NavSystem->ProjectPointToNavigation(InLocation, NavLocation, FVector(100.0f, 100.0f, 100.0f));
-}
-
 FVector AAlienShark::GetRandomNavMeshLocation(const FVector& Origin, const float& Radius) const
 {
     UNavigationSystemV1* NavSystem = UNavigationSystemV1::GetCurrent(GetWorld());

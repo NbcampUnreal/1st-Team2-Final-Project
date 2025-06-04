@@ -23,7 +23,6 @@ public:
 	void PerformNormalMovement(float DeltaTime);
 	void SetNewTarget();
 	void SmoothMoveAlongSurface(const float& InDeltaTime);
-	bool IsLocationOnNavMesh(const FVector& InLocation) const;
 	FVector GetRandomNavMeshLocation(const FVector& Origin, const float& Radius) const;
 	void ReturnToNavMeshArea();
 	

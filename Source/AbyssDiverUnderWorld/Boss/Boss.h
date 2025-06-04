@@ -27,6 +27,9 @@ protected:
 
 #pragma region Method
 public:
+	/** 매개변수로 전달받은 InLocation이 NavMesh위에 있는지 확인하는 함수 */
+	bool IsLocationOnNavMesh(const FVector& InLocation) const;
+	
 	void SetCharacterMovementSetting(const float& InBrakingDecelerationSwimming, const float& InMaxSwimSpeed);
 	void InitCharacterMovementSetting();
 	FVector GetNextPatrolPoint();

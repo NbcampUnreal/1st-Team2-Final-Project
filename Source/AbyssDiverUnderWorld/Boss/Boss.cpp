@@ -94,6 +94,17 @@ void ABoss::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifet
 	DOREPLIFETIME(ABoss, BossState);
 }
 
+bool ABoss::IsLocationOnNavMesh(const FVector& InLocation) const
+{
+	UNavigationSystemV1* NavSystem = UNavigationSystemV1::GetCurrent(GetWorld());
+	if (!IsValid(NavSystem)) return false;
+    
+	FNavLocation NavLocation;
+
+	// 액터가 NavMesh 상에 존재하는지에 대한 여부를 반환한다.
+	return NavSystem->ProjectPointToNavigation(InLocation, NavLocation, FVector(100.0f, 100.0f, 100.0f));
+}
+
 void ABoss::SetCharacterMovementSetting(const float& InBrakingDecelerationSwimming, const float& InMaxSwimSpeed)
 {
 	if (!IsValid(GetCharacterMovement())) return;
