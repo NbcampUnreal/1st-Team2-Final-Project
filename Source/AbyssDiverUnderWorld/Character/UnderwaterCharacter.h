@@ -760,6 +760,10 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class ULanternComponent> LanternComponent;
 
+	/** 수중 효과 컴포넌트 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UUnderwaterEffectComponent> UnderwaterEffectComponent;
+	
 	/** 발자국 소리 컴포넌트 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UFootstepComponent> FootstepComponent;
