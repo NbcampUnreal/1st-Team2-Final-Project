@@ -7,6 +7,7 @@
 #include "Monster/TestPlayerCharacter.h"
 #include "AbyssDiverUnderWorld.h"
 #include "Monster/EMonsterState.h"
+#include "Monster/Monster.h"
 #include "GenericTeamAgentInterface.h"
 #include "AbyssDiverUnderWorld.h"
 
@@ -49,10 +50,11 @@ void AMonsterAIController::Tick(float DeltaSeconds)
 	float Elapsed = GetWorld()->GetTimeSeconds() - LostTargetTime;
 	if (Elapsed > SightConfig->GetMaxAge())
 	{
-		BlackboardComponent->ClearValue("TargetActor");
 		BlackboardComponent->SetValueAsEnum("MonsterState", static_cast<uint8>(EMonsterState::Patrol));
 		bIsLosingTarget = false;
-		LOG(TEXT("TargetActor Clear, Monster State : Patrol"));
+		Monster->SetMonsterState(EMonsterState::Patrol);
+		Monster->bIsChasing = false;
+		LOG(TEXT("Monster State : Patrol"));
 	}
 }
 
@@ -66,10 +68,11 @@ void AMonsterAIController::OnPossess(APawn* InPawn)
 		RunBehaviorTree(BehaviorTree);
 		LOG(TEXT("AIController Possess"));
 
-		// Initialize BlackboardKey (CurrnetState, TargetActor)
-		BlackboardComponent->SetValueAsEnum("MonsterState", static_cast<uint8>(EMonsterState::Patrol));
+		// Initialize BlackboardKey (TargetActor)
 		BlackboardComponent->ClearValue("TargetActor");
 	}
+
+	Monster = Cast<AMonster>(GetPawn());
 
 	FTimerHandle TimerHandle;
 	GetWorldTimerManager().SetTimer(TimerHandle, this, &AMonsterAIController::InitializePatrolPoint, 0.5f, false);
@@ -92,6 +95,8 @@ void AMonsterAIController::LoadSightDataFromTable()
 		SightConfig->LoseSightRadius = SightRow->LoseSightRadius;
 		SightConfig->PeripheralVisionAngleDegrees = SightRow->PeripheralVisionAngleDegrees;
 		SightConfig->SetMaxAge(SightRow->SenseInterval);
+
+		AIPerceptionComponent->ConfigureSense(*SightConfig);
 	}
 	else
 	{
@@ -118,7 +123,8 @@ void AMonsterAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus 
 		{
 			LOG(TEXT("[Perception] : %s"), *Actor->GetName());
 
-			Blackboard->SetValueAsObject("TargetActor", Actor);
+			Monster->AddDetection(Actor);
+			Monster->SetMonsterState(EMonsterState::Chase);
 			Blackboard->SetValueAsEnum("MonsterState", static_cast<uint8>(EMonsterState::Chase));
 			bIsLosingTarget = false;
 		}
@@ -126,6 +132,7 @@ void AMonsterAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus 
 		{
 			// Lost Perception. but Target Value still remains for MaxAge
 			bIsLosingTarget = true;
+			Monster->RemoveDetection(Actor);
 			LostTargetTime = GetWorld()->GetTimeSeconds(); // Timer On.
 		}
 	}

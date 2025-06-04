@@ -12,14 +12,23 @@
 #include "Interactable/OtherActors/Radars/RadarReturnComponent.h"
 
 const FName AMonster::MonsterStateKey = "MonsterState";
+const FName AMonster::InvestigateLocationKey = "InvestigateLocation";
+const FName AMonster::TargetActorKey = "TargetActor";
 
 AMonster::AMonster()
 {
+	// Initialize
 	AssignedSplineActor = nullptr;
 	BlackboardComponent = nullptr;
 	AIController = nullptr;
 	AnimInstance = nullptr;
-	
+	TargetActor = nullptr;
+	ChaseTriggerTime = 3.0f;
+	ChaseSpeed = 400.0f;
+	PatrolSpeed = 200.0f;
+	InvestigateSpeed = 300.0f;
+	bIsChasing = false;
+
 	bUseControllerRotationYaw = false;
 	bReplicates = true;
 	SetReplicatingMovement(true);
@@ -37,6 +46,7 @@ void AMonster::BeginPlay()
 	if (IsValid(AIController))
 	{
 		BlackboardComponent = AIController->GetBlackboardComponent();
+		SetMonsterState(EMonsterState::Patrol);
 	}
 
 	if (UCharacterMovementComponent* MovementComp = GetCharacterMovement())
@@ -95,6 +105,11 @@ void AMonster::M_PlayMontage_Implementation(UAnimMontage* AnimMontage, float InP
 
 float AMonster::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
+	if (!HasAuthority())
+	{
+		return 0.0f;
+	}
+
 	const float Damage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
 	if (IsValid(StatComponent))
@@ -102,6 +117,8 @@ float AMonster::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, 
 		if (StatComponent->GetCurrentHealth() <= 0)
 		{
 			OnDeath();
+			// Delegate Broadcasts for Achievements
+			OnMonsterDead.Broadcast(DamageCauser, this);
 		}
 	}
 	return Damage;
@@ -109,7 +126,7 @@ float AMonster::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, 
 
 void AMonster::OnDeath()
 {
-	AIController->StopMovement();
+	StopMovement();
 	AnimInstance->StopAllMontages(1.0f);
 
 	SetMonsterState(EMonsterState::Death);
@@ -130,13 +147,154 @@ void AMonster::PlayAttackMontage()
 	}
 }
 
-void AMonster::SetMonsterState(EMonsterState State)
+void AMonster::StopMovement()
+{
+	if (AIController)
+	{
+		AIController->StopMovement();
+	}
+}
+
+void AMonster::NotifyLightExposure(float DeltaTime, float TotalExposedTime, const FVector& PlayerLocation, AActor* PlayerActor)
 {
 	if (!HasAuthority()) return;
 
-	MonsterState = State;
+	switch (MonsterState)
+	{
+	case EMonsterState::Patrol:
+		SetMonsterState(EMonsterState::Detected);
+		break;
 
-	BlackboardComponent ->SetValueAsEnum(MonsterStateKey, static_cast<uint8>(MonsterState));
+	case EMonsterState::Detected:
+		if (TotalExposedTime < ChaseTriggerTime)
+		{
+			SetMonsterState(EMonsterState::Investigate);
+		}
+		else if (TotalExposedTime >= ChaseTriggerTime)
+		{
+			SetMonsterState(EMonsterState::Chase);
+			AddDetection(PlayerActor);
+		}
+		else break;
+
+	case EMonsterState::Investigate:
+	{
+		if (AIController)
+		{
+			if (BlackboardComponent)
+			{
+				BlackboardComponent->SetValueAsVector(InvestigateLocationKey, PlayerLocation);
+			}
+		}
+		if (TotalExposedTime >= ChaseTriggerTime)
+		{
+			SetMonsterState(EMonsterState::Chase);
+			AddDetection(PlayerActor);
+		}
+		break;
+	}
+	case EMonsterState::Chase:
+		break;
+	
+	default:
+		break;
+	}
+}
+
+void AMonster::AddDetection(AActor* Actor)
+{
+	if (!IsValid(Actor)) return;
+
+	int32& Count = DetectionRefCounts.FindOrAdd(Actor);
+	Count++;
+
+	// If Target is empty, set
+	if (TargetActor == nullptr)
+	{
+		TargetActor = Actor;
+
+		if (BlackboardComponent)
+		{
+			BlackboardComponent->SetValueAsObject(TargetActorKey, TargetActor);
+		}
+	}
+}
+
+void AMonster::RemoveDetection(AActor* Actor)
+{
+	if (!IsValid(Actor)) return;
+
+	int32* CountPtr = DetectionRefCounts.Find(Actor);
+	if (!CountPtr) return;
+
+	(*CountPtr)--;
+
+	if (*CountPtr <= 0)
+	{
+		DetectionRefCounts.Remove(Actor);
+
+		if (TargetActor == Actor)
+		{
+			TargetActor = nullptr;
+
+			if (BlackboardComponent)
+			{
+				BlackboardComponent->ClearValue(TargetActorKey);
+			}
+		}
+	}
+}
+
+
+void AMonster::SetMonsterState(EMonsterState NewState)
+{
+	if (!HasAuthority()) return;
+
+	if (MonsterState == NewState) return;
+
+	MonsterState = NewState;
+	UE_LOG(LogTemp, Warning, TEXT("MonsterState changed: %d ¡æ %d"), (int32)MonsterState, (int32)NewState);
+
+	if (UBlackboardComponent* BB = Cast<AAIController>(GetController())->GetBlackboardComponent())
+	{
+		BB->SetValueAsEnum(MonsterStateKey, static_cast<uint8>(NewState));
+	}
+
+	switch (NewState)
+	{
+	case EMonsterState::Detected:
+		LOG(TEXT("AI is Detected"));
+		StopMovement();
+		if (IsValid(DetectedAnimations))
+		{
+			M_PlayMontage(DetectedAnimations);
+		}
+		break;
+
+	case EMonsterState::Chase:
+		LOG(TEXT("AI starts Chase"));
+		SetMaxSwimSpeed(ChaseSpeed);
+		bIsChasing = true;
+		// @TODO : Add animations, sounds, and more
+		break;
+
+	case EMonsterState::Patrol:
+		SetMaxSwimSpeed(PatrolSpeed);
+		break;
+
+	case EMonsterState::Investigate:
+		SetMaxSwimSpeed(InvestigateSpeed);
+		// @TODO : Add animations, sounds, and more
+		break;
+
+	default:
+		break;
+	}
+}
+
+void AMonster::SetMaxSwimSpeed(float Speed)
+{
+	GetCharacterMovement()->MaxSwimSpeed = Speed;
 }
 
 
