@@ -11,6 +11,7 @@ UShieldComponent::UShieldComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
 
+	SetIsReplicatedByDefault(true);
 	bCanGainShield = true;
 	ShieldValue = 0.0f;
 	OldShieldValue = ShieldValue;
