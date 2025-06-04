@@ -17,6 +17,7 @@
 #include "EngineUtils.h"
 #include "Projectile/GenericPool.h"
 #include "Projectile/ADSpearGunBullet.h"
+#include "Subsystems/SoundSubsystem.h"
 
 AADInGameMode::AADInGameMode()
 {
@@ -33,9 +34,20 @@ void AADInGameMode::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+	{
+		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
+	}
+	GetSoundSubsystem()->PlayBGM(ESFX_BGM::ShallowBackground, 1.0f);
+	GetSoundSubsystem()->PlayBGM(ESFX_BGM::ShallowPhase1, 1.0f);
+
 	if (AADInGameState* InGameState = GetGameState<AADInGameState>())
 	{
 		UDataTableSubsystem* DataTableSubsystem = GetGameInstance()->GetSubsystem<UDataTableSubsystem>();
+
+		SpearGunBulletPool = GetWorld()->SpawnActor<AGenericPool>();
+		SpearGunBulletPool->InitPool<AADSpearGunBullet>(10, BulletClass);
+		LOGVN(Warning, TEXT("SpawnSpearGunBulletPool"));
 
 		int32 LastDroneNumber = 0;
 		const int32 FirstDroneNumber = 1;
@@ -63,12 +75,10 @@ void AADInGameMode::BeginPlay()
 			if (DronePhaseNumber == FirstDroneNumber)
 			{
 				InGameState->SetCurrentDroneSeller(Drone->CurrentSeller);
+				Drone->M_PlayPhaseBGM(1);
 			}
 		}
 	}
-	SpearGunBulletPool = GetWorld()->SpawnActor<AGenericPool>();
-	SpearGunBulletPool->InitPool<AADSpearGunBullet>(10, BulletClass);
-	LOGVN(Warning, TEXT("SpawnSpearGunBulletPool"));
 }
 
 void AADInGameMode::PostLogin(APlayerController* NewPlayer)
@@ -186,4 +196,19 @@ void AADInGameMode::GetMoney()
 	}
 
 	GS->SetTotalTeamCredit(GS->GetTotalTeamCredit() + 10000);
+}
+
+USoundSubsystem* AADInGameMode::GetSoundSubsystem()
+{
+	if (SoundSubsystem)
+	{
+		return SoundSubsystem;
+	}
+
+	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+	{
+		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
+		return SoundSubsystem;
+	}
+	return nullptr;
 }

@@ -6,6 +6,7 @@
 
 enum class EMapName : uint8;
 class AGenericPool;
+class USoundSubsystem;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADInGameMode : public AGameMode
@@ -52,9 +53,12 @@ private:
 	TSubclassOf<class AADSpearGunBullet> BulletClass;
 	UPROPERTY()
 	TObjectPtr<AGenericPool> SpearGunBulletPool = nullptr;
+	UPROPERTY()
+	TObjectPtr<USoundSubsystem> SoundSubsystem;
 
 #pragma endregion
 
 public:
 	FORCEINLINE AGenericPool* GetGenericPool() const { return SpearGunBulletPool; }
+	USoundSubsystem* GetSoundSubsystem();
 };
