@@ -225,7 +225,7 @@ void UADInventoryComponent::S_UseBatteryAmount_Implementation(int8 Amount)
 void UADInventoryComponent::M_SpawnItemEffect_Implementation(ESFX SFXType, UNiagaraSystem* VFX, FVector SpawnLocation)
 {
 	if (!VFX) return;
-	SoundSubsystem->PlayAt(SFXType, SpawnLocation);
+	GetSoundSubsystem()->PlayAt(SFXType, SpawnLocation);
 	
 	UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 		GetWorld(),
@@ -242,14 +242,14 @@ void UADInventoryComponent::M_SpawnItemEffect_Implementation(ESFX SFXType, UNiag
 
 void UADInventoryComponent::C_InventoryPlaySound_Implementation(ESFX SFXType)
 {
-	SoundSubsystem->Play2D(SFXType);
+	GetSoundSubsystem()->Play2D(SFXType);
 }
 
 void UADInventoryComponent::C_SpawnItemEffect_Implementation()
 {
 	//UObject는 리플리케이트를 지원하지 않으므로, 이펙트 스폰을 클라이언트에서만 실행되는 함수로 구현
 
-	SoundSubsystem->Play2D(ESFX::RefillOxygen);
+	GetSoundSubsystem()->Play2D(ESFX::RefillOxygen);
 	if (!OxygenRefillEffect) return;
 	if (APlayerController* PC = Cast<APlayerController>(Cast<AADPlayerState>(GetOwner())->GetPlayerController()))
 	{
@@ -850,7 +850,20 @@ void UADInventoryComponent::SetChargeBatteryInstance(UChargeBatteryWidget* Batte
 	LOGINVEN(Warning, TEXT("Allocate BatteryWidget To Inventory"));
 }
 
+USoundSubsystem* UADInventoryComponent::GetSoundSubsystem()
+{
+	if (SoundSubsystem)
+	{
+		return SoundSubsystem;
+	}
 
+	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+	{
+		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
+		return SoundSubsystem;
+	}
+	return nullptr;
+}
 
 
 

@@ -44,6 +44,14 @@ void UChargeBatteryWidget::NativeConstruct()
 	GetWorld()->GetTimerManager().SetTimer(InitialzieTimerHandle, this, &UChargeBatteryWidget::InitializeChargeBatteryWidget, InitializeRepeatDelay, true);
 }
 
+void UChargeBatteryWidget::NativeDestruct()
+{
+	Super::NativeDestruct();
+	GetWorld()->GetTimerManager().ClearTimer(IncreaseTimerHandle);
+	GetWorld()->GetTimerManager().ClearTimer(InitialzieTimerHandle);
+	LOGB(Warning, TEXT("ChargeBatteryWidget Destruct"));
+}
+
 void UChargeBatteryWidget::StartChargeBattery(FName ItemName)
 {
 	CurrentChargeItem = ItemName;
@@ -86,6 +94,10 @@ bool UChargeBatteryWidget::CanCharge()
 	if ((CurrentChargeItem == DPVRow->Name && EquipUseComp->bBoostActive) || (CurrentChargeItem == NVRow->Name && EquipUseComp->bNightVisionOn))
 	{
 		LOGB(Warning, TEXT("Equipment is in use!"));
+		if (ChargeBatterySound && ChargeBatterySound->IsPlaying())
+		{
+			ChargeBatterySound->Stop();
+		}
 		return false;
 	}
 
@@ -96,7 +108,10 @@ bool UChargeBatteryWidget::CanCharge()
 		return true;
 	}
 
-		
+	if (ChargeBatterySound && ChargeBatterySound->IsPlaying())
+	{
+		ChargeBatterySound->Stop();
+	}
 	LOGB(Warning, TEXT("There is no battery."));
 	return false;
 }
@@ -189,6 +204,11 @@ void UChargeBatteryWidget::PlayVisibleAnimation(bool bIsVisible)
 
 void UChargeBatteryWidget::InitializeChargeBatteryWidget()
 {
+	if (InitializeNum <= 0)
+	{
+		GetWorld()->GetTimerManager().ClearTimer(InitialzieTimerHandle);
+		return;
+	}
 	InitializeNum--;
 	if (InventoryComp == nullptr)
 	{
@@ -196,8 +216,14 @@ void UChargeBatteryWidget::InitializeChargeBatteryWidget()
 		if (PC)
 		{
 			AADPlayerState* PS = Cast<AADPlayerState>(PC->PlayerState);
-			InventoryComp = PS->GetInventory();
-			InventoryComp->SetChargeBatteryInstance(this);
+			if (PS)
+			{
+				InventoryComp = PS->GetInventory();
+				if (InventoryComp)
+				{
+					InventoryComp->SetChargeBatteryInstance(this);
+				}
+			}
 		}
 	}
 	if (EquipUseComp == nullptr)

@@ -36,7 +36,7 @@ AADSpearGunBullet::AADSpearGunBullet() :
 void AADSpearGunBullet::M_SpawnFX_Implementation(UNiagaraSystem* Effect, ESFX SFXType, const FVector& SpawnLocation)
 {
     if(SFXType != ESFX::Max)
-        SoundSubsystem->PlayAt(SFXType, SpawnLocation);
+        GetSoundSubsystem()->PlayAt(SFXType, SpawnLocation);
     UNiagaraFunctionLibrary::SpawnSystemAtLocation(
         GetWorld(),
         Effect,
@@ -84,7 +84,7 @@ void AADSpearGunBullet::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AAct
         TrailEffect->Deactivate();
         if (OtherActor && OtherActor != this && OtherComp && OtherComp->GetOwner() != this)
         {
-            SoundSubsystem->PlayAt(ESFX::Hit, SweepResult.Location);
+            GetSoundSubsystem()->PlayAt(ESFX::Hit, SweepResult.Location);
             if (HasAuthority())
             {
                 UGameplayStatics::ApplyPointDamage(
@@ -273,5 +273,20 @@ void AADSpearGunBullet::Addict()
 
 
     LOGP(Warning, TEXT("Addict"));
+}
+
+USoundSubsystem* AADSpearGunBullet::GetSoundSubsystem()
+{
+    if (SoundSubsystem)
+    {
+        return SoundSubsystem;
+    }
+
+    if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+    {
+        SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
+        return SoundSubsystem;
+    }
+    return nullptr;
 }
 

@@ -34,6 +34,7 @@ class ABYSSDIVERUNDERWORLD_API UChargeBatteryWidget : public UUserWidget
 #pragma region Method
 public:
 	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
 	UFUNCTION(BlueprintCallable)
 	void StartChargeBattery(FName ItemName);
 	UFUNCTION(BlueprintCallable)
