@@ -309,30 +309,35 @@ void UADInventoryComponent::C_SetEquipBatteryAmount_Implementation(EChargeBatter
 void UADInventoryComponent::InventoryInitialize()
 {
 	APlayerController* PC = Cast<APlayerController>(Cast<AADPlayerState>(GetOwner())->GetPlayerController());
-	if (ToggleWidgetClass && PC && PC->IsLocalController())
+	if (!ToggleWidgetClass || !PC || !PC->IsLocalController())
 	{
-		ToggleWidgetInstance = CreateWidget<UToggleWidget>(PC, ToggleWidgetClass);
-		LOGINVEN(Warning, TEXT("WidgetCreate!"));
-
-		if (ToggleWidgetInstance)
-		{
-			ToggleWidgetInstance->AddToViewport();
-			ToggleWidgetInstance->InitializeInventoriesInfo(this);
-			ToggleWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
-		}
+		return;
 	}
+
+	ToggleWidgetInstance = CreateWidget<UToggleWidget>(PC, ToggleWidgetClass);
+	LOGINVEN(Warning, TEXT("WidgetCreate!"));
+
+	if (!ToggleWidgetInstance)
+	{
+		LOGINVEN(Warning, TEXT("!ToggleWidgetInstance"));
+		return;
+	}
+
+	ToggleWidgetInstance->AddToViewport();
+	ToggleWidgetInstance->InitializeInventoriesInfo(this);
+	ToggleWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
 
 	AADInGameState* GS = Cast<AADInGameState>(UGameplayStatics::GetGameState(GetWorld()));
 	if (GS == nullptr)
 	{
-		LOGV(Warning, TEXT("GS == nullptr"));
+		LOGINVEN(Warning, TEXT("GS == nullptr"));
 		return;
 	}
 
 	AADDroneSeller* CurrentDroneSeller = GS->GetCurrentDroneSeller();
 	if (CurrentDroneSeller == nullptr)
 	{
-		LOGV(Warning, TEXT("CurrentDroneSeller == nullptr, Server? : %d"), GetOwner()->GetNetMode() != ENetMode::NM_Client);
+		LOGINVEN(Warning, TEXT("CurrentDroneSeller == nullptr, Server? : %d"), GetOwner()->GetNetMode() != ENetMode::NM_Client);
 		return;
 	}
 

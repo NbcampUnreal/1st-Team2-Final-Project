@@ -292,7 +292,7 @@ void UEquipUseComponent::OnRep_CurrentAmmoInMag()
 	UPlayerStatusWidget* StatusWidget = HUDComp->GetPlayerStatusWidget();
 	if (!StatusWidget)
 	{
-		UE_LOG(LogTemp, Error, TEXT("❌ StatusWidget is NULL"));
+		LOGVN(Error, TEXT("❌ StatusWidget is NULL"));
 		return;
 	}
 
