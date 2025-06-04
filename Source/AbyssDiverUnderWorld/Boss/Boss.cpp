@@ -213,14 +213,6 @@ void ABoss::SetNewTargetLocation()
         
         return;
     }
-    
-    /*// 모든 시도가 실패하면 NavMesh 내에서 가까운 점으로 지정한다.
-    // 만약 재설정에 실패한 경우 강제로 재설정 지점을 지정한다.
-    TargetLocation = GetRandomNavMeshLocation(CurrentLocation, MinTargetDistance * 3.0f);
-    if (FVector::Dist(TargetLocation, CurrentLocation) <= KINDA_SMALL_NUMBER)
-    {
-        TargetLocation = CurrentLocation + Forward * MinTargetDistance;
-    }*/
 
 	// 최후의 수단으로 가까운 NavMesh 지점 설정
 	TargetLocation = GetRandomNavMeshLocation(CurrentLocation, MinTargetDistance * 3.0f);
@@ -347,9 +339,9 @@ void ABoss::PerformNormalMovement(const float& InDeltaTime)
     const float AngleDifference = FMath::RadiansToDegrees(FMath::Acos(FMath::Clamp(DotProduct, -1.0f, 1.0f)));
     
     // 목표점이 너무 뒤쪽에 있거나 접근하기 어려운 경우 새로 목표점을 지정한다.
-    if (AngleDifference > 120.0f || DistanceToTarget > WanderRadius * 2.0f)
+    if (DistanceToTarget > WanderRadius * 2.0f)
     {
-        LOG(TEXT("Target too far or behind, setting new target"));
+        LOG(TEXT("Target too far , setting new target"));
         SetNewTargetLocation();
         return;
     }
@@ -437,7 +429,11 @@ void ABoss::StartTurn()
 			ECC_Visibility,
 			Params
 		);
-    	
+
+    	if (!IsLocationOnNavMesh(End))
+    	{
+    		continue;
+    	}
         
     	// 디버그 라인 표시 (더 오래 표시)
     	DrawDebugLine(GetWorld(), Start, End, bHit ? FColor::Red : FColor::Green, false, 5.0f, 0, 5.0f);
@@ -452,10 +448,7 @@ void ABoss::StartTurn()
     		return;
     	}
     }
-    
-    // 모든 방향이 막혔으면 Nav Mesh 내에서 랜덤한 방향으로 목표 회전 값을 추출한다.
-    /*const FVector RandomNavMeshPoint = GetRandomNavMeshLocation(GetActorLocation(), WanderRadius);
-    TurnDirection = (RandomNavMeshPoint - GetActorLocation()).GetSafeNormal();*/
+	
 	// 모든 방향이 막혔으면 뒤로 돌기
 	TurnDirection = -GetActorForwardVector();
     LOG(TEXT("All directions blocked, turning toward random NavMesh point"));
@@ -521,7 +514,13 @@ void ABoss::PerformTurn(const float& InDeltaTime)
 			}
 		}
 	}
-    
+
+	const bool bHasObstacleAhead = EnhancedAIController->GetBlackboardComponent()->GetValueAsBool("bHasObstacleAhead");
+	if (bHasObstacleAhead)
+	{
+		StartTurn();
+		return;
+	}
 	// 목표 회전 값과 현재 회전 값의 차이가 15도 미만이거나
 	// 회전을 시작한 지 2.0초를 초과했다면 회전을 종료하고 목표 지점을 재설정한다.
 	const float AngleDifference = FMath::Abs(FMath::FindDeltaAngleDegrees(CurrentRotation.Yaw, TargetRotation.Yaw));
@@ -581,13 +580,6 @@ bool ABoss::HasObstacleAhead()
 
 bool ABoss::IsLocationOnNavMesh(const FVector& InLocation) const
 {
-	/*UNavigationSystemV1* NavSystem = UNavigationSystemV1::GetCurrent(GetWorld());
-	if (!IsValid(NavSystem)) return false;
-    
-	FNavLocation NavLocation;
-
-	// 액터가 NavMesh 상에 존재하는지에 대한 여부를 반환한다.
-	return NavSystem->ProjectPointToNavigation(InLocation, NavLocation, FVector(100.0f, 100.0f, 100.0f));*/
 	UNavigationSystemV1* NavSystem = UNavigationSystemV1::GetCurrent(GetWorld());
 	if (!IsValid(NavSystem)) return false;
     
