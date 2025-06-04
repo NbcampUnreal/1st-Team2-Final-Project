@@ -357,6 +357,11 @@ bool UADInventoryComponent::AddInventoryItem(const FItemData& ItemData)
 		if (FoundRow)
 		{
 			int8 ItemIndex = FindItemIndexByName(ItemData.Name);
+			if (ItemData.ItemType == EItemType::Equipment)
+			{
+				if (ItemIndex != -1)
+					return false;
+			}
 			LOGINVEN(Warning, TEXT("AddInventoryItem ItemIndex : %d"), ItemIndex);
 			bool bIsUpdateSuccess = false;
 
@@ -476,7 +481,6 @@ void UADInventoryComponent::RemoveBySlotIndex(uint8 SlotIndex, EItemType ItemTyp
 
 		if (bIsDropAction)
 		{
-			/*M_PlaySound(ESFX::DropItem);*/
 			DropItem(Item);
 		}
 		InventoryList.UpdateQuantity(InventoryIndex, INDEX_NONE);
