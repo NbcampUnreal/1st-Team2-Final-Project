@@ -14,7 +14,6 @@ public:
 
 public:
 	virtual void BeginPlay() override;
-	virtual void Tick(float DeltaTime) override;
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Collision")
