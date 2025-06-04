@@ -9,6 +9,7 @@
 #include "Net/UnrealNetwork.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "AbyssDiverUnderWorld.h"
+#include "Interactable/OtherActors/Radars/RadarReturnComponent.h"
 
 const FName AMonster::MonsterStateKey = "MonsterState";
 
@@ -22,6 +23,8 @@ AMonster::AMonster()
 	bUseControllerRotationYaw = false;
 	bReplicates = true;
 	SetReplicatingMovement(true);
+
+	RadarReturnComponent->FactionTags.Init(TEXT("Hostile"), 1);
 }
 
 void AMonster::BeginPlay()

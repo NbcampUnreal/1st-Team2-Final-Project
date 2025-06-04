@@ -28,9 +28,10 @@ AADOreRock::AADOreRock()
 	// InteractableComponent 생성
 	InteractableComp = CreateDefaultSubobject<UADInteractableComponent>(TEXT("InteractableComp"));
 
+	RadarReturnComponent = CreateDefaultSubobject<URadarReturnComponent>(TEXT("RadarReturn"));
+	RadarReturnComponent->ChangeNeutralReturnSize(0.3f);
+
 	bIsHold = true;
-
-
 }
 
 // Called when the game starts or when spawned
