@@ -35,9 +35,7 @@ UADInventoryComponent::UADInventoryComponent() :
 	TotalPrice(0),
 	WeightMax(100),
 	CurrentEquipmentSlotIndex(INDEX_NONE),
-	bInventoryWidgetShowed(false), 
 	CurrentEquipmentInstance(nullptr),
-	bAlreadyCursorShowed(false),
 	ToggleWidgetInstance(nullptr),
 	bCanUseItem(true),
 	DataTableSubsystem(nullptr),
@@ -410,7 +408,6 @@ void UADInventoryComponent::ShowInventory()
 
 	ToggleWidgetInstance->PlaySlideAnimation(true);
 	InventoryUIUpdate();
-	bAlreadyCursorShowed = PC->bShowMouseCursor;
 	PC->bShowMouseCursor = true;
 
 	FInputModeGameAndUI InputMode;
@@ -425,13 +422,11 @@ void UADInventoryComponent::ShowInventory()
 void UADInventoryComponent::HideInventory()
 {
 	APlayerController* PC = Cast<APlayerController>(Cast<AADPlayerState>(GetOwner())->GetPlayerController());
-	if (!PC && !ToggleWidgetInstance) return;
+	if (!PC || !ToggleWidgetInstance) return;
 
-	bInventoryWidgetShowed = false;
 	ToggleWidgetInstance->PlaySlideAnimation(false);
 
-	if (!bAlreadyCursorShowed)
-		PC->bShowMouseCursor = false;
+	PC->bShowMouseCursor = false;
 	PC->SetIgnoreLookInput(false);
 	PC->SetInputMode(FInputModeGameOnly());
 	
@@ -558,7 +553,8 @@ void UADInventoryComponent::CopyInventoryFrom(UADInventoryComponent* Source)
 	{
 		InventoryList.Items.Add(Item);
 	}
-
+	Source->TotalPrice = TotalPrice;
+	Source->TotalWeight = TotalWeight;
 	// FastArray는 복사 후 MarkItemDirty 필요
 	InventoryMarkArrayDirty();
 }

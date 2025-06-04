@@ -51,6 +51,7 @@ public:
 	void PlayVisibleAnimation(bool bIsVisible);
 private:
 	void InitializeChargeBatteryWidget();
+	uint8 bChargeBatteryWidgetShowed : 1;
 #pragma endregion
 
 #pragma region Variable
@@ -95,6 +96,7 @@ private:
 	FName CurrentChargeItem;
 	FTimerHandle IncreaseTimerHandle;
 	FTimerHandle InitialzieTimerHandle;
+	FTimerHandle HiddenTimerHandle;
 
 	TMap<FName, EChargeBatteryType> ChargeBatteryTypeMap = {
 		{FName(TEXT("NightVisionGoggle")), EChargeBatteryType::NightVisionGoggle},
