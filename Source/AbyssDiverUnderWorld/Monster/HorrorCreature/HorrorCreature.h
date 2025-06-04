@@ -16,7 +16,6 @@ class ABYSSDIVERUNDERWORLD_API AHorrorCreature : public AMonster
 public:
 	AHorrorCreature();
 
-	void Tick(float DeltaTime) override;
 #pragma region Variable
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI|Attack", meta = (AllowPrivateAccess = "true"))
