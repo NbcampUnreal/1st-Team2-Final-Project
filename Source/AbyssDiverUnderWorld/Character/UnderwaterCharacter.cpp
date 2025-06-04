@@ -31,7 +31,7 @@
 #include "Laser/ADLaserCutter.h"
 #include "PlayerComponent/LanternComponent.h"
 #include "PlayerComponent/ShieldComponent.h"
-#include "EngineUtils.h"
+#include "PlayerComponent/UnderwaterEffectComponent.h"
 
 DEFINE_LOG_CATEGORY(LogAbyssDiverCharacter);
 
@@ -138,6 +138,8 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	EquipUseComponent = CreateDefaultSubobject<UEquipUseComponent>(TEXT("EquipUseComponent"));
 
 	LanternComponent = CreateDefaultSubobject<ULanternComponent>(TEXT("LanternComponent"));
+
+	UnderwaterEffectComponent = CreateDefaultSubobject<UUnderwaterEffectComponent>(TEXT("UnderwaterEffectComponent"));
 	FootstepComponent = CreateDefaultSubobject<UFootstepComponent>(TEXT("FootstepComponent"));
 	
 	bIsRadarOn = false;
