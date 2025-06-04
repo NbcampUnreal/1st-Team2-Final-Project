@@ -218,9 +218,9 @@ void AAlienShark::StartTurn()
         }
         
         const FVector End = Start + Direction * TraceDistance;
-        FColor DebugColor = bDirectionViable ? FColor::Green : FColor::Red;
 
 #if WITH_EDITOR
+        FColor DebugColor = bDirectionViable ? FColor::Green : FColor::Red;
         DrawDebugLine(GetWorld(), Start, End, DebugColor, false, 1.0f, 0, 2.0f);
 #endif
         
@@ -448,8 +448,9 @@ void AAlienShark::SmoothMoveAlongSurface(const float& InDeltaTime)
                 bHit = true;
             }
         }
-
+#if WITH_EDITOR
         DrawDebugLine(GetWorld(), Start, End, FColor::Blue, false, 0.1f, 0, 2.0f);
+#endif
     }
 
     if (bHit)
