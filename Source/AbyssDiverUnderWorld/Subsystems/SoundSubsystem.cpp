@@ -103,12 +103,20 @@ void USoundSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 void USoundSubsystem::Init(const int32 InitialPoolCount)
 {
-	ActivatedAmbientComponents.Empty(InitialPoolCount);
-	ActivatedBGMComponents.Empty(InitialPoolCount);
-	ActivatedSFXComponents.Empty(InitialPoolCount);
+	ActivatedAmbientComponents.Reset();
+	ActivatedAmbientComponents.Reserve(InitialPoolCount);
 
-	AudioComponentWithIdMap.Empty(InitialPoolCount);
-	AudioIdWithComponentMap.Empty(InitialPoolCount);
+	ActivatedBGMComponents.Reset();
+	ActivatedBGMComponents.Reserve(InitialPoolCount);
+
+	ActivatedSFXComponents.Reset();
+	ActivatedSFXComponents.Reserve(InitialPoolCount);
+
+	AudioComponentWithIdMap.Reset();
+	AudioComponentWithIdMap.Reserve(InitialPoolCount);
+
+	AudioIdWithComponentMap.Reset();
+	AudioIdWithComponentMap.Reserve(InitialPoolCount);
 
 	DeactivatedComponents.Empty();
 
@@ -356,9 +364,14 @@ void USoundSubsystem::OnAudioFinished(UAudioComponent* FinishedAudio)
 		LOGV(Warning, TEXT("Removing Ambient Comp, Activated : %d, Deactivated? : %d"), ActivatedAmbientComponents.Num(), DeactivatedComponents.IsEmpty());
 	}
 
-	if (::IsValid(FinishedAudio) == false || FinishedAudio->IsValidLowLevel() == false)
+	if (::IsValid(FinishedAudio) == false || FinishedAudio->GetWorld() == nullptr)
 	{
 		LOGV(Warning, TEXT("Trying to Deactivated, But Not Valid"));
+
+		if (AudioIdWithComponentMap.Contains(FinishedAudio) == false)
+		{
+			return;
+		}
 
 		int32 OldId = AudioIdWithComponentMap[FinishedAudio];
 		AudioComponentWithIdMap.Remove(OldId);
@@ -382,12 +395,11 @@ void USoundSubsystem::OnAudioFinished(UAudioComponent* FinishedAudio)
 int32 USoundSubsystem::Play2DInternal(USoundBase* SoundAsset, const bool& bIsBGM, const bool& bIsAmbient, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve)
 {
 	TObjectPtr<UAudioComponent> NewAudio = GetNewAudio();
-	if (NewAudio == nullptr)
+	if (NewAudio == nullptr || IsValid(NewAudio) == false || NewAudio->IsValidLowLevel() == false)
 	{
+		LOGV(Error, TEXT("Not Valid"));
 		return INDEX_NONE;
 	}
-
-	NewAudio->RegisterComponent();
 
 	float NewVolume = MasterVolume * Volume;
 
