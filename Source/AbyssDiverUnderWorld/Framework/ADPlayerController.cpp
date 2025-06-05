@@ -73,7 +73,7 @@ void AADPlayerController::SetPawn(APawn* InPawn)
 
 	if (InPawn)
 	{
-		// »óÈ£ÀÛ¿ë UI »ý¼º°ú ÇÔ¼ö ¹ÙÀÎµù
+		// ï¿½ï¿½È£ï¿½Û¿ï¿½ UI ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ô¼ï¿½ ï¿½ï¿½ï¿½Îµï¿½
 		if (InteractionWidgetClass && IsLocalController())
 		{
 			InteractionWidget = CreateWidget<UInteractionDescriptionWidget>(this, InteractionWidgetClass);
@@ -160,5 +160,13 @@ void AADPlayerController::HideInventory(const FInputActionValue& InputActionValu
 	if (AADPlayerState* PS = GetPlayerState<AADPlayerState>())
 	{
 		PS->GetInventory()->HideInventory();
+	}
+}
+
+void AADPlayerController::ToggleTestHUD()
+{
+	if (PlayerHUDComponent)
+	{
+		PlayerHUDComponent->ToggleTestHUD();
 	}
 }
