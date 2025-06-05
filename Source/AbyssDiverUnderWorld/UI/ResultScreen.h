@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
@@ -12,7 +12,7 @@ enum class EAliveInfo
 	Alive,
 	Abandoned,
 	Dead,
-	MAX
+	MAX UMETA(Hidden)
 };
 
 struct FResultScreenParams
@@ -53,21 +53,21 @@ protected:
 
 public:
 
-	// Player Index´Â 1ºÎÅÍ ½ÃÀÛ
+	// Player IndexëŠ” 1ë¶€í„° ì‹œì‘
 	void Update(int32 PlayerIndexBased_1, const FResultScreenParams& Params);
 
-	// Player Index´Â 1ºÎÅÍ ½ÃÀÛ
+	// Player IndexëŠ” 1ë¶€í„° ì‹œì‘
 	void ChangePlayerNickNameText(int32 PlayerIndexBased_1, const FString& NewText);
 
-	// Player Index´Â 1ºÎÅÍ ½ÃÀÛ
+	// Player IndexëŠ” 1ë¶€í„° ì‹œì‘
 	void ChangePlayerAliveText(int32 PlayerIndexBased_1, EAliveInfo AliveInfo);
 	void ChangePlayerAliveText(int32 PlayerIndexBased_1, const FString& NewText);
 
-	// Player Index´Â 1ºÎÅÍ ½ÃÀÛ
+	// Player IndexëŠ” 1ë¶€í„° ì‹œì‘
 	void ChangePlayerContributionText(int32 PlayerIndexBased_1, int32 ContributionScore);
 	void ChangePlayerContributionText(int32 PlayerIndexBased_1, const FString& NewText);
 
-	// Player Index´Â 1ºÎÅÍ ½ÃÀÛ
+	// Player IndexëŠ” 1ë¶€í„° ì‹œì‘
 	void ChangePlayerOreText(int32 PlayerIndexBased_1, int32 OreScore);
 	void ChangePlayerOreText(int32 PlayerIndexBased_1, const FString& NewText);
 

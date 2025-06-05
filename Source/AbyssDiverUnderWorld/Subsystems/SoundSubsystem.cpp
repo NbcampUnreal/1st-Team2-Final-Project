@@ -491,20 +491,7 @@ UAudioComponent* USoundSubsystem::GetNewAudio()
 
 		DeactivatedComponents.Dequeue(NewAudio);
 
-		if (NewAudio == nullptr || IsValid(NewAudio) == false || NewAudio->IsValidLowLevel() == false)
-		{
-			LOGV(Error, TEXT("Not Valid"));
-
-			if (AudioIdWithComponentMap.Contains(NewAudio))
-			{
-				int32 OldId = AudioIdWithComponentMap[NewAudio];
-				AudioComponentWithIdMap.Remove(OldId);
-				AudioIdWithComponentMap.Remove(NewAudio);
-			}
-
-			continue;
-		}
-		else
+		if (RemoveInvalidAudioComponent(NewAudio) == false)
 		{
 			break;
 		}
@@ -516,6 +503,23 @@ UAudioComponent* USoundSubsystem::GetNewAudio()
 	}
 
 	return NewAudio;
+}
+
+bool USoundSubsystem::RemoveInvalidAudioComponent(UAudioComponent* SomeAudio)
+{
+	if (SomeAudio && IsValid(SomeAudio) && SomeAudio->GetWorld())
+	{
+		return false;
+	}
+
+	if (AudioIdWithComponentMap.Contains(SomeAudio))
+	{
+		int32 OldId = AudioIdWithComponentMap[SomeAudio];
+		AudioComponentWithIdMap.Remove(OldId);
+		AudioIdWithComponentMap.Remove(SomeAudio);
+	}
+
+	return true;
 }
 
 void USoundSubsystem::CreateAudioComponent()
