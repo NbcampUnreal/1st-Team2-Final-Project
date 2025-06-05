@@ -8,6 +8,7 @@
 
 /*
  * Light Channel
+ * Local 1인칭 메시 : Channel 0
  * Local 3인칭 메시 : Channel 1
  * Other 3인칭 메시 : Channel 1, 2
  * Lantern Light : Channel 0, 2
