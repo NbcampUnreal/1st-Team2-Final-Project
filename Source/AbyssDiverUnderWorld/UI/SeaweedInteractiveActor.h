@@ -65,6 +65,9 @@ protected:
     float LerpAlpha = 0.0f;
     uint8 bShouldBend : 1;
 
+    // Multiplayer-safe counter
+    int32 OverlappingCharacterCount = 0;
+
     FVector StartPos = FVector::ZeroVector;
     FVector EndPos = FVector(0.f, 0.f, 795.f);
     FVector StartTangent = FVector(0.f, 0.f, 100.f);

@@ -10,16 +10,13 @@ ASeaweedInteractiveActor::ASeaweedInteractiveActor()
 {
     PrimaryActorTick.bCanEverTick = true;
 
-    // Root
     SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
     RootComponent = SceneRoot;
 
-    // Static Mesh (시각적 회전용)
     SeaweedMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SeaweedMesh"));
     SeaweedMesh->SetupAttachment(SceneRoot);
     SeaweedMesh->SetRelativeLocation(FVector(0.f, 0.f, -100.f));
 
-    // Spline Mesh (휘는 효과용)
     SplineMesh = CreateDefaultSubobject<USplineMeshComponent>(TEXT("SplineMesh"));
     SplineMesh->SetupAttachment(SceneRoot);
 
@@ -31,7 +28,6 @@ ASeaweedInteractiveActor::ASeaweedInteractiveActor()
         SplineMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     }
 
-    // Detection
     DetectionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("DetectionSphere"));
     DetectionSphere->SetupAttachment(SceneRoot);
     DetectionSphere->SetSphereRadius(150.f);
@@ -79,35 +75,45 @@ void ASeaweedInteractiveActor::TickSplineBend(float DeltaTime)
 }
 
 void ASeaweedInteractiveActor::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
-    UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+    UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
+    bool bFromSweep, const FHitResult& SweepResult)
 {
-    ACharacter* Player = UGameplayStatics::GetPlayerCharacter(GetWorld(), 0);
-    if (OtherActor == Player)
+    if (OtherActor && OtherActor->IsA<ACharacter>())
     {
+        OverlappingCharacterCount++;
+
         FVector SeaweedLocation = GetActorLocation();
-        FVector PlayerLocation = Player->GetActorLocation();
+        FVector PlayerLocation = OtherActor->GetActorLocation();
         FVector ToPlayer = PlayerLocation - SeaweedLocation;
-        ToPlayer.Normalize();
 
-        FVector UpVector = SeaweedMesh->GetUpVector();
-        FVector RotationAxis = FVector::CrossProduct(UpVector, ToPlayer).GetSafeNormal();
-        float Dot = FVector::DotProduct(UpVector, ToPlayer);
-        float Sign = FMath::Sign(Dot);
+        if (!ToPlayer.IsNearlyZero())
+        {
+            ToPlayer.Normalize();
 
-        FQuat QuatRot = FQuat(RotationAxis, FMath::DegreesToRadians(BendPitch * Sign));
-        FRotator BentRot = (QuatRot * StartRotation.Quaternion()).Rotator();
+            FVector UpVector = SeaweedMesh->GetUpVector();
+            FVector RotationAxis = FVector::CrossProduct(UpVector, ToPlayer).GetSafeNormal();
+            float Dot = FVector::DotProduct(UpVector, ToPlayer);
+            float Sign = FMath::Sign(Dot);
 
-        TargetRotation = BentRot;
-        bShouldBend = true;
+            FQuat QuatRot = FQuat(RotationAxis, FMath::DegreesToRadians(BendPitch * Sign));
+            FRotator BentRot = (QuatRot * StartRotation.Quaternion()).Rotator();
+            TargetRotation = BentRot;
+
+            bShouldBend = true;
+        }
     }
 }
+
 
 void ASeaweedInteractiveActor::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
     UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-    ACharacter* Player = UGameplayStatics::GetPlayerCharacter(GetWorld(), 0);
-    if (OtherActor == Player)
+    if (Cast<ACharacter>(OtherActor))
     {
-        bShouldBend = false;
+        OverlappingCharacterCount = FMath::Max(0, OverlappingCharacterCount - 1);
+        if (OverlappingCharacterCount == 0)
+        {
+            bShouldBend = false;
+        }
     }
 }
