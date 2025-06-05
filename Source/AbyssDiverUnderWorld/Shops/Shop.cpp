@@ -184,9 +184,9 @@ AShop::AShop()
 	ItemMeshCaptureComp->ShowFlags.EyeAdaptation = false;
 	ItemMeshCaptureComp->ShowFlags.LocalExposure = false;
 	ItemMeshCaptureComp->ShowFlags.MotionBlur = false;
-	ItemMeshCaptureComp->ShowFlags.PostProcessMaterial = true;
+	//ItemMeshCaptureComp->ShowFlags.PostProcessMaterial = true;
 	ItemMeshCaptureComp->ShowFlags.ToneCurve = true;
-	ItemMeshCaptureComp->ShowFlags.Tonemapper = true;
+	//ItemMeshCaptureComp->ShowFlags.Tonemapper = true;
 
 	ItemMeshCaptureComp->ShowFlags.SkyLighting = false;
 

@@ -30,6 +30,7 @@ public class AbyssDiverUnderWorld : ModuleRules
             , "GameplayTags"
             , "Voice"
             , "NavigationSystem"
+            , "UnrealEd"
         });
 		
         PublicIncludePaths.AddRange(new string[] { "AbyssDiverUnderWorld" });

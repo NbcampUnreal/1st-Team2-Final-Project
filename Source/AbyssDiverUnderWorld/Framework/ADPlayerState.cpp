@@ -38,7 +38,6 @@ void AADPlayerState::BeginPlay()
 	}
 }
 
-
 //Client
 void AADPlayerState::PostNetInit()
 {
@@ -73,8 +72,21 @@ void AADPlayerState::CopyProperties(APlayerState* PlayerState)
 {
 	Super::CopyProperties(PlayerState);
 
+	if (ensure(this) == false || ensure(PlayerState) == false)
+	{
+		return;
+	}
+
 	AADPlayerState* NextPlayerState = CastChecked<AADPlayerState>(PlayerState);
-	LOGV(Warning, TEXT("Id Copied, Old : %d, New : %d, Net : %s"), PlayerIndex, NextPlayerState->GetPlayerIndex(), *NextPlayerState->GetUniqueId().GetUniqueNetId()->ToString());
+
+	const FUniqueNetIdRepl& UniqueNetIdRepl = NextPlayerState->GetUniqueId();
+	if (ensure(&UniqueNetIdRepl) == false)
+	{
+		return;
+	}
+
+	LOGV(Warning, TEXT("Id Copied, Old : %d, New : %d, Net : %s"), PlayerIndex, NextPlayerState->GetPlayerIndex(), *UniqueNetIdRepl->ToString());
+	
 	NextPlayerState->SetPlayerIndex(PlayerIndex);
 	if (UUpgradeComponent* NextUpgradeComponent = NextPlayerState->GetUpgradeComp())
 	{
@@ -85,6 +97,8 @@ void AADPlayerState::CopyProperties(APlayerState* PlayerState)
 	{
 		NextInventoryComp->CopyInventoryFrom(GetInventory());
 	}
+
+	NextPlayerState->SetPlayerNickname(PlayerNickname);
 }
 
 void AADPlayerState::SetPlayerInfo( const FString& InNickname)
