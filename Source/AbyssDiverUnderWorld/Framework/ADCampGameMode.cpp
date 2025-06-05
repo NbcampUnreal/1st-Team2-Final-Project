@@ -25,7 +25,7 @@ void AADCampGameMode::PostLogin(APlayerController* NewPlayer)
 {
 	Super::PostLogin(NewPlayer);
 
-	FString NewPlayerId = NewPlayer->GetPlayerState<AADPlayerState>()->GetUniqueId().GetUniqueNetId()->ToString();
+	FString NewPlayerId = NewPlayer->GetPlayerState<AADPlayerState>()->GetUniqueId()->ToString();
 
 	LOGV(Warning, TEXT("%s Has Entered"), *NewPlayerId);
 	UADGameInstance* GI = GetGameInstance<UADGameInstance>();
@@ -43,6 +43,7 @@ void AADCampGameMode::PostLogin(APlayerController* NewPlayer)
 			return;
 		}
 
+		ADPlayerState->SetPlayerNickname(NewPlayerId);
 		ADPlayerState->SetPlayerIndex(NewPlayerIndex);
 	}
 }

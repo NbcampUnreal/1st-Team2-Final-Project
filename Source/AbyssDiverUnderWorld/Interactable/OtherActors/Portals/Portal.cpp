@@ -94,7 +94,7 @@ FString APortal::GetInteractionDescription() const
 
 USoundSubsystem* APortal::GetSoundSubsystem()
 {
-	if (SoundSubsystem)
+	if (IsValid(SoundSubsystem))
 	{
 		return SoundSubsystem;
 	}
@@ -102,9 +102,10 @@ USoundSubsystem* APortal::GetSoundSubsystem()
 	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
 	{
 		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
-		return SoundSubsystem;
 	}
-	return nullptr;
+
+	check(SoundSubsystem);
+	return SoundSubsystem;
 }
 
 
