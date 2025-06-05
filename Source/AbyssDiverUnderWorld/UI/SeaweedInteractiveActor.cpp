@@ -3,8 +3,7 @@
 #include "Components/SphereComponent.h"
 #include "Components/SplineMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
-#include "GameFramework/Character.h"
-#include "UObject/ConstructorHelpers.h"
+#include "Character/UnderwaterCharacter.h"
 
 ASeaweedInteractiveActor::ASeaweedInteractiveActor()
 {
@@ -19,14 +18,7 @@ ASeaweedInteractiveActor::ASeaweedInteractiveActor()
 
     SplineMesh = CreateDefaultSubobject<USplineMeshComponent>(TEXT("SplineMesh"));
     SplineMesh->SetupAttachment(SceneRoot);
-
-    static ConstructorHelpers::FObjectFinder<UStaticMesh> MeshAsset(TEXT("/Game/OceanFloor/Meshes/SM_SeaweedE.SM_SeaweedE"));
-    if (MeshAsset.Succeeded())
-    {
-        SplineMesh->SetStaticMesh(MeshAsset.Object);
-        SplineMesh->SetStartAndEnd(StartPos, StartTangent, EndPos, StartTangent);
-        SplineMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-    }
+    SplineMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
     DetectionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("DetectionSphere"));
     DetectionSphere->SetupAttachment(SceneRoot);
@@ -43,6 +35,12 @@ void ASeaweedInteractiveActor::BeginPlay()
 
     StartRotation = SeaweedMesh->GetRelativeRotation();
     TargetRotation = StartRotation;
+
+    if (SeaweedMeshAsset)
+    {
+        SplineMesh->SetStaticMesh(SeaweedMeshAsset);
+        SplineMesh->SetStartAndEnd(StartPos, StartTangent, EndPos, StartTangent);
+    }
 }
 
 void ASeaweedInteractiveActor::Tick(float DeltaTime)
@@ -78,7 +76,7 @@ void ASeaweedInteractiveActor::OnOverlapBegin(UPrimitiveComponent* OverlappedCom
     UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
     bool bFromSweep, const FHitResult& SweepResult)
 {
-    if (OtherActor && OtherActor->IsA<ACharacter>())
+    if (Cast<AUnderwaterCharacter>(OtherActor))
     {
         OverlappingCharacterCount++;
 
@@ -104,11 +102,10 @@ void ASeaweedInteractiveActor::OnOverlapBegin(UPrimitiveComponent* OverlappedCom
     }
 }
 
-
 void ASeaweedInteractiveActor::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
     UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-    if (Cast<ACharacter>(OtherActor))
+    if (Cast<AUnderwaterCharacter>(OtherActor))
     {
         OverlappingCharacterCount = FMath::Max(0, OverlappingCharacterCount - 1);
         if (OverlappingCharacterCount == 0)

@@ -57,6 +57,9 @@ protected:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
     TObjectPtr<USplineMeshComponent> SplineMesh;
 
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Seaweed", meta = (AllowPrivateAccess = "true"))
+    TObjectPtr<UStaticMesh> SeaweedMeshAsset;
+
     // Runtime
     FRotator StartRotation;
     FRotator TargetRotation;
