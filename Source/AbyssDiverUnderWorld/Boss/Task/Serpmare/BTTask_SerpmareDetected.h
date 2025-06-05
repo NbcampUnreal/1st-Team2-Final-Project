@@ -9,7 +9,6 @@ struct FBTSerpmareDetectedTaskMemory
 {
 	TWeakObjectPtr<class ASerpmare> Serpmare;
 	TWeakObjectPtr<class ABossAIController> AIController;
-	float AccumulatedAttackTime;
 	float AccumulatedDetectTime;
 };
 

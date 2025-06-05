@@ -90,11 +90,39 @@ void UPlayerHUDComponent::C_ShowResultScreen_Implementation()
 {
 	for (AADPlayerState* PS : TActorRange<AADPlayerState>(GetWorld()))
 	{
+		AUnderwaterCharacter* PlayerCharacter = Cast<AUnderwaterCharacter>(PS->GetPawn());
+		if (ensure(PlayerCharacter) == false)
+		{
+			continue;
+		}
+
+		EAliveInfo AliveInfo = EAliveInfo::Alive;
+
+		if (PS->IsSafeReturn() == false)
+		{
+			const ECharacterState CharacterState = PlayerCharacter->GetCharacterState();
+			switch (CharacterState)
+			{
+			case ECharacterState::Normal:
+				AliveInfo = EAliveInfo::Abandoned;
+				break;
+			case ECharacterState::Groggy:
+				AliveInfo = EAliveInfo::Dead;
+				break;
+			case ECharacterState::Death:
+				AliveInfo = EAliveInfo::Dead;
+				break;
+			default:
+				check(false);
+				break;
+			}
+		}
+
 		FResultScreenParams Params(
 			PS->GetPlayerNickname(),
 			98,
 			PS->GetTotalOreMinedCount(),
-			EAliveInfo::Abandoned
+			AliveInfo
 		);
 		UpdateResultScreen(PS->GetPlayerIndex(), Params);
 	}

@@ -104,6 +104,9 @@ private:
 
 	UAudioComponent* GetNewAudio();
 
+	// return : Succeeded to remove?
+	bool RemoveInvalidAudioComponent(UAudioComponent* SomeAudio);
+
 	void CreateAudioComponent();
 
 	// ID 만드는데 실패하면 INDEX_NONE 반환

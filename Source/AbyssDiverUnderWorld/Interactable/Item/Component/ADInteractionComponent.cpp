@@ -66,12 +66,14 @@ void UADInteractionComponent::TickComponent(float DeltaTime, ELevelTick TickType
 			OnInteractReleased();
 		}
 	}
+#if WITH_EDITOR
 	DrawDebugSphere(
 		GetWorld(),
 		GetOwner()->GetActorLocation(),
 		RangeSphere->GetScaledSphereRadius(),
 		16, FColor::Blue, false, -1.f, 0, 2.f
 	);
+#endif
 }
 
 void UADInteractionComponent::S_RequestInteract_Implementation(AActor* TargetActor)
