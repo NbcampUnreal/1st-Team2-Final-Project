@@ -786,21 +786,22 @@ void UADInventoryComponent::UnEquip()
 void UADInventoryComponent::DropItem(FItemData& ItemData)
 {
 	// EquipComp의 장비 현재값 초기화
-	if (APlayerState* PS = Cast<APlayerState>(GetOwner()))
+	APlayerState* PS = Cast<APlayerState>(GetOwner());
+	if (!PS) return;
+	APawn* Pawn = PS->GetPawn();
+	if (!Pawn) return;
+	if (UEquipUseComponent* EquipComp = Pawn->FindComponentByClass<UEquipUseComponent>())
 	{
-		// GetPawn() returns the pawn possessed by this PlayerState
-		if (APawn* Pawn = PS->GetPawn())
-		{
-			// Now find your EquipUseComponent on the pawn
-			if (UEquipUseComponent* EquipComp = Pawn->FindComponentByClass<UEquipUseComponent>())
-			{
-				EquipComp->DeinitializeEquip();
-			}
-		}
+		EquipComp->DeinitializeEquip();
 	}
 	FVector DropLocation = GetDropLocation();
 	AADUseItem* SpawnItem = GetWorld()->SpawnActor<AADUseItem>(AADUseItem::StaticClass(), DropLocation, FRotator::ZeroRotator);
-	M_SpawnItemEffect(ESFX::DropItem, DropItemEffect, DropLocation);
+	AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(Pawn);
+	EEnvironmentState CurrentEnviromnent = UnderwaterCharacter->GetEnvironmentState();
+	if (CurrentEnviromnent == EEnvironmentState::Underwater)
+	{
+		M_SpawnItemEffect(ESFX::DropItem, DropItemEffect, DropLocation);
+	}
 	SpawnItem->SetItemInfo(ItemData, false);
 	LOGINVEN(Warning, TEXT("Spawn Item To Drop : %s"), *ItemData.Name.ToString());
 }
