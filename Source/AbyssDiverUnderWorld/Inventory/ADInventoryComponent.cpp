@@ -416,11 +416,12 @@ bool UADInventoryComponent::AddInventoryItem(const FItemData& ItemData)
 
 void UADInventoryComponent::ShowInventory()
 {
-	APlayerController* PC = Cast<APlayerController>(Cast<AADPlayerState>(GetOwner())->GetPlayerController());
+	AADPlayerState* PS = Cast<AADPlayerState>(GetOwner());
+	if (!PS) return;
+	APlayerController* PC = Cast<APlayerController>(PS->GetPlayerController());
 	if (!PC || !ToggleWidgetInstance) return;
 
 	ToggleWidgetInstance->PlaySlideAnimation(true);
-	InventoryUIUpdate();
 	PC->bShowMouseCursor = true;
 
 	FInputModeGameAndUI InputMode;
