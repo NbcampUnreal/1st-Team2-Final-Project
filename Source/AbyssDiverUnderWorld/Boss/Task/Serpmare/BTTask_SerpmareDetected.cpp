@@ -18,7 +18,6 @@ EBTNodeResult::Type UBTTask_SerpmareDetected::ExecuteTask(UBehaviorTreeComponent
 	FBTSerpmareDetectedTaskMemory* TaskMemory = (FBTSerpmareDetectedTaskMemory*)NodeMemory;
 	if (!TaskMemory) return EBTNodeResult::Failed;
 	
-	TaskMemory->AccumulatedAttackTime = 0.0f;
 	TaskMemory->AccumulatedDetectTime = 0.0f;
 	
 	return EBTNodeResult::InProgress;
@@ -39,15 +38,11 @@ void UBTTask_SerpmareDetected::TickTask(UBehaviorTreeComponent& OwnerComp, uint8
 	// 플레이어가 공격 범위 내에 있는 경우
 	if (TaskMemory->Serpmare->GetIsAttackCollisionOverlappedPlayer())
 	{
-		if (TaskMemory->AccumulatedAttackTime >= AttackInterval)
+		if (TaskMemory->Serpmare->GetCanAttack())
 		{
 			TaskMemory->Serpmare->SetBossState(EBossState::Attack);
 			FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 		}
-		else
-		{
-			TaskMemory->AccumulatedAttackTime += DeltaSeconds;
-		}	
 	}
 	// 플레이어가 공격 범위에서 벗어난 경우
 	else
@@ -67,7 +62,7 @@ void UBTTask_SerpmareDetected::TickTask(UBehaviorTreeComponent& OwnerComp, uint8
 		}
 		else
 		{
-			TaskMemory->AccumulatedDetectTime += DeltaSeconds;
+			TaskMemory->AccumulatedDetectTime += FMath::Clamp(DeltaSeconds, 0.0f, 0.1f);
 		}
 	}
 }
