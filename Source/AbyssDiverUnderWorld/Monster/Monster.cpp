@@ -209,7 +209,7 @@ void AMonster::AddDetection(AActor* Actor)
 	Count++;
 
 	// If Target is empty, set
-	if (TargetActor == nullptr)
+	if (TargetActor == nullptr || !IsValid(TargetActor))
 	{
 		TargetActor = Actor;
 
