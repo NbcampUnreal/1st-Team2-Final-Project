@@ -15,12 +15,13 @@ UUnderwaterEffectComponent::UUnderwaterEffectComponent()
 
 	BreathInterval = 10.0f;
 	BreathFirstDelay = 5.0f;
-	// BreathBubbleLocationOffset = FVector(0.0f, 0.0f, 0.0f);
 
 	MovementSoundThreshold = 300.0f;
 	MoveRequireTime = 0.5f;
 	MoveTimeAccumulator = 0.0f;
-	MovementAudioComponent = nullptr;
+	
+	MovementSoundFadeTime = 0.5f;
+	MovementSoundFadeCurve = EAudioFaderCurve::Linear;
 }
 
 
@@ -56,7 +57,26 @@ void UUnderwaterEffectComponent::BeginPlay()
 			);
 			MovementAudioComponent->SetAutoActivate(false);
 			MovementAudioComponent->Stop();
-			MovementAudioComponent->SetVolumeMultiplier(0.2f);
+			MovementAudioComponent->SetVolumeMultiplier(0.5f);
+
+			SprintMovementAudioComponent = UGameplayStatics::SpawnSoundAttached(
+				SprintMovementSound,
+				GetOwner()->GetRootComponent(),
+				NAME_None,
+				FVector::ZeroVector,
+				FRotator::ZeroRotator,
+				EAttachLocation::KeepRelativeOffset,
+				false,
+				0.0f,
+				1.0f,
+				0.0f,
+				nullptr,
+				nullptr,
+				false
+			);
+			SprintMovementAudioComponent->SetAutoActivate(false);
+			SprintMovementAudioComponent->Stop();
+			SprintMovementAudioComponent->SetVolumeMultiplier(0.5f);
 		}
 	}
 	else
@@ -133,7 +153,7 @@ void UUnderwaterEffectComponent::PlayBreathEffects()
 			GetWorld(),
 			BreathSound,
 			GetOwner()->GetActorLocation(),
-			0.5f,
+			0.2f,
 			1.0f,
 			0.0f
 		);
@@ -159,28 +179,42 @@ void UUnderwaterEffectComponent::PlayBreathEffects()
 
 void UUnderwaterEffectComponent::UpdateMovementEffects(float DeltaTime)
 {
-	float Speed = OwnerCharacter->GetVelocity().Size();
+	const float Speed = OwnerCharacter->GetVelocity().Size();
 
 	const bool bCurrentMoving = Speed > MovementSoundThreshold;
-	if (bCurrentMoving)
+	MoveTimeAccumulator = bCurrentMoving ? MoveTimeAccumulator + DeltaTime : 0.0f;
+	
+	const bool bWasMoving = bShouldPlayMovementSound;
+	bShouldPlayMovementSound = bCurrentMoving && MoveTimeAccumulator > MoveRequireTime;
+
+	if (bShouldPlayMovementSound)
 	{
-		MoveTimeAccumulator += DeltaTime;
+		if (!MovementAudioComponent->IsPlaying()
+			&& MovementSound)
+		{
+			if (bWasMoving)
+			{
+				const float Duration = MovementSound->GetDuration();
+				const float RandomStartTime = FMath::FRandRange(0.0f, Duration);
+				MovementAudioComponent->Play(RandomStartTime);	
+			}
+			else
+			{
+				MovementAudioComponent->Play();
+			}
+		}
+		if (Speed > OwnerCharacter->GetSprintSpeed() - 50.0f
+			&& SprintMovementSound
+			&& !SprintMovementAudioComponent->IsPlaying())
+		{
+			SprintMovementAudioComponent->Play();
+		}
 	}
 	else
 	{
-		MoveTimeAccumulator = 0.0f;
-	}
-
-	if (bCurrentMoving && MoveTimeAccumulator > MoveRequireTime)
-	{
-		if (MovementAudioComponent && !MovementAudioComponent->IsPlaying())
+		if (MovementAudioComponent->IsPlaying())
 		{
-			MovementAudioComponent->Play();
-		}
-		else if (!IsValid(MovementAudioComponent))
-		{
-			UE_LOG(LogAbyssDiverCharacter, Error, TEXT("MovementAudioComponent is not valid"));
+			MovementAudioComponent->FadeOut(MovementSoundFadeTime, 0.0f, MovementSoundFadeCurve);
 		}
 	}
 }
-

@@ -8,6 +8,8 @@
 #include "UnderwaterEffectComponent.generated.h"
 
 
+enum class EAudioFaderCurve : uint8;
+
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class ABYSSDIVERUNDERWORLD_API UUnderwaterEffectComponent : public UActorComponent
 {
@@ -38,7 +40,10 @@ protected:
 	void PlayBreathEffects();
 
 	/** 수중에서 이동 소리를 업데이트한다. 이 함수는 수중에서 이동 중일 때만 호출된다. */
-	void UpdateMovementEffects(float DeltaTime);
+	void UpdateMovementEffects(const float DeltaTime);
+
+	/** 급격한 속도 변화가 있을 경우에 사운드를 재생한다. */
+	void CheckVelocityChange(const float DeltaTime);
 	
 #pragma endregion
 
@@ -69,30 +74,46 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Character|UnderwaterEffect")
 	TObjectPtr<class UNiagaraSystem> BreathBubbleEffect;
 
-	// UPROPERTY(EditDefaultsOnly, Category = "Character|UnderwaterEffect")
-	// FVector BreathBubbleLocationOffset;
-
 	/** 숨쉬기 효과 재생 타이머 핸들. 숨쉬기 효과를 주기적으로 재생하는 데 사용된다. */
 	FTimerHandle BreathEffectTimerHandle;
 
 	// @ToDo : Sound Subsystem으로 변경
 
+	/** 수중에서 이동 소리를 재생하고 있는지 여부. 이 값이 true일 때만 이동 소리가 재생된다. */
+	UPROPERTY(BlueprintReadOnly, Category = "Character|UnderwaterEffect", meta = (AllowPrivateAccess = "true"))
+	uint8 bShouldPlayMovementSound : 1;
+	
 	/** 수중에서 이동 소리 재생을 위한 오디오 컴포넌트. 이 컴포넌트는 MovementSoundThreshold보다 큰 속도로 이동할 때만 소리를 재생한다. */
 	UPROPERTY()
 	TObjectPtr<UAudioComponent> MovementAudioComponent;
+
+	UPROPERTY()
+	TObjectPtr<UAudioComponent> SprintMovementAudioComponent;
 
 	/** 수중에서 이동 소리 재생을 위한 사운드. 이 사운드는 MovementSoundThreshold보다 큰 속도로 이동할 때만 재생된다. */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|UnderwaterEffect")
 	TObjectPtr<USoundBase> MovementSound;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Character|UnderwaterEffect")
+	TObjectPtr<USoundBase> SprintMovementSound;
+
 	/** 수중에서 이동 소리 재생을 위한 임계값. 이 값보다 큰 속도로 이동할 때만 소리가 재생된다. */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|UnderwaterEffect")
 	float MovementSoundThreshold;
 
+	/** 수중에서 이동 소리 재생을 위해 필요한 시간 */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|UnderwaterEffect")
 	float MoveRequireTime;
 
+	/** 수중에서 이동 소리 재생을 확인하기 위한 누적 시간 */
 	float MoveTimeAccumulator;
+
+	/** MovementSound Fade가 되는 시간 */
+	UPROPERTY(EditDefaultsOnly, Category = "Character|UnderwaterEffect")
+	float MovementSoundFadeTime;
+
+	/** FadeOut 함수 */
+	EAudioFaderCurve MovementSoundFadeCurve;
 
 #pragma endregion
 

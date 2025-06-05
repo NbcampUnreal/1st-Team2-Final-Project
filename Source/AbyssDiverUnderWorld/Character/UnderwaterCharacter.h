@@ -7,6 +7,7 @@
 #include "UnitBase.h"
 #include "Interface/IADInteractable.h"
 #include "AbyssDiverUnderWorld.h"
+#include "StatComponent.h"
 #include "UnderwaterCharacter.generated.h"
 
 #if UE_BUILD_SHIPPING
@@ -615,10 +616,6 @@ private:
 	/** Sprint 시에 적용되는 속도 배율. Sprint가 적용되면 EffectiveSpeed에 곱해진다. */
 	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float SprintMultiplier;
-	
-	/** Sprint 속도 */
-	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
-	float SprintSpeed;
 
 	/** 생성할 레이더 BP */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Radar", meta = (AllowPrivateAccess = "true"))
@@ -873,5 +870,8 @@ public:
 	
 	/** 상호작용 타입 반환 */
 	virtual FString GetInteractionDescription() const override { return TEXT("Revive Character!"); }
+
+	FORCEINLINE float GetSprintSpeed() const { return StatComponent->MoveSpeed * SprintMultiplier; }
+	
 #pragma endregion
 };
