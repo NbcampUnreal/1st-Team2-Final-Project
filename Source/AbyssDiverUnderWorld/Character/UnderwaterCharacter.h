@@ -435,6 +435,11 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FOnEnvironmentStateChanged OnEnvironmentStateChangedDelegate;
 
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnDamageTaken, float, DamageAmount, float, CurrentHealth);
+	/** 캐릭터가 피해를 입었을 때 호출되는 델리게이트, DamageAmount는 실드에 흡수된 데미지를 포함한다. */
+	UPROPERTY(BlueprintAssignable)
+	FOnDamageTaken OnDamageTakenDelegate;
+	
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnMontageEnd, UAnimMontage*, Montage, bool, bInterrupted);
 	/** 1인칭 메시 몽타주 종료 시 호출되는 델리게이트 */
 	UPROPERTY(BlueprintAssignable, Category = Animation)

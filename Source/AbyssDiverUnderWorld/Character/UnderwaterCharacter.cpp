@@ -1242,6 +1242,8 @@ float AUnderwaterCharacter::TakeDamage(float DamageAmount, struct FDamageEvent c
 		EmitBloodNoise();
 	}
 
+	OnDamageTakenDelegate.Broadcast(ActualDamage, StatComponent->GetCurrentHealth());
+
 	return ActualDamage;
 }
 
