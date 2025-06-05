@@ -16,6 +16,7 @@ const FName AEnhancedBossAIController::bIsChasingKey = "bIsChasing";
 const FName AEnhancedBossAIController::bHasAttackedKey = "bHasAttacked";
 const FName AEnhancedBossAIController::bIsPlayerHiddenKey = "bIsPlayerHidden";
 const FName AEnhancedBossAIController::BloodOccurredLocationKey = "BloodOccurredLocation";
+const FName AEnhancedBossAIController::TargetPlayerKey = "TargetPlayer";
 
 AEnhancedBossAIController::AEnhancedBossAIController()
 {
@@ -127,24 +128,42 @@ void AEnhancedBossAIController::OnTargetPerceptionUpdatedHandler(AActor* Actor, 
 
 void AEnhancedBossAIController::OnSightPerceptionSuccess(AUnderwaterCharacter* Player)
 {
+	LOG(TEXT("OnSightPerceptionSuccess: %s"), *Player->GetName());
 	// 플레이어가 부쉬에 숨은 상태라면 얼리 리턴
 	if (Player->IsHideInSeaweed())	return;
-	
-	// 블랙보드 키 값 세팅
-	BlackboardComponent->SetValueAsBool(bIsChasingKey, true);
-	BlackboardComponent->SetValueAsBool(bHasSeenPlayerKey, true);
-	SetBlackboardPerceptionType(EPerceptionType::Player);
-			
-	// 타겟 세팅
-	Boss->SetTarget(Player);
-	Boss->SetCachedTarget(Player);
 
-	// 플레이어 사라짐 인지 변수 초기화
-	bIsDisappearPlayer = false;
+	// 플레이어가 NavMesh 위에 있지 않다면 얼리 리턴
+	if (!Boss->IsLocationOnNavMesh(Player->GetActorLocation()))	return;
+
+	// AlienShark와 다른 AI의 동작방식이 다르다.
+	// 코드가 난잡해지긴 하지만, 개발속도 차원에서 일단 bool 값으로 대체한다.
+	if (bIsAlienShark)
+	{
+		// 현재 설정된 타겟이 없는 경우에만 블랙보드 값을 설정한다.
+		if (!IsValid(BlackboardComponent->GetValueAsObject(TargetPlayerKey)))
+		{
+			BlackboardComponent->SetValueAsObject(TargetPlayerKey, Player);	
+		}
+	}
+	else
+	{
+		// 블랙보드 키 값 세팅
+		BlackboardComponent->SetValueAsBool(bIsChasingKey, true);
+		BlackboardComponent->SetValueAsBool(bHasSeenPlayerKey, true);
+		SetBlackboardPerceptionType(EPerceptionType::Player);
+			
+		// 타겟 세팅
+		Boss->SetTarget(Player);
+		Boss->SetCachedTarget(Player);
+
+		// 플레이어 사라짐 인지 변수 초기화
+		bIsDisappearPlayer = false;	
+	}
 }
 
 void AEnhancedBossAIController::OnSightPerceptionFail()
 {
+	LOG(TEXT(" OnSightPerceptionFail"));
 	// 플레이어 사라짐 인지 변수 초기화
 	bIsDisappearPlayer = true;
 	BlackboardComponent->SetValueAsBool(bHasSeenPlayerKey, false);
