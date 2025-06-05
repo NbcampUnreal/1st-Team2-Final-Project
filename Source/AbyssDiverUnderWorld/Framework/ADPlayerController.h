@@ -36,6 +36,9 @@ protected:
 	virtual void SetupInputComponent() override;
 	void ShowInventory(const FInputActionValue& InputActionValue);
 	void HideInventory(const FInputActionValue& InputActionValue);
+
+	UFUNCTION(Exec)
+	void ToggleTestHUD();
 	
 #pragma endregion
 	

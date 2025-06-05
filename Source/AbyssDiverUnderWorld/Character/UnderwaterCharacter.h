@@ -7,6 +7,7 @@
 #include "UnitBase.h"
 #include "Interface/IADInteractable.h"
 #include "AbyssDiverUnderWorld.h"
+#include "StatComponent.h"
 #include "UnderwaterCharacter.generated.h"
 
 #if UE_BUILD_SHIPPING
@@ -434,6 +435,11 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FOnEnvironmentStateChanged OnEnvironmentStateChangedDelegate;
 
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnDamageTaken, float, DamageAmount, float, CurrentHealth);
+	/** 캐릭터가 피해를 입었을 때 호출되는 델리게이트, DamageAmount는 실드에 흡수된 데미지를 포함한다. */
+	UPROPERTY(BlueprintAssignable)
+	FOnDamageTaken OnDamageTakenDelegate;
+	
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnMontageEnd, UAnimMontage*, Montage, bool, bInterrupted);
 	/** 1인칭 메시 몽타주 종료 시 호출되는 델리게이트 */
 	UPROPERTY(BlueprintAssignable, Category = Animation)
@@ -615,10 +621,6 @@ private:
 	/** Sprint 시에 적용되는 속도 배율. Sprint가 적용되면 EffectiveSpeed에 곱해진다. */
 	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float SprintMultiplier;
-	
-	/** Sprint 속도 */
-	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
-	float SprintSpeed;
 
 	/** 생성할 레이더 BP */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Radar", meta = (AllowPrivateAccess = "true"))
@@ -873,5 +875,8 @@ public:
 	
 	/** 상호작용 타입 반환 */
 	virtual FString GetInteractionDescription() const override { return TEXT("Revive Character!"); }
+
+	FORCEINLINE float GetSprintSpeed() const { return StatComponent->MoveSpeed * SprintMultiplier; }
+	
 #pragma endregion
 };
