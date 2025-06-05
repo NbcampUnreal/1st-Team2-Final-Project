@@ -307,7 +307,8 @@ void ABoss::SmoothMoveAlongSurface(const float& InDeltaTime)
 
 void ABoss::PerformNormalMovement(const float& InDeltaTime)
 {
-	 const FVector CurrentLocation = GetActorLocation();
+	
+	const FVector CurrentLocation = GetActorLocation();
     
     // 목표점이 없거나 Nav Mesh를 벗어났으면 목표점을 새로 설정한다.
     if (TargetLocation.IsZero() || !IsLocationOnNavMesh(TargetLocation))
@@ -753,6 +754,7 @@ void ABoss::Attack()
 	if (IsValid(NormalAttackAnimations[AttackType]))
 	{
 		ChaseAccumulatedTime = 0.f;
+		AnimInstance->OnMontageEnded.RemoveDynamic(this, &ABoss::OnAttackMontageEnded);
 		AnimInstance->OnMontageEnded.AddDynamic(this, &ABoss::OnAttackMontageEnded);
 		M_PlayAnimation(NormalAttackAnimations[AttackType]);
 	}
@@ -775,20 +777,17 @@ void ABoss::M_PlayAnimation_Implementation(class UAnimMontage* AnimMontage, floa
 
 void ABoss::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
-	AEnhancedBossAIController* EnhancedBossAIController = Cast<AEnhancedBossAIController>(GetController());
-	if (!IsValid(EnhancedBossAIController) || !IsValid(AnimInstance)) return;
-
+	if (!IsValid(EnhancedAIController)) return;
+	
 	if (bIsAttackInfinite)
 	{
-		EnhancedBossAIController->GetBlackboardComponent()->SetValueAsBool("bHasAttacked", false);
+		EnhancedAIController->GetBlackboardComponent()->SetValueAsBool("bHasAttacked", false);
 	}
 	else
 	{
-		EnhancedBossAIController->GetBlackboardComponent()->SetValueAsBool("bHasDetectedPlayer", false);
-		EnhancedBossAIController->SetBlackboardPerceptionType(EPerceptionType::Finish);	
+		EnhancedAIController->GetBlackboardComponent()->SetValueAsBool("bHasDetectedPlayer", false);
+		EnhancedAIController->SetBlackboardPerceptionType(EPerceptionType::Finish);	
 	}
-	
-	AnimInstance->OnMontageEnded.RemoveDynamic(this, &ABoss::OnAttackMontageEnded);
 }
 
 void ABoss::OnMeshOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
