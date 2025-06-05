@@ -57,6 +57,9 @@ protected:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
     TObjectPtr<USplineMeshComponent> SplineMesh;
 
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Seaweed", meta = (AllowPrivateAccess = "true"))
+    TObjectPtr<UStaticMesh> SeaweedMeshAsset;
+
     // Runtime
     FRotator StartRotation;
     FRotator TargetRotation;
@@ -64,6 +67,9 @@ protected:
     float CurrentAlpha = 0.0f;
     float LerpAlpha = 0.0f;
     uint8 bShouldBend : 1;
+
+    // Multiplayer-safe counter
+    int32 OverlappingCharacterCount = 0;
 
     FVector StartPos = FVector::ZeroVector;
     FVector EndPos = FVector(0.f, 0.f, 795.f);
