@@ -648,7 +648,7 @@ FVector UADInventoryComponent::GetDropLocation()
 	APlayerController* PC = Cast<APlayerController>(Cast<AADPlayerState>(GetOwner())->GetPlayerController());
 	APawn* OwnerPawn = PC->GetPawn();
 	FVector CameraForward = PC->PlayerCameraManager->GetCameraRotation().Vector();
-	FVector DropLocation = OwnerPawn->GetActorLocation() +FVector(0, 0, 100) + UKismetMathLibrary::RandomUnitVectorInConeInDegrees(CameraForward, 30) * 350.0;
+	FVector DropLocation = OwnerPawn->GetActorLocation() +FVector(0, 0, 50) + UKismetMathLibrary::RandomUnitVectorInConeInDegrees(CameraForward, 30) * 150.0;
 	return DropLocation;
 }
 
