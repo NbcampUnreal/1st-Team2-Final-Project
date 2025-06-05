@@ -13,9 +13,11 @@ class ABYSSDIVERUNDERWORLD_API ALimadonSpawner : public ASpawner
 	GENERATED_BODY()
 
 public:
+
 	ALimadonSpawner();
 
 public:
+
 	virtual void Spawn() override;
 
 protected:
@@ -35,5 +37,7 @@ private:
 	TArray<FVector> OreSpawnedLocations;
 	TArray<TObjectPtr<ALimadonSpawnPoint>> LimadonSpawnedLocations;
 	float MaxLimadonSpawnDistance;
+
+	TArray<int32> RandomIndexs;
 	
 };
