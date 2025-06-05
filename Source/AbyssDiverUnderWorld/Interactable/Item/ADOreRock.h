@@ -51,6 +51,9 @@ protected:
 
 #pragma region Method
 public:
+	UFUNCTION(NetMulticast, Reliable)
+	void M_CleanupToolAndEffects(AUnderwaterCharacter* UnderwaterCharacter);
+	void M_CleanupToolAndEffects_Implementation(AUnderwaterCharacter* UnderwaterCharacter);
 
 	virtual void Interact_Implementation(AActor* InstigatorActor) override;
 	virtual void InteractHold_Implementation(AActor* InstigatorActor) override;
