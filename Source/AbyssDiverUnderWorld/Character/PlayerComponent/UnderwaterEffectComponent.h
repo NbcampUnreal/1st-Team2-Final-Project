@@ -43,6 +43,9 @@ protected:
 	/** 숨쉬기 효과를 재생한다. 이 함수는 숨쉬기 효과가 활성화되었을 때만 호출된다. */
 	void PlayBreathEffects();
 
+	/** 숨쉬기 효과 재생을 시작한다. */
+	void StartBreathEffect(float Delay);
+	
 	/** 공기 방울 효과를 생성한다. */
 	void SpawnBreathBubbleEffect();
 

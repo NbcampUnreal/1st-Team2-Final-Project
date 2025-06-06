@@ -6,6 +6,7 @@
 #include "NiagaraFunctionLibrary.h"
 #include "Character/UnderwaterCharacter.h"
 #include "Components/AudioComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Logging/LogMacros.h"
 
@@ -17,6 +18,7 @@ UUnderwaterEffectComponent::UUnderwaterEffectComponent()
 	BreathFirstDelay = 5.0f;
 	BreathSocketName = TEXT("head_bubble_socket");
 
+	bShouldPlayMovementSound = false;
 	MovementSoundThreshold = 300.0f;
 	MoveRequireTime = 0.5f;
 	MoveTimeAccumulator = 0.0f;
@@ -24,7 +26,6 @@ UUnderwaterEffectComponent::UUnderwaterEffectComponent()
 	MovementSoundFadeTime = 0.5f;
 	MovementSoundFadeCurve = EAudioFaderCurve::Linear;
 }
-
 
 void UUnderwaterEffectComponent::BeginPlay()
 {
@@ -50,7 +51,7 @@ void UUnderwaterEffectComponent::BeginPlay()
 				FRotator::ZeroRotator,
 				EAttachLocation::KeepRelativeOffset,
 				false,
-				0.0f,
+				0.5f,
 				1.0f,
 				0.0f,
 				nullptr,
@@ -59,7 +60,6 @@ void UUnderwaterEffectComponent::BeginPlay()
 			);
 			MovementAudioComponent->SetAutoActivate(false);
 			MovementAudioComponent->Stop();
-			MovementAudioComponent->SetVolumeMultiplier(0.5f);
 
 			SprintMovementAudioComponent = UGameplayStatics::SpawnSoundAttached(
 				SprintMovementSound,
@@ -69,7 +69,7 @@ void UUnderwaterEffectComponent::BeginPlay()
 				FRotator::ZeroRotator,
 				EAttachLocation::KeepRelativeOffset,
 				false,
-				0.0f,
+				0.5f,
 				1.0f,
 				0.0f,
 				nullptr,
@@ -78,7 +78,6 @@ void UUnderwaterEffectComponent::BeginPlay()
 			);
 			SprintMovementAudioComponent->SetAutoActivate(false);
 			SprintMovementAudioComponent->Stop();
-			SprintMovementAudioComponent->SetVolumeMultiplier(0.5f);
 		}
 	}
 	else
@@ -115,23 +114,21 @@ void UUnderwaterEffectComponent::SetEnableEffect(bool bNewEnabled)
 	
 	if (bEnabled)
 	{
-		GetWorld()->GetTimerManager().SetTimer(
-			BreathEffectTimerHandle,
-			this,
-			&UUnderwaterEffectComponent::PlayBreathEffects,
-			BreathInterval,
-			true,
-			BreathFirstDelay
-		);
+		StartBreathEffect(BreathFirstDelay);
 	}
 	else
 	{
 		GetWorld()->GetTimerManager().ClearTimer(BreathEffectTimerHandle);
 		if (MovementAudioComponent && MovementAudioComponent->IsPlaying())
 		{
-			MovementAudioComponent->Stop();
+			MovementAudioComponent->FadeOut(MovementSoundFadeTime, 0.0f, MovementSoundFadeCurve);
+		}
+		if (SprintMovementAudioComponent && SprintMovementAudioComponent->IsPlaying())
+		{
+			SprintMovementAudioComponent->Stop();
 		}
 		MoveTimeAccumulator = 0.0f;
+		bShouldPlayMovementSound = false;
 	}
 }
 
@@ -141,19 +138,25 @@ void UUnderwaterEffectComponent::OnEnvironmentStateChanged(EEnvironmentState Old
 	SetEnableEffect(NewEnvironmentState == EEnvironmentState::Underwater);
 }
 
+void UUnderwaterEffectComponent::StartBreathEffect(float Delay)
+{
+	GetWorld()->GetTimerManager().SetTimer(
+		BreathEffectTimerHandle,
+		this,
+		&UUnderwaterEffectComponent::PlayBreathEffects,
+		BreathInterval,
+		true,
+		Delay
+	);
+	GetWorld()->GetTimerManager().ClearTimer(BreathBubbleEffectTimerHandle);
+}
+
 void UUnderwaterEffectComponent::OnDamageTaken(float DamageAmount, float CurrentHealth)
 {
 	// 피해를 입으면 피해 사운드가 재생되어야 한다.
 	// 숨쉬기 효과를 초기화하고 버블 효과를 중지한다.
-	GetWorld()->GetTimerManager().SetTimer(
-			BreathEffectTimerHandle,
-			this,
-			&UUnderwaterEffectComponent::PlayBreathEffects,
-			BreathInterval,
-			true,
-			BreathFirstDelay / 2.0f
-	);
-	GetWorld()->GetTimerManager().ClearTimer(BreathBubbleEffectTimerHandle);
+	bShouldPlayMovementSound = false;
+	StartBreathEffect(BreathFirstDelay * 0.5f);
 }
 
 void UUnderwaterEffectComponent::PlayBreathEffects()
@@ -164,12 +167,8 @@ void UUnderwaterEffectComponent::PlayBreathEffects()
 	}
 
 	USoundBase* BreathSoundToPlay = bShouldPlayMovementSound ? MoveBreathSound : IdleBreathSound;
-	if (!BreathSoundToPlay)
-	{
-		return;
-	}
 	
-	if (OwnerCharacter->IsLocallyControlled())
+	if (OwnerCharacter->IsLocallyControlled() && BreathSoundToPlay)
 	{
 		UGameplayStatics::PlaySoundAtLocation(
 			GetWorld(),
@@ -181,7 +180,8 @@ void UUnderwaterEffectComponent::PlayBreathEffects()
 		);
 	}
 
-	const float Duration = BreathSoundToPlay->GetDuration();
+	// Breath Sound가 없으면 3초로 간주하고 버블 효과를 생성한다.
+	const float Duration =  BreathSoundToPlay ? BreathSoundToPlay->GetDuration() : 3.0f;
 	const float DelayToNextBubble = FMath::FRandRange(Duration * 0.5f, Duration * 0.6f);
 	GetWorld()->GetTimerManager().SetTimer(
 		BreathBubbleEffectTimerHandle,
@@ -237,7 +237,10 @@ void UUnderwaterEffectComponent::UpdateMovementEffects(float DeltaTime)
 				MovementAudioComponent->Play();
 			}
 		}
+		
+		// 플레이어가 직접 움직일 때 소리가 나야 한다.
 		if (Speed > OwnerCharacter->GetSprintSpeed() - 50.0f
+			&& OwnerCharacter->GetCharacterMovement()->GetCurrentAcceleration().Size() > 0.0f
 			&& SprintMovementSound
 			&& !SprintMovementAudioComponent->IsPlaying())
 		{
