@@ -373,7 +373,8 @@ bool UADInventoryComponent::AddInventoryItem(const FItemData& ItemData)
 			if (FoundRow->Stackable && ItemIndex != -1)
 			{
 				bIsUpdateSuccess = InventoryList.UpdateQuantity(ItemIndex, ItemData.Quantity);
-				InventoryList.SetAmount(ItemIndex, ItemData.Amount);
+				if(InventoryList.Items[ItemIndex].Amount > ItemData.Amount)
+					InventoryList.SetAmount(ItemIndex, ItemData.Amount);
 				if (bIsUpdateSuccess)
 				{
 					LOGINVEN(Warning, TEXT("Item Update, ItemName : %s, Id : %d"), *InventoryList.Items[ItemIndex].Name.ToString(), InventoryList.Items[ItemIndex].Id);
@@ -790,9 +791,13 @@ void UADInventoryComponent::DropItem(FItemData& ItemData)
 	if (!PS) return;
 	APawn* Pawn = PS->GetPawn();
 	if (!Pawn) return;
-	if (UEquipUseComponent* EquipComp = Pawn->FindComponentByClass<UEquipUseComponent>())
+
+	if (ItemData.Name == CurrentEquipmentInstance->ItemData.Name)
 	{
-		EquipComp->DeinitializeEquip();
+		if (UEquipUseComponent* EquipComp = Pawn->FindComponentByClass<UEquipUseComponent>())
+		{
+			EquipComp->DeinitializeEquip();
+		}
 	}
 	FVector DropLocation = GetDropLocation();
 	AADUseItem* SpawnItem = GetWorld()->SpawnActor<AADUseItem>(AADUseItem::StaticClass(), DropLocation, FRotator::ZeroRotator);
