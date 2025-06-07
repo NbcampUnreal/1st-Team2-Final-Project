@@ -19,6 +19,8 @@ void UADGameInstance::Init()
 
     SettingsManager = NewObject<USettingsManager>(this);
     SettingsManager->LoadAllSettings(GetFirstLocalPlayerController());
+
+    SettingsManager->InitializeActionMap(GetInputActionMap());
 }
 
 bool UADGameInstance::TryGetPlayerIndex(const FString& NetId, int32& OutPlayerIndex)

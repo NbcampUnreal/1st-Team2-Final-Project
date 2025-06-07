@@ -107,12 +107,20 @@ void USettingsManager::ApplyKeySettings(const TArray<FKeyBinding>& InBindings, A
 		const FKey& Key = Binding.AssignedKey;
 
 		// InputAction 찾기 (예: 이름 기준으로 StaticMap에서 참조하거나 등록해둔 배열)
-		const UInputAction* FoundAction = nullptr; // TODO: ActionName → UInputAction* 맵으로 관리하는 구조가 필요
+		const UInputAction* FoundAction = ActionMap.FindRef(ActionName);
 
 		if (FoundAction)
 		{
-			RuntimeMappingContext->UnmapKey(FoundAction, Key); // 기존 키 해제
-			RuntimeMappingContext->MapKey(FoundAction, Key);   // 새 키 매핑
+			for (const FEnhancedActionKeyMapping& Mapping : RuntimeMappingContext->GetMappings())
+			{
+				if (Mapping.Action == FoundAction)
+				{
+					RuntimeMappingContext->UnmapKey(FoundAction, Mapping.Key);
+				}
+			}
+
+			// 2. 새 키 매핑
+			RuntimeMappingContext->MapKey(FoundAction, Key);
 		}
 	}
 
@@ -169,7 +177,33 @@ void USettingsManager::UpdateCachedKeyBinding(FName ActionName, FKey NewKey)
 
 }
 
+void USettingsManager::InitializeActionMap(const TMap<FName, TObjectPtr<UInputAction>>& InMap)
+{
+	ActionMap = InMap;
+}
+
 void USettingsManager::InitializeDefaultKeyBindingsIfEmpty()
 {
+	if (!CachedKeyBindings.IsEmpty())
+		return;
 
+	CachedKeyBindings.Add({ "Ascend", EKeys::SpaceBar });            // 수직 상승
+	CachedKeyBindings.Add({ "Descend", EKeys::C });                  // 수직 하강
+	CachedKeyBindings.Add({ "Sprint", EKeys::LeftShift });           // 빠른 이동
+	CachedKeyBindings.Add({ "Fire", EKeys::LeftMouseButton });       // 발사
+	CachedKeyBindings.Add({ "Aim", EKeys::RightMouseButton });       // 조준
+	CachedKeyBindings.Add({ "Interact", EKeys::E });                 // 상호작용
+	CachedKeyBindings.Add({ "SlotScroll", EKeys::MouseWheelAxis });  // 마우스 휠 (스크롤)
+	CachedKeyBindings.Add({ "Light", EKeys::F });                    // 라이트
+	CachedKeyBindings.Add({ "Inventory", EKeys::Tab });              // 인벤토리
+	CachedKeyBindings.Add({ "Radar", EKeys::Q });                    // 레이더
+	CachedKeyBindings.Add({ "Reload", EKeys::R });                   // 재장전
+	CachedKeyBindings.Add({ "Jump", EKeys::SpaceBar });              // 점프
+
+	// 슬롯 1~5
+	CachedKeyBindings.Add({ "Slot1", EKeys::One });
+	CachedKeyBindings.Add({ "Slot2", EKeys::Two });
+	CachedKeyBindings.Add({ "Slot3", EKeys::Three });
+	CachedKeyBindings.Add({ "Slot4", EKeys::Four });
+	CachedKeyBindings.Add({ "Slot5", EKeys::Five });
 }

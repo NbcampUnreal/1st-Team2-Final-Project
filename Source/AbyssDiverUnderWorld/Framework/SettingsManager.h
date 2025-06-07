@@ -14,7 +14,7 @@ class ABYSSDIVERUNDERWORLD_API USettingsManager : public UObject
 public:
 	USettingsManager();
 
-
+	
 	
 public:
 	//Audio Settgins
@@ -49,8 +49,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Settings|Key")
 	void UpdateCachedKeyBinding(FName ActionName, FKey NewKey);
 
-
+	UFUNCTION(BlueprintCallable, Category = "Settings|Control")
+	void InitializeActionMap(const TMap<FName, TObjectPtr<UInputAction>>& InMap);
 private:
+
+
+
 	void InitializeDefaultKeyBindingsIfEmpty();
 
 protected:

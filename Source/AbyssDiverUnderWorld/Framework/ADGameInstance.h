@@ -121,6 +121,9 @@ public:
 	UPROPERTY(BlueprintReadOnly)
 	TObjectPtr<USettingsManager> SettingsManager;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
+	TMap<FName, TObjectPtr<UInputAction>> InputActionMap;
+
 private:
 
 	TMap<FString, int32> PlayerIdMap;
@@ -130,6 +133,7 @@ private:
 	
 
 #pragma region Getters / Setters
+public:
 
 	UFUNCTION(BlueprintPure, Category = "ADGameInstance")
 	const float GetCurrentMasterVolume() const;
@@ -146,6 +150,8 @@ private:
 	UFUNCTION(BlueprintCallable, Category = "Settings")
 	USettingsManager* GetSettingsManager() const { return SettingsManager; }
 
+	UFUNCTION(BlueprintCallable, Category = "Input")
+	const TMap<FName, TObjectPtr<UInputAction>>& GetInputActionMap() const { return InputActionMap; }
 #pragma endregion
 
 
