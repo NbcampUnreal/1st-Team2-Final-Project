@@ -3,6 +3,16 @@
 #include "AbyssDiverUnderWorld.h"
 #include "Character/UnderwaterCharacter.h"
 #include "Framework/ADPlayerState.h"
+#include "Subsystems/SoundSubsystem.h"
+
+#include "EngineUtils.h"
+
+void APortalToSubmarine::BeginPlay()
+{
+	Super::BeginPlay();
+
+	GetSoundSubsystem()->PlayAt(ESFX::Submarine, GetActorLocation(), 2.0f);
+}
 
 void APortalToSubmarine::Interact_Implementation(AActor* InstigatorActor)
 {
@@ -23,4 +33,19 @@ void APortalToSubmarine::Interact_Implementation(AActor* InstigatorActor)
 	}
 
 	PS->SetIsSafeReturn(true);
+	
+	if (bIsNetCullingDeactivated)
+	{
+		return;
+	}
+
+	bIsNetCullingDeactivated = true;
+
+	for (AADPlayerState* ADPlayerState : TActorRange<AADPlayerState>(GetWorld()))
+	{
+		ADPlayerState->GetPawn()->bAlwaysRelevant = true;
+	}
+
+	ForceNetUpdate();
+	LOGV(Error, TEXT("Releveant On"));
 }
