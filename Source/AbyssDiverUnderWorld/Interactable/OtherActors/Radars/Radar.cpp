@@ -1,10 +1,14 @@
-#include "Interactable/OtherActors/Radars/Radar.h"
+ï»¿#include "Interactable/OtherActors/Radars/Radar.h"
 
 #include "RadarReturnComponent.h"
 #include "AbyssDiverUnderWorld.h"
 
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
+
+const FName ARadar::MeshEmissiveParamName = TEXT("EmissiveMultiplier");
+const FName ARadar::MeshEdgeEmissiveParamName = TEXT("EmissiveMultiplier_Edge");
+const FName ARadar::ReturnEmissiveParamName = TEXT("ReturnEmissiveMultiplier");
 
 ARadar::ARadar()
 {
@@ -282,6 +286,26 @@ void ARadar::ChangeRadarRadius(float NewRadius)
 	RadarOuterDimensionLimitRadiusMetersFromSphere = NewRadius;
 }
 
+void ARadar::ChangeRadarReturnMaterialEmissive(const float& NewEmissive)
+{
+	CurrentReturnEmissiveIntensity = NewEmissive;
+
+	for (UStaticMeshComponent* ReturnMesh : ReturnsMeshes)
+	{
+		ReturnMesh->SetScalarParameterValueOnMaterials(ReturnEmissiveParamName, NewEmissive);
+	}
+}
+
+void ARadar::ChangeRadarMeshMaterialEmissive(const float& NewEmissive)
+{
+	RadarGrid->SetScalarParameterValueOnMaterials(MeshEmissiveParamName, NewEmissive);
+}
+
+void ARadar::ChangeRadarMeshEdgeMaterialEmissive(const float& NewEmissive)
+{
+	RadarGrid->SetScalarParameterValueOnMaterials(MeshEdgeEmissiveParamName, NewEmissive);
+}
+
 void ARadar::FindIfReturnIsValidResponseForRader(AActor* RadarActor)
 {
 	bIsIgnoreRange = false;
@@ -370,8 +394,8 @@ void ARadar::InitializeRadarReturnIfActive()
 	if (bShouldShowNonFactionAllignedReturns)
 	{
 		//CheckIfUnitTypeIsVisible();
-		// Fixed.. -> ¼öÁ¤ Àü¿£ °¡Àå ÃÖ±ÙÀÇ FactionÀ» ¹Ý¿µÇÏµµ·Ï µÇ¾îÀÖ¾ú´Âµí?
-		// ¾ÏÆ° ÅÂ±×°¡ ¾øÀ¸¸é ¹Ù·Î Neutral·Î ÆÇº°ÇÏµµ·Ï Determine ÇÔ¼ö È£ÃâÇÏµµ·Ï º¯°æ
+		// Fixed.. -> ìˆ˜ì • ì „ì—” ê°€ìž¥ ìµœê·¼ì˜ Factionì„ ë°˜ì˜í•˜ë„ë¡ ë˜ì–´ìžˆì—ˆëŠ”ë“¯?
+		// ì•”íŠ¼ íƒœê·¸ê°€ ì—†ìœ¼ë©´ ë°”ë¡œ Neutralë¡œ íŒë³„í•˜ë„ë¡ Determine í•¨ìˆ˜ í˜¸ì¶œí•˜ë„ë¡ ë³€ê²½
 		DetermineAndStoreAffiliation();
 	}
 	else
@@ -501,7 +525,7 @@ void ARadar::FindIfReturnsInVisibleRange()
 		CurrentRangeMultiplier = CurrentRadarReturnSearched->GetVisibleRangeMultiplier() * CurrentRadarReturnSearched->GetNeutralVisibleRangeMultiplier();
 		break;
 	default:
-		return;;
+		return;
 	}
 
 	for (const auto& TempFactionTag : CurrentFactionTags)
@@ -524,8 +548,14 @@ void ARadar::FindIfReturnsInVisibleRange()
 		CurrentRangeMultiplier *= UnitTypeRangeMulitpliers[TempUnitTypeTag];
 	}
 
+	// ë†’ì´ëŠ” ê³ ë ¤ í•˜ì§€ ì•ŠìŒ
 	FVector AppliesToComponentLocation = CurrentRadarReturnSearched->GetAppliesToComponent()->GetComponentLocation();
+	AppliesToComponentLocation.Z = 0;
+
+	// ë†’ì´ëŠ” ê³ ë ¤ í•˜ì§€ ì•ŠìŒ
 	FVector RadarSourceLocation = RadarSourceLocationComponent->GetComponentLocation();
+	RadarSourceLocation.Z = 0;
+
 	FVector VectorToRadarSourceLocation = AppliesToComponentLocation - RadarSourceLocation;
 
 	float PercentMultiplier = 100.0f;
@@ -864,7 +894,7 @@ void ARadar::FindRadarReturnTransformFromGrid()
 
 			NewScale /= CurrentRadarWidth;
 		}
-
+		NewLocation.Z = 0;
 		CurrentMeshTransform = FTransform(NewRotation, NewLocation, NewScale);
 
 		if (FoundReturnsCount == 0)
@@ -1002,6 +1032,8 @@ void ARadar::UpdateExistingReturnMesh()
 		check(false);
 		break;
 	}
+
+	ReturnMesh->SetScalarParameterValueOnMaterials(ReturnEmissiveParamName, CurrentReturnEmissiveIntensity);
 
 	if (CurrentRadarReturn->ShouldLimitOpacityToRadarDisplay())
 	{
@@ -1160,7 +1192,8 @@ void ARadar::AddNewReturnMesh()
 		check(false);
 		break;
 	}
-
+	
+	TempMeshComponent->SetScalarParameterValueOnMaterials(ReturnEmissiveParamName, CurrentReturnEmissiveIntensity);
 	check(ReturnsMeshes.IsValidIndex(CurrentIndexCached));
 	ReturnsMeshes[CurrentIndexCached] = TempMeshComponent;
 
@@ -1204,6 +1237,7 @@ void ARadar::AddNewReturnMesh()
 			break;
 		}
 
+		TempMeshComponent->SetScalarParameterValueOnMaterials(ReturnEmissiveParamName, CurrentReturnEmissiveIntensity);
 		check(ReturnStandMeshes.IsValidIndex(CurrentIndexCached));
 		ReturnStandMeshes[CurrentIndexCached] = TempMeshComponent;
 
@@ -1251,6 +1285,7 @@ void ARadar::AddNewReturnMesh()
 		break;
 	}
 
+	TempMeshComponent->SetScalarParameterValueOnMaterials(ReturnEmissiveParamName, CurrentReturnEmissiveIntensity);
 	check(ReturnPingMeshes.IsValidIndex(CurrentIndexCached));
 	ReturnPingMeshes[CurrentIndexCached] = TempMeshComponent;
 

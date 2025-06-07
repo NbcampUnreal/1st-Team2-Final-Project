@@ -20,7 +20,7 @@ public:
 	virtual void OnPossess(APawn* InPawn) override;
 
 public:
-	void SetBlackboardPerceptionType(EPerceptionType PerceptionType);
+	void SetBlackboardPerceptionType(EPerceptionType InPerceptionType);
 	void InitVariables();
 
 protected:
@@ -32,6 +32,19 @@ private:
 	void OnSightPerceptionFail();
 	void OnHearingPerceptionSuccess(const FAIStimulus& Stimulus);
 	void OnDamagePerceptionSuccess();
+
+protected:
+	UPROPERTY(EditAnywhere)
+	uint8 bIsPerceptionSight : 1;
+
+	UPROPERTY(EditAnywhere)
+	uint8 bIsPerceptionHearing : 1;
+
+	UPROPERTY(EditAnywhere)
+	uint8 bIsPerceptionDamage : 1;
+
+	UPROPERTY(EditAnywhere)
+	uint8 bIsAlienShark : 1 = false;
 
 private:
 	/** 플레이어를 감지한 경우 true 반환 */
@@ -58,6 +71,7 @@ private:
 	static const FName bHasAttackedKey;
 	static const FName bIsPlayerHiddenKey;
 	static const FName BloodOccurredLocationKey;
+	static const FName TargetPlayerKey;
 
 public:
 	FORCEINLINE bool GetIsDetectedPlayer() const { return bIsDetectedPlayer; }

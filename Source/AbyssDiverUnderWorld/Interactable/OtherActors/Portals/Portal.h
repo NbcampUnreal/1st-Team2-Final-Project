@@ -7,6 +7,8 @@
 
 #include "Portal.generated.h"
 
+class USoundSubsystem;
+
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API APortal : public AActor, public IIADInteractable
 {
@@ -51,6 +53,9 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Portal")
 	uint8 bIsHoldMode : 1;
 
+	UPROPERTY()
+	TObjectPtr<USoundSubsystem> SoundSubsystem;
+
 #pragma endregion
 
 
@@ -60,7 +65,8 @@ public:
 
 	virtual UADInteractableComponent* GetInteractableComponent() const override;
 	virtual bool IsHoldMode() const override;
-	virtual EInteractionType GetInteractionType() const override;
+	virtual FString GetInteractionDescription() const override;
+	USoundSubsystem* GetSoundSubsystem();
 
 #pragma endregion
 

@@ -9,8 +9,11 @@ UENUM(BlueprintType)
 enum class ESFX_BGM : uint8
 {
 	Sound0,
-	Sound1,
-	Sound2,
+	ShallowPhase1,
+	ShallowPhase2,
+	ShallowPhase3,
+	ShallowBackground,
+	Max UMETA(Hidden)
 };
 
 USTRUCT(BlueprintType)

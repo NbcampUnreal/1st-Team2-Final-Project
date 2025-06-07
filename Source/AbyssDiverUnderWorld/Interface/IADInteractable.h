@@ -56,5 +56,5 @@ public:
 
 	virtual UADInteractableComponent* GetInteractableComponent() const = 0;
 	virtual bool IsHoldMode() const = 0;
-	virtual EInteractionType GetInteractionType() const = 0;
+	virtual FString GetInteractionDescription() const;
 };

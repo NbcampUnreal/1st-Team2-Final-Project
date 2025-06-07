@@ -7,12 +7,15 @@
 #include "Components/VerticalBoxSlot.h"
 #include "Components/RichTextBlock.h"
 #include "Kismet/GameplayStatics.h"
+#include "Animation/WidgetAnimation.h"
 
 void UToggleWidget::InitializeInventoriesInfo(UADInventoryComponent* InventoryComp)
 {
     const TArray<int8>& InventorySizeByType = InventoryComp->GetInventorySizeByType();
     InventoryComp->InventoryInfoUpdateDelegate.AddUObject(this, &UToggleWidget::RefreshExchangableInventoryInfo);
     RefreshExchangableInventoryInfo(0, 0);
+
+    bInventoryWidgetShowed = false;
 
     if (EquipmentInventory && ConsumableInventory && ExchangableInventory)
     {
@@ -46,6 +49,35 @@ void UToggleWidget::SetDroneTargetText(int32 Target)
     if (TargetMoneyText && TargetMoneyText->IsValidLowLevel())
     {
         TargetMoneyText->SetText(FText::FromString(FString::Printf(TEXT("%d"), Target)));
+    }
+}
+
+void UToggleWidget::PlaySlideAnimation(bool bIsVisible)
+{
+    if (bIsVisible)
+    {
+        if (!bInventoryWidgetShowed)
+        {
+            GetWorld()->GetTimerManager().ClearTimer(HiddenTimerHandle);
+            SetVisibility(ESlateVisibility::Visible);
+            bInventoryWidgetShowed = true;
+            if (SlideIn && !IsAnimationPlaying(SlideIn))
+                PlayAnimation(SlideIn);
+        }
+    }
+    else
+    {
+        if (bInventoryWidgetShowed)
+        {
+            if (SlideOUt && !IsAnimationPlaying(SlideOUt))
+                PlayAnimation(SlideOUt);
+            float HiddenDelay = SlideOUt->GetEndTime();
+            GetWorld()->GetTimerManager().SetTimer(HiddenTimerHandle,
+                FTimerDelegate::CreateLambda([this]() { 
+                    SetVisibility(ESlateVisibility::Hidden);
+                    bInventoryWidgetShowed = false;
+                    }), HiddenDelay, false);
+        }
     }
 }
 

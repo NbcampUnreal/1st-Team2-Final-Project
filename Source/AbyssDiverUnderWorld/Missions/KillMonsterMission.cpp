@@ -1,5 +1,97 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿#include "Missions/KillMonsterMission.h"
 
+#include "DataRow/MissionDataRow/KillMonsterMissionRow.h"
+#include "Character/UnderwaterCharacter.h"
 
-#include "Missions/KillMonsterMission.h"
+UKillMonsterMission::UKillMonsterMission()
+{
+	MissionType = EMissionType::KillMonster;
+}
 
+void UKillMonsterMission::InitMission(const FMissionInitParams& Params)
+{
+	Super::InitMission(Params);
+}
+
+void UKillMonsterMission::InitMission(const FKillMissionInitParams& Params, const EKillMonsterMission& NewMissionIndex)
+{
+	InitMission((const FMissionInitParams&)Params);
+
+	MissionIndex = NewMissionIndex;
+
+	UnitId = Params.UnitId;
+}
+
+void UKillMonsterMission::BindDelegates(UObject* TargetForDelegate)
+{
+}
+
+void UKillMonsterMission::UnbindDelegates(UObject* TargetForDelegate)
+{
+}
+
+bool UKillMonsterMission::IsConditionMet()
+{
+	bool bConditionMet = false;
+	
+	switch (ConditionType)
+	{
+	case EMissionConditionType::AtLeast:
+		bConditionMet = (GoalCount <= CurrentCount);
+		break;
+	case EMissionConditionType::AtMost:
+		bConditionMet = (GoalCount >= CurrentCount);
+		break;
+	case EMissionConditionType::EqualTo:
+		bConditionMet = (GoalCount == CurrentCount);
+		break;
+	case EMissionConditionType::Custom:
+		break;
+	default:
+		break;
+	}
+
+	return bConditionMet;
+}
+
+void UKillMonsterMission::OnDamaged(AActor* DamagedActor, AActor* DamageCauser, const float& ReceivedDamage)
+{
+}
+
+void UKillMonsterMission::OnDead(AActor* DamageCauser, AActor* DeadActor)
+{
+
+	AUnderwaterCharacter* Causer = Cast<AUnderwaterCharacter>(DamageCauser);
+	if (Causer == nullptr)
+	{
+		LOGV(Log, TEXT("Causer == nullptr, Name : %s"), *DamageCauser->GetName());
+		return;
+	}
+
+	AUnitBase* DeadUnit = Cast<AUnitBase>(DeadActor);
+	if (DeadUnit == nullptr)
+	{
+		LOGV(Log, TEXT("DeadUnit == nullptr, Name : %s"), *DeadActor->GetName());
+		return;
+	}
+
+	const EUnitId DeadUnitId = DeadUnit->GetUnitId();
+
+	if (DeadUnitId != UnitId)
+	{
+		return;
+	}
+
+	CurrentCount++;
+	if (IsConditionMet() == false)
+	{
+		return;
+	}
+
+	OnConditionMet();
+}
+
+const uint8 UKillMonsterMission::GetMissionIndex() const
+{
+	return uint8(MissionIndex);
+}

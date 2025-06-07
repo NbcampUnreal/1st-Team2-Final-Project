@@ -1,4 +1,6 @@
 #include "Gimmic/Spawn/Spawner/Spawner.h"
+
+#include "AbyssDiverUnderWorld.h"
 #include "Gimmic/Spawn/SpawnPoint/SpawnPoint.h"
 #include "EngineUtils.h"
 #include "Components/BoxComponent.h"
@@ -67,14 +69,13 @@ void ASpawner::RemoveAllSpawnPoints()
 	SpawnSuccessPoints.Empty();
 }
 
-void ASpawner::GetSpawnPoint(TSubclassOf<ASpawnPoint> SpawnPointClass)
+TSet<TObjectPtr<ASpawnPoint>> ASpawner::GetSpawnPoint(TSubclassOf<ASpawnPoint> SpawnPointClass)
 {
-	if (!IsValid(SpawnPointClass)|| !IsValid(LocationRange)) return;
+	if (!IsValid(SpawnPointClass)|| !IsValid(LocationRange)) return TSet<TObjectPtr<ASpawnPoint>>();
 
-	// LocationRange가 기준이 되는 Box 위치와 범위
-	const FVector BoxOrigin = LocationRange->GetComponentLocation();
-	const FVector BoxExtent = LocationRange->GetScaledBoxExtent();
-	const FBox SpawnBounds(BoxOrigin - BoxExtent, BoxOrigin + BoxExtent);
+	const FBox SpawnBounds = LocationRange->CalcBounds(LocationRange->GetComponentTransform()).GetBox();
+
+	TSet<TObjectPtr<ASpawnPoint>> SpawnPointArray;
 
 	for (TActorIterator<ASpawnPoint> It(GetWorld(), SpawnPointClass); It; ++It)
 	{
@@ -82,12 +83,14 @@ void ASpawner::GetSpawnPoint(TSubclassOf<ASpawnPoint> SpawnPointClass)
 		if (!IsValid(Found)) continue;
 
 		const FVector SpawnLocation = Found->GetActorLocation();
-
+		
 		// Box 범위 안에 들어있는 경우만 추가
 		if (SpawnBounds.IsInside(SpawnLocation))
 		{
-			TotalSpawnPoints.Add(Found);
+			SpawnPointArray.Add(Found);
 		}
 	}
+
+	return MoveTemp(SpawnPointArray);
 }
 

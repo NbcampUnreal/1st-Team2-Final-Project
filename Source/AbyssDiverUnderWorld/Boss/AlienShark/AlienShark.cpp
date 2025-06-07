@@ -1,9 +1,11 @@
 #include "Boss/AlienShark/AlienShark.h"
 #include "Components/CapsuleComponent.h"
-#include "GameFramework/CharacterMovementComponent.h"
+
 
 AAlienShark::AAlienShark()
 {
+	PrimaryActorTick.bCanEverTick = false;
+	
 	BiteCollision = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Bite Collision"));
 	BiteCollision->SetupAttachment(GetMesh(), TEXT("BiteSocket"));
 	BiteCollision->SetCapsuleHalfHeight(80.0f);
@@ -18,3 +20,4 @@ void AAlienShark::BeginPlay()
 
 	BiteCollision->OnComponentBeginOverlap.AddDynamic(this, &ABoss::OnMeshOverlapBegin);
 }
+

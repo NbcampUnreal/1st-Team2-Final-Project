@@ -184,9 +184,9 @@ AShop::AShop()
 	ItemMeshCaptureComp->ShowFlags.EyeAdaptation = false;
 	ItemMeshCaptureComp->ShowFlags.LocalExposure = false;
 	ItemMeshCaptureComp->ShowFlags.MotionBlur = false;
-	ItemMeshCaptureComp->ShowFlags.PostProcessMaterial = true;
+	//ItemMeshCaptureComp->ShowFlags.PostProcessMaterial = true;
 	ItemMeshCaptureComp->ShowFlags.ToneCurve = true;
-	ItemMeshCaptureComp->ShowFlags.Tonemapper = true;
+	//ItemMeshCaptureComp->ShowFlags.Tonemapper = true;
 
 	ItemMeshCaptureComp->ShowFlags.SkyLighting = false;
 
@@ -230,6 +230,8 @@ void AShop::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
 
+#if WITH_EDITOR
+
 	// 게임 중이 아닌 경우 리턴(블루프린트 상일 경우)
 	// PostInitializeComponents는 블루프린트에서도 발동함
 	UWorld* World = GetWorld();
@@ -237,6 +239,8 @@ void AShop::PostInitializeComponents()
 	{
 		return;
 	}
+
+#endif
 
 	InitShopWidget();
 	InitData();
@@ -322,16 +326,25 @@ void AShop::CloseShop(AUnderwaterCharacter* Requester)
 	{
 		return;
 	}
+	ShopWidget->PlayCloseAnimation();
 
-	ShopWidget->RemoveFromParent();
+	FTimerHandle RemoveWidgetTimerHandle;
+	float RemoveDelay = ShopWidget->GetCloseShopAnimEndTime();
+	GetWorld()->GetTimerManager().SetTimer(RemoveWidgetTimerHandle,
+		FTimerDelegate::CreateLambda([this]() 
+			{ 
+				ShopWidget->RemoveFromParent();
 
-	APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
-	PC->SetInputMode(FInputModeGameOnly());
-	PC->SetShowMouseCursor(false);
-	bIsOpened = false;
-	PC->SetIgnoreMoveInput(false);
+				APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+				PC->SetInputMode(FInputModeGameOnly());
+				PC->SetShowMouseCursor(false);
+				bIsOpened = false;
+				PC->SetIgnoreMoveInput(false);
 
-	ItemMeshCaptureComp->bCaptureEveryFrame = false;
+				ItemMeshCaptureComp->bCaptureEveryFrame = false;
+
+			}), RemoveDelay, false);
+
 }
 
 EBuyResult AShop::BuyItem(uint8 ItemId, uint8 Quantity, AUnderwaterCharacter* Buyer)
@@ -377,8 +390,6 @@ EBuyResult AShop::BuyItem(uint8 ItemId, uint8 Quantity, AUnderwaterCharacter* Bu
 		return EBuyResult::NotEnoughMoney;
 	}
 
-	GS->SetTotalTeamCredit(TeamCredits - ItemDataRow->Price * Quantity);
-
 	FItemData ItemData;
 	ItemData.Amount = ItemDataRow->Amount;
 	ItemData.Id = ItemDataRow->Id;
@@ -389,7 +400,13 @@ EBuyResult AShop::BuyItem(uint8 ItemId, uint8 Quantity, AUnderwaterCharacter* Bu
 	ItemData.Quantity = Quantity;
 	ItemData.Thumbnail = ItemDataRow->Thumbnail;
 
-	PS->GetInventory()->AddInventoryItem(ItemData);
+	if (PS->GetInventory()->AddInventoryItem(ItemData) == false)
+	{
+		LOGS(Log, TEXT("Buying Item Failed : %s"), *ItemDataRow->Name.ToString());
+		return EBuyResult::FailedFromOtherReason;
+	}
+
+	GS->SetTotalTeamCredit(TeamCredits - ItemDataRow->Price * Quantity);
 
 	LOGS(Log, TEXT("Buying Item Succeeded : %s"), *ItemDataRow->Name.ToString());
 	return EBuyResult::Succeeded;
@@ -951,9 +968,9 @@ bool AShop::IsOpened() const
 	return bIsOpened;
 }
 
-EInteractionType AShop::GetInteractionType() const
+FString AShop::GetInteractionDescription() const
 {
-	return EInteractionType::OpenShop;
+	return TEXT("Open Shop!");
 }
 
 UADInteractableComponent* AShop::GetInteractableComponent() const

@@ -4,6 +4,7 @@
 #include "Boss/Limadon/Limadon.h"
 #include "Gimmic/Spawn/SpawnPoint/Limadon/LimadonSpawnPoint.h"
 #include "Interactable/Item/ADOreRock.h"
+#include "Algo/RandomShuffle.h"
 
 ALimadonSpawner::ALimadonSpawner()
 {
@@ -20,6 +21,7 @@ ALimadonSpawner::ALimadonSpawner()
 
 void ALimadonSpawner::Spawn()
 {
+	OreSpawnedLocations.Reset();
 	// 1. 월드 내에 존재하는 광석의 위치를 추출하여 배열에 저장한다.
 	for (AADOreRock* OreRock : TActorRange<AADOreRock>(GetWorld()))
 	{
@@ -29,6 +31,7 @@ void ALimadonSpawner::Spawn()
 		}
 	}
 
+	LimadonSpawnedLocations.Reset();
 	// 2. 월드 내에 존재하는 Limadon SpawnPoint의 위치를 추출하여 배열에 저장한다.
 	// 1페이즈에서 Limadon Spawn을 호출하지만 관계없는 2페이즈, 3페이즈의 Limadon SpawnPoint를 가져온다.
 	// 하지만 거리 기반으로 스폰시키기 때문에 버그가 발생하진 않지만, 계산의 비효율성이 발생한다.
@@ -43,30 +46,42 @@ void ALimadonSpawner::Spawn()
 	// 3. 스폰시킬 Limadon 개체 수를 추출한다.
 	const uint8 LimadonSpawnCount = FMath::RandRange(MinLimadonSpawnCount, MaxLimadonSpawnCount);
 
+	RandomIndexs.Reset(LimadonSpawnedLocations.Num());
+	for (int8 i = 0; i < LimadonSpawnedLocations.Num(); ++i)
+	{
+		RandomIndexs.Emplace(i);
+	}
+
+	Algo::RandomShuffle(RandomIndexs);
+
+	const uint8 IterationCount = FMath::Min(LimadonSpawnCount, (uint8)RandomIndexs.Num());
 	// 4. 스폰할 Limadon 개체 수만큼 Spawn 로직을 호출한다.
 	// 월드 내에 스폰된 광석의 위치를 랜덤으로 가져온다.
 	// 해당 광석의 위치에서 MaxLimadonSpawnDistance보다 가까운 Limadon SpawnPoint를 찾아 Limadon을 스폰시킨다.
 	// 스폰 성공한 SpawnPoint는 월드 상에서 Destroy 한다. 이는 다음 Limadon Spawn 시의 효율성을 높이기 위함이다.
-	for (int8 i = 0; i < LimadonSpawnCount; ++i)
+	for (int8 i = 0; i < IterationCount; ++i)
 	{
 		if (OreSpawnedLocations.Num() == 0 || LimadonSpawnedLocations.Num() == 0)
 			break;
 
-		const uint8 RandomIndex = FMath::RandRange(0, OreSpawnedLocations.Num() - 1);
-		const FVector& OreLocation = OreSpawnedLocations[RandomIndex];
+		const uint8 RandomIndex = RandomIndexs[i];
+		ALimadonSpawnPoint* LimadonSpawnedLocation = LimadonSpawnedLocations[RandomIndex];
 
-		for (int32 j = 0; j < LimadonSpawnedLocations.Num(); ++j)
+		for (int32 j = 0; j < OreSpawnedLocations.Num(); ++j)
 		{
-			if (FVector::Dist(LimadonSpawnedLocations[j]->GetActorLocation(), OreLocation) < MaxLimadonSpawnDistance)
+			if (FVector::Dist(LimadonSpawnedLocation->GetActorLocation(), OreSpawnedLocations[j]) < MaxLimadonSpawnDistance)
 			{
 				GetWorld()->SpawnActor<ALimadon>(
 					LimadonClass,
-					LimadonSpawnedLocations[j]->GetActorLocation(),
-					LimadonSpawnedLocations[j]->GetActorRotation()
+					LimadonSpawnedLocation->GetActorLocation(),
+					LimadonSpawnedLocation->GetActorRotation()
 				);
-				ALimadonSpawnPoint* CachedLimadonSpawnPoint = LimadonSpawnedLocations[j];
-				LimadonSpawnedLocations.RemoveAt(j);
-				CachedLimadonSpawnPoint->Destroy();
+
+				LimadonSpawnedLocation->Destroy();
+				LimadonSpawnedLocations[RandomIndex] = nullptr;
+				
+				OreSpawnedLocations.RemoveAt(j);
+
 				break;
 			}
 		}

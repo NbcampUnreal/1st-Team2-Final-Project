@@ -13,6 +13,7 @@ class UNiagaraComponent;
 class UADInteractableComponent;
 class URadarReturnComponent;
 class AUnderwaterCharacter;
+class USoundSubsystem;
 
 USTRUCT(BlueprintType)
 struct FDropEntry : public FTableRowBase
@@ -50,6 +51,9 @@ protected:
 
 #pragma region Method
 public:
+	UFUNCTION(NetMulticast, Reliable)
+	void M_CleanupToolAndEffects(AUnderwaterCharacter* UnderwaterCharacter);
+	void M_CleanupToolAndEffects_Implementation(AUnderwaterCharacter* UnderwaterCharacter);
 
 	virtual void Interact_Implementation(AActor* InstigatorActor) override;
 	virtual void InteractHold_Implementation(AActor* InstigatorActor) override;
@@ -104,7 +108,8 @@ public:
 	// 암석 파편 이펙트
 	UPROPERTY(EditDefaultsOnly, Category = "Mining")
 	TObjectPtr<UNiagaraSystem> RockFragmentsFX;
-	
+	UPROPERTY()
+	TObjectPtr<USoundSubsystem> SoundSubsystem;
 
 protected:
 	// 무게 샘플링 강도 (1.0 : 균등, 2.0 : 중간 편향, 클수록 편향이 강해짐)
@@ -114,6 +119,10 @@ protected:
 	float SpawnHeight = 150.f;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction")
 	TObjectPtr<UADInteractableComponent> InteractableComp;
+
+	UPROPERTY(EditAnywhere, Category = "Radar Settings")
+	TObjectPtr<URadarReturnComponent> RadarReturnComponent;
+
 	UPROPERTY(EditAnywhere, Category = "Mining")
 	int32 DefaultMiningStrength = 25;
 
@@ -124,11 +133,12 @@ protected:
 	TObjectPtr<UAnimMontage> MiningMontage;
 	UPROPERTY(EditAnywhere, Category = "Mining")
 	TObjectPtr<UAnimMontage> StowMontage;
-
+	
 private:
 	TArray<FDropEntry*> CachedEntries;
 	TArray<float>  CumulativeWeights;
 	float TotalWeight = 0.f;
+	int32 PreviousEquipIndex = 0;
 
 
 #pragma endregion
@@ -138,7 +148,10 @@ public:
 	virtual UADInteractableComponent* GetInteractableComponent() const override;
 	virtual bool IsHoldMode() const;
 	virtual float GetHoldDuration_Implementation() const override;
-	virtual EInteractionType GetInteractionType() const override;
+	virtual FString GetInteractionDescription() const override;
+
+private:
+	USoundSubsystem* GetSoundSubsystem();
 
 #pragma endregion
 };

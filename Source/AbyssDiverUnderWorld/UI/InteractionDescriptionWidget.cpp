@@ -1,14 +1,16 @@
 #include "UI/InteractionDescriptionWidget.h"
 #include "Components/TextBlock.h"
+#include "Animation/WidgetAnimation.h"
 
-void UInteractionDescriptionWidget::HandleFocus(AActor* Actor, EInteractionType Type)
+void UInteractionDescriptionWidget::HandleFocus(AActor* Actor, FString Description)
 {
     if (TextAction)
     {
-        FText Label = UEnum::GetDisplayValueAsText(Type);
+        FText Label = FText::FromString(Description);
         TextAction->SetText(Label);
     }
 
+    PlayAnimation(InAnim);
 
     if (!IsInViewport())
     {
@@ -19,9 +21,6 @@ void UInteractionDescriptionWidget::HandleFocus(AActor* Actor, EInteractionType 
 
 void UInteractionDescriptionWidget::HandleFocusLost()
 {
-    if (IsInViewport())
-    {
-        RemoveFromParent();
-        UE_LOG(LogTemp, Log, TEXT("Remove from ViewPort"));
-    }
+    RemoveFromParent();
+
 }

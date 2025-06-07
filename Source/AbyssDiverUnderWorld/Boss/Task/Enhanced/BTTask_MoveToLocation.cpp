@@ -3,6 +3,7 @@
 #include "NavigationSystem.h"
 #include "Boss/Boss.h"
 #include "Boss/ENum/EBossState.h"
+#include "Boss/Enum/EPerceptionType.h"
 
 // ----- 기능 -----
 // 1. Task에 할당한 Blackboard Key를 FName으로 가져온다.
@@ -24,9 +25,7 @@ UBTTask_MoveToLocation::UBTTask_MoveToLocation()
 	bCreateNodeInstance = false;
 	
 	bIsInitialized = true;
-	MinFinishTaskInterval = 3.f;
-	MaxFinishTaskInterval = 6.f;
-	DecelerationTriggeredRadius = 2000.0f;
+	MinFinishTaskInterval = 15.f;
 }
 
 EBTNodeResult::Type UBTTask_MoveToLocation::ExecuteTask(UBehaviorTreeComponent& Comp, uint8* NodeMemory)
@@ -39,7 +38,7 @@ EBTNodeResult::Type UBTTask_MoveToLocation::ExecuteTask(UBehaviorTreeComponent& 
 	
 	if (!TaskMemory->Boss.IsValid() || !TaskMemory->AIController.IsValid()) return EBTNodeResult::Failed;
 
-	// 감속을 멈추고 이동 상태로 전이하여 ABP에서 이동 상태임을 인지
+	// 이동 상태로 전이하여 ABP에서 이동 상태임을 인지
 	TaskMemory->Boss->SetBossState(EBossState::Move);
 	
 	// Task에 할당된 블랙보드 키 값을 추출
@@ -48,42 +47,13 @@ EBTNodeResult::Type UBTTask_MoveToLocation::ExecuteTask(UBehaviorTreeComponent& 
 
 	// 디버그용 구체 출력 (5초 동안, 반지름 50, 빨간색)
 	DrawDebugSphere(GetWorld(), TaskMemory->TargetLocation, 250.0f, 12, FColor::Green, false, 3.f);
-
+	
 	// MoveTask를 종료할 랜덤 시간 추출
-	TaskMemory->FinishTaskInterval = FMath::RandRange(MinFinishTaskInterval, MaxFinishTaskInterval);
 	TaskMemory->AccumulatedTime = 0.f;
 
-	const EPathFollowingRequestResult::Type Result = TaskMemory->AIController->MoveToLocationWithRadius(TaskMemory->TargetLocation);
-	
-	// AI가 NavMesh를 벗어난 상태인 경우
-	if (Result == EPathFollowingRequestResult::AlreadyAtGoal)
-	{
-		TaskMemory->bShouldMoveToNearestPoint = true;
-	}
-	
-	// AI가 지형에 막힌 경우
-	if (TaskMemory->bHasBeenTriggeredMoveToLocation && FVector::Dist(TaskMemory->TargetLocation, TaskMemory->CachedLocation) <= 1.f)
-	{
-		TaskMemory->bShouldMoveToNearestPoint = true;
-	}
+	Result = TaskMemory->AIController->MoveToLocationWithRadius(TaskMemory->TargetLocation);
 
-	// AI가 지형에 막힌 상태이거나 NavMesh를 벗어난 상태인 경우
-	if (TaskMemory->bShouldMoveToNearestPoint)
-	{
-		LOG(TEXT("AI %s is Stuck ! Should Move AI to Nearest NavMesh"), *TaskMemory->AIController->GetName());
-
-		return EBTNodeResult::Failed;
-	}
-
-	// 이동 요청이 성공적으로 처리된 경우
-	if (Result == EPathFollowingRequestResult::RequestSuccessful)
-	{
-		LOG(TEXT("AI Move Request Successful"));
-		return EBTNodeResult::InProgress;
-	}
-
-	// 위의 요청들이 False인 경우 예외 상황이므로 Fail 처리
-	return EBTNodeResult::Failed;
+	return EBTNodeResult::InProgress;
 }
 
 void UBTTask_MoveToLocation::TickTask(UBehaviorTreeComponent& Comp, uint8* NodeMemory, float DeltaSeconds)
@@ -97,6 +67,41 @@ void UBTTask_MoveToLocation::TickTask(UBehaviorTreeComponent& Comp, uint8* NodeM
 	TaskMemory->Boss = Cast<ABoss>(TaskMemory->AIController->GetCharacter());
 	
 	if (!TaskMemory->Boss.IsValid() || !TaskMemory->AIController.IsValid()) return;
+
+
+	
+	// 만약 MoveToLocation Task 노드의 점유 시간이 MinFinishTaskInterval 이상이 된다면
+	// 현재 Task에 이상이 있다는 의미이므로 주변 NavMesh 지점으로 이동한다.
+	TaskMemory->AccumulatedTime += FMath::Clamp(DeltaSeconds, 0.f, 0.1f);
+	if (TaskMemory->AccumulatedTime >= MinFinishTaskInterval)
+	{
+		LOG(TEXT("AI Name %s : MoveToLocation Task has been running for too long, Teleporting to Cached Location"), *TaskMemory->Boss->GetName());
+		TeleportToNearestNavMeshLocation(TaskMemory);
+	}
+
+
+	
+	// MoveTo의 결과가 Fail인 것은 NavMesh를 벗어났다는 의미이다.
+	// 주변에 이동 가능한 NavMesh 지점으로 이동한 후 다시 Patrol Point를 할당 받는다.
+	if (Result == EPathFollowingRequestResult::Failed)
+	{
+		LOG(TEXT("AI Name %s : MoveToLocation Failed, Trying to Move to Cached Location"), *TaskMemory->Boss->GetName());
+		TeleportToNearestNavMeshLocation(TaskMemory);
+		return;
+	}
+
+
+	
+	// 이전에 이동한 지점과 거리가 0.0001f 만큼 차이가 난다는 것은 벽에 끼었다는 것이다.
+	// 따라서 주변의 이동 가능한 NavMesh 지점으로 이동한다.
+	if (FVector::Dist(TaskMemory->TargetLocation, TaskMemory->CachedLocation) < KINDA_SMALL_NUMBER)
+	{
+		LOG(TEXT("AI Stuck, Trying to Move to Cached Location"));
+		TeleportToNearestNavMeshLocation(TaskMemory);
+		return;
+	}
+
+
 	
 	// 해당 지점에 도착한 경우 테스크 종료
 	if (TaskMemory->AIController->GetPathFollowingComponent()->GetStatus() == EPathFollowingStatus::Idle)
@@ -106,7 +111,6 @@ void UBTTask_MoveToLocation::TickTask(UBehaviorTreeComponent& Comp, uint8* NodeM
 		{
 			TaskMemory->AIController->InitVariables();	
 		}
-		
 		FinishLatentTask(Comp, EBTNodeResult::Succeeded);
 		return;
 	}
@@ -126,8 +130,38 @@ void UBTTask_MoveToLocation::OnTaskFinished(UBehaviorTreeComponent& OwnerComp, u
 	if (!TaskMemory->Boss.IsValid() || !TaskMemory->AIController.IsValid()) return;
 
 	TaskMemory->CachedLocation = TaskMemory->TargetLocation;
-	TaskMemory->bHasBeenTriggeredMoveToLocation = true;
-	TaskMemory->bShouldMoveToNearestPoint = false;
+}
+
+void UBTTask_MoveToLocation::TeleportToNearestNavMeshLocation(FBTMoveToLocationTaskMemory* TaskMemory)
+{
+	// 주변의 가장 가까운 NavMesh 점을 찾아서 로그 출력
+	UNavigationSystemV1* NavSys = UNavigationSystemV1::GetCurrent(TaskMemory->Boss->GetWorld());
+	if (NavSys)
+	{
+		FNavLocation NearestNavLocation;
+		const FVector CurrentLocation = TaskMemory->Boss->GetActorLocation();
+		
+		bool bFound = NavSys->ProjectPointToNavigation(
+			CurrentLocation,                   // 검색 기준 위치
+			NearestNavLocation,               // 결과
+			FVector(100.f, 100.f, 100.f)      // 탐색 반경
+		);
+
+		if (bFound)
+		{
+			LOG(TEXT("Nearest NavMesh Location: %s"), *NearestNavLocation.Location.ToString());
+		}
+		else
+		{
+			LOG(TEXT("Failed to find nearest NavMesh location."));
+		}
+
+		TaskMemory->Boss->SetActorLocation(NearestNavLocation.Location);
+	}
+
+	TaskMemory->CachedLocation = FVector::ZeroVector;
+	TaskMemory->AccumulatedTime = 0.f;
+	TaskMemory->TargetLocation = TaskMemory->Boss->GetNextPatrolPoint();
 }
 
 

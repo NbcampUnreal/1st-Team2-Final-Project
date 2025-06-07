@@ -34,6 +34,7 @@ class ABYSSDIVERUNDERWORLD_API UChargeBatteryWidget : public UUserWidget
 #pragma region Method
 public:
 	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
 	UFUNCTION(BlueprintCallable)
 	void StartChargeBattery(FName ItemName);
 	UFUNCTION(BlueprintCallable)
@@ -46,8 +47,11 @@ public:
 
 	void UpdateBatteryInfoDelay();
 	void UpdateBatteryInfo();
+
+	void PlayVisibleAnimation(bool bIsVisible);
 private:
 	void InitializeChargeBatteryWidget();
+	uint8 bChargeBatteryWidgetShowed : 1;
 #pragma endregion
 
 #pragma region Variable
@@ -55,10 +59,16 @@ public:
 	FFADItemDataRow* DPVRow;
 	FFADItemDataRow* NVRow;
 	FFADItemDataRow* BatteryRow;
-private:
-	TObjectPtr<UADInventoryComponent> InventoryComp = nullptr;
-	TObjectPtr<UEquipUseComponent> EquipUseComp = nullptr;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
+	TObjectPtr<USoundBase> SoundCue = nullptr;
+	UPROPERTY()
+	TObjectPtr<UAudioComponent> ChargeBatterySound = nullptr;
+private:
+	UPROPERTY(meta = (BindWidgetAnim), Transient)
+	TObjectPtr<UWidgetAnimation> FadeIn;
+	UPROPERTY(meta = (BindWidgetAnim), Transient)
+	TObjectPtr<UWidgetAnimation> FadeOut;
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<URichTextBlock> BatteryAmountText;
 	UPROPERTY(meta = (BindWidget))
@@ -73,7 +83,10 @@ private:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> NVButton;
 
-	FTimerHandle InitialzieTimerHandle;
+	UPROPERTY()
+	TObjectPtr<UADInventoryComponent> InventoryComp = nullptr;
+	UPROPERTY()
+	TObjectPtr<UEquipUseComponent> EquipUseComp = nullptr;
 
 	int32 DPVBatteryMax = 0;
 	int32 NVBatteryMax = 0;
@@ -82,6 +95,8 @@ private:
 
 	FName CurrentChargeItem;
 	FTimerHandle IncreaseTimerHandle;
+	FTimerHandle InitialzieTimerHandle;
+	FTimerHandle HiddenTimerHandle;
 
 	TMap<FName, EChargeBatteryType> ChargeBatteryTypeMap = {
 		{FName(TEXT("NightVisionGoggle")), EChargeBatteryType::NightVisionGoggle},
@@ -95,6 +110,5 @@ public:
 	void SetEquipBatteryAmount(EChargeBatteryType ChargeBatteryType, int16 Amount);
 	void SetEquipBatteryButtonActivate(EChargeBatteryType ChargeBatteryType, bool bActivate);
 
-	static EChargeBatteryType GetEChargeBatteryTypeByName(FName Name);
 #pragma endregion
 };

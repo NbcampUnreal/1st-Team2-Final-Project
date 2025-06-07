@@ -40,6 +40,7 @@ void UPlayerHUDComponent::BeginPlay()
 			HudWidget->BindWidget(PlayerController->GetPawn());
 		}
 	}
+	SetTestHUDVisibility(false);
 
 	// 상태 UI 생성
 	if (PlayerStatusWidgetClass)
@@ -49,6 +50,11 @@ void UPlayerHUDComponent::BeginPlay()
 		{
 			PlayerStatusWidget->AddToViewport();
 		}
+	}
+
+	if (ResultScreenWidgetClass)
+	{
+		ResultScreenWidget = CreateWidget<UResultScreen>(PlayerController, ResultScreenWidgetClass);
 	}
 
 	// 올바른 수정
@@ -84,11 +90,39 @@ void UPlayerHUDComponent::C_ShowResultScreen_Implementation()
 {
 	for (AADPlayerState* PS : TActorRange<AADPlayerState>(GetWorld()))
 	{
+		AUnderwaterCharacter* PlayerCharacter = Cast<AUnderwaterCharacter>(PS->GetPawn());
+		if (ensure(PlayerCharacter) == false)
+		{
+			continue;
+		}
+
+		EAliveInfo AliveInfo = EAliveInfo::Alive;
+
+		if (PS->IsSafeReturn() == false)
+		{
+			const ECharacterState CharacterState = PlayerCharacter->GetCharacterState();
+			switch (CharacterState)
+			{
+			case ECharacterState::Normal:
+				AliveInfo = EAliveInfo::Abandoned;
+				break;
+			case ECharacterState::Groggy:
+				AliveInfo = EAliveInfo::Dead;
+				break;
+			case ECharacterState::Death:
+				AliveInfo = EAliveInfo::Dead;
+				break;
+			default:
+				check(false);
+				break;
+			}
+		}
+
 		FResultScreenParams Params(
 			PS->GetPlayerNickname(),
 			98,
 			PS->GetTotalOreMinedCount(),
-			EAliveInfo::Abandoned
+			AliveInfo
 		);
 		UpdateResultScreen(PS->GetPlayerIndex(), Params);
 	}
@@ -96,11 +130,20 @@ void UPlayerHUDComponent::C_ShowResultScreen_Implementation()
 	SetResultScreenVisible(true);
 }
 
-void UPlayerHUDComponent::SetVisibility(const bool NewVisible) const
+void UPlayerHUDComponent::SetTestHUDVisibility(const bool NewVisible) const
 {
 	if (HudWidget)
 	{
 		HudWidget->SetVisibility(NewVisible ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+	}
+}
+
+void UPlayerHUDComponent::ToggleTestHUD() const
+{
+	if (HudWidget)
+	{
+		const bool bIsVisible = HudWidget->GetVisibility() == ESlateVisibility::Visible;
+		SetTestHUDVisibility(!bIsVisible);
 	}
 }
 
@@ -135,7 +178,7 @@ void UPlayerHUDComponent::OnPossessedPawnChanged(APawn* OldPawn, APawn* NewPawn)
 	if (!NewPawn) return;
 
 	APlayerController* PlayerController = Cast<APlayerController>(GetOwner());
-	
+
 	if (!IsValid(HudWidget))
 	{
 		HudWidget = CreateWidget<UPlayerHUDWidget>(PlayerController, HudWidgetClass);
@@ -153,6 +196,11 @@ void UPlayerHUDComponent::OnPossessedPawnChanged(APawn* OldPawn, APawn* NewPawn)
 	if (PlayerStatusWidget)
 	{
 		PlayerStatusWidget->AddToViewport();
+	}
+
+	if (ResultScreenWidgetClass && IsValid(ResultScreenWidget) == false)
+	{
+		ResultScreenWidget = CreateWidget<UResultScreen>(PlayerController, ResultScreenWidgetClass);
 	}
 
 	if (AUnderwaterCharacter* UWCharacter = Cast<AUnderwaterCharacter>(NewPawn))
@@ -198,7 +246,6 @@ void UPlayerHUDComponent::UpdateHealthHUD(int32 CurrentHealth, int32 MaxHealth)
 
 void UPlayerHUDComponent::UpdateStaminaHUD(float Stamina, float MaxStamina)
 {
-
 	if (PlayerStatusWidget)
 	{
 		const float Ratio = MaxStamina > 0 ? Stamina / MaxStamina : 0.f;
@@ -220,4 +267,9 @@ void UPlayerHUDComponent::SetSpearUIVisibility(bool bVisible)
 	{
 		PlayerStatusWidget->SetSpearVisibility(bVisible);
 	}
+}
+
+bool UPlayerHUDComponent::IsTestHUDVisible() const
+{
+	return HudWidget && HudWidget->GetVisibility() == ESlateVisibility::Visible;
 }

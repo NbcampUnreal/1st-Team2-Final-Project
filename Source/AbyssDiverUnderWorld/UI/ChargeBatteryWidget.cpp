@@ -11,7 +11,9 @@
 #include "Inventory/ADInventoryComponent.h"
 #include "Character/UnderwaterCharacter.h"
 #include "Interactable/Item/Component/EquipUseComponent.h"
-
+#include "Kismet/GameplayStatics.h"
+#include "Components/AudioComponent.h"
+#include "Animation/WidgetAnimation.h"
 
 
 DEFINE_LOG_CATEGORY(BatteryLog);
@@ -38,13 +40,33 @@ void UChargeBatteryWidget::NativeConstruct()
 	BatteryNumText->SetVisibility(ESlateVisibility::Hidden);
 	BatteryAmountText->SetVisibility(ESlateVisibility::Hidden);
 
+	bChargeBatteryWidgetShowed = false;
+
 	float InitializeRepeatDelay = 2.0f;
 	GetWorld()->GetTimerManager().SetTimer(InitialzieTimerHandle, this, &UChargeBatteryWidget::InitializeChargeBatteryWidget, InitializeRepeatDelay, true);
+}
+
+void UChargeBatteryWidget::NativeDestruct()
+{
+	Super::NativeDestruct();
+	GetWorld()->GetTimerManager().ClearAllTimersForObject(this);
+	LOGB(Warning, TEXT("ChargeBatteryWidget Destruct"));
 }
 
 void UChargeBatteryWidget::StartChargeBattery(FName ItemName)
 {
 	CurrentChargeItem = ItemName;
+
+	if (SoundCue)
+	{
+		UAudioComponent* Sound = UGameplayStatics::SpawnSound2D(this, SoundCue, 1.0f, 1.0f, 0.0f, nullptr, true);
+		if (Sound)
+		{
+			Sound->Play();
+			ChargeBatterySound = Sound;
+		}
+	}
+
 	if (CanCharge())
 	{
 		float IncreaseRepeatDelay = 0.2f;
@@ -57,6 +79,11 @@ void UChargeBatteryWidget::StopChargeBattery()
 {
 	CurrentChargeItem = NAME_None;
 
+	if (ChargeBatterySound && ChargeBatterySound->IsPlaying())
+	{
+		ChargeBatterySound->Stop();
+	}
+
 	GetWorld()->GetTimerManager().ClearTimer(IncreaseTimerHandle);
 	LOGB(Warning, TEXT("Stop Charge Battery"));
 }
@@ -68,6 +95,10 @@ bool UChargeBatteryWidget::CanCharge()
 	if ((CurrentChargeItem == DPVRow->Name && EquipUseComp->bBoostActive) || (CurrentChargeItem == NVRow->Name && EquipUseComp->bNightVisionOn))
 	{
 		LOGB(Warning, TEXT("Equipment is in use!"));
+		if (ChargeBatterySound && ChargeBatterySound->IsPlaying())
+		{
+			ChargeBatterySound->Stop();
+		}
 		return false;
 	}
 
@@ -78,7 +109,10 @@ bool UChargeBatteryWidget::CanCharge()
 		return true;
 	}
 
-		
+	if (ChargeBatterySound && ChargeBatterySound->IsPlaying())
+	{
+		ChargeBatterySound->Stop();
+	}
 	LOGB(Warning, TEXT("There is no battery."));
 	return false;
 }
@@ -97,14 +131,22 @@ void UChargeBatteryWidget::ChargeBatteryAmount()
 
 		if (CurrentEquipment && CurrentEquipment->Name == CurrentChargeItem)
 		{
-			if (EquipUseComp->Amount >= MaxToCompare) return;
+			if (EquipUseComp->Amount >= MaxToCompare)
+			{
+				StopChargeBattery();
+				return;
+			}
 			EquipUseComp->S_IncreaseAmount(IncreaseAmount);
 			LOGB(Warning, TEXT("Amount of EquipUseComp is charged"));
 		}
 		else
 		{
 			const FItemData* ItemInfoToCharge = InventoryComp->GetInventoryItemData(CurrentChargeItem);
-			if (ItemInfoToCharge->Amount >= MaxToCompare) return;
+			if (ItemInfoToCharge->Amount >= MaxToCompare)
+			{
+				StopChargeBattery();
+				return;
+			}
 			InventoryComp->S_EquipmentChargeBattery(ChargeBatteryTypeMap[CurrentChargeItem], IncreaseAmount);
 			LOGB(Warning, TEXT("Amount of InventoryComp is charged"));
 		}
@@ -142,8 +184,43 @@ void UChargeBatteryWidget::UpdateBatteryInfo()
 	GetWorld()->GetTimerManager().SetTimer(UpdateBatteryInfoTimerHandle, this, &UChargeBatteryWidget::UpdateBatteryInfoDelay, UpdateDelay, false);
 }
 
+void UChargeBatteryWidget::PlayVisibleAnimation(bool bIsVisible)
+{
+	if (bIsVisible)
+	{
+		if (!bChargeBatteryWidgetShowed)
+		{
+			GetWorld()->GetTimerManager().ClearTimer(HiddenTimerHandle);
+			SetVisibility(ESlateVisibility::Visible);
+			bChargeBatteryWidgetShowed = true;
+			if (FadeIn && !IsAnimationPlaying(FadeIn))
+				PlayAnimation(FadeIn);
+		}
+	}
+	else
+	{
+		if (bChargeBatteryWidgetShowed)
+		{
+			if (FadeOut && !IsAnimationPlaying(FadeOut))
+				PlayAnimation(FadeOut);
+
+			float HiddenDelay = FadeOut->GetEndTime();
+			GetWorld()->GetTimerManager().SetTimer(HiddenTimerHandle, 
+				FTimerDelegate::CreateLambda([this]() { 
+					SetVisibility(ESlateVisibility::Hidden); 
+					bChargeBatteryWidgetShowed = false;
+			}), HiddenDelay, false);
+		}
+	}
+}
+
 void UChargeBatteryWidget::InitializeChargeBatteryWidget()
 {
+	if (InitializeNum <= 0)
+	{
+		GetWorld()->GetTimerManager().ClearTimer(InitialzieTimerHandle);
+		return;
+	}
 	InitializeNum--;
 	if (InventoryComp == nullptr)
 	{
@@ -151,8 +228,14 @@ void UChargeBatteryWidget::InitializeChargeBatteryWidget()
 		if (PC)
 		{
 			AADPlayerState* PS = Cast<AADPlayerState>(PC->PlayerState);
-			InventoryComp = PS->GetInventory();
-			InventoryComp->SetChargeBatteryInstance(this);
+			if (PS)
+			{
+				InventoryComp = PS->GetInventory();
+				if (InventoryComp)
+				{
+					InventoryComp->SetChargeBatteryInstance(this);
+				}
+			}
 		}
 	}
 	if (EquipUseComp == nullptr)

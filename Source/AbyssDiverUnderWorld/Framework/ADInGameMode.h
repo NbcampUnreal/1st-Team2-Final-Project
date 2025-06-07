@@ -5,12 +5,19 @@
 #include "ADInGameMode.generated.h"
 
 enum class EMapName : uint8;
+enum class ECharacterState : uint8;
+
+class AGenericPool;
+class USoundSubsystem;
+class AUnderwaterCharacter;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADInGameMode : public AGameMode
 {
 	GENERATED_BODY()
+
 public:
+
 	AADInGameMode();
 
 	virtual void BeginPlay() override;
@@ -26,10 +33,18 @@ public:
 
 	bool IsAllPhaseCleared();
 
+	void BindDelegate(AUnderwaterCharacter* PlayerCharacter);
+
 protected:
+
 	void InitPlayer(APlayerController* PC);
 
 private:
+
+	void GameOver();
+
+	UFUNCTION()
+	void OnCharacterStateChanged(ECharacterState OldCharacterState, ECharacterState NewCharacterState);
 
 	UFUNCTION(Exec, Category = "Cheat")
 	void GetOre();
@@ -40,7 +55,6 @@ private:
 #pragma endregion
 
 #pragma region Variables
-
 private:
 
 	UPROPERTY(EditAnywhere, Category = "InGameMode")
@@ -49,6 +63,20 @@ private:
 	UPROPERTY()
 	TObjectPtr<class AADDrone> LastDrone;
 
+	TSubclassOf<class AADSpearGunBullet> BulletClass;
+	UPROPERTY()
+	TObjectPtr<AGenericPool> SpearGunBulletPool = nullptr;
+	UPROPERTY()
+	TObjectPtr<USoundSubsystem> SoundSubsystem;
+
+	int32 DeathCount = 0;
+	int32 GroggyCount = 0;
+
+	FTimerHandle ResultTimerHandle;
+
 #pragma endregion
 
+public:
+	FORCEINLINE AGenericPool* GetGenericPool() const { return SpearGunBulletPool; }
+	USoundSubsystem* GetSoundSubsystem();
 };

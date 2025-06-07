@@ -1,7 +1,8 @@
-#include "Framework/ADInGameState.h"
+﻿#include "Framework/ADInGameState.h"
 #include "ADGameInstance.h"
 #include "Subsystems/DataTableSubsystem.h"
 #include "Subsystems/SoundSubsystem.h"
+#include "Subsystems/MissionSubsystem.h"
 #include "Net/UnrealNetwork.h"
 #include "AbyssDiverUnderWorld.h"
 #include "DataRow/PhaseGoalRow.h"
@@ -10,6 +11,111 @@
 #include "Inventory/ADInventoryComponent.h"
 #include "Interactable/OtherActors/ADDroneSeller.h"
 #include "UI/ToggleWidget.h"
+#include "Missions/MissionBase.h"
+#include "UI/SelectedMissionListWidget.h"
+#include "Framework/ADCampGameMode.h"
+
+#pragma region FastArraySerializer Methods
+
+void FActivatedMissionInfo::PostReplicatedAdd(const FActivatedMissionInfoList& InArraySerializer)
+{
+	const TArray<FActivatedMissionInfo>& Infos = InArraySerializer.MissionInfoList;
+	int32 Index = Infos.IndexOfByKey(*this);
+
+	InArraySerializer.OnMissionInfosChangedDelegate.Broadcast(Index, InArraySerializer);
+	LOGV(Warning, TEXT("Added, Index : %d, MissionType : %d, MissionIndex : %d, Value : %d"), Index, Infos[Index].MissionType, Infos[Index].MissionIndex, Infos[Index].CurrentProgress);
+}
+
+void FActivatedMissionInfo::PostReplicatedChange(const FActivatedMissionInfoList& InArraySerializer)
+{
+	const TArray<FActivatedMissionInfo>& Infos = InArraySerializer.MissionInfoList;
+	int32 Index = Infos.IndexOfByKey(*this);
+
+	InArraySerializer.OnMissionInfosChangedDelegate.Broadcast(Index, InArraySerializer);
+	LOGV(Warning, TEXT("Changed, Index : %d, MissionType : %d, MissionIndex : %d, Value : %d"), Index, Infos[Index].MissionType, Infos[Index].MissionIndex, Infos[Index].CurrentProgress);
+}
+
+void FActivatedMissionInfo::PreReplicatedRemove(const FActivatedMissionInfoList& InArraySerializer)
+{
+	const TArray<FActivatedMissionInfo>& Infos = InArraySerializer.MissionInfoList;
+	int32 Index = Infos.IndexOfByKey(*this);
+
+	InArraySerializer.OnMissionInfosRemovedDelegate.Broadcast(Index, InArraySerializer);
+	LOGV(Warning, TEXT("Removed, Index : %d, MissionType : %d, MissionIndex : %d, Value : %d"), Index, Infos[Index].MissionType, Infos[Index].MissionIndex, Infos[Index].CurrentProgress);
+}
+
+bool FActivatedMissionInfoList::NetDeltaSerialize(FNetDeltaSerializeInfo& DeltaParams)
+{
+	return FFastArraySerializer::FastArrayDeltaSerialize<FActivatedMissionInfo, FActivatedMissionInfoList>(MissionInfoList, DeltaParams, *this);
+}
+
+void FActivatedMissionInfoList::Add(const EMissionType& MissionType, const uint8& MissionIndex)
+{
+	FActivatedMissionInfo NewInfo;
+	NewInfo.MissionType = MissionType;
+	NewInfo.MissionIndex = MissionIndex;
+	NewInfo.CurrentProgress = 0;
+	NewInfo.bIsCompleted = false;
+
+	MissionInfoList.Emplace(MoveTemp(NewInfo));
+	MarkItemDirty(MissionInfoList.Last());
+}
+
+void FActivatedMissionInfoList::Remove(const EMissionType& MissionType, const uint8& MissionIndex)
+{
+	const int32 Index = Contains(MissionType, MissionIndex);
+	if (Index == INDEX_NONE)
+	{
+		return;
+	}
+
+	MissionInfoList.RemoveAt(Index);
+	MarkArrayDirty();
+}
+
+void FActivatedMissionInfoList::ModifyProgress(const EMissionType& MissionType, const uint8& MissionIndex, const uint8& NewProgress)
+{
+	const int32 Index = Contains(MissionType, MissionIndex);
+	if (Index == INDEX_NONE)
+	{
+		return;
+	}
+
+	MissionInfoList[Index].CurrentProgress = NewProgress;
+	MarkItemDirty(MissionInfoList[Index]);
+}
+
+void FActivatedMissionInfoList::AddOrModify(const EMissionType& MissionType, const uint8& MissionIndex, const uint8& NewProgress)
+{
+	if (Contains(MissionType, MissionIndex) == INDEX_NONE)
+	{
+		Add(MissionType, MissionIndex);
+	}
+
+	ModifyProgress(MissionType, MissionIndex, NewProgress);
+}
+
+int32 FActivatedMissionInfoList::Contains(const EMissionType& MissionType, const uint8& MissionIndex)
+{
+	const int32 InfoCount = MissionInfoList.Num();
+	for (int32 i = 0; i < InfoCount; ++i)
+	{
+		if (MissionInfoList[i].MissionType == MissionType && MissionInfoList[i].MissionIndex == MissionIndex)
+		{
+			return i;
+		}
+	}
+
+	return INDEX_NONE;
+}
+
+void FActivatedMissionInfoList::Clear(const int32 SlackCount)
+{
+	MissionInfoList.Empty(SlackCount);
+	MarkArrayDirty();
+}
+
+#pragma endregion
 
 AADInGameState::AADInGameState()
 	: SelectedLevelName(EMapName::Max)
@@ -25,9 +131,19 @@ void AADInGameState::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
 
+	// 게임 중이 아닌 경우 리턴(블루프린트 상일 경우)
+	// PostInitializeComponents는 블루프린트에서도 발동함
+	UWorld* World = GetWorld();
+	if (World == nullptr || World->IsGameWorld() == false)
+	{
+		return;
+	}
+
 	if (HasAuthority())
 	{
 		ReceiveDataFromGameInstance();
+
+		RefreshActivatedMissionList();
 	}
 }
 
@@ -46,7 +162,6 @@ void AADInGameState::BeginPlay()
 	TeamCreditsChangedDelegate.Broadcast(TeamCredits);
 	CurrentPhaseChangedDelegate.Broadcast(CurrentPhase);
 	CurrentPhaseGoalChangedDelegate.Broadcast(CurrentPhaseGoal);
-
 }
 
 void AADInGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -57,6 +172,7 @@ void AADInGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME(AADInGameState, TeamCredits);
 	DOREPLIFETIME(AADInGameState, CurrentPhase);
 	DOREPLIFETIME(AADInGameState, CurrentDroneSeller);
+	DOREPLIFETIME(AADInGameState, ActivatedMissionList);
 }
 
 void AADInGameState::PostNetInit()
@@ -97,14 +213,14 @@ void AADInGameState::SendDataToGameInstance()
 
 void AADInGameState::OnRep_Money()
 {
-	// UI ������Ʈ
+	// UI 업데이트
 	UE_LOG(LogTemp, Log, TEXT("TotalTeamCredit updated: %d"), TeamCredits);
 	TeamCreditsChangedDelegate.Broadcast(TeamCredits);
 }
 
 void AADInGameState::OnRep_Phase()
 {
-	// UI ������Ʈ
+	// UI 업데이트
 	UE_LOG(LogTemp, Log, TEXT("Phase updated: %d/%d"), CurrentPhase, MaxPhase);
 	CurrentPhaseChangedDelegate.Broadcast(CurrentPhase);
 }
@@ -138,14 +254,23 @@ void AADInGameState::OnRep_CurrentDroneSeller()
 		return;
 	}
 
-	ToggleWidget->SetDroneTargetText(CurrentDroneSeller->GetTargetMoney());
-	ToggleWidget->SetDroneCurrentText(CurrentDroneSeller->GetCurrentMoney());
+	int32 TargetMoney = 0;
+	int32 CurrentMoney = 0;
 
-	CurrentDroneSeller->OnCurrentMoneyChangedDelegate.RemoveAll(ToggleWidget);
-	CurrentDroneSeller->OnCurrentMoneyChangedDelegate.AddUObject(ToggleWidget, &UToggleWidget::SetDroneCurrentText);
+	if (CurrentDroneSeller)
+	{
+		TargetMoney = CurrentDroneSeller->GetTargetMoney();
+		CurrentMoney = CurrentDroneSeller->GetCurrentMoney();
 
-	CurrentDroneSeller->OnTargetMoneyChangedDelegate.RemoveAll(ToggleWidget);
-	CurrentDroneSeller->OnTargetMoneyChangedDelegate.AddUObject(ToggleWidget, &UToggleWidget::SetDroneTargetText);
+		CurrentDroneSeller->OnCurrentMoneyChangedDelegate.RemoveAll(ToggleWidget);
+		CurrentDroneSeller->OnCurrentMoneyChangedDelegate.AddUObject(ToggleWidget, &UToggleWidget::SetDroneCurrentText);
+
+		CurrentDroneSeller->OnTargetMoneyChangedDelegate.RemoveAll(ToggleWidget);
+		CurrentDroneSeller->OnTargetMoneyChangedDelegate.AddUObject(ToggleWidget, &UToggleWidget::SetDroneTargetText);
+	}
+
+	ToggleWidget->SetDroneTargetText(TargetMoney);
+	ToggleWidget->SetDroneCurrentText(CurrentMoney);
 }
 
 void AADInGameState::ReceiveDataFromGameInstance()
@@ -176,4 +301,22 @@ FString AADInGameState::GetMapDisplayName() const
 
 	return DisplayName;
 
+}
+
+void AADInGameState::RefreshActivatedMissionList()
+{
+	if (HasAuthority() == false)
+	{
+		return;
+	}
+
+	const TArray<UMissionBase*>& Missions = GetGameInstance()->GetSubsystem<UMissionSubsystem>()->GetActivatedMissions();
+	ActivatedMissionList.Clear(Missions.Num());
+
+	for (const UMissionBase* Mission : Missions)
+	{
+		ActivatedMissionList.Add(Mission->GetMissionType(), Mission->GetMissionIndex());
+	}
+
+	OnMissionListRefreshedDelegate.Broadcast();
 }

@@ -1,17 +1,26 @@
 ﻿#include "Framework/ADInGameMode.h"
+
+#include "AbyssDiverUnderWorld.h"
 #include "ADInGameState.h"
 #include "ADPlayerState.h"
 #include "ADPlayerController.h"
-#include "GameFramework/PlayerController.h"
-#include "Framework/ADGameInstance.h"
+
 #include "Interactable/OtherActors/ADDrone.h"
 #include "Interactable/OtherActors/ADDroneSeller.h"
+
+#include "Subsystems/SoundSubsystem.h"
 #include "Subsystems/DataTableSubsystem.h"
+
+#include "Character/PlayerComponent/PlayerHUDComponent.h"
+#include "Character/UnderwaterCharacter.h"
+
+#include "Projectile/GenericPool.h"
+#include "Projectile/ADSpearGunBullet.h"
+
 #include "DataRow/PhaseGoalRow.h"
-#include "AbyssDiverUnderWorld.h"
 #include "Container/FStructContainer.h"
 #include "Inventory/ADInventoryComponent.h"
-#include "Character/PlayerComponent/PlayerHUDComponent.h"
+#include "Framework/ADGameInstance.h"
 
 #include "Kismet/GameplayStatics.h"
 #include "EngineUtils.h"
@@ -19,15 +28,33 @@
 AADInGameMode::AADInGameMode()
 {
 	bUseSeamlessTravel = true;
+
+	ConstructorHelpers::FClassFinder<AADSpearGunBullet> SpearGunBulletFinder(TEXT("/Game/_AbyssDiver/Blueprints/Projectile/BP_ADSpearGunBullet"));
+	if (SpearGunBulletFinder.Succeeded())
+	{
+		BulletClass = SpearGunBulletFinder.Class;
+	}
 }
 
 void AADInGameMode::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+	{
+		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
+	}
+
+	GetSoundSubsystem()->PlayBGM(ESFX_BGM::ShallowBackground, 1.0f);
+	GetSoundSubsystem()->PlayBGM(ESFX_BGM::ShallowPhase1, 1.0f);
+
 	if (AADInGameState* InGameState = GetGameState<AADInGameState>())
 	{
 		UDataTableSubsystem* DataTableSubsystem = GetGameInstance()->GetSubsystem<UDataTableSubsystem>();
+
+		SpearGunBulletPool = GetWorld()->SpawnActor<AGenericPool>();
+		SpearGunBulletPool->InitPool<AADSpearGunBullet>(10, BulletClass);
+		LOGVN(Warning, TEXT("SpawnSpearGunBulletPool"));
 
 		int32 LastDroneNumber = 0;
 		const int32 FirstDroneNumber = 1;
@@ -55,6 +82,7 @@ void AADInGameMode::BeginPlay()
 			if (DronePhaseNumber == FirstDroneNumber)
 			{
 				InGameState->SetCurrentDroneSeller(Drone->CurrentSeller);
+				Drone->M_PlayPhaseBGM(1);
 			}
 		}
 	}
@@ -71,9 +99,28 @@ void AADInGameMode::Logout(AController* Exiting)
 {
 	Super::Logout(Exiting);
 
-	FString ExitingId = Exiting->GetPlayerState<AADPlayerState>()->GetUniqueId().GetUniqueNetId()->ToString();
+	if (ensure(Exiting) == false)
+	{
+		return;
+	}
+
+	AADPlayerState* PS = Exiting->GetPlayerState<AADPlayerState>();
+	if (ensure(PS) == false)
+	{
+		return;
+	}
+
+	const FUniqueNetIdRepl& UniqueNetIdRepl = PS->GetUniqueId();
+	if (ensure(&UniqueNetIdRepl) == false)
+	{
+		return;
+	}
+
+	FString ExitingId = UniqueNetIdRepl->ToString();
 	UADGameInstance* GI = GetGameInstance<UADGameInstance>();
 	GI->RemovePlayerNetId(ExitingId);
+
+	LOGVN(Error, TEXT("Logout, Who : %s, NetId : %s"), *Exiting->GetName(), *ExitingId);
 
 }
 
@@ -86,9 +133,16 @@ void AADInGameMode::ReadyForTravelToCamp()
 		PC->GetPlayerHUDComponent()->C_ShowResultScreen();
 	}
 
-	FTimerHandle TimerHandle;
+	FTimerManager& TimerManager = GetWorldTimerManager();
+	if (TimerManager.IsTimerActive(ResultTimerHandle))
+	{
+		return;
+	}
+
+	TimerManager.ClearTimer(ResultTimerHandle);
+	
 	const float Interval = 5.0f;
-	GetWorldTimerManager().SetTimer(TimerHandle, this, &AADInGameMode::TravelToCamp, 1, false, Interval);
+	TimerManager.SetTimer(ResultTimerHandle, this, &AADInGameMode::TravelToCamp, 1, false, Interval);
 }
 
 void AADInGameMode::TravelToCamp()
@@ -123,6 +177,23 @@ bool AADInGameMode::IsAllPhaseCleared()
 	return GS->GetPhase() == GS->GetMaxPhase() && (::IsValid(LastDrone) == false);
 }
 
+void AADInGameMode::BindDelegate(AUnderwaterCharacter* PlayerCharacter)
+{
+	if (PlayerCharacter == nullptr)
+	{
+		LOGV(Error, TEXT("PlayerCharacter == nullptr"));
+		return;
+	}
+
+	if (PlayerCharacter->OnCharacterStateChangedDelegate.IsAlreadyBound(this, &AADInGameMode::OnCharacterStateChanged))
+	{
+		return;
+	}
+
+	LOGV(Error, TEXT("DelegateBound"));
+	PlayerCharacter->OnCharacterStateChangedDelegate.AddDynamic(this, &AADInGameMode::OnCharacterStateChanged);
+}
+
 void AADInGameMode::InitPlayer(APlayerController* PC)
 {
 	if (!PC)
@@ -132,12 +203,52 @@ void AADInGameMode::InitPlayer(APlayerController* PC)
 	{
 		RestartPlayer(PC);
 	}
+}
 
-	if (AADPlayerState* ADPlayerState = Cast<AADPlayerState>(PC->PlayerState))
+void AADInGameMode::GameOver()
+{
+	LOGV(Error, TEXT("Game Over"));
+
+#if WITH_EDITOR
+	// PIE 버그로 이걸 호출해주지 않으면 Server Travel시 크래시 일어남.
+	if (GEditor)
 	{
-		ADPlayerState->ResetLevelResults();
-
+		GEditor->SelectNone(true, true);
 	}
+
+#endif
+
+	ReadyForTravelToCamp();
+}
+
+void AADInGameMode::OnCharacterStateChanged(ECharacterState OldCharacterState, ECharacterState NewCharacterState)
+{
+	LOGV(Error, TEXT("Begin, NewCharacterState : %d, PlayerNum : %d"), NewCharacterState, GetNumPlayers());
+	if (NewCharacterState == ECharacterState::Death)
+	{
+		if (OldCharacterState == ECharacterState::Groggy)
+		{
+			GroggyCount--;
+		}
+
+		DeathCount++;
+	}
+	else if (NewCharacterState == ECharacterState::Groggy)
+	{
+		LOGV(Error, TEXT("Groggy"));
+		GroggyCount++;
+	}
+	else if (OldCharacterState == ECharacterState::Groggy && NewCharacterState == ECharacterState::Normal)
+	{
+		GroggyCount--;
+	}
+
+	if (DeathCount + GroggyCount == GetNumPlayers())
+	{
+		GameOver();
+	}
+
+	LOGV(Error, TEXT("End"));
 }
 
 void AADInGameMode::GetOre()
@@ -175,4 +286,19 @@ void AADInGameMode::GetMoney()
 	}
 
 	GS->SetTotalTeamCredit(GS->GetTotalTeamCredit() + 10000);
+}
+
+USoundSubsystem* AADInGameMode::GetSoundSubsystem()
+{
+	if (SoundSubsystem)
+	{
+		return SoundSubsystem;
+	}
+
+	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+	{
+		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
+		return SoundSubsystem;
+	}
+	return nullptr;
 }

@@ -6,8 +6,11 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "NiagaraCommon.h"
 #include "NiagaraFunctionLibrary.h"
+#include "NiagaraComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"
+#include "AbyssDiverUnderWorld.h"
+
 
 
 AGFProjectile::AGFProjectile() : Damage(50.0f), LifeSpan(5.0f)
@@ -23,7 +26,7 @@ AGFProjectile::AGFProjectile() : Damage(50.0f), LifeSpan(5.0f)
 	CollisionComponent->SetCollisionProfileName(TEXT("Projectile"));
 	CollisionComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	CollisionComponent->SetNotifyRigidBodyCollision(true); // Must be present for OnComponentHit to occur
-	CollisionComponent->OnComponentHit.AddDynamic(this, &AGFProjectile::OnProjectileHit);
+	CollisionComponent->OnComponentBeginOverlap.AddDynamic(this, &AGFProjectile::OnProjectileBeginOverlap);
 
 
 	ProjectileMovementComp = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovementComp"));
@@ -64,25 +67,45 @@ void AGFProjectile::FireDirection(const FVector& ShootDirection)
 	ProjectileMovementComp->Velocity = ShootDirection * ProjectileMovementComp->InitialSpeed;
 }
 
-void AGFProjectile::OnProjectileHit(
-	UPrimitiveComponent* HitComponent,
+void AGFProjectile::DestroyProjectile()
+{
+	if (TrailEffect)
+	{
+		NiagaraComponent->Deactivate();
+		NiagaraComponent->SetVisibility(false);
+	}
+
+	// Disable collision and visual elements
+	SetActorEnableCollision(false);
+	SetActorHiddenInGame(true);
+
+	// AActor::Destroy() ¡æ bPendingKill = true
+	SetLifeSpan(0.1f);
+	LOG(TEXT("Projectile has BeginOverlap!! Destroyed!!"))
+}
+
+void AGFProjectile::OnProjectileBeginOverlap(
+	UPrimitiveComponent* OverlappedComponent,
 	AActor* OtherActor,
 	UPrimitiveComponent* OtherComp,
-	FVector NormalImpulse,
-	const FHitResult& Hit)
+	int32 OtherBodyIndex,
+	bool bFromSweep,
+	const FHitResult& SweepResult)
 {
 	if (OtherActor && OtherActor != this)
 	{
+		UE_LOG(LogTemp, Log, TEXT("Projectile overlapped with: %s"), *OtherActor->GetName());
+
 		UGameplayStatics::ApplyDamage(
 			OtherActor, // DamagedActor : AActor*
 			Damage, // BaseDamage : float
 			GetInstigatorController(), // Event Instigator Controller : AController*
 			this, // Damage Causer : AActor*
 			nullptr // Damage Type Class : TSubclassof<UDamageType>
-			);
+		);
 	}
-
-	Destroy();
+	
+	DestroyProjectile();
 }
 
 

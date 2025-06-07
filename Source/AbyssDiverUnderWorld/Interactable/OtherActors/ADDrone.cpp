@@ -6,6 +6,8 @@
 #include "Net/UnrealNetwork.h"
 #include "Gimmic/Spawn/SpawnManager.h"
 #include "Kismet/GameplayStatics.h"
+#include "Framework/ADGameInstance.h"
+#include "Subsystems/SoundSubsystem.h"
 
 DEFINE_LOG_CATEGORY(DroneLog);
 
@@ -32,11 +34,16 @@ void AADDrone::BeginPlay()
 	{
 		AActor* Found = UGameplayStatics::GetActorOfClass(this, ASpawnManager::StaticClass());
 		SpawnManager = Cast<ASpawnManager>(Found);
+	
+	}
+	if (SpawnManager && DronePhaseNumber == 1)
+	{
+		SpawnManager->SpawnByGroup();
+	}
 
-		if (SpawnManager && DronePhaseNumber == 1)
-		{
-			SpawnManager->SpawnByGroup();
-		}
+	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+	{
+		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
 	}
 }
 
@@ -79,6 +86,10 @@ void AADDrone::Interact_Implementation(AActor* InstigatorActor)
 				NextSeller->Activate();
 				GS->SetCurrentDroneSeller(NextSeller);
 			}
+			else
+			{
+				GS->SetCurrentDroneSeller(nullptr);
+			}
 		}
 	}
 	CurrentSeller->DisableSelling();
@@ -88,6 +99,42 @@ void AADDrone::Interact_Implementation(AActor* InstigatorActor)
 		SpawnManager->SpawnByGroup();
 		LOGD(Log, TEXT("Monster Spawns"));
 	}
+	// 다음 BGM 실행
+	if (HasAuthority())
+	{
+		LOGN(TEXT("No PhaseSound, DronePhaseNumber : %d"), DronePhaseNumber);
+		LOGN(TEXT("No PhaseSound, DroneName : %s"), *GetName());
+		M_PlayPhaseBGM(DronePhaseNumber + 1);
+		LOGD(Log,TEXT("Next Phase : PhaseSound"));
+	}
+}
+
+void AADDrone::M_PlayDroneRisingSound_Implementation()
+{
+	GetSoundSubsystem()->PlayAt(ESFX::SendDrone, GetActorLocation());
+}
+
+// 나중에 수정..
+void AADDrone::M_PlayPhaseBGM_Implementation(int32 PhaseNumber)
+{
+	if (PhaseNumber == 1)
+	{
+		CachedSoundNumber = GetSoundSubsystem()->PlayBGM(ESFX_BGM::ShallowPhase1, true);
+		LOGN(TEXT("PhaseSound1"));
+	}
+	else if (PhaseNumber == 2)
+	{
+		GetSoundSubsystem()->StopAudio(CachedSoundNumber, true);
+		CachedSoundNumber = GetSoundSubsystem()->PlayBGM(ESFX_BGM::ShallowPhase2, true);
+		LOGN(TEXT("PhaseSound2"));
+	}
+	else if (PhaseNumber == 3)
+	{
+		GetSoundSubsystem()->StopAudio(CachedSoundNumber, true);
+		CachedSoundNumber = GetSoundSubsystem()->PlayBGM(ESFX_BGM::ShallowPhase3, true);
+		LOGN(TEXT("PhaseSound3"));
+	}
+	LOGN(TEXT("No PhaseSound, DronePhaseNumber : %d"), DronePhaseNumber);
 }
 
 void AADDrone::Activate()
@@ -111,6 +158,7 @@ void AADDrone::StartRising()
 			&AADDrone::OnDestroyTimer,
 			DestroyDelay, false
 		);
+	M_PlayDroneRisingSound();
 }
 
 void AADDrone::OnDestroyTimer()
@@ -139,7 +187,22 @@ bool AADDrone::IsHoldMode() const
 	return bIsHold;
 }
 
-EInteractionType AADDrone::GetInteractionType() const
+FString AADDrone::GetInteractionDescription() const
 {
-	return EInteractionType::SendDrone;
+	return TEXT("Send Drone!");
+}
+
+USoundSubsystem* AADDrone::GetSoundSubsystem()
+{
+	if (SoundSubsystem)
+	{
+		return SoundSubsystem;
+	}
+
+	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+	{
+		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
+		return SoundSubsystem;
+	}
+	return nullptr;
 }

@@ -18,7 +18,7 @@ class ABYSSDIVERUNDERWORLD_API UInteractionDescriptionWidget : public UUserWidge
 public:
 	// 상호작용 가능할 때 호출할 함수
 	UFUNCTION()
-	void HandleFocus(AActor* Actor, EInteractionType Type);
+	void HandleFocus(AActor* Actor, FString Description);
 	// 상호작용 불가능할 때 호출할 함수
 	UFUNCTION()
 	void HandleFocusLost();
@@ -35,6 +35,12 @@ public:
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UImage> ImageKeyE;
+
+	UPROPERTY(meta = (BindWidgetAnim), Transient)
+	TObjectPtr<UWidgetAnimation> InAnim;
+
+	UPROPERTY(meta = (BindWidgetAnim), Transient)
+	TObjectPtr<UWidgetAnimation> OutAnim;
 
 private:
 	FTimerHandle TimerHandle;

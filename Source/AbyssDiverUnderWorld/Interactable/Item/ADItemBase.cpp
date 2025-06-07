@@ -6,6 +6,8 @@
 #include "Inventory/ADInventoryComponent.h"
 #include "Framework/ADPlayerState.h"
 #include "GameFramework/ProjectileMovementComponent.h"
+#include "Framework/ADGameInstance.h"
+#include "Subsystems/SoundSubsystem.h"
 
 DEFINE_LOG_CATEGORY(ItemLog);
 
@@ -37,6 +39,11 @@ AADItemBase::AADItemBase()
 void AADItemBase::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+	{
+		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
+	}
 }
 
 void AADItemBase::Interact_Implementation(AActor* InstigatorActor)
@@ -60,9 +67,15 @@ void AADItemBase::HandlePickup(APawn* InstigatorPawn)
 		LOGI(Log, TEXT("Find Inventory"));
 		if (Inventory->AddInventoryItem(ItemData))
 		{
+			M_PlayPickupSound();
 			Destroy();
 		}
 	}
+}
+
+void AADItemBase::M_PlayPickupSound_Implementation()
+{
+	GetSoundSubsystem()->PlayAt(ESFX::Pickup, GetActorLocation(), 2.0f);
 }
 
 void AADItemBase::OnRep_ItemData()
@@ -97,7 +110,22 @@ bool AADItemBase::IsHoldMode() const
 	return bIsHold;
 }
 
-EInteractionType AADItemBase::GetInteractionType() const
+FString AADItemBase::GetInteractionDescription() const
 {
-	return EInteractionType::Pickup;
+	return TEXT("Pick up!");
+}
+
+USoundSubsystem* AADItemBase::GetSoundSubsystem()
+{
+	if (SoundSubsystem)
+	{
+		return SoundSubsystem;
+	}
+
+	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+	{
+		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
+		return SoundSubsystem;
+	}
+	return nullptr;
 }

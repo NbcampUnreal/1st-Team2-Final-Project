@@ -2,10 +2,13 @@
 
 #include "Interactable/Item/Component/ADInteractableComponent.h"
 #include "Framework/ADInGameMode.h"
+#include "Framework/ADGameInstance.h"
 #include "AbyssDiverUnderWorld.h"
 
 #include "Kismet/GameplayStatics.h"
 #include "Engine/TargetPoint.h"
+#include "Subsystems/SoundSubsystem.h"
+
 
 APortal::APortal()
 {
@@ -31,6 +34,12 @@ void APortal::BeginPlay()
 		GEngine->AddOnScreenDebugMessage(-1, 5, FColor::Red, TEXT("포탈에 목표지점을 등록해주세요 레벨상에서"));
 		LOGVN(Error, TEXT("TaregetDestination == nullptr"));
 	}
+
+	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+	{
+		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
+	}
+	GetSoundSubsystem()->PlayAt(ESFX::Submarine, GetActorLocation(), 2.0f);
 }
 
 void APortal::Interact_Implementation(AActor* InstigatorActor)
@@ -78,9 +87,25 @@ bool APortal::IsHoldMode() const
 	return false;
 }
 
-EInteractionType APortal::GetInteractionType() const
+FString APortal::GetInteractionDescription() const
 {
-	return EInteractionType::GoToSubmarine;
+	return TEXT("Go to Submarine!");
+}
+
+USoundSubsystem* APortal::GetSoundSubsystem()
+{
+	if (IsValid(SoundSubsystem))
+	{
+		return SoundSubsystem;
+	}
+
+	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+	{
+		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
+	}
+
+	check(SoundSubsystem);
+	return SoundSubsystem;
 }
 
 

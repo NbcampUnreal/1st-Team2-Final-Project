@@ -1,10 +1,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "AbyssDiverUnderWorld.h"
 #include "BossAIController.h"
 #include "Character/UnitBase.h"
 #include "Boss.generated.h"
 
+class AEnhancedBossAIController;
 class UNiagaraSystem;
 enum class EBossPhysicsType : uint8;
 class UCameraControllerComponent;
@@ -25,8 +27,97 @@ protected:
 
 #pragma region Method
 public:
+	/** NavMesh 상의 랜덤 위치를 반환하는 함수
+	 * 
+	 * NavMesh 상의 유효한 위치를 찾기 위해 NavMesh 시스템을 사용한다.
+	 * 
+	 * @param Origin - 시작 위치
+	 * @param Radius - 탐색 반경
+	 * @return NavMesh 상의 랜덤 위치 반환
+	 */
+	FVector GetRandomNavMeshLocation(const FVector& Origin, const float& Radius) const;
+
+	/** 새로운 목표 이동지점을 할당하는 함수 */
+	void SetNewTargetLocation();
+
+	/** 상하좌우 방향으로 라인 트레이싱을 한다.
+	 *
+	 * 장애물이 탐지될 경우 벽의 표면벡터에 맞도록 액터를 회전시킨다.
+	 *
+	 * @param InDeltaTime - 프레임 시간
+	 */
+	void SmoothMoveAlongSurface(const float& InDeltaTime);
+
+	/** TargetLocation 방향으로 회전하며 이동하는 함수
+	 * 
+	 * @param InDeltaTime - 프레임 시간
+	 */
+	void PerformNormalMovement(const float& InDeltaTime);
+
+	/** TargetPlayer를 추적하며 이동하는 함수
+	 * 
+	 * TargetPlayer가 존재하는 경우, TargetPlayer의 위치를 추적하여 이동한다.
+	 * 
+	 * @param InDeltaTime - 프레임 시간
+	 */
+	void PerformChasing(const float& InDeltaTime);
+
+	/** bIsTurning 변수를 true로 설정하고 회전 시작
+	 * 
+	 * 회전 중인 경우 PerformTurn 함수를 호출하여 회전을 수행한다.
+	 */
+	void StartTurn();
+
+	/** 현재 액터가 NavMesh 상에 존재하지 않는 경우 NavMesh 상의 유효한 위치로 이동
+	 * 
+	 * NavMesh 상에 존재하지 않는 경우, NavMesh 상의 가장 가까운 위치로 이동한다.
+	 */
+	void ReturnToNavMeshArea();
+
+	/** 회전 중인 경우 회전 수행
+	 * 
+	 * 회전 중인 경우에만 호출되며, 회전이 끝나면 bIsTurning 변수를 false로 설정한다.
+	 * @param InDeltaTime - 프레임 시간
+	 */
+	void PerformTurn(const float& InDeltaTime);
+
+	/** 현재 액터의 전방에 장애물이 있는지 확인하는 함수
+	 * @return 전방에 장애물이 있는 경우 true, 그렇지 않은 경우 false 반환
+	 */
+	bool HasObstacleAhead();
+
+	/** 현재 액터가 NavMesh 상에 존재하는지 확인하는 함수
+	 * @param InLocation - 검사할 위치
+	 * @return NavMesh 상에 존재하는 경우 true, 그렇지 않은 경우 false 반환
+	 */
+	bool IsLocationOnNavMesh(const FVector& InLocation) const;
+
+	/** 캐릭터의 이동 설정을 변경하는 함수
+	 * @param InBrakingDecelerationSwimming: 수영 중 감속값
+	 * @param InMaxSwimSpeed: 최대 수영 속도
+	 */
+	void SetCharacterMovementSetting(const float& InBrakingDecelerationSwimming, const float& InMaxSwimSpeed);
+
+	/** 캐릭터의 이동 설정을 초기화하는 함수
+	 * 
+	 * 기본값으로 설정된 수영 중 감속값과 최대 수영 속도로 초기화한다.
+	 */
+	void InitCharacterMovementSetting();
+
+	/** NavMesh 기반으로 랜덤 위치를 찾는 함수
+	 * @return NavMesh 상의 랜덤 위치 반환
+	 */
 	FVector GetNextPatrolPoint();
+
+	/** 보스의 상태를 초기화하는 함수
+	 * @param State: 초기화할 상태
+	 */
 	void SetBossState(EBossState State);
+
+	/** 플레이어를 밀치는 함수
+	 * @param Player: 밀칠 플레이어
+	 * @param Power: 밀치는 힘
+	 */
 	void LaunchPlayer(AUnderwaterCharacter* Player, const float& Power) const;
 	
 	/** 데미지를 받을 때 호출하는 함수 */
@@ -37,7 +128,7 @@ public:
 
 	/** 보스를 타겟 방향으로 회전시키는 함수 */
 	virtual void RotationToTarget(AActor* Target);
-	virtual void RotationToTarget(const FVector& TargetLocation);
+	virtual void RotationToTarget(const FVector& InTargetLocation);
 
 	/** 보스의 공격 시 애니메이션 재생*/
 	virtual void Attack();
@@ -47,9 +138,6 @@ public:
 	 * AnimNotify_BossAttack 호출 후 일정 시간 후 호출
 	 */
 	virtual void OnAttackEnded();
-	
-	/** 다음 순찰 지점으로 변환 */ 
-	void AddPatrolPoint();
 
 	/** 보스의 이동속도를 설정하는 함수 */
 	void SetMoveSpeed(const float& SpeedMultiplier);
@@ -89,6 +177,15 @@ private:
 
 #pragma region Variable
 public:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
+	float ChasingRotationSpeedMultiplier = 1.5f;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
+	float ChasingMovementSpeedMultiplier = 2.2f;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
+	float MovementInterpSpeed = 1.0f;
+	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
 	float RotationInterpSpeed;
 	
@@ -136,8 +233,23 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Collision")
 	TObjectPtr<UCapsuleComponent> AttackCollision;
+
+	UPROPERTY()
+	float ChaseAccumulatedTime = 0.0f;
 	
 protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Stat")
+	float TraceDistance = 800.0f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	float MinTargetDistance = 100.0f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	float WanderRadius = 1300.0f;
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Boss|Stat")
+	uint8 bIsAttackInfinite : 1;
+	
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Camera")
 	TObjectPtr<UCameraControllerComponent> CameraControllerComponent;
 	
@@ -165,16 +277,30 @@ protected:
 	UPROPERTY(Replicated, BlueprintReadWrite)
 	EBossState BossState;
 
+	UPROPERTY(BlueprintReadWrite)
+	float CurrentMoveSpeed = 0.0f;
+
 	UPROPERTY()
 	FVector DamagedLocation;
+
+	UPROPERTY()
+	TObjectPtr<AEnhancedBossAIController> EnhancedAIController;
+
+	FCollisionQueryParams Params;
+	uint8 bIsTurning : 1 = false;
 
 private:
 	static const FName BossStateKey;
 	uint8 CurrentPatrolPointIndex = 0;
 	uint8 bIsBiteAttackSuccess : 1;
 	uint8 bIsAttackCollisionOverlappedPlayer : 1;
+	float TurnTimer = 0.0f;
+	float OriginDeceleration;
+	const float FourDirectionTraceDistance = 200.0f;
+	FVector TargetLocation;
 	FVector CachedSpawnLocation;
-	
+	FVector TurnDirection;
+
 #pragma endregion
 
 #pragma region Getter, Setter
@@ -200,9 +326,8 @@ public:
 	FORCEINLINE void InitCachedTarget() { CachedTargetPlayer = nullptr; };
 	FORCEINLINE FVector GetCachedSpawnLocation() const { return CachedSpawnLocation; }
 
-	AActor* GetTargetPoint();
-	const FVector GetTargetPointLocation() const;
-	
+	FORCEINLINE void SetTargetLocation(const FVector& InTargetLocation) { TargetLocation = InTargetLocation; }
+
 #pragma endregion
 	
 };

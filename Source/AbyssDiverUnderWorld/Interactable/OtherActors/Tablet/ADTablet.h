@@ -9,6 +9,7 @@
 class UWidgetComponent;
 class UCameraComponent;
 class AUnderwaterCharacter;
+class USoundSubsystem;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADTablet : public AActor, public IIADInteractable
@@ -19,11 +20,13 @@ public:
 	// Sets default values for this actor's properties
 	AADTablet();
 
+public:
+	virtual void BeginPlay() override;
 
 #pragma region Method
 public:
 	virtual void Interact_Implementation(AActor* InstigatorActor) override;
-	virtual bool CanHighlight_Implementation() const override { return true; }
+	virtual bool CanHighlight_Implementation() const override { return !bIsHeld; }
 	void Pickup(AUnderwaterCharacter* UnderwaterCharacter);
 	UFUNCTION(BlueprintCallable)
 	void PutDown();
@@ -55,6 +58,8 @@ protected:
 
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<UWidgetComponent> ScreenWidget;
+	UPROPERTY()
+	TObjectPtr<USoundSubsystem> SoundSubsystem;
 
 private:
 	UPROPERTY(ReplicatedUsing = OnRep_Held)
@@ -74,7 +79,10 @@ private:
 public:
 	virtual UADInteractableComponent* GetInteractableComponent() const override { return InteractableComp; }
 	virtual bool IsHoldMode() const override { return false; }
-	virtual EInteractionType GetInteractionType() const override { return EInteractionType::Pickup; }
+	virtual FString GetInteractionDescription() const override { return TEXT("Pick up!"); }
+
+private:
+	USoundSubsystem* GetSoundSubsystem();
 #pragma endregion
 
 

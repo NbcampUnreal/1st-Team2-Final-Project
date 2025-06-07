@@ -14,6 +14,7 @@ class UUserWidget;
 class AADSpearGunBullet;
 class UADNightVisionGoggle;
 class UChargeBatteryWidget;
+class USoundSubsystem;
 
 enum class EAction : uint8
 {
@@ -57,6 +58,11 @@ public:
 	UFUNCTION(Server, Reliable)
 	void S_IncreaseAmount(int8 AddAmount);
 	void S_IncreaseAmount_Implementation(int8 AddAmount);
+	UFUNCTION(NetMulticast, Unreliable)
+	void M_PlayFireHarpoonSound();
+	void M_PlayFireHarpoonSound_Implementation();
+
+
 	UFUNCTION()
 	void OnRep_Amount();
 	UFUNCTION()
@@ -69,6 +75,8 @@ public:
 	void OnRep_NightVisionUIVisible();
 	UFUNCTION()
 	void OnRep_ChargeBatteryUIVisible();
+	UFUNCTION()
+	void OnRep_BoostActive();
 
 	// 내부 실행 함수
 	UFUNCTION(BlueprintCallable)
@@ -112,6 +120,16 @@ public:
 	void InitializeAmmoUI();
 
 	bool IsSpearGun() const;
+
+	// 헬퍼 함수
+	bool CanFire() const;
+	void GetCameraView(FVector& OutLoc, FRotator& OutRot) const;
+	FVector CalculateTargetPoint(const FVector& CamLoc, const FVector& AimDir) const;
+	FVector GetMuzzleLocation(const FVector& CamLoc, const FVector& AimDir) const;
+	AADSpearGunBullet* SpawnHarpoon(const FVector& Loc, const FRotator& Rot);
+	void ConfigureProjectile(AADSpearGunBullet* Proj, const FVector& TargetPoint, const FVector& MuzzleLoc);
+
+
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
@@ -131,7 +149,7 @@ public:
 	UPROPERTY(ReplicatedUsing = OnRep_ReserveAmmo, EditAnywhere, BlueprintReadWrite, Category = "Weapon")
 	int32 ReserveAmmo = 0;
 
-	UPROPERTY( EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
 	int32 MagazineSize = 5;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Weapon")
@@ -139,6 +157,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Weapon")
 	float ReloadDuration = 3.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Weapon|Trace")
+	float TraceMaxRange = 20000.f;
 
 	uint8 bCanFire : 1;
 	uint8 bIsWeapon : 1;
@@ -150,7 +171,7 @@ public:
 	int32 Amount = 0;
 	UPROPERTY(Replicated)
 	FName CurrentEquipmentName;
-	UPROPERTY(Replicated)
+	UPROPERTY(ReplicatedUsing = OnRep_BoostActive)
 	uint8 bBoostActive : 1;
 	UPROPERTY(ReplicatedUsing = OnRep_NightVisionOn)
 	uint8 bNightVisionOn : 1;
@@ -173,7 +194,9 @@ public:
 	uint8 bChargeBatteryWidgetVisible : 1;
 	uint8 bAlreadyCursorShowed : 1;
 
-	
+	// SpearType 저장
+	TArray<FString> SpearGunTypeNames = { "BasicSpearGun", "PoisonSpearGun", "BombSpearGun" };
+
 	
 protected:
 	UPROPERTY(EditAnywhere)
@@ -192,6 +215,10 @@ protected:
 	TObjectPtr<UADInventoryComponent> Inventory = nullptr;
 	UPROPERTY(EditAnywhere, Category = "Projectile")
 	TSubclassOf<AADSpearGunBullet> ProjectileClass = nullptr;
+	UPROPERTY()
+	TObjectPtr<USoundSubsystem> SoundSubsystem;
+
+
 	FItemData* CurrentItemData = nullptr;
 
 	TWeakObjectPtr<class ACharacter> OwningCharacter;
@@ -205,17 +232,22 @@ private:
 	float CurrentMultiplier = 1.f;
 	float TargetMultiplier = 1.f;
 	float DrainAcc = 0.f;
+	int32 DPVAudioID = 0;
 	// NVG 설정 변수
 	TObjectPtr<class UCameraComponent> CameraComp = nullptr;
 	FPostProcessSettings OriginalPPSettings;
 	uint8 bOriginalExposureCached : 1;
 	static const FName BASIC_SPEAR_GUN_NAME;
 
+	
 
 #pragma endregion
 
 #pragma region Getter, Setteer
 public:
 	uint8 IsBoost() const { return bBoostActive; }
+
+private:
+	USoundSubsystem* GetSoundSubsystem();
 #pragma endregion		
 };

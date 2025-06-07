@@ -71,19 +71,22 @@ void AADPlayerController::SetPawn(APawn* InPawn)
 
 	Super::SetPawn(InPawn);
 
-	// »óÈ£ÀÛ¿ë UI »ý¼º°ú ÇÔ¼ö ¹ÙÀÎµù
-	if (InteractionWidgetClass && IsLocalController())
+	if (InPawn)
 	{
-		InteractionWidget = CreateWidget<UInteractionDescriptionWidget>(this, InteractionWidgetClass);
-
-		if (InteractionWidget)
+		// ï¿½ï¿½È£ï¿½Û¿ï¿½ UI ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ô¼ï¿½ ï¿½ï¿½ï¿½Îµï¿½
+		if (InteractionWidgetClass && IsLocalController())
 		{
-			if (AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(GetPawn()))
+			InteractionWidget = CreateWidget<UInteractionDescriptionWidget>(this, InteractionWidgetClass);
+
+			if (InteractionWidget)
 			{
-				if (UADInteractionComponent* InteractionComponent = UnderwaterCharacter->GetInteractionComponent())
+				if (AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(GetPawn()))
 				{
-					InteractionComponent->OnFocus.AddDynamic(InteractionWidget, &UInteractionDescriptionWidget::HandleFocus);
-					InteractionComponent->OnFocusEnd.AddDynamic(InteractionWidget, &UInteractionDescriptionWidget::HandleFocusLost);
+					if (UADInteractionComponent* InteractionComponent = UnderwaterCharacter->GetInteractionComponent())
+					{
+						InteractionComponent->OnFocus.AddDynamic(InteractionWidget, &UInteractionDescriptionWidget::HandleFocus);
+						InteractionComponent->OnFocusEnd.AddDynamic(InteractionWidget, &UInteractionDescriptionWidget::HandleFocusLost);
+					}
 				}
 			}
 		}
@@ -157,5 +160,13 @@ void AADPlayerController::HideInventory(const FInputActionValue& InputActionValu
 	if (AADPlayerState* PS = GetPlayerState<AADPlayerState>())
 	{
 		PS->GetInventory()->HideInventory();
+	}
+}
+
+void AADPlayerController::ToggleTestHUD()
+{
+	if (PlayerHUDComponent)
+	{
+		PlayerHUDComponent->ToggleTestHUD();
 	}
 }

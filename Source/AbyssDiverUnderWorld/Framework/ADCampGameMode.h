@@ -23,6 +23,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void TryStartGame();
 
+	UFUNCTION(Exec, Category = "Cheat")
+	void GetMoney();
+
 protected:
 	void TravelToInGameLevel();
 

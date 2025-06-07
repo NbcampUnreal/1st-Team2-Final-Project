@@ -1,10 +1,18 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
-
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+
 #include "UnitBase.generated.h"
+
+class URadarReturnComponent;
+
+UENUM(BlueprintType)
+enum class EUnitId : uint8
+{
+	PlayerCharacter,
+	Max UMETA(Hidden)
+};
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AUnitBase : public ACharacter
@@ -12,11 +20,11 @@ class ABYSSDIVERUNDERWORLD_API AUnitBase : public ACharacter
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this character's properties
+
 	AUnitBase();
 
 protected:
-	// Called when the game starts or when spawned
+
 	virtual void BeginPlay() override;
 	
 #pragma region Method
@@ -30,8 +38,15 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category="Stat")
 	TObjectPtr<class UStatComponent> StatComponent;
 
+	UPROPERTY(EditAnywhere, Category = "Radar Settings")
+	TObjectPtr<URadarReturnComponent> RadarReturnComponent;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Id")
+	EUnitId UnitId;
+
 #pragma endregion
 
 public:
 	FORCEINLINE UStatComponent* GetStatComponent() const { return StatComponent; }
+	FORCEINLINE const EUnitId& GetUnitId() const { return UnitId; }
 };

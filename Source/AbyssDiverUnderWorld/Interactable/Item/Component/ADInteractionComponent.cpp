@@ -15,6 +15,7 @@ UADInteractionComponent::UADInteractionComponent()
 	bHoldTriggered = false;
 	bIsFocusing = false;
 	bIsInteractingStart = false;
+	HeldInteractable = nullptr;
 }
 
 
@@ -65,12 +66,14 @@ void UADInteractionComponent::TickComponent(float DeltaTime, ELevelTick TickType
 			OnInteractReleased();
 		}
 	}
+#if WITH_EDITOR
 	DrawDebugSphere(
 		GetWorld(),
 		GetOwner()->GetActorLocation(),
 		RangeSphere->GetScaledSphereRadius(),
 		16, FColor::Blue, false, -1.f, 0, 2.f
 	);
+#endif
 }
 
 void UADInteractionComponent::S_RequestInteract_Implementation(AActor* TargetActor)
@@ -238,36 +241,48 @@ UADInteractableComponent* UADInteractionComponent::PerformLineTrace(const FVecto
 
 void UADInteractionComponent::UpdateFocus(UADInteractableComponent* NewFocus)
 {
-//	if (!IsLocallyControlled()) return;
-	if (NewFocus == FocusedInteractable) 
+
+	if (NewFocus == FocusedInteractable)
 	{
-		if (!ShouldHighlight(NewFocus))
+		const bool bNeedHighlight = ShouldHighlight(NewFocus);
+		if (bNeedHighlight != NewFocus->IsHighlighted())
 		{
-			ClearFocus();
+			NewFocus->SetHighLight(bNeedHighlight);
+
+			if (!bNeedHighlight)
+			{
+				OnFocusEnd.Broadcast();          // 설명 숨김
+			}
+			else
+			{
+				if (IIADInteractable* IADInteractable = Cast<IIADInteractable>(NewFocus->GetOwner()))
+				{
+					OnFocus.Broadcast(NewFocus->GetOwner(), IADInteractable->GetInteractionDescription());
+				}
+			}
 		}
 		return;
 	}
+
 
 	if (FocusedInteractable)
 	{
 		FocusedInteractable->SetHighLight(false);
 		OnFocusEnd.Broadcast();
 	}
-		
+
+
+	FocusedInteractable = NewFocus;
+
 
 	if (ShouldHighlight(NewFocus))
 	{
-		FocusedInteractable = NewFocus;
 		FocusedInteractable->SetHighLight(true);
-		if (IIADInteractable* FocusedActor = Cast<IIADInteractable>(FocusedInteractable->GetOwner()))
+
+		if (IIADInteractable* IADInteractable = Cast<IIADInteractable>(NewFocus->GetOwner()))
 		{
-			OnFocus.Broadcast(FocusedInteractable->GetOwner(), FocusedActor->GetInteractionType());
+			OnFocus.Broadcast(NewFocus->GetOwner(), IADInteractable->GetInteractionDescription());
 		}
-		
-	}
-	else
-	{
-		FocusedInteractable = nullptr;
 	}
 }
 

@@ -7,6 +7,7 @@
 #include "UnitBase.h"
 #include "Interface/IADInteractable.h"
 #include "AbyssDiverUnderWorld.h"
+#include "StatComponent.h"
 #include "UnderwaterCharacter.generated.h"
 
 #if UE_BUILD_SHIPPING
@@ -34,7 +35,7 @@ enum class ELocomotionMode : uint8;
 
 /* 캐릭터의 지상, 수중을 결정, Move 로직, Animation이 변경되고 사용 가능 기능이 제한된다. */
 UENUM(BlueprintType)
-enum class EEnvState : uint8
+enum class EEnvironmentState : uint8
 {
 	Underwater,
 	Ground,
@@ -133,7 +134,7 @@ public:
 
 	/** 현재 캐릭터의 상태를 전환. 수중, 지상 */
 	UFUNCTION(BlueprintCallable)
-	void SetEnvState(EEnvState State);
+	void SetEnvironmentState(EEnvironmentState State);
 
 	/** 빠른 구현을 위해 Captrue를 현재 Multicast로 구현한다.
 	 * 이후 변경 모델
@@ -158,6 +159,11 @@ public:
 	UFUNCTION(NetMulticast, Reliable)
 	void M_PlayMontageOnBothMesh(UAnimMontage* Montage, float InPlayRate = 1.0f, FName StartSectionName = NAME_None, FAnimSyncState NewAnimSyncState = FAnimSyncState());
 	void M_PlayMontageOnBothMesh_Implementation(UAnimMontage* Montage, float InPlayRate = 1.0f, FName StartSectionName = NAME_None, FAnimSyncState NewAnimSyncState = FAnimSyncState());
+
+	/** 1인칭 메시, 3인칭 메시 모두 애니메이션 몽타주를 정지한다. */
+	UFUNCTION(NetMulticast, Reliable)
+	void M_StopAllMontagesOnBothMesh(float BlendOut);
+	void M_StopAllMontagesOnBothMesh_Implementation(float BlendOut);
 
 	/** Anim State 변경 요청 */
 	void RequestChangeAnimSyncState(FAnimSyncState NewAnimSyncState);
@@ -238,6 +244,10 @@ protected:
 	UFUNCTION(BlueprintImplementableEvent)
 	void K2_OnDeath();
 
+	/** 캐릭터의 환경이 변경됬을 시에 Blueprint에서 호출될 함수 */
+	UFUNCTION(BlueprintImplementableEvent)
+	void K2_OnEnvronmentStateChanged(EEnvironmentState OldEnvironmentState, EEnvironmentState NewEnvironmentState);
+
 	/** Player State 정보를 초기화 */
 	void InitFromPlayerState(class AADPlayerState* ADPlayerState);
 	
@@ -264,23 +274,18 @@ protected:
 	UFUNCTION()
 	void AdjustSpeed();
 
-	/** Lantern Toggle 요청 */
-	void RequestToggleLanternLight();
-
-	/** Request Toggle Lantern Light를 서버에서 처리한다. */
-	UFUNCTION(Server, Reliable)
-	void S_ToggleLanternLight();
-	void S_ToggleLanternLight_Implementation();
-
-	UFUNCTION()
-	void OnRep_bIsLanternOn();
-
 	/** 레이더 Actor를 생성한다. */
 	void SpawnRadar();
 
 	/** Radar Toggle을 요청한다. */
 	UFUNCTION(BlueprintCallable)
 	void RequestToggleRadar();
+
+	/** 현재 상태에 맞춰서 Blur 효과를 업데이트한다. */
+	void UpdateBlurEffect();
+	
+	/** Blur 효과 적용 여부를 설정한다. */
+	void SetBlurEffect(const bool bEnable);
 
 	/** Radar 보이는 것을 설정 */
 	void SetRadarVisibility(bool bRadarVisible);
@@ -294,7 +299,7 @@ protected:
 	UFUNCTION()
 	void OnRep_bIsRadarOn();
 
-	/** 산소 상태가 변경될 떄 호출되는 함수 */
+	/** 산소 상태가 변경될 때 호출되는 함수 */
 	UFUNCTION()
 	void OnOxygenLevelChanged(float CurrentOxygenLevel, float MaxOxygenLevel);
 
@@ -302,7 +307,7 @@ protected:
 	UFUNCTION()
 	void OnOxygenDepleted();
 
-	/** 체력 상태가 변경될 떄 호출되는 함수 */
+	/** 체력 상태가 변경될 때 호출되는 함수 */
 	UFUNCTION()
 	void OnHealthChanged(int32 CurrentHealth, int32 MaxHealth);
 
@@ -357,10 +362,10 @@ protected:
 
 	void CompleteInteraction(const FInputActionValue& InputActionValue);
 
-	/** 라이트 함수. 미구현*/
+	/** 라이트 토글 함수*/
 	void Light(const FInputActionValue& InputActionValue);
 
-	/** 레이더 함수. 미구현*/
+	/** 레이더 토글 함수 */
 	void Radar(const FInputActionValue& InputActionValue);
 
 	/** 재장전 함수 */
@@ -425,6 +430,16 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FOnCharacterStateChanged OnCharacterStateChangedDelegate;
 
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnEnvironmentStateChanged, EEnvironmentState, OldEnvironmentState, EEnvironmentState, NewEnvironmentState);
+	/** 캐릭터의 환경 상태가 변경되었을 때 호출되는 델리게이트 */
+	UPROPERTY(BlueprintAssignable)
+	FOnEnvironmentStateChanged OnEnvironmentStateChangedDelegate;
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnDamageTaken, float, DamageAmount, float, CurrentHealth);
+	/** 캐릭터가 피해를 입었을 때 호출되는 델리게이트, DamageAmount는 실드에 흡수된 데미지를 포함한다. */
+	UPROPERTY(BlueprintAssignable)
+	FOnDamageTaken OnDamageTakenDelegate;
+	
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnMontageEnd, UAnimMontage*, Montage, bool, bInterrupted);
 	/** 1인칭 메시 몽타주 종료 시 호출되는 델리게이트 */
 	UPROPERTY(BlueprintAssignable, Category = Animation)
@@ -473,6 +488,18 @@ private:
 	/** Global Gravity Z에 상관 없이 캐릭터가 설정할 Gravity Z 값. 음수값을 지정해야 한다. */
 	UPROPERTY(EditDefaultsOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float ExpectedGravityZ;
+
+	/** 플레이어 무적 설정. 무적이 되면 피해를 입지 않는다. */
+	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	uint8 bIsInvincible : 1;
+	
+	/** Normal 상태에서 장비 착용 가능 여부 */
+	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	uint8 bCanUseEquipment : 1;
+
+	/** 캐릭터 랜턴의 거리 */
+	UPROPERTY(EditDefaultsOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	float LanternLength;
 	
 	/** 오리발이 생성될 왼발 소켓 이름 */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Flipper")
@@ -518,6 +545,10 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true"))
 	float GroggyDuration;
 
+	/** 그로기 상태에서 공격 받았을 경우 줄어드는 Groggy 시간. 초 단위이다. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true", ClampMin = "0.0"))
+	float GroggyHitPenalty;
+
 	/** 그로기 상태에 진입될 떄마다 감소하는 Groggy Duration 비율. [0, 1]의 범위로 설정한다. 0.3일 경우 0.7배로 감소한다. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true", ClampMin = "0.0", ClampMax = "1.0"))
 	float GroggyReductionRate;
@@ -557,7 +588,7 @@ private:
 
 	/** 캐릭터의 현재 상태. 지상 혹은 수중 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
-	EEnvState EnvState;
+	EEnvironmentState EnvironmentState;
 
 	/** Capture 상태 여부. 추후 상태가 많아지면 상태 패턴 이용을 고려 */
 	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
@@ -590,14 +621,6 @@ private:
 	/** Sprint 시에 적용되는 속도 배율. Sprint가 적용되면 EffectiveSpeed에 곱해진다. */
 	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float SprintMultiplier;
-	
-	/** Sprint 속도 */
-	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
-	float SprintSpeed;
-
-	/** 현재 라이트 활성화 여부 */
-	UPROPERTY(BlueprintReadOnly, ReplicatedUsing=OnRep_bIsLanternOn, Category = Character, meta = (AllowPrivateAccess = "true"))
-	uint8 bIsLanternOn : 1;
 
 	/** 생성할 레이더 BP */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Radar", meta = (AllowPrivateAccess = "true"))
@@ -715,6 +738,10 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UStaminaComponent> StaminaComponent;
 
+	/** 캐릭터의 실드를 관리하는 Component */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UShieldComponent> ShieldComponent;
+
 	/** 캐릭터 출혈을 시뮬레이션을 하는 Noise Emitter Component */
 	UPROPERTY()
 	TObjectPtr<class UPawnNoiseEmitterComponent> NoiseEmitterComponent;
@@ -731,10 +758,14 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UEquipUseComponent> EquipUseComponent;
 
-	/** Light 컴포넌트. 캐릭터가 라이트를 켜고 끌 수 있다. */
+	/** Lantern 컴포넌트. 캐릭터가 라이트를 켜고 끌 수 있다. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<class USpotLightComponent> LanternLightComponent;
+	TObjectPtr<class ULanternComponent> LanternComponent;
 
+	/** 수중 효과 컴포넌트 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UUnderwaterEffectComponent> UnderwaterEffectComponent;
+	
 	/** 발자국 소리 컴포넌트 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UFootstepComponent> FootstepComponent;
@@ -765,14 +796,23 @@ public:
 	/** 캐릭터의 Oxygen Component를 반환 */
 	FORCEINLINE class UOxygenComponent* GetOxygenComponent() const { return OxygenComponent; }
 
+	/** 캐릭터의 Shield Component를 반환 */
+	FORCEINLINE class UShieldComponent* GetShieldComponent() const { return ShieldComponent; }
+
 	/** Interaction Component를 반환 */
 	FORCEINLINE UADInteractionComponent* GetInteractionComponent() const { return InteractionComponent; }
 
 	/** Shop Interaction Component를 반환 */
 	FORCEINLINE UShopInteractionComponent* GetShopInteractionComponent() const { return ShopInteractionComponent; }
 
+	/** 1인칭 Camera Component를 반환 */
+	FORCEINLINE UCameraComponent* GetFirstPersonCameraComponent() const { return FirstPersonCameraComponent; }
+
+	/** 1인칭 Camera Arm을 반환 */
+	FORCEINLINE USpringArmComponent* GetMesh1PSpringArm() const { return Mesh1PSpringArm; }
+
 	/** 캐릭터의 상태를 반환 */
-	FORCEINLINE EEnvState GetEnvState() const { return EnvState; }
+	FORCEINLINE EEnvironmentState GetEnvironmentState() const { return EnvironmentState; }
 
 	/** 현재 Locomotion Mode를 반환 */
 	FORCEINLINE ELocomotionMode GetLocomotionMode() const { return LocomotionMode; }
@@ -782,6 +822,12 @@ public:
 
 	/** 캐릭터의 현재 상태를 반환 */
 	FORCEINLINE ECharacterState GetCharacterState() const { return CharacterState; }
+
+	/** 캐릭터 무적 상태를 반환. 현재는 Server에서만 유효하다. */
+	FORCEINLINE bool IsInvincible() const { return bIsInvincible; }
+
+	/** 캐릭터 무적 상태를 설정. 현재는 Server에서만 유효하다. */
+	FORCEINLINE void SetInvincible(const bool bNewInvincible) { bIsInvincible = bNewInvincible; }
 
 	/** 캐릭터가 일반 상태인지 여부를 반환 */
 	FORCEINLINE bool IsNormal() const { return CharacterState == ECharacterState::Normal; }
@@ -828,6 +874,9 @@ public:
 	FORCEINLINE bool Is3PStrafe() const {return bIsAnim3PSyncStateOverride ? AnimSyncState.bIsStrafing : OverrideAnimSyncState.bIsStrafing;}
 	
 	/** 상호작용 타입 반환 */
-	virtual EInteractionType GetInteractionType() const override { return EInteractionType::ReviveCharacter; }
+	virtual FString GetInteractionDescription() const override { return TEXT("Revive Character!"); }
+
+	FORCEINLINE float GetSprintSpeed() const { return StatComponent->MoveSpeed * SprintMultiplier; }
+	
 #pragma endregion
 };
