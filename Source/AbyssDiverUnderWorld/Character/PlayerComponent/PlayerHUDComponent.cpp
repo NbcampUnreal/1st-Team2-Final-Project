@@ -50,6 +50,7 @@ void UPlayerHUDComponent::BeginPlay()
 		if (PlayerStatusWidget)
 		{
 			PlayerStatusWidget->AddToViewport();
+			PlayerStatusWidget->SetCompassObjectWidgetVisible(true);
 		}
 	}
 
@@ -207,6 +208,7 @@ void UPlayerHUDComponent::OnPossessedPawnChanged(APawn* OldPawn, APawn* NewPawn)
 	if (PlayerStatusWidget)
 	{
 		PlayerStatusWidget->AddToViewport();
+		PlayerStatusWidget->SetCompassObjectWidgetVisible(true);
 	}
 
 	if (ResultScreenWidgetClass && IsValid(ResultScreenWidget) == false)
