@@ -339,6 +339,31 @@ void AUnderwaterCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProp
 	DOREPLIFETIME(AUnderwaterCharacter, bIsRadarOn);
 }
 
+void AUnderwaterCharacter::OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode)
+{
+	Super::OnMovementModeChanged(PrevMovementMode, PreviousCustomMode);
+
+	if (EnvironmentState != EEnvironmentState::Underwater)
+	{
+		return;
+	}
+
+	// Launch되어서 Falling으로 변경되고 Launch가 끝나서 Swimming으로 변경될 경우 Knockback이 종료된다.
+	if (PrevMovementMode == MOVE_Falling && GetCharacterMovement()->MovementMode == MOVE_Swimming)
+	{
+		LOGVN(Display, TEXT("Knockback Ended: %s"), *GetName());
+		OnKnockbackEndDelegate.Broadcast();
+	}
+}
+
+void AUnderwaterCharacter::LaunchCharacter(FVector LaunchVelocity, bool bXYOverride, bool bZOverride)
+{
+	// LaunchCharacter는 Server, Client 양쪽에서 호출되어서 따로 Replicate할 필요는 없다.
+	Super::LaunchCharacter(LaunchVelocity, bXYOverride, bZOverride);
+	
+	OnKnockbackDelegate.Broadcast(LaunchVelocity);
+}
+
 void AUnderwaterCharacter::SetEnvironmentState(EEnvironmentState State)
 {
 	if (EnvironmentState == State)
@@ -1242,6 +1267,16 @@ float AUnderwaterCharacter::TakeDamage(float DamageAmount, struct FDamageEvent c
 		EmitBloodNoise();
 	}
 
+	// Normal State
+	// 1. Shield Logic
+	// 2. Health Logic(StatComponent)
+	// 2.1 Health가 0이 되면 Groggy로 전이(OnHealthChanged 함수에서 처리)
+	// 3. OnDamageTakenDelegate
+
+	// OnDamageTaken 함수를 이용할 경우 발생한 순간 Groggy 상태로 전이될 수 있다.
+	// Normal State에만 적용되어야 하는 로직이라면 캐릭터의 현재 상태를 검사해야 한다.
+	// Current Health를 이용할 수 있지만 Capture State를 Polishing 할 경우 Groggy 상태가 Pending 될 수 있다.
+	// 캐릭터의 상태를 검사하는 것이 더 안전하다.
 	OnDamageTakenDelegate.Broadcast(ActualDamage, StatComponent->GetCurrentHealth());
 
 	return ActualDamage;

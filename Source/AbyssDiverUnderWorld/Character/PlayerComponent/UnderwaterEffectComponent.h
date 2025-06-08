@@ -36,15 +36,28 @@ protected:
 	UFUNCTION()
 	void OnEnvironmentStateChanged(EEnvironmentState OldEnvironmentState, EEnvironmentState NewEnvironmentState);
 
+	UFUNCTION()
+	void OnDeath();
+
 	/** 피해를 받았을 때 호출되는 함수. 숨소리 간격을 조정하기 위해 사용한다. */
 	UFUNCTION()
 	void OnDamageTaken(float DamageAmount, float CurrentHealth);
+
+	/** 캐릭터가 넉백되었을 떄 호출되는 함수. 넉백 속도를 받아 숨쉬기 효과를 초기화한다. */
+	UFUNCTION()
+	void OnKnockback(FVector KnockbackVelocity);
+
+	UFUNCTION()
+	void OnKnockbackEnd();
 
 	/** 숨쉬기 효과를 재생한다. 이 함수는 숨쉬기 효과가 활성화되었을 때만 호출된다. */
 	void PlayBreathEffects();
 
 	/** 숨쉬기 효과 재생을 시작한다. */
 	void StartBreathEffect(float Delay);
+
+	/** 숨쉬기 효과 재생을 중지한다. */
+	void StopBreathEffect();
 	
 	/** 공기 방울 효과를 생성한다. */
 	void SpawnBreathBubbleEffect();

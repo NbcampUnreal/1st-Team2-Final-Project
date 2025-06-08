@@ -39,7 +39,10 @@ void UUnderwaterEffectComponent::BeginPlay()
 		SetEnableEffect(CurrentEnvironmentState == EEnvironmentState::Underwater);
 		
 		OwnerCharacter->OnEnvironmentStateChangedDelegate.AddDynamic(this, &UUnderwaterEffectComponent::OnEnvironmentStateChanged);
+		OwnerCharacter->OnDeathDelegate.AddDynamic(this, &UUnderwaterEffectComponent::OnDeath);
 		OwnerCharacter->OnDamageTakenDelegate.AddDynamic(this, &UUnderwaterEffectComponent::OnDamageTaken);
+		OwnerCharacter->OnKnockbackDelegate.AddDynamic(this, &UUnderwaterEffectComponent::OnKnockback);
+		OwnerCharacter->OnKnockbackEndDelegate.AddDynamic(this, &UUnderwaterEffectComponent::OnKnockbackEnd);
 
 		if (OwnerCharacter->IsLocallyControlled() && MovementSound)
 		{
@@ -58,7 +61,6 @@ void UUnderwaterEffectComponent::BeginPlay()
 				nullptr,
 				false
 			);
-			MovementAudioComponent->SetAutoActivate(false);
 			MovementAudioComponent->Stop();
 
 			SprintMovementAudioComponent = UGameplayStatics::SpawnSoundAttached(
@@ -76,7 +78,6 @@ void UUnderwaterEffectComponent::BeginPlay()
 				nullptr,
 				false
 			);
-			SprintMovementAudioComponent->SetAutoActivate(false);
 			SprintMovementAudioComponent->Stop();
 		}
 	}
@@ -118,7 +119,8 @@ void UUnderwaterEffectComponent::SetEnableEffect(bool bNewEnabled)
 	}
 	else
 	{
-		GetWorld()->GetTimerManager().ClearTimer(BreathEffectTimerHandle);
+		StopBreathEffect();
+		
 		if (MovementAudioComponent && MovementAudioComponent->IsPlaying())
 		{
 			MovementAudioComponent->FadeOut(MovementSoundFadeTime, 0.0f, MovementSoundFadeCurve);
@@ -138,6 +140,11 @@ void UUnderwaterEffectComponent::OnEnvironmentStateChanged(EEnvironmentState Old
 	SetEnableEffect(NewEnvironmentState == EEnvironmentState::Underwater);
 }
 
+void UUnderwaterEffectComponent::OnDeath()
+{
+	StopBreathEffect();
+}
+
 void UUnderwaterEffectComponent::StartBreathEffect(float Delay)
 {
 	GetWorld()->GetTimerManager().SetTimer(
@@ -151,11 +158,27 @@ void UUnderwaterEffectComponent::StartBreathEffect(float Delay)
 	GetWorld()->GetTimerManager().ClearTimer(BreathBubbleEffectTimerHandle);
 }
 
+void UUnderwaterEffectComponent::StopBreathEffect()
+{
+	GetWorld()->GetTimerManager().ClearTimer(BreathEffectTimerHandle);
+	GetWorld()->GetTimerManager().ClearTimer(BreathBubbleEffectTimerHandle);
+}
+
 void UUnderwaterEffectComponent::OnDamageTaken(float DamageAmount, float CurrentHealth)
 {
 	// 피해를 입으면 피해 사운드가 재생되어야 한다.
 	// 숨쉬기 효과를 초기화하고 버블 효과를 중지한다.
 	bShouldPlayMovementSound = false;
+	StartBreathEffect(BreathFirstDelay * 0.5f);
+}
+
+void UUnderwaterEffectComponent::OnKnockback(FVector KnockbackVelocity)
+{
+	StopBreathEffect();
+}
+
+void UUnderwaterEffectComponent::OnKnockbackEnd()
+{
 	StartBreathEffect(BreathFirstDelay * 0.5f);
 }
 
@@ -166,6 +189,7 @@ void UUnderwaterEffectComponent::PlayBreathEffects()
 		return;
 	}
 
+	// @ToDo : Groggy 상태에서 다른 효과를 재생해야 할 수 있다.
 	USoundBase* BreathSoundToPlay = bShouldPlayMovementSound ? MoveBreathSound : IdleBreathSound;
 	
 	if (OwnerCharacter->IsLocallyControlled() && BreathSoundToPlay)
@@ -239,6 +263,7 @@ void UUnderwaterEffectComponent::UpdateMovementEffects(float DeltaTime)
 		}
 		
 		// 플레이어가 직접 움직일 때 소리가 나야 한다.
+		// 캐릭터가 Launch 되거나 밀릴 경우 소리가 나면 안 된다.
 		if (Speed > OwnerCharacter->GetSprintSpeed() - 50.0f
 			&& OwnerCharacter->GetCharacterMovement()->GetCurrentAcceleration().Size() > 0.0f
 			&& SprintMovementSound
@@ -258,5 +283,5 @@ void UUnderwaterEffectComponent::UpdateMovementEffects(float DeltaTime)
 
 void UUnderwaterEffectComponent::CheckVelocityChange(const float DeltaTime)
 {
-	
+	// @ToDo: 캐릭터가 급격한 속도 변화를 감지했을 때 소리 재생, 속도를 감지하거나 아니면 ABP에서 Notify를 받는다.
 }
