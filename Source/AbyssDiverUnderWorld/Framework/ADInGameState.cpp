@@ -145,14 +145,14 @@ void AADInGameState::PostInitializeComponents()
 
 		RefreshActivatedMissionList();
 	}
+
+	const int32 SoundPoolInitCount = 10;
+	GetGameInstance()->GetSubsystem<USoundSubsystem>()->Init(SoundPoolInitCount);
 }
 
 void AADInGameState::BeginPlay()
 {
 	Super::BeginPlay();
-
-	const int32 SoundPoolInitCount = 10;
-	GetGameInstance()->GetSubsystem<USoundSubsystem>()->Init(SoundPoolInitCount);
 
 	if (HasAuthority() == false)
 	{

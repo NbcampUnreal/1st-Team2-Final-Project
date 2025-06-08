@@ -2,6 +2,7 @@
 
 #include "AbyssDiverUnderWorld.h"
 #include "Character/PlayerHUDWidget.h"
+#include "Framework/ADInGameState.h"
 #include "Framework/ADPlayerState.h"
 #include "UI/ResultScreen.h"
 #include "UI/PlayerStatusWidget.h"
@@ -118,15 +119,25 @@ void UPlayerHUDComponent::C_ShowResultScreen_Implementation()
 			}
 		}
 
-		FResultScreenParams Params(
+		FResultScreenParams Params
+		(
 			PS->GetPlayerNickname(),
 			98,
-			PS->GetTotalOreMinedCount(),
+			PS->GetOreMinedCount(),
 			AliveInfo
 		);
+
 		UpdateResultScreen(PS->GetPlayerIndex(), Params);
 	}
 
+	AADInGameState* GS = Cast<AADInGameState>(GetWorld()->GetGameState());
+	if (GS == nullptr)
+	{
+		LOGV(Error, TEXT("GS == nullptr"));
+		return;
+	}
+
+	ResultScreenWidget->ChangeTeamMoneyText(GS->GetTotalTeamCredit());
 	SetResultScreenVisible(true);
 }
 

@@ -126,17 +126,17 @@ void AADInGameMode::Logout(AController* Exiting)
 
 void AADInGameMode::ReadyForTravelToCamp()
 {
+	FTimerManager& TimerManager = GetWorldTimerManager();
+	if (TimerManager.IsTimerActive(ResultTimerHandle))
+	{
+		return;
+	}
+
 	LOGVN(Warning, TEXT("Ready For Traveling to Camp..."));
 
 	for (AADPlayerController* PC : TActorRange<AADPlayerController>(GetWorld()))
 	{
 		PC->GetPlayerHUDComponent()->C_ShowResultScreen();
-	}
-
-	FTimerManager& TimerManager = GetWorldTimerManager();
-	if (TimerManager.IsTimerActive(ResultTimerHandle))
-	{
-		return;
 	}
 
 	TimerManager.ClearTimer(ResultTimerHandle);
