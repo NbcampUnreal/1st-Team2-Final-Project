@@ -14,6 +14,8 @@
 #include "Missions/MissionBase.h"
 #include "UI/SelectedMissionListWidget.h"
 #include "Framework/ADCampGameMode.h"
+#include "Framework/ADPlayerController.h"
+#include "Character/PlayerComponent/PlayerHUDComponent.h"
 
 #pragma region FastArraySerializer Methods
 
@@ -173,6 +175,7 @@ void AADInGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME(AADInGameState, CurrentPhase);
 	DOREPLIFETIME(AADInGameState, CurrentDroneSeller);
 	DOREPLIFETIME(AADInGameState, ActivatedMissionList);
+	DOREPLIFETIME(AADInGameState, DestinationTarget);
 }
 
 void AADInGameState::PostNetInit()
@@ -273,6 +276,32 @@ void AADInGameState::OnRep_CurrentDroneSeller()
 	ToggleWidget->SetDroneCurrentText(CurrentMoney);
 }
 
+void AADInGameState::OnRep_DestinationTarget()
+{
+	AADPlayerController* PC = Cast<AADPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
+	if (PC == nullptr)
+	{
+		LOGV(Error, TEXT("PC == nullptr"));
+		return;
+	}
+
+	UPlayerHUDComponent* HudComp = PC->GetPlayerHUDComponent();
+	if (HudComp == nullptr)
+	{
+		LOGV(Error, TEXT("HudComp == nullptr"));
+		return;
+	}
+
+	UPlayerStatusWidget* PlayerStatusWidget = HudComp->GetPlayerStatusWidget();
+	if (PlayerStatusWidget == nullptr)
+	{
+		LOGV(Error, TEXT("PlayerStatusWidget == nullptr"));
+		return;
+	}
+
+	PlayerStatusWidget->SetCompassObject(DestinationTarget);
+}
+
 void AADInGameState::ReceiveDataFromGameInstance()
 {
 	if (UADGameInstance* ADGameInstance = GetGameInstance<UADGameInstance>())
@@ -286,6 +315,17 @@ void AADInGameState::ReceiveDataFromGameInstance()
 	}
 
 	LOGVN(Error, TEXT("SelectedLevelName: %d / TeamCredits: %d / CurrentPhaseGoal : %d"), SelectedLevelName, TeamCredits, CurrentPhaseGoal);
+}
+
+void AADInGameState::SetDestinationTarget(AActor* NewDestinationTarget)
+{
+	if (HasAuthority() == false)
+	{
+		return;
+	}
+
+	DestinationTarget = NewDestinationTarget;
+	OnRep_DestinationTarget();
 }
 
 FString AADInGameState::GetMapDisplayName() const

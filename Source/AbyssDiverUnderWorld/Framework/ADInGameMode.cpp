@@ -82,6 +82,7 @@ void AADInGameMode::BeginPlay()
 			if (DronePhaseNumber == FirstDroneNumber)
 			{
 				InGameState->SetCurrentDroneSeller(Drone->CurrentSeller);
+				InGameState->SetDestinationTarget(Drone->CurrentSeller);
 				Drone->M_PlayPhaseBGM(1);
 			}
 		}
