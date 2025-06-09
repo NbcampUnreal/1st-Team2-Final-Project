@@ -131,7 +131,7 @@ void AEnhancedBossAIController::OnSightPerceptionSuccess(AUnderwaterCharacter* P
 	LOG(TEXT("OnSightPerceptionSuccess: %s"), *Player->GetName());
 	// 플레이어가 부쉬에 숨은 상태라면 얼리 리턴
 	if (Player->IsHideInSeaweed())	return;
-
+	
 	// 플레이어가 NavMesh 위에 있지 않다면 얼리 리턴
 	if (!Boss->IsLocationOnNavMesh(Player->GetActorLocation()))	return;
 
@@ -142,6 +142,7 @@ void AEnhancedBossAIController::OnSightPerceptionSuccess(AUnderwaterCharacter* P
 		// 현재 설정된 타겟이 없는 경우에만 블랙보드 값을 설정한다.
 		if (!IsValid(BlackboardComponent->GetValueAsObject(TargetPlayerKey)))
 		{
+			BlackboardComponent->SetValueAsBool(bIsPlayerHiddenKey, false);
 			BlackboardComponent->SetValueAsObject(TargetPlayerKey, Player);	
 		}
 	}
