@@ -436,7 +436,22 @@ void ABoss::StartTurn()
         Forward.RotateAngleAxis(45.0f, Up).RotateAngleAxis(30.0f, Right),
         Forward.RotateAngleAxis(-45.0f, Up).RotateAngleAxis(30.0f, Right),
         Forward.RotateAngleAxis(45.0f, Up).RotateAngleAxis(-30.0f, Right),
-        Forward.RotateAngleAxis(-45.0f, Up).RotateAngleAxis(-30.0f, Right)
+        Forward.RotateAngleAxis(-45.0f, Up).RotateAngleAxis(-30.0f, Right),
+
+    	// 후방 수평 방향들
+    	Forward.RotateAngleAxis(120.0f, Up),
+	    Forward.RotateAngleAxis(-120.0f, Up),
+	    Forward.RotateAngleAxis(150.0f, Up),
+	    Forward.RotateAngleAxis(-150.0f, Up),
+
+		// 후방 대각선 방향들
+    	Forward.RotateAngleAxis(135.0f, Up).RotateAngleAxis(30.0f, Right),
+		Forward.RotateAngleAxis(-135.0f, Up).RotateAngleAxis(30.0f, Right),
+		Forward.RotateAngleAxis(135.0f, Up).RotateAngleAxis(-30.0f, Right),
+		Forward.RotateAngleAxis(-135.0f, Up).RotateAngleAxis(-30.0f, Right),
+
+    	// 후방 방향
+	    Forward.RotateAngleAxis(180.0f, Up),
     };
     
     // 수평, 수직, 대각선 방향에 대해 라인 트레이싱을 한다.
