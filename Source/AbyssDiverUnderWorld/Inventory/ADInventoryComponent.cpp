@@ -792,7 +792,7 @@ void UADInventoryComponent::DropItem(FItemData& ItemData)
 	APawn* Pawn = PS->GetPawn();
 	if (!Pawn) return;
 
-	if (ItemData.Name == CurrentEquipmentInstance->ItemData.Name)
+	if (CurrentEquipmentInstance && ItemData.Name == CurrentEquipmentInstance->ItemData.Name)
 	{
 		if (UEquipUseComponent* EquipComp = Pawn->FindComponentByClass<UEquipUseComponent>())
 		{
