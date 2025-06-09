@@ -85,3 +85,8 @@ void UPlayerStatusWidget::SetSpearVisibility(bool bVisible)
         SpearPanel->SetVisibility(bVisible ? ESlateVisibility::Visible : ESlateVisibility::Hidden);
     }
 }
+
+void UPlayerStatusWidget::SetCompassObject(AActor* NewTargetObject)
+{
+    CompassTargetObject = NewTargetObject;
+}

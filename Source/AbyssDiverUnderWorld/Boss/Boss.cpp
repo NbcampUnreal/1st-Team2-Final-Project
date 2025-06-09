@@ -88,6 +88,7 @@ void ABoss::BeginPlay()
 
 	GetCharacterMovement()->MaxSwimSpeed = StatComponent->GetMoveSpeed();
 	OriginDeceleration = GetCharacterMovement()->BrakingDecelerationSwimming;
+	CurrentMoveSpeed = StatComponent->MoveSpeed;
 
 	Params.AddIgnoredActor(this);
 }
@@ -307,7 +308,6 @@ void ABoss::SmoothMoveAlongSurface(const float& InDeltaTime)
 
 void ABoss::PerformNormalMovement(const float& InDeltaTime)
 {
-	
 	const FVector CurrentLocation = GetActorLocation();
     
     // 목표점이 없거나 Nav Mesh를 벗어났으면 목표점을 새로 설정한다.
@@ -381,8 +381,32 @@ void ABoss::PerformNormalMovement(const float& InDeltaTime)
     }
 
     const float AdjustedSpeed = StatComponent->MoveSpeed * SpeedMultiplier;
-    const FVector NewLocation = CurrentLocation + GetActorForwardVector() * AdjustedSpeed * InDeltaTime;
+	CurrentMoveSpeed = FMath::FInterpTo(CurrentMoveSpeed, AdjustedSpeed, InDeltaTime, MovementInterpSpeed);
+    const FVector NewLocation = CurrentLocation + GetActorForwardVector() * CurrentMoveSpeed * InDeltaTime;
     SetActorLocation(NewLocation, true);
+}
+
+void ABoss::PerformChasing(const float& InDeltaTime)
+{
+	// @TODO: TargetPlayer가 IsValid 하지 않으면 일반 상태로 전환 로직 필요
+	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(EnhancedAIController->GetBlackboardComponent()->GetValueAsObject("TargetPlayer"));
+	if (!IsValid(Player)) return;
+
+	const FVector CurrentLocation = GetActorLocation();
+	const FVector PlayerLocation = Player->GetActorLocation();
+	const FVector ToPlayer = (PlayerLocation - CurrentLocation).GetSafeNormal();
+    
+	// 플레이어 방향으로 회전
+	const FRotator CurrentRotation = GetActorRotation();
+	const FRotator TargetRotation = ToPlayer.Rotation();
+	const FRotator NewRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, InDeltaTime, RotationInterpSpeed * ChasingRotationSpeedMultiplier);
+	SetActorRotation(NewRotation);
+    
+	// 플레이어 방향으로 이동
+	const float AdjustedMoveSpeed = StatComponent->MoveSpeed * ChasingMovementSpeedMultiplier;
+	CurrentMoveSpeed = FMath::FInterpTo(CurrentMoveSpeed, AdjustedMoveSpeed, InDeltaTime, MovementInterpSpeed);
+	const FVector NewLocation = CurrentLocation + GetActorForwardVector() * CurrentMoveSpeed * InDeltaTime;
+	SetActorLocation(NewLocation, true);
 }
 
 void ABoss::StartTurn()
@@ -435,16 +459,16 @@ void ABoss::StartTurn()
     	{
     		continue;
     	}
-        
+#if WITH_EDITOR
     	// 디버그 라인 표시 (더 오래 표시)
     	DrawDebugLine(GetWorld(), Start, End, bHit ? FColor::Red : FColor::Green, false, 5.0f, 0, 5.0f);
-        
+#endif
     	if (!bHit)
     	{
     		TurnDirection = Direction;
     		
     		// 즉시 한 번 회전 시도 (디버깅용)
-    		LOG(TEXT("Attempting immediate turn..."));
+    		//LOG(TEXT("Attempting immediate turn..."));
     		
     		return;
     	}
@@ -492,7 +516,8 @@ void ABoss::PerformTurn(const float& InDeltaTime)
 
 	// 회전 중 이동할 위치 검증
 	const float TurnMoveSpeed = StatComponent->MoveSpeed * 0.4f;
-	const FVector NextLocation = CurrentLocation + GetActorForwardVector() * TurnMoveSpeed * InDeltaTime;
+	CurrentMoveSpeed = FMath::FInterpTo(CurrentMoveSpeed, TurnMoveSpeed, InDeltaTime, MovementInterpSpeed);
+	const FVector NextLocation = CurrentLocation + GetActorForwardVector() * CurrentMoveSpeed * InDeltaTime;
 	
 	// 이동할 위치가 NavMesh 내에 있고 장애물이 없는지 확인
 	if (IsLocationOnNavMesh(NextLocation))

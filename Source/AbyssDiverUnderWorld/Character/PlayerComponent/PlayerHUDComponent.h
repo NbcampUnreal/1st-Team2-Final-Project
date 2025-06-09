@@ -69,7 +69,7 @@ private:
     UPROPERTY(EditDefaultsOnly, Category = UI, meta = (AllowPrivateAccess = "true"))
     TSubclassOf<class UPlayerStatusWidget> PlayerStatusWidgetClass;
 
-    UPROPERTY()
+    UPROPERTY(BlueprintReadOnly, meta =(AllowPrivateAccess = true))
     TObjectPtr<UPlayerStatusWidget> PlayerStatusWidget;
     
 #pragma endregion

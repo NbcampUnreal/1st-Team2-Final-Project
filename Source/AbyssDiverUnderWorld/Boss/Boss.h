@@ -54,6 +54,14 @@ public:
 	 */
 	void PerformNormalMovement(const float& InDeltaTime);
 
+	/** TargetPlayer를 추적하며 이동하는 함수
+	 * 
+	 * TargetPlayer가 존재하는 경우, TargetPlayer의 위치를 추적하여 이동한다.
+	 * 
+	 * @param InDeltaTime - 프레임 시간
+	 */
+	void PerformChasing(const float& InDeltaTime);
+
 	/** bIsTurning 변수를 true로 설정하고 회전 시작
 	 * 
 	 * 회전 중인 경우 PerformTurn 함수를 호출하여 회전을 수행한다.
@@ -170,6 +178,15 @@ private:
 #pragma region Variable
 public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
+	float ChasingRotationSpeedMultiplier = 1.5f;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
+	float ChasingMovementSpeedMultiplier = 2.2f;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
+	float MovementInterpSpeed = 1.0f;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
 	float RotationInterpSpeed;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
@@ -259,6 +276,9 @@ protected:
 
 	UPROPERTY(Replicated, BlueprintReadWrite)
 	EBossState BossState;
+
+	UPROPERTY(BlueprintReadWrite)
+	float CurrentMoveSpeed = 0.0f;
 
 	UPROPERTY()
 	FVector DamagedLocation;
