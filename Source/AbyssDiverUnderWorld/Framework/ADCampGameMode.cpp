@@ -25,7 +25,7 @@ void AADCampGameMode::PostLogin(APlayerController* NewPlayer)
 {
 	Super::PostLogin(NewPlayer);
 
-	FString NewPlayerId = NewPlayer->GetPlayerState<AADPlayerState>()->GetUniqueId().GetUniqueNetId()->ToString();
+	FString NewPlayerId = NewPlayer->GetPlayerState<AADPlayerState>()->GetUniqueId()->ToString();
 
 	LOGV(Warning, TEXT("%s Has Entered"), *NewPlayerId);
 	UADGameInstance* GI = GetGameInstance<UADGameInstance>();
@@ -43,6 +43,7 @@ void AADCampGameMode::PostLogin(APlayerController* NewPlayer)
 			return;
 		}
 
+		ADPlayerState->SetPlayerNickname(NewPlayerId);
 		ADPlayerState->SetPlayerIndex(NewPlayerIndex);
 	}
 }
@@ -61,8 +62,25 @@ void AADCampGameMode::TryStartGame()
 	TravelToInGameLevel();
 }
 
+void AADCampGameMode::GetMoney()
+{
+	AADInGameState* GS = GetGameState<AADInGameState>();
+	if (GS == nullptr)
+	{
+		LOGVN(Error, TEXT("Cheat Failed : GS == nullptr"));
+		return;
+	}
+
+	GS->SetTotalTeamCredit(GS->GetTotalTeamCredit() + 10000);
+}
+
 void AADCampGameMode::TravelToInGameLevel()
 {
+	if (HasAuthority() == false)
+	{
+		return;
+	}
+
 	if (AADInGameState* ADInGameState = GetGameState<AADInGameState>())
 	{
 		EMapName MapName = ADInGameState->GetSelectedLevel();

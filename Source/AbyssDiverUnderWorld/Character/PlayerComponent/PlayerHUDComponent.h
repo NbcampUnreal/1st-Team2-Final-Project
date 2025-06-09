@@ -22,7 +22,12 @@ public:
     void C_ShowResultScreen();
     void C_ShowResultScreen_Implementation();
 
-    void SetVisibility(bool NewVisible) const;
+    /** Test HUD 보이기 설정 */
+    void SetTestHUDVisibility(bool NewVisible) const;
+    
+    /** Test HUD 보이기 토글 */
+    void ToggleTestHUD() const;
+    
     void SetResultScreenVisible(const bool bShouldVisible) const;
     void UpdateResultScreen(int32 PlayerIndexBased_1, const struct FResultScreenParams& Params);
 
@@ -64,7 +69,14 @@ private:
     UPROPERTY(EditDefaultsOnly, Category = UI, meta = (AllowPrivateAccess = "true"))
     TSubclassOf<class UPlayerStatusWidget> PlayerStatusWidgetClass;
 
-    UPROPERTY()
+    UPROPERTY(BlueprintReadOnly, meta =(AllowPrivateAccess = true))
     TObjectPtr<UPlayerStatusWidget> PlayerStatusWidget;
+    
+#pragma endregion
+
+#pragma region Getter Setter
+
+    bool IsTestHUDVisible() const;
+    
 #pragma endregion
 };

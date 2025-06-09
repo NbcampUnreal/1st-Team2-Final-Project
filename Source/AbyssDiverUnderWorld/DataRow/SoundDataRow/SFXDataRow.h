@@ -27,6 +27,8 @@ enum class ESFX : uint8
 	DPVOn,
 	DPVOff,
 	ActivateDrone,
+	Submarine,
+	LaserSound,
 	Max UMETA(Hidden)
 };
 

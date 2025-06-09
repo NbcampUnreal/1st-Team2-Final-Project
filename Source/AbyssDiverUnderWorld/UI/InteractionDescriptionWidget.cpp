@@ -21,18 +21,6 @@ void UInteractionDescriptionWidget::HandleFocus(AActor* Actor, FString Descripti
 
 void UInteractionDescriptionWidget::HandleFocusLost()
 {
-    PlayAnimation(OutAnim);
-
-
-    FTimerHandle RemoveTimerHandle;
-    float RemoveDelay = OutAnim->GetEndTime();
-    GetWorld()->GetTimerManager().SetTimer(RemoveTimerHandle,
-        FTimerDelegate::CreateLambda([this]() { 
-            if (IsInViewport())
-            {
-                RemoveFromParent();
-                UE_LOG(LogTemp, Log, TEXT("Remove from ViewPort"));
-            }
-            }), RemoveDelay, false);
+    RemoveFromParent();
 
 }

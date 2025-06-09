@@ -1,5 +1,6 @@
 ﻿#include "Interactable/OtherActors/ADDrone.h"
 #include "Interactable/Item/Component/ADInteractableComponent.h"
+#include "Interactable/OtherActors/Portals/PortalToSubmarine.h"
 #include "Inventory/ADInventoryComponent.h"
 #include "FrameWork/ADInGameState.h"
 #include "ADDroneSeller.h"
@@ -85,6 +86,12 @@ void AADDrone::Interact_Implementation(AActor* InstigatorActor)
 			{
 				NextSeller->Activate();
 				GS->SetCurrentDroneSeller(NextSeller);
+				GS->SetDestinationTarget(NextSeller);
+			}
+			else
+			{
+				GS->SetCurrentDroneSeller(nullptr);
+				GS->SetDestinationTarget(UGameplayStatics::GetActorOfClass(GetWorld(), APortalToSubmarine::StaticClass()));
 			}
 		}
 	}
@@ -95,11 +102,42 @@ void AADDrone::Interact_Implementation(AActor* InstigatorActor)
 		SpawnManager->SpawnByGroup();
 		LOGD(Log, TEXT("Monster Spawns"));
 	}
+	// 다음 BGM 실행
+	if (HasAuthority())
+	{
+		LOGN(TEXT("No PhaseSound, DronePhaseNumber : %d"), DronePhaseNumber);
+		LOGN(TEXT("No PhaseSound, DroneName : %s"), *GetName());
+		M_PlayPhaseBGM(DronePhaseNumber + 1);
+		LOGD(Log,TEXT("Next Phase : PhaseSound"));
+	}
 }
 
 void AADDrone::M_PlayDroneRisingSound_Implementation()
 {
 	GetSoundSubsystem()->PlayAt(ESFX::SendDrone, GetActorLocation());
+}
+
+// 나중에 수정..
+void AADDrone::M_PlayPhaseBGM_Implementation(int32 PhaseNumber)
+{
+	if (PhaseNumber == 1)
+	{
+		CachedSoundNumber = GetSoundSubsystem()->PlayBGM(ESFX_BGM::ShallowPhase1, true);
+		LOGN(TEXT("PhaseSound1"));
+	}
+	else if (PhaseNumber == 2)
+	{
+		GetSoundSubsystem()->StopAudio(CachedSoundNumber, true);
+		CachedSoundNumber = GetSoundSubsystem()->PlayBGM(ESFX_BGM::ShallowPhase2, true);
+		LOGN(TEXT("PhaseSound2"));
+	}
+	else if (PhaseNumber == 3)
+	{
+		GetSoundSubsystem()->StopAudio(CachedSoundNumber, true);
+		CachedSoundNumber = GetSoundSubsystem()->PlayBGM(ESFX_BGM::ShallowPhase3, true);
+		LOGN(TEXT("PhaseSound3"));
+	}
+	LOGN(TEXT("No PhaseSound, DronePhaseNumber : %d"), DronePhaseNumber);
 }
 
 void AADDrone::Activate()

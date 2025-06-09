@@ -34,6 +34,11 @@ public class AbyssDiverUnderWorld : ModuleRules
 		
         PublicIncludePaths.AddRange(new string[] { "AbyssDiverUnderWorld" });
 
+        if (Target.Type == TargetType.Editor) 
+        {
+            PublicDependencyModuleNames.Add("UnrealEd");
+        }
+
         // Uncomment if you are using Slate UI
         // PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
 

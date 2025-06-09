@@ -184,9 +184,9 @@ AShop::AShop()
 	ItemMeshCaptureComp->ShowFlags.EyeAdaptation = false;
 	ItemMeshCaptureComp->ShowFlags.LocalExposure = false;
 	ItemMeshCaptureComp->ShowFlags.MotionBlur = false;
-	ItemMeshCaptureComp->ShowFlags.PostProcessMaterial = true;
+	//ItemMeshCaptureComp->ShowFlags.PostProcessMaterial = true;
 	ItemMeshCaptureComp->ShowFlags.ToneCurve = true;
-	ItemMeshCaptureComp->ShowFlags.Tonemapper = true;
+	//ItemMeshCaptureComp->ShowFlags.Tonemapper = true;
 
 	ItemMeshCaptureComp->ShowFlags.SkyLighting = false;
 
@@ -390,8 +390,6 @@ EBuyResult AShop::BuyItem(uint8 ItemId, uint8 Quantity, AUnderwaterCharacter* Bu
 		return EBuyResult::NotEnoughMoney;
 	}
 
-	GS->SetTotalTeamCredit(TeamCredits - ItemDataRow->Price * Quantity);
-
 	FItemData ItemData;
 	ItemData.Amount = ItemDataRow->Amount;
 	ItemData.Id = ItemDataRow->Id;
@@ -402,7 +400,13 @@ EBuyResult AShop::BuyItem(uint8 ItemId, uint8 Quantity, AUnderwaterCharacter* Bu
 	ItemData.Quantity = Quantity;
 	ItemData.Thumbnail = ItemDataRow->Thumbnail;
 
-	PS->GetInventory()->AddInventoryItem(ItemData);
+	if (PS->GetInventory()->AddInventoryItem(ItemData) == false)
+	{
+		LOGS(Log, TEXT("Buying Item Failed : %s"), *ItemDataRow->Name.ToString());
+		return EBuyResult::FailedFromOtherReason;
+	}
+
+	GS->SetTotalTeamCredit(TeamCredits - ItemDataRow->Price * Quantity);
 
 	LOGS(Log, TEXT("Buying Item Succeeded : %s"), *ItemDataRow->Name.ToString());
 	return EBuyResult::Succeeded;

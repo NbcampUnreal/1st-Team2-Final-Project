@@ -1,5 +1,8 @@
-#include "Interactable/OtherActors/LevelSelector/LevelSelector.h"
+ï»¿#include "Interactable/OtherActors/LevelSelector/LevelSelector.h"
+
+#include "AbyssDiverUnderWorld.h"
 #include "UI/LevelSelectWidget.h"
+#include "Framework/ADCampGameMode.h"
 
 ALevelSelector::ALevelSelector()
 {
@@ -16,6 +19,8 @@ void ALevelSelector::Interact_Implementation(AActor* InstigatorActor)
 {
     if (APlayerController* PC = Cast<APlayerController>(InstigatorActor->GetInstigatorController()))
     {
+        if (!PC->IsLocalController()) return;
+
         if (!LevelSelectWidget && LevelSelectWidgetClass)
         {
             LevelSelectWidget = CreateWidget<ULevelSelectWidget>(PC, LevelSelectWidgetClass);
@@ -23,16 +28,17 @@ void ALevelSelector::Interact_Implementation(AActor* InstigatorActor)
         }
         if (LevelSelectWidget)
         {
-            LevelSelectWidget->AddToViewport(); // UI Ç¥½Ã
+            LevelSelectWidget->AddToViewport(); // UI í‘œì‹œ
 
-            // ÀÔ·Â ¸ðµå ÀüÈ¯
+            // ìž…ë ¥ ëª¨ë“œ ì „í™˜
             FInputModeGameAndUI Mode;
             Mode.SetWidgetToFocus(LevelSelectWidget->TakeWidget());
             Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
             PC->SetInputMode(Mode);
             PC->bShowMouseCursor = true;  
 
-            // µ¨¸®°ÔÀÌÆ® ¹ÙÀÎµù
+            if (LevelSelectWidget->OnMapChosen.IsBound()) return;
+            // ë¸ë¦¬ê²Œì´íŠ¸ ë°”ì¸ë”©
             LevelSelectWidget->OnMapChosen.AddUObject(this, &ALevelSelector::HandleMapChosen);
         }
     }
@@ -41,6 +47,11 @@ void ALevelSelector::Interact_Implementation(AActor* InstigatorActor)
 void ALevelSelector::HandleMapChosen(EMapName InLevelID)
 {
     LevelID = InLevelID;
+
+    AADCampGameMode* GM = Cast<AADCampGameMode>(GetWorld()->GetAuthGameMode());
+    if (!GM) return;
+
+    GM->SetSelectedLevel(LevelID);
 
     if (!LevelSelectWidget)
     {

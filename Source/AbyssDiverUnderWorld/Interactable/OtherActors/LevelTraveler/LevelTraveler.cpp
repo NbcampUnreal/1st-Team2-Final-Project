@@ -2,8 +2,8 @@
 
 #include "AbyssDiverUnderWorld.h"
 #include "Framework/ADInGameMode.h"
-
-#include "Kismet/GameplayStatics.h"
+#include "Framework/ADCampGameMode.h"
+#include "Character/UnderwaterCharacter.h"
 
 ALevelTraveler::ALevelTraveler()
 {
@@ -27,20 +27,36 @@ void ALevelTraveler::BeginPlay()
 
 void ALevelTraveler::Interact_Implementation(AActor* InstigatorActor)
 {
-	AADInGameMode* GM = Cast<AADInGameMode>(UGameplayStatics::GetGameMode(GetWorld()));
-	if (GM == nullptr)
-	{
-		LOGVN(Warning, TEXT("GM == nullptr"));
-		return;
-	}
-
 	if (IsConditionMet() == false)
 	{
 		LOGVN(Warning, TEXT("Condition Is not Met"));
 		return;
 	}
 
-	GM->ReadyForTravelToCamp();
+	if (AADInGameMode* InGameMode = Cast<AADInGameMode>(GetWorld()->GetAuthGameMode()))
+	{
+		InGameMode->ReadyForTravelToCamp();
+	}
+	else if (AADCampGameMode* CampGameMode = Cast<AADCampGameMode>(GetWorld()->GetAuthGameMode()))
+	{
+		AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(InstigatorActor);
+		if (UnderwaterCharacter == nullptr)
+		{
+			LOGV(Error, TEXT("UnderwaterCharacter == nullptr"));
+			return;
+		}
+
+		if (UnderwaterCharacter->IsLocallyControlled() == false)
+		{
+			return;
+		}
+
+		CampGameMode->TravelToInGameLevel();
+	}
+	else
+	{
+		LOGV(Error, TEXT("Failed to Travel Level"));
+	}
 }
 
 bool ALevelTraveler::IsConditionMet()

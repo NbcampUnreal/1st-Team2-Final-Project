@@ -56,6 +56,11 @@ void AADOreRock::BeginPlay()
 	}
 }
 
+void AADOreRock::M_CleanupToolAndEffects_Implementation(AUnderwaterCharacter* UnderwaterCharacter)
+{
+	UnderwaterCharacter->CleanupToolAndEffects();
+}
+
 void AADOreRock::Interact_Implementation(AActor* InstigatorActor)
 {
 	if (!HasAuthority()) return;
@@ -91,7 +96,6 @@ void AADOreRock::OnHoldStart_Implementation(APawn* InstigatorPawn)
 				}
 			}
 		}
-
 		Diver->SpawnAndAttachTool(MiningToolClass);
 		PlayMiningAnim(InstigatorPawn);
 	}
@@ -109,17 +113,14 @@ void AADOreRock::OnHoldStop_Implementation(APawn* InstigatorPawn)
 			if (UADInventoryComponent* InventoryComp = ADPlayerState->GetInventory())
 			{
 				InventoryComp->S_UseInventoryItem_Implementation(EItemType::Equipment, PreviousEquipIndex);
-				Diver->CleanupToolAndEffects();
+				M_CleanupToolAndEffects(Diver);
 				LOGI(Log, TEXT("Skip Mining Stops"));
 				return;
 			}
 		}
 	}
-
 	LOGI(Log, TEXT("Mining Stops"));
 	PlayStowAnim(InstigatorPawn);
-
-	
 }
 
 void AADOreRock::HandleMineRequest(APawn* InstigatorPawn)
@@ -128,7 +129,7 @@ void AADOreRock::HandleMineRequest(APawn* InstigatorPawn)
 
 	if (AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(InstigatorPawn))
 	{
-		CurrentMiningGauge = FMath::Max(0, CurrentMiningGauge - DefaultMiningStrength * UnderwaterCharacter->GetGatherMultiplier());
+		CurrentMiningGauge = 0.f;
 		OnRep_CurrentMiningGauge();
 		PlayMiningFX();
 
@@ -146,6 +147,16 @@ void AADOreRock::HandleMineRequest(APawn* InstigatorPawn)
 		{
 			PlayFractureFX();
 			SpawnDrops();
+
+			AADPlayerState* PS = UnderwaterCharacter->GetPlayerState<AADPlayerState>();
+			if (PS == nullptr)
+			{
+				LOGV(Error, TEXT("PS == nullptr"));
+				return;
+			}
+
+			int32 MineCount = PS->GetOreMinedCount();
+			PS->SetOreMinedCount(MineCount + 1);
 		}
 	}
 	if (this->GetClass()->ImplementsInterface(UIADInteractable::StaticClass()))

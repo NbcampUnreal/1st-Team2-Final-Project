@@ -11,7 +11,9 @@ UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADCampGameMode : public AGameMode
 {
 	GENERATED_BODY()
+
 public:
+
 	void ADCampGameMode();
 
 	virtual void PostLogin(APlayerController* NewPlayer) override;
@@ -23,7 +25,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void TryStartGame();
 
-protected:
+	UFUNCTION(Exec, Category = "Cheat")
+	void GetMoney();
+
 	void TravelToInGameLevel();
 
 };

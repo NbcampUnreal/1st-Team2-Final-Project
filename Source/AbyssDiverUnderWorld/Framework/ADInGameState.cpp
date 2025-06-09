@@ -14,6 +14,8 @@
 #include "Missions/MissionBase.h"
 #include "UI/SelectedMissionListWidget.h"
 #include "Framework/ADCampGameMode.h"
+#include "Framework/ADPlayerController.h"
+#include "Character/PlayerComponent/PlayerHUDComponent.h"
 
 #pragma region FastArraySerializer Methods
 
@@ -145,14 +147,14 @@ void AADInGameState::PostInitializeComponents()
 
 		RefreshActivatedMissionList();
 	}
+
+	const int32 SoundPoolInitCount = 10;
+	GetGameInstance()->GetSubsystem<USoundSubsystem>()->Init(SoundPoolInitCount);
 }
 
 void AADInGameState::BeginPlay()
 {
 	Super::BeginPlay();
-
-	const int32 SoundPoolInitCount = 10;
-	GetGameInstance()->GetSubsystem<USoundSubsystem>()->Init(SoundPoolInitCount);
 
 	if (HasAuthority() == false)
 	{
@@ -173,6 +175,7 @@ void AADInGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME(AADInGameState, CurrentPhase);
 	DOREPLIFETIME(AADInGameState, CurrentDroneSeller);
 	DOREPLIFETIME(AADInGameState, ActivatedMissionList);
+	DOREPLIFETIME(AADInGameState, DestinationTarget);
 }
 
 void AADInGameState::PostNetInit()
@@ -254,14 +257,49 @@ void AADInGameState::OnRep_CurrentDroneSeller()
 		return;
 	}
 
-	ToggleWidget->SetDroneTargetText(CurrentDroneSeller->GetTargetMoney());
-	ToggleWidget->SetDroneCurrentText(CurrentDroneSeller->GetCurrentMoney());
+	int32 TargetMoney = 0;
+	int32 CurrentMoney = 0;
 
-	CurrentDroneSeller->OnCurrentMoneyChangedDelegate.RemoveAll(ToggleWidget);
-	CurrentDroneSeller->OnCurrentMoneyChangedDelegate.AddUObject(ToggleWidget, &UToggleWidget::SetDroneCurrentText);
+	if (CurrentDroneSeller)
+	{
+		TargetMoney = CurrentDroneSeller->GetTargetMoney();
+		CurrentMoney = CurrentDroneSeller->GetCurrentMoney();
 
-	CurrentDroneSeller->OnTargetMoneyChangedDelegate.RemoveAll(ToggleWidget);
-	CurrentDroneSeller->OnTargetMoneyChangedDelegate.AddUObject(ToggleWidget, &UToggleWidget::SetDroneTargetText);
+		CurrentDroneSeller->OnCurrentMoneyChangedDelegate.RemoveAll(ToggleWidget);
+		CurrentDroneSeller->OnCurrentMoneyChangedDelegate.AddUObject(ToggleWidget, &UToggleWidget::SetDroneCurrentText);
+
+		CurrentDroneSeller->OnTargetMoneyChangedDelegate.RemoveAll(ToggleWidget);
+		CurrentDroneSeller->OnTargetMoneyChangedDelegate.AddUObject(ToggleWidget, &UToggleWidget::SetDroneTargetText);
+	}
+
+	ToggleWidget->SetDroneTargetText(TargetMoney);
+	ToggleWidget->SetDroneCurrentText(CurrentMoney);
+}
+
+void AADInGameState::OnRep_DestinationTarget()
+{
+	AADPlayerController* PC = Cast<AADPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
+	if (PC == nullptr)
+	{
+		LOGV(Error, TEXT("PC == nullptr"));
+		return;
+	}
+
+	UPlayerHUDComponent* HudComp = PC->GetPlayerHUDComponent();
+	if (HudComp == nullptr)
+	{
+		LOGV(Error, TEXT("HudComp == nullptr"));
+		return;
+	}
+
+	UPlayerStatusWidget* PlayerStatusWidget = HudComp->GetPlayerStatusWidget();
+	if (PlayerStatusWidget == nullptr)
+	{
+		LOGV(Error, TEXT("PlayerStatusWidget == nullptr"));
+		return;
+	}
+
+	PlayerStatusWidget->SetCompassObject(DestinationTarget);
 }
 
 void AADInGameState::ReceiveDataFromGameInstance()
@@ -277,6 +315,17 @@ void AADInGameState::ReceiveDataFromGameInstance()
 	}
 
 	LOGVN(Error, TEXT("SelectedLevelName: %d / TeamCredits: %d / CurrentPhaseGoal : %d"), SelectedLevelName, TeamCredits, CurrentPhaseGoal);
+}
+
+void AADInGameState::SetDestinationTarget(AActor* NewDestinationTarget)
+{
+	if (HasAuthority() == false)
+	{
+		return;
+	}
+
+	DestinationTarget = NewDestinationTarget;
+	OnRep_DestinationTarget();
 }
 
 FString AADInGameState::GetMapDisplayName() const

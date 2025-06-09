@@ -1,4 +1,4 @@
-#include "UI/ResultScreen.h"
+﻿#include "UI/ResultScreen.h"
 
 #include "AbyssDiverUnderWorld.h"
 
@@ -54,11 +54,6 @@ void UResultScreen::NativeOnInitialized()
 	check(PlayerAliveTextArray.IsEmpty() == false);
 	check(PlayerContributionTextArray.IsEmpty() == false);
 	check(PlayerOreTextArray.IsEmpty() == false);
-}
-
-void UResultScreen::NativeConstruct()
-{
-	
 }
 
 void UResultScreen::Update(int32 PlayerIndexBased_1, const FResultScreenParams& Params)
@@ -126,4 +121,15 @@ void UResultScreen::ChangePlayerOreText(int32 PlayerIndexBased_1, int32 OreScore
 void UResultScreen::ChangePlayerOreText(int32 PlayerIndexBased_1, const FString& NewText)
 {
 	PlayerOreTextArray[PlayerIndexBased_1 - 1]->SetText(FText::FromString(NewText));
+}
+
+void UResultScreen::ChangeTeamMoneyText(int32 NewTeamMoney)
+{
+	FString NewTeamMoneyText = TEXT("공통 자금 : ") + FString::FromInt(NewTeamMoney);
+	ChangeTeamMoneyText(NewTeamMoneyText);
+}
+
+void UResultScreen::ChangeTeamMoneyText(const FString& NewText)
+{
+	TeamMoneyText->SetText(FText::FromString(NewText));
 }

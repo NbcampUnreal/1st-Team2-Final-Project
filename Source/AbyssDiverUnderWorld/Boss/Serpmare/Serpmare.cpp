@@ -15,3 +15,16 @@ void ASerpmare::BeginPlay()
 	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	GetMesh()->OnComponentBeginOverlap.AddDynamic(this, &ABoss::OnMeshOverlapBegin);
 }
+
+void ASerpmare::Attack()
+{
+	Super::Attack();
+
+	GetWorldTimerManager().SetTimer(AttackIntervalTimer, this, &ASerpmare::InitAttackInterval, AttackInterval, false);
+	bCanAttack = false;
+}
+
+void ASerpmare::InitAttackInterval()
+{
+	bCanAttack = true;
+}

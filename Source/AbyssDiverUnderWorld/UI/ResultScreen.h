@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
@@ -12,7 +12,7 @@ enum class EAliveInfo
 	Alive,
 	Abandoned,
 	Dead,
-	MAX
+	MAX UMETA(Hidden)
 };
 
 struct FResultScreenParams
@@ -47,29 +47,32 @@ class ABYSSDIVERUNDERWORLD_API UResultScreen : public UUserWidget
 protected:
 
 	virtual void NativeOnInitialized() override;
-	virtual void NativeConstruct() override;
 
 #pragma region Methods
 
 public:
 
-	// Player Index´Â 1ºÎÅÍ ½ÃÀÛ
+	// Player IndexëŠ” 1ë¶€í„° ì‹œìž‘
 	void Update(int32 PlayerIndexBased_1, const FResultScreenParams& Params);
 
-	// Player Index´Â 1ºÎÅÍ ½ÃÀÛ
+	// Player IndexëŠ” 1ë¶€í„° ì‹œìž‘
 	void ChangePlayerNickNameText(int32 PlayerIndexBased_1, const FString& NewText);
 
-	// Player Index´Â 1ºÎÅÍ ½ÃÀÛ
+	// Player IndexëŠ” 1ë¶€í„° ì‹œìž‘
 	void ChangePlayerAliveText(int32 PlayerIndexBased_1, EAliveInfo AliveInfo);
 	void ChangePlayerAliveText(int32 PlayerIndexBased_1, const FString& NewText);
 
-	// Player Index´Â 1ºÎÅÍ ½ÃÀÛ
+	// Player IndexëŠ” 1ë¶€í„° ì‹œìž‘
 	void ChangePlayerContributionText(int32 PlayerIndexBased_1, int32 ContributionScore);
 	void ChangePlayerContributionText(int32 PlayerIndexBased_1, const FString& NewText);
 
-	// Player Index´Â 1ºÎÅÍ ½ÃÀÛ
+	// Player IndexëŠ” 1ë¶€í„° ì‹œìž‘
 	void ChangePlayerOreText(int32 PlayerIndexBased_1, int32 OreScore);
 	void ChangePlayerOreText(int32 PlayerIndexBased_1, const FString& NewText);
+
+	// Player IndexëŠ” 1ë¶€í„° ì‹œìž‘
+	void ChangeTeamMoneyText(int32 NewTeamMoney);
+	void ChangeTeamMoneyText(const FString& NewText);
 
 #pragma endregion
 
@@ -88,6 +91,9 @@ protected:
 
 	UPROPERTY()
 	TArray<TObjectPtr<UTextBlock>> PlayerOreTextArray;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> TeamMoneyText;
 
 #pragma endregion
 

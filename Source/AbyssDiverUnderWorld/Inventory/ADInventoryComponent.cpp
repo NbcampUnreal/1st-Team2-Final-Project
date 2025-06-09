@@ -35,9 +35,7 @@ UADInventoryComponent::UADInventoryComponent() :
 	TotalPrice(0),
 	WeightMax(100),
 	CurrentEquipmentSlotIndex(INDEX_NONE),
-	bInventoryWidgetShowed(false), 
 	CurrentEquipmentInstance(nullptr),
-	bAlreadyCursorShowed(false),
 	ToggleWidgetInstance(nullptr),
 	bCanUseItem(true),
 	DataTableSubsystem(nullptr),
@@ -86,6 +84,7 @@ void UADInventoryComponent::BeginPlay()
 		DataTableSubsystem = GI->GetSubsystem<UDataTableSubsystem>();
 		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
 	}
+
 }
 
 void UADInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -144,7 +143,7 @@ void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType
 			if (Strategy)
 			{
 				Strategy->Use(GetOwner());
-				if (Item.Amount > 0)
+				if (Item.Amount <= 100)
 				{
 					C_InventoryPlaySound(ESFX::Breath);
 					FTimerHandle SpawnEffectDelay;
@@ -311,30 +310,35 @@ void UADInventoryComponent::C_SetEquipBatteryAmount_Implementation(EChargeBatter
 void UADInventoryComponent::InventoryInitialize()
 {
 	APlayerController* PC = Cast<APlayerController>(Cast<AADPlayerState>(GetOwner())->GetPlayerController());
-	if (ToggleWidgetClass && PC && PC->IsLocalController())
+	if (!ToggleWidgetClass || !PC || !PC->IsLocalController())
 	{
-		ToggleWidgetInstance = CreateWidget<UToggleWidget>(PC, ToggleWidgetClass);
-		LOGINVEN(Warning, TEXT("WidgetCreate!"));
-
-		if (ToggleWidgetInstance)
-		{
-			ToggleWidgetInstance->AddToViewport();
-			ToggleWidgetInstance->InitializeInventoriesInfo(this);
-			ToggleWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
-		}
+		return;
 	}
+
+	ToggleWidgetInstance = CreateWidget<UToggleWidget>(PC, ToggleWidgetClass);
+	LOGINVEN(Warning, TEXT("WidgetCreate!"));
+
+	if (!ToggleWidgetInstance)
+	{
+		LOGINVEN(Warning, TEXT("!ToggleWidgetInstance"));
+		return;
+	}
+
+	ToggleWidgetInstance->AddToViewport();
+	ToggleWidgetInstance->InitializeInventoriesInfo(this);
+	ToggleWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
 
 	AADInGameState* GS = Cast<AADInGameState>(UGameplayStatics::GetGameState(GetWorld()));
 	if (GS == nullptr)
 	{
-		LOGV(Warning, TEXT("GS == nullptr"));
+		LOGINVEN(Warning, TEXT("GS == nullptr"));
 		return;
 	}
 
 	AADDroneSeller* CurrentDroneSeller = GS->GetCurrentDroneSeller();
 	if (CurrentDroneSeller == nullptr)
 	{
-		LOGV(Warning, TEXT("CurrentDroneSeller == nullptr, Server? : %d"), GetOwner()->GetNetMode() != ENetMode::NM_Client);
+		LOGINVEN(Warning, TEXT("CurrentDroneSeller == nullptr, Server? : %d"), GetOwner()->GetNetMode() != ENetMode::NM_Client);
 		return;
 	}
 
@@ -346,6 +350,8 @@ void UADInventoryComponent::InventoryInitialize()
 
 	CurrentDroneSeller->OnTargetMoneyChangedDelegate.RemoveAll(ToggleWidgetInstance);
 	CurrentDroneSeller->OnTargetMoneyChangedDelegate.AddUObject(ToggleWidgetInstance, &UToggleWidget::SetDroneTargetText);
+
+
 }
 
 bool UADInventoryComponent::AddInventoryItem(const FItemData& ItemData)
@@ -356,13 +362,19 @@ bool UADInventoryComponent::AddInventoryItem(const FItemData& ItemData)
 		if (FoundRow)
 		{
 			int8 ItemIndex = FindItemIndexByName(ItemData.Name);
+			if (ItemData.ItemType == EItemType::Equipment)
+			{
+				if (ItemIndex != -1)
+					return false;
+			}
 			LOGINVEN(Warning, TEXT("AddInventoryItem ItemIndex : %d"), ItemIndex);
 			bool bIsUpdateSuccess = false;
 
 			if (FoundRow->Stackable && ItemIndex != -1)
 			{
 				bIsUpdateSuccess = InventoryList.UpdateQuantity(ItemIndex, ItemData.Quantity);
-				InventoryList.SetAmount(ItemIndex, ItemData.Amount);
+				if(InventoryList.Items[ItemIndex].Amount > ItemData.Amount)
+					InventoryList.SetAmount(ItemIndex, ItemData.Amount);
 				if (bIsUpdateSuccess)
 				{
 					LOGINVEN(Warning, TEXT("Item Update, ItemName : %s, Id : %d"), *InventoryList.Items[ItemIndex].Name.ToString(), InventoryList.Items[ItemIndex].Id);
@@ -405,12 +417,12 @@ bool UADInventoryComponent::AddInventoryItem(const FItemData& ItemData)
 
 void UADInventoryComponent::ShowInventory()
 {
-	APlayerController* PC = Cast<APlayerController>(Cast<AADPlayerState>(GetOwner())->GetPlayerController());
+	AADPlayerState* PS = Cast<AADPlayerState>(GetOwner());
+	if (!PS) return;
+	APlayerController* PC = Cast<APlayerController>(PS->GetPlayerController());
 	if (!PC || !ToggleWidgetInstance) return;
 
 	ToggleWidgetInstance->PlaySlideAnimation(true);
-	InventoryUIUpdate();
-	bAlreadyCursorShowed = PC->bShowMouseCursor;
 	PC->bShowMouseCursor = true;
 
 	FInputModeGameAndUI InputMode;
@@ -425,13 +437,11 @@ void UADInventoryComponent::ShowInventory()
 void UADInventoryComponent::HideInventory()
 {
 	APlayerController* PC = Cast<APlayerController>(Cast<AADPlayerState>(GetOwner())->GetPlayerController());
-	if (!PC && !ToggleWidgetInstance) return;
+	if (!PC || !ToggleWidgetInstance) return;
 
-	bInventoryWidgetShowed = false;
 	ToggleWidgetInstance->PlaySlideAnimation(false);
 
-	if (!bAlreadyCursorShowed)
-		PC->bShowMouseCursor = false;
+	PC->bShowMouseCursor = false;
 	PC->SetIgnoreLookInput(false);
 	PC->SetInputMode(FInputModeGameOnly());
 	
@@ -478,7 +488,6 @@ void UADInventoryComponent::RemoveBySlotIndex(uint8 SlotIndex, EItemType ItemTyp
 
 		if (bIsDropAction)
 		{
-			/*M_PlaySound(ESFX::DropItem);*/
 			DropItem(Item);
 		}
 		InventoryList.UpdateQuantity(InventoryIndex, INDEX_NONE);
@@ -558,9 +567,15 @@ void UADInventoryComponent::CopyInventoryFrom(UADInventoryComponent* Source)
 	{
 		InventoryList.Items.Add(Item);
 	}
-
+	Source->TotalPrice = TotalPrice;
+	Source->TotalWeight = TotalWeight;
 	// FastArray는 복사 후 MarkItemDirty 필요
 	InventoryMarkArrayDirty();
+
+	FTimerHandle UpdateDelayTimerHandle;
+	float UpdateDelay = 0.2f;
+	GetWorld()->GetTimerManager().SetTimer(UpdateDelayTimerHandle, this, &UADInventoryComponent::InventoryUIUpdate, UpdateDelay, false);
+
 }
 
 void UADInventoryComponent::InventoryMarkArrayDirty()
@@ -634,7 +649,7 @@ FVector UADInventoryComponent::GetDropLocation()
 	APlayerController* PC = Cast<APlayerController>(Cast<AADPlayerState>(GetOwner())->GetPlayerController());
 	APawn* OwnerPawn = PC->GetPawn();
 	FVector CameraForward = PC->PlayerCameraManager->GetCameraRotation().Vector();
-	FVector DropLocation = OwnerPawn->GetActorLocation() +FVector(0, 0, 100) + UKismetMathLibrary::RandomUnitVectorInConeInDegrees(CameraForward, 30) * 350.0;
+	FVector DropLocation = OwnerPawn->GetActorLocation() +FVector(0, 0, 50) + UKismetMathLibrary::RandomUnitVectorInConeInDegrees(CameraForward, 30) * 150.0;
 	return DropLocation;
 }
 
@@ -772,21 +787,26 @@ void UADInventoryComponent::UnEquip()
 void UADInventoryComponent::DropItem(FItemData& ItemData)
 {
 	// EquipComp의 장비 현재값 초기화
-	if (APlayerState* PS = Cast<APlayerState>(GetOwner()))
+	APlayerState* PS = Cast<APlayerState>(GetOwner());
+	if (!PS) return;
+	APawn* Pawn = PS->GetPawn();
+	if (!Pawn) return;
+
+	if (ItemData.Name == CurrentEquipmentInstance->ItemData.Name)
 	{
-		// GetPawn() returns the pawn possessed by this PlayerState
-		if (APawn* Pawn = PS->GetPawn())
+		if (UEquipUseComponent* EquipComp = Pawn->FindComponentByClass<UEquipUseComponent>())
 		{
-			// Now find your EquipUseComponent on the pawn
-			if (UEquipUseComponent* EquipComp = Pawn->FindComponentByClass<UEquipUseComponent>())
-			{
-				EquipComp->DeinitializeEquip();
-			}
+			EquipComp->DeinitializeEquip();
 		}
 	}
 	FVector DropLocation = GetDropLocation();
 	AADUseItem* SpawnItem = GetWorld()->SpawnActor<AADUseItem>(AADUseItem::StaticClass(), DropLocation, FRotator::ZeroRotator);
-	M_SpawnItemEffect(ESFX::DropItem, DropItemEffect, DropLocation);
+	AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(Pawn);
+	EEnvironmentState CurrentEnviromnent = UnderwaterCharacter->GetEnvironmentState();
+	if (CurrentEnviromnent == EEnvironmentState::Underwater)
+	{
+		M_SpawnItemEffect(ESFX::DropItem, DropItemEffect, DropLocation);
+	}
 	SpawnItem->SetItemInfo(ItemData, false);
 	LOGINVEN(Warning, TEXT("Spawn Item To Drop : %s"), *ItemData.Name.ToString());
 }

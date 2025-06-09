@@ -141,6 +141,9 @@ protected:
 	UFUNCTION()
 	void OnRep_CurrentDroneSeller();
 
+	UFUNCTION()
+	void OnRep_DestinationTarget();
+
 private:
 
 	void ReceiveDataFromGameInstance();
@@ -168,6 +171,9 @@ protected:
 
 	UPROPERTY(ReplicatedUsing = OnRep_CurrentDroneSeller)
 	TObjectPtr<AADDroneSeller> CurrentDroneSeller;
+
+	UPROPERTY(ReplicatedUsing = OnRep_DestinationTarget)
+	TObjectPtr<AActor> DestinationTarget;
 
 	UPROPERTY(Replicated)
 	FActivatedMissionInfoList ActivatedMissionList;
@@ -223,6 +229,7 @@ public:
 	void SetSelectedLevel(EMapName LevelName) { SelectedLevelName = LevelName; }
 	EMapName GetSelectedLevel() const { return SelectedLevelName; }
 
+	UFUNCTION(BlueprintPure, Category = "ADInGameState")
 	AADDroneSeller* GetCurrentDroneSeller() const { return CurrentDroneSeller; }
 	FORCEINLINE void SetCurrentDroneSeller(AADDroneSeller* NewDroneSeller)
 	{
@@ -234,6 +241,10 @@ public:
 		CurrentDroneSeller = NewDroneSeller;
 		OnRep_CurrentDroneSeller();
 	}
+
+	UFUNCTION(BlueprintPure, Category = "ADInGameState")
+	AActor* GetDestinationTarget() const { return DestinationTarget; }
+	void SetDestinationTarget(AActor* NewDestinationTarget);
 
 	FActivatedMissionInfoList& GetActivatedMissionList() { return ActivatedMissionList; }
 

@@ -16,6 +16,9 @@ ULanternComponent::ULanternComponent()
 	SetIsReplicatedByDefault(true);
 	bIsLanternOn = false;
 	LanternForwardOffset = 10.0f; // 라이트가 캐릭터 앞에 위치하도록 설정
+
+	LightAngle = 25.0f;
+	Intensity = 150000.0f;
 }
 
 void ULanternComponent::BeginPlay()
@@ -94,6 +97,11 @@ void ULanternComponent::OnRep_bIsLanternOn()
 
 void ULanternComponent::UpdateDetectionShape(float ConeHeight, float ConeAngle)
 {
+	if (GetOwnerRole() != ROLE_Authority)
+	{
+		return;
+	}
+	
 	const FVector Direction = LanternLightComponent->GetForwardVector().GetSafeNormal();
 	const FVector Origin = LanternLightComponent->GetComponentLocation();
 		
@@ -123,9 +131,9 @@ void ULanternComponent::SpawnLight(USceneComponent* AttachToComponent, const flo
 	LightLength = NewLightLength;
 	
 	LanternLightComponent = NewObject<USpotLightComponent>(this, USpotLightComponent::StaticClass(), TEXT("LanternLightComponent"));
-	LanternLightComponent->SetOuterConeAngle(25.0f);
+	LanternLightComponent->SetOuterConeAngle(LightAngle);
 	LanternLightComponent->SetAttenuationRadius(NewLightLength); // 거리에 영향을 준다.
-	LanternLightComponent->SetIntensity(200000.0f);
+	LanternLightComponent->SetIntensity(Intensity);
 	LanternLightComponent->SetVisibility(bIsLanternOn);
 	LanternLightComponent->RegisterComponent();
 	LanternLightComponent->SetLightingChannels(true, false, true);

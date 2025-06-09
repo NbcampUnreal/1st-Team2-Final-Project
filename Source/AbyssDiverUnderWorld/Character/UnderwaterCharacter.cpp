@@ -17,6 +17,7 @@
 #include "Footstep/FootstepComponent.h"
 #include "Framework/ADPlayerState.h"
 #include "Framework/ADPlayerController.h"
+#include "Framework/ADInGameMode.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PhysicsVolume.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -31,7 +32,9 @@
 #include "Laser/ADLaserCutter.h"
 #include "PlayerComponent/LanternComponent.h"
 #include "PlayerComponent/ShieldComponent.h"
-#include "EngineUtils.h"
+#include "PlayerComponent/UnderwaterEffectComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "PlayerComponent/NameWidgetComponent.h"
 
 DEFINE_LOG_CATEGORY(LogAbyssDiverCharacter);
 
@@ -138,6 +141,8 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	EquipUseComponent = CreateDefaultSubobject<UEquipUseComponent>(TEXT("EquipUseComponent"));
 
 	LanternComponent = CreateDefaultSubobject<ULanternComponent>(TEXT("LanternComponent"));
+
+	UnderwaterEffectComponent = CreateDefaultSubobject<UUnderwaterEffectComponent>(TEXT("UnderwaterEffectComponent"));
 	FootstepComponent = CreateDefaultSubobject<UFootstepComponent>(TEXT("FootstepComponent"));
 	
 	bIsRadarOn = false;
@@ -147,6 +152,10 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	EnvironmentState = EEnvironmentState::Underwater;
 
 	RadarReturnComponent->FactionTags.Init(TEXT("Friendly"), 1);
+
+	NameWidgetComponent = CreateDefaultSubobject<UNameWidgetComponent>(TEXT("NameWidgetComponent"));
+	NameWidgetComponent->SetupAttachment(GetCapsuleComponent());
+	NameWidgetComponent->SetRelativeLocation(FVector::UpVector * GetCapsuleComponent()->GetScaledCapsuleHalfHeight() * 2.0f);
 }
 
 void AUnderwaterCharacter::BeginPlay()
@@ -190,6 +199,18 @@ void AUnderwaterCharacter::BeginPlay()
 	SpawnRadar();
 	SpawnFlipperMesh();
 	LanternComponent->SpawnLight(GetMesh1PSpringArm(), LanternLength);
+
+	if (HasAuthority())
+	{
+		AADInGameMode* GM = Cast<AADInGameMode>(UGameplayStatics::GetGameMode(GetWorld()));
+		if (GM == nullptr)
+		{
+			return;
+		}
+
+		GM->BindDelegate(this);
+	}
+	
 }
 
 void AUnderwaterCharacter::InitFromPlayerState(AADPlayerState* ADPlayerState)
@@ -284,6 +305,11 @@ void AUnderwaterCharacter::PossessedBy(AController* NewController)
 	if (AADPlayerState* ADPlayerState = GetPlayerState<AADPlayerState>())
 	{
 		InitFromPlayerState(ADPlayerState);
+		if (!IsLocallyControlled())
+		{
+			NameWidgetComponent->SetNameText(ADPlayerState->GetPlayerNickname());
+			NameWidgetComponent->SetVisibility(true);
+		}
 	}
 	else
 	{
@@ -308,6 +334,11 @@ void AUnderwaterCharacter::OnRep_PlayerState()
 	if (AADPlayerState* ADPlayerState = GetPlayerState<AADPlayerState>())
 	{
 		InitFromPlayerState(ADPlayerState);
+		if (!IsLocallyControlled())
+		{
+			NameWidgetComponent->SetNameText(ADPlayerState->GetPlayerNickname());
+			NameWidgetComponent->SetVisibility(true);
+		}
 	}
 	else
 	{
@@ -320,6 +351,31 @@ void AUnderwaterCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProp
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(AUnderwaterCharacter, bIsRadarOn);
+}
+
+void AUnderwaterCharacter::OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode)
+{
+	Super::OnMovementModeChanged(PrevMovementMode, PreviousCustomMode);
+
+	if (EnvironmentState != EEnvironmentState::Underwater)
+	{
+		return;
+	}
+
+	// Launch되어서 Falling으로 변경되고 Launch가 끝나서 Swimming으로 변경될 경우 Knockback이 종료된다.
+	if (PrevMovementMode == MOVE_Falling && GetCharacterMovement()->MovementMode == MOVE_Swimming)
+	{
+		LOGVN(Display, TEXT("Knockback Ended: %s"), *GetName());
+		OnKnockbackEndDelegate.Broadcast();
+	}
+}
+
+void AUnderwaterCharacter::LaunchCharacter(FVector LaunchVelocity, bool bXYOverride, bool bZOverride)
+{
+	// LaunchCharacter는 Server, Client 양쪽에서 호출되어서 따로 Replicate할 필요는 없다.
+	Super::LaunchCharacter(LaunchVelocity, bXYOverride, bZOverride);
+	
+	OnKnockbackDelegate.Broadcast(LaunchVelocity);
 }
 
 void AUnderwaterCharacter::SetEnvironmentState(EEnvironmentState State)
@@ -358,7 +414,7 @@ void AUnderwaterCharacter::SetEnvironmentState(EEnvironmentState State)
 	}
 
 	OnEnvironmentStateChangedDelegate.Broadcast(OldState, EnvironmentState);
-	K2_OnEnvronmentStateChanged(OldState, EnvironmentState);
+	K2_OnEnvironmentStateChanged(OldState, EnvironmentState);
 }
 
 void AUnderwaterCharacter::StartCaptureState()
@@ -1224,6 +1280,18 @@ float AUnderwaterCharacter::TakeDamage(float DamageAmount, struct FDamageEvent c
 	{
 		EmitBloodNoise();
 	}
+
+	// Normal State
+	// 1. Shield Logic
+	// 2. Health Logic(StatComponent)
+	// 2.1 Health가 0이 되면 Groggy로 전이(OnHealthChanged 함수에서 처리)
+	// 3. OnDamageTakenDelegate
+
+	// OnDamageTaken 함수를 이용할 경우 발생한 순간 Groggy 상태로 전이될 수 있다.
+	// Normal State에만 적용되어야 하는 로직이라면 캐릭터의 현재 상태를 검사해야 한다.
+	// Current Health를 이용할 수 있지만 Capture State를 Polishing 할 경우 Groggy 상태가 Pending 될 수 있다.
+	// 캐릭터의 상태를 검사하는 것이 더 안전하다.
+	OnDamageTakenDelegate.Broadcast(ActualDamage, StatComponent->GetCurrentHealth());
 
 	return ActualDamage;
 }

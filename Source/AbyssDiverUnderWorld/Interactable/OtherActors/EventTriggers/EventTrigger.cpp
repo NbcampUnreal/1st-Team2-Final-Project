@@ -32,12 +32,6 @@ void AEventTrigger::PostInitializeComponents()
 
 #endif
 
-	// 호스트만 사용
-	if (HasAuthority() == false)
-	{
-		return;
-	}
-
 	CollisionBox->OnComponentBeginOverlap.AddDynamic(this, &AEventTrigger::OnBeginOverlap);
 	CollisionBox->OnComponentEndOverlap.AddDynamic(this, &AEventTrigger::OnEndOverlap);
 }

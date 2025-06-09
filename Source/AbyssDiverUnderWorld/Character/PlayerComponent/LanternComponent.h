@@ -8,6 +8,7 @@
 
 /*
  * Light Channel
+ * Local 1인칭 메시 : Channel 0
  * Local 3인칭 메시 : Channel 1
  * Other 3인칭 메시 : Channel 1, 2
  * Lantern Light : Channel 0, 2
@@ -91,6 +92,12 @@ private:
 	/** 빛이 닿는 거리 */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Lantern", meta = (AllowPrivateAccess = "true"))
 	float LightLength;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Character|Lantern", meta = (AllowPrivateAccess = "true"))
+	float LightAngle;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Character|Lantern", meta = (AllowPrivateAccess = "true"))
+	float Intensity;
 	
 	/** 랜턴의 라이트 컴포넌트 */
 	UPROPERTY()
