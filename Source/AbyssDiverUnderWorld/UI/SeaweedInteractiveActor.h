@@ -77,10 +77,10 @@ protected:
 
     // Config
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Seaweed")
-    float BendSpeed = 1.5f;
+    float BendSpeed = 1.3f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Seaweed")
-    float BendPitch = -30.f;
+    float BendPitch = -15.f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Seaweed")
     float BendAmount = 100.f;

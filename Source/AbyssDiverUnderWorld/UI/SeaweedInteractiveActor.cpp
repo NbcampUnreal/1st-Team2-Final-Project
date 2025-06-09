@@ -53,21 +53,27 @@ void ASeaweedInteractiveActor::Tick(float DeltaTime)
 
 void ASeaweedInteractiveActor::TickRotation(float DeltaTime)
 {
-    float Target = bShouldBend ? 1.f : 0.f;
-    CurrentAlpha = FMath::FInterpTo(CurrentAlpha, Target, DeltaTime, BendSpeed);
+    float TargetAlpha = bShouldBend ? 1.f : 0.f;
 
-    FRotator NewRotation = FMath::Lerp(StartRotation, TargetRotation, CurrentAlpha);
-    NewRotation.Roll = 0.f;
-    SeaweedMesh->SetRelativeRotation(NewRotation);
+    // 더 부드럽게 보간
+    CurrentAlpha = FMath::FInterpTo(CurrentAlpha, TargetAlpha, DeltaTime, BendSpeed);
+
+    // 부드러운 회전 보간 (Quaternion)
+    FQuat StartQuat = StartRotation.Quaternion();
+    FQuat TargetQuat = TargetRotation.Quaternion();
+    FQuat SmoothQuat = FQuat::Slerp(StartQuat, TargetQuat, CurrentAlpha);
+
+    SeaweedMesh->SetRelativeRotation(SmoothQuat);
 }
+
 
 void ASeaweedInteractiveActor::TickSplineBend(float DeltaTime)
 {
     float Target = bShouldBend ? 1.f : 0.f;
-    LerpAlpha = FMath::FInterpTo(LerpAlpha, Target, DeltaTime, BendSpeed);
+    LerpAlpha = FMath::FInterpTo(LerpAlpha, Target, DeltaTime, BendSpeed * 0.5f);
 
-    FVector CurEnd = FMath::Lerp(EndPos, EndPos + FVector(BendAmount, 0.f, 0.f), LerpAlpha);
-    FVector CurTangent = FMath::Lerp(StartTangent, FVector(BendAmount * 0.5f, 0.f, 100.f), LerpAlpha);
+    FVector CurEnd = FMath::Lerp(EndPos, EndPos + FVector(BendAmount * 0.3f, BendAmount * 0.3f, 0.f), LerpAlpha);
+    FVector CurTangent = FMath::Lerp(StartTangent, FVector(BendAmount * 0.5f, BendAmount * 0.5f, 100.f), LerpAlpha);
 
     SplineMesh->SetStartAndEnd(StartPos, StartTangent, CurEnd, CurTangent);
 }
@@ -80,23 +86,23 @@ void ASeaweedInteractiveActor::OnOverlapBegin(UPrimitiveComponent* OverlappedCom
     {
         OverlappingCharacterCount++;
 
-        FVector SeaweedLocation = GetActorLocation();
-        FVector PlayerLocation = OtherActor->GetActorLocation();
-        FVector ToPlayer = PlayerLocation - SeaweedLocation;
+        FVector PlayerToSeaweed = GetActorLocation() - OtherActor->GetActorLocation();
+        PlayerToSeaweed.Z = 0.f;
 
-        if (!ToPlayer.IsNearlyZero())
+        if (!PlayerToSeaweed.IsNearlyZero())
         {
-            ToPlayer.Normalize();
+            PlayerToSeaweed.Normalize();
 
-            FVector UpVector = SeaweedMesh->GetUpVector();
-            FVector RotationAxis = FVector::CrossProduct(UpVector, ToPlayer).GetSafeNormal();
-            float Dot = FVector::DotProduct(UpVector, ToPlayer);
-            float Sign = FMath::Sign(Dot);
+            FVector PitchAxis = FVector::CrossProduct(FVector::UpVector, PlayerToSeaweed).GetSafeNormal();
+            if (PitchAxis.IsNearlyZero())
+            {
+                PitchAxis = FVector::RightVector;
+            }
 
-            FQuat QuatRot = FQuat(RotationAxis, FMath::DegreesToRadians(BendPitch * Sign));
-            FRotator BentRot = (QuatRot * StartRotation.Quaternion()).Rotator();
-            TargetRotation = BentRot;
+            float Radians = FMath::DegreesToRadians(BendPitch);
+            FQuat BendQuat = FQuat(PitchAxis, -Radians);
 
+            TargetRotation = (BendQuat * StartRotation.Quaternion()).Rotator();
             bShouldBend = true;
         }
     }
