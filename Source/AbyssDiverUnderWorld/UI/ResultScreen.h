@@ -47,7 +47,6 @@ class ABYSSDIVERUNDERWORLD_API UResultScreen : public UUserWidget
 protected:
 
 	virtual void NativeOnInitialized() override;
-	virtual void NativeConstruct() override;
 
 #pragma region Methods
 
@@ -71,6 +70,10 @@ public:
 	void ChangePlayerOreText(int32 PlayerIndexBased_1, int32 OreScore);
 	void ChangePlayerOreText(int32 PlayerIndexBased_1, const FString& NewText);
 
+	// Player Index는 1부터 시작
+	void ChangeTeamMoneyText(int32 NewTeamMoney);
+	void ChangeTeamMoneyText(const FString& NewText);
+
 #pragma endregion
 
 #pragma region Variables
@@ -88,6 +91,9 @@ protected:
 
 	UPROPERTY()
 	TArray<TObjectPtr<UTextBlock>> PlayerOreTextArray;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> TeamMoneyText;
 
 #pragma endregion
 

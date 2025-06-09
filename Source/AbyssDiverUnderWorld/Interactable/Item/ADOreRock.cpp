@@ -147,6 +147,16 @@ void AADOreRock::HandleMineRequest(APawn* InstigatorPawn)
 		{
 			PlayFractureFX();
 			SpawnDrops();
+
+			AADPlayerState* PS = UnderwaterCharacter->GetPlayerState<AADPlayerState>();
+			if (PS == nullptr)
+			{
+				LOGV(Error, TEXT("PS == nullptr"));
+				return;
+			}
+
+			int32 MineCount = PS->GetOreMinedCount();
+			PS->SetOreMinedCount(MineCount + 1);
 		}
 	}
 	if (this->GetClass()->ImplementsInterface(UIADInteractable::StaticClass()))
