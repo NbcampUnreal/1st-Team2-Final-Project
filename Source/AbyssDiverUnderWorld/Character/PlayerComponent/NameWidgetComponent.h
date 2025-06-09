@@ -6,6 +6,12 @@
 #include "Components/WidgetComponent.h"
 #include "NameWidgetComponent.generated.h"
 
+UENUM(BlueprintType)
+enum class EBillboardRotationMode : uint8
+{
+	LookAtCamera, // Direction = Component - Camera
+	ReverseCameraForward, // Direction = -(Camera Forward)
+};
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class ABYSSDIVERUNDERWORLD_API UNameWidgetComponent : public UWidgetComponent
@@ -25,12 +31,15 @@ public:
 #pragma region Method
 
 protected:
-	/** 로컬 플레이어의 카메라를 바라보도록 Billboard를 회전시킵니다. */
+	/** 로컬 플레이어의 카메라를 바라보도록 Billboard를 회전 */
 	void UpdateBillboardRotation();
 
-	/** 로컬 플레이어와의 거리를 확인해서 이름을 표시할지 여부를 결정합니다. */
+	/** 로컬 플레이어와의 거리를 확인해서 UI 가시성 여부 계산 */
 	void UpdateDistanceVisibility();
-	
+
+	/** 현재 위젯 가시성 설정 */
+	void SetVisibility(bool bNewVisibility);
+
 #pragma endregion
 
 #pragma region Variable
@@ -53,9 +62,17 @@ private:
 	UPROPERTY()
 	TObjectPtr<APlayerController> LocalPlayerController;
 
-	/** 현재 이름 위젯이 표시되고 있는지 여부 */
+	/** 현재 위젯 활성화 여부 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|NameWidget", meta = (AllowPrivateAccess = "true"))
+	uint8 bIsEnabled : 1;
+	
+	/** 가시성 조건을 만족해서 Widget이 표기되는 지 여부 */
 	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	uint8 bIsVisible : 1;
+
+	/** 빌보드 회전 모드 */
+	UPROPERTY(EditDefaultsOnly, Category = "Character|NameWidget", meta = (AllowPrivateAccess = "true"))
+	EBillboardRotationMode BillboardRotationMode;
 	
 #pragma endregion
 
@@ -64,7 +81,7 @@ public:
 	/** 이름 위젯의 텍스트를 설정 */
 	void SetNameText(const FString& NewName);
 
-	/** 현재 위젯 가시성 설정 */
-	void SetVisibility(bool bNewVisibility);
-
+	/** 위젯 활성화 여부 설정 */
+	UFUNCTION(BlueprintCallable)
+	void SetEnable(bool bNewEnabled);
 };
