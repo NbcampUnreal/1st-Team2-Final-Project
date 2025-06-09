@@ -37,6 +37,7 @@ protected:
 
 private:
 
+	/** 이름 위젯에 표시될 텍스트 */
 	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	FString NameText;
 

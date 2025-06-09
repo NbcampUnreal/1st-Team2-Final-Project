@@ -36,6 +36,7 @@ protected:
 	UFUNCTION()
 	void OnEnvironmentStateChanged(EEnvironmentState OldEnvironmentState, EEnvironmentState NewEnvironmentState);
 
+	/** 사망 상태가 되었을 때 호출되는 함수. 사망 중에는 효과를 중지한다. */
 	UFUNCTION()
 	void OnDeath();
 
@@ -47,6 +48,7 @@ protected:
 	UFUNCTION()
 	void OnKnockback(FVector KnockbackVelocity);
 
+	/** 넉백이 끝났을 때 호출되는 함수. 숨쉬기 효과를 재개한다. */
 	UFUNCTION()
 	void OnKnockbackEnd();
 
