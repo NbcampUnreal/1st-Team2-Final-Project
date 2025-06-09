@@ -714,10 +714,6 @@ void ABoss::OnDeath()
 {
 	GetCharacterMovement()->StopMovementImmediately();
 
-	// 피직스 에셋 물리엔진 적용
-	FTimerHandle TimerHandle;
-	GetWorldTimerManager().SetTimer(TimerHandle, this, &ABoss::ApplyPhysicsSimulation, 0.5f, false);	
-
 	// 이동을 멈추고 모든 애니메이션 출력 정지
 	AIController->StopMovement();
 	AnimInstance->StopAllMontages(0.5f);
@@ -727,6 +723,10 @@ void ABoss::OnDeath()
 
 	// AIController 작동 중지
 	AIController->UnPossess();
+
+	// 피직스 에셋 물리엔진 적용
+	FTimerHandle TimerHandle;
+	GetWorldTimerManager().SetTimer(TimerHandle, this, &ABoss::ApplyPhysicsSimulation, 0.5f, false);	
 }
 #pragma endregion
 
