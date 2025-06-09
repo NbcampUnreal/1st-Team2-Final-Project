@@ -95,6 +95,7 @@ protected:
 	virtual void PostNetInit() override;
 	virtual void OnRep_PlayerState() override;
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode = 0) override;
 
 	/** IA를 Enhanced Input Component에 연결 */
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
@@ -127,6 +128,14 @@ public:
 	virtual bool IsHoldMode() const override;
 
 	// Interactable Interface End
+
+	// Launch Character
+	// - Boss: 공격 시에 넉백을 적용하기 Launch를 실행한다.
+	// - CurrentZone : 급류 효과를 위해 Launch를 실행한다.
+	// - SpikeHazard : 공격 효과를 위해 Launch를 실행한다.
+	
+	/** Launch Character를 오버라이드 해서 캐릭터의 넉백 상태를 확인한다. */
+	virtual void LaunchCharacter(FVector LaunchVelocity, bool bXYOverride, bool bZOverride) override;
 	
 	/** 그로기 상태 캐릭터를 부활시킨다. */
 	UFUNCTION(BlueprintCallable)
@@ -241,12 +250,12 @@ protected:
 	virtual float CalculateGroggyTime(float CurrentGroggyDuration, uint8 CalculateGroggyCount) const;
 	
 	/** 캐릭터 사망 시에 Blueprint에서 호출될 함수 */
-	UFUNCTION(BlueprintImplementableEvent)
+	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "OnDeath"))
 	void K2_OnDeath();
 
 	/** 캐릭터의 환경이 변경됬을 시에 Blueprint에서 호출될 함수 */
-	UFUNCTION(BlueprintImplementableEvent)
-	void K2_OnEnvronmentStateChanged(EEnvironmentState OldEnvironmentState, EEnvironmentState NewEnvironmentState);
+	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "OnEnvironmentStateChanged"))
+	void K2_OnEnvironmentStateChanged(EEnvironmentState OldEnvironmentState, EEnvironmentState NewEnvironmentState);
 
 	/** Player State 정보를 초기화 */
 	void InitFromPlayerState(class AADPlayerState* ADPlayerState);
@@ -420,6 +429,19 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FOnDeath OnDeathDelegate;
 
+	// Knockback이 되는 상황은 LaunchCharacter 때이므로 LaunchCharacter를 오버라이드해서 처리한다.
+	// 복귀가 될 때는 MoveMode 변화를 통해서 처리한다.
+	
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnKnockbacked, FVector, KnockbackVelocity);
+	/** 캐릭터가 넉백되었을 때 호출되는 델리게이트 */
+	UPROPERTY(BlueprintAssignable)
+	FOnKnockbacked OnKnockbackDelegate;
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnKnockbackEnd);
+	/** 캐릭터의 넉백이 끝났을 때 호출되는 델리게이트 */
+	UPROPERTY(BlueprintAssignable)
+	FOnKnockbackEnd OnKnockbackEndDelegate;
+	
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnGroggy);
 	/** 캐릭터가 그로기 상태에 진입했을 때 호출되는 델리게이트 */
 	UPROPERTY(BlueprintAssignable)
@@ -436,7 +458,7 @@ public:
 	FOnEnvironmentStateChanged OnEnvironmentStateChangedDelegate;
 
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnDamageTaken, float, DamageAmount, float, CurrentHealth);
-	/** 캐릭터가 피해를 입었을 때 호출되는 델리게이트, DamageAmount는 실드에 흡수된 데미지를 포함한다. */
+	/** 캐릭터가 피해를 입었을 때 호출되는 델리게이트, DamageAmount = Health Damage Taken + Shield Damage Taken */
 	UPROPERTY(BlueprintAssignable)
 	FOnDamageTaken OnDamageTakenDelegate;
 	
@@ -629,6 +651,10 @@ private:
 	/** 생성한 레이더 인스턴스 */
 	UPROPERTY()
 	TObjectPtr<class ARadar> RadarObject;
+
+	/** 이름 표기 위젯 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character|UI", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UNameWidgetComponent> NameWidgetComponent;
 
 	/** 레이더가 생성된 위치 오프셋. 카메라 기준으로 부착이 된다. */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Radar", meta = (AllowPrivateAccess = "true"))
