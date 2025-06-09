@@ -255,7 +255,7 @@ protected:
 
 	/** 캐릭터의 환경이 변경됬을 시에 Blueprint에서 호출될 함수 */
 	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "OnEnvironmentStateChanged"))
-	void K2_OnEnvronmentStateChanged(EEnvironmentState OldEnvironmentState, EEnvironmentState NewEnvironmentState);
+	void K2_OnEnvironmentStateChanged(EEnvironmentState OldEnvironmentState, EEnvironmentState NewEnvironmentState);
 
 	/** Player State 정보를 초기화 */
 	void InitFromPlayerState(class AADPlayerState* ADPlayerState);
@@ -651,6 +651,10 @@ private:
 	/** 생성한 레이더 인스턴스 */
 	UPROPERTY()
 	TObjectPtr<class ARadar> RadarObject;
+
+	/** 이름 표기 위젯 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character|UI", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UNameWidgetComponent> NameWidgetComponent;
 
 	/** 레이더가 생성된 위치 오프셋. 카메라 기준으로 부착이 된다. */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Radar", meta = (AllowPrivateAccess = "true"))

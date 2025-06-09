@@ -33,8 +33,8 @@
 #include "PlayerComponent/LanternComponent.h"
 #include "PlayerComponent/ShieldComponent.h"
 #include "PlayerComponent/UnderwaterEffectComponent.h"
-
 #include "Kismet/GameplayStatics.h"
+#include "PlayerComponent/NameWidgetComponent.h"
 
 DEFINE_LOG_CATEGORY(LogAbyssDiverCharacter);
 
@@ -152,6 +152,10 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	EnvironmentState = EEnvironmentState::Underwater;
 
 	RadarReturnComponent->FactionTags.Init(TEXT("Friendly"), 1);
+
+	NameWidgetComponent = CreateDefaultSubobject<UNameWidgetComponent>(TEXT("NameWidgetComponent"));
+	NameWidgetComponent->SetupAttachment(GetCapsuleComponent());
+	NameWidgetComponent->SetRelativeLocation(FVector::UpVector * GetCapsuleComponent()->GetScaledCapsuleHalfHeight() * 2.0f);
 }
 
 void AUnderwaterCharacter::BeginPlay()
@@ -301,6 +305,11 @@ void AUnderwaterCharacter::PossessedBy(AController* NewController)
 	if (AADPlayerState* ADPlayerState = GetPlayerState<AADPlayerState>())
 	{
 		InitFromPlayerState(ADPlayerState);
+		if (!IsLocallyControlled())
+		{
+			NameWidgetComponent->SetNameText(ADPlayerState->GetPlayerNickname());
+			NameWidgetComponent->SetVisibility(true);
+		}
 	}
 	else
 	{
@@ -325,6 +334,11 @@ void AUnderwaterCharacter::OnRep_PlayerState()
 	if (AADPlayerState* ADPlayerState = GetPlayerState<AADPlayerState>())
 	{
 		InitFromPlayerState(ADPlayerState);
+		if (!IsLocallyControlled())
+		{
+			NameWidgetComponent->SetNameText(ADPlayerState->GetPlayerNickname());
+			NameWidgetComponent->SetVisibility(true);
+		}
 	}
 	else
 	{
@@ -400,7 +414,7 @@ void AUnderwaterCharacter::SetEnvironmentState(EEnvironmentState State)
 	}
 
 	OnEnvironmentStateChangedDelegate.Broadcast(OldState, EnvironmentState);
-	K2_OnEnvronmentStateChanged(OldState, EnvironmentState);
+	K2_OnEnvironmentStateChanged(OldState, EnvironmentState);
 }
 
 void AUnderwaterCharacter::StartCaptureState()
