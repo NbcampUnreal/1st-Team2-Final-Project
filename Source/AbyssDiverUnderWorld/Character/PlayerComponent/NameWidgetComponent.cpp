@@ -3,10 +3,8 @@
 
 #include "NameWidgetComponent.h"
 
-#include "Character/UnderwaterCharacter.h"
 #include "Kismet/GameplayStatics.h"
 #include "UI/NameWidget.h"
-
 
 UNameWidgetComponent::UNameWidgetComponent()
 {
@@ -14,11 +12,13 @@ UNameWidgetComponent::UNameWidgetComponent()
 
 	SetUsingAbsoluteRotation(true);
 	SetWidgetSpace(EWidgetSpace::World);
+	DrawSize = FIntPoint(200, 100);
 	
 	DisplayDistance = 1000.0f;
 	MaxDisplayDistance = 1500.0f;
+	bIsEnabled = false;
 	bIsVisible = false;
-	DrawSize = FIntPoint(200, 100);
+	BillboardRotationMode = EBillboardRotationMode::ReverseCameraForward;
 }
 
 void UNameWidgetComponent::BeginPlay()
@@ -34,7 +34,6 @@ void UNameWidgetComponent::BeginPlay()
 			NameWidget->SetNameText(NameText);
 		}
 	}
-	SetVisibility(bIsVisible);
 }
 
 void UNameWidgetComponent::TickComponent(float DeltaTime, ELevelTick TickType,
@@ -42,7 +41,7 @@ void UNameWidgetComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	if (!LocalPlayerController)
+	if (!LocalPlayerController || !bIsEnabled)
 	{
 		return;
 	}
@@ -61,18 +60,49 @@ void UNameWidgetComponent::UpdateBillboardRotation()
 
 	// 가시성 체크는 Actor 기준으로 처리해야 하지만 위젯 각도는 컴포넌트의 위치를 기준으로 처리
 	APlayerCameraManager* PlayerCameraManager = LocalPlayerController->PlayerCameraManager;
-	FVector CameraLocation = PlayerCameraManager->GetCameraLocation();
-	FVector ComponentLocation = GetComponentLocation();
+	FRotator BillboardRotation = GetComponentRotation();
 
-	FRotator LookAtRotation = (CameraLocation - ComponentLocation).Rotation();
-	SetWorldRotation(LookAtRotation);
+	if (BillboardRotationMode == EBillboardRotationMode::LookAtCamera)
+	{
+		const FVector CameraLocation = PlayerCameraManager->GetCameraLocation();
+		const FVector ComponentLocation = GetComponentLocation();
+		BillboardRotation = (CameraLocation - ComponentLocation).Rotation();
+	}
+	else if (BillboardRotationMode == EBillboardRotationMode::ReverseCameraForward)
+	{
+		FVector CameraDirection = PlayerCameraManager->GetCameraRotation().Vector();
+		BillboardRotation = (-CameraDirection).Rotation();
+	}
+	
+	SetWorldRotation(BillboardRotation);
 }
 
+// PreCondition : bEnabled == true
 void UNameWidgetComponent::UpdateDistanceVisibility()
 {
 	AActor* Owner = GetOwner();
+	if (!IsValid(Owner) || !IsValid(LocalPlayerController))
+	{
+		SetVisibility(false);
+		return;
+	}
 
-	float Distance = FVector::Distance(Owner->GetActorLocation(), LocalPlayerController->GetPawn()->GetActorLocation());
+	FVector LookTargetLocation;
+	if (LocalPlayerController->GetPawn())
+	{
+		LookTargetLocation = LocalPlayerController->GetPawn()->GetActorLocation();
+	}
+	else if (LocalPlayerController->PlayerCameraManager)
+	{
+		LookTargetLocation = LocalPlayerController->PlayerCameraManager->GetCameraLocation();
+	}
+	else
+	{
+		SetVisibility(false);
+		return;
+	}
+
+	float Distance = FVector::Distance(Owner->GetActorLocation(), LookTargetLocation);
 
 	// 비활성화 상태에서 DisplayDistance 안으로 들어오면 이름 표시
 	if (Distance <= DisplayDistance && !bIsVisible)
@@ -117,5 +147,19 @@ void UNameWidgetComponent::SetNameText(const FString& NewName)
 			NameWidget->SetNameText(NameText);
 		}
 	}
+}
+
+void UNameWidgetComponent::SetEnable(bool bNewEnabled)
+{
+	if (bNewEnabled == bIsEnabled)
+	{
+		return;
+	}
+
+	bIsEnabled = bNewEnabled;
+
+	// 위젯이 비활성화되면 위젯도 숨김처리
+	// 활성화되면 Tick에서 가시성 여부를 판단한다.
+	SetVisibility(bIsEnabled && bIsVisible);
 }
 
