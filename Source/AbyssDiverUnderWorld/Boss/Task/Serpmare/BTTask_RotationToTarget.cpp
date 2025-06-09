@@ -44,8 +44,6 @@ void UBTTask_RotationToTarget::TickTask(UBehaviorTreeComponent& OwnerComp, uint8
 	FRotator TargetRotation = (PlayerLocation - CurrentLocation).GetSafeNormal().Rotation();
 	TargetRotation.Roll = 0.0f;
 	TargetRotation.Pitch = 0.0f;
-
-	LOG(TEXT("Rotation"));
 	
 	const FRotator NewRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, DeltaSeconds, RotationInterpSpeed);
 	
