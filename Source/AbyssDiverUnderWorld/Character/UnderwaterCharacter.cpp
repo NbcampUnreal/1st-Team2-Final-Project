@@ -308,7 +308,7 @@ void AUnderwaterCharacter::PossessedBy(AController* NewController)
 		if (!IsLocallyControlled())
 		{
 			NameWidgetComponent->SetNameText(ADPlayerState->GetPlayerNickname());
-			NameWidgetComponent->SetVisibility(true);
+			NameWidgetComponent->SetEnable(true);
 		}
 	}
 	else
@@ -337,7 +337,7 @@ void AUnderwaterCharacter::OnRep_PlayerState()
 		if (!IsLocallyControlled())
 		{
 			NameWidgetComponent->SetNameText(ADPlayerState->GetPlayerNickname());
-			NameWidgetComponent->SetVisibility(true);
+			NameWidgetComponent->SetEnable(true);
 		}
 	}
 	else
