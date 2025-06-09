@@ -463,6 +463,7 @@ protected:
 	/** 감정 표현을 중지 */
 	void StopPlayingEmote();
 
+	/** 감정 표현 몽타주가 끝났을 때 호출되는 함수 */
 	UFUNCTION()
 	void OnEmoteEnd(UAnimMontage* AnimMontage, bool bArg);
 	
@@ -789,12 +790,15 @@ private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> EquipSlot3Action;
 
+	/** 감정 표현 1번 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> EmoteAction1;
 
+	/** 감정 표현 2번 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> EmoteAction2;
 
+	/** 감정 표현 3번 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> EmoteAction3;
 
@@ -878,6 +882,7 @@ private:
 	/** Tool 소켓 명 (1P/3P 공용) */
 	FName LaserSocketName = TEXT("Laser");
 
+	/** 감정 표현 몽타주 배열. 순서대로 Emote1, Emote2, Emote3에 해당한다. */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Emote", meta = (AllowPrivateAccess = "true"))
 	TArray<TObjectPtr<UAnimMontage>> EmoteAnimationMontages;
 
