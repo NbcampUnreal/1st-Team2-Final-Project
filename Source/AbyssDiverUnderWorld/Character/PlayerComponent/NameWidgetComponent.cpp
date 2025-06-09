@@ -81,7 +81,7 @@ void UNameWidgetComponent::UpdateBillboardRotation()
 void UNameWidgetComponent::UpdateDistanceVisibility()
 {
 	AActor* Owner = GetOwner();
-	if (!IsValid(Owner) && !IsValid(LocalPlayerController))
+	if (!IsValid(Owner) || !IsValid(LocalPlayerController))
 	{
 		SetVisibility(false);
 		return;
