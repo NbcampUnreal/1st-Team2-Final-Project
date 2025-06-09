@@ -475,7 +475,6 @@ void AUnderwaterCharacter::M_BroadcastPlayMontage_Implementation(UAnimMontage* M
 	{
 		if (GetMesh1P() && GetMesh1P()->GetAnimInstance())
 		{
-			UE_LOG(LogAbyssDiverCharacter, Log, TEXT("Playing Mesh1P Montage: %s"), *Mesh1PMontage->GetName());
 			GetMesh1P()->GetAnimInstance()->Montage_Play(Mesh1PMontage, InPlayRate);
 			if (StartSectionName != NAME_None)
 			{
@@ -491,7 +490,6 @@ void AUnderwaterCharacter::M_BroadcastPlayMontage_Implementation(UAnimMontage* M
 	{
 		if (GetMesh() && GetMesh()->GetAnimInstance())
 		{
-			UE_LOG(LogAbyssDiverCharacter, Log, TEXT("Playing Mesh3P Montage: %s"), *Mesh3PMontage->GetName());
 			GetMesh()->GetAnimInstance()->Montage_Play(Mesh3PMontage, InPlayRate);
 			if (StartSectionName != NAME_None)
 			{
@@ -1516,7 +1514,6 @@ void AUnderwaterCharacter::MoveGround(FVector MoveInput)
 	UAnimInstance* AnimInstance = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr;
 	if (bPlayingEmote && AnimInstance && AnimInstance->IsAnyMontagePlaying())
 	{
-		UE_LOG(LogAbyssDiverCharacter, Warning, TEXT("Move Input while Emote is playing. Stop Emote."));
 		StopPlayingEmote();
 	}
 	
@@ -1724,7 +1721,8 @@ void AUnderwaterCharacter::EquipSlot3(const FInputActionValue& InputActionValue)
 
 void AUnderwaterCharacter::PerformEmote1(const FInputActionValue& InputActionValue)
 {
-	if (EnvironmentState == EEnvironmentState::Ground && GetCharacterMovement()->IsMovingOnGround())
+	if (EnvironmentState == EEnvironmentState::Ground && GetCharacterMovement()->IsMovingOnGround()
+		&& !bPlayingEmote)
 	{
 		PlayEmote(0);
 	}
@@ -1732,7 +1730,8 @@ void AUnderwaterCharacter::PerformEmote1(const FInputActionValue& InputActionVal
 
 void AUnderwaterCharacter::PerformEmote2(const FInputActionValue& InputActionValue)
 {
-	if (EnvironmentState == EEnvironmentState::Ground && GetCharacterMovement()->IsMovingOnGround())
+	if (EnvironmentState == EEnvironmentState::Ground && GetCharacterMovement()->IsMovingOnGround()
+		&& !bPlayingEmote)
 	{
 		PlayEmote(1);
 	}
@@ -1740,7 +1739,8 @@ void AUnderwaterCharacter::PerformEmote2(const FInputActionValue& InputActionVal
 
 void AUnderwaterCharacter::PerformEmote3(const FInputActionValue& InputActionValue)
 {
-	if (EnvironmentState == EEnvironmentState::Ground && GetCharacterMovement()->IsMovingOnGround())
+	if (EnvironmentState == EEnvironmentState::Ground && GetCharacterMovement()->IsMovingOnGround()
+		&& !bPlayingEmote)
 	{
 		PlayEmote(2);
 	}
@@ -1806,7 +1806,6 @@ void AUnderwaterCharacter::PlayEmote(uint8 EmoteIndex)
 		UAnimInstance* AnimInstance = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr;
 		if (AnimInstance && !AnimInstance->IsAnyMontagePlaying())
 		{
-			UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Request Play Emote Montage : %s"), *EmoteMontage->GetName());
 			RequestPlayMontage(EmoteMontage, EmoteMontage, 1.0f, NAME_None);
 			bPlayingEmote = true;
 			bUseControllerRotationYaw = false;
