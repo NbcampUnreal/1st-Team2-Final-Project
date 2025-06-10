@@ -404,7 +404,9 @@ protected:
 	/** 3인칭 메시 몽타주 종료 시 호출되는 함수 */
 	UFUNCTION()
 	virtual void OnMesh3PMontageEnded(UAnimMontage* Montage, bool bInterrupted);
-	
+
+	//Initialize ActionMap
+	void RegisterInputActionsToSettingsManager();
 private:
 
 	/** Montage 콜백을 등록 */
@@ -786,6 +788,8 @@ private:
 
 	/** Tool 소켓 명 (1P/3P 공용) */
 	FName LaserSocketName = TEXT("Laser");
+
+	uint8 bHasRegisteredInputActions : 1 = false;
 
 #pragma endregion
 

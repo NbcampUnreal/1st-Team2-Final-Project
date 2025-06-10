@@ -18,6 +18,8 @@
 #include "Framework/ADPlayerState.h"
 #include "Framework/ADPlayerController.h"
 #include "Framework/ADInGameMode.h"
+#include "Framework/ADGameInstance.h"
+#include "Framework/SettingsManager.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PhysicsVolume.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -33,6 +35,7 @@
 #include "PlayerComponent/LanternComponent.h"
 #include "PlayerComponent/ShieldComponent.h"
 #include "PlayerComponent/UnderwaterEffectComponent.h"
+
 
 #include "Kismet/GameplayStatics.h"
 
@@ -205,6 +208,12 @@ void AUnderwaterCharacter::BeginPlay()
 		}
 
 		GM->BindDelegate(this);
+	}
+
+	if (bHasRegisteredInputActions == false)
+	{
+		RegisterInputActionsToSettingsManager();
+		bHasRegisteredInputActions = true;
 	}
 	
 }
@@ -1592,6 +1601,33 @@ void AUnderwaterCharacter::OnMesh3PMontageEnded(UAnimMontage* Montage, bool bInt
 {
 	bIsAnim3PSyncStateOverride = false;
 	OnMesh3PMontageEndDelegate.Broadcast(Montage, bInterrupted);
+}
+
+void AUnderwaterCharacter::RegisterInputActionsToSettingsManager()
+{
+	if (UADGameInstance* GameInstance = GetGameInstance<UADGameInstance>())
+	{
+		if (USettingsManager* SettingsManager = GameInstance->GetSettingsManager())
+		{
+			TMap<FName, UInputAction*> ActionMap;
+
+			ActionMap.Add("Move", MoveAction);
+			ActionMap.Add("Jump", JumpAction);
+			ActionMap.Add("Sprint", SprintAction);
+			ActionMap.Add("Look", LookAction);
+			ActionMap.Add("Fire", FireAction);
+			ActionMap.Add("Aim", AimAction);
+			ActionMap.Add("Interaction", InteractionAction);
+			ActionMap.Add("Light", LightAction);
+			ActionMap.Add("Radar", RadarAction);
+			ActionMap.Add("Reload", ReloadAction);
+			ActionMap.Add("EquipSlot1", EquipSlot1Action);
+			ActionMap.Add("EquipSlot2", EquipSlot2Action);
+			ActionMap.Add("EquipSlot3", EquipSlot3Action);
+
+			SettingsManager->InitializeActionMap(ActionMap);
+		}
+	}
 }
 
 void AUnderwaterCharacter::SetupMontageCallbacks()

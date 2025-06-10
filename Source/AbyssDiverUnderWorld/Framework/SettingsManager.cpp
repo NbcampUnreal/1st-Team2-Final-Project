@@ -87,44 +87,35 @@ void USettingsManager::ApplyKeySettings(const TArray<FKeyBinding>& InBindings, A
 
 	if (!BaseMappingContext || !PC) return;
 
-	// 복제
+	// Context 복제
 	RuntimeMappingContext = DuplicateObject<UInputMappingContext>(BaseMappingContext, this);
 
-	// Input Subsystem 확보
+	// 기존 매핑 제거 → 정확한 키 매핑 쌍 제거
+	for (auto& Pair : ActionMap)
+	{
+		if (Pair.Value)
+		{
+			RuntimeMappingContext->UnmapAllKeysFromAction(Pair.Value); // 전체 키 제거
+		}
+	}
+
+	// 새 매핑 적용
+	for (const FKeyBinding& Binding : InBindings)
+	{
+		if (const UInputAction* FoundAction = ActionMap.FindRef(Binding.ActionName))
+		{
+			RuntimeMappingContext->MapKey(FoundAction, Binding.AssignedKey);
+		}
+	}
+
 	if (ULocalPlayer* LocalPlayer = PC->GetLocalPlayer())
 	{
 		if (UEnhancedInputLocalPlayerSubsystem* InputSubsystem = LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
 		{
-			InputSubsystem->ClearAllMappings();
-			InputSubsystem->AddMappingContext(RuntimeMappingContext, 0);
+			InputSubsystem->ClearAllMappings(); // 모든 기존 맵핑 제거
+			InputSubsystem->AddMappingContext(RuntimeMappingContext, 0); // 새 컨텍스트 삽입
 		}
 	}
-
-	// 바인딩 변경
-	for (const FKeyBinding& Binding : InBindings)
-	{
-		const FName& ActionName = Binding.ActionName;
-		const FKey& Key = Binding.AssignedKey;
-
-		// InputAction 찾기 (예: 이름 기준으로 StaticMap에서 참조하거나 등록해둔 배열)
-		const UInputAction* FoundAction = ActionMap.FindRef(ActionName);
-
-		if (FoundAction)
-		{
-			for (const FEnhancedActionKeyMapping& Mapping : RuntimeMappingContext->GetMappings())
-			{
-				if (Mapping.Action == FoundAction)
-				{
-					RuntimeMappingContext->UnmapKey(FoundAction, Mapping.Key);
-				}
-			}
-
-			// 2. 새 키 매핑
-			RuntimeMappingContext->MapKey(FoundAction, Key);
-		}
-	}
-
-
 
 }
 
@@ -177,7 +168,7 @@ void USettingsManager::UpdateCachedKeyBinding(FName ActionName, FKey NewKey)
 
 }
 
-void USettingsManager::InitializeActionMap(const TMap<FName, TObjectPtr<UInputAction>>& InMap)
+void USettingsManager::InitializeActionMap(const TMap<FName, UInputAction*>& InMap)
 {
 	ActionMap = InMap;
 }

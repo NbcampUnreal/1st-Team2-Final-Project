@@ -122,7 +122,7 @@ public:
 	TObjectPtr<USettingsManager> SettingsManager;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
-	TMap<FName, TObjectPtr<UInputAction>> InputActionMap;
+	TMap<FName, UInputAction*> InputActionMap;
 
 private:
 
@@ -151,7 +151,7 @@ public:
 	USettingsManager* GetSettingsManager() const { return SettingsManager; }
 
 	UFUNCTION(BlueprintCallable, Category = "Input")
-	const TMap<FName, TObjectPtr<UInputAction>>& GetInputActionMap() const { return InputActionMap; }
+	const TMap<FName, UInputAction*>& GetInputActionMap() const { return InputActionMap; }
 #pragma endregion
 
 

@@ -50,7 +50,7 @@ public:
 	void UpdateCachedKeyBinding(FName ActionName, FKey NewKey);
 
 	UFUNCTION(BlueprintCallable, Category = "Settings|Control")
-	void InitializeActionMap(const TMap<FName, TObjectPtr<UInputAction>>& InMap);
+	void InitializeActionMap(const TMap<FName, UInputAction*>& InMap);
 private:
 
 
@@ -67,7 +67,7 @@ protected:
 	TObjectPtr<UInputMappingContext> RuntimeMappingContext;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
-	TMap<FName, TObjectPtr<UInputAction>> ActionMap;
+	TMap<FName, UInputAction*> ActionMap;
 
 	UPROPERTY(BlueprintReadOnly)
 	TArray<FKeyBinding> CachedKeyBindings;
