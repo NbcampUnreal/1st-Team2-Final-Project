@@ -526,11 +526,6 @@ void AUnderwaterCharacter::OnRep_CurrentTool()
 	}
 }
 
-void AUnderwaterCharacter::M_AttachTool_Implementation(AActor* Item, FName Socket)
-{
-	EquipRenderComp->AttachItem(Item, Socket);
-}
-
 void AUnderwaterCharacter::OnMoveSpeedChanged(float NewMoveSpeed)
 {
 	AdjustSpeed();

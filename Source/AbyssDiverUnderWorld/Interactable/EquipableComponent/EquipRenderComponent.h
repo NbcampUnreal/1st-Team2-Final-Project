@@ -14,11 +14,9 @@ struct FRenderEntry
 {
     GENERATED_BODY()
 
-    /** 1P용 Mesh 컴포넌트*/
     UPROPERTY()
     TWeakObjectPtr<UMeshComponent> Mesh1P;
 
-    /** 3P용 Mesh 컴포넌트*/
     UPROPERTY()
     TWeakObjectPtr<UMeshComponent> Mesh3P;
 };

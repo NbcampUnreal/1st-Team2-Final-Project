@@ -51,10 +51,10 @@ public:
 	FName DurationParam = "LoopDuration";
 
 private:
-	static TMap<USkeletalMeshComponent*, TWeakObjectPtr<UNiagaraComponent>> BeamMap1P;
-	static TMap<USkeletalMeshComponent*, TWeakObjectPtr<UNiagaraComponent>> BeamMap3P;
-	static TMap<USkeletalMeshComponent*, TWeakObjectPtr<UNiagaraComponent>> HitMap1P;
-	static TMap<USkeletalMeshComponent*, TWeakObjectPtr<UNiagaraComponent>> HitMap3P;
+	static TMap<TObjectPtr<USkeletalMeshComponent>, TWeakObjectPtr<UNiagaraComponent>> BeamMap1P;
+	static TMap<TObjectPtr<USkeletalMeshComponent>, TWeakObjectPtr<UNiagaraComponent>> BeamMap3P;
+	static TMap<TObjectPtr<USkeletalMeshComponent>, TWeakObjectPtr<UNiagaraComponent>> HitMap1P;
+	static TMap<TObjectPtr<USkeletalMeshComponent>, TWeakObjectPtr<UNiagaraComponent>> HitMap3P;
 
 	TObjectPtr<AUnderwaterCharacter> Diver;
 #pragma endregion

@@ -30,9 +30,9 @@ public:
 	TWeakObjectPtr<UMeshComponent> MeshComponent;
 
 	UPROPERTY(EditAnywhere, Category = "Equip", meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UStaticMesh>   StaticMeshAsset;    // ADLaserCutter¿ë		
+	TObjectPtr<UStaticMesh>   StaticMeshAsset;
 	UPROPERTY(EditAnywhere, Category = "Equip", meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<USkeletalMesh> SkeletalMeshAsset;  // ADUseItem¿ë
+	TObjectPtr<USkeletalMesh> SkeletalMeshAsset; 
 
 #pragma endregion
 

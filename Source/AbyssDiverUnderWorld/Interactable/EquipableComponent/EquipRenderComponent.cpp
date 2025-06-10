@@ -23,8 +23,8 @@ void UEquipRenderComponent::AttachItem(AActor* RawItem, FName SocketName)
 		return;
 	}
 	bool bIsSkeletal = EComp->IsSkeletal();
-	//bool bIsStatic = EComp->IsStatic();
-	if (!bIsSkeletal /*&& !bIsStatic*/)
+	bool bIsStatic = EComp->IsStatic();
+	if (!bIsSkeletal && !bIsStatic)
 	{
 		LOG(TEXT("%s: 메시 타입을 알 수 없음."), *GetNameSafe(RawItem));
 		return;

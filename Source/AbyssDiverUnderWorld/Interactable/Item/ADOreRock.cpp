@@ -61,11 +61,6 @@ void AADOreRock::M_CleanupToolAndEffects_Implementation(AUnderwaterCharacter* Un
 	UnderwaterCharacter->CleanupToolAndEffects();
 }
 
-void AADOreRock::M_SpawnAndAttachTool_Implementation(AUnderwaterCharacter* UnderwaterCharacter)
-{
-	UnderwaterCharacter->SpawnAndAttachTool(MiningToolClass);
-}
-
 void AADOreRock::Interact_Implementation(AActor* InstigatorActor)
 {
 	if (!HasAuthority()) return;
@@ -102,7 +97,6 @@ void AADOreRock::OnHoldStart_Implementation(APawn* InstigatorPawn)
 			}
 		}
 		Diver->SpawnAndAttachTool(MiningToolClass);
-		/*M_SpawnAndAttachTool(Diver);*/
 		PlayMiningAnim(InstigatorPawn);
 	}
 }

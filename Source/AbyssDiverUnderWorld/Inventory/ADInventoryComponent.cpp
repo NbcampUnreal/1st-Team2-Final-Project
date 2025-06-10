@@ -755,6 +755,10 @@ void UADInventoryComponent::Equip(FItemData& ItemData, int8 SlotIndex)
 	if (AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(Pawn))
 	{
 		LOGINVEN(Log, TEXT("Play Equip Montage!!"));
+		if (UnderwaterCharacter->SpawnedTool)
+		{
+			UnderwaterCharacter->CleanupToolAndEffects();
+		}
 		PlayEquipAnimation(UnderwaterCharacter, bIsWeapon);
 	}
 }

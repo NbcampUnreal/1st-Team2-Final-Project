@@ -176,11 +176,6 @@ public:
 
 	UFUNCTION()
 	void OnRep_CurrentTool();
-
-	/** 암반이 요청하면 Mining Tool을 스폰해 착용하는 함수 */
-	UFUNCTION(NetMulticast, Reliable)
-	void M_AttachTool(AActor* Item, FName Socket);
-	void M_AttachTool_Implementation(AActor* Item, FName Socket);
 	
 protected:
 

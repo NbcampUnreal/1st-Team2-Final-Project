@@ -1,12 +1,12 @@
-#include "Character/Laser/AnimNotifyState/AnimNotifyState_LaserBeam.h"
+Ôªø#include "Character/Laser/AnimNotifyState/AnimNotifyState_LaserBeam.h"
 #include "NiagaraComponent.h"
 #include "Character/UnderwaterCharacter.h"
 #include "NiagaraFunctionLibrary.h"
 
-TMap<USkeletalMeshComponent*, TWeakObjectPtr<UNiagaraComponent>> UAnimNotifyState_LaserBeam::BeamMap1P;
-TMap<USkeletalMeshComponent*, TWeakObjectPtr<UNiagaraComponent>> UAnimNotifyState_LaserBeam::BeamMap3P;
-TMap<USkeletalMeshComponent*, TWeakObjectPtr<UNiagaraComponent>> UAnimNotifyState_LaserBeam::HitMap1P;
-TMap<USkeletalMeshComponent*, TWeakObjectPtr<UNiagaraComponent>> UAnimNotifyState_LaserBeam::HitMap3P;
+TMap<TObjectPtr<USkeletalMeshComponent>, TWeakObjectPtr<UNiagaraComponent>> UAnimNotifyState_LaserBeam::BeamMap1P;
+TMap<TObjectPtr<USkeletalMeshComponent>, TWeakObjectPtr<UNiagaraComponent>> UAnimNotifyState_LaserBeam::BeamMap3P;
+TMap<TObjectPtr<USkeletalMeshComponent>, TWeakObjectPtr<UNiagaraComponent>> UAnimNotifyState_LaserBeam::HitMap1P;
+TMap<TObjectPtr<USkeletalMeshComponent>, TWeakObjectPtr<UNiagaraComponent>> UAnimNotifyState_LaserBeam::HitMap3P;
 
 void UAnimNotifyState_LaserBeam::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Anim, float TotalDuration, const FAnimNotifyEventReference& EventRef)
 {
@@ -29,7 +29,7 @@ void UAnimNotifyState_LaserBeam::NotifyBegin(USkeletalMeshComponent* MeshComp, U
     FRotator CamRot;
     if (IsFirstPersonMesh(MeshComp))
     {
-        // 1P: ƒ´∏ﬁ∂Û ∫‰ø°º≠ ∂Û¿Œ∆Æ∑π¿ÃΩ∫
+        // 1P: Ïπ¥Î©îÎùº Î∑∞ÏóêÏÑú ÎùºÏù∏Ìä∏Î†àÏù¥Ïä§
         AController* Controller = Owner->GetInstigatorController();
         if (!Controller)
             return;
@@ -37,7 +37,7 @@ void UAnimNotifyState_LaserBeam::NotifyBegin(USkeletalMeshComponent* MeshComp, U
     }
     else
     {
-        // 3P: BaseAimRotation + ∏ﬁΩ¨ º“ƒœ ¿ßƒ°
+        // 3P: BaseAimRotation + Î©îÏâ¨ ÏÜåÏºì ÏúÑÏπò
         CamRot = Diver->GetBaseAimRotation();
         CamLoc = MeshComp->GetSocketLocation(MuzzleSocket);
     }
@@ -59,8 +59,8 @@ void UAnimNotifyState_LaserBeam::NotifyBegin(USkeletalMeshComponent* MeshComp, U
 
     if (Beam)
     {
-        Beam->SetVariableVec3(BeamEndParam, TargetPoint);    // ≥°¡°
-        Beam->SetVariableFloat(DurationParam, TotalDuration); // ¡ˆº” Ω√∞£
+        Beam->SetVariableVec3(BeamEndParam, TargetPoint);    // ÎÅùÏ†ê
+        Beam->SetVariableFloat(DurationParam, TotalDuration); // ÏßÄÏÜç ÏãúÍ∞Ñ
     }
 
     UNiagaraComponent* HitEffect = nullptr;
@@ -86,8 +86,8 @@ void UAnimNotifyState_LaserBeam::NotifyBegin(USkeletalMeshComponent* MeshComp, U
 
 void UAnimNotifyState_LaserBeam::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Anim, const FAnimNotifyEventReference& EventRef)
 {
-    TMap<USkeletalMeshComponent*, TWeakObjectPtr<UNiagaraComponent>>& BeamMap = IsFirstPersonMesh(MeshComp) ? BeamMap1P : BeamMap3P;
-    TMap<USkeletalMeshComponent*, TWeakObjectPtr<UNiagaraComponent>>& HitMap = IsFirstPersonMesh(MeshComp) ? HitMap1P : HitMap3P;
+    TMap<TObjectPtr<USkeletalMeshComponent>, TWeakObjectPtr<UNiagaraComponent>>& BeamMap = IsFirstPersonMesh(MeshComp) ? BeamMap1P : BeamMap3P;
+    TMap<TObjectPtr<USkeletalMeshComponent>, TWeakObjectPtr<UNiagaraComponent>>& HitMap = IsFirstPersonMesh(MeshComp) ? HitMap1P : HitMap3P;
 
     if (TWeakObjectPtr<UNiagaraComponent>* BeamPtr = BeamMap.Find(MeshComp))
     {

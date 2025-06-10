@@ -1,8 +1,8 @@
-#include "Character/Laser/AnimNotifyState/AnimNotifyState_LaserSound.h"
+Ôªø#include "Character/Laser/AnimNotifyState/AnimNotifyState_LaserSound.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/AudioComponent.h"
 
-TMap<USkeletalMeshComponent*, TWeakObjectPtr<UAudioComponent>> UAnimNotifyState_LaserSound::SoundMap;
+TMap<TObjectPtr<USkeletalMeshComponent>, TWeakObjectPtr<UAudioComponent>> UAnimNotifyState_LaserSound::SoundMap;
 
 void UAnimNotifyState_LaserSound::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Anim, float TotalDuration, const FAnimNotifyEventReference& EventRef)
 {
@@ -21,7 +21,7 @@ void UAnimNotifyState_LaserSound::NotifyBegin(USkeletalMeshComponent* MeshComp, 
     UAudioComponent* AudioComp = UGameplayStatics::SpawnSoundAttached(
         LoopSoundCue,
         MeshComp,                    
-        NAME_None,                  // º“ƒœ¿Ã æ¯¿∏∏È NAME_None
+        NAME_None,                  // ÏÜåÏºìÏù¥ ÏóÜÏúºÎ©¥ NAME_None
         FVector::ZeroVector,
         EAttachLocation::KeepRelativeOffset,
         true                         // AutoDestroy
