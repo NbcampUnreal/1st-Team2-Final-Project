@@ -2,6 +2,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "Components/AudioComponent.h"
 
+TMap<USkeletalMeshComponent*, TWeakObjectPtr<UAudioComponent>> UAnimNotifyState_LaserSound::SoundMap;
+
 void UAnimNotifyState_LaserSound::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Anim, float TotalDuration, const FAnimNotifyEventReference& EventRef)
 {
     if (!MeshComp) return;
@@ -10,26 +12,32 @@ void UAnimNotifyState_LaserSound::NotifyBegin(USkeletalMeshComponent* MeshComp, 
 #if WITH_EDITOR
     if (!World || World->IsPreviewWorld()) return;
 #endif
-    AActor* Owner = MeshComp->GetOwner();
-    const FVector Loc = Owner ? Owner->GetActorLocation() : FVector::ZeroVector;
-
-    if (CachedAudio.IsValid() && CachedAudio->IsPlaying())
+    if (TWeakObjectPtr<UAudioComponent>* ExistingSound = SoundMap.Find(MeshComp))
     {
-        return;
+        if (ExistingSound->IsValid() && ExistingSound->Get()->IsPlaying())
+            return;
     }
-    UAudioComponent* AudioComp = UGameplayStatics::SpawnSoundAtLocation(
-        World, LoopSoundCue, Loc, FRotator::ZeroRotator,
-        1.f, 1.f, 0.f, nullptr, nullptr, true);
+    
+    UAudioComponent* AudioComp = UGameplayStatics::SpawnSoundAttached(
+        LoopSoundCue,
+        MeshComp,                    
+        NAME_None,                  // 소켓이 없으면 NAME_None
+        FVector::ZeroVector,
+        EAttachLocation::KeepRelativeOffset,
+        true                         // AutoDestroy
+    );
     if (AudioComp)
     {
-        CachedAudio = AudioComp;
+        SoundMap.Add(MeshComp, AudioComp);
     }
 }
 
 void UAnimNotifyState_LaserSound::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Anim, const FAnimNotifyEventReference& EventRef)
 {
-    if (CachedAudio.IsValid())
+    if (TWeakObjectPtr<UAudioComponent>* AudioPtr = SoundMap.Find(MeshComp))
     {
-        CachedAudio->FadeOut(0.15f, 0.f);
-    }   
+        if (AudioPtr->IsValid())
+            AudioPtr->Get()->FadeOut(0.15f, 0.f);
+        SoundMap.Remove(MeshComp);
+    }
 }

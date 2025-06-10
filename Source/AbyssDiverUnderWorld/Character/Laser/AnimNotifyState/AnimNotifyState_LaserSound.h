@@ -27,7 +27,7 @@ public:
 	TObjectPtr<USoundBase> LoopSoundCue;
 
 private:
-
+	static TMap<USkeletalMeshComponent*, TWeakObjectPtr<UAudioComponent>> SoundMap;
 
 #pragma endregion
 

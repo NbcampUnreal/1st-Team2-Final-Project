@@ -173,6 +173,14 @@ public:
 
 	/** 암반이 요청하면 Mining Tool을 스폰해 착용하는 함수 */
 	void SpawnAndAttachTool(TSubclassOf<AActor> ToolClass);
+
+	UFUNCTION()
+	void OnRep_CurrentTool();
+
+	/** 암반이 요청하면 Mining Tool을 스폰해 착용하는 함수 */
+	UFUNCTION(NetMulticast, Reliable)
+	void M_AttachTool(AActor* Item, FName Socket);
+	void M_AttachTool_Implementation(AActor* Item, FName Socket);
 	
 protected:
 
@@ -452,6 +460,18 @@ public:
 	/** 3인칭 메시 몽타주 시작 시 호출되는 델리게이트 */
 	FOnMontageStarted OnMesh3PMontageStartedDelegate;
 
+	UPROPERTY(VisibleAnywhere, Category = "Mining")
+	/** 현재 1p에 장착된 Tool 인스턴스 */
+	TObjectPtr<AActor> SpawnedTool;
+
+	TObjectPtr<USkeletalMeshComponent> CachedSkeletalMesh;
+
+	UPROPERTY(ReplicatedUsing = OnRep_CurrentTool)
+	AActor* CurrentTool = nullptr;
+
+	UPROPERTY()
+	AActor* PrevTool = nullptr;
+	
 	UPROPERTY(VisibleAnywhere, Category = "Mining")
 	/** 현재 1p에 장착된 Tool 인스턴스 */
 	TObjectPtr<AActor> SpawnedTool1P;
@@ -775,6 +795,10 @@ private:
 	/** 인벤토리 컴포넌트 캐시 */
 	UPROPERTY()
 	TObjectPtr<class UADInventoryComponent> CachedInventoryComponent;
+
+	/** 장착 아이템 렌더링을 위한 컴포넌트 */
+	UPROPERTY()
+	TObjectPtr<class UEquipRenderComponent> EquipRenderComp;
 
 	UPROPERTY(EditAnywhere, Category = "UI", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<class UHoldInteractionWidget> HoldWidgetClass;

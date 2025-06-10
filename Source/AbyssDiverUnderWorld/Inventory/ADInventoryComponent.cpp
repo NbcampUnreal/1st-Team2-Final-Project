@@ -764,11 +764,15 @@ void UADInventoryComponent::UnEquip()
 	// EquipComp의 장비 현재값 초기화
 	if (APlayerState* PS = Cast<APlayerState>(GetOwner()))
 	{
-		// GetPawn() returns the pawn possessed by this PlayerState
 		if (APawn* Pawn = PS->GetPawn())
 		{
-			// Now find your EquipUseComponent on the pawn
-			if (UEquipUseComponent* EquipComp = Pawn->FindComponentByClass<UEquipUseComponent>())
+			AUnderwaterCharacter* Diver = Cast<AUnderwaterCharacter>(Pawn);
+			if (!Diver)
+				return;
+
+			const float MontageStopSeconds = 1.0f;
+			Diver->M_StopAllMontagesOnBothMesh(MontageStopSeconds);
+			if (UEquipUseComponent* EquipComp = Diver->GetEquipUseComponent())
 			{
 				EquipComp->DeinitializeEquip();
 				InventoryList.MarkItemDirty(InventoryList.Items[FindItemIndexByName(CurrentEquipmentInstance->ItemData.Name)]);
@@ -780,6 +784,7 @@ void UADInventoryComponent::UnEquip()
 	if(CurrentEquipmentInstance)
 		CurrentEquipmentInstance->Destroy();
 	SetEquipInfo(INDEX_NONE, nullptr);
+
 }
 
 void UADInventoryComponent::DropItem(FItemData& ItemData)
@@ -787,11 +792,15 @@ void UADInventoryComponent::DropItem(FItemData& ItemData)
 	// EquipComp의 장비 현재값 초기화
 	if (APlayerState* PS = Cast<APlayerState>(GetOwner()))
 	{
-		// GetPawn() returns the pawn possessed by this PlayerState
 		if (APawn* Pawn = PS->GetPawn())
 		{
-			// Now find your EquipUseComponent on the pawn
-			if (UEquipUseComponent* EquipComp = Pawn->FindComponentByClass<UEquipUseComponent>())
+			AUnderwaterCharacter* Diver = Cast<AUnderwaterCharacter>(Pawn);
+			if (!Diver)
+				return;
+
+			const float MontageStopSeconds = 1.0f;
+			Diver->M_StopAllMontagesOnBothMesh(MontageStopSeconds);
+			if (UEquipUseComponent* EquipComp = Diver->GetEquipUseComponent())
 			{
 				EquipComp->DeinitializeEquip();
 			}

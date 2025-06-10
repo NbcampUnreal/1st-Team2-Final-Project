@@ -6,6 +6,7 @@
 
 class UNiagaraSystem;
 class UNiagaraComponent;
+class AUnderwaterCharacter;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API UAnimNotifyState_LaserBeam : public UAnimNotifyState
@@ -20,6 +21,9 @@ public:
 	virtual void  NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Anim, const FAnimNotifyEventReference& EventRef) override;
 	virtual void  NotifyTick(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Anim, float FrameDeltaTime, const FAnimNotifyEventReference& EventRef) override;
 
+private:
+	static bool IsVisibleMesh(const USkeletalMeshComponent* MeshComp);
+	static bool IsFirstPersonMesh(const USkeletalMeshComponent* MeshComp);
 #pragma endregion
 
 #pragma region Variable
@@ -47,7 +51,11 @@ public:
 	FName DurationParam = "LoopDuration";
 
 private:
-	TWeakObjectPtr<UNiagaraComponent> CachedSpawnedBeam;
-	TWeakObjectPtr<UNiagaraComponent> CachedHitEffect;
+	static TMap<USkeletalMeshComponent*, TWeakObjectPtr<UNiagaraComponent>> BeamMap1P;
+	static TMap<USkeletalMeshComponent*, TWeakObjectPtr<UNiagaraComponent>> BeamMap3P;
+	static TMap<USkeletalMeshComponent*, TWeakObjectPtr<UNiagaraComponent>> HitMap1P;
+	static TMap<USkeletalMeshComponent*, TWeakObjectPtr<UNiagaraComponent>> HitMap3P;
+
+	TObjectPtr<AUnderwaterCharacter> Diver;
 #pragma endregion
 };
