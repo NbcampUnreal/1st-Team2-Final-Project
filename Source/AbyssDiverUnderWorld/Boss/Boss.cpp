@@ -2,6 +2,7 @@
 #include "AbyssDiverUnderWorld.h"
 #include "EngineUtils.h"
 #include "EnhancedBossAIController.h"
+#include "NavigationPath.h"
 #include "Enum/EBossPhysicsType.h"
 #include "Enum/EBossState.h"
 #include "BehaviorTree/BlackboardComponent.h"
@@ -388,21 +389,55 @@ void ABoss::PerformNormalMovement(const float& InDeltaTime)
 
 void ABoss::PerformChasing(const float& InDeltaTime)
 {
-	// @TODO: TargetPlayer가 IsValid 하지 않으면 일반 상태로 전환 로직 필요
 	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(EnhancedAIController->GetBlackboardComponent()->GetValueAsObject("TargetPlayer"));
 	if (!IsValid(Player)) return;
 
 	const FVector CurrentLocation = GetActorLocation();
 	const FVector PlayerLocation = Player->GetActorLocation();
-	const FVector ToPlayer = (PlayerLocation - CurrentLocation).GetSafeNormal();
+
+	// NavMesh를 사용한 경로 탐색
+	UNavigationSystemV1* NavSystem = UNavigationSystemV1::GetCurrent(GetWorld());
+	if (!IsValid(NavSystem)) return;
+
+	// 경로 찾기
+	UNavigationPath* NavPath = NavSystem->FindPathToLocationSynchronously(
+		GetWorld(),
+		CurrentLocation,
+		PlayerLocation,
+		this,
+		TSubclassOf<UNavigationQueryFilter>()
+	);
+
+	FVector TargetDirection;
+
+	if (IsValid(NavPath) && NavPath->PathPoints.Num() > 1)
+	{
+		// 경로가 존재하는 경우, 다음 경로점으로 방향 설정
+		// PathPoints[0]은 현재 위치, PathPoints[1]이 다음 목표점
+		const FVector NextPathPoint = NavPath->PathPoints[1];
+		TargetDirection = (NextPathPoint - CurrentLocation).GetSafeNormal();
     
-	// 플레이어 방향으로 회전
+		// 경로점에 충분히 가까워졌다면 그 다음 점을 타겟으로 설정
+		const float DistanceToNextPoint = FVector::Dist(CurrentLocation, NextPathPoint);
+		if (DistanceToNextPoint < 100.0f && NavPath->PathPoints.Num() > 2)
+	    {
+	        const FVector SecondNextPoint = NavPath->PathPoints[2];
+	        TargetDirection = (SecondNextPoint - CurrentLocation).GetSafeNormal();
+	    }
+	}
+	else
+	{
+	    // 경로가 없는 경우 직접 플레이어 방향으로 (기존 로직)
+	    TargetDirection = (PlayerLocation - CurrentLocation).GetSafeNormal();
+	}
+
+	// 타겟 방향으로 회전
 	const FRotator CurrentRotation = GetActorRotation();
-	const FRotator TargetRotation = ToPlayer.Rotation();
+	const FRotator TargetRotation = TargetDirection.Rotation();
 	const FRotator NewRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, InDeltaTime, RotationInterpSpeed * ChasingRotationSpeedMultiplier);
 	SetActorRotation(NewRotation);
-    
-	// 플레이어 방향으로 이동
+
+	// 전방벡터로 이동 (기존 로직 유지)
 	const float AdjustedMoveSpeed = StatComponent->MoveSpeed * ChasingMovementSpeedMultiplier;
 	CurrentMoveSpeed = FMath::FInterpTo(CurrentMoveSpeed, AdjustedMoveSpeed, InDeltaTime, MovementInterpSpeed);
 	const FVector NewLocation = CurrentLocation + GetActorForwardVector() * CurrentMoveSpeed * InDeltaTime;
@@ -420,6 +455,13 @@ void ABoss::StartTurn()
     const FVector Forward = GetActorForwardVector();
     
     TArray<FVector> PossibleDirections = {
+    	
+    	// 대각선 방향들
+    	Forward.RotateAngleAxis(45.0f, Up).RotateAngleAxis(30.0f, Right),
+		Forward.RotateAngleAxis(-45.0f, Up).RotateAngleAxis(30.0f, Right),
+		Forward.RotateAngleAxis(45.0f, Up).RotateAngleAxis(-30.0f, Right),
+		Forward.RotateAngleAxis(-45.0f, Up).RotateAngleAxis(-30.0f, Right),
+    	
         // 수평 방향들
         Forward.RotateAngleAxis(30.0f, Up),
         Forward.RotateAngleAxis(-30.0f, Up),
@@ -431,12 +473,6 @@ void ABoss::StartTurn()
         // 수직 방향들
         Forward.RotateAngleAxis(45.0f, Right),
         Forward.RotateAngleAxis(-45.0f, Right),
-        
-        // 대각선 방향들
-        Forward.RotateAngleAxis(45.0f, Up).RotateAngleAxis(30.0f, Right),
-        Forward.RotateAngleAxis(-45.0f, Up).RotateAngleAxis(30.0f, Right),
-        Forward.RotateAngleAxis(45.0f, Up).RotateAngleAxis(-30.0f, Right),
-        Forward.RotateAngleAxis(-45.0f, Up).RotateAngleAxis(-30.0f, Right),
 
     	// 후방 수평 방향들
     	Forward.RotateAngleAxis(120.0f, Up),
@@ -459,7 +495,7 @@ void ABoss::StartTurn()
     for (const FVector& Direction : PossibleDirections)
     {
     	const FVector Start = GetActorLocation();
-    	const FVector End = Start + Direction * TraceDistance;
+    	const FVector End = Start + Direction * TurnTraceDistance;
         
     	FHitResult HitResult;
     	bool bHit = GetWorld()->LineTraceSingleByChannel(
@@ -569,8 +605,12 @@ void ABoss::PerformTurn(const float& InDeltaTime)
 	{
 		EnhancedAIController->GetBlackboardComponent()->SetValueAsBool("bIsTurning", false);
 		TurnTimer = 0.0f;
-        
-		SetNewTargetLocation();
+
+		const bool bIsChasingBlood = EnhancedAIController->GetBlackboardComponent()->GetValueAsBool("bIsChasingBlood");
+		if (!bIsChasingBlood)
+		{
+			SetNewTargetLocation();	
+		}
         
 		LOG(TEXT("Turn completed, setting new target"));
 	}
