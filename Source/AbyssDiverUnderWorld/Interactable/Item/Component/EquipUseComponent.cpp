@@ -57,12 +57,12 @@ UEquipUseComponent::UEquipUseComponent()
 		DefaultSpeed = Char->GetCharacterMovement()->MaxSwimSpeed;
 	}
 
-	static ConstructorHelpers::FClassFinder<UADNightVisionGoggle> NVClassFinder(TEXT("/Game/_AbyssDiver/Blueprints/UI/EquipUI/WBP_NightVisionGoggle"));
+	static ConstructorHelpers::FClassFinder<UADNightVisionGoggle> NVClassFinder(TEXT("/Game/_AbyssDiver/Blueprints/UI/ItemUI/WBP_NightVisionGoggle"));
 	if (NVClassFinder.Succeeded())
 	{
 		NightVisionClass = NVClassFinder.Class;
 	}
-	static ConstructorHelpers::FClassFinder<UChargeBatteryWidget> BatteryClassFinder(TEXT("/Game/_AbyssDiver/Blueprints/UI/EquipUI/WBP_ChargeBattery"));
+	static ConstructorHelpers::FClassFinder<UChargeBatteryWidget> BatteryClassFinder(TEXT("/Game/_AbyssDiver/Blueprints/UI/ItemUI/WBP_ChargeBattery"));
 	if (BatteryClassFinder.Succeeded())
 	{
 		ChargeBatteryClass = BatteryClassFinder.Class;
