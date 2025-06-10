@@ -803,18 +803,15 @@ void UADInventoryComponent::DropItem(FItemData& ItemData)
 
 	if (CurrentEquipmentInstance && ItemData.Name == CurrentEquipmentInstance->ItemData.Name)
 	{
-		if (APawn* Pawn = PS->GetPawn())
-		{
-			AUnderwaterCharacter* Diver = Cast<AUnderwaterCharacter>(Pawn);
-			if (!Diver)
-				return;
+		AUnderwaterCharacter* Diver = Cast<AUnderwaterCharacter>(Pawn);
+		if (!Diver)
+			return;
 
-			const float MontageStopSeconds = 1.0f;
-			Diver->M_StopAllMontagesOnBothMesh(MontageStopSeconds);
-			if (UEquipUseComponent* EquipComp = Diver->GetEquipUseComponent())
-			{
-				EquipComp->DeinitializeEquip();
-			}
+		const float MontageStopSeconds = 1.0f;
+		Diver->M_StopAllMontagesOnBothMesh(MontageStopSeconds);
+		if (UEquipUseComponent* EquipComp = Diver->GetEquipUseComponent())
+		{
+			EquipComp->DeinitializeEquip();
 		}
 	}
 	FVector DropLocation = GetDropLocation();
