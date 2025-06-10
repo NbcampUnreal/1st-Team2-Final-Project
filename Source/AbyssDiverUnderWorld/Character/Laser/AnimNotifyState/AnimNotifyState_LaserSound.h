@@ -20,14 +20,12 @@ public:
 
 #pragma region Variable
 public:
-	UPROPERTY()
-	TWeakObjectPtr<UAudioComponent> CachedAudio;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Laser|Sound")
 	TObjectPtr<USoundBase> LoopSoundCue;
 
 private:
-
+	static TMap<TObjectPtr<USkeletalMeshComponent>, TWeakObjectPtr<UAudioComponent>> SoundMap;
 
 #pragma endregion
 

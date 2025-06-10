@@ -30,7 +30,7 @@ private:
 
 protected:
 
-	UPROPERTY(VisibleAnywhere, Category = "TriggerSettings")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TriggerSettings")
 	TObjectPtr<class UBoxComponent> CollisionBox;
 
 	UPROPERTY(VisibleAnywhere, Category = "TriggerSettings")

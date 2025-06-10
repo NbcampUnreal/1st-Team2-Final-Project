@@ -240,6 +240,12 @@ public:
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Stat")
 	float TraceDistance = 800.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Stat")
+	float TurnTraceDistance = 600.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Stat")
+	float FourDirectionTraceDistance = 300.0f;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	float MinTargetDistance = 100.0f;
@@ -280,6 +286,9 @@ protected:
 	UPROPERTY(BlueprintReadWrite)
 	float CurrentMoveSpeed = 0.0f;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	uint8 bDrawDebugLine : 1 = false;
+
 	UPROPERTY()
 	FVector DamagedLocation;
 
@@ -296,7 +305,6 @@ private:
 	uint8 bIsAttackCollisionOverlappedPlayer : 1;
 	float TurnTimer = 0.0f;
 	float OriginDeceleration;
-	const float FourDirectionTraceDistance = 200.0f;
 	FVector TargetLocation;
 	FVector CachedSpawnLocation;
 	FVector TurnDirection;

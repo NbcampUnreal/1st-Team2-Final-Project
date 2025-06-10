@@ -6,6 +6,8 @@
 #include "Interactable/Item/ADItemBase.h"
 #include "ADUseItem.generated.h"
 
+class UEquipableComponent;
+
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADUseItem : public AADItemBase
 {
@@ -36,6 +38,14 @@ public:
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TObjectPtr<USkeletalMeshComponent> SkeletalMesh;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Equip")
+	TObjectPtr<UEquipableComponent> EquipableComp;
+	
 
 #pragma endregion	
+#pragma region Getter, Setter
+public:
+	UEquipableComponent* GetEquipableComponent() { return EquipableComp; }
+
+#pragma endregion
 };

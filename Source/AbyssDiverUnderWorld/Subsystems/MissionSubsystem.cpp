@@ -15,7 +15,7 @@
 void UMissionSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
-	LOGV(Log, TEXT("???????????????"));
+
 	UADGameInstance* GI = Cast<UADGameInstance>(GetGameInstance());
 	if (ensureMsgf(GI, TEXT("GameInstance가 유효하지 않음, ADGameInstance를 상속받은 것인지 확인 바람.")) == false)
 	{
@@ -138,131 +138,131 @@ void UMissionSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	}
 }
 
-void UMissionSubsystem::AddToSelectedMissions(const EAggroTriggerMission& Mission)
-{
-	if (AddToSelectedMissionFromIndex(EMissionType::AggroTrigger, (uint8)Mission) == false)
-	{
-		return;
-	}
-
-	const FAggroTriggerMissionRow* Data = GetAggroTriggerMissionData(Mission);
-	SelecedMissionNames.Add(Data->MissionName);
-}
-
-void UMissionSubsystem::AddToSelectedMissions(const EInteractionMission& Mission)
-{
-	if (AddToSelectedMissionFromIndex(EMissionType::Interaction, (uint8)Mission) == false) 
-	{
-		return;
-	}
-
-	const FInteractionMissionRow* Data = GetInteractionMissionData(Mission);
-	SelecedMissionNames.Add(Data->MissionName);
-}
-
-void UMissionSubsystem::AddToSelectedMissions(const EItemCollectMission& Mission)
-{
-	if(AddToSelectedMissionFromIndex(EMissionType::ItemCollection, (uint8)Mission) == false)
-	{
-		return;
-	}
-
-	const FItemCollectMissionRow* Data = GetItemCollectMissionData(Mission);
-	SelecedMissionNames.Add(Data->MissionName);
-}
-
-void UMissionSubsystem::AddToSelectedMissions(const EItemUseMission& Mission)
-{
-	if(AddToSelectedMissionFromIndex(EMissionType::ItemUse, (uint8)Mission) == false)
-	{
-		return;
-	}
-
-	const FItemUseMissionRow* Data = GetItemUseMissionData(Mission);
-	SelecedMissionNames.Add(Data->MissionName);
-}
-
-void UMissionSubsystem::AddToSelectedMissions(const EKillMonsterMission& Mission)
-{
-	if(AddToSelectedMissionFromIndex(EMissionType::KillMonster, (uint8)Mission) == false)
-	{
-		return;
-	}
-
-	const FKillMonsterMissionRow* Data = GetKillMonsterMissionData(Mission);
-	SelecedMissionNames.Add(Data->MissionName);
-}
-
-bool UMissionSubsystem::AddToSelectedMissionFromIndex(const EMissionType& MissionType, const uint8& MissionIndex)
-{
-	if (SelectedMissions.Num() <= (int32)MissionType)
-	{
-		LOGV(Error, TEXT("Invalid MissionType : %d"), MissionType);
-		return false;
-	}
-	if (IsAlreadySelected(MissionType, MissionIndex))
-	{
-		return false;
-	}
-
-	SelectedMissions[MissionType].Add(MissionIndex);
-	return true;
-}
-
-void UMissionSubsystem::RemoveFromSelectedMissions(const EAggroTriggerMission& Mission)
-{
-	if(RemoveFromSelectedMissionsInternal(EMissionType::AggroTrigger, (uint8)Mission) == false)
-	{
-		return;
-	}
-
-	const FString& MissionName = AggroTriggerMissionDataArray[int32(Mission)]->MissionName;
-	SelecedMissionNames.Remove(MissionName);
-}
-
-void UMissionSubsystem::RemoveFromSelectedMissions(const EInteractionMission& Mission)
-{
-	if(RemoveFromSelectedMissionsInternal(EMissionType::Interaction, (uint8)Mission) == false)
-	{
-		return;
-	}
-
-	const FString& MissionName = InteractionMissionDataArray[int32(Mission)]->MissionName;
-	SelecedMissionNames.Remove(MissionName);
-}
-
-void UMissionSubsystem::RemoveFromSelectedMissions(const EItemCollectMission& Mission)
-{
-	if(RemoveFromSelectedMissionsInternal(EMissionType::ItemCollection, (uint8)Mission) == false)
-	{
-		return;
-	}
-
-	const FString& MissionName = ItemCollectMissionDataArray[int32(Mission)]->MissionName;
-	SelecedMissionNames.Remove(MissionName);
-}
-
-void UMissionSubsystem::RemoveFromSelectedMissions(const EItemUseMission& Mission)
-{
-	if(RemoveFromSelectedMissionsInternal(EMissionType::ItemUse, (uint8)Mission) == false)
-	{
-		return;
-	}
-
-	const FString& MissionName = ItemUseMissionDataArray[int32(Mission)]->MissionName;
-	SelecedMissionNames.Remove(MissionName);
-}
-
-void UMissionSubsystem::RemoveFromSelectedMissions(const EKillMonsterMission& Mission)
-{
-	if(RemoveFromSelectedMissionsInternal(EMissionType::KillMonster, (uint8)Mission) == false)
-	{
-		return;
-	}
-
-	const FString& MissionName = KillMonsterMissionDataArray[int32(Mission)]->MissionName;
-	SelecedMissionNames.Remove(MissionName);
-}
+//void UMissionSubsystem::AddToSelectedMissions(const EAggroTriggerMission& Mission)
+//{
+//	if (AddToSelectedMissionFromIndex(EMissionType::AggroTrigger, (uint8)Mission) == false)
+//	{
+//		return;
+//	}
+//
+//	const FAggroTriggerMissionRow* Data = GetAggroTriggerMissionData(Mission);
+//	SelecedMissionNames.Add(Data->MissionName);
+//}
+//
+//void UMissionSubsystem::AddToSelectedMissions(const EInteractionMission& Mission)
+//{
+//	if (AddToSelectedMissionFromIndex(EMissionType::Interaction, (uint8)Mission) == false) 
+//	{
+//		return;
+//	}
+//
+//	const FInteractionMissionRow* Data = GetInteractionMissionData(Mission);
+//	SelecedMissionNames.Add(Data->MissionName);
+//}
+//
+//void UMissionSubsystem::AddToSelectedMissions(const EItemCollectMission& Mission)
+//{
+//	if(AddToSelectedMissionFromIndex(EMissionType::ItemCollection, (uint8)Mission) == false)
+//	{
+//		return;
+//	}
+//
+//	const FItemCollectMissionRow* Data = GetItemCollectMissionData(Mission);
+//	SelecedMissionNames.Add(Data->MissionName);
+//}
+//
+//void UMissionSubsystem::AddToSelectedMissions(const EItemUseMission& Mission)
+//{
+//	if(AddToSelectedMissionFromIndex(EMissionType::ItemUse, (uint8)Mission) == false)
+//	{
+//		return;
+//	}
+//
+//	const FItemUseMissionRow* Data = GetItemUseMissionData(Mission);
+//	SelecedMissionNames.Add(Data->MissionName);
+//}
+//
+//void UMissionSubsystem::AddToSelectedMissions(const EKillMonsterMission& Mission)
+//{
+//	if(AddToSelectedMissionFromIndex(EMissionType::KillMonster, (uint8)Mission) == false)
+//	{
+//		return;
+//	}
+//
+//	const FKillMonsterMissionRow* Data = GetKillMonsterMissionData(Mission);
+//	SelecedMissionNames.Add(Data->MissionName);
+//}
+//
+//bool UMissionSubsystem::AddToSelectedMissionFromIndex(const EMissionType& MissionType, const uint8& MissionIndex)
+//{
+//	if (SelectedMissions.Num() <= (int32)MissionType)
+//	{
+//		LOGV(Error, TEXT("Invalid MissionType : %d"), MissionType);
+//		return false;
+//	}
+//	if (IsAlreadySelected(MissionType, MissionIndex))
+//	{
+//		return false;
+//	}
+//
+//	SelectedMissions[MissionType].Add(MissionIndex);
+//	return true;
+//}
+//
+//void UMissionSubsystem::RemoveFromSelectedMissions(const EAggroTriggerMission& Mission)
+//{
+//	if(RemoveFromSelectedMissionsInternal(EMissionType::AggroTrigger, (uint8)Mission) == false)
+//	{
+//		return;
+//	}
+//
+//	const FString& MissionName = AggroTriggerMissionDataArray[int32(Mission)]->MissionName;
+//	SelecedMissionNames.Remove(MissionName);
+//}
+//
+//void UMissionSubsystem::RemoveFromSelectedMissions(const EInteractionMission& Mission)
+//{
+//	if(RemoveFromSelectedMissionsInternal(EMissionType::Interaction, (uint8)Mission) == false)
+//	{
+//		return;
+//	}
+//
+//	const FString& MissionName = InteractionMissionDataArray[int32(Mission)]->MissionName;
+//	SelecedMissionNames.Remove(MissionName);
+//}
+//
+//void UMissionSubsystem::RemoveFromSelectedMissions(const EItemCollectMission& Mission)
+//{
+//	if(RemoveFromSelectedMissionsInternal(EMissionType::ItemCollection, (uint8)Mission) == false)
+//	{
+//		return;
+//	}
+//
+//	const FString& MissionName = ItemCollectMissionDataArray[int32(Mission)]->MissionName;
+//	SelecedMissionNames.Remove(MissionName);
+//}
+//
+//void UMissionSubsystem::RemoveFromSelectedMissions(const EItemUseMission& Mission)
+//{
+//	if(RemoveFromSelectedMissionsInternal(EMissionType::ItemUse, (uint8)Mission) == false)
+//	{
+//		return;
+//	}
+//
+//	const FString& MissionName = ItemUseMissionDataArray[int32(Mission)]->MissionName;
+//	SelecedMissionNames.Remove(MissionName);
+//}
+//
+//void UMissionSubsystem::RemoveFromSelectedMissions(const EKillMonsterMission& Mission)
+//{
+//	if(RemoveFromSelectedMissionsInternal(EMissionType::KillMonster, (uint8)Mission) == false)
+//	{
+//		return;
+//	}
+//
+//	const FString& MissionName = KillMonsterMissionDataArray[int32(Mission)]->MissionName;
+//	SelecedMissionNames.Remove(MissionName);
+//}
 
 void UMissionSubsystem::UnlockMission(const EAggroTriggerMission& Mission)
 {
@@ -289,10 +289,10 @@ void UMissionSubsystem::UnlockMission(const EKillMonsterMission& Mission)
 	UnlockMissionInternal((FMissionBaseRow*)KillMonsterMissionDataArray[int32(Mission)]);
 }
 
-void UMissionSubsystem::ClearSelectedMissions(const int32& SlackCount)
-{
-	SelectedMissions.Empty(SlackCount);
-}
+//void UMissionSubsystem::ClearSelectedMissions(const int32& SlackCount)
+//{
+//	SelectedMissions.Empty(SlackCount);
+//}
 
 void UMissionSubsystem::ReceiveMissionDataFromUIData(const TArray<FMissionData>& MissionsFromUI)
 {
@@ -323,7 +323,8 @@ void UMissionSubsystem::ReceiveMissionDataFromUIData(const TArray<FMissionData>&
 				AggroMissionData->ConditionType,
 				AggroMissionData->MissionName,
 				AggroMissionData->MissionDescription,
-				AggroMissionData->ExtraValues
+				AggroMissionData->ExtraValues,
+				AggroMissionData->bShouldCompleteInstantly
 			);
 
 			NewAggroMission->InitMission(AggroMissionParams, (EAggroTriggerMission)MissionIndex);
@@ -342,6 +343,7 @@ void UMissionSubsystem::ReceiveMissionDataFromUIData(const TArray<FMissionData>&
 				KillMissionData->MissionName,
 				KillMissionData->MissionDescription,
 				KillMissionData->ExtraValues,
+				KillMissionData->bShouldCompleteInstantly,
 				KillMissionData->UnitId
 			);
 
@@ -360,7 +362,8 @@ void UMissionSubsystem::ReceiveMissionDataFromUIData(const TArray<FMissionData>&
 				InteractionMissionData->ConditionType,
 				InteractionMissionData->MissionName,
 				InteractionMissionData->MissionDescription,
-				InteractionMissionData->ExtraValues
+				InteractionMissionData->ExtraValues,
+				InteractionMissionData->bShouldCompleteInstantly
 			);
 
 			NewInteractionMission->InitMission(InteractionMissionParams, EInteractionMission(MissionIndex));
@@ -378,7 +381,8 @@ void UMissionSubsystem::ReceiveMissionDataFromUIData(const TArray<FMissionData>&
 				ItemCollectionMissionData->ConditionType,
 				ItemCollectionMissionData->MissionName,
 				ItemCollectionMissionData->MissionDescription,
-				ItemCollectionMissionData->ExtraValues
+				ItemCollectionMissionData->ExtraValues,
+				ItemCollectionMissionData->bShouldCompleteInstantly
 			);
 
 			NewItemCollectionMission->InitMission(ItemCollectionMissionParams, EItemCollectMission(MissionIndex));
@@ -396,7 +400,8 @@ void UMissionSubsystem::ReceiveMissionDataFromUIData(const TArray<FMissionData>&
 				ItemUseMissionData->ConditionType,
 				ItemUseMissionData->MissionName,
 				ItemUseMissionData->MissionDescription,
-				ItemUseMissionData->ExtraValues
+				ItemUseMissionData->ExtraValues,
+				(bool)ItemUseMissionData->bShouldCompleteInstantly
 			};
 
 			NewItemUseMission->InitMission(ItemUseMissionParams, EItemUseMission(MissionIndex));
@@ -444,37 +449,37 @@ void UMissionSubsystem::MakeAndAddMissionDataForUI(const FMissionBaseRow* Missio
 	MissionDataForUI.Add(NewData);
 }
 
-bool UMissionSubsystem::RemoveFromSelectedMissionsInternal(const EMissionType& MissionType, const uint8& MissionIndex)
-{
-	if (SelectedMissions.Num() <= (int32)MissionType)
-	{
-		LOGV(Error, TEXT("Invalid MissionType : %d"), MissionType);
-		return false;
-	}
+//bool UMissionSubsystem::RemoveFromSelectedMissionsInternal(const EMissionType& MissionType, const uint8& MissionIndex)
+//{
+//	if (SelectedMissions.Num() <= (int32)MissionType)
+//	{
+//		LOGV(Error, TEXT("Invalid MissionType : %d"), MissionType);
+//		return false;
+//	}
+//
+//	if (IsAlreadySelected(MissionType, MissionIndex) == false)
+//	{
+//		return false;
+//	}
+//
+//	SelectedMissions[MissionType].Remove(MissionIndex);
+//	return true;
+//}
 
-	if (IsAlreadySelected(MissionType, MissionIndex) == false)
-	{
-		return false;
-	}
-
-	SelectedMissions[MissionType].Remove(MissionIndex);
-	return true;
-}
-
-bool UMissionSubsystem::IsAlreadySelected(const EMissionType& MissionType, const uint8& MissionIndex) const
-{
-	if (SelectedMissions.Contains(MissionType) == false)
-	{
-		return false;
-	}
-
-	if (SelectedMissions[MissionType].Contains(MissionIndex) == false)
-	{
-		return false;
-	}
-
-	return true;
-}
+//bool UMissionSubsystem::IsAlreadySelected(const EMissionType& MissionType, const uint8& MissionIndex) const
+//{
+//	if (SelectedMissions.Contains(MissionType) == false)
+//	{
+//		return false;
+//	}
+//
+//	if (SelectedMissions[MissionType].Contains(MissionIndex) == false)
+//	{
+//		return false;
+//	}
+//
+//	return true;
+//}
 
 bool UMissionSubsystem::IsServer() const
 {
@@ -507,14 +512,25 @@ bool UMissionSubsystem::CheckIfGameStateIsValid()
 void UMissionSubsystem::OnMissionComplete(const EMissionType& InMissionType, const uint8& InMissionIndex)
 {
 	// 완료시... 이벤트
+	const FMissionBaseRow* MissionData = GetMissionData(InMissionType, InMissionIndex);
+	if (MissionData->bShouldCompleteInstantly)
+	{
+		LOGV(Warning, TEXT("MissionComplete Instantly, Type : %d, MissionIndex : %d"), InMissionType, InMissionIndex);
+
+	}
+	else
+	{
+		LOGV(Warning, TEXT("Mission Condidion Met, Type : %d, MissionIndex : %d"), InMissionType, InMissionIndex);
+	}
+
 }
 
-const TSet<FString>& UMissionSubsystem::GetAllSelectedMissionNames() const
-{
-	return SelecedMissionNames;
-}
+//const TSet<FString>& UMissionSubsystem::GetAllSelectedMissionNames() const
+//{
+//	return SelecedMissionNames;
+//}
 
-const TSet<FMissionData>& UMissionSubsystem::GetMissionDataForUI() const
+const TArray<FMissionData>& UMissionSubsystem::GetMissionDataForUI() const
 {
 	return MissionDataForUI;
 }
@@ -577,4 +593,33 @@ const FKillMonsterMissionRow* UMissionSubsystem::GetKillMonsterMissionData(const
 	}
 
 	return KillMonsterMissionDataArray[int32(Mission)];
+}
+
+const FMissionBaseRow* UMissionSubsystem::GetMissionData(const EMissionType& InMissionType, const uint8& InMissionIndex) const
+{
+	FMissionBaseRow* Data = nullptr;
+
+	switch (InMissionType)
+	{
+	case EMissionType::AggroTrigger:
+		Data = (FMissionBaseRow*)GetAggroTriggerMissionData(EAggroTriggerMission(InMissionIndex));
+		break;
+	case EMissionType::Interaction:
+		Data = (FMissionBaseRow*)GetInteractionMissionData(EInteractionMission(InMissionIndex));
+		break;
+	case EMissionType::ItemCollection:
+		Data = (FMissionBaseRow*)GetItemCollectMissionData(EItemCollectMission(InMissionIndex));
+		break;
+	case EMissionType::ItemUse:
+		Data = (FMissionBaseRow*)GetItemUseMissionData(EItemUseMission(InMissionIndex));
+		break;
+	case EMissionType::KillMonster:
+		Data = (FMissionBaseRow*)GetKillMonsterMissionData(EKillMonsterMission(InMissionIndex));
+		break;
+	default:
+		check(false);
+		return nullptr;
+	}
+
+	return Data;
 }

@@ -1,14 +1,11 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
-
-
-#include "UnitBase.h"
+﻿#include "UnitBase.h"
 
 #include "StatComponent.h"
 #include "Interactable/OtherActors/Radars/RadarReturnComponent.h"
+#include "Subsystems/MissionSubsystem.h"
 
 AUnitBase::AUnitBase()
 {
-	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
 	bReplicates = true;
 
@@ -21,6 +18,27 @@ AUnitBase::AUnitBase()
 void AUnitBase::BeginPlay()
 {
 	Super::BeginPlay();
+
+	GetGameInstance()->GetSubsystem<UMissionSubsystem>()->RequestBinding(this);
+}
+
+void AUnitBase::Destroyed()
+{
+#if WITH_EDITOR
+
+	// 게임 중이 아닌 경우 리턴(블루프린트 상일 경우)
+	// PostInitializeComponents는 블루프린트에서도 발동함
+	UWorld* World = GetWorld();
+	if (World == nullptr || World->IsGameWorld() == false)
+	{
+		return;
+	}
+
+#endif
+
+	GetGameInstance()->GetSubsystem<UMissionSubsystem>()->RequestUnbinding(this);
+
+	Super::Destroyed();
 }
 
 float AUnitBase::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent,
