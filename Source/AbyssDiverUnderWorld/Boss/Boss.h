@@ -286,6 +286,9 @@ protected:
 	UPROPERTY(BlueprintReadWrite)
 	float CurrentMoveSpeed = 0.0f;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	uint8 bDrawDebugLine : 1 = false;
+
 	UPROPERTY()
 	FVector DamagedLocation;
 

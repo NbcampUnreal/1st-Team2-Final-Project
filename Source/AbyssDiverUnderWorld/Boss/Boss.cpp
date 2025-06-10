@@ -187,8 +187,11 @@ void ABoss::SetNewTargetLocation()
                    FVector::Dist(CurrentLocation, TargetLocation));
 
 #if WITH_EDITOR
-            DrawDebugSphere(GetWorld(), TargetLocation, 50.0f, 12, FColor::Yellow, false, 3.0f, 0, 5.0f);
-            DrawDebugLine(GetWorld(), CurrentLocation, TargetLocation, FColor::Yellow, false, 3.0f, 0, 3.0f);
+        	if (bDrawDebugLine)
+        	{
+        		DrawDebugSphere(GetWorld(), TargetLocation, 50.0f, 12, FColor::Yellow, false, 3.0f, 0, 5.0f);
+        		DrawDebugLine(GetWorld(), CurrentLocation, TargetLocation, FColor::Yellow, false, 3.0f, 0, 3.0f);
+        	}
 #endif
             
             return;
@@ -209,8 +212,12 @@ void ABoss::SetNewTargetLocation()
         
 #if WITH_EDITOR
         // 디버그용 목표점 표시
-        DrawDebugSphere(GetWorld(), TargetLocation, 50.0f, 12, FColor::Cyan, false, 3.0f, 0, 5.0f);
-        DrawDebugLine(GetWorld(), CurrentLocation, TargetLocation, FColor::Cyan, false, 3.0f, 0, 3.0f);
+    	if (bDrawDebugLine)
+    	{
+    		DrawDebugSphere(GetWorld(), TargetLocation, 50.0f, 12, FColor::Cyan, false, 3.0f, 0, 5.0f);
+    		DrawDebugLine(GetWorld(), CurrentLocation, TargetLocation, FColor::Cyan, false, 3.0f, 0, 3.0f);	
+    	}
+
 #endif
         
         return;
@@ -234,7 +241,10 @@ void ABoss::SetNewTargetLocation()
     LOG(TEXT("Fallback target set: %s"), *TargetLocation.ToString());
 
 #if WITH_EDITOR
-    DrawDebugSphere(GetWorld(), TargetLocation, 50.0f, 12, FColor::Red, false, 3.0f, 0, 5.0f);
+	if (bDrawDebugLine)
+	{
+		DrawDebugSphere(GetWorld(), TargetLocation, 50.0f, 12, FColor::Red, false, 3.0f, 0, 5.0f);
+	}
 #endif
 }
 
@@ -276,7 +286,10 @@ void ABoss::SmoothMoveAlongSurface(const float& InDeltaTime)
             }
         }
 #if WITH_EDITOR
-        DrawDebugLine(GetWorld(), Start, End, FColor::Blue, false, 0.1f, 0, 2.0f);
+    	if (bDrawDebugLine)
+    	{
+    		DrawDebugLine(GetWorld(), Start, End, FColor::Blue, false, 0.1f, 0, 2.0f);
+    	}
 #endif
     }
 
@@ -512,7 +525,10 @@ void ABoss::StartTurn()
     	}
 #if WITH_EDITOR
     	// 디버그 라인 표시 (더 오래 표시)
-    	DrawDebugLine(GetWorld(), Start, End, bHit ? FColor::Red : FColor::Green, false, 5.0f, 0, 5.0f);
+    	if (bDrawDebugLine)
+    	{
+    		DrawDebugLine(GetWorld(), Start, End, bHit ? FColor::Red : FColor::Green, false, 5.0f, 0, 5.0f);
+    	}
 #endif
     	if (!bHit)
     	{
@@ -652,8 +668,11 @@ bool ABoss::HasObstacleAhead()
 	{
 		DebugColor = FColor::Purple;
 	}
-    
-	DrawDebugLine(GetWorld(), Start, End, DebugColor, false, 0.1f, 0, 3.0f);
+
+	if (bDrawDebugLine)
+	{
+		DrawDebugLine(GetWorld(), Start, End, DebugColor, false, 0.1f, 0, 3.0f);
+	}
 #endif
     
 	return bPhysicalHit || bNavMeshBlocked;;
