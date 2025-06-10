@@ -543,10 +543,10 @@ public:
 	TObjectPtr<USkeletalMeshComponent> CachedSkeletalMesh;
 
 	UPROPERTY(ReplicatedUsing = OnRep_CurrentTool)
-	AActor* CurrentTool = nullptr;
+	TObjectPtr<AActor> CurrentTool = nullptr;
 
 	UPROPERTY()
-	AActor* PrevTool = nullptr;
+	TObjectPtr<AActor> PrevTool = nullptr;
 	
 	UPROPERTY(VisibleAnywhere, Category = "Mining")
 	/** 현재 1p에 장착된 Tool 인스턴스 */
