@@ -33,6 +33,7 @@
 #include "PlayerComponent/LanternComponent.h"
 #include "PlayerComponent/ShieldComponent.h"
 #include "PlayerComponent/UnderwaterEffectComponent.h"
+#include "Interactable/EquipableComponent/EquipRenderComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "PlayerComponent/NameWidgetComponent.h"
 
@@ -153,7 +154,7 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	EnvironmentState = EEnvironmentState::Underwater;
 
 	RadarReturnComponent->FactionTags.Init(TEXT("Friendly"), 1);
-
+	EquipRenderComp = CreateDefaultSubobject<UEquipRenderComponent>(TEXT("EquipRenderComponent"));
 	NameWidgetComponent = CreateDefaultSubobject<UNameWidgetComponent>(TEXT("NameWidgetComponent"));
 	NameWidgetComponent->SetupAttachment(GetCapsuleComponent());
 	NameWidgetComponent->SetRelativeLocation(FVector::UpVector * GetCapsuleComponent()->GetScaledCapsuleHalfHeight() * 2.0f);
@@ -352,6 +353,7 @@ void AUnderwaterCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProp
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(AUnderwaterCharacter, bIsRadarOn);
+	DOREPLIFETIME(AUnderwaterCharacter, CurrentTool);
 }
 
 void AUnderwaterCharacter::OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode)
@@ -589,63 +591,74 @@ void AUnderwaterCharacter::RequestChangeAnimSyncState(FAnimSyncState NewAnimSync
 
 void AUnderwaterCharacter::CleanupToolAndEffects()
 {
-	if (SpawnedTool1P || SpawnedTool3P)
+	if (SpawnedTool)
 	{
-		SpawnedTool1P->Destroy();
-		SpawnedTool1P = nullptr;
-
-		SpawnedTool3P->Destroy();
-		SpawnedTool3P = nullptr;
+		EquipRenderComp->DetachItem(SpawnedTool);
+		SpawnedTool->Destroy();
+		CurrentTool->Destroy();
+		SpawnedTool = nullptr;
+		CurrentTool = nullptr;
 	}
+	
 }
 
 void AUnderwaterCharacter::SpawnAndAttachTool(TSubclassOf<AActor> ToolClass)
 {
-	if (SpawnedTool1P || SpawnedTool3P || !ToolClass) return;
-	
+	if (SpawnedTool || !ToolClass || !HasAuthority()) return;
+
 	FActorSpawnParameters Params;
 	Params.Owner = this;
 	Params.Instigator = this;
 
-	SpawnedTool1P = GetWorld()->SpawnActor<AActor>(
+	SpawnedTool = GetWorld()->SpawnActor<AActor>(
 		ToolClass,
 		GetActorLocation(),
 		GetActorRotation(),
 		Params
 	);
-	if (AADLaserCutter* Laser1P = Cast<AADLaserCutter>(SpawnedTool1P))
-		Laser1P->M_SetupVisibility(true);
+	SpawnedTool->SetActorEnableCollision(false);
+	//SpawnedTool->SetActorHiddenInGame(true);
+	//FVector SpawnLocation = { 0, 0, 100000000 };
+	//SpawnedTool->SetActorLocation(SpawnLocation);
+	// 단, Source Mesh는 Bone 업데이트 지속
+	//CachedSkeletalMesh = SpawnedTool->FindComponentByClass<USkeletalMeshComponent>();
+	//if (CachedSkeletalMesh)
+	//{
+	//	CachedSkeletalMesh->SetVisibility(false, true);              // 화면만 OFF
+	//	CachedSkeletalMesh->SetComponentTickEnabled(true);           // 본→MasterPose 계속 갱신
+	//	CachedSkeletalMesh->bComponentUseFixedSkelBounds = true;
+	//	CachedSkeletalMesh->BoundsScale = 3.f;
+	//}
+	CurrentTool = SpawnedTool;
+	OnRep_CurrentTool();
+}
 
-	SpawnedTool3P = GetWorld()->SpawnActor<AActor>(
-		ToolClass,
-		GetActorLocation(),
-		GetActorRotation(),
-		Params
-	);
+void AUnderwaterCharacter::OnRep_CurrentTool()
+{
+	LOG(TEXT("OnRep_CurrentTool for %s  EquipRenderComp=%s  IsRegistered=%d"),
+		*GetNameSafe(this),
+		*GetNameSafe(EquipRenderComp),
+		EquipRenderComp ? EquipRenderComp->IsRegistered() : 0);
 
-	if (AADLaserCutter* Laser3P = Cast<AADLaserCutter>(SpawnedTool3P))
-		Laser3P->M_SetupVisibility(false);
+	if (PrevTool)
+	{
+		EquipRenderComp->DetachItem(PrevTool);
+		PrevTool = nullptr;
+		LOG(TEXT("PrevTool"));
+	}
 
-	if (!SpawnedTool1P || !SpawnedTool3P) return;
-
-	SpawnedTool1P->SetActorEnableCollision(false);
-	SpawnedTool3P->SetActorEnableCollision(false);
-
-	// 1-인칭
-	SpawnedTool1P->AttachToComponent(
-		GetMesh1P(),
-		FAttachmentTransformRules::SnapToTargetIncludingScale,
-		LaserSocketName
-	);
-
-
-	// 3-인칭
-	SpawnedTool3P->AttachToComponent(
-		GetMesh(),
-		FAttachmentTransformRules::SnapToTargetIncludingScale,
-		LaserSocketName
-	);
-	
+	if (CurrentTool)
+	{
+		if (USkeletalMeshComponent* Src = CurrentTool->FindComponentByClass<USkeletalMeshComponent>())
+		{
+			Src->SetVisibility(false, true);
+			//Src->SetComponentTickEnabled(true);
+			LOG(TEXT("Src is CurrentTool's SkeletalMesh"));
+		}
+		EquipRenderComp->AttachItem(CurrentTool, LaserSocketName);
+		PrevTool = CurrentTool;                   // 다음 Detach 대비
+		LOG(TEXT("CurrentTool's Owner : %s"), *CurrentTool->GetOwner()->GetName());
+	}
 }
 
 void AUnderwaterCharacter::OnMoveSpeedChanged(float NewMoveSpeed)

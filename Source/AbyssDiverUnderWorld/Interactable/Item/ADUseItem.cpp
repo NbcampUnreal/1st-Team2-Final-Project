@@ -7,6 +7,7 @@
 #include <Net/UnrealNetwork.h>
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "AbyssDiverUnderWorld.h"
+#include "Interactable/EquipableComponent/EquipableComponent.h"
 
 AADUseItem::AADUseItem()
 {
@@ -20,6 +21,8 @@ AADUseItem::AADUseItem()
 	SkeletalMesh->SetGenerateOverlapEvents(true);
 	SkeletalMesh->SetSimulatePhysics(true);
 	SkeletalMesh->SetCollisionProfileName("BlockAllDynamic");
+	EquipableComp = CreateDefaultSubobject<UEquipableComponent>(TEXT("EquipableComponent"));
+
 
 	bReplicates = true;
 }
