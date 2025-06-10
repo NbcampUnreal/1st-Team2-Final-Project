@@ -54,6 +54,14 @@ public:
 	 */
 	void PerformNormalMovement(const float& InDeltaTime);
 
+	/** TargetPlayer를 추적하며 이동하는 함수
+	 * 
+	 * TargetPlayer가 존재하는 경우, TargetPlayer의 위치를 추적하여 이동한다.
+	 * 
+	 * @param InDeltaTime - 프레임 시간
+	 */
+	void PerformChasing(const float& InDeltaTime);
+
 	/** bIsTurning 변수를 true로 설정하고 회전 시작
 	 * 
 	 * 회전 중인 경우 PerformTurn 함수를 호출하여 회전을 수행한다.
@@ -170,6 +178,15 @@ private:
 #pragma region Variable
 public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
+	float ChasingRotationSpeedMultiplier = 1.5f;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
+	float ChasingMovementSpeedMultiplier = 2.2f;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
+	float MovementInterpSpeed = 1.0f;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
 	float RotationInterpSpeed;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
@@ -223,6 +240,12 @@ public:
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Stat")
 	float TraceDistance = 800.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Stat")
+	float TurnTraceDistance = 600.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Stat")
+	float FourDirectionTraceDistance = 300.0f;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	float MinTargetDistance = 100.0f;
@@ -260,6 +283,12 @@ protected:
 	UPROPERTY(Replicated, BlueprintReadWrite)
 	EBossState BossState;
 
+	UPROPERTY(BlueprintReadWrite)
+	float CurrentMoveSpeed = 0.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	uint8 bDrawDebugLine : 1 = false;
+
 	UPROPERTY()
 	FVector DamagedLocation;
 
@@ -276,7 +305,6 @@ private:
 	uint8 bIsAttackCollisionOverlappedPlayer : 1;
 	float TurnTimer = 0.0f;
 	float OriginDeceleration;
-	const float FourDirectionTraceDistance = 200.0f;
 	FVector TargetLocation;
 	FVector CachedSpawnLocation;
 	FVector TurnDirection;

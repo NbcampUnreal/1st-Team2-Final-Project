@@ -24,6 +24,10 @@ protected:
 
 #pragma region Method
 public:
+
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Compass")
+	void SetCompassObjectWidgetVisible(bool bShouldVisible);
+
 	// 일반 함수
 	void SetSpearCount(int32 Current, int32 Total);
 	void SetOxygenPercent(float InPercent);
@@ -33,6 +37,7 @@ public:
 
 #pragma region Variable
 protected:
+
 	// 작살 수치
 	UPROPERTY()
 	int32 CurrentSpear = 0;
@@ -59,6 +64,9 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UWidget> SpearPanel;
 
+	UPROPERTY(BlueprintReadOnly, Category = "Compass")
+	TObjectPtr<AActor> CompassTargetObject;
+
 private:
 	UPROPERTY()
 	TArray<TObjectPtr<UImage>> HealthSegments;
@@ -72,5 +80,6 @@ public:
 	void SetCurrentSpear(int32 InValue);
 	void SetTotalSpear(int32 InValue);
 	void SetSpearVisibility(bool bVisible);
+	void SetCompassObject(AActor* NewTargetObject);
 #pragma endregion
 };

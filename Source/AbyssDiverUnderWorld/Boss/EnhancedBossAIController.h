@@ -20,7 +20,7 @@ public:
 	virtual void OnPossess(APawn* InPawn) override;
 
 public:
-	void SetBlackboardPerceptionType(EPerceptionType PerceptionType);
+	void SetBlackboardPerceptionType(EPerceptionType InPerceptionType);
 	void InitVariables();
 
 protected:
@@ -31,6 +31,8 @@ private:
 	void OnSightPerceptionSuccess(AUnderwaterCharacter* Player);
 	void OnSightPerceptionFail();
 	void OnHearingPerceptionSuccess(const FAIStimulus& Stimulus);
+	void SetBloodDetectedState();
+	void InitBloodDetectedState();
 	void OnDamagePerceptionSuccess();
 
 protected:
@@ -42,6 +44,9 @@ protected:
 
 	UPROPERTY(EditAnywhere)
 	uint8 bIsPerceptionDamage : 1;
+
+	UPROPERTY(EditAnywhere)
+	uint8 bIsAlienShark : 1 = false;
 
 private:
 	/** 플레이어를 감지한 경우 true 반환 */
@@ -60,6 +65,7 @@ private:
 	uint8 bIsDisappearPlayer : 1;
 	
 	FTimerHandle DamageStateTransitionTimerHandle;
+	FTimerHandle BloodDetectedTimerHandle;
 
 	static const FName bHasSeenPlayerKey;
 	static const FName PerceptionTypeKey;
@@ -68,6 +74,9 @@ private:
 	static const FName bHasAttackedKey;
 	static const FName bIsPlayerHiddenKey;
 	static const FName BloodOccurredLocationKey;
+	static const FName TargetPlayerKey;
+	static const FName bIsDetectBloodKey;
+	static const FName bIsChasingBloodKey;
 
 public:
 	FORCEINLINE bool GetIsDetectedPlayer() const { return bIsDetectedPlayer; }

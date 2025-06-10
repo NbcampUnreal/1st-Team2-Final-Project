@@ -373,7 +373,8 @@ bool UADInventoryComponent::AddInventoryItem(const FItemData& ItemData)
 			if (FoundRow->Stackable && ItemIndex != -1)
 			{
 				bIsUpdateSuccess = InventoryList.UpdateQuantity(ItemIndex, ItemData.Quantity);
-				InventoryList.SetAmount(ItemIndex, ItemData.Amount);
+				if(InventoryList.Items[ItemIndex].Amount > ItemData.Amount)
+					InventoryList.SetAmount(ItemIndex, ItemData.Amount);
 				if (bIsUpdateSuccess)
 				{
 					LOGINVEN(Warning, TEXT("Item Update, ItemName : %s, Id : %d"), *InventoryList.Items[ItemIndex].Name.ToString(), InventoryList.Items[ItemIndex].Id);
@@ -416,11 +417,12 @@ bool UADInventoryComponent::AddInventoryItem(const FItemData& ItemData)
 
 void UADInventoryComponent::ShowInventory()
 {
-	APlayerController* PC = Cast<APlayerController>(Cast<AADPlayerState>(GetOwner())->GetPlayerController());
+	AADPlayerState* PS = Cast<AADPlayerState>(GetOwner());
+	if (!PS) return;
+	APlayerController* PC = Cast<APlayerController>(PS->GetPlayerController());
 	if (!PC || !ToggleWidgetInstance) return;
 
 	ToggleWidgetInstance->PlaySlideAnimation(true);
-	InventoryUIUpdate();
 	PC->bShowMouseCursor = true;
 
 	FInputModeGameAndUI InputMode;
@@ -647,7 +649,7 @@ FVector UADInventoryComponent::GetDropLocation()
 	APlayerController* PC = Cast<APlayerController>(Cast<AADPlayerState>(GetOwner())->GetPlayerController());
 	APawn* OwnerPawn = PC->GetPawn();
 	FVector CameraForward = PC->PlayerCameraManager->GetCameraRotation().Vector();
-	FVector DropLocation = OwnerPawn->GetActorLocation() +FVector(0, 0, 100) + UKismetMathLibrary::RandomUnitVectorInConeInDegrees(CameraForward, 30) * 350.0;
+	FVector DropLocation = OwnerPawn->GetActorLocation() +FVector(0, 0, 50) + UKismetMathLibrary::RandomUnitVectorInConeInDegrees(CameraForward, 30) * 150.0;
 	return DropLocation;
 }
 
@@ -794,7 +796,12 @@ void UADInventoryComponent::UnEquip()
 void UADInventoryComponent::DropItem(FItemData& ItemData)
 {
 	// EquipComp의 장비 현재값 초기화
-	if (APlayerState* PS = Cast<APlayerState>(GetOwner()))
+	APlayerState* PS = Cast<APlayerState>(GetOwner());
+	if (!PS) return;
+	APawn* Pawn = PS->GetPawn();
+	if (!Pawn) return;
+
+	if (CurrentEquipmentInstance && ItemData.Name == CurrentEquipmentInstance->ItemData.Name)
 	{
 		if (APawn* Pawn = PS->GetPawn())
 		{
@@ -812,7 +819,12 @@ void UADInventoryComponent::DropItem(FItemData& ItemData)
 	}
 	FVector DropLocation = GetDropLocation();
 	AADUseItem* SpawnItem = GetWorld()->SpawnActor<AADUseItem>(AADUseItem::StaticClass(), DropLocation, FRotator::ZeroRotator);
-	M_SpawnItemEffect(ESFX::DropItem, DropItemEffect, DropLocation);
+	AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(Pawn);
+	EEnvironmentState CurrentEnviromnent = UnderwaterCharacter->GetEnvironmentState();
+	if (CurrentEnviromnent == EEnvironmentState::Underwater)
+	{
+		M_SpawnItemEffect(ESFX::DropItem, DropItemEffect, DropLocation);
+	}
 	SpawnItem->SetItemInfo(ItemData, false);
 	LOGINVEN(Warning, TEXT("Spawn Item To Drop : %s"), *ItemData.Name.ToString());
 }

@@ -7,6 +7,7 @@
 #include "UnitBase.h"
 #include "Interface/IADInteractable.h"
 #include "AbyssDiverUnderWorld.h"
+#include "StatComponent.h"
 #include "UnderwaterCharacter.generated.h"
 
 #if UE_BUILD_SHIPPING
@@ -78,6 +79,14 @@ struct FAnimSyncState
 	uint8 bIsStrafing : 1 = false;
 };
 
+UENUM(BlueprintType)
+enum class EPlayAnimationTarget : uint8
+{
+	FirstPersonMesh UMETA(DisplayName = "First Person"),
+	ThirdPersonMesh UMETA(DisplayName = "Third Person"),
+	BothPersonMesh UMETA(DisplayName = "Both Person"),
+};
+
 class UInputAction;
 
 UCLASS()
@@ -94,6 +103,7 @@ protected:
 	virtual void PostNetInit() override;
 	virtual void OnRep_PlayerState() override;
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode = 0) override;
 
 	/** IA를 Enhanced Input Component에 연결 */
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
@@ -126,6 +136,14 @@ public:
 	virtual bool IsHoldMode() const override;
 
 	// Interactable Interface End
+
+	// Launch Character
+	// - Boss: 공격 시에 넉백을 적용하기 Launch를 실행한다.
+	// - CurrentZone : 급류 효과를 위해 Launch를 실행한다.
+	// - SpikeHazard : 공격 효과를 위해 Launch를 실행한다.
+	
+	/** Launch Character를 오버라이드 해서 캐릭터의 넉백 상태를 확인한다. */
+	virtual void LaunchCharacter(FVector LaunchVelocity, bool bXYOverride, bool bZOverride) override;
 	
 	/** 그로기 상태 캐릭터를 부활시킨다. */
 	UFUNCTION(BlueprintCallable)
@@ -154,6 +172,32 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void EmitBloodNoise();
 
+	/** 캐릭터의 몽타주 재생 요청 */
+	void RequestPlayMontage(UAnimMontage* Mesh1PMontage, UAnimMontage* Mesh3PMontage, float InPlayRate = 1.0f, FName StartSectionName = NAME_None);
+
+	/** 서버에 몽타주 재생 요청 */
+	UFUNCTION(Reliable, Server)
+	void S_PlayMontage(UAnimMontage* Mesh1PMontage, UAnimMontage* Mesh3PMontage, float InPlayRate = 1.0f, FName StartSectionName = NAME_None);
+	void S_PlayMontage_Implementation(UAnimMontage* Mesh1PMontage, UAnimMontage* Mesh3PMontage, float InPlayRate = 1.0f, FName StartSectionName = NAME_None);
+
+	/** 몽타주 재생 전파 */
+	UFUNCTION(NetMulticast, Reliable)
+	void M_BroadcastPlayMontage(UAnimMontage* Mesh1PMontage, UAnimMontage* Mesh3PMontage, float InPlayRate = 1.0f, FName StartSectionName = NAME_None);
+	void M_BroadcastPlayMontage_Implementation(UAnimMontage* Mesh1PMontage, UAnimMontage* Mesh3PMontage, float InPlayRate = 1.0f, FName StartSectionName = NAME_None);
+
+	/** 현재 재생 중인 몽타주 정지 요청 */
+	void RequestStopAllMontage(EPlayAnimationTarget Target, float BlendOut = 0.0f);
+
+	/** 몽타주 정지 Server RPC */
+	UFUNCTION(Reliable, Server)
+	void S_StopAllMontage(EPlayAnimationTarget Target, float BlendOut = 0.0f);
+	void S_StopAllMontage_Implementation(EPlayAnimationTarget Target, float BlendOut = 0.0f);
+
+	/** 몽타주 정지 전파 */
+	UFUNCTION(NetMulticast, Reliable)
+	void M_StopAllMontage(EPlayAnimationTarget Target, float BlendOut = 0.0f);
+	void M_StopAllMontage_Implementation(EPlayAnimationTarget Target, float BlendOut = 0.0f);
+	
 	/** 1인칭 메시, 3인칭 메시 모두에 애니메이션 몽타주를 재생한다. */
 	UFUNCTION(NetMulticast, Reliable)
 	void M_PlayMontageOnBothMesh(UAnimMontage* Montage, float InPlayRate = 1.0f, FName StartSectionName = NAME_None, FAnimSyncState NewAnimSyncState = FAnimSyncState());
@@ -243,12 +287,12 @@ protected:
 	virtual float CalculateGroggyTime(float CurrentGroggyDuration, uint8 CalculateGroggyCount) const;
 	
 	/** 캐릭터 사망 시에 Blueprint에서 호출될 함수 */
-	UFUNCTION(BlueprintImplementableEvent)
+	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "OnDeath"))
 	void K2_OnDeath();
 
 	/** 캐릭터의 환경이 변경됬을 시에 Blueprint에서 호출될 함수 */
-	UFUNCTION(BlueprintImplementableEvent)
-	void K2_OnEnvronmentStateChanged(EEnvironmentState OldEnvironmentState, EEnvironmentState NewEnvironmentState);
+	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "OnEnvironmentStateChanged"))
+	void K2_OnEnvironmentStateChanged(EEnvironmentState OldEnvironmentState, EEnvironmentState NewEnvironmentState);
 
 	/** Player State 정보를 초기화 */
 	void InitFromPlayerState(class AADPlayerState* ADPlayerState);
@@ -384,6 +428,15 @@ protected:
 	/** 3번 슬롯 장착 함수 */
 	void EquipSlot3(const FInputActionValue& InputActionValue);
 
+	/** 1번 감정 표현 실행 */
+	void PerformEmote1(const FInputActionValue& InputActionValue);
+
+	/** 2번 감정 표현 실행 */
+	void PerformEmote2(const FInputActionValue& InputActionValue);
+
+	/** 3번 감정 표현 실행 */
+	void PerformEmote3(const FInputActionValue& InputActionValue);
+	
 	/** 3인칭 디버그 카메라 활성화 설정 */
 	void SetDebugCameraMode(bool bDebugCameraEnable);
 
@@ -406,6 +459,16 @@ protected:
 	/** 3인칭 메시 몽타주 종료 시 호출되는 함수 */
 	UFUNCTION()
 	virtual void OnMesh3PMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+
+	/** 감정 표현을 재생. Local에서 실행된다. */
+	void PlayEmote(uint8 EmoteIndex);
+
+	/** 감정 표현을 중지 */
+	void StopPlayingEmote();
+
+	/** 감정 표현 몽타주가 끝났을 때 호출되는 함수 */
+	UFUNCTION()
+	void OnEmoteEnd(UAnimMontage* AnimMontage, bool bArg);
 	
 private:
 
@@ -422,6 +485,19 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FOnDeath OnDeathDelegate;
 
+	// Knockback이 되는 상황은 LaunchCharacter 때이므로 LaunchCharacter를 오버라이드해서 처리한다.
+	// 복귀가 될 때는 MoveMode 변화를 통해서 처리한다.
+	
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnKnockbacked, FVector, KnockbackVelocity);
+	/** 캐릭터가 넉백되었을 때 호출되는 델리게이트 */
+	UPROPERTY(BlueprintAssignable)
+	FOnKnockbacked OnKnockbackDelegate;
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnKnockbackEnd);
+	/** 캐릭터의 넉백이 끝났을 때 호출되는 델리게이트 */
+	UPROPERTY(BlueprintAssignable)
+	FOnKnockbackEnd OnKnockbackEndDelegate;
+	
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnGroggy);
 	/** 캐릭터가 그로기 상태에 진입했을 때 호출되는 델리게이트 */
 	UPROPERTY(BlueprintAssignable)
@@ -437,6 +513,11 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FOnEnvironmentStateChanged OnEnvironmentStateChangedDelegate;
 
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnDamageTaken, float, DamageAmount, float, CurrentHealth);
+	/** 캐릭터가 피해를 입었을 때 호출되는 델리게이트, DamageAmount = Health Damage Taken + Shield Damage Taken */
+	UPROPERTY(BlueprintAssignable)
+	FOnDamageTaken OnDamageTakenDelegate;
+	
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnMontageEnd, UAnimMontage*, Montage, bool, bInterrupted);
 	/** 1인칭 메시 몽타주 종료 시 호출되는 델리게이트 */
 	UPROPERTY(BlueprintAssignable, Category = Animation)
@@ -506,6 +587,10 @@ private:
 	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	uint8 bCanUseEquipment : 1;
 
+	/** 감정 표현 중 여부, Client 에서만 저장하고 따로 전파하지 않는다. */
+	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	uint8 bPlayingEmote : 1;
+	
 	/** 캐릭터 랜턴의 거리 */
 	UPROPERTY(EditDefaultsOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float LanternLength;
@@ -630,10 +715,6 @@ private:
 	/** Sprint 시에 적용되는 속도 배율. Sprint가 적용되면 EffectiveSpeed에 곱해진다. */
 	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float SprintMultiplier;
-	
-	/** Sprint 속도 */
-	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
-	float SprintSpeed;
 
 	/** 생성할 레이더 BP */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Radar", meta = (AllowPrivateAccess = "true"))
@@ -642,6 +723,10 @@ private:
 	/** 생성한 레이더 인스턴스 */
 	UPROPERTY()
 	TObjectPtr<class ARadar> RadarObject;
+
+	/** 이름 표기 위젯 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character|UI", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UNameWidgetComponent> NameWidgetComponent;
 
 	/** 레이더가 생성된 위치 오프셋. 카메라 기준으로 부착이 된다. */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Radar", meta = (AllowPrivateAccess = "true"))
@@ -719,6 +804,18 @@ private:
 	/** 3번 슬롯 장착 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> EquipSlot3Action;
+
+	/** 감정 표현 1번 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> EmoteAction1;
+
+	/** 감정 표현 2번 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> EmoteAction2;
+
+	/** 감정 표현 3번 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> EmoteAction3;
 
 	/** 게임에 사용될 1인칭 Camera Component의 Spring Arm. 회전 Smoothing을 위해 사용한다. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
@@ -803,6 +900,10 @@ private:
 
 	/** Tool 소켓 명 (1P/3P 공용) */
 	FName LaserSocketName = TEXT("Laser");
+
+	/** 감정 표현 몽타주 배열. 순서대로 Emote1, Emote2, Emote3에 해당한다. */
+	UPROPERTY(EditDefaultsOnly, Category = "Character|Emote", meta = (AllowPrivateAccess = "true"))
+	TArray<TObjectPtr<UAnimMontage>> EmoteAnimationMontages;
 
 #pragma endregion
 
@@ -892,5 +993,7 @@ public:
 	
 	/** 상호작용 타입 반환 */
 	virtual FString GetInteractionDescription() const override { return TEXT("Revive Character!"); }
+
+	FORCEINLINE float GetSprintSpeed() const { return StatComponent->MoveSpeed * SprintMultiplier; }
 #pragma endregion
 };

@@ -9,7 +9,6 @@
 #include "Engine/TargetPoint.h"
 #include "Subsystems/SoundSubsystem.h"
 
-
 APortal::APortal()
 {
 	PrimaryActorTick.bCanEverTick = false;
@@ -39,7 +38,6 @@ void APortal::BeginPlay()
 	{
 		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
 	}
-	GetSoundSubsystem()->PlayAt(ESFX::Submarine, GetActorLocation(), 2.0f);
 }
 
 void APortal::Interact_Implementation(AActor* InstigatorActor)
@@ -94,7 +92,7 @@ FString APortal::GetInteractionDescription() const
 
 USoundSubsystem* APortal::GetSoundSubsystem()
 {
-	if (SoundSubsystem)
+	if (IsValid(SoundSubsystem))
 	{
 		return SoundSubsystem;
 	}
@@ -102,9 +100,10 @@ USoundSubsystem* APortal::GetSoundSubsystem()
 	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
 	{
 		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
-		return SoundSubsystem;
 	}
-	return nullptr;
+
+	check(SoundSubsystem);
+	return SoundSubsystem;
 }
 
 

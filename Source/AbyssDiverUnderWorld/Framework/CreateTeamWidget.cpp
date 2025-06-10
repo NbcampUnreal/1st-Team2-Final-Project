@@ -7,6 +7,7 @@
 #include "Components/Button.h"
 #include "Components/TextBlock.h"
 #include "Components/EditableTextBox.h"
+#include "Animation/WidgetAnimation.h"
 
 void UCreateTeamWidget::NativeConstruct()
 {
@@ -40,7 +41,15 @@ void UCreateTeamWidget::OnPrivateClicked()
 
 void UCreateTeamWidget::OnBackClicked()
 {
-    OnBackClickedDelegate.ExecuteIfBound();
+    PlayAnimation(OutAnim);
+    FTimerHandle RemoveWidgetTimerHandle;
+    float RemoveDelay = OutAnim->GetEndTime();
+    GetWorld()->GetTimerManager().SetTimer(RemoveWidgetTimerHandle,
+        FTimerDelegate::CreateLambda([this]()
+            {
+                OnBackClickedDelegate.ExecuteIfBound();
+            }), RemoveDelay, false);
+    
 }
 
 void UCreateTeamWidget::OnConfirmClicked()

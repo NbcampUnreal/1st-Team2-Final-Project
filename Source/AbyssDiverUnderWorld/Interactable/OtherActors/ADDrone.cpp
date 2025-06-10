@@ -1,5 +1,6 @@
 ﻿#include "Interactable/OtherActors/ADDrone.h"
 #include "Interactable/Item/Component/ADInteractableComponent.h"
+#include "Interactable/OtherActors/Portals/PortalToSubmarine.h"
 #include "Inventory/ADInventoryComponent.h"
 #include "FrameWork/ADInGameState.h"
 #include "ADDroneSeller.h"
@@ -85,10 +86,12 @@ void AADDrone::Interact_Implementation(AActor* InstigatorActor)
 			{
 				NextSeller->Activate();
 				GS->SetCurrentDroneSeller(NextSeller);
+				GS->SetDestinationTarget(NextSeller);
 			}
 			else
 			{
 				GS->SetCurrentDroneSeller(nullptr);
+				GS->SetDestinationTarget(UGameplayStatics::GetActorOfClass(GetWorld(), APortalToSubmarine::StaticClass()));
 			}
 		}
 	}
