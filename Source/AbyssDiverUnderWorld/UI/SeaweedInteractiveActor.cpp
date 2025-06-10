@@ -4,10 +4,12 @@
 #include "Components/SplineMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Character/UnderwaterCharacter.h"
+#include "Net/UnrealNetwork.h"
 
 ASeaweedInteractiveActor::ASeaweedInteractiveActor()
 {
     PrimaryActorTick.bCanEverTick = true;
+    bReplicates = true;
 
     SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
     RootComponent = SceneRoot;
@@ -24,6 +26,15 @@ ASeaweedInteractiveActor::ASeaweedInteractiveActor()
     DetectionSphere->SetupAttachment(SceneRoot);
     DetectionSphere->SetSphereRadius(150.f);
     DetectionSphere->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
+
+    BottomSplineMesh = CreateDefaultSubobject<USplineMeshComponent>(TEXT("BottomSplineMesh"));
+    BottomSplineMesh->SetupAttachment(SceneRoot);
+    BottomSplineMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+    TopSplineMesh = CreateDefaultSubobject<USplineMeshComponent>(TEXT("TopSplineMesh"));
+    TopSplineMesh->SetupAttachment(SceneRoot);
+    TopSplineMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
 }
 
 void ASeaweedInteractiveActor::BeginPlay()
@@ -38,9 +49,25 @@ void ASeaweedInteractiveActor::BeginPlay()
 
     if (SeaweedMeshAsset)
     {
-        SplineMesh->SetStaticMesh(SeaweedMeshAsset);
-        SplineMesh->SetStartAndEnd(StartPos, StartTangent, EndPos, StartTangent);
+        // 하단: 0 ~ 400
+        BottomSplineMesh->SetStaticMesh(SeaweedMeshAsset);
+        BottomSplineMesh->SetStartAndEnd(
+            FVector(0.f, 0.f, 0.f),
+            FVector(0.f, 0.f, 0.f),
+            FVector(0.f, 0.f, 400.f),
+            FVector(0.f, 0.f, 0.f)
+        );
+
+        // 상단: 400 ~ 800 (변형 대상)
+        TopSplineMesh->SetStaticMesh(SeaweedMeshAsset);
+        TopSplineMesh->SetStartAndEnd(
+            FVector(0.f, 0.f, 400.f),
+            FVector(0.f, 0.f, 0.f),
+            FVector(0.f, 0.f, 800.f),
+            FVector(0.f, 0.f, 0.f)
+        );
     }
+
 }
 
 void ASeaweedInteractiveActor::Tick(float DeltaTime)
@@ -54,11 +81,8 @@ void ASeaweedInteractiveActor::Tick(float DeltaTime)
 void ASeaweedInteractiveActor::TickRotation(float DeltaTime)
 {
     float TargetAlpha = bShouldBend ? 1.f : 0.f;
-
-    // 더 부드럽게 보간
     CurrentAlpha = FMath::FInterpTo(CurrentAlpha, TargetAlpha, DeltaTime, BendSpeed);
 
-    // 부드러운 회전 보간 (Quaternion)
     FQuat StartQuat = StartRotation.Quaternion();
     FQuat TargetQuat = TargetRotation.Quaternion();
     FQuat SmoothQuat = FQuat::Slerp(StartQuat, TargetQuat, CurrentAlpha);
@@ -67,56 +91,100 @@ void ASeaweedInteractiveActor::TickRotation(float DeltaTime)
 }
 
 
+
 void ASeaweedInteractiveActor::TickSplineBend(float DeltaTime)
 {
     float Target = bShouldBend ? 1.f : 0.f;
-    LerpAlpha = FMath::FInterpTo(LerpAlpha, Target, DeltaTime, BendSpeed * 0.5f);
+    LerpAlpha = FMath::FInterpTo(LerpAlpha, Target, DeltaTime, BendSpeed);
 
-    FVector CurEnd = FMath::Lerp(EndPos, EndPos + FVector(BendAmount * 0.3f, BendAmount * 0.3f, 0.f), LerpAlpha);
-    FVector CurTangent = FMath::Lerp(StartTangent, FVector(BendAmount * 0.5f, BendAmount * 0.5f, 100.f), LerpAlpha);
+    // Start: 고정점 (하단 끝 위치)
+    FVector Start = FVector(0.f, 0.f, 400.f);
 
-    SplineMesh->SetStartAndEnd(StartPos, StartTangent, CurEnd, CurTangent);
+    // End: 상단 끝 위치 + 휘는 방향
+    FVector End = FMath::Lerp(
+        FVector(0.f, 0.f, 800.f),
+        FVector(0.f, BendAmount, 800.f),
+        LerpAlpha
+    );
+
+    // Tangents
+    FVector StartBendTangent = FVector(0.f, 0.f, 0.f);
+    FVector EndBendTangent = FMath::Lerp(
+        FVector(0.f, 0.f, 0.f),
+        FVector(0.f, BendAmount * 0.5f, 0.f),
+        LerpAlpha
+    );
+
+    TopSplineMesh->SetStartAndEnd(Start, StartBendTangent, End, EndBendTangent);
 }
 
+
 void ASeaweedInteractiveActor::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
-    UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
-    bool bFromSweep, const FHitResult& SweepResult)
+    UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
+    if (!HasAuthority()) return;
+
     if (Cast<AUnderwaterCharacter>(OtherActor))
     {
         OverlappingCharacterCount++;
 
-        FVector PlayerToSeaweed = GetActorLocation() - OtherActor->GetActorLocation();
-        PlayerToSeaweed.Z = 0.f;
-
-        if (!PlayerToSeaweed.IsNearlyZero())
+        // ✅ 처음 들어온 캐릭터일 때만 방향 계산
+        if (OverlappingCharacterCount == 1)
         {
-            PlayerToSeaweed.Normalize();
+            FVector PlayerToSeaweed = GetActorLocation() - OtherActor->GetActorLocation();
+            PlayerToSeaweed.Z = 0.f;
 
-            FVector PitchAxis = FVector::CrossProduct(FVector::UpVector, PlayerToSeaweed).GetSafeNormal();
-            if (PitchAxis.IsNearlyZero())
+            if (!PlayerToSeaweed.IsNearlyZero())
             {
-                PitchAxis = FVector::RightVector;
+                PlayerToSeaweed.Normalize();
+
+                FVector PitchAxis = FVector::CrossProduct(FVector::UpVector, PlayerToSeaweed).GetSafeNormal();
+                if (PitchAxis.IsNearlyZero())
+                {
+                    PitchAxis = FVector::RightVector;
+                }
+
+                float Radians = FMath::DegreesToRadians(BendPitch);
+                FQuat BendQuat = FQuat(PitchAxis, -Radians);
+
+                TargetRotation = (BendQuat * StartRotation.Quaternion()).Rotator();
             }
 
-            float Radians = FMath::DegreesToRadians(BendPitch);
-            FQuat BendQuat = FQuat(PitchAxis, -Radians);
-
-            TargetRotation = (BendQuat * StartRotation.Quaternion()).Rotator();
             bShouldBend = true;
+            ForceNetUpdate();
         }
     }
 }
 
+
 void ASeaweedInteractiveActor::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
     UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
+    if (!HasAuthority()) return;
+
     if (Cast<AUnderwaterCharacter>(OtherActor))
     {
         OverlappingCharacterCount = FMath::Max(0, OverlappingCharacterCount - 1);
         if (OverlappingCharacterCount == 0)
         {
             bShouldBend = false;
+            ForceNetUpdate();
         }
     }
+}
+
+void ASeaweedInteractiveActor::OnRep_BendState()
+{
+    //if (!bShouldBend)
+   // {
+   //     TargetRotation = StartRotation;
+    //}
+}
+
+void ASeaweedInteractiveActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+    Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+    DOREPLIFETIME(ASeaweedInteractiveActor, bShouldBend);
+    DOREPLIFETIME(ASeaweedInteractiveActor, TargetRotation);
 }

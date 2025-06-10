@@ -22,9 +22,9 @@ public:
 #pragma region Lifecycle
 protected:
     virtual void BeginPlay() override;
-
 public:
     virtual void Tick(float DeltaTime) override;
+    virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 #pragma endregion
 
 #pragma region Method
@@ -37,6 +37,9 @@ protected:
     UFUNCTION()
     void OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
         UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+    UFUNCTION()
+    void OnRep_BendState();
 
     void TickRotation(float DeltaTime);
     void TickSplineBend(float DeltaTime);
@@ -62,13 +65,16 @@ protected:
 
     // Runtime
     FRotator StartRotation;
+
+    UPROPERTY(ReplicatedUsing = OnRep_BendState)
     FRotator TargetRotation;
 
     float CurrentAlpha = 0.0f;
     float LerpAlpha = 0.0f;
-    uint8 bShouldBend : 1;
 
-    // Multiplayer-safe counter
+    UPROPERTY(ReplicatedUsing = OnRep_BendState)
+    bool bShouldBend = false;
+
     int32 OverlappingCharacterCount = 0;
 
     FVector StartPos = FVector::ZeroVector;
@@ -77,12 +83,12 @@ protected:
 
     // Config
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Seaweed")
-    float BendSpeed = 1.3f;
+    float BendSpeed = 1.0f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Seaweed")
     float BendPitch = -26.f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Seaweed")
-    float BendAmount = 100.f;
+    float BendAmount = 30.f;
 #pragma endregion
 };
