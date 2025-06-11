@@ -42,6 +42,7 @@ UEquipUseComponent::UEquipUseComponent()
 	bOriginalExposureCached = false;
 	bCanFire = true;
 	bIsWeapon = true;
+	bHasNoAnimation = false;
 	NightVisionClass = nullptr;
 	NightVisionInstance = nullptr;
 	ChargeBatteryClass = nullptr;
@@ -429,7 +430,7 @@ void UEquipUseComponent::Initialize(FItemData& ItemData)
 	}
 
 	bIsWeapon = (LeftAction == EAction::WeaponFire || RKeyAction == EAction::WeaponFire);
-
+	bHasNoAnimation = (LeftAction == EAction::ToggleNVGToggle);
 	
 
 	if (bIsWeapon)
@@ -508,6 +509,7 @@ void UEquipUseComponent::DeinitializeEquip()
 	// 입력·액션 상태 초기화
 	bCanFire = true;
 	bIsWeapon = false;
+	bHasNoAnimation = true;
 	LeftAction = EAction::None;
 	RKeyAction = EAction::None;
 
