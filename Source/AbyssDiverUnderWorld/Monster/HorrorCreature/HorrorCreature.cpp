@@ -4,6 +4,7 @@
 #include "Monster/HorrorCreature/HorrorCreature.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Character/UnderwaterCharacter.h"
+#include "TimerManager.h"
 
 
 AHorrorCreature::AHorrorCreature()
@@ -84,6 +85,19 @@ void AHorrorCreature::EjectPlayer(AUnderwaterCharacter* Victim)
 	{
 		M_PlayMontage(EjectMontage);
 	}
+
+	GetWorld()->GetTimerManager().SetTimer(
+		TimerHandle_SetSwimMode,
+		[Victim]()
+		{
+			if (IsValid(Victim) && Victim->GetCharacterMovement())
+			{
+				Victim->GetCharacterMovement()->SetMovementMode(MOVE_Swimming);
+			}
+		},
+		0.5f,
+		false
+	);
 
 	SetMonsterState(EMonsterState::Patrol);
 	BlackboardComponent->SetValueAsEnum(MonsterStateKey, static_cast<uint8>(EMonsterState::Patrol));
