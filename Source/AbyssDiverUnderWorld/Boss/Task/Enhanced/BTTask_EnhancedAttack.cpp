@@ -25,7 +25,7 @@ EBTNodeResult::Type UBTTask_EnhancedAttack::ExecuteTask(UBehaviorTreeComponent& 
 	if (!TaskMemory) return EBTNodeResult::Failed;
 
 	TaskMemory->AIController = Cast<AEnhancedBossAIController>(Comp.GetAIOwner());
-	TaskMemory->Boss = Cast<ABoss>(TaskMemory->AIController->GetCharacter());
+	TaskMemory->Boss = Cast<ABoss>(Comp.GetAIOwner()->GetCharacter());
 	
 	if (!TaskMemory->Boss.IsValid() || !TaskMemory->AIController.IsValid()) return EBTNodeResult::Failed;
 	
@@ -40,11 +40,6 @@ void UBTTask_EnhancedAttack::TickTask(UBehaviorTreeComponent& Comp, uint8* NodeM
 	
 	FBTEnhancedAttackTaskMemory* TaskMemory = (FBTEnhancedAttackTaskMemory*)NodeMemory;
 	if (!TaskMemory) return;
-
-	TaskMemory->AIController = Cast<AEnhancedBossAIController>(Comp.GetAIOwner());
-	TaskMemory->Boss = Cast<ABoss>(TaskMemory->AIController->GetCharacter());
-	
-	if (!TaskMemory->Boss.IsValid() || !TaskMemory->AIController.IsValid()) return;
 	
 	if (TaskMemory->AIController->GetBlackboardComponent()->GetValueAsBool(TaskMemory->BlackboardKeyName)) return;
 	

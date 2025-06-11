@@ -364,7 +364,7 @@ void USoundSubsystem::OnAudioFinished(UAudioComponent* FinishedAudio)
 		LOGV(Warning, TEXT("Removing Ambient Comp, Activated : %d, Deactivated? : %d"), ActivatedAmbientComponents.Num(), DeactivatedComponents.IsEmpty());
 	}
 
-	if (::IsValid(FinishedAudio) == false || FinishedAudio->GetWorld() == nullptr)
+	if (::IsValid(FinishedAudio) == false || FinishedAudio->IsValidLowLevelFast() == false || FinishedAudio->IsValidLowLevel() == false)
 	{
 		LOGV(Warning, TEXT("Trying to Deactivated, But Not Valid"));
 
@@ -395,7 +395,7 @@ void USoundSubsystem::OnAudioFinished(UAudioComponent* FinishedAudio)
 int32 USoundSubsystem::Play2DInternal(USoundBase* SoundAsset, const bool& bIsBGM, const bool& bIsAmbient, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve)
 {
 	TObjectPtr<UAudioComponent> NewAudio = GetNewAudio();
-	if (NewAudio == nullptr || IsValid(NewAudio) == false || NewAudio->IsValidLowLevel() == false)
+	if (NewAudio == nullptr || IsValid(NewAudio) == false)
 	{
 		LOGV(Error, TEXT("Not Valid"));
 		return INDEX_NONE;
@@ -436,7 +436,7 @@ int32 USoundSubsystem::Play2DInternal(USoundBase* SoundAsset, const bool& bIsBGM
 int32 USoundSubsystem::Play3DInternal(USoundBase* SoundAsset, const FVector& Position, USceneComponent* AttachComp, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve)
 {
 	TObjectPtr<UAudioComponent> NewAudio = GetNewAudio();
-	if (NewAudio == nullptr || IsValid(NewAudio) == false || NewAudio->IsValidLowLevel() == false)
+	if (NewAudio == nullptr || IsValid(NewAudio) == false)
 	{
 		LOGV(Error, TEXT("Not Valid"));
 		return INDEX_NONE;
@@ -492,6 +492,12 @@ UAudioComponent* USoundSubsystem::GetNewAudio()
 {
 	TObjectPtr<UAudioComponent> NewAudio = nullptr;
 
+	UWorld* World = GetWorld();
+	if (World == nullptr || World->bIsTearingDown)
+	{
+		return nullptr;
+	}
+	
 	static const int32 SafetyLimit = 100;
 	int32 Iteration = 0;
 	for (; Iteration < SafetyLimit; ++Iteration)
@@ -501,10 +507,18 @@ UAudioComponent* USoundSubsystem::GetNewAudio()
 			CreateAudioComponent();
 		}
 
-		DeactivatedComponents.Dequeue(NewAudio);
+		if (DeactivatedComponents.Dequeue(NewAudio) == false)
+		{
+			continue;
+		}
 
 		if (RemoveInvalidAudioComponent(NewAudio) == false)
 		{
+			if (NewAudio->IsRegistered() == false)
+			{
+				NewAudio->RegisterComponent();
+			}
+
 			break;
 		}
 	}
@@ -519,7 +533,13 @@ UAudioComponent* USoundSubsystem::GetNewAudio()
 
 bool USoundSubsystem::RemoveInvalidAudioComponent(UAudioComponent* SomeAudio)
 {
-	if (SomeAudio && IsValid(SomeAudio) && SomeAudio->GetWorld())
+	UWorld* World = GetWorld();
+	if (World == nullptr || World->bIsTearingDown)
+	{
+		return false;
+	}
+
+	if (SomeAudio && IsValid(SomeAudio))
 	{
 		return false;
 	}
@@ -536,12 +556,18 @@ bool USoundSubsystem::RemoveInvalidAudioComponent(UAudioComponent* SomeAudio)
 
 void USoundSubsystem::CreateAudioComponent()
 {
-	TObjectPtr<UAudioComponent> NewAudio = NewObject<UAudioComponent>((UObject*)UGameplayStatics::GetGameState(GetWorld()));
-	if (IsValid(NewAudio) && NewAudio->IsValidLowLevel())
+	UWorld* World = GetWorld();
+	if (World == nullptr || World->bIsTearingDown)
+	{
+		return;
+	}
+
+	TObjectPtr<UAudioComponent> NewAudio = NewObject<UAudioComponent>((UObject*)World->GetGameState());
+	if (IsValid(NewAudio))
 	{
 		DeactivatedComponents.Enqueue(NewAudio);
 		NewAudio->RegisterComponent();
-
+		
 		int32 NewId = CreateNewId();
 		AudioComponentWithIdMap.Add(NewId, NewAudio);
 		AudioIdWithComponentMap.Add(NewAudio, NewId);

@@ -2,6 +2,7 @@
 #include "AbyssDiverUnderWorld.h"
 #include "EngineUtils.h"
 #include "EnhancedBossAIController.h"
+#include "NavigationPath.h"
 #include "Enum/EBossPhysicsType.h"
 #include "Enum/EBossState.h"
 #include "BehaviorTree/BlackboardComponent.h"
@@ -18,6 +19,7 @@
 #include "NavigationSystem.h"
 #include "NiagaraFunctionLibrary.h"
 #include "Enum/EPerceptionType.h"
+#include "Framework/ADPlayerController.h"
 #include "Perception/AISense_Damage.h"
 #include "Interactable/OtherActors/Radars/RadarReturnComponent.h"
 
@@ -186,8 +188,11 @@ void ABoss::SetNewTargetLocation()
                    FVector::Dist(CurrentLocation, TargetLocation));
 
 #if WITH_EDITOR
-            DrawDebugSphere(GetWorld(), TargetLocation, 50.0f, 12, FColor::Yellow, false, 3.0f, 0, 5.0f);
-            DrawDebugLine(GetWorld(), CurrentLocation, TargetLocation, FColor::Yellow, false, 3.0f, 0, 3.0f);
+        	if (bDrawDebugLine)
+        	{
+        		DrawDebugSphere(GetWorld(), TargetLocation, 50.0f, 12, FColor::Yellow, false, 3.0f, 0, 5.0f);
+        		DrawDebugLine(GetWorld(), CurrentLocation, TargetLocation, FColor::Yellow, false, 3.0f, 0, 3.0f);
+        	}
 #endif
             
             return;
@@ -208,8 +213,12 @@ void ABoss::SetNewTargetLocation()
         
 #if WITH_EDITOR
         // 디버그용 목표점 표시
-        DrawDebugSphere(GetWorld(), TargetLocation, 50.0f, 12, FColor::Cyan, false, 3.0f, 0, 5.0f);
-        DrawDebugLine(GetWorld(), CurrentLocation, TargetLocation, FColor::Cyan, false, 3.0f, 0, 3.0f);
+    	if (bDrawDebugLine)
+    	{
+    		DrawDebugSphere(GetWorld(), TargetLocation, 50.0f, 12, FColor::Cyan, false, 3.0f, 0, 5.0f);
+    		DrawDebugLine(GetWorld(), CurrentLocation, TargetLocation, FColor::Cyan, false, 3.0f, 0, 3.0f);	
+    	}
+
 #endif
         
         return;
@@ -233,7 +242,10 @@ void ABoss::SetNewTargetLocation()
     LOG(TEXT("Fallback target set: %s"), *TargetLocation.ToString());
 
 #if WITH_EDITOR
-    DrawDebugSphere(GetWorld(), TargetLocation, 50.0f, 12, FColor::Red, false, 3.0f, 0, 5.0f);
+	if (bDrawDebugLine)
+	{
+		DrawDebugSphere(GetWorld(), TargetLocation, 50.0f, 12, FColor::Red, false, 3.0f, 0, 5.0f);
+	}
 #endif
 }
 
@@ -275,7 +287,10 @@ void ABoss::SmoothMoveAlongSurface(const float& InDeltaTime)
             }
         }
 #if WITH_EDITOR
-        DrawDebugLine(GetWorld(), Start, End, FColor::Blue, false, 0.1f, 0, 2.0f);
+    	if (bDrawDebugLine)
+    	{
+    		DrawDebugLine(GetWorld(), Start, End, FColor::Blue, false, 0.1f, 0, 2.0f);
+    	}
 #endif
     }
 
@@ -388,21 +403,55 @@ void ABoss::PerformNormalMovement(const float& InDeltaTime)
 
 void ABoss::PerformChasing(const float& InDeltaTime)
 {
-	// @TODO: TargetPlayer가 IsValid 하지 않으면 일반 상태로 전환 로직 필요
 	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(EnhancedAIController->GetBlackboardComponent()->GetValueAsObject("TargetPlayer"));
 	if (!IsValid(Player)) return;
 
 	const FVector CurrentLocation = GetActorLocation();
 	const FVector PlayerLocation = Player->GetActorLocation();
-	const FVector ToPlayer = (PlayerLocation - CurrentLocation).GetSafeNormal();
+
+	// NavMesh를 사용한 경로 탐색
+	UNavigationSystemV1* NavSystem = UNavigationSystemV1::GetCurrent(GetWorld());
+	if (!IsValid(NavSystem)) return;
+
+	// 경로 찾기
+	UNavigationPath* NavPath = NavSystem->FindPathToLocationSynchronously(
+		GetWorld(),
+		CurrentLocation,
+		PlayerLocation,
+		this,
+		TSubclassOf<UNavigationQueryFilter>()
+	);
+
+	FVector TargetDirection;
+
+	if (IsValid(NavPath) && NavPath->PathPoints.Num() > 1)
+	{
+		// 경로가 존재하는 경우, 다음 경로점으로 방향 설정
+		// PathPoints[0]은 현재 위치, PathPoints[1]이 다음 목표점
+		const FVector NextPathPoint = NavPath->PathPoints[1];
+		TargetDirection = (NextPathPoint - CurrentLocation).GetSafeNormal();
     
-	// 플레이어 방향으로 회전
+		// 경로점에 충분히 가까워졌다면 그 다음 점을 타겟으로 설정
+		const float DistanceToNextPoint = FVector::Dist(CurrentLocation, NextPathPoint);
+		if (DistanceToNextPoint < 100.0f && NavPath->PathPoints.Num() > 2)
+	    {
+	        const FVector SecondNextPoint = NavPath->PathPoints[2];
+	        TargetDirection = (SecondNextPoint - CurrentLocation).GetSafeNormal();
+	    }
+	}
+	else
+	{
+	    // 경로가 없는 경우 직접 플레이어 방향으로 (기존 로직)
+	    TargetDirection = (PlayerLocation - CurrentLocation).GetSafeNormal();
+	}
+
+	// 타겟 방향으로 회전
 	const FRotator CurrentRotation = GetActorRotation();
-	const FRotator TargetRotation = ToPlayer.Rotation();
+	const FRotator TargetRotation = TargetDirection.Rotation();
 	const FRotator NewRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, InDeltaTime, RotationInterpSpeed * ChasingRotationSpeedMultiplier);
 	SetActorRotation(NewRotation);
-    
-	// 플레이어 방향으로 이동
+
+	// 전방벡터로 이동 (기존 로직 유지)
 	const float AdjustedMoveSpeed = StatComponent->MoveSpeed * ChasingMovementSpeedMultiplier;
 	CurrentMoveSpeed = FMath::FInterpTo(CurrentMoveSpeed, AdjustedMoveSpeed, InDeltaTime, MovementInterpSpeed);
 	const FVector NewLocation = CurrentLocation + GetActorForwardVector() * CurrentMoveSpeed * InDeltaTime;
@@ -420,6 +469,13 @@ void ABoss::StartTurn()
     const FVector Forward = GetActorForwardVector();
     
     TArray<FVector> PossibleDirections = {
+    	
+    	// 대각선 방향들
+    	Forward.RotateAngleAxis(45.0f, Up).RotateAngleAxis(30.0f, Right),
+		Forward.RotateAngleAxis(-45.0f, Up).RotateAngleAxis(30.0f, Right),
+		Forward.RotateAngleAxis(45.0f, Up).RotateAngleAxis(-30.0f, Right),
+		Forward.RotateAngleAxis(-45.0f, Up).RotateAngleAxis(-30.0f, Right),
+    	
         // 수평 방향들
         Forward.RotateAngleAxis(30.0f, Up),
         Forward.RotateAngleAxis(-30.0f, Up),
@@ -431,12 +487,21 @@ void ABoss::StartTurn()
         // 수직 방향들
         Forward.RotateAngleAxis(45.0f, Right),
         Forward.RotateAngleAxis(-45.0f, Right),
-        
-        // 대각선 방향들
-        Forward.RotateAngleAxis(45.0f, Up).RotateAngleAxis(30.0f, Right),
-        Forward.RotateAngleAxis(-45.0f, Up).RotateAngleAxis(30.0f, Right),
-        Forward.RotateAngleAxis(45.0f, Up).RotateAngleAxis(-30.0f, Right),
-        Forward.RotateAngleAxis(-45.0f, Up).RotateAngleAxis(-30.0f, Right)
+
+    	// 후방 수평 방향들
+    	Forward.RotateAngleAxis(120.0f, Up),
+	    Forward.RotateAngleAxis(-120.0f, Up),
+	    Forward.RotateAngleAxis(150.0f, Up),
+	    Forward.RotateAngleAxis(-150.0f, Up),
+
+		// 후방 대각선 방향들
+    	Forward.RotateAngleAxis(135.0f, Up).RotateAngleAxis(30.0f, Right),
+		Forward.RotateAngleAxis(-135.0f, Up).RotateAngleAxis(30.0f, Right),
+		Forward.RotateAngleAxis(135.0f, Up).RotateAngleAxis(-30.0f, Right),
+		Forward.RotateAngleAxis(-135.0f, Up).RotateAngleAxis(-30.0f, Right),
+
+    	// 후방 방향
+	    Forward.RotateAngleAxis(180.0f, Up),
     };
     
     // 수평, 수직, 대각선 방향에 대해 라인 트레이싱을 한다.
@@ -444,7 +509,7 @@ void ABoss::StartTurn()
     for (const FVector& Direction : PossibleDirections)
     {
     	const FVector Start = GetActorLocation();
-    	const FVector End = Start + Direction * TraceDistance;
+    	const FVector End = Start + Direction * TurnTraceDistance;
         
     	FHitResult HitResult;
     	bool bHit = GetWorld()->LineTraceSingleByChannel(
@@ -461,7 +526,10 @@ void ABoss::StartTurn()
     	}
 #if WITH_EDITOR
     	// 디버그 라인 표시 (더 오래 표시)
-    	DrawDebugLine(GetWorld(), Start, End, bHit ? FColor::Red : FColor::Green, false, 5.0f, 0, 5.0f);
+    	if (bDrawDebugLine)
+    	{
+    		DrawDebugLine(GetWorld(), Start, End, bHit ? FColor::Red : FColor::Green, false, 5.0f, 0, 5.0f);
+    	}
 #endif
     	if (!bHit)
     	{
@@ -554,8 +622,12 @@ void ABoss::PerformTurn(const float& InDeltaTime)
 	{
 		EnhancedAIController->GetBlackboardComponent()->SetValueAsBool("bIsTurning", false);
 		TurnTimer = 0.0f;
-        
-		SetNewTargetLocation();
+
+		const bool bIsChasingBlood = EnhancedAIController->GetBlackboardComponent()->GetValueAsBool("bIsChasingBlood");
+		if (!bIsChasingBlood)
+		{
+			SetNewTargetLocation();	
+		}
         
 		LOG(TEXT("Turn completed, setting new target"));
 	}
@@ -597,8 +669,11 @@ bool ABoss::HasObstacleAhead()
 	{
 		DebugColor = FColor::Purple;
 	}
-    
-	DrawDebugLine(GetWorld(), Start, End, DebugColor, false, 0.1f, 0, 3.0f);
+
+	if (bDrawDebugLine)
+	{
+		DrawDebugLine(GetWorld(), Start, End, DebugColor, false, 0.1f, 0, 3.0f);
+	}
 #endif
     
 	return bPhysicalHit || bNavMeshBlocked;;
@@ -691,13 +766,11 @@ float ABoss::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
 		UAISense_Damage::ReportDamageEvent(
 		GetWorld(),
 		this,        // 데미지를 입은 보스
-		DamageCauser,      // 공격한 플레이어
+		Cast<AADPlayerController>(DamageCauser)->GetCharacter(),      // 공격한 플레이어
 		Damage,
 		DamageCauser->GetActorLocation(),
 		HitResult.ImpactPoint
 		);
-
-		DamagedLocation = DamageCauser->GetActorLocation();
 	}
 	
 	if (IsValid(StatComponent))
@@ -714,10 +787,6 @@ void ABoss::OnDeath()
 {
 	GetCharacterMovement()->StopMovementImmediately();
 
-	// 피직스 에셋 물리엔진 적용
-	FTimerHandle TimerHandle;
-	GetWorldTimerManager().SetTimer(TimerHandle, this, &ABoss::ApplyPhysicsSimulation, 0.5f, false);	
-
 	// 이동을 멈추고 모든 애니메이션 출력 정지
 	AIController->StopMovement();
 	AnimInstance->StopAllMontages(0.5f);
@@ -727,6 +796,10 @@ void ABoss::OnDeath()
 
 	// AIController 작동 중지
 	AIController->UnPossess();
+
+	// 피직스 에셋 물리엔진 적용
+	FTimerHandle TimerHandle;
+	GetWorldTimerManager().SetTimer(TimerHandle, this, &ABoss::ApplyPhysicsSimulation, 0.5f, false);	
 }
 #pragma endregion
 

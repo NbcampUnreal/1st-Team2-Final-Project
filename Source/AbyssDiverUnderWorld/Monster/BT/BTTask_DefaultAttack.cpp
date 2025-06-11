@@ -11,6 +11,7 @@ UBTTask_DefaultAttack::UBTTask_DefaultAttack()
 	NodeName = "DefaultAttack";
 	bCreateNodeInstance = true;
 	bNotifyTick = false;
+	CachedOwnerComp = nullptr;
 }
 
 EBTNodeResult::Type UBTTask_DefaultAttack::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
@@ -70,7 +71,7 @@ void UBTTask_DefaultAttack::HandleAttackMontageEnded(UAnimMontage* Montage, bool
 		if (UBlackboardComponent* Blackboard = CachedOwnerComp->GetBlackboardComponent())
 		{
 			// Reverting back to tracking now that the attack is over
-			Blackboard->SetValueAsEnum("MonsterState", static_cast<uint8>(EMonsterState::Chase));
+			Blackboard->SetValueAsEnum(MonsterStateKey.SelectedKeyName, static_cast<uint8>(EMonsterState::Chase));
 		}
 		FinishLatentTask(*CachedOwnerComp, bInterrupted ? EBTNodeResult::Failed : EBTNodeResult::Succeeded);
 	}

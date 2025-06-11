@@ -27,6 +27,8 @@ protected:
 	TObjectPtr<UBehaviorTreeComponent> CachedOwnerComp;
 	UPROPERTY()
 	TObjectPtr<AActor> CachedTargetActor;
+	UPROPERTY(EditAnywhere, Category = "Blackboard")
+	struct FBlackboardKeySelector TargetActorKey;
 #pragma endregion
 };
 

@@ -20,6 +20,8 @@ EBTNodeResult::Type UBTTask_SetTargetLocation::ExecuteTask(UBehaviorTreeComponen
 	const FVector TargetLocation = AIController->GetBlackboardComponent()->GetValueAsVector(BlackboardKeyName);
 
 	Boss->SetTargetLocation(TargetLocation);
+
+	AIController->GetBlackboardComponent()->SetValueAsObject("TargetPlayer", nullptr);
 	
 	return EBTNodeResult::Succeeded;
 }
