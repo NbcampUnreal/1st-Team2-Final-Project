@@ -80,6 +80,8 @@ protected:
 	float PatrolSpeed;
 	UPROPERTY(EditAnywhere, Category = "AI")
 	float InvestigateSpeed;
+	UPROPERTY(EditAnywhere, Category = "AI")
+	float FleeSpeed;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TMap<AActor*, int32> DetectionRefCounts;
 

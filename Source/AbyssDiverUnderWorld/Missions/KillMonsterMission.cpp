@@ -2,6 +2,7 @@
 
 #include "DataRow/MissionDataRow/KillMonsterMissionRow.h"
 #include "Character/UnderwaterCharacter.h"
+#include "Monster/Monster.h"
 
 UKillMonsterMission::UKillMonsterMission()
 {
@@ -24,10 +25,26 @@ void UKillMonsterMission::InitMission(const FKillMissionInitParams& Params, cons
 
 void UKillMonsterMission::BindDelegates(UObject* TargetForDelegate)
 {
+	if (TargetForDelegate->IsA<AMonster>())
+	{
+		AMonster* Monster = Cast<AMonster>(TargetForDelegate);
+		Monster->OnMonsterDead.RemoveAll(this);
+		Monster->OnMonsterDead.AddDynamic(this, &UKillMonsterMission::OnMonsterDead);
+	}
 }
 
 void UKillMonsterMission::UnbindDelegates(UObject* TargetForDelegate)
 {
+	if (TargetForDelegate->IsA<AMonster>())
+	{
+		AMonster* Monster = Cast<AMonster>(TargetForDelegate);
+		Monster->OnMonsterDead.RemoveAll(this);
+	}
+}
+
+void UKillMonsterMission::OnMonsterDead(AActor* Killer, AMonster* DeadMonster)
+{
+	OnDead(Killer, (AActor*)DeadMonster);
 }
 
 bool UKillMonsterMission::IsConditionMet()
@@ -60,13 +77,12 @@ void UKillMonsterMission::OnDamaged(AActor* DamagedActor, AActor* DamageCauser, 
 
 void UKillMonsterMission::OnDead(AActor* DamageCauser, AActor* DeadActor)
 {
-
-	AUnderwaterCharacter* Causer = Cast<AUnderwaterCharacter>(DamageCauser);
+	/*AUnderwaterCharacter* Causer = Cast<AUnderwaterCharacter>(DamageCauser);
 	if (Causer == nullptr)
 	{
 		LOGV(Log, TEXT("Causer == nullptr, Name : %s"), *DamageCauser->GetName());
 		return;
-	}
+	}*/
 
 	AUnitBase* DeadUnit = Cast<AUnitBase>(DeadActor);
 	if (DeadUnit == nullptr)
@@ -83,6 +99,7 @@ void UKillMonsterMission::OnDead(AActor* DamageCauser, AActor* DeadActor)
 	}
 
 	CurrentCount++;
+
 	if (IsConditionMet() == false)
 	{
 		return;

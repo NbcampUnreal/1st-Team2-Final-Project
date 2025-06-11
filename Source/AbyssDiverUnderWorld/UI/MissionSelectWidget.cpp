@@ -38,7 +38,11 @@ void UMissionSelectWidget::NativeConstruct()
     };*/
 
     ScrollBox_MissionList->ClearChildren();
-    const TSet<FMissionData>& Missions = GetGameInstance()->GetSubsystem<UMissionSubsystem>()->GetMissionDataForUI();
+    const TArray<FMissionData>& Missions = GetGameInstance()->GetSubsystem<UMissionSubsystem>()->GetMissionDataForUI();
+    Algo::Sort(Missions, [](const FMissionData& A, const FMissionData& B)
+        {
+            return A.Stage < B.Stage;
+        });
 
     for (const FMissionData& Mission : Missions)
     {

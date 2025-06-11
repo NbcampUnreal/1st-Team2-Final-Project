@@ -49,6 +49,7 @@ struct FMissionBaseRow : public FTableRowBase
 	UPROPERTY(EditDefaultsOnly, Category = "MissionBase")
 	FString UnlockHint;
 
+	// 해금 조건 같은데 쓸 몇 스테이지 까지 갔는가 정도..
 	UPROPERTY(EditDefaultsOnly, Category = "MissionBase")
 	int32 Stage;
 
@@ -58,4 +59,12 @@ struct FMissionBaseRow : public FTableRowBase
 	// 처음에 미션이 잠금상태로 시작할 것인지 말 것인지 선택
 	UPROPERTY(EditDefaultsOnly, Category = "MissionBase")
 	uint8 bIsLocked : 1;
+
+	// 미션 완료 조건이 충족되는 즉시 미션 성공으로 간주할 것인가.
+	UPROPERTY(EditDefaultsOnly, Category = "MissionBase")
+	uint8 bShouldCompleteInstantly : 1;
+
+	// HUD에 띄울 간략한 미션 이미지
+	UPROPERTY(EditDefaultsOnly, Category = "MissionBase")
+	TObjectPtr<UTexture2D> MissionImage;
 };

@@ -18,8 +18,8 @@ class UItemCollectionMission;
 class UItemUseMission;
 class UKillMonsterMission;
 class UMissionBase;
-
 class AADInGameState;
+
 /**
  * 
  */
@@ -36,20 +36,20 @@ protected:
 
 public:
 
-	void AddToSelectedMissions(const EAggroTriggerMission& Mission);
-	void AddToSelectedMissions(const EInteractionMission& Mission);
-	void AddToSelectedMissions(const EItemCollectMission& Mission);
-	void AddToSelectedMissions(const EItemUseMission& Mission);
-	void AddToSelectedMissions(const EKillMonsterMission& Mission);
+	//void AddToSelectedMissions(const EAggroTriggerMission& Mission);
+	//void AddToSelectedMissions(const EInteractionMission& Mission);
+	//void AddToSelectedMissions(const EItemCollectMission& Mission);
+	//void AddToSelectedMissions(const EItemUseMission& Mission);
+	//void AddToSelectedMissions(const EKillMonsterMission& Mission);
 
 	// return : Succeeded?
-	bool AddToSelectedMissionFromIndex(const EMissionType& MissionType, const uint8& MissionIndex);
+	//bool AddToSelectedMissionFromIndex(const EMissionType& MissionType, const uint8& MissionIndex);
 
-	void RemoveFromSelectedMissions(const EAggroTriggerMission& Mission);
-	void RemoveFromSelectedMissions(const EInteractionMission& Mission);
-	void RemoveFromSelectedMissions(const EItemCollectMission& Mission);
-	void RemoveFromSelectedMissions(const EItemUseMission& Mission);
-	void RemoveFromSelectedMissions(const EKillMonsterMission& Mission);
+	//void RemoveFromSelectedMissions(const EAggroTriggerMission& Mission);
+	//void RemoveFromSelectedMissions(const EInteractionMission& Mission);
+	//void RemoveFromSelectedMissions(const EItemCollectMission& Mission);
+	//void RemoveFromSelectedMissions(const EItemUseMission& Mission);
+	//void RemoveFromSelectedMissions(const EKillMonsterMission& Mission);
 
 	void UnlockMission(const EAggroTriggerMission& Mission);
 	void UnlockMission(const EInteractionMission& Mission);
@@ -57,7 +57,7 @@ public:
 	void UnlockMission(const EItemUseMission& Mission);
 	void UnlockMission(const EKillMonsterMission& Mission);
 
-	void ClearSelectedMissions(const int32& SlackCount = 0);
+	//void ClearSelectedMissions(const int32& SlackCount = 0);
 
 	void ReceiveMissionDataFromUIData(const TArray<FMissionData>& Missions);
 
@@ -69,9 +69,9 @@ private:
 	void MakeAndAddMissionDataForUI(const FMissionBaseRow* MissionBaseData, const uint8& MissionIndex);
 
 	// return : Succeeded?
-	bool RemoveFromSelectedMissionsInternal(const EMissionType& MissionType, const uint8& MissionIndex);
+	//bool RemoveFromSelectedMissionsInternal(const EMissionType& MissionType, const uint8& MissionIndex);
 
-	bool IsAlreadySelected(const EMissionType& MissionType, const uint8& MissionIndex) const;
+	//bool IsAlreadySelected(const EMissionType& MissionType, const uint8& MissionIndex) const;
 	bool IsServer() const;
 
 	void UnlockMissionInternal(FMissionBaseRow* MissionsFromUI);
@@ -91,11 +91,11 @@ private:
 
 	// 미션 타입에 맞게 uint8을 Enum으로 캐스팅하여 사용
 	// 이것을 토대로 미션 생성할 예정
-	TMap<EMissionType, TArray<uint8>> SelectedMissions;
+	//TMap<EMissionType, TArray<uint8>> SelectedMissions;
 	// Set을 쓰기 때문에 미션 이름이 같은게 있으면 안 된다.
-	TSet<FString> SelecedMissionNames;
+	//TSet<FString> SelecedMissionNames;
 
-	TSet<FMissionData> MissionDataForUI;
+	TArray<FMissionData> MissionDataForUI;
 
 	TArray<FAggroTriggerMissionRow*> AggroTriggerMissionDataArray;
 	TArray<FInteractionMissionRow*> InteractionMissionDataArray;
@@ -116,9 +116,9 @@ private:
 #pragma region Getters / Setters
 public:
 
-	const TSet<FString>& GetAllSelectedMissionNames() const;
+	//const TSet<FString>& GetAllSelectedMissionNames() const;
 
-	const TSet<FMissionData>& GetMissionDataForUI() const;
+	const TArray<FMissionData>& GetMissionDataForUI() const;
 	const TArray<TObjectPtr<UMissionBase>>& GetActivatedMissions() const;
 
 	const FAggroTriggerMissionRow* GetAggroTriggerMissionData(const EAggroTriggerMission& Mission) const;
@@ -126,6 +126,9 @@ public:
 	const FItemCollectMissionRow* GetItemCollectMissionData(const EItemCollectMission& Mission) const;
 	const FItemUseMissionRow* GetItemUseMissionData(const EItemUseMission& Mission) const;
 	const FKillMonsterMissionRow* GetKillMonsterMissionData(const EKillMonsterMission& Mission) const;
+
+	const FMissionBaseRow* GetMissionData(const EMissionType& InMissionType, const uint8& InMissionIndex) const;
+
 #pragma endregion
 
 };

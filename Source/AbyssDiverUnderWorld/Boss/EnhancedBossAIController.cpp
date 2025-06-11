@@ -18,6 +18,7 @@ const FName AEnhancedBossAIController::bHasAttackedKey = "bHasAttacked";
 const FName AEnhancedBossAIController::bIsPlayerHiddenKey = "bIsPlayerHidden";
 const FName AEnhancedBossAIController::BloodOccurredLocationKey = "BloodOccurredLocation";
 const FName AEnhancedBossAIController::TargetPlayerKey = "TargetPlayer";
+const FName AEnhancedBossAIController::bIsChasingPlayerKey = "bIsChasingPlayer";
 const FName AEnhancedBossAIController::bIsDetectBloodKey = "bIsDetectBlood";
 const FName AEnhancedBossAIController::bIsChasingBloodKey = "bIsChasingBlood";
 
@@ -112,7 +113,7 @@ void AEnhancedBossAIController::OnTargetPerceptionUpdatedHandler(AActor* Actor, 
 		
 		if (Stimulus.WasSuccessfullySensed())
 		{
-			OnDamagePerceptionSuccess();
+			OnDamagePerceptionSuccess(Player);
 		}
 	}
 	
@@ -131,14 +132,13 @@ void AEnhancedBossAIController::OnTargetPerceptionUpdatedHandler(AActor* Actor, 
 		
 		if (Stimulus.WasSuccessfullySensed())
 		{
-			OnHearingPerceptionSuccess(Stimulus);
+			OnHearingPerceptionSuccess(Player);
 		}
 	}
 }
 
 void AEnhancedBossAIController::OnSightPerceptionSuccess(AUnderwaterCharacter* Player)
 {
-	LOG(TEXT("OnSightPerceptionSuccess: %s"), *Player->GetName());
 	// 플레이어가 부쉬에 숨은 상태라면 얼리 리턴
 	if (Player->IsHideInSeaweed())	return;
 	
@@ -174,26 +174,26 @@ void AEnhancedBossAIController::OnSightPerceptionSuccess(AUnderwaterCharacter* P
 
 void AEnhancedBossAIController::OnSightPerceptionFail()
 {
-	LOG(TEXT(" OnSightPerceptionFail"));
 	// 플레이어 사라짐 인지 변수 초기화
 	bIsDisappearPlayer = true;
 	BlackboardComponent->SetValueAsBool(bHasSeenPlayerKey, false);
 }
 
-void AEnhancedBossAIController::OnHearingPerceptionSuccess(const FAIStimulus& Stimulus)
+void AEnhancedBossAIController::OnHearingPerceptionSuccess(AUnderwaterCharacter* Player)
 {
-	LOG(TEXT("Player Blood Detected !"));
-
+	if (!IsValid(GetCharacter())) return;
+	
 	// 실제 수중에서 피를 흘린 경우 상어는 현재 위치에 따라 피를 감지하는 시간이 다를 것이다.
 	// 또한 영구적으로 피를 흘린 위치를 기억하는 것이 아닌, 피를 감지한 이후 5초 정도의 유효 시간이 존재한다.
 	// 유효시간이 지나거나 피를 흘린 주변 위치에 도달했다면 Normal 상태로 복귀한다.
 	
-	// 플레이어가 피를 흘린 위치를 저장
-	const FVector BloodOccurredLocation = Stimulus.StimulusLocation;
+	const FVector BloodOccurredLocation = Player->GetActorLocation();
 	BlackboardComponent->SetValueAsVector(BloodOccurredLocationKey, BloodOccurredLocation);
 
 	if (bIsAlienShark)
 	{
+		BlackboardComponent->SetValueAsObject(TargetPlayerKey, Player);
+		
 		const FVector CurrentLocation = GetCharacter()->GetActorLocation();
 		const float Distance = FVector::Dist(CurrentLocation, BloodOccurredLocation);
 
@@ -226,22 +226,18 @@ void AEnhancedBossAIController::SetBloodDetectedState()
 {
 	// 피 감지 상태 변수를 활성화한다.
 	// 5초동안 피를 감지하지 못 했다면 상태를 초기화한다.
-	GetBlackboardComponent()->SetValueAsBool(bIsDetectBloodKey, true);
-
-	LOG(TEXT("Set Blood State"));
-
-	FTimerHandle BloodForgetTimerHandle;
-	GetWorldTimerManager().SetTimer(BloodForgetTimerHandle, this, &AEnhancedBossAIController::InitBloodDetectedState, 5.0f);
+	GetBlackboardComponent()->SetValueAsBool(bIsChasingPlayerKey, true);
 }
 
-void AEnhancedBossAIController::InitBloodDetectedState()
-{
-	LOG(TEXT("Init Blood State"));
-	GetBlackboardComponent()->SetValueAsBool(bIsDetectBloodKey, false);
-	GetBlackboardComponent()->SetValueAsBool(bIsChasingBloodKey, false);
-}
 
-void AEnhancedBossAIController::OnDamagePerceptionSuccess()
+
+void AEnhancedBossAIController::OnDamagePerceptionSuccess(AUnderwaterCharacter* Player)
 {
 	SetBlackboardPerceptionType(EPerceptionType::Damage);
+
+	if (bIsAlienShark)
+	{
+		GetBlackboardComponent()->SetValueAsObject(TargetPlayerKey, Player);
+		GetBlackboardComponent()->SetValueAsBool(bIsChasingPlayerKey, true);
+	}
 }

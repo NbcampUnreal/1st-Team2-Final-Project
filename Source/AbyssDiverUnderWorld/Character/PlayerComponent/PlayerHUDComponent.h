@@ -5,6 +5,8 @@
 #include "UI/PlayerStatusWidget.h"
 #include "PlayerHUDComponent.generated.h"
 
+enum class EMissionType : uint8;
+
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class ABYSSDIVERUNDERWORLD_API UPlayerHUDComponent : public UActorComponent
 {
@@ -14,7 +16,9 @@ public:
     UPlayerHUDComponent();
 
 protected:
+
     virtual void BeginPlay() override;
+    virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 #pragma region Method
 public:
@@ -49,6 +53,9 @@ public:
     void UpdateSpearCount(const int32& CurrentSpear, const int32& TotalSpear);
 
     void SetSpearUIVisibility(bool bVisible);
+
+    void UpdateMissionsOnHUD(EMissionType MissionType, uint8 MissionIndex, int32 CurrentProgress);
+
 private:
 #pragma endregion
 
@@ -61,6 +68,14 @@ private:
     TObjectPtr<class UPlayerHUDWidget> HudWidget;
 
     UPROPERTY(EditDefaultsOnly, Category = UI, meta = (AllowPrivateAccess = "true"))
+    TSubclassOf<class UCrosshairWidget> CrosshairWidgetClass;
+
+    UPROPERTY()
+    TObjectPtr<class UCrosshairWidget> CrosshairWidget;
+
+    FVector2D CrosshairPosition;
+
+    UPROPERTY(EditDefaultsOnly, Category = UI, meta = (AllowPrivateAccess = "true"))
     TSubclassOf<class UResultScreen> ResultScreenWidgetClass;
 
     UPROPERTY()
@@ -71,12 +86,22 @@ private:
 
     UPROPERTY(BlueprintReadOnly, meta =(AllowPrivateAccess = true))
     TObjectPtr<UPlayerStatusWidget> PlayerStatusWidget;
+
+    UPROPERTY(EditDefaultsOnly, Category = UI, meta = (AllowPrivateAccess = "true"))
+    TSubclassOf<class UMissionsOnHUDWidget> MissionsOnHUDWidgetClass;
+
+    UPROPERTY()
+    TObjectPtr<class UMissionsOnHUDWidget> MissionsOnHUDWidget;
     
 #pragma endregion
 
 #pragma region Getter Setter
 
+public:
+
     bool IsTestHUDVisible() const;
+
+    UMissionsOnHUDWidget* GetMissionsOnHudWidget() const;
     
 #pragma endregion
 };
