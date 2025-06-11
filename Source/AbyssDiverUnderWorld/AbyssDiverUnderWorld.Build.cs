@@ -31,7 +31,6 @@ public class AbyssDiverUnderWorld : ModuleRules
             , "GameplayTags"
             , "Voice"
             , "NavigationSystem"
-            , "VivoxCore"
         });
 		
         PublicIncludePaths.AddRange(new string[] { "AbyssDiverUnderWorld" });

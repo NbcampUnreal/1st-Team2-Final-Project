@@ -25,7 +25,7 @@ protected:
 	virtual void Init() override;
 
 public:
-	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent)
+	UFUNCTION( BlueprintImplementableEvent)
 	void ExitSession(APlayerController* Caller);
 
 	bool TryGetPlayerIndex(const FString& NetId, int32& OutPlayerIndex);

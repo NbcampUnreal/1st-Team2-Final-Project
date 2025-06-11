@@ -38,24 +38,10 @@ void AADPlayerController::BeginPlay()
 
 	if (IsLocalController())
 	{
-		if (UADGameInstance* GI = GetGameInstance<UADGameInstance>())
-		{
-			if (USettingsManager* Settings = GI->GetSettingsManager())
-			{
-				Settings->ApplyKeySettings(Settings->GetCachedKeyBindings(), this);
-			}
-		}
-
 
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = GetLocalPlayer()->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
 		{
-			if (UADGameInstance* GI = GetGameInstance<UADGameInstance>())
-			{
-				if (USettingsManager* Settings = GI->GetSettingsManager())
-				{
-					Settings->ApplyKeySettings(Settings->GetCachedKeyBindings(), this);
-				}
-			}
+			Subsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
 
 		FString Nickname = TEXT("Guest");
