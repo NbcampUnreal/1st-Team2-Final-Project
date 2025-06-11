@@ -183,6 +183,8 @@ void AEnhancedBossAIController::OnSightPerceptionFail()
 void AEnhancedBossAIController::OnHearingPerceptionSuccess(const FAIStimulus& Stimulus)
 {
 	LOG(TEXT("Player Blood Detected !"));
+	
+	if (!IsValid(GetCharacter())) return;
 
 	// 실제 수중에서 피를 흘린 경우 상어는 현재 위치에 따라 피를 감지하는 시간이 다를 것이다.
 	// 또한 영구적으로 피를 흘린 위치를 기억하는 것이 아닌, 피를 감지한 이후 5초 정도의 유효 시간이 존재한다.
