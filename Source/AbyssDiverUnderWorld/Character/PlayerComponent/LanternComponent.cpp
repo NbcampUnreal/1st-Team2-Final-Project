@@ -72,7 +72,7 @@ void ULanternComponent::RequestToggleLanternLight()
 					// Handling Unexposed Monsters
 					if (IsValid(Monster) && Monster->GetMonsterState() == EMonsterState::Investigate)
 					{
-						Monster->SetMonsterState(EMonsterState::Patrol);
+						// Monster->SetMonsterState(EMonsterState::Patrol);
 						Monster->RemoveDetection(GetOwner());
 					}
 					It.RemoveCurrent();
@@ -217,7 +217,7 @@ void ULanternComponent::UpdateExposureTimes(TArray<AActor*> OverlappedActors, co
 			// Handling Unexposed Monsters
 			if (IsValid(Monster) && Monster->GetMonsterState() == EMonsterState::Investigate)
 			{
-				Monster->SetMonsterState(EMonsterState::Patrol);
+				// Monster->SetMonsterState(EMonsterState::Patrol);
 				Monster->RemoveDetection(GetOwner());
 			}
 			It.RemoveCurrent();
