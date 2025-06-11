@@ -12,11 +12,15 @@
 #include "Character/StatComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "EngineUtils.h"
-#include "Logging/StructuredLogFormat.h"
+#include "Components/CanvasPanel.h"
+#include "GameFramework/SpringArmComponent.h"
+#include "UI/CrosshairWidget.h"
 
 UPlayerHUDComponent::UPlayerHUDComponent()
 {
-	PrimaryComponentTick.bCanEverTick = false;
+	PrimaryComponentTick.bCanEverTick = true;
+	
+	CrosshairPosition = FVector2D::ZeroVector;
 }
 
 void UPlayerHUDComponent::BeginPlay()
@@ -42,6 +46,15 @@ void UPlayerHUDComponent::BeginPlay()
 		}
 	}
 	SetTestHUDVisibility(false);
+
+	if (CrosshairWidgetClass)
+	{
+		CrosshairWidget = CreateWidget<UCrosshairWidget>(PlayerController, CrosshairWidgetClass);
+		if (CrosshairWidget)
+		{
+			CrosshairWidget->AddToViewport();
+		}
+	}
 
 	// 상태 UI 생성
 	if (PlayerStatusWidgetClass)
@@ -86,6 +99,45 @@ void UPlayerHUDComponent::BeginPlay()
 			}
 		}
 	}
+}
+
+void UPlayerHUDComponent::TickComponent(float DeltaTime, enum ELevelTick TickType,
+	FActorComponentTickFunction* ThisTickFunction)
+{
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+	
+	APlayerController* PlayerController = Cast<APlayerController>(GetOwner());
+	if (!PlayerController || !PlayerController->IsLocalController())
+	{
+		return;
+	}
+
+	AUnderwaterCharacter* Character = PlayerController->GetPawn<AUnderwaterCharacter>();
+	if (!Character)
+	{
+		return;
+	}
+
+	// Viewport 크기와 DPI를 가져오는 방법
+	// 현재는 SetPotionInViewport에서 DPI를 계산해주므로 사용하지 않는다.
+	// FVector2D ViewportSize;
+	// GEngine->GameViewport->GetViewportSize(ViewportSize);
+	// UE_LOG(LogTemp,Display, TEXT("Viewport Size: %s"), *ViewportSize.ToString());
+
+	// UGameViewportClient* ViewportClient = GEngine->GameViewport;
+	// float DPI = ViewportClient->GetDPIScale();
+	// UE_LOG(LogTemp,Display, TEXT("DPI: %f"), DPI);
+	
+	const FVector CameraLocation = PlayerController->PlayerCameraManager->GetCameraLocation();
+	const FRotator LaggedRotation = Character->GetMesh1PSpringArm()->GetSocketRotation(Character->GetMesh1PSpringArm()->SocketName);
+	const FVector LaggedLookTarget = CameraLocation + LaggedRotation.Vector() * 1000.0f;
+
+	FVector2D ScreenPosition;
+	PlayerController->ProjectWorldLocationToScreen(LaggedLookTarget, ScreenPosition);
+
+	CrosshairPosition = FMath::Vector2DInterpTo(CrosshairPosition, ScreenPosition, DeltaTime, 20.0f);
+
+	CrosshairWidget->SetPositionInViewport(CrosshairPosition);
 }
 
 void UPlayerHUDComponent::C_ShowResultScreen_Implementation()
@@ -187,6 +239,8 @@ void UPlayerHUDComponent::UpdateResultScreen(int32 PlayerIndexBased_1, const FRe
 
 void UPlayerHUDComponent::OnPossessedPawnChanged(APawn* OldPawn, APawn* NewPawn)
 {
+	// UnPossess 상황에서 변화가 필요하면 OldPawn, NewPawn의 변화를 체크해서 구현할 것
+	
 	if (!NewPawn) return;
 
 	APlayerController* PlayerController = Cast<APlayerController>(GetOwner());
@@ -199,6 +253,11 @@ void UPlayerHUDComponent::OnPossessedPawnChanged(APawn* OldPawn, APawn* NewPawn)
 	{
 		HudWidget->AddToViewport();
 		HudWidget->BindWidget(NewPawn);
+	}
+
+	if (IsValid(CrosshairWidget))
+	{
+		
 	}
 
 	if (!IsValid(PlayerStatusWidget))
