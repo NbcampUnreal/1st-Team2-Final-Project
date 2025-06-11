@@ -994,6 +994,11 @@ public:
 	/** 상호작용 타입 반환 */
 	virtual FString GetInteractionDescription() const override { return TEXT("Revive Character!"); }
 
+	/** 스프린트 적용 속도 반환 */
 	FORCEINLINE float GetSprintSpeed() const { return StatComponent->MoveSpeed * SprintMultiplier; }
+
+	/** 현재 캐릭터가 무기를 장착하고 있는지 여부를 반환 */
+	bool IsWeaponEquipped() const;
+	
 #pragma endregion
 };

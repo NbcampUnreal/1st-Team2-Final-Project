@@ -1894,3 +1894,8 @@ bool AUnderwaterCharacter::IsOverloaded() const
 {
 	return IsValid(CachedInventoryComponent) && CachedInventoryComponent->GetTotalWeight() >= OverloadWeight;
 }
+
+bool AUnderwaterCharacter::IsWeaponEquipped() const
+{
+	return EquipUseComponent ? EquipUseComponent->bIsWeapon : false;
+}
