@@ -114,6 +114,7 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 
 	OverloadWeight = 40.0f;
 	OverloadSpeedFactor = 0.4f;
+	MinSpeed = 50.0f;
 	
 	StatComponent->MoveSpeed = 400.0f;
 	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
@@ -124,6 +125,7 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 		Movement->GravityScale = 0.0f;
 	}
 	SprintMultiplier = 1.75f;
+	ZoneSpeedMultiplier = 1.0f;
 
 	// Debug용 카메라
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
@@ -1103,10 +1105,12 @@ void AUnderwaterCharacter::AdjustSpeed()
 	{
 		Multiplier = 1 - OverloadSpeedFactor;
 	}
+	Multiplier *= ZoneSpeedMultiplier;
 	Multiplier = FMath::Clamp(Multiplier, 0.0f, 1.0f);
 	
-
 	EffectiveSpeed = BaseSpeed * Multiplier;
+	EffectiveSpeed = FMath::Max(EffectiveSpeed, MinSpeed);
+	
 	if (EnvironmentState == EEnvironmentState::Underwater)
 	{
 		GetCharacterMovement()->MaxSwimSpeed = EffectiveSpeed;

@@ -764,9 +764,20 @@ private:
 	UPROPERTY(Transient, BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float EffectiveSpeed;
 
+	/** 캐릭터가 감속할 수 있는 최소 속도 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	float MinSpeed;
+
+	// @ToDo: Multiplier를 통합 적용
+	// @ToDo: DPV 상황 추가
+	
 	/** Sprint 시에 적용되는 속도 배율. Sprint가 적용되면 EffectiveSpeed에 곱해진다. */
 	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float SprintMultiplier;
+
+	/** 특정 Zone에서 적용되는 속도 배율. Zone에 따라 다르게 적용된다. */
+	UPROPERTY(BlueprintReadWrite, Category = Character, meta = (AllowPrivateAccess = "true"))
+	float ZoneSpeedMultiplier;
 
 	/** 생성할 레이더 BP */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Radar", meta = (AllowPrivateAccess = "true"))
@@ -1049,6 +1060,12 @@ public:
 	/** 스프린트 적용 속도 반환 */
 	FORCEINLINE float GetSprintSpeed() const { return StatComponent->MoveSpeed * SprintMultiplier; }
 
+	/** Zone Speed Multiplier를 반환 */
+	FORCEINLINE float GetZoneSpeedMultiplier() const { return ZoneSpeedMultiplier; }
+
+	/** Zone Speed Multiplier를 설정 */
+	FORCEINLINE void SetZoneSpeedMultiplier(float NewMultiplier) { ZoneSpeedMultiplier = NewMultiplier; }
+	
 	/** 현재 캐릭터가 무기를 장착하고 있는지 여부를 반환 */
 	bool IsWeaponEquipped() const;
 	
