@@ -48,6 +48,7 @@ protected:
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<UAnimMontage> EjectMontage;
 
+	FTimerHandle TimerHandle_SetSwimMode;
 private:
 	UPROPERTY(EditAnywhere, Category = "Lanch")
 	float LanchStrength;
