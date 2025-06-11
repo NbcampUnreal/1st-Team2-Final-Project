@@ -20,6 +20,12 @@ public:
 	virtual void BeginPlay() override;
 
 #pragma region Method
+public:
+	UFUNCTION()
+	void SwallowPlayer(AUnderwaterCharacter* Victim);
+	UFUNCTION()
+	void EjectPlayer(AUnderwaterCharacter* Victim);
+
 protected:
 	UFUNCTION()
 	void OnSwallowTriggerOverlap(
@@ -31,22 +37,20 @@ protected:
 		const FHitResult& SweepResult
 	);
 
-	UFUNCTION()
-	void SwallowPlayer(AUnderwaterCharacter* Victim);
-
-	UFUNCTION()
-	void EjectPlayer(AUnderwaterCharacter* Victim);
-
-
 #pragma endregion
 
 #pragma region Variable
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI|Attack", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USphereComponent> HorrorCreatureHitSphere;
-
 	UPROPERTY()
 	TObjectPtr<AUnderwaterCharacter> SwallowedPlayer;
+	UPROPERTY(EditAnywhere)
+	TObjectPtr<UAnimMontage> EjectMontage;
+
+private:
+	UPROPERTY(EditAnywhere, Category = "Lanch")
+	float LanchStrength;
 
 	uint8 bCanSwallow : 1;
 #pragma endregion
@@ -54,6 +58,7 @@ protected:
 #pragma region Getter, Setter
 public:
 	virtual USphereComponent* GetAttackHitComponent() const override { return HorrorCreatureHitSphere; }
+	AUnderwaterCharacter* GetSwallowedPlayer() { return SwallowedPlayer; }
 
 #pragma endregion
 };

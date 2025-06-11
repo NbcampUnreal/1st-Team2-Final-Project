@@ -5,14 +5,18 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Character/UnderwaterCharacter.h"
 
+
 AHorrorCreature::AHorrorCreature()
 {
 	// Initialize Variable
 	ChaseTriggerTime = 2.0f;
-	ChaseSpeed = 650.0f;
-	PatrolSpeed = 150.0f;
-	InvestigateSpeed = 250.0f;
+	ChaseSpeed = 1400.0f;
+	PatrolSpeed = 200.0f;
+	InvestigateSpeed = 500.0f;
+	FleeSpeed = 2000.0f;
 	SwallowedPlayer = nullptr;
+	bCanSwallow = true;
+	LanchStrength = 150.0f;
 
 	HorrorCreatureHitSphere = CreateDefaultSubobject<USphereComponent>(TEXT("HorrorCreatureHitSphere"));
 	HorrorCreatureHitSphere->SetupAttachment(GetMesh(), TEXT("AttackSocket"));
@@ -23,6 +27,7 @@ AHorrorCreature::AHorrorCreature()
 
 void AHorrorCreature::BeginPlay()
 {
+	Super::BeginPlay();
 	HorrorCreatureHitSphere->OnComponentBeginOverlap.AddDynamic(this, &AHorrorCreature::OnSwallowTriggerOverlap);
 }
 
@@ -35,11 +40,13 @@ void AHorrorCreature::OnSwallowTriggerOverlap(
 	const FHitResult& SweepResult)
 {
 	if (!bCanSwallow || !HasAuthority() || SwallowedPlayer) return;
+	if (OtherActor == this) return;
 
 	AUnderwaterCharacter* Victim = Cast<AUnderwaterCharacter>(OtherActor);
 	if (Victim)
 	{
 		SwallowPlayer(Victim);
+		UE_LOG(LogTemp, Warning, TEXT("SwallowPlayer is Called"))
 	}
 }
 
@@ -48,34 +55,42 @@ void AHorrorCreature::SwallowPlayer(AUnderwaterCharacter* Victim)
 	if (!HasAuthority() || !Victim || SwallowedPlayer) return;
 
 	SwallowedPlayer = Victim;
+	bCanSwallow = false;
 
-	Victim->SetActorEnableCollision(false);
-	Victim->GetCharacterMovement()->DisableMovement();
-	Victim->SetActorHiddenInGame(true);
-	// @TODO : Add SwallowedEffect on PlayerLogic
-	// Victim->Client_PlaySwallowedEffect(); 
+	// Attach to mouth or body socket
+	Victim->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("MouthSocket"));
+	Victim->SetActorRelativeLocation(FVector::ZeroVector); // Safely reset location
+	Victim->StartCaptureState();
 
-	FTimerHandle TimerHandle;
-	GetWorld()->GetTimerManager().SetTimer(TimerHandle, FTimerDelegate::CreateUObject(this, &AHorrorCreature::EjectPlayer, Victim), 5.0f, false);
+	SetMonsterState(EMonsterState::Flee);
+	RemoveDetection(Victim);
+	BlackboardComponent->SetValueAsEnum(MonsterStateKey, static_cast<uint8>(EMonsterState::Flee));
 }
 
 void AHorrorCreature::EjectPlayer(AUnderwaterCharacter* Victim)
 {
 	if (!Victim) return;
 
-	// Re-enable components
-	Victim->SetActorEnableCollision(true);
+	Victim->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 	Victim->SetActorHiddenInGame(false);
-	Victim->GetCharacterMovement()->SetMovementMode(MOVE_Swimming);
-	// @TODO : Add EjectEffect on PlayerLogic
-	// Victim->Client_PlayEjectEffect();
-
+	Victim->StopCaptureState();
+	
 	// Launch the player upward and forward from the mouth
-	FVector LaunchDirection = GetActorForwardVector() + FVector(0, 0, 1.2f);
-	LaunchDirection.Normalize();
-	FVector LaunchVelocity = LaunchDirection * 150.f; // adjust strength as needed
-	Victim->LaunchCharacter(LaunchVelocity, true, true);
+	FVector LaunchDirection = GetActorForwardVector();
+	FVector LaunchVelocity = LaunchDirection * LanchStrength; // adjust strength as needed
+	Victim->LaunchCharacter(LaunchVelocity, false, false);
+
+	if (EjectMontage)
+	{
+		M_PlayMontage(EjectMontage);
+	}
+
+	SetMonsterState(EMonsterState::Patrol);
+	BlackboardComponent->SetValueAsEnum(MonsterStateKey, static_cast<uint8>(EMonsterState::Patrol));
 
 	SwallowedPlayer = nullptr;
+	bCanSwallow = true;
 }
+
+
 

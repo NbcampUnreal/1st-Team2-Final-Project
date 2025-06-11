@@ -287,6 +287,9 @@ void AMonster::SetMonsterState(EMonsterState NewState)
 		// @TODO : Add animations, sounds, and more
 		break;
 
+	case EMonsterState::Flee:
+		SetMaxSwimSpeed(FleeSpeed);
+
 	default:
 		break;
 	}

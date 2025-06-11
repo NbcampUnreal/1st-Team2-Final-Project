@@ -1,17 +1,17 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Monster/BT/BTTask_RotateToTarget.h"
+#include "Monster/BT/BTTask_RotateToLocation.h"
 #include "AIController.h"
 #include "Monster/Monster.h"
 
-UBTTask_RotateToTarget::UBTTask_RotateToTarget()
+UBTTask_RotateToLocation::UBTTask_RotateToLocation()
 {
-	NodeName = "RotateToTarget";
+	NodeName = "RotateToLocation";
 	bNotifyTick = true;
 }
 
-EBTNodeResult::Type UBTTask_RotateToTarget::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
+EBTNodeResult::Type UBTTask_RotateToLocation::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
 	CachedOwnerComp = &OwnerComp;
 
@@ -19,24 +19,23 @@ EBTNodeResult::Type UBTTask_RotateToTarget::ExecuteTask(UBehaviorTreeComponent& 
 	ACharacter* AIPawn = Cast<ACharacter>(AIController->GetPawn());
 	if (!AIPawn) return EBTNodeResult::Failed;
 
-	CachedTargetActor = Cast<AActor>(AIController->GetBlackboardComponent()->GetValueAsObject(TargetActorKey.SelectedKeyName));
-	if (!CachedTargetActor || !IsValid(CachedTargetActor)) return EBTNodeResult::Failed;
+	TargetLocation = AIController->GetBlackboardComponent()->GetValueAsVector(TargetLocationKey.SelectedKeyName);
+	if (TargetLocation.IsZero()) return EBTNodeResult::Failed;
 
 	return EBTNodeResult::InProgress;
 }
 
-void UBTTask_RotateToTarget::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
+void UBTTask_RotateToLocation::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
 {
 	ACharacter* AIPawn = Cast<ACharacter>(OwnerComp.GetAIOwner()->GetPawn());
-	if (!AIPawn || !CachedTargetActor) return;
+	if (!AIPawn) return;
 
-	FVector ToTarget = CachedTargetActor->GetActorLocation() - AIPawn->GetActorLocation();
+	FVector ToTarget = TargetLocation - AIPawn->GetActorLocation();
 	ToTarget.Normalize();
 
 	FRotator CurrentRot = AIPawn->GetActorRotation();
 	FRotator TargetRot = FRotationMatrix::MakeFromX(ToTarget).Rotator();
 	TargetRot.Roll = 0.f;
-	// TargetRot.Pitch = 0.f;
 
 	// Rotational interpolation
 	FRotator NewRot = FMath::RInterpTo(CurrentRot, TargetRot, DeltaSeconds, 5.f);
