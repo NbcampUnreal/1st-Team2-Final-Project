@@ -34,7 +34,7 @@ EBTNodeResult::Type UBTTask_MoveToLocation::ExecuteTask(UBehaviorTreeComponent& 
 	if (!TaskMemory) return EBTNodeResult::Failed;
 
 	TaskMemory->AIController = Cast<AEnhancedBossAIController>(Comp.GetAIOwner());
-	TaskMemory->Boss = Cast<ABoss>(TaskMemory->AIController->GetCharacter());
+	TaskMemory->Boss = Cast<ABoss>(Comp.GetAIOwner()->GetCharacter());
 	
 	if (!TaskMemory->Boss.IsValid() || !TaskMemory->AIController.IsValid()) return EBTNodeResult::Failed;
 
@@ -62,12 +62,6 @@ void UBTTask_MoveToLocation::TickTask(UBehaviorTreeComponent& Comp, uint8* NodeM
 
 	FBTMoveToLocationTaskMemory* TaskMemory = (FBTMoveToLocationTaskMemory*)NodeMemory;
 	if (!TaskMemory) return;
-
-	TaskMemory->AIController = Cast<AEnhancedBossAIController>(Comp.GetAIOwner());
-	TaskMemory->Boss = Cast<ABoss>(TaskMemory->AIController->GetCharacter());
-	
-	if (!TaskMemory->Boss.IsValid() || !TaskMemory->AIController.IsValid()) return;
-
 
 	
 	// 만약 MoveToLocation Task 노드의 점유 시간이 MinFinishTaskInterval 이상이 된다면

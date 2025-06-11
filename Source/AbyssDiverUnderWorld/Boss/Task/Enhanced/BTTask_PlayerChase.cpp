@@ -51,11 +51,7 @@ void UBTTask_PlayerChase::TickTask(UBehaviorTreeComponent& Comp, uint8* NodeMemo
 
 	FBTPlayerChaseTaskMemory* TaskMemory = (FBTPlayerChaseTaskMemory*)NodeMemory;
 	if (!TaskMemory) return;
-
-	TaskMemory->AIController = Cast<AEnhancedBossAIController>(Comp.GetAIOwner());
-	TaskMemory->Boss = Cast<ABoss>(TaskMemory->AIController->GetCharacter());
 	
-	if (!TaskMemory->Boss.IsValid() || !TaskMemory->AIController.IsValid()) return;
 
 	// 추적중인 액터에게 MoveTo를 호출하는 코드이다.
 	Result = TaskMemory->AIController->MoveToActorWithRadius();
