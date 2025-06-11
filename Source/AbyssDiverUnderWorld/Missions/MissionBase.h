@@ -73,6 +73,8 @@ protected:
 
 	TArray<int32> ExtraValues;
 
+	uint8 bIsCompletedAlready : 1;
+
 #pragma endregion
 
 #pragma region Getters / Setters
@@ -84,7 +86,7 @@ public:
 	FORCEINLINE const int32& GetCurrentCount() const { return CurrentCount; }
 	FORCEINLINE const FString& GetMissionName() const { return MissionName; }
 	FORCEINLINE const FString& GetMissionDescription() const { return MissionDescription; }
-	
+	FORCEINLINE const bool IsCompletedAlready() const { return bIsCompletedAlready; }
 	virtual const uint8 GetMissionIndex() const PURE_VIRTUAL(UMissionBase::GetMissionIndex, static uint8 Dummy = 0; return Dummy;);
 
 #pragma endregion

@@ -5,6 +5,8 @@
 #include "UI/PlayerStatusWidget.h"
 #include "PlayerHUDComponent.generated.h"
 
+enum class EMissionType : uint8;
+
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class ABYSSDIVERUNDERWORLD_API UPlayerHUDComponent : public UActorComponent
 {
@@ -14,6 +16,7 @@ public:
     UPlayerHUDComponent();
 
 protected:
+
     virtual void BeginPlay() override;
 
 #pragma region Method
@@ -49,6 +52,9 @@ public:
     void UpdateSpearCount(const int32& CurrentSpear, const int32& TotalSpear);
 
     void SetSpearUIVisibility(bool bVisible);
+
+    void UpdateMissionsOnHUD(EMissionType MissionType, uint8 MissionIndex, int32 CurrentProgress);
+
 private:
 #pragma endregion
 
@@ -71,12 +77,22 @@ private:
 
     UPROPERTY(BlueprintReadOnly, meta =(AllowPrivateAccess = true))
     TObjectPtr<UPlayerStatusWidget> PlayerStatusWidget;
+
+    UPROPERTY(EditDefaultsOnly, Category = UI, meta = (AllowPrivateAccess = "true"))
+    TSubclassOf<class UMissionsOnHUDWidget> MissionsOnHUDWidgetClass;
+
+    UPROPERTY()
+    TObjectPtr<class UMissionsOnHUDWidget> MissionsOnHUDWidget;
     
 #pragma endregion
 
 #pragma region Getter Setter
 
+public:
+
     bool IsTestHUDVisible() const;
+
+    UMissionsOnHUDWidget* GetMissionsOnHudWidget() const;
     
 #pragma endregion
 };
