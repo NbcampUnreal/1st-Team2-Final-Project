@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/GameInstance.h"
+#include "AdvancedFriendsGameInstance.h"
 #include "UI/MissionData.h"
 #include "Framework/SettingsManager.h"
 #include "ADGameInstance.generated.h"
@@ -9,7 +10,7 @@
 enum class EMapName : uint8;
 
 UCLASS()
-class ABYSSDIVERUNDERWORLD_API UADGameInstance : public UGameInstance
+class ABYSSDIVERUNDERWORLD_API UADGameInstance : public UAdvancedFriendsGameInstance
 {
     GENERATED_BODY()
 public:
@@ -17,7 +18,7 @@ public:
     const TArray<FMissionData>& GetSelectedMissions() const { return SelectedMissions; }
 
 public:
-	UADGameInstance();
+	UADGameInstance(const FObjectInitializer& ObjectInitializer);
 
 protected:
 

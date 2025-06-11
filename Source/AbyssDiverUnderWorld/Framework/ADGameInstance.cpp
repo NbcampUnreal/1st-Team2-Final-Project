@@ -5,8 +5,8 @@
 
 #include "Kismet/GameplayStatics.h"
 
-UADGameInstance::UADGameInstance()
-
+UADGameInstance::UADGameInstance(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
 {
 }
 
