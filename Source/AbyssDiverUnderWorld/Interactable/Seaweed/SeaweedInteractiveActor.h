@@ -51,7 +51,7 @@ protected:
     TMap<FName, FQuat> OriginalBoneRotations;
 
     UPROPERTY(ReplicatedUsing = OnRep_BendState)
-    bool bShouldBend = false;
+    uint8 bShouldBend : 1;
 
     int32 OverlappingCharacterCount = 0;
     float CurrentAlpha = 0.0f;
