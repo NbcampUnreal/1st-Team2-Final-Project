@@ -63,4 +63,8 @@ struct FMissionBaseRow : public FTableRowBase
 	// 미션 완료 조건이 충족되는 즉시 미션 성공으로 간주할 것인가.
 	UPROPERTY(EditDefaultsOnly, Category = "MissionBase")
 	uint8 bShouldCompleteInstantly : 1;
+
+	// HUD에 띄울 간략한 미션 이미지
+	UPROPERTY(EditDefaultsOnly, Category = "MissionBase")
+	TObjectPtr<UTexture2D> MissionImage;
 };

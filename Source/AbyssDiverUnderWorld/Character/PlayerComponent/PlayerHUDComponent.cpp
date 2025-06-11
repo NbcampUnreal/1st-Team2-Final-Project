@@ -2,14 +2,15 @@
 
 #include "AbyssDiverUnderWorld.h"
 #include "Character/PlayerHUDWidget.h"
-#include "Framework/ADInGameState.h"
-#include "Framework/ADPlayerState.h"
-#include "UI/ResultScreen.h"
-#include "UI/PlayerStatusWidget.h"
 #include "Character/UnderwaterCharacter.h"
 #include "Character/PlayerComponent/OxygenComponent.h"
 #include "Character/PlayerComponent/StaminaComponent.h"
 #include "Character/StatComponent.h"
+#include "Framework/ADInGameState.h"
+#include "Framework/ADPlayerState.h"
+#include "UI/ResultScreen.h"
+#include "UI/PlayerStatusWidget.h"
+#include "UI/MissionsOnHUDWidget.h"
 #include "GameFramework/PlayerController.h"
 #include "EngineUtils.h"
 #include "Components/CanvasPanel.h"
@@ -70,6 +71,12 @@ void UPlayerHUDComponent::BeginPlay()
 	if (ResultScreenWidgetClass)
 	{
 		ResultScreenWidget = CreateWidget<UResultScreen>(PlayerController, ResultScreenWidgetClass);
+	}
+
+	if (MissionsOnHUDWidgetClass)
+	{
+		MissionsOnHUDWidget = CreateWidget<UMissionsOnHUDWidget>(PlayerController, MissionsOnHUDWidgetClass);
+		MissionsOnHUDWidget->AddToViewport();
 	}
 
 	// 올바른 수정
@@ -194,6 +201,11 @@ void UPlayerHUDComponent::C_ShowResultScreen_Implementation()
 	SetResultScreenVisible(true);
 }
 
+void UPlayerHUDComponent::UpdateMissionsOnHUD(EMissionType MissionType, uint8 MissionIndex, int32 CurrentProgress)
+{
+	MissionsOnHUDWidget->UpdateMission(MissionType, MissionIndex, CurrentProgress);
+}
+
 void UPlayerHUDComponent::SetTestHUDVisibility(const bool NewVisible) const
 {
 	if (HudWidget)
@@ -275,6 +287,16 @@ void UPlayerHUDComponent::OnPossessedPawnChanged(APawn* OldPawn, APawn* NewPawn)
 		ResultScreenWidget = CreateWidget<UResultScreen>(PlayerController, ResultScreenWidgetClass);
 	}
 
+	if (MissionsOnHUDWidgetClass && IsValid(MissionsOnHUDWidget) == false)
+	{
+		MissionsOnHUDWidget = CreateWidget<UMissionsOnHUDWidget>(PlayerController, MissionsOnHUDWidgetClass);
+	}
+
+	if (MissionsOnHUDWidget)
+	{
+		MissionsOnHUDWidget->AddToViewport();
+	}
+
 	if (AUnderwaterCharacter* UWCharacter = Cast<AUnderwaterCharacter>(NewPawn))
 	{
 		if (UOxygenComponent* OxygenComp = UWCharacter->GetOxygenComponent())
@@ -344,4 +366,9 @@ void UPlayerHUDComponent::SetSpearUIVisibility(bool bVisible)
 bool UPlayerHUDComponent::IsTestHUDVisible() const
 {
 	return HudWidget && HudWidget->GetVisibility() == ESlateVisibility::Visible;
+}
+
+UMissionsOnHUDWidget* UPlayerHUDComponent::GetMissionsOnHudWidget() const
+{
+	return MissionsOnHUDWidget;
 }
