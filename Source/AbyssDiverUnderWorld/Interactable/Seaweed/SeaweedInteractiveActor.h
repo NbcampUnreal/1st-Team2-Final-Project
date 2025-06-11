@@ -2,12 +2,12 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Components/PoseableMeshComponent.h"
 #include "SeaweedInteractiveActor.generated.h"
 
-class USplineMeshComponent;
-class UStaticMeshComponent;
 class USphereComponent;
 class USceneComponent;
+class UPoseableMeshComponent;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API ASeaweedInteractiveActor : public AActor
@@ -22,8 +22,6 @@ protected:
     virtual void Tick(float DeltaTime) override;
     virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-#pragma region Overlap Events
-protected:
     UFUNCTION()
     void OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
         UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
@@ -35,63 +33,35 @@ protected:
 
     UFUNCTION()
     void OnRep_BendState();
-#pragma endregion
 
-#pragma region Tick Functions
-protected:
-    void TickRotation(float DeltaTime);
-    void TickSplineBend(float DeltaTime);
-#pragma endregion
-
-#pragma region Components
 protected:
     UPROPERTY(VisibleAnywhere)
-    USceneComponent* SceneRoot;
+    TObjectPtr<USceneComponent> SceneRoot;
 
     UPROPERTY(VisibleAnywhere)
-    USplineMeshComponent* SplineMesh;
+    TObjectPtr<UPoseableMeshComponent> SeaweedMesh;
 
     UPROPERTY(VisibleAnywhere)
-    USphereComponent* DetectionSphere;
+    TObjectPtr<USphereComponent> DetectionSphere;
 
-    UPROPERTY(VisibleAnywhere)
-    USkeletalMeshComponent* SeaweedSkeletalMesh;
-#pragma endregion
+    TArray<FName> BendingBoneNames = {
+        "Bone_004", "Bone_005", "Bone_006", "Bone_007" // 하단 본 제외
+    };
 
-#pragma region Config
-public:
-    UPROPERTY(EditAnywhere)
-    UStaticMesh* SeaweedMeshAsset;
-
-    UPROPERTY(EditAnywhere)
-    float BendSpeed = 1.0f;
-
-    UPROPERTY(EditAnywhere)
-    float RecoverSpeed = 0.5f;
-
-    UPROPERTY(EditAnywhere)
-    float BendPitch = -26.f;
-
-    UPROPERTY(EditAnywhere)
-    float BendAmount = 30.f;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    float BendAlpha = 0.f;
-#pragma endregion
-
-#pragma region Runtime
-protected:
-    FRotator StartRotation;
-
-    UPROPERTY(ReplicatedUsing = OnRep_BendState)
-    FRotator TargetRotation;
+    TMap<FName, FQuat> OriginalBoneRotations;
 
     UPROPERTY(ReplicatedUsing = OnRep_BendState)
     bool bShouldBend = false;
 
-    float CurrentAlpha = 0.f;
-    float LerpAlpha = 0.f;
-
     int32 OverlappingCharacterCount = 0;
-#pragma endregion
+    float CurrentAlpha = 0.0f;
+
+    UPROPERTY(EditAnywhere, Category = "Seaweed")
+    float BendSpeed = 3.0f;
+
+    UPROPERTY(EditAnywhere, Category = "Seaweed")
+    float BendAmount = 35.f;
+
+    UPROPERTY(Replicated)
+    FVector BendAxis = FVector::RightVector;
 };
