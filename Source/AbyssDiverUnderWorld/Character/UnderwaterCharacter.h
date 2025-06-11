@@ -159,6 +159,19 @@ public:
 	 * 혹은 2개가 결합된 방식을 사용할 수 있다.
 	 * 2. State Pattern 사용 : 상태가 많아질 경우 해당 State Pattern을 사용해서 상태를 관리한다.
 	 */
+
+	// Monster 인식 시에 Target
+	// Monster가 놓칠 시에 UnTarget
+	// Monster가 사망했을 때 UnTarget
+	// Monster가 Target을 변경했을 때 UnTarget
+	
+	/** Monster에 의해 Target 되었을 때 호출된다. Authority Node에서만 유효하다. */
+	UFUNCTION(BlueprintCallable)
+	void OnTargeted();
+
+	/** Monster에 의해 UnTarget 되었을 때 호출된다. Authority Node에서만 유효하다. */
+	UFUNCTION(BlueprintCallable)
+	void OnUntargeted();
 	
 	/** 캐릭터 Capture 상태 실행 */
 	UFUNCTION(BlueprintCallable)
@@ -316,6 +329,25 @@ protected:
 	void M_StopCaptureState();
 	void M_StopCaptureState_Implementation();
 
+	// Stat Component의 회복 기능을 통해서 구현한다.
+	
+	// - Combat End
+	// - (UnCombat) Damage를 받고 일정 시간 이후에 체력 회복 시작
+	
+	/** Health Regen을 시작한다. */
+	void StartHealthRegen();
+
+	// - Combat Start
+	// - (UnCombat) Damage를 받고 일정 시간 이후에 체력 회복 중지
+	/** Health Regen을 종료 */
+	void StopHealthRegen();
+	
+	/** 전투 진입 시에 호출되는 함수 */
+	void StartCombat();
+
+	/** 전투 종료 시에 호출되는 함수 */
+	void EndCombat();
+	
 	/** 현재 상태 속도 갱신.(무게, Sprint) */
 	UFUNCTION()
 	void AdjustSpeed();
@@ -669,6 +701,26 @@ private:
 	/** 그로기 상태에서 부활할 때 Hold해야 하는 시간. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true"))
 	float RescueRequireTime;
+
+	/** 현재 전투 중인지 여부 */
+	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	uint8 bIsInCombat : 1;
+	
+	/** 현재 캐릭터를 타겟팅하고 있는 Actor의 개수. */
+	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	int TargetingActorCount;
+
+	// Tick을 썼다면 쉽게 관리했겠지만 현재로는 Timer를 사용해서 관리한다.
+	/** 체력 회복 중지 상태에서 체력 회복을 시작하기 위해 필요한 시간 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Combat", meta = (AllowPrivateAccess = "true"))
+	float HealthRegenDelay;
+
+	/** 1초당 체력 회복 비율이다. MaxHealth * HealthRegenRate 만큼 회복한다. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Combat", meta = (AllowPrivateAccess = "true", ClampMin = "0.0", ClampMax = "1.0"))
+	float HealthRegenRate;
+	
+	/** 전투 종료 시에 체력 회복을 위한 타이머 핸들 */
+	FTimerHandle HealthRegenStartTimer;
 	
 	// Gather와 같은 정보는 추후 다른 곳으로 이동될 수 있지만 일단은 캐릭터에 구현한다.
 
@@ -712,9 +764,20 @@ private:
 	UPROPERTY(Transient, BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float EffectiveSpeed;
 
+	/** 캐릭터가 감속할 수 있는 최소 속도 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	float MinSpeed;
+
+	// @ToDo: Multiplier를 통합 적용
+	// @ToDo: DPV 상황 추가
+	
 	/** Sprint 시에 적용되는 속도 배율. Sprint가 적용되면 EffectiveSpeed에 곱해진다. */
 	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float SprintMultiplier;
+
+	/** 특정 Zone에서 적용되는 속도 배율. Zone에 따라 다르게 적용된다. */
+	UPROPERTY(BlueprintReadWrite, Category = Character, meta = (AllowPrivateAccess = "true"))
+	float ZoneSpeedMultiplier;
 
 	/** 생성할 레이더 BP */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Radar", meta = (AllowPrivateAccess = "true"))
@@ -994,6 +1057,17 @@ public:
 	/** 상호작용 타입 반환 */
 	virtual FString GetInteractionDescription() const override { return TEXT("Revive Character!"); }
 
+	/** 스프린트 적용 속도 반환 */
 	FORCEINLINE float GetSprintSpeed() const { return StatComponent->MoveSpeed * SprintMultiplier; }
+
+	/** Zone Speed Multiplier를 반환 */
+	FORCEINLINE float GetZoneSpeedMultiplier() const { return ZoneSpeedMultiplier; }
+
+	/** Zone Speed Multiplier를 설정 */
+	FORCEINLINE void SetZoneSpeedMultiplier(float NewMultiplier) { ZoneSpeedMultiplier = NewMultiplier; }
+	
+	/** 현재 캐릭터가 무기를 장착하고 있는지 여부를 반환 */
+	bool IsWeaponEquipped() const;
+	
 #pragma endregion
 };

@@ -96,7 +96,12 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	GroggyLookSensitivity = 0.25f;
 	RescueRequireTime = 6.0f;
 	GroggyHitPenalty = 5.0f;
-	RecoveryHealthPercentage = 1.0f;
+	RecoveryHealthPercentage = 0.1f;
+
+	bIsInCombat = false;
+	TargetingActorCount = 0;
+	HealthRegenDelay = 5.0f;
+	HealthRegenRate = 0.1f;
 	
 	GatherMultiplier = 1.0f;
 	
@@ -109,6 +114,7 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 
 	OverloadWeight = 40.0f;
 	OverloadSpeedFactor = 0.4f;
+	MinSpeed = 50.0f;
 	
 	StatComponent->MoveSpeed = 400.0f;
 	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
@@ -119,6 +125,7 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 		Movement->GravityScale = 0.0f;
 	}
 	SprintMultiplier = 1.75f;
+	ZoneSpeedMultiplier = 1.0f;
 
 	// Debug용 카메라
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
@@ -420,6 +427,28 @@ void AUnderwaterCharacter::SetEnvironmentState(EEnvironmentState State)
 	K2_OnEnvironmentStateChanged(OldState, EnvironmentState);
 }
 
+void AUnderwaterCharacter::OnTargeted()
+{
+	if (HasAuthority())
+	{
+		TargetingActorCount++;
+		StartCombat();
+	}
+}
+
+void AUnderwaterCharacter::OnUntargeted()
+{
+	if (HasAuthority())
+	{
+		TargetingActorCount--;
+		if (TargetingActorCount <= 0)
+		{
+			TargetingActorCount = 0;
+			EndCombat();
+		}
+	}
+}
+
 void AUnderwaterCharacter::StartCaptureState()
 {
 	if(bIsCaptured || !HasAuthority())
@@ -661,6 +690,7 @@ void AUnderwaterCharacter::OnRep_CurrentTool()
 	}
 }
 
+
 void AUnderwaterCharacter::OnMoveSpeedChanged(float NewMoveSpeed)
 {
 	AdjustSpeed();
@@ -893,6 +923,14 @@ void AUnderwaterCharacter::HandleExitGroggy()
 
 void AUnderwaterCharacter::HandleEnterNormal()
 {
+	if (HasAuthority())
+	{
+		if (StatComponent->GetCurrentHealth() <= StatComponent->GetMaxHealth())
+		{
+			StartHealthRegen();
+		}
+	}
+	
 	if (IsLocallyControlled())
 	{
 		if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
@@ -911,11 +949,8 @@ void AUnderwaterCharacter::HandleExitNormal()
 	if (HasAuthority())
 	{
 		StaminaComponent->RequestStopSprint();
+		StopHealthRegen();
 	}
-
-	// @TODO
-	// 1. Stamina 회복 정지
-	// 2. Character 체력 기능 활성화
 }
 
 void AUnderwaterCharacter::HandleEnterDeath()
@@ -1016,6 +1051,50 @@ void AUnderwaterCharacter::M_StopCaptureState_Implementation()
 	SetActorEnableCollision(true);
 }
 
+void AUnderwaterCharacter::StartHealthRegen()
+{
+	if (GetCharacterState() != ECharacterState::Normal)
+	{
+		return;
+	}
+	
+	const float HealthRegenAmount = StatComponent->GetMaxHealth() * HealthRegenRate;
+	StatComponent->SetHealthRegenRate(HealthRegenAmount);
+}
+
+void AUnderwaterCharacter::StopHealthRegen()
+{
+	GetWorldTimerManager().ClearTimer(HealthRegenStartTimer);
+	// 추후에 Buff나 Item으로 초당 회복을 실행한다고 변경되면 수정할 것
+	StatComponent->SetHealthRegenRate(0.0f);
+}
+
+void AUnderwaterCharacter::StartCombat()
+{
+	if (bIsInCombat)
+	{
+		return;
+	}
+
+	bIsInCombat = true;
+	StopHealthRegen();
+}
+
+void AUnderwaterCharacter::EndCombat()
+{
+	if (!bIsInCombat)
+	{
+		return;
+	}
+
+	bIsInCombat = false;
+
+	if (GetCharacterState() == ECharacterState::Normal)
+	{
+		GetWorldTimerManager().SetTimer(HealthRegenStartTimer, this, &AUnderwaterCharacter::StartHealthRegen, HealthRegenDelay, false);
+	}
+}
+
 void AUnderwaterCharacter::AdjustSpeed()
 {
 	const float BaseSpeed = StaminaComponent->IsSprinting() ? StatComponent->MoveSpeed * SprintMultiplier : StatComponent->MoveSpeed;
@@ -1026,10 +1105,12 @@ void AUnderwaterCharacter::AdjustSpeed()
 	{
 		Multiplier = 1 - OverloadSpeedFactor;
 	}
+	Multiplier *= ZoneSpeedMultiplier;
 	Multiplier = FMath::Clamp(Multiplier, 0.0f, 1.0f);
 	
-
 	EffectiveSpeed = BaseSpeed * Multiplier;
+	EffectiveSpeed = FMath::Max(EffectiveSpeed, MinSpeed);
+	
 	if (EnvironmentState == EEnvironmentState::Underwater)
 	{
 		GetCharacterMovement()->MaxSwimSpeed = EffectiveSpeed;
@@ -1409,7 +1490,7 @@ float AUnderwaterCharacter::TakeDamage(float DamageAmount, struct FDamageEvent c
 	// Normal State
 	// 1. Shield Logic
 	// 2. Health Logic(StatComponent)
-	// 2.1 Health가 0이 되면 Groggy로 전이(OnHealthChanged 함수에서 처리)
+	// 2.1 Health가 0이 되면 Groggy로 전이(OnHealthChanged 함수에서 처리), 이 밑으로는 State 전이가 발생되어 있다.
 	// 3. OnDamageTakenDelegate
 
 	// OnDamageTaken 함수를 이용할 경우 발생한 순간 Groggy 상태로 전이될 수 있다.
@@ -1417,6 +1498,19 @@ float AUnderwaterCharacter::TakeDamage(float DamageAmount, struct FDamageEvent c
 	// Current Health를 이용할 수 있지만 Capture State를 Polishing 할 경우 Groggy 상태가 Pending 될 수 있다.
 	// 캐릭터의 상태를 검사하는 것이 더 안전하다.
 	OnDamageTakenDelegate.Broadcast(ActualDamage, StatComponent->GetCurrentHealth());
+
+	StopHealthRegen();
+	if (CharacterState == ECharacterState::Normal
+		&& !bIsInCombat)
+	{
+		GetWorldTimerManager().SetTimer(
+			HealthRegenStartTimer,
+			this,
+			&AUnderwaterCharacter::StartHealthRegen,
+			HealthRegenDelay,
+			false
+		);
+	}
 
 	return ActualDamage;
 }
@@ -1893,4 +1987,9 @@ void AUnderwaterCharacter::SetHideInSeaweed(const bool bNewHideInSeaweed)
 bool AUnderwaterCharacter::IsOverloaded() const
 {
 	return IsValid(CachedInventoryComponent) && CachedInventoryComponent->GetTotalWeight() >= OverloadWeight;
+}
+
+bool AUnderwaterCharacter::IsWeaponEquipped() const
+{
+	return EquipUseComponent ? EquipUseComponent->bIsWeapon : false;
 }

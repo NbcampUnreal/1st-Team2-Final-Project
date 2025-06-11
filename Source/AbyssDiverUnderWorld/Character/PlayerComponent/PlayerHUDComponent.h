@@ -18,6 +18,7 @@ public:
 protected:
 
     virtual void BeginPlay() override;
+    virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 #pragma region Method
 public:
@@ -65,6 +66,14 @@ private:
 
     UPROPERTY()
     TObjectPtr<class UPlayerHUDWidget> HudWidget;
+
+    UPROPERTY(EditDefaultsOnly, Category = UI, meta = (AllowPrivateAccess = "true"))
+    TSubclassOf<class UCrosshairWidget> CrosshairWidgetClass;
+
+    UPROPERTY()
+    TObjectPtr<class UCrosshairWidget> CrosshairWidget;
+
+    FVector2D CrosshairPosition;
 
     UPROPERTY(EditDefaultsOnly, Category = UI, meta = (AllowPrivateAccess = "true"))
     TSubclassOf<class UResultScreen> ResultScreenWidgetClass;

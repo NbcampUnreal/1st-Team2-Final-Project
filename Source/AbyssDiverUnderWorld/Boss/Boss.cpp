@@ -19,6 +19,7 @@
 #include "NavigationSystem.h"
 #include "NiagaraFunctionLibrary.h"
 #include "Enum/EPerceptionType.h"
+#include "Framework/ADPlayerController.h"
 #include "Perception/AISense_Damage.h"
 #include "Interactable/OtherActors/Radars/RadarReturnComponent.h"
 
@@ -765,13 +766,11 @@ float ABoss::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
 		UAISense_Damage::ReportDamageEvent(
 		GetWorld(),
 		this,        // 데미지를 입은 보스
-		DamageCauser,      // 공격한 플레이어
+		Cast<AADPlayerController>(DamageCauser)->GetCharacter(),      // 공격한 플레이어
 		Damage,
 		DamageCauser->GetActorLocation(),
 		HitResult.ImpactPoint
 		);
-
-		DamagedLocation = DamageCauser->GetActorLocation();
 	}
 	
 	if (IsValid(StatComponent))
