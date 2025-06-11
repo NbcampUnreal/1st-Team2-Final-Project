@@ -67,12 +67,13 @@ void ULanternComponent::RequestToggleLanternLight()
 			for (auto It = MonsterExposeTimeMap.CreateIterator(); It; ++It)
 			{
 				AMonster* Monster = Cast<AMonster>(It.Key());
-				if (!IsValid(It.Key()))
+				if (IsValid(It.Key()))
 				{
 					// Handling Unexposed Monsters
 					if (IsValid(Monster) && Monster->GetMonsterState() == EMonsterState::Investigate)
 					{
 						Monster->SetMonsterState(EMonsterState::Patrol);
+						Monster->RemoveDetection(GetOwner());
 					}
 					It.RemoveCurrent();
 				}
@@ -198,6 +199,7 @@ void ULanternComponent::UpdateExposureTimes(TArray<AActor*> OverlappedActors, co
 			float& ExposureTime = MonsterExposeTimeMap.FindOrAdd(Monster);
 			ExposureTime += DeltaTime;
 			Monster->NotifyLightExposure(DeltaTime, ExposureTime, GetOwner()->GetActorLocation(), GetOwner());
+			Monster->AddDetection(GetOwner());
 		}
 		// Cone 바깥이라면 노출 시간을 초기화
 		else if (MonsterExposeTimeMap.Contains(Monster))
@@ -216,6 +218,7 @@ void ULanternComponent::UpdateExposureTimes(TArray<AActor*> OverlappedActors, co
 			if (IsValid(Monster) && Monster->GetMonsterState() == EMonsterState::Investigate)
 			{
 				Monster->SetMonsterState(EMonsterState::Patrol);
+				Monster->RemoveDetection(GetOwner());
 			}
 			It.RemoveCurrent();
 		}

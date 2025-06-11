@@ -4,16 +4,16 @@
 
 #include "CoreMinimal.h"
 #include "BehaviorTree/Tasks/BTTask_BlackboardBase.h"
-#include "BTTask_DefaultAttack.generated.h"
+#include "BTTask_HorrorCreatureAttack.generated.h"
 
 
 UCLASS()
-class ABYSSDIVERUNDERWORLD_API UBTTask_DefaultAttack : public UBTTask_BlackboardBase
+class ABYSSDIVERUNDERWORLD_API UBTTask_HorrorCreatureAttack : public UBTTask_BlackboardBase
 {
 	GENERATED_BODY()
 	
 public:
-	UBTTask_DefaultAttack();
+	UBTTask_HorrorCreatureAttack();
 
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
 	virtual void OnTaskFinished(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, EBTNodeResult::Type TaskResult) override;
@@ -29,9 +29,11 @@ protected:
 private:
 	UPROPERTY()
 	TObjectPtr<UBehaviorTreeComponent> CachedOwnerComp;
+	UPROPERTY()
+	TObjectPtr<class AHorrorCreature> CachedHorrorCreature;
 
 protected:
-	UPROPERTY(EditAnywhere, Category = "Blackboard")
+	UPROPERTY(EditAnywhere)
 	struct FBlackboardKeySelector MonsterStateKey;
 
 #pragma endregion

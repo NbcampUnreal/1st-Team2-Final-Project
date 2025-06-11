@@ -4,17 +4,17 @@
 
 #include "CoreMinimal.h"
 #include "BehaviorTree/Tasks/BTTask_BlackboardBase.h"
-#include "BTTask_RotateToTarget.generated.h"
+#include "BTTask_RotateToLocation.generated.h"
 
 
 UCLASS()
-class ABYSSDIVERUNDERWORLD_API UBTTask_RotateToTarget : public UBTTask_BlackboardBase
+class ABYSSDIVERUNDERWORLD_API UBTTask_RotateToLocation : public UBTTask_BlackboardBase
 {
 	GENERATED_BODY()
 	
 
 public:
-	UBTTask_RotateToTarget();
+	UBTTask_RotateToLocation();
 
 protected:
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
@@ -26,9 +26,8 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UBehaviorTreeComponent> CachedOwnerComp;
 	UPROPERTY()
-	TObjectPtr<AActor> CachedTargetActor;
+	FVector TargetLocation;
 	UPROPERTY(EditAnywhere, Category = "Blackboard")
-	struct FBlackboardKeySelector TargetActorKey;
+	struct FBlackboardKeySelector TargetLocationKey;
 #pragma endregion
 };
-

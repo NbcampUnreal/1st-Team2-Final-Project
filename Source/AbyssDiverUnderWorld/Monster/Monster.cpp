@@ -209,7 +209,7 @@ void AMonster::AddDetection(AActor* Actor)
 	Count++;
 
 	// If Target is empty, set
-	if (TargetActor == nullptr)
+	if (TargetActor == nullptr || !IsValid(TargetActor))
 	{
 		TargetActor = Actor;
 
@@ -286,6 +286,9 @@ void AMonster::SetMonsterState(EMonsterState NewState)
 		SetMaxSwimSpeed(InvestigateSpeed);
 		// @TODO : Add animations, sounds, and more
 		break;
+
+	case EMonsterState::Flee:
+		SetMaxSwimSpeed(FleeSpeed);
 
 	default:
 		break;
