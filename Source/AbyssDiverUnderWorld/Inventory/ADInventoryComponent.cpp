@@ -351,7 +351,7 @@ void UADInventoryComponent::InventoryInitialize()
 	CurrentDroneSeller->OnTargetMoneyChangedDelegate.RemoveAll(ToggleWidgetInstance);
 	CurrentDroneSeller->OnTargetMoneyChangedDelegate.AddUObject(ToggleWidgetInstance, &UToggleWidget::SetDroneTargetText);
 
-
+	InventoryUIUpdate();
 }
 
 bool UADInventoryComponent::AddInventoryItem(const FItemData& ItemData)
@@ -546,6 +546,7 @@ void UADInventoryComponent::ClientRequestInventoryInitialize()
 
 void UADInventoryComponent::InventoryUIUpdate()
 {
+	LOGINVEN(Warning, TEXT("InventoryUIUpdate"));
 	RebuildIndexMap();
 	if (InventoryUpdateDelegate.IsBound())
 	{
@@ -560,7 +561,7 @@ void UADInventoryComponent::InventoryUIUpdate()
 void UADInventoryComponent::CopyInventoryFrom(UADInventoryComponent* Source)
 {
 	if (!Source) return;
-
+	LOGINVEN(Warning, TEXT("CopyInventory"));
 	InventoryList.Items.Empty();
 
 	for (const FItemData& Item : Source->InventoryList.Items)

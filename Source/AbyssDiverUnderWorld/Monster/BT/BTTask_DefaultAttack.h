@@ -30,6 +30,9 @@ private:
 	UPROPERTY()
 	TObjectPtr<UBehaviorTreeComponent> CachedOwnerComp;
 
+protected:
+	UPROPERTY(EditAnywhere, Category = "Blackboard")
+	struct FBlackboardKeySelector MonsterStateKey;
+
 #pragma endregion
-	
 };
