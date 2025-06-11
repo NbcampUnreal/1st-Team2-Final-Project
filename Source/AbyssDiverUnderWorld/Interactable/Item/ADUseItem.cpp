@@ -25,11 +25,27 @@ AADUseItem::AADUseItem()
 
 
 	bReplicates = true;
+	SetReplicateMovement(true);
+}
+
+void AADUseItem::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (!HasAuthority())          // 클라이언트 초기 1프레임 숨김
+	{
+		SetActorHiddenInGame(true);
+	}
 }
 
 void AADUseItem::M_SetSkeletalMesh_Implementation(USkeletalMesh* NewMesh)
 {
 	SkeletalMesh->SetSkeletalMesh(NewMesh);
+}
+
+void AADUseItem::M_SetItemVisible_Implementation(bool bVisible)
+{
+	SetActorHiddenInGame(!bVisible);
 }
 
 void AADUseItem::SetItemInfo(FItemData& ItemInfo, bool bIsEquipMode)

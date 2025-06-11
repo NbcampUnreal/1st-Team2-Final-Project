@@ -42,6 +42,7 @@ UEquipUseComponent::UEquipUseComponent()
 	bOriginalExposureCached = false;
 	bCanFire = true;
 	bIsWeapon = true;
+	bHasNoAnimation = false;
 	NightVisionClass = nullptr;
 	NightVisionInstance = nullptr;
 	ChargeBatteryClass = nullptr;
@@ -320,7 +321,10 @@ void UEquipUseComponent::OnRep_NightVisionOn()
 {
 	if (bNightVisionOn)
 	{
-		NightVisionMaterialInstance->SetScalarParameterValue(TEXT("NightBlend"), 1);
+		if (NightVisionMaterialInstance)
+		{
+			NightVisionMaterialInstance->SetScalarParameterValue(TEXT("NightBlend"), 1);
+		}
 		if (NightVisionInstance)
 		{
 			NightVisionInstance->NightVigionUse();
@@ -333,7 +337,10 @@ void UEquipUseComponent::OnRep_NightVisionOn()
 	}
 	else
 	{
-		NightVisionMaterialInstance->SetScalarParameterValue(TEXT("NightBlend"), 0);
+		if (NightVisionMaterialInstance)
+		{
+			NightVisionMaterialInstance->SetScalarParameterValue(TEXT("NightBlend"), 0);
+		}
 		if (NightVisionInstance)
 		{
 			NightVisionInstance->NightVigionUnUse();
@@ -423,7 +430,7 @@ void UEquipUseComponent::Initialize(FItemData& ItemData)
 	}
 
 	bIsWeapon = (LeftAction == EAction::WeaponFire || RKeyAction == EAction::WeaponFire);
-
+	bHasNoAnimation = (LeftAction == EAction::ToggleNVGToggle);
 	
 
 	if (bIsWeapon)
@@ -502,6 +509,7 @@ void UEquipUseComponent::DeinitializeEquip()
 	// 입력·액션 상태 초기화
 	bCanFire = true;
 	bIsWeapon = false;
+	bHasNoAnimation = true;
 	LeftAction = EAction::None;
 	RKeyAction = EAction::None;
 

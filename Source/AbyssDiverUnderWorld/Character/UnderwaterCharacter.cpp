@@ -646,18 +646,7 @@ void AUnderwaterCharacter::SpawnAndAttachTool(TSubclassOf<AActor> ToolClass)
 		Params
 	);
 	SpawnedTool->SetActorEnableCollision(false);
-	//SpawnedTool->SetActorHiddenInGame(true);
-	//FVector SpawnLocation = { 0, 0, 100000000 };
-	//SpawnedTool->SetActorLocation(SpawnLocation);
-	// 단, Source Mesh는 Bone 업데이트 지속
-	//CachedSkeletalMesh = SpawnedTool->FindComponentByClass<USkeletalMeshComponent>();
-	//if (CachedSkeletalMesh)
-	//{
-	//	CachedSkeletalMesh->SetVisibility(false, true);              // 화면만 OFF
-	//	CachedSkeletalMesh->SetComponentTickEnabled(true);           // 본→MasterPose 계속 갱신
-	//	CachedSkeletalMesh->bComponentUseFixedSkelBounds = true;
-	//	CachedSkeletalMesh->BoundsScale = 3.f;
-	//}
+
 	CurrentTool = SpawnedTool;
 	OnRep_CurrentTool();
 }
@@ -681,7 +670,6 @@ void AUnderwaterCharacter::OnRep_CurrentTool()
 		if (USkeletalMeshComponent* Src = CurrentTool->FindComponentByClass<USkeletalMeshComponent>())
 		{
 			Src->SetVisibility(false, true);
-			//Src->SetComponentTickEnabled(true);
 			LOG(TEXT("Src is CurrentTool's SkeletalMesh"));
 		}
 		EquipRenderComp->AttachItem(CurrentTool, LaserSocketName);
