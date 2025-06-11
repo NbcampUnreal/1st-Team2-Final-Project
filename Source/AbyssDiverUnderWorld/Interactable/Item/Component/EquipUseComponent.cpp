@@ -320,7 +320,10 @@ void UEquipUseComponent::OnRep_NightVisionOn()
 {
 	if (bNightVisionOn)
 	{
-		NightVisionMaterialInstance->SetScalarParameterValue(TEXT("NightBlend"), 1);
+		if (NightVisionMaterialInstance)
+		{
+			NightVisionMaterialInstance->SetScalarParameterValue(TEXT("NightBlend"), 1);
+		}
 		if (NightVisionInstance)
 		{
 			NightVisionInstance->NightVigionUse();
@@ -333,7 +336,10 @@ void UEquipUseComponent::OnRep_NightVisionOn()
 	}
 	else
 	{
-		NightVisionMaterialInstance->SetScalarParameterValue(TEXT("NightBlend"), 0);
+		if (NightVisionMaterialInstance)
+		{
+			NightVisionMaterialInstance->SetScalarParameterValue(TEXT("NightBlend"), 0);
+		}
 		if (NightVisionInstance)
 		{
 			NightVisionInstance->NightVigionUnUse();
