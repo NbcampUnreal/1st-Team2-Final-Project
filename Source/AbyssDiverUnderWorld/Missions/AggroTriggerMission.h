@@ -16,9 +16,10 @@ struct FAggroMissionInitParams : public FMissionInitParams
 		const EMissionConditionType& InConditionType,
 		const FString& InMissionName,
 		const FString& InMissionDescription,
-		const TArray<int32>& InExtraValues
+		const TArray<int32>& InExtraValues,
+		bool bInShouldCompleteInstanly
 	)
-		: FMissionInitParams(InMissionType, InGoalCount, InConditionType, InMissionName, InMissionDescription, InExtraValues)
+		: FMissionInitParams(InMissionType, InGoalCount, InConditionType, InMissionName, InMissionDescription, InExtraValues, bInShouldCompleteInstanly)
 	{
 	}
 

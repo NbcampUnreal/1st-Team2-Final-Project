@@ -46,7 +46,7 @@ EBTNodeResult::Type UBTTask_MoveToLocation::ExecuteTask(UBehaviorTreeComponent& 
 	TaskMemory->TargetLocation = TaskMemory->AIController->GetBlackboardComponent()->GetValueAsVector(KeyName);
 
 	// 디버그용 구체 출력 (5초 동안, 반지름 50, 빨간색)
-	DrawDebugSphere(GetWorld(), TaskMemory->TargetLocation, 250.0f, 12, FColor::Green, false, 3.f);
+	//DrawDebugSphere(GetWorld(), TaskMemory->TargetLocation, 250.0f, 12, FColor::Green, false, 3.f);
 	
 	// MoveTask를 종료할 랜덤 시간 추출
 	TaskMemory->AccumulatedTime = 0.f;

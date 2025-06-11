@@ -31,6 +31,8 @@ private:
 	void OnSightPerceptionSuccess(AUnderwaterCharacter* Player);
 	void OnSightPerceptionFail();
 	void OnHearingPerceptionSuccess(const FAIStimulus& Stimulus);
+	void SetBloodDetectedState();
+	void InitBloodDetectedState();
 	void OnDamagePerceptionSuccess();
 
 protected:
@@ -63,6 +65,7 @@ private:
 	uint8 bIsDisappearPlayer : 1;
 	
 	FTimerHandle DamageStateTransitionTimerHandle;
+	FTimerHandle BloodDetectedTimerHandle;
 
 	static const FName bHasSeenPlayerKey;
 	static const FName PerceptionTypeKey;
@@ -72,6 +75,8 @@ private:
 	static const FName bIsPlayerHiddenKey;
 	static const FName BloodOccurredLocationKey;
 	static const FName TargetPlayerKey;
+	static const FName bIsDetectBloodKey;
+	static const FName bIsChasingBloodKey;
 
 public:
 	FORCEINLINE bool GetIsDetectedPlayer() const { return bIsDetectedPlayer; }

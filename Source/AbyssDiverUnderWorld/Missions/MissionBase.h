@@ -12,7 +12,7 @@ DECLARE_DELEGATE_TwoParams(FOnCompleteMissionDelegate, const EMissionType&, cons
 
 struct FMissionInitParams
 {
-	FMissionInitParams(const EMissionType& InMissionType, const int32& InGoalCount, const EMissionConditionType& InConditionType, const FString& InMissionName, const FString& InMissionDescription, const TArray<int32>& InExtraValues)
+	FMissionInitParams(const EMissionType& InMissionType, const int32& InGoalCount, const EMissionConditionType& InConditionType, const FString& InMissionName, const FString& InMissionDescription, const TArray<int32>& InExtraValues, bool bInShouldCompleteInstanly)
 	{
 		MissionType = InMissionType;
 		GoalCount = InGoalCount;
@@ -20,6 +20,7 @@ struct FMissionInitParams
 		MissionName = InMissionName;
 		MissionDescription = InMissionDescription;
 		ExtraValues = InExtraValues;
+		bShouldCompleteInstanly = bInShouldCompleteInstanly;
 	}
 
 	EMissionType MissionType;
@@ -28,6 +29,7 @@ struct FMissionInitParams
 	FString MissionName;
 	FString MissionDescription;
 	TArray<int32> ExtraValues;
+	uint8 bShouldCompleteInstanly : 1;
 };
 
 /**

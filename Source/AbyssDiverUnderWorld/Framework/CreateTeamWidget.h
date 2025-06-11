@@ -48,6 +48,8 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> Button_Confirm;
 
+	UPROPERTY(meta = (BindWidgetAnim), Transient)
+	TObjectPtr<UWidgetAnimation> OutAnim;
 
 	UPROPERTY(BlueprintReadWrite)
 	uint8 bIsPrivate : 1 = 0;

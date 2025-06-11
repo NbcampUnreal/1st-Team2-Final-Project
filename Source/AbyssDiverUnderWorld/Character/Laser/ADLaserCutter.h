@@ -4,6 +4,8 @@
 #include "GameFramework/Actor.h"
 #include "ADLaserCutter.generated.h"
 
+class UEquipableComponent;
+
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADLaserCutter : public AActor
 {
@@ -33,7 +35,10 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Components")
 	TObjectPtr<USceneComponent> SceneComp;
 	UPROPERTY(EditAnywhere, Category = "Components")
-	TObjectPtr<UStaticMeshComponent> StaticMeshComp;
+	TObjectPtr<USkeletalMeshComponent> SkeletalMeshComp;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Equip")
+	TObjectPtr<UEquipableComponent> EquipableComp;
+
 
 private:
 
@@ -41,7 +46,8 @@ private:
 
 #pragma region Getter, Setteer
 public:
-	UStaticMeshComponent* GetStaticMesh() { return StaticMeshComp; }
+	USkeletalMeshComponent* GetSkeletalMesh() { return SkeletalMeshComp; }
+	UEquipableComponent* GetEquipableComponent() { return EquipableComp; }
 
 #pragma endregion
 

@@ -33,6 +33,7 @@
 #include "PlayerComponent/LanternComponent.h"
 #include "PlayerComponent/ShieldComponent.h"
 #include "PlayerComponent/UnderwaterEffectComponent.h"
+#include "Interactable/EquipableComponent/EquipRenderComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "PlayerComponent/NameWidgetComponent.h"
 
@@ -78,6 +79,7 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	bIsInvincible = false;
 
 	bCanUseEquipment = true;
+	bPlayingEmote = false;
 
 	LanternLength = 2000.0f;
 	
@@ -152,7 +154,7 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	EnvironmentState = EEnvironmentState::Underwater;
 
 	RadarReturnComponent->FactionTags.Init(TEXT("Friendly"), 1);
-
+	EquipRenderComp = CreateDefaultSubobject<UEquipRenderComponent>(TEXT("EquipRenderComponent"));
 	NameWidgetComponent = CreateDefaultSubobject<UNameWidgetComponent>(TEXT("NameWidgetComponent"));
 	NameWidgetComponent->SetupAttachment(GetCapsuleComponent());
 	NameWidgetComponent->SetRelativeLocation(FVector::UpVector * GetCapsuleComponent()->GetScaledCapsuleHalfHeight() * 2.0f);
@@ -308,7 +310,7 @@ void AUnderwaterCharacter::PossessedBy(AController* NewController)
 		if (!IsLocallyControlled())
 		{
 			NameWidgetComponent->SetNameText(ADPlayerState->GetPlayerNickname());
-			NameWidgetComponent->SetVisibility(true);
+			NameWidgetComponent->SetEnable(true);
 		}
 	}
 	else
@@ -337,7 +339,7 @@ void AUnderwaterCharacter::OnRep_PlayerState()
 		if (!IsLocallyControlled())
 		{
 			NameWidgetComponent->SetNameText(ADPlayerState->GetPlayerNickname());
-			NameWidgetComponent->SetVisibility(true);
+			NameWidgetComponent->SetEnable(true);
 		}
 	}
 	else
@@ -351,6 +353,7 @@ void AUnderwaterCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProp
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(AUnderwaterCharacter, bIsRadarOn);
+	DOREPLIFETIME(AUnderwaterCharacter, CurrentTool);
 }
 
 void AUnderwaterCharacter::OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode)
@@ -450,6 +453,87 @@ void AUnderwaterCharacter::EmitBloodNoise()
 	}
 }
 
+void AUnderwaterCharacter::RequestPlayMontage(UAnimMontage* Mesh1PMontage, UAnimMontage* Mesh3PMontage,
+	float InPlayRate, FName StartSectionName)
+{
+	if (HasAuthority())
+	{
+		M_BroadcastPlayMontage(Mesh1PMontage, Mesh3PMontage, InPlayRate, StartSectionName);
+	}
+	else
+	{
+		S_PlayMontage(Mesh1PMontage, Mesh3PMontage, InPlayRate, StartSectionName);
+	}
+}
+
+void AUnderwaterCharacter::S_PlayMontage_Implementation(UAnimMontage* Mesh1PMontage, UAnimMontage* Mesh3PMontage, float InPlayRate, FName StartSectionName)
+{
+	RequestPlayMontage(Mesh1PMontage, Mesh3PMontage, InPlayRate, StartSectionName);
+}
+
+void AUnderwaterCharacter::M_BroadcastPlayMontage_Implementation(UAnimMontage* Mesh1PMontage, UAnimMontage* Mesh3PMontage, float InPlayRate, FName StartSectionName)
+{
+	if (Mesh1PMontage)
+	{
+		if (GetMesh1P() && GetMesh1P()->GetAnimInstance())
+		{
+			GetMesh1P()->GetAnimInstance()->Montage_Play(Mesh1PMontage, InPlayRate);
+			if (StartSectionName != NAME_None)
+			{
+				GetMesh1P()->GetAnimInstance()->Montage_JumpToSection(StartSectionName, Mesh1PMontage);
+			}
+		}
+		else
+		{
+			LOGVN(Error, TEXT("Mesh1P AnimInstance is not valid: %s"), *GetName());
+		}
+	}
+	if (Mesh3PMontage)
+	{
+		if (GetMesh() && GetMesh()->GetAnimInstance())
+		{
+			GetMesh()->GetAnimInstance()->Montage_Play(Mesh3PMontage, InPlayRate);
+			if (StartSectionName != NAME_None)
+			{
+				GetMesh()->GetAnimInstance()->Montage_JumpToSection(StartSectionName, Mesh3PMontage);
+			}
+		}
+		else
+		{
+			LOGVN(Error, TEXT("Mesh AnimInstance is not valid: %s"), *GetName());
+		}
+	}
+}
+
+void AUnderwaterCharacter::RequestStopAllMontage(EPlayAnimationTarget Target, float BlendOut)
+{
+	if (HasAuthority())
+	{
+		M_StopAllMontage(Target, BlendOut);
+	}
+	else
+	{
+		S_StopAllMontage(Target, BlendOut);
+	}
+}
+
+void AUnderwaterCharacter::M_StopAllMontage_Implementation(EPlayAnimationTarget Target, float BlendOut)
+{
+	if (GetMesh1P() && GetMesh1P()->GetAnimInstance())
+	{
+		GetMesh1P()->GetAnimInstance()->StopAllMontages(BlendOut);
+	}
+	if (GetMesh() && GetMesh()->GetAnimInstance())
+	{
+		GetMesh()->GetAnimInstance()->StopAllMontages(BlendOut);
+	}
+}
+
+void AUnderwaterCharacter::S_StopAllMontage_Implementation(EPlayAnimationTarget Target, float BlendOut)
+{
+	RequestStopAllMontage(Target, BlendOut);
+}
+
 void AUnderwaterCharacter::M_PlayMontageOnBothMesh_Implementation(UAnimMontage* Montage, float InPlayRate, FName StartSectionName, FAnimSyncState NewAnimSyncState)
 {
 	if (Montage == nullptr)
@@ -507,63 +591,74 @@ void AUnderwaterCharacter::RequestChangeAnimSyncState(FAnimSyncState NewAnimSync
 
 void AUnderwaterCharacter::CleanupToolAndEffects()
 {
-	if (SpawnedTool1P || SpawnedTool3P)
+	if (SpawnedTool)
 	{
-		SpawnedTool1P->Destroy();
-		SpawnedTool1P = nullptr;
-
-		SpawnedTool3P->Destroy();
-		SpawnedTool3P = nullptr;
+		EquipRenderComp->DetachItem(SpawnedTool);
+		SpawnedTool->Destroy();
+		CurrentTool->Destroy();
+		SpawnedTool = nullptr;
+		CurrentTool = nullptr;
 	}
+	
 }
 
 void AUnderwaterCharacter::SpawnAndAttachTool(TSubclassOf<AActor> ToolClass)
 {
-	if (SpawnedTool1P || SpawnedTool3P || !ToolClass) return;
-	
+	if (SpawnedTool || !ToolClass || !HasAuthority()) return;
+
 	FActorSpawnParameters Params;
 	Params.Owner = this;
 	Params.Instigator = this;
 
-	SpawnedTool1P = GetWorld()->SpawnActor<AActor>(
+	SpawnedTool = GetWorld()->SpawnActor<AActor>(
 		ToolClass,
 		GetActorLocation(),
 		GetActorRotation(),
 		Params
 	);
-	if (AADLaserCutter* Laser1P = Cast<AADLaserCutter>(SpawnedTool1P))
-		Laser1P->M_SetupVisibility(true);
+	SpawnedTool->SetActorEnableCollision(false);
+	//SpawnedTool->SetActorHiddenInGame(true);
+	//FVector SpawnLocation = { 0, 0, 100000000 };
+	//SpawnedTool->SetActorLocation(SpawnLocation);
+	// 단, Source Mesh는 Bone 업데이트 지속
+	//CachedSkeletalMesh = SpawnedTool->FindComponentByClass<USkeletalMeshComponent>();
+	//if (CachedSkeletalMesh)
+	//{
+	//	CachedSkeletalMesh->SetVisibility(false, true);              // 화면만 OFF
+	//	CachedSkeletalMesh->SetComponentTickEnabled(true);           // 본→MasterPose 계속 갱신
+	//	CachedSkeletalMesh->bComponentUseFixedSkelBounds = true;
+	//	CachedSkeletalMesh->BoundsScale = 3.f;
+	//}
+	CurrentTool = SpawnedTool;
+	OnRep_CurrentTool();
+}
 
-	SpawnedTool3P = GetWorld()->SpawnActor<AActor>(
-		ToolClass,
-		GetActorLocation(),
-		GetActorRotation(),
-		Params
-	);
+void AUnderwaterCharacter::OnRep_CurrentTool()
+{
+	LOG(TEXT("OnRep_CurrentTool for %s  EquipRenderComp=%s  IsRegistered=%d"),
+		*GetNameSafe(this),
+		*GetNameSafe(EquipRenderComp),
+		EquipRenderComp ? EquipRenderComp->IsRegistered() : 0);
 
-	if (AADLaserCutter* Laser3P = Cast<AADLaserCutter>(SpawnedTool3P))
-		Laser3P->M_SetupVisibility(false);
+	if (PrevTool)
+	{
+		EquipRenderComp->DetachItem(PrevTool);
+		PrevTool = nullptr;
+		LOG(TEXT("PrevTool"));
+	}
 
-	if (!SpawnedTool1P || !SpawnedTool3P) return;
-
-	SpawnedTool1P->SetActorEnableCollision(false);
-	SpawnedTool3P->SetActorEnableCollision(false);
-
-	// 1-인칭
-	SpawnedTool1P->AttachToComponent(
-		GetMesh1P(),
-		FAttachmentTransformRules::SnapToTargetIncludingScale,
-		LaserSocketName
-	);
-
-
-	// 3-인칭
-	SpawnedTool3P->AttachToComponent(
-		GetMesh(),
-		FAttachmentTransformRules::SnapToTargetIncludingScale,
-		LaserSocketName
-	);
-	
+	if (CurrentTool)
+	{
+		if (USkeletalMeshComponent* Src = CurrentTool->FindComponentByClass<USkeletalMeshComponent>())
+		{
+			Src->SetVisibility(false, true);
+			//Src->SetComponentTickEnabled(true);
+			LOG(TEXT("Src is CurrentTool's SkeletalMesh"));
+		}
+		EquipRenderComp->AttachItem(CurrentTool, LaserSocketName);
+		PrevTool = CurrentTool;                   // 다음 Detach 대비
+		LOG(TEXT("CurrentTool's Owner : %s"), *CurrentTool->GetOwner()->GetName());
+	}
 }
 
 void AUnderwaterCharacter::OnMoveSpeedChanged(float NewMoveSpeed)
@@ -1235,6 +1330,36 @@ void AUnderwaterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 				&AUnderwaterCharacter::EquipSlot3
 			);
 		}
+
+		if (EmoteAction1)
+		{
+			EnhancedInput->BindAction(
+				EmoteAction1,
+				ETriggerEvent::Started,
+				this,
+				&AUnderwaterCharacter::PerformEmote1
+			);
+		}
+
+		if (EmoteAction2)
+		{
+			EnhancedInput->BindAction(
+				EmoteAction2,
+				ETriggerEvent::Started,
+				this,
+				&AUnderwaterCharacter::PerformEmote2
+			);
+		}
+
+		if (EmoteAction3)
+		{
+			EnhancedInput->BindAction(
+				EmoteAction3,
+				ETriggerEvent::Started,
+				this,
+				&AUnderwaterCharacter::PerformEmote3
+			);
+		}
 	}
 	else
 	{
@@ -1399,6 +1524,12 @@ void AUnderwaterCharacter::MoveUnderwater(const FVector MoveInput)
 
 void AUnderwaterCharacter::MoveGround(FVector MoveInput)
 {
+	UAnimInstance* AnimInstance = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr;
+	if (bPlayingEmote && AnimInstance && AnimInstance->IsAnyMontagePlaying())
+	{
+		StopPlayingEmote();
+	}
+	
 	const FRotator ControllerRotator = FRotator(0.f, Controller->GetControlRotation().Yaw, 0.f);
 
 	// World에서 Controller의 X축, Y축 방향
@@ -1425,6 +1556,11 @@ void AUnderwaterCharacter::JumpInputStart(const FInputActionValue& InputActionVa
 		return;
 	}
 
+	if (bPlayingEmote && GetMesh()->GetAnimInstance() && GetMesh()->GetAnimInstance()->IsAnyMontagePlaying())
+	{
+		StopPlayingEmote();
+	}
+	
 	Jump();
 }
 
@@ -1596,6 +1732,33 @@ void AUnderwaterCharacter::EquipSlot3(const FInputActionValue& InputActionValue)
 	CachedInventoryComponent->S_UseInventoryItem(EItemType::Equipment, 2);
 }
 
+void AUnderwaterCharacter::PerformEmote1(const FInputActionValue& InputActionValue)
+{
+	if (EnvironmentState == EEnvironmentState::Ground && GetCharacterMovement()->IsMovingOnGround()
+		&& !bPlayingEmote)
+	{
+		PlayEmote(0);
+	}
+}
+
+void AUnderwaterCharacter::PerformEmote2(const FInputActionValue& InputActionValue)
+{
+	if (EnvironmentState == EEnvironmentState::Ground && GetCharacterMovement()->IsMovingOnGround()
+		&& !bPlayingEmote)
+	{
+		PlayEmote(1);
+	}
+}
+
+void AUnderwaterCharacter::PerformEmote3(const FInputActionValue& InputActionValue)
+{
+	if (EnvironmentState == EEnvironmentState::Ground && GetCharacterMovement()->IsMovingOnGround()
+		&& !bPlayingEmote)
+	{
+		PlayEmote(2);
+	}
+}
+
 void AUnderwaterCharacter::SetDebugCameraMode(bool bDebugCameraEnable)
 {
 	bUseDebugCamera = bDebugCameraEnable;
@@ -1641,6 +1804,51 @@ void AUnderwaterCharacter::OnMesh3PMontageEnded(UAnimMontage* Montage, bool bInt
 {
 	bIsAnim3PSyncStateOverride = false;
 	OnMesh3PMontageEndDelegate.Broadcast(Montage, bInterrupted);
+}
+
+void AUnderwaterCharacter::PlayEmote(uint8 EmoteIndex)
+{
+	if (EmoteIndex >= EmoteAnimationMontages.Num())
+	{
+		UE_LOG(LogAbyssDiverCharacter, Warning, TEXT("Emote Index %d is out of range"), EmoteIndex);
+		return;
+	}
+
+	if (UAnimMontage* EmoteMontage = EmoteAnimationMontages[EmoteIndex])
+	{
+		UAnimInstance* AnimInstance = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr;
+		if (AnimInstance && !AnimInstance->IsAnyMontagePlaying())
+		{
+			RequestPlayMontage(EmoteMontage, EmoteMontage, 1.0f, NAME_None);
+			bPlayingEmote = true;
+			bUseControllerRotationYaw = false;
+			
+			FOnMontageEnded MontageEndDelegate;
+			MontageEndDelegate.BindUObject(this, &AUnderwaterCharacter::OnEmoteEnd);
+			AnimInstance->Montage_SetEndDelegate(MontageEndDelegate, EmoteMontage);
+		}
+		else
+		{
+			UE_LOG(LogAbyssDiverCharacter, Warning, TEXT("Emote Montage is already playing or AnimInstance is not valid"));
+		}
+	}
+	else
+	{
+		UE_LOG(LogAbyssDiverCharacter, Warning, TEXT("Emote Montage is not valid for index %d"), EmoteIndex);
+	}
+}
+
+void AUnderwaterCharacter::StopPlayingEmote()
+{
+	RequestStopAllMontage(EPlayAnimationTarget::BothPersonMesh, 0.1f);
+	bPlayingEmote = false;
+	bUseControllerRotationYaw = true;
+}
+
+void AUnderwaterCharacter::OnEmoteEnd(UAnimMontage* AnimMontage, bool bArg)
+{
+	bPlayingEmote = false;
+	bUseControllerRotationYaw = true;
 }
 
 void AUnderwaterCharacter::SetupMontageCallbacks()
