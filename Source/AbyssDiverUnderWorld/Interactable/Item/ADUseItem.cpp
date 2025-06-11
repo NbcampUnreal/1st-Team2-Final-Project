@@ -35,7 +35,6 @@ void AADUseItem::BeginPlay()
 	if (!HasAuthority())          // 클라이언트 초기 1프레임 숨김
 	{
 		SetActorHiddenInGame(true);
-		//SetActorEnableCollision(false);
 	}
 }
 
