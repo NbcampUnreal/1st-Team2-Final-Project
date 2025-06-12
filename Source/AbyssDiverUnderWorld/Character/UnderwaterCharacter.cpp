@@ -1007,6 +1007,7 @@ void AUnderwaterCharacter::M_StartCaptureState_Implementation()
 
 	SetActorHiddenInGame(true);
 	SetActorEnableCollision(false);
+	InteractionComponent->OnInteractReleased();
 }
 
 void AUnderwaterCharacter::M_StopCaptureState_Implementation()

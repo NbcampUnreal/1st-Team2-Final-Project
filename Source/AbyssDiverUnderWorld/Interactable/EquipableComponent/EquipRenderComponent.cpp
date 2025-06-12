@@ -94,7 +94,7 @@ UMeshComponent* UEquipRenderComponent::Create1PComponent(UEquipableComponent* EC
     if (EComp->IsSkeletal())
     {
         USkeletalMeshComponent* SkelSource = Cast<USkeletalMeshComponent>(AnimSource);
-        USkeletalMesh* MeshSkelAsset = SkelSource->SkeletalMesh;
+        USkeletalMesh* MeshSkelAsset = SkelSource->GetSkeletalMeshAsset();
         if (!MeshSkelAsset) return nullptr;
 
         USkeletalMeshComponent* Skel1P = NewObject<USkeletalMeshComponent>(GetOwner());
@@ -161,7 +161,7 @@ UMeshComponent* UEquipRenderComponent::Create3PComponent(UEquipableComponent* EC
     if (EComp->IsSkeletal())
     {
         USkeletalMeshComponent* SkelSource = Cast<USkeletalMeshComponent>(AnimSource);
-        USkeletalMesh* MeshSkelAsset = SkelSource->SkeletalMesh;
+        USkeletalMesh* MeshSkelAsset = SkelSource->GetSkeletalMeshAsset();
         if (!MeshSkelAsset) return nullptr;
 
         USkeletalMeshComponent* Skel3P = NewObject<USkeletalMeshComponent>(GetOwner());
@@ -174,9 +174,9 @@ UMeshComponent* UEquipRenderComponent::Create3PComponent(UEquipableComponent* EC
         Skel3P->SetOwnerNoSee(true);
         Skel3P->SetOnlyOwnerSee(false);
         Skel3P->MarkRenderStateDirty();
-        Skel3P->SetCastShadow(true);
-        Skel3P->bCastHiddenShadow = true;
-        Skel3P->SetMasterPoseComponent(SkelSource);
+        Skel3P->SetCastShadow(false);
+        Skel3P->bCastHiddenShadow = false;
+        Skel3P->SetLeaderPoseComponent(SkelSource);
 
         LOG(
             TEXT("[AttachItem] Mesh3P=%s  |  Owner=%s  |  Outer=%s"),
@@ -203,8 +203,8 @@ UMeshComponent* UEquipRenderComponent::Create3PComponent(UEquipableComponent* EC
             SocketName);
         Stat3P->SetOwnerNoSee(true);
         Stat3P->MarkRenderStateDirty();
-        Stat3P->SetCastShadow(true);
-        Stat3P->bCastHiddenShadow = true;
+        Stat3P->SetCastShadow(false);
+        Stat3P->bCastHiddenShadow = false;
         LOG(
             TEXT("[AttachItem] Mesh3P=%s  |  Owner=%s  |  Outer=%s"),
             *GetNameSafe(Stat3P),
