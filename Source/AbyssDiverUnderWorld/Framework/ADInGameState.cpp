@@ -232,7 +232,14 @@ void AADInGameState::OnRep_ReplicatedHasBegunPlay()
 		return;
 	}
 
-	HudComp->GetMissionsOnHudWidget()->InitWiget();
+	UMissionsOnHUDWidget* MissionsWidget = HudComp->GetMissionsOnHudWidget();
+	if (MissionsWidget == nullptr)
+	{
+		LOGV(Error, TEXT("MissionsWidget == nullptr"));
+		return;
+	}
+
+	MissionsWidget->InitWiget();
 }
 
 void AADInGameState::OnRep_Money()

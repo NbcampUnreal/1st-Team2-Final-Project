@@ -23,7 +23,7 @@ AMonster::AMonster()
 	AIController = nullptr;
 	AnimInstance = nullptr;
 	TargetActor = nullptr;
-	ChaseTriggerTime = 3.0f;
+	ChaseTriggerTime = 1.8f;
 	ChaseSpeed = 400.0f;
 	PatrolSpeed = 200.0f;
 	InvestigateSpeed = 300.0f;
@@ -32,6 +32,7 @@ AMonster::AMonster()
 	bUseControllerRotationYaw = false;
 	bReplicates = true;
 	SetReplicatingMovement(true);
+	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 
 	RadarReturnComponent->FactionTags.Init(TEXT("Hostile"), 1);
 }
@@ -158,7 +159,10 @@ void AMonster::StopMovement()
 void AMonster::NotifyLightExposure(float DeltaTime, float TotalExposedTime, const FVector& PlayerLocation, AActor* PlayerActor)
 {
 	if (!HasAuthority()) return;
+	if (!IsValid(this)) return;
+	if (AIController == nullptr) return;
 
+	UE_LOG(LogTemp, Warning, TEXT("TotalExposedTime : %.2f"), TotalExposedTime);
 	switch (MonsterState)
 	{
 	case EMonsterState::Patrol:
@@ -166,16 +170,16 @@ void AMonster::NotifyLightExposure(float DeltaTime, float TotalExposedTime, cons
 		break;
 
 	case EMonsterState::Detected:
-		if (TotalExposedTime < ChaseTriggerTime)
+		if (TotalExposedTime >= ChaseTriggerTime)
+		{
+			AddDetection(PlayerActor);
+			SetMonsterState(EMonsterState::Chase);
+		}
+		else
 		{
 			SetMonsterState(EMonsterState::Investigate);
 		}
-		else if (TotalExposedTime >= ChaseTriggerTime)
-		{
-			SetMonsterState(EMonsterState::Chase);
-			AddDetection(PlayerActor);
-		}
-		else break;
+		break;
 
 	case EMonsterState::Investigate:
 	{
@@ -191,9 +195,24 @@ void AMonster::NotifyLightExposure(float DeltaTime, float TotalExposedTime, cons
 			SetMonsterState(EMonsterState::Chase);
 			AddDetection(PlayerActor);
 		}
+		else if (TotalExposedTime < ChaseTriggerTime)
+		{
+			if (TargetActor == nullptr)
+			{
+				SetMonsterState(EMonsterState::Investigate);
+			}
+			else
+			{
+				SetMonsterState(EMonsterState::Chase);
+			}
+		}
 		break;
 	}
 	case EMonsterState::Chase:
+		if (TargetActor != PlayerActor)
+		{
+			AddDetection(PlayerActor);
+		}
 		break;
 	
 	default:
@@ -204,6 +223,8 @@ void AMonster::NotifyLightExposure(float DeltaTime, float TotalExposedTime, cons
 void AMonster::AddDetection(AActor* Actor)
 {
 	if (!IsValid(Actor)) return;
+
+	if (!IsValid(this)) return;
 
 	int32& Count = DetectionRefCounts.FindOrAdd(Actor);
 	Count++;
@@ -223,6 +244,8 @@ void AMonster::AddDetection(AActor* Actor)
 void AMonster::RemoveDetection(AActor* Actor)
 {
 	if (!IsValid(Actor)) return;
+
+	if (!IsValid(this)) return;
 
 	int32* CountPtr = DetectionRefCounts.Find(Actor);
 	if (!CountPtr) return;
@@ -252,6 +275,8 @@ void AMonster::SetMonsterState(EMonsterState NewState)
 
 	if (MonsterState == NewState) return;
 
+	if (GetController() == nullptr) return;
+
 	MonsterState = NewState;
 	UE_LOG(LogTemp, Warning, TEXT("MonsterState changed: %d ¡æ %d"), (int32)MonsterState, (int32)NewState);
 
@@ -280,15 +305,18 @@ void AMonster::SetMonsterState(EMonsterState NewState)
 
 	case EMonsterState::Patrol:
 		SetMaxSwimSpeed(PatrolSpeed);
+		bIsChasing = false;
 		break;
 
 	case EMonsterState::Investigate:
 		SetMaxSwimSpeed(InvestigateSpeed);
+		bIsChasing = false;
 		// @TODO : Add animations, sounds, and more
 		break;
 
 	case EMonsterState::Flee:
 		SetMaxSwimSpeed(FleeSpeed);
+		bIsChasing = false;
 
 	default:
 		break;
