@@ -85,6 +85,8 @@ void AADSpearGunBullet::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AAct
         if (OtherActor && OtherActor != this && OtherComp && OtherComp->GetOwner() != this)
         {
             GetSoundSubsystem()->PlayAt(ESFX::Hit, SweepResult.Location);
+            if (!GetInstigatorController() || !GetOwner()) return;
+            else LOGP(Warning, TEXT("InstigatorController or Owner is not"));
             if (HasAuthority())
             {
                 UGameplayStatics::ApplyPointDamage(

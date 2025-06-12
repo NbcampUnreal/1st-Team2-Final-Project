@@ -53,7 +53,7 @@ void AADInGameMode::BeginPlay()
 		UDataTableSubsystem* DataTableSubsystem = GetGameInstance()->GetSubsystem<UDataTableSubsystem>();
 
 		SpearGunBulletPool = GetWorld()->SpawnActor<AGenericPool>();
-		SpearGunBulletPool->InitPool<AADSpearGunBullet>(10, BulletClass);
+		SpearGunBulletPool->InitPool<AADSpearGunBullet>(30, BulletClass);
 		LOGVN(Warning, TEXT("SpawnSpearGunBulletPool"));
 
 		int32 LastDroneNumber = 0;
