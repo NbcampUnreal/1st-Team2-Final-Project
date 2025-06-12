@@ -159,6 +159,8 @@ void AMonster::StopMovement()
 void AMonster::NotifyLightExposure(float DeltaTime, float TotalExposedTime, const FVector& PlayerLocation, AActor* PlayerActor)
 {
 	if (!HasAuthority()) return;
+	if (!IsValid(this)) return;
+	if (AIController == nullptr) return;
 
 	UE_LOG(LogTemp, Warning, TEXT("TotalExposedTime : %.2f"), TotalExposedTime);
 	switch (MonsterState)
@@ -222,6 +224,8 @@ void AMonster::AddDetection(AActor* Actor)
 {
 	if (!IsValid(Actor)) return;
 
+	if (!IsValid(this)) return;
+
 	int32& Count = DetectionRefCounts.FindOrAdd(Actor);
 	Count++;
 
@@ -240,6 +244,8 @@ void AMonster::AddDetection(AActor* Actor)
 void AMonster::RemoveDetection(AActor* Actor)
 {
 	if (!IsValid(Actor)) return;
+
+	if (!IsValid(this)) return;
 
 	int32* CountPtr = DetectionRefCounts.Find(Actor);
 	if (!CountPtr) return;
@@ -268,6 +274,8 @@ void AMonster::SetMonsterState(EMonsterState NewState)
 	if (!HasAuthority()) return;
 
 	if (MonsterState == NewState) return;
+
+	if (GetController() == nullptr) return;
 
 	MonsterState = NewState;
 	UE_LOG(LogTemp, Warning, TEXT("MonsterState changed: %d ¡æ %d"), (int32)MonsterState, (int32)NewState);

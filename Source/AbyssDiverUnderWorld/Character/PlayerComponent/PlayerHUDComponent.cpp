@@ -143,8 +143,11 @@ void UPlayerHUDComponent::TickComponent(float DeltaTime, enum ELevelTick TickTyp
 	PlayerController->ProjectWorldLocationToScreen(LaggedLookTarget, ScreenPosition);
 
 	CrosshairPosition = FMath::Vector2DInterpTo(CrosshairPosition, ScreenPosition, DeltaTime, 20.0f);
-
-	CrosshairWidget->SetPositionInViewport(CrosshairPosition);
+	
+	if (CrosshairWidget)
+	{
+		CrosshairWidget->SetPositionInViewport(CrosshairPosition);
+	}	
 }
 
 void UPlayerHUDComponent::C_ShowResultScreen_Implementation()

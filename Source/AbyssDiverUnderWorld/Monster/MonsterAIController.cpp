@@ -47,6 +47,8 @@ void AMonsterAIController::Tick(float DeltaSeconds)
 
 	if (!bIsLosingTarget) return;
 
+	if (!IsValid(Monster)) return;
+
 	float Elapsed = GetWorld()->GetTimeSeconds() - LostTargetTime;
 	if (Elapsed > SightConfig->GetMaxAge())
 	{
@@ -114,6 +116,8 @@ void AMonsterAIController::InitializePatrolPoint()
 
 void AMonsterAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
+	if (!IsValid(Monster)) return;
+
 	if (Actor->IsA(AUnderwaterCharacter::StaticClass()))
 	{
 		BlackboardComponent = GetBlackboardComponent();
