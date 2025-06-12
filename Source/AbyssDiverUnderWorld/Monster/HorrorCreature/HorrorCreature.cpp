@@ -18,6 +18,8 @@ AHorrorCreature::AHorrorCreature()
 	SwallowedPlayer = nullptr;
 	bCanSwallow = true;
 	LanchStrength = 150.0f;
+	DisableSightTime = 1.5f;
+	FleeTime = 2.5f;
 
 	HorrorCreatureHitSphere = CreateDefaultSubobject<USphereComponent>(TEXT("HorrorCreatureHitSphere"));
 	HorrorCreatureHitSphere->SetupAttachment(GetMesh(), TEXT("AttackSocket"));
@@ -29,7 +31,17 @@ AHorrorCreature::AHorrorCreature()
 void AHorrorCreature::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	if (AIController)
+	{
+		CachedPerceptionComponent = AIController->FindComponentByClass<UAIPerceptionComponent>();
+	}
 	HorrorCreatureHitSphere->OnComponentBeginOverlap.AddDynamic(this, &AHorrorCreature::OnSwallowTriggerOverlap);
+}
+
+void AHorrorCreature::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
 }
 
 void AHorrorCreature::OnSwallowTriggerOverlap(
@@ -64,13 +76,16 @@ void AHorrorCreature::SwallowPlayer(AUnderwaterCharacter* Victim)
 	Victim->StartCaptureState();
 
 	SetMonsterState(EMonsterState::Flee);
-	RemoveDetection(Victim);
+	BlackboardComponent->ClearValue(TargetActorKey);
 	BlackboardComponent->SetValueAsEnum(MonsterStateKey, static_cast<uint8>(EMonsterState::Flee));
 }
 
 void AHorrorCreature::EjectPlayer(AUnderwaterCharacter* Victim)
 {
 	if (!Victim) return;
+
+	// Perception keeps setting the TargetActor, so it should be turned off.
+	TemporarilyDisalbeSightPerception(DisableSightTime);
 
 	Victim->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 	Victim->SetActorHiddenInGame(false);
@@ -86,6 +101,7 @@ void AHorrorCreature::EjectPlayer(AUnderwaterCharacter* Victim)
 		M_PlayMontage(EjectMontage);
 	}
 
+	// SwimMode On
 	GetWorld()->GetTimerManager().SetTimer(
 		TimerHandle_SetSwimMode,
 		[Victim]()
@@ -99,12 +115,46 @@ void AHorrorCreature::EjectPlayer(AUnderwaterCharacter* Victim)
 		false
 	);
 
-	SetMonsterState(EMonsterState::Patrol);
-	BlackboardComponent->SetValueAsEnum(MonsterStateKey, static_cast<uint8>(EMonsterState::Patrol));
-
+	FTimerHandle SetPatrolTimeHandle;
+	GetWorld()->GetTimerManager().SetTimer(
+		SetPatrolTimeHandle,
+		this,
+		&AHorrorCreature::SetPatrolStateAfterEject,
+		FleeTime,
+		false
+	);
 	SwallowedPlayer = nullptr;
 	bCanSwallow = true;
 }
 
+void AHorrorCreature::TemporarilyDisalbeSightPerception(float Duration)
+{
+	if (!CachedPerceptionComponent) return;
 
+	CachedPerceptionComponent->SetSenseEnabled(UAISense_Sight::StaticClass(), false);
+
+	FTimerHandle EnableSightHandle;
+	GetWorld()->GetTimerManager().SetTimer(
+		EnableSightHandle,
+		this,
+		&AHorrorCreature::SightPerceptionOn,
+		Duration,
+		false
+	);
+}
+
+void AHorrorCreature::SightPerceptionOn()
+{
+	if (CachedPerceptionComponent)
+	{
+		CachedPerceptionComponent->SetSenseEnabled(UAISense_Sight::StaticClass(), true);
+	}
+}
+
+void AHorrorCreature::SetPatrolStateAfterEject()
+{
+	SetMonsterState(EMonsterState::Patrol);
+	BlackboardComponent->SetValueAsEnum(MonsterStateKey, static_cast<uint8>(EMonsterState::Patrol));
+	BlackboardComponent->ClearValue(TargetActorKey);
+}
 
