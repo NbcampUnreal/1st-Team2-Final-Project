@@ -9,6 +9,7 @@
 const FName UBTTask_PerformChasing::bCanAttackKey = "bCanAttack";
 const FName UBTTask_PerformChasing::bIsHidingKey = "bIsHiding";
 const FName UBTTask_PerformChasing::bIsPlayerHiddenKey = "bIsPlayerHidden";
+const FName UBTTask_PerformChasing::TargetPlayerKey = "TargetPlayer";
 
 UBTTask_PerformChasing::UBTTask_PerformChasing()
 {
@@ -48,6 +49,7 @@ void UBTTask_PerformChasing::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* 
 		LOG(TEXT("PerformChasing: Player is not valid"));
 		TaskMemory->AIController->GetBlackboardComponent()->SetValueAsBool(bIsHidingKey, true);
 		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
+		return;
 	}
 	
 
@@ -57,6 +59,7 @@ void UBTTask_PerformChasing::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* 
 		LOG(TEXT("PerformChasing: Player is not on NavMesh"));
 		TaskMemory->AIController->GetBlackboardComponent()->SetValueAsBool(bIsHidingKey, true);
 		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
+		return;
 	}
 
 
@@ -67,6 +70,7 @@ void UBTTask_PerformChasing::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* 
 		LOG(TEXT("PerformChasing: Chasing time exceeded"));
 		TaskMemory->AIController->GetBlackboardComponent()->SetValueAsBool(bIsHidingKey, true);
 		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
+		return;
 	}
 
 	// 공격 영역 내에 들어온 경우 ...
@@ -103,6 +107,7 @@ void UBTTask_PerformChasing::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* 
 			{
 				TaskMemory->AIController->GetBlackboardComponent()->SetValueAsBool(bIsPlayerHiddenKey, true);
 				FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
+				return;
 			}
 		}
 	}
