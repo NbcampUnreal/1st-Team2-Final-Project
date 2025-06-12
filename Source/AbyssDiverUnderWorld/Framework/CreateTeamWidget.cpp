@@ -54,6 +54,7 @@ void UCreateTeamWidget::OnBackClicked()
 
 void UCreateTeamWidget::OnConfirmClicked()
 {
+    StopAllAnimations();
     RemoveFromParent();
 }
 

@@ -314,7 +314,8 @@ void UADInventoryComponent::C_SetButtonActive_Implementation(EChargeBatteryType 
 
 void UADInventoryComponent::C_UpdateBatteryInfo_Implementation()
 {
-	ChargeBatteryWidget->UpdateBatteryInfo();
+	if(ChargeBatteryWidget)
+		ChargeBatteryWidget->UpdateBatteryInfo();
 }
 
 void UADInventoryComponent::C_SetEquipBatteryAmount_Implementation(EChargeBatteryType ItemChargeBatteryType)
