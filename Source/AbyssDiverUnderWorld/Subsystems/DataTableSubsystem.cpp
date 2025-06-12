@@ -5,6 +5,7 @@
 #include "DataRow/UpgradeDataRow.h"
 #include "DataRow/FADItemDataRow.h"
 #include "DataRow/FADProjectileDataRow.h"
+#include "DataRow/ButtonDataRow.h"
 #include "DataRow/PhaseGoalRow.h"
 #include "DataRow/ShopItemMeshTransformRow.h"
 #include "Interactable/Item/ADOreRock.h"
@@ -27,6 +28,11 @@ void UDataTableSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	if (UDataTable* ProjectileDataTable = GI->ProjectileDataTable)
 	{
 		ProjectileDataTable->GetAllRows<FFADProjectileDataRow>(TEXT("ItemDataTable"), ProjectileDataTableArray);
+	}
+
+	if (UDataTable* ButtonDataTable = GI->ButtonDataTable)
+	{
+		ButtonDataTable->GetAllRows<FButtonDataRow>(TEXT("ButtonDataTable"), ButtonDataTableArray);
 	}
 	else
 	{
@@ -59,6 +65,11 @@ void UDataTableSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 		});
 
 	Algo::Sort(ProjectileDataTableArray, [](const FFADProjectileDataRow* A, const FFADProjectileDataRow* B)
+		{
+			return A->Id < B->Id;
+		});
+
+	Algo::Sort(ButtonDataTableArray, [](const FButtonDataRow* A, const FButtonDataRow* B)
 		{
 			return A->Id < B->Id;
 		});
@@ -98,6 +109,11 @@ FFADItemDataRow* UDataTableSubsystem::GetItemDataByName(FName ItemName) const
 FFADProjectileDataRow* UDataTableSubsystem::GetProjectileData(int32 ProjectileId) const
 {
 	return ProjectileDataTableArray[ProjectileId];
+}
+
+FButtonDataRow* UDataTableSubsystem::GetButtonData(int32 ProjectileId) const
+{
+	return ButtonDataTableArray[ProjectileId];
 }
 
 FUpgradeDataRow* UDataTableSubsystem::GetUpgradeDataTableArray(int32 Index) const

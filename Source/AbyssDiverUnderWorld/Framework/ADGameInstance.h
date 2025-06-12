@@ -61,6 +61,8 @@ public:
 	TObjectPtr<UDataTable> ItemDataTable;
 	UPROPERTY(EditDefaultsOnly, Category = "ADGameInstance", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.FADProjectileDataRow"))
 	TObjectPtr<UDataTable> ProjectileDataTable;
+	UPROPERTY(EditDefaultsOnly, Category = "ADGameInstance", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.ButtonDataRow"))
+	TObjectPtr<UDataTable> ButtonDataTable;
 
     UPROPERTY(EditDefaultsOnly, Category = "ADGameInstance", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.UpgradeDataRow"))
     TObjectPtr<UDataTable> UpgradeDataTable;
