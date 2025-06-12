@@ -81,7 +81,7 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	bCanUseEquipment = true;
 	bPlayingEmote = false;
 
-	LanternLength = 2000.0f;
+	LanternLength = 3000.0f;
 	
 	LeftFlipperSocketName = TEXT("foot_l_flipper_socket");
 	RightFlipperSocketName = TEXT("foot_r_flipper_socket");
