@@ -47,26 +47,31 @@ public:
 	T* GetObject()
 	{
 		static_assert(std::is_base_of<APoolableItem, T>::value, "T must be a subclass of APoolableItem");
-		for (APoolableItem* Object : ObjectPool)
+		if(ObjectPool.IsEmpty())
 		{
-			if (!Object->GetIsActive())
+			LOGOP(Warning, TEXT("There are no more bullet. Add a new bullet"));
+			T* NewObject = GetWorld()->SpawnActor<T>(PoolableClass);
+			if (NewObject)
 			{
-				Object->SetObjectPool(this);
-				Object->Activate();
-				DeActivatedBulletCount--;
-				LOGOP(Warning, TEXT("Bullet is Activated. Bullet Id : %d"), Object->GetProjectileId());
-				LOGOP(Warning, TEXT("Number of Bullets left : %d"), DeActivatedBulletCount);
-				return Cast<T>(Object);
+				NewObject->Activate();
+				ObjectPool.Add(NewObject);
+				return NewObject;
 			}
 		}
-
-		LOGOP(Warning, TEXT("There are no more bullet. Add a new bullet"));
-		T* NewObject = GetWorld()->SpawnActor<T>(PoolableClass);
-		if (NewObject)
+		else
 		{
-			NewObject->Activate();
-			ObjectPool.Add(NewObject);
-			return NewObject;
+			for (APoolableItem* Object : ObjectPool)
+			{
+				if (!Object->GetIsActive())
+				{
+					Object->SetObjectPool(this);
+					Object->Activate();
+					DeActivatedBulletCount--;
+					LOGOP(Warning, TEXT("Bullet is Activated. Bullet Id : %d"), Object->GetProjectileId());
+					LOGOP(Warning, TEXT("Number of Bullets left : %d"), DeActivatedBulletCount);
+					return Cast<T>(Object);
+				}
+			}
 		}
 
 		return nullptr;
