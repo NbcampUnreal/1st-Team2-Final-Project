@@ -16,7 +16,6 @@ AADPlayerState::AADPlayerState()
 	, OreMinedCount(0)
 	, bIsSafeReturn(false)
 	, PlayerIndex(INDEX_NONE)
-	, bIsHost(false)
 {
 	bReplicates = true;
 
@@ -72,16 +71,24 @@ void AADPlayerState::CopyProperties(APlayerState* PlayerState)
 {
 	Super::CopyProperties(PlayerState);
 
-	if (ensure(this) == false || ensure(PlayerState) == false)
+	if (IsValid(this) == false)
 	{
+		LOGVN(Error, TEXT("IsValid(this) == false"));
+		return;
+	}
+
+	if (IsValid(PlayerState) == false)
+	{
+		LOGVN(Error, TEXT("IsValid(PlayerState) == false"));
 		return;
 	}
 
 	AADPlayerState* NextPlayerState = CastChecked<AADPlayerState>(PlayerState);
 
 	const FUniqueNetIdRepl& UniqueNetIdRepl = NextPlayerState->GetUniqueId();
-	if (ensure(&UniqueNetIdRepl) == false)
+	if (UniqueNetIdRepl.IsValid() == false)
 	{
+		LOGVN(Error, TEXT("UniqueNetIdRepl.IsValid() == false"));
 		return;
 	}
 

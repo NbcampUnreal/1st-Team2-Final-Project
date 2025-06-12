@@ -188,6 +188,9 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<AActor> PrevEquipItem = nullptr;
+
+	const FName HarpoonSocketName = TEXT("Harpoon");
+	const FName DPVSocketName = TEXT("DPV");
 #pragma endregion
 
 
@@ -214,8 +217,5 @@ public:
 
 private:
 	USoundSubsystem* GetSoundSubsystem();
-
-	FName HarpoonSocketName = TEXT("Harpoon");
-	FName DPVSocketName = TEXT("DPV");
 #pragma endregion
 };
