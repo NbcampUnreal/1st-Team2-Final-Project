@@ -493,11 +493,6 @@ void UMissionSubsystem::UnlockMissionInternal(FMissionBaseRow* MissionData)
 
 bool UMissionSubsystem::CheckIfGameStateIsValid()
 {
-	if (IsValid(InGameState))
-	{
-		return true;
-	}
-
 	AADInGameState* GS = Cast<AADInGameState>(UGameplayStatics::GetGameState(GetWorld()));
 	if (GS == nullptr)
 	{
@@ -511,8 +506,15 @@ bool UMissionSubsystem::CheckIfGameStateIsValid()
 
 void UMissionSubsystem::OnMissionComplete(const EMissionType& InMissionType, const uint8& InMissionIndex)
 {
+	if (CheckIfGameStateIsValid() == false)
+	{
+		LOGV(Error, TEXT("Invalid GS"));
+		return;
+	}
+
 	// 완료시... 이벤트
 	const FMissionBaseRow* MissionData = GetMissionData(InMissionType, InMissionIndex);
+	
 	if (MissionData->bShouldCompleteInstantly)
 	{
 		LOGV(Warning, TEXT("MissionComplete Instantly, Type : %d, MissionIndex : %d"), InMissionType, InMissionIndex);
@@ -523,6 +525,7 @@ void UMissionSubsystem::OnMissionComplete(const EMissionType& InMissionType, con
 		LOGV(Warning, TEXT("Mission Condidion Met, Type : %d, MissionIndex : %d"), InMissionType, InMissionIndex);
 	}
 
+	InGameState->RefreshActivatedMissionList();
 }
 
 //const TSet<FString>& UMissionSubsystem::GetAllSelectedMissionNames() const

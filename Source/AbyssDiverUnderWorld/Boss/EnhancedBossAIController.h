@@ -30,10 +30,9 @@ protected:
 private:
 	void OnSightPerceptionSuccess(AUnderwaterCharacter* Player);
 	void OnSightPerceptionFail();
-	void OnHearingPerceptionSuccess(const FAIStimulus& Stimulus);
+	void OnHearingPerceptionSuccess(AUnderwaterCharacter* Player);
 	void SetBloodDetectedState();
-	void InitBloodDetectedState();
-	void OnDamagePerceptionSuccess();
+	void OnDamagePerceptionSuccess(AUnderwaterCharacter* Player);
 
 protected:
 	UPROPERTY(EditAnywhere)
@@ -75,6 +74,7 @@ private:
 	static const FName bIsPlayerHiddenKey;
 	static const FName BloodOccurredLocationKey;
 	static const FName TargetPlayerKey;
+	static const FName bIsChasingPlayerKey;
 	static const FName bIsDetectBloodKey;
 	static const FName bIsChasingBloodKey;
 
