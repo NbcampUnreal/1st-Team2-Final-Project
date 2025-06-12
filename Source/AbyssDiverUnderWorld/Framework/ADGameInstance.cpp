@@ -24,6 +24,7 @@ void UADGameInstance::Init()
     SettingsManager->InitializeActionMap(GetInputActionMap());
 }
 
+
 bool UADGameInstance::TryGetPlayerIndex(const FString& NetId, int32& OutPlayerIndex)
 {
     if (PlayerIdMap.Contains(NetId))

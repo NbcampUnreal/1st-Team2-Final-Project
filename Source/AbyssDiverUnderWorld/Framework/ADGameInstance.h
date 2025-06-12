@@ -25,13 +25,11 @@ protected:
 	virtual void Init() override;
 
 public:
-	UFUNCTION( BlueprintImplementableEvent)
-	void ExitSession(APlayerController* Caller);
 
 	bool TryGetPlayerIndex(const FString& NetId, int32& OutPlayerIndex);
 	void AddPlayerNetId(const FString& NetId);
 	void RemovePlayerNetId(const FString& NetId);
-
+	
 	// 0~1의 값
 	UFUNCTION(BlueprintCallable, Category = "ADGameInstance")
 	void ChangeMasterVolume(const float& NewVolume);
