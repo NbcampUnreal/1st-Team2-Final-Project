@@ -5,6 +5,7 @@
 #include "AbyssDiverUnderWorld.h"
 #include "Interface/IADInteractable.h"
 #include "Net/UnrealNetwork.h"
+#include "Character/UnderwaterCharacter.h"
 
 // Sets default values for this component's properties
 UADInteractionComponent::UADInteractionComponent()
@@ -302,7 +303,8 @@ void UADInteractionComponent::ClearFocus()
 
 void UADInteractionComponent::OnInteractPressed()
 {
-	if (!FocusedInteractable) return;
+	if (!FocusedInteractable || !FocusedInteractable->CanInteractable()) return;
+
 	bIsInteractingStart = true;
 	if (AActor* Owner = FocusedInteractable->GetOwner())
 	{

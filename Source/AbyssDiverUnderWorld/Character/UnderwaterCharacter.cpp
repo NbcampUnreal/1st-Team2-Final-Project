@@ -219,7 +219,7 @@ void AUnderwaterCharacter::BeginPlay()
 
 		GM->BindDelegate(this);
 	}
-	
+	InteractableComponent->SetInteractable(false);
 }
 
 void AUnderwaterCharacter::InitFromPlayerState(AADPlayerState* ADPlayerState)
@@ -898,6 +898,7 @@ void AUnderwaterCharacter::HandleEnterGroggy()
 	{
 		AnimInstance->StopAllMontages(0.0f);
 	}
+	InteractableComponent->SetInteractable(true);
 }
 
 void AUnderwaterCharacter::HandleExitGroggy()
@@ -929,6 +930,7 @@ void AUnderwaterCharacter::HandleEnterNormal()
 
 		LookSensitivity = NormalLookSensitivity;
 	}
+	InteractableComponent->SetInteractable(false);
 }
 
 void AUnderwaterCharacter::HandleExitNormal()
@@ -970,6 +972,7 @@ void AUnderwaterCharacter::HandleEnterDeath()
 	
 	K2_OnDeath();
 	OnDeathDelegate.Broadcast();
+	InteractableComponent->SetInteractable(true);
 }
 
 void AUnderwaterCharacter::S_Revive_Implementation()
