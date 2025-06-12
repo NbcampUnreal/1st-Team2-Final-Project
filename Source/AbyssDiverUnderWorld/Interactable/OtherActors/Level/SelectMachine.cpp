@@ -45,7 +45,7 @@ void ASelectMachine::BeginPlay()
 					EButtonAction ButtonAction = static_cast<EButtonAction>(i);
 					ButtonActor->SetButtonAction(ButtonAction);
 					ButtonActor->SetActorRelativeTransform(ButtonData->ButtonTransform);
-					ButtonActor->M_SetStaticMesh(ButtonData->ButtonMesh);
+					ButtonActor->SetStaticMesh(ButtonData->ButtonMesh);
 					switch (ButtonAction)
 					{
 					case EButtonAction::PrevLevel:

@@ -24,18 +24,30 @@ AInteractableButton::AInteractableButton()
 
 void AInteractableButton::Interact_Implementation(AActor* InstigatorActor)
 {
-	OnButtonPressed.ExecuteIfBound(InstigatorActor);
-	LOGV(Error, TEXT("ButtonInteract"));
+	if (APlayerController* PC = Cast<APlayerController>(InstigatorActor->GetInstigatorController()))
+	{
+		if (!PC->IsLocalController()) return;
+
+		OnButtonPressed.ExecuteIfBound(InstigatorActor);
+		LOGV(Error, TEXT("ButtonInteract"));
+	}
 }
 
 void AInteractableButton::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AInteractableButton, ButtonAction);
+	DOREPLIFETIME(AInteractableButton, ReplicatedMesh);
 }
 
-void AInteractableButton::M_SetStaticMesh_Implementation(UStaticMesh* Mesh)
+void AInteractableButton::OnRep_SetMesh()
 {
+	MeshComp->SetStaticMesh(ReplicatedMesh);
+}
+
+void AInteractableButton::SetStaticMesh(UStaticMesh* Mesh)
+{
+	ReplicatedMesh = Mesh;
 	MeshComp->SetStaticMesh(Mesh);
 }
 

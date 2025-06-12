@@ -32,24 +32,28 @@ public:
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-	UFUNCTION(NetMulticast, Reliable)
-	void M_SetStaticMesh(UStaticMesh* Mesh);
-	void M_SetStaticMesh_Implementation(UStaticMesh* Mesh);
+	UFUNCTION()
+	void OnRep_SetMesh();
+
+	void SetStaticMesh(UStaticMesh* Mesh);
 
 	FOnButtonPressed OnButtonPressed;
 #pragma endregion
 
 #pragma region Variables
 protected:
-	UPROPERTY(Replicated)
+	UPROPERTY(Replicated, VisibleAnywhere)
 	EButtonAction ButtonAction = EButtonAction::MAX;
 private:
 
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<USceneComponent> DefaultComp;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(ReplicatedUsing = OnRep_SetMesh)
 	TObjectPtr<UStaticMeshComponent> MeshComp;
+
+	UPROPERTY(ReplicatedUsing = OnRep_SetMesh)
+	UStaticMesh* ReplicatedMesh;
 
 	UPROPERTY()
 	TObjectPtr<UADInteractableComponent> InteractableComp;
