@@ -16,7 +16,7 @@ void UEquipableComponent::BeginPlay()
 	if (SkelComp)
 	{
 		MeshComponent = SkelComp;
-		SkeletalMeshAsset = SkelComp->SkeletalMesh;
+		SkeletalMeshAsset = SkelComp->GetSkeletalMeshAsset();
 		return;
 	}
 	UStaticMeshComponent* StatComp = GetOwner()->FindComponentByClass<UStaticMeshComponent>();

@@ -56,6 +56,21 @@ void AADOreRock::BeginPlay()
 	}
 }
 
+void AADOreRock::Destroyed()
+{
+	Super::Destroyed();
+
+	for (TWeakObjectPtr<APawn> PawnPtr : ActiveInstigators)
+	{
+		if (PawnPtr.IsValid())
+		{
+			IIADInteractable::Execute_OnHoldStop(this, PawnPtr.Get());
+			LOGI(Log, TEXT("Instigator Pawn [%s] Stops Hold!"), *PawnPtr->GetName());
+		}
+	}
+	ActiveInstigators.Empty();
+}
+
 void AADOreRock::M_CleanupToolAndEffects_Implementation(AUnderwaterCharacter* UnderwaterCharacter)
 {
 	UnderwaterCharacter->CleanupToolAndEffects();
@@ -77,6 +92,12 @@ void AADOreRock::InteractHold_Implementation(AActor* InstigatorActor)
 
 void AADOreRock::OnHoldStart_Implementation(APawn* InstigatorPawn)
 {
+	ActiveInstigators.AddUnique(InstigatorPawn);
+	for (TWeakObjectPtr<APawn> PawnPtr : ActiveInstigators)
+	{
+		LOGI(Log, TEXT("Instigator Pawn : %s"), *PawnPtr->GetName());
+	}
+	
 	LOGI(Log, TEXT("Mining Starts"));
 	if (AUnderwaterCharacter* Diver = Cast<AUnderwaterCharacter>(InstigatorPawn))
 	{
@@ -123,6 +144,7 @@ void AADOreRock::OnHoldStop_Implementation(APawn* InstigatorPawn)
 	}
 	LOGI(Log, TEXT("Mining Stops"));
 	PlayStowAnim(InstigatorPawn);
+	ActiveInstigators.Remove(InstigatorPawn);
 }
 
 void AADOreRock::HandleMineRequest(APawn* InstigatorPawn)

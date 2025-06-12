@@ -201,9 +201,9 @@ public:
 	
 protected:
 	UPROPERTY(EditAnywhere)
-	float DrainPerSecond = 5.f;
+	float DrainPerSecond = 0.1f;
 	UPROPERTY(EditDefaultsOnly, Category = "NightVision")
-	float NightVisionDrainPerSecond = 2.f;
+	float NightVisionDrainPerSecond = 0.1f;
 	UPROPERTY(EditDefaultsOnly, Category = "NightVision")
 	TSoftObjectPtr<UMaterialInterface> NVGMaterial;
 	UPROPERTY(EditAnywhere, Category = "NightVision")
