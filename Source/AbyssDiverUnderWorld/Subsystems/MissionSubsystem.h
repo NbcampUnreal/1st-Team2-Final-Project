@@ -18,8 +18,8 @@ class UItemCollectionMission;
 class UItemUseMission;
 class UKillMonsterMission;
 class UMissionBase;
-
 class AADInGameState;
+
 /**
  * 
  */
@@ -69,9 +69,9 @@ private:
 	void MakeAndAddMissionDataForUI(const FMissionBaseRow* MissionBaseData, const uint8& MissionIndex);
 
 	// return : Succeeded?
-	bool RemoveFromSelectedMissionsInternal(const EMissionType& MissionType, const uint8& MissionIndex);
+	//bool RemoveFromSelectedMissionsInternal(const EMissionType& MissionType, const uint8& MissionIndex);
 
-	bool IsAlreadySelected(const EMissionType& MissionType, const uint8& MissionIndex) const;
+	//bool IsAlreadySelected(const EMissionType& MissionType, const uint8& MissionIndex) const;
 	bool IsServer() const;
 
 	void UnlockMissionInternal(FMissionBaseRow* MissionsFromUI);

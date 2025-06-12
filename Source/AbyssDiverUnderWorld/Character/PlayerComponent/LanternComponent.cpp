@@ -17,7 +17,7 @@ ULanternComponent::ULanternComponent()
 	bIsLanternOn = false;
 	LanternForwardOffset = 10.0f; // 라이트가 캐릭터 앞에 위치하도록 설정
 
-	LightAngle = 25.0f;
+	LightAngle = 35.0f;
 	Intensity = 150000.0f;
 }
 
@@ -188,7 +188,7 @@ void ULanternComponent::UpdateExposureTimes(TArray<AActor*> OverlappedActors, co
 	const FVector LightForward = LanternLightComponent->GetForwardVector();
 	const float LightConeAngleDegree = LanternLightComponent->OuterConeAngle;
 	const float LightRange = LanternLightComponent->AttenuationRadius;
-	
+
 	for (AActor* Actor: OverlappedActors)
 	{
 		AMonster* Monster = Cast<AMonster>(Actor);
@@ -199,7 +199,7 @@ void ULanternComponent::UpdateExposureTimes(TArray<AActor*> OverlappedActors, co
 			float& ExposureTime = MonsterExposeTimeMap.FindOrAdd(Monster);
 			ExposureTime += DeltaTime;
 			Monster->NotifyLightExposure(DeltaTime, ExposureTime, GetOwner()->GetActorLocation(), GetOwner());
-			Monster->AddDetection(GetOwner());
+			// Monster->AddDetection(GetOwner());
 		}
 		// Cone 바깥이라면 노출 시간을 초기화
 		else if (MonsterExposeTimeMap.Contains(Monster))

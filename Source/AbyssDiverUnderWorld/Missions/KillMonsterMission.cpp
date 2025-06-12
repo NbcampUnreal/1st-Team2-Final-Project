@@ -99,6 +99,7 @@ void UKillMonsterMission::OnDead(AActor* DamageCauser, AActor* DeadActor)
 	}
 
 	CurrentCount++;
+
 	if (IsConditionMet() == false)
 	{
 		return;

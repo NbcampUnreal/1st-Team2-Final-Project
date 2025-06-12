@@ -163,6 +163,7 @@ public:
 
 	uint8 bCanFire : 1;
 	uint8 bIsWeapon : 1;
+	uint8 bHasNoAnimation : 1;
 
 	FTimerHandle TimerHandle_HandleRefire;
 	FTimerHandle TimerHandle_HandleReload;

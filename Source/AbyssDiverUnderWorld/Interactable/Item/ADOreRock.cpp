@@ -112,6 +112,8 @@ void AADOreRock::OnHoldStop_Implementation(APawn* InstigatorPawn)
 		{
 			if (UADInventoryComponent* InventoryComp = ADPlayerState->GetInventory())
 			{
+				const float MontageStopDuration = 0.f;
+				Diver->M_StopAllMontagesOnBothMesh(MontageStopDuration);
 				InventoryComp->S_UseInventoryItem_Implementation(EItemType::Equipment, PreviousEquipIndex);
 				M_CleanupToolAndEffects(Diver);
 				LOGI(Log, TEXT("Skip Mining Stops"));

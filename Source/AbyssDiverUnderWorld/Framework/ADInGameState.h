@@ -59,10 +59,10 @@ public:
 
 	bool NetDeltaSerialize(FNetDeltaSerializeInfo& DeltaParams);
 
-	void Add(const EMissionType& MissionType, const uint8& MissionIndex);
+	void Add(const EMissionType& MissionType, const uint8& MissionIndex, bool bIsCompletedAlready);
 	void Remove(const EMissionType& MissionType, const uint8& MissionIndex);
-	void ModifyProgress(const EMissionType& MissionType, const uint8& MissionIndex, const uint8& NewProgress);
-	void AddOrModify(const EMissionType& MissionType, const uint8& MissionIndex, const uint8& NewProgress);
+	void ModifyProgress(const EMissionType& MissionType, const uint8& MissionIndex, const uint8& NewProgress, bool bIsCompletedAlready);
+	void AddOrModify(const EMissionType& MissionType, const uint8& MissionIndex, const uint8& NewProgress, bool bIsCompletedAlready);
 
 	// 인덱스 반환, 없으면 INDEX_NONE 반환
 	int32 Contains(const EMissionType& MissionType, const uint8& MissionIndex);
@@ -128,6 +128,8 @@ public:
 	FOnMissionListRefreshedDelegate OnMissionListRefreshedDelegate;
 
 protected:
+
+	virtual void OnRep_ReplicatedHasBegunPlay() override;
 
 	UFUNCTION()
 	void OnRep_Money();
@@ -246,7 +248,12 @@ public:
 	AActor* GetDestinationTarget() const { return DestinationTarget; }
 	void SetDestinationTarget(AActor* NewDestinationTarget);
 
-	FActivatedMissionInfoList& GetActivatedMissionList() { return ActivatedMissionList; }
+	FActivatedMissionInfoList& GetActivatedMissionList()
+	{ 
+		return ActivatedMissionList;
+	}
+
+	class UPlayerHUDComponent* GetPlayerHudComponent();
 
 #pragma endregion
 

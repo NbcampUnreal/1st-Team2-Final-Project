@@ -26,6 +26,7 @@
 #include "Framework/ADGameInstance.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Interactable/EquipableComponent/EquipRenderComponent.h"
 
 DEFINE_LOG_CATEGORY(InventoryLog);
 
@@ -84,7 +85,19 @@ void UADInventoryComponent::BeginPlay()
 		DataTableSubsystem = GI->GetSubsystem<UDataTableSubsystem>();
 		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
 	}
+	
+	TryCachedDiver();
+	SetComponentTickEnabled(true);
+}
 
+void UADInventoryComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+{
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+	// CachedDiver가 아직 null일 때만 재시도
+	if (!CachedDiver)
+	{
+		TryCachedDiver();
+	}
 }
 
 void UADInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -95,6 +108,9 @@ void UADInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	DOREPLIFETIME(UADInventoryComponent, TotalWeight);
 	DOREPLIFETIME(UADInventoryComponent, CurrentEquipmentSlotIndex);
 	DOREPLIFETIME(UADInventoryComponent, CurrentEquipmentInstance);
+	DOREPLIFETIME(UADInventoryComponent, CurrentEquipItem);
+	DOREPLIFETIME(UADInventoryComponent, bIsWeapon);
+
 }
 
 void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType, uint8 SlotIndex)
@@ -452,6 +468,45 @@ void UADInventoryComponent::OnRep_InventoryList()
 	InventoryUIUpdate();
 }
 
+void UADInventoryComponent::OnRep_CurrentEquipItem()
+{
+	if (!CachedDiver)
+	{
+		LOGINVEN(Warning, TEXT("CachedDiver is null"));
+		return;
+	}
+
+	UEquipRenderComponent* EquipRenderComp = CachedDiver->GetEquipRenderComponent();
+	if (!EquipRenderComp)
+	{
+		LOGINVEN(Warning, TEXT("EquipRenderComp is null"));
+		return;
+	}
+
+	if (PrevEquipItem)
+	{
+		EquipRenderComp->DetachItem(PrevEquipItem);
+		PrevEquipItem->Destroy();
+		PrevEquipItem = nullptr;
+	}
+	if (CurrentEquipItem)
+	{
+		if (USkeletalMeshComponent* SkeletalMeshComp = CurrentEquipItem->FindComponentByClass<USkeletalMeshComponent>())
+		{
+			SkeletalMeshComp->SetVisibility(false, true);
+			if (bIsWeapon)
+			{
+				EquipRenderComp->AttachItem(CurrentEquipItem, HarpoonSocketName);
+			}
+			else
+			{
+				EquipRenderComp->AttachItem(CurrentEquipItem, DPVSocketName);
+			}
+			PrevEquipItem = CurrentEquipItem;
+		}
+	}
+}
+
 int8 UADInventoryComponent::FindItemIndexByName(FName ItemName) //빈슬롯이 없으면 -1 반환
 {
 	for (int i = 0; i < InventoryList.Items.Num(); ++i)
@@ -716,13 +771,24 @@ void UADInventoryComponent::Equip(FItemData& ItemData, int8 SlotIndex)
 
 	ACharacter* Character = Cast<ACharacter>(Pawn);
 	USkeletalMeshComponent* MeshComp = Character->GetMesh();
+	AUnderwaterCharacter* Diver = Cast<AUnderwaterCharacter>(Pawn);
+	UEquipRenderComponent* EquipRenderComp = Diver->GetEquipRenderComponent();
+	if (!Character || !Diver || !EquipRenderComp)
+		return;
 
 	if (MeshComp)
 	{
-		if (MeshComp->DoesSocketExist("Harpoon") && MeshComp->DoesSocketExist("DPV"))
+		if (MeshComp->DoesSocketExist(HarpoonSocketName) && MeshComp->DoesSocketExist(DPVSocketName))
 		{
+			const FName SocketName = bIsWeapon ? HarpoonSocketName : DPVSocketName;
+			FTransform AttachTM = MeshComp->GetSocketTransform(SocketName);
 
-			AADUseItem* SpawnedItem = GetWorld()->SpawnActor<AADUseItem>(AADUseItem::StaticClass(), MeshComp->GetSocketLocation("Harpoon"), MeshComp->GetSocketRotation("Hand_R"), SpawnParams);
+			AADUseItem* SpawnedItem = GetWorld()->SpawnActor<AADUseItem>(
+				AADUseItem::StaticClass(),
+				FVector::ZeroVector,
+				FRotator::ZeroRotator,
+				SpawnParams
+			);
 			if (!SpawnedItem)
 			{
 				LOGINVEN(Warning, TEXT("No SpawnItem"));
@@ -735,24 +801,17 @@ void UADInventoryComponent::Equip(FItemData& ItemData, int8 SlotIndex)
 			LOGINVEN(Warning, TEXT("ItemToEquip Name: %s, Amount %d"), *ItemData.Name.ToString(), ItemData.Amount);
 			SetEquipInfo(SlotIndex, SpawnedItem);
 			
-			if (UEquipUseComponent* EquipComp = Pawn->FindComponentByClass<UEquipUseComponent>()) // 나중에 Getter로 바꿔야 함
+			if (UEquipUseComponent* EquipComp = Diver->GetEquipUseComponent()) 
 			{
 				if (GetCurrentEquipmentItemData())
 				{
 					EquipComp->Initialize(*GetCurrentEquipmentItemData());
 					bIsWeapon = EquipComp->bIsWeapon;
+					bHasNoAnimation = EquipComp->bHasNoAnimation;
 				}
 			}
-
-			if (bIsWeapon)
-			{
-				SpawnedItem->AttachToComponent(MeshComp, FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("Harpoon"));
-
-			}
-			else
-			{
-				SpawnedItem->AttachToComponent(MeshComp, FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("DPV"));
-			}
+			CurrentEquipItem = SpawnedItem;
+			OnRep_CurrentEquipItem();
 		}
 	}
 	if (AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(Pawn))
@@ -762,7 +821,10 @@ void UADInventoryComponent::Equip(FItemData& ItemData, int8 SlotIndex)
 		{
 			UnderwaterCharacter->CleanupToolAndEffects();
 		}
-		PlayEquipAnimation(UnderwaterCharacter, bIsWeapon);
+		if (!bHasNoAnimation)
+		{
+			PlayEquipAnimation(UnderwaterCharacter, bIsWeapon);
+		}
 	}
 }
 
@@ -784,12 +846,21 @@ void UADInventoryComponent::UnEquip()
 				EquipComp->DeinitializeEquip();
 				InventoryList.MarkItemDirty(InventoryList.Items[FindItemIndexByName(CurrentEquipmentInstance->ItemData.Name)]);
 			}
+			
 		}
 	}
 	C_InventoryPlaySound(ESFX::UnEquip);
-	LOGINVEN(Warning, TEXT("UnEquipItem %s"), *CurrentEquipmentInstance->ItemData.Name.ToString());
+	/*LOGINVEN(Warning, TEXT("UnEquipItem %s"), *CurrentEquipmentInstance->ItemData.Name.ToString());
 	if(CurrentEquipmentInstance)
+		CurrentEquipmentInstance->Destroy();*/
+	if (CurrentEquipmentInstance)
+	{
+		CachedDiver->GetEquipRenderComponent()->DetachItem(CurrentEquipmentInstance);
 		CurrentEquipmentInstance->Destroy();
+		CurrentEquipItem->Destroy();
+		CurrentEquipmentInstance = nullptr;
+		CurrentEquipItem = nullptr;
+	}
 	SetEquipInfo(INDEX_NONE, nullptr);
 
 }
@@ -823,6 +894,7 @@ void UADInventoryComponent::DropItem(FItemData& ItemData)
 	{
 		M_SpawnItemEffect(ESFX::DropItem, DropItemEffect, DropLocation);
 	}
+	SpawnItem->M_SetItemVisible(true);
 	SpawnItem->SetItemInfo(ItemData, false);
 	LOGINVEN(Warning, TEXT("Spawn Item To Drop : %s"), *ItemData.Name.ToString());
 }
@@ -875,6 +947,28 @@ void UADInventoryComponent::PrintLogInventoryData()
 			}
 			else
 				LOGVN(Warning, TEXT("NoItems"));
+		}
+	}
+}
+
+void UADInventoryComponent::TryCachedDiver()
+{
+	if (CachedDiver) return;
+
+	if (AADPlayerState* PlayerState = Cast<AADPlayerState>(GetOwner()))
+	{
+		if (APawn* Pawn = PlayerState->GetPawn())
+		{
+			if (AUnderwaterCharacter* Diver = Cast<AUnderwaterCharacter>(Pawn))
+			{
+				CachedDiver = Diver;
+				SetComponentTickEnabled(false);
+
+				if (CurrentEquipItem)
+				{
+					OnRep_CurrentEquipItem();
+				}
+			}
 		}
 	}
 }

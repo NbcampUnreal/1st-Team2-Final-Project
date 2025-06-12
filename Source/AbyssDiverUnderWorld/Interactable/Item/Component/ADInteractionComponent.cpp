@@ -59,7 +59,7 @@ void UADInteractionComponent::TickComponent(float DeltaTime, ELevelTick TickType
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 	PerformFocusCheck();
-	if (!bIsFocusing && bIsInteractingStart)
+	if (!bIsFocusing && bIsInteractingStart && !FocusedInteractable)
 	{
 		if (IsLocallyControlled())
 		{
@@ -183,13 +183,16 @@ void UADInteractionComponent::TryInteract()
 
 void UADInteractionComponent::PerformFocusCheck()
 {
-	if (!IsLocallyControlled()) return;
-	if (NearbyInteractables.Num() == 0) return;
+	if (!IsLocallyControlled())
+	{
+		return;
+	}
 
 	FVector CamLocation;
 	FVector TraceEnd;
-	if (!ComputeViewTrace(CamLocation, TraceEnd))
+	if (!ComputeViewTrace(CamLocation, TraceEnd) || NearbyInteractables.Num() == 0)
 	{
+		bIsFocusing = false;
 		ClearFocus();
 		return;
 	}
@@ -426,4 +429,3 @@ void UADInteractionComponent::GetLifetimeReplicatedProps(TArray<FLifetimePropert
 	DOREPLIFETIME(UADInteractionComponent, bHoldTriggered);
 	DOREPLIFETIME(UADInteractionComponent, bIsFocusing);
 }
-

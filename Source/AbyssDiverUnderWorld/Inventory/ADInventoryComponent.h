@@ -37,6 +37,7 @@ public:
 	UADInventoryComponent();
 protected:
 	virtual void BeginPlay() override;
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 #pragma region Method
 public:
@@ -99,6 +100,9 @@ public:
 
 	UFUNCTION()
 	void OnRep_InventoryList();
+	
+	UFUNCTION()
+	void OnRep_CurrentEquipItem();
 
 	int8 FindItemIndexByName(FName ItemName); //아이템 이름으로 InventoryList 인덱스 반환 (빈슬롯이 없으면 -1 반환)
 	int8 FindItemIndexByID(int8 ItemID); //빈슬롯이 없으면 - 1 반환
@@ -130,6 +134,7 @@ private:
 	void RebuildIndexMap();
 	void OnUseCoolTimeEnd(); //아이템 사용 지연
 	void PrintLogInventoryData();
+	void TryCachedDiver();
 
 #pragma endregion
 	
@@ -151,12 +156,15 @@ private:
 	int8 CurrentEquipmentSlotIndex;
 	UPROPERTY(Replicated)
 	TObjectPtr<AADUseItem> CurrentEquipmentInstance;
+	UPROPERTY(Replicated)
+	uint8 bIsWeapon : 1 = false;
+	uint8 bHasNoAnimation : 1 = false;
 	UPROPERTY()
 	TObjectPtr<UToggleWidget> ToggleWidgetInstance;
 
 	int32 WeightMax;
 	uint8 bCanUseItem : 1;
-	uint8 bIsWeapon : 1 = false;
+	
 
 	TMap<EItemType, TArray<int8>> InventoryIndexMapByType;
 	TArray<int8> InventorySizeByType;
@@ -171,6 +179,15 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "DPV")
 	TObjectPtr<UAnimMontage> DPVDrawMontage;
+	
+	UPROPERTY()
+	TObjectPtr<AUnderwaterCharacter> CachedDiver;
+
+	UPROPERTY(ReplicatedUsing = OnRep_CurrentEquipItem)
+	TObjectPtr<AActor> CurrentEquipItem = nullptr;
+
+	UPROPERTY()
+	TObjectPtr<AActor> PrevEquipItem = nullptr;
 #pragma endregion
 
 
@@ -197,5 +214,8 @@ public:
 
 private:
 	USoundSubsystem* GetSoundSubsystem();
+
+	FName HarpoonSocketName = TEXT("Harpoon");
+	FName DPVSocketName = TEXT("DPV");
 #pragma endregion
 };
