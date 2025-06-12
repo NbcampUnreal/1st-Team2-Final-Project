@@ -48,7 +48,7 @@ void UPlayerHUDWidget::BindWidget(APawn* PlayerPawn)
 	if (UShieldComponent* ShieldComponent = PlayerPawn->FindComponentByClass<UShieldComponent>())
 	{
 		ShieldComponent->OnShieldValueChangedDelegate.AddDynamic(this, &UPlayerHUDWidget::UpdateShieldText);
-		UpdateShieldText(ShieldComponent->GetShieldValue());
+		UpdateShieldText(ShieldComponent->GetShieldValue(), ShieldComponent->GetShieldValue());
 	}
 	if (UOxygenComponent* OxygenComponent = PlayerPawn->FindComponentByClass<UOxygenComponent>())
 	{
@@ -80,11 +80,11 @@ void UPlayerHUDWidget::UpdateHealthText(int32 Health, int32 MaxHealth)
 	}
 }
 
-void UPlayerHUDWidget::UpdateShieldText(float ShieldValue)
+void UPlayerHUDWidget::UpdateShieldText(float OldShieldValue, float NewShieldValue)
 {
 	if (ShieldTextBlock)
 	{
-		FText ShieldText = FText::Format(FText::FromString(TEXT("Shield : {0}")), FText::AsNumber(ShieldValue));
+		FText ShieldText = FText::Format(FText::FromString(TEXT("Shield : {0}")), FText::AsNumber(OldShieldValue));
 		ShieldTextBlock->SetText(ShieldText);
 	}
 	else
