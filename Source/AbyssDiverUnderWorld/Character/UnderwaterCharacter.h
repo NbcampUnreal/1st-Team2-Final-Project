@@ -1067,7 +1067,7 @@ public:
 	FORCEINLINE float GetZoneSpeedMultiplier() const { return ZoneSpeedMultiplier; }
 
 	/** Zone Speed Multiplier를 설정 */
-	FORCEINLINE void SetZoneSpeedMultiplier(float NewMultiplier) { ZoneSpeedMultiplier = NewMultiplier; }
+	void SetZoneSpeedMultiplier(float NewMultiplier);
 	
 	/** 현재 캐릭터가 무기를 장착하고 있는지 여부를 반환 */
 	bool IsWeaponEquipped() const;
