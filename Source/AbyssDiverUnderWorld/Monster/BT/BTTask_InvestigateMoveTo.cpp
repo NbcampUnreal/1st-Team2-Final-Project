@@ -10,35 +10,45 @@
 UBTTask_InvestigateMoveTo::UBTTask_InvestigateMoveTo()
 {
 	NodeName = "Investigate Move To";
-	bNotifyTick = false;
+	bNotifyTick = true;
+	bNotifyTaskFinished = true;
 	AcceptableRadius = 200.0f;
 }
 
 EBTNodeResult::Type UBTTask_InvestigateMoveTo::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
+	return EBTNodeResult::InProgress;
+}
+
+void UBTTask_InvestigateMoveTo::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
+{
 	UBlackboardComponent* Blackboard = OwnerComp.GetBlackboardComponent();
-	if (!Blackboard) return EBTNodeResult::Failed;
 	AAIController* AIController = OwnerComp.GetAIOwner();
-	if (!AIController) return EBTNodeResult::Failed;
-	APawn* AIPawn = AIController->GetPawn();
-	if (!AIPawn) return EBTNodeResult::Failed;
+	APawn* AIPawn = AIController ? AIController->GetPawn() : nullptr;
+	AMonster* Monster = Cast<AMonster>(AIPawn);
+
+	if (!Blackboard || !AIController || !AIPawn || !Monster)
+	{
+		FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
+		return;
+	}
+
+	if (Monster->TargetActor)
+	{
+		Monster->SetMonsterState(EMonsterState::Chase);
+		Blackboard->ClearValue(InvestigateLocationKey.SelectedKeyName);
+		FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
+		return;
+	}
 
 	const FVector InvestigateLocation = Blackboard->GetValueAsVector(InvestigateLocationKey.SelectedKeyName);
-	const FVector MonsterLocation = AIPawn->GetActorLocation();
-
-	const float Distance = FVector::Dist(InvestigateLocation, MonsterLocation);
+	const FVector CurrentLocation = AIPawn->GetActorLocation();
+	const float Distance = FVector::Dist(InvestigateLocation, CurrentLocation);
 
 	if (Distance <= AcceptableRadius)
 	{
-		AMonster* Monster = Cast<AMonster>(AIPawn);
-		Blackboard->SetValueAsEnum(MonsterStateKey.SelectedKeyName, static_cast<uint8>(EMonsterState::Patrol));
-
-		if (Monster)
-		{
-			Monster->SetMonsterState(EMonsterState::Patrol); 
-		}
-		return EBTNodeResult::Succeeded;
+		Monster->SetMonsterState(EMonsterState::Patrol);
+		Blackboard->ClearValue(InvestigateLocationKey.SelectedKeyName);
+		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 	}
-
-	return EBTNodeResult::Failed;
 }

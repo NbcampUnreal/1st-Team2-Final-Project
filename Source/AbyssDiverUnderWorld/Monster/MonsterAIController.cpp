@@ -50,7 +50,6 @@ void AMonsterAIController::Tick(float DeltaSeconds)
 	float Elapsed = GetWorld()->GetTimeSeconds() - LostTargetTime;
 	if (Elapsed > SightConfig->GetMaxAge())
 	{
-		BlackboardComponent->SetValueAsEnum("MonsterState", static_cast<uint8>(EMonsterState::Patrol));
 		bIsLosingTarget = false;
 		Monster->SetMonsterState(EMonsterState::Patrol);
 		Monster->bIsChasing = false;
@@ -121,12 +120,15 @@ void AMonsterAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus 
 
 		if (Stimulus.WasSuccessfullySensed())
 		{
-			LOG(TEXT("[Perception] : %s"), *Actor->GetName());
-
 			Monster->AddDetection(Actor);
 			Monster->SetMonsterState(EMonsterState::Chase);
-			Blackboard->SetValueAsEnum("MonsterState", static_cast<uint8>(EMonsterState::Chase));
+			Blackboard->SetValueAsObject("TargetActor", Actor);
 			bIsLosingTarget = false;
+
+			if (Monster->GetMonsterState() != EMonsterState::Chase)
+			{
+				Monster->SetMonsterState(EMonsterState::Chase);
+			}
 		}
 		else
 		{

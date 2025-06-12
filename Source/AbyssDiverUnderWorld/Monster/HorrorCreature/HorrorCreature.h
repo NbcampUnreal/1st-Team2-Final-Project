@@ -18,6 +18,7 @@ public:
 	AHorrorCreature();
 	
 	virtual void BeginPlay() override;
+	virtual void PossessedBy(AController* NewController) override;
 
 #pragma region Method
 public:
@@ -37,6 +38,13 @@ protected:
 		const FHitResult& SweepResult
 	);
 
+	UFUNCTION()
+	void TemporarilyDisalbeSightPerception(float Duration);
+	UFUNCTION()
+	void SightPerceptionOn();
+	UFUNCTION()
+	void SetPatrolStateAfterEject();
+
 #pragma endregion
 
 #pragma region Variable
@@ -47,11 +55,17 @@ protected:
 	TObjectPtr<AUnderwaterCharacter> SwallowedPlayer;
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<UAnimMontage> EjectMontage;
+	UPROPERTY()
+	TObjectPtr<UAIPerceptionComponent> CachedPerceptionComponent;
 
 	FTimerHandle TimerHandle_SetSwimMode;
 private:
 	UPROPERTY(EditAnywhere, Category = "Lanch")
 	float LanchStrength;
+	UPROPERTY(EditAnywhere, Category = "Sight")
+	float DisableSightTime;
+	UPROPERTY(EditAnywhere, Category = "Sight")
+	float FleeTime;
 
 	uint8 bCanSwallow : 1;
 #pragma endregion
@@ -60,6 +74,7 @@ private:
 public:
 	virtual USphereComponent* GetAttackHitComponent() const override { return HorrorCreatureHitSphere; }
 	AUnderwaterCharacter* GetSwallowedPlayer() { return SwallowedPlayer; }
+	bool GetbCanSwallow() { return bCanSwallow; }
 
 #pragma endregion
 };

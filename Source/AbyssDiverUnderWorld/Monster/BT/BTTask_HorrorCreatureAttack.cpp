@@ -10,7 +10,9 @@ UBTTask_HorrorCreatureAttack::UBTTask_HorrorCreatureAttack()
 {
 	NodeName = "HorrorCreature Attack";
 	bCreateNodeInstance = true;
-	bNotifyTick = false;
+	bNotifyTick = true;
+	bNotifyTaskFinished = true;
+
 	CachedHorrorCreature = nullptr;
 	CachedOwnerComp = nullptr;
 }
@@ -27,6 +29,17 @@ EBTNodeResult::Type UBTTask_HorrorCreatureAttack::ExecuteTask(UBehaviorTreeCompo
 	CachedHorrorCreature = Monster;
 	if (!Monster) return EBTNodeResult::Failed;
 
+	if (!Monster->GetbCanSwallow()) return EBTNodeResult::Failed;
+
+	UAnimInstance* AnimInst = AIPawn->GetMesh()->GetAnimInstance();
+	for (UAnimMontage* AttackMontage : Monster->GetAttackAnimations())
+	{
+		if (AnimInst && AttackMontage && AnimInst->Montage_IsPlaying(AttackMontage))
+		{
+			// Already playing attack montage ¡æ Prevent duplicate execution
+			return EBTNodeResult::Failed;
+		}
+	}
 	// In Server
 	// AIController->StopMovement();
 	if (Monster->HasAuthority())
@@ -35,7 +48,7 @@ EBTNodeResult::Type UBTTask_HorrorCreatureAttack::ExecuteTask(UBehaviorTreeCompo
 		Monster->PlayAttackMontage();
 
 		// Detect end of montage ¡æ End BTTask
-		if (UAnimInstance* AnimInst = AIPawn->GetMesh()->GetAnimInstance())
+		if (AnimInst)
 		{
 			// Defence logic. Delegate duplication prevention.
 			if (AnimInst->OnMontageEnded.IsAlreadyBound(this, &UBTTask_HorrorCreatureAttack::HandleAttackMontageEnded))
@@ -79,5 +92,5 @@ void UBTTask_HorrorCreatureAttack::HandleAttackMontageEnded(UAnimMontage* Montag
 	{
 		Blackboard->SetValueAsEnum(MonsterStateKey.SelectedKeyName, (uint8)EMonsterState::Flee);
 	}
-
+	FinishLatentTask(*CachedOwnerComp, EBTNodeResult::Succeeded);
 }
