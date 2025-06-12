@@ -55,7 +55,7 @@ public:
 
 	UPROPERTY(BlueprintReadWrite)
 	int32 TeamCredits;
-
+	 
 
 	UPROPERTY(EditDefaultsOnly, Category = "ADGameInstance", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.FADItemDataRow"))
 	TObjectPtr<UDataTable> ItemDataTable;
