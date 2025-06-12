@@ -470,12 +470,6 @@ void ABoss::StartTurn()
     
     TArray<FVector> PossibleDirections = {
     	
-    	// 대각선 방향들
-    	Forward.RotateAngleAxis(45.0f, Up).RotateAngleAxis(30.0f, Right),
-		Forward.RotateAngleAxis(-45.0f, Up).RotateAngleAxis(30.0f, Right),
-		Forward.RotateAngleAxis(45.0f, Up).RotateAngleAxis(-30.0f, Right),
-		Forward.RotateAngleAxis(-45.0f, Up).RotateAngleAxis(-30.0f, Right),
-    	
         // 수평 방향들
         Forward.RotateAngleAxis(30.0f, Up),
         Forward.RotateAngleAxis(-30.0f, Up),
@@ -493,6 +487,12 @@ void ABoss::StartTurn()
 	    Forward.RotateAngleAxis(-120.0f, Up),
 	    Forward.RotateAngleAxis(150.0f, Up),
 	    Forward.RotateAngleAxis(-150.0f, Up),
+
+    	// 대각선 방향들
+		Forward.RotateAngleAxis(45.0f, Up).RotateAngleAxis(30.0f, Right),
+		Forward.RotateAngleAxis(-45.0f, Up).RotateAngleAxis(30.0f, Right),
+		Forward.RotateAngleAxis(45.0f, Up).RotateAngleAxis(-30.0f, Right),
+		Forward.RotateAngleAxis(-45.0f, Up).RotateAngleAxis(-30.0f, Right),
 
 		// 후방 대각선 방향들
     	Forward.RotateAngleAxis(135.0f, Up).RotateAngleAxis(30.0f, Right),
