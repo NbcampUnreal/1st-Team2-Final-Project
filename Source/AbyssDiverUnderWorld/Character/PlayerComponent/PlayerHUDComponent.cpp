@@ -270,9 +270,13 @@ void UPlayerHUDComponent::OnPossessedPawnChanged(APawn* OldPawn, APawn* NewPawn)
 		HudWidget->BindWidget(NewPawn);
 	}
 
-	if (IsValid(CrosshairWidget))
+	if (!IsValid(CrosshairWidget))
 	{
-		
+		CrosshairWidget = CreateWidget<UCrosshairWidget>(PlayerController, CrosshairWidgetClass);
+	}
+	if (CrosshairWidget)
+	{
+		CrosshairWidget->AddToViewport();
 	}
 
 	if (!IsValid(PlayerStatusWidget))
