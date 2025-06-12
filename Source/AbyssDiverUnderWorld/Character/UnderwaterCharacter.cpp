@@ -81,7 +81,7 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	bCanUseEquipment = true;
 	bPlayingEmote = false;
 
-	LanternLength = 2000.0f;
+	LanternLength = 3000.0f;
 	
 	LeftFlipperSocketName = TEXT("foot_l_flipper_socket");
 	RightFlipperSocketName = TEXT("foot_r_flipper_socket");
@@ -1088,14 +1088,14 @@ void AUnderwaterCharacter::AdjustSpeed()
 {
 	const float BaseSpeed = StaminaComponent->IsSprinting() ? StatComponent->MoveSpeed * SprintMultiplier : StatComponent->MoveSpeed;
 
-	// 추후 Multiplier 종류가 늘어나면 Multiplier를 합산하도록 한다.
+	// Effective Speed = BaseSpeed * (1 - OverloadSpeedFactor) * ZoneSpeedMultiplier
 	float Multiplier = 1.0f;
 	if (IsOverloaded())
 	{
 		Multiplier = 1 - OverloadSpeedFactor;
 	}
 	Multiplier *= ZoneSpeedMultiplier;
-	Multiplier = FMath::Clamp(Multiplier, 0.0f, 1.0f);
+	Multiplier = FMath::Max(0.0f, Multiplier);
 	
 	EffectiveSpeed = BaseSpeed * Multiplier;
 	EffectiveSpeed = FMath::Max(EffectiveSpeed, MinSpeed);
@@ -1976,6 +1976,12 @@ void AUnderwaterCharacter::SetHideInSeaweed(const bool bNewHideInSeaweed)
 bool AUnderwaterCharacter::IsOverloaded() const
 {
 	return IsValid(CachedInventoryComponent) && CachedInventoryComponent->GetTotalWeight() >= OverloadWeight;
+}
+
+void AUnderwaterCharacter::SetZoneSpeedMultiplier(float NewMultiplier)
+{
+	ZoneSpeedMultiplier = NewMultiplier;
+	AdjustSpeed();
 }
 
 bool AUnderwaterCharacter::IsWeaponEquipped() const

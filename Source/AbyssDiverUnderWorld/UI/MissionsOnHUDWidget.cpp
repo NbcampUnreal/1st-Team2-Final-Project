@@ -169,9 +169,9 @@ UMissionSubsystem* UMissionsOnHUDWidget::GetMissionSubsystem()
 AADInGameState* UMissionsOnHUDWidget::GetInGameState()
 {
 	UWorld* World = GetWorld();
-	if (World == nullptr)
+	if (IsValid(World) == false || World->IsValidLowLevel() == false || World->bIsTearingDown)
 	{
-		LOGV(Error, TEXT("World == nullptr"));
+		LOGV(Error, TEXT("World is Invalid"));
 		return nullptr;
 	}
 	
