@@ -6,9 +6,11 @@
 #include "ADDroneSeller.generated.h"
 
 class USoundSubsystem;
+class UMissionSubsystem;
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnCurrentMoneyChangedDelegate, int32/*Changed Money*/);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnTargetMoneyChangedDelegate, int32/*Changed Money*/);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnSellOreDelegate, uint8 /*OreId*/, int32 /*OreMass*/);
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADDroneSeller : public AActor, public IIADInteractable
@@ -21,6 +23,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void Destroyed() override;
 
 #pragma region Method
 public:
@@ -43,7 +46,9 @@ public:
 
 	FOnCurrentMoneyChangedDelegate OnCurrentMoneyChangedDelegate;
 	FOnTargetMoneyChangedDelegate OnTargetMoneyChangedDelegate;
+	FOnSellOreDelegate OnSellOreDelegate;
 
+	void SetLightColor(FLinearColor NewColor);
 protected:
 	int32 SellAllExchangeableItems(AActor* InstigatorActor);
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -52,7 +57,7 @@ private:
 
 #pragma region Variable
 public:
-	
+
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction")
 	uint8 bIsHold : 1;
@@ -70,6 +75,17 @@ protected:
 	TObjectPtr<class UADInteractableComponent> InteractableComp;
 	UPROPERTY()
 	TObjectPtr<USoundSubsystem> SoundSubsystem;
+	UPROPERTY()
+	TObjectPtr<UMissionSubsystem> MissionSubsystem;
+
+	UPROPERTY()
+	TObjectPtr<UStaticMeshComponent> CachedMesh = nullptr;
+
+	UPROPERTY(EditAnywhere, Category = "Material", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UMaterialInterface> RedMaterial = nullptr;
+
+	UPROPERTY(EditAnywhere, Category = "Material", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UMaterialInterface> GreenMaterial = nullptr;
 
 private:
 
@@ -104,6 +120,7 @@ private:
 	}
 	
 	USoundSubsystem* GetSoundSubsystem();
+	UMissionSubsystem* GetMissionSubsystem();
 #pragma endregion
 
 };

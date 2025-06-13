@@ -27,4 +27,10 @@ struct FKillMonsterMissionRow : public FMissionBaseRow
 
 	UPROPERTY(EditDefaultsOnly, Category = "KillMonsterMission")
 	EUnitId UnitId;
+
+	UPROPERTY(EditDefaultsOnly, Category = "KillMonsterMission")
+	uint8 NeededSimultaneousKillCount = 1;
+
+	UPROPERTY(EditDefaultsOnly, Category = "KillMonsterMission")
+	float KillInterval;
 };
