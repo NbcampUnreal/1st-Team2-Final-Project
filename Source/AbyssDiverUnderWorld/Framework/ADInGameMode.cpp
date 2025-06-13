@@ -207,6 +207,28 @@ void AADInGameMode::InitPlayer(APlayerController* PC)
 	{
 		RestartPlayer(PC);
 	}
+
+	FString NewPlayerId = PC->GetPlayerState<AADPlayerState>()->GetUniqueId()->ToString();
+
+	LOGV(Warning, TEXT("%s Has Entered"), *NewPlayerId);
+	UADGameInstance* GI = GetGameInstance<UADGameInstance>();
+	check(GI);
+
+	if (AADPlayerState* ADPlayerState = PC->GetPlayerState<AADPlayerState>())
+	{
+		ADPlayerState->ResetLevelResults();
+		GI->AddPlayerNetId(NewPlayerId);
+
+		int32 NewPlayerIndex = INDEX_NONE;
+		if (GI->TryGetPlayerIndex(NewPlayerId, NewPlayerIndex) == false)
+		{
+			LOGV(Error, TEXT("Fail To Get Player Index"));
+			return;
+		}
+
+		ADPlayerState->SetPlayerNickname(NewPlayerId);
+		ADPlayerState->SetPlayerIndex(NewPlayerIndex);
+	}
 }
 
 void AADInGameMode::GameOver()
