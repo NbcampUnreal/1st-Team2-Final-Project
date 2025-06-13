@@ -130,5 +130,5 @@ void UCrosshairWidget::ResetCrosshairPosition()
 {
 	int32 ViewPortSizeX, ViewPortSizeY;
 	GetOwningPlayer()->GetViewportSize(ViewPortSizeX, ViewPortSizeY);
-	SetPositionInViewport({ ViewPortSizeX * 0.5f, ViewPortSizeY * 0.5f });
+	CrosshairPosition = FVector2D(0.5f * ViewPortSizeX, 0.5f * ViewPortSizeY);
 }
