@@ -26,40 +26,51 @@ AADDroneSeller::AADDroneSeller()
 void AADDroneSeller::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
 	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
 	{
 		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
 	}
+
+	// ✅ StaticMeshComponent를 가져와서 캐싱 (머테리얼 교체용)
+	CachedMesh = FindComponentByClass<UStaticMeshComponent>();
 }
+
+
 
 void AADDroneSeller::Interact_Implementation(AActor* InstigatorActor)
 {
 	LOGD(Log, TEXT("Not Active"));
 	if (!HasAuthority() || !bIsActive) return;
-	
+
 	int32 Gained = SellAllExchangeableItems(InstigatorActor);
 	if (Gained <= 0)
 	{
 		LOGD(Log, TEXT("Gained < 0"))
-		return;
+			return;
 	}
-	
+
 	SetCurrentMoeny(CurrentMoney + Gained);
-	//CurrentMoney += Gained;
 	LOGD(Log, TEXT("→ 누적 금액: %d / %d"), CurrentMoney, TargetMoney);
-	if (CurrentMoney >= TargetMoney && IsValid(CurrentDrone))
+
+	bool bReachedGoal = (CurrentMoney >= TargetMoney);
+
+	if (bReachedGoal && IsValid(CurrentDrone))
 	{
 		LOGD(Log, TEXT("목표 달성! Drone 활성화 호출"))
-		CurrentDrone->Activate();
+			CurrentDrone->Activate();
 		GetSoundSubsystem()->PlayAt(ESFX::ActivateDrone, GetActorLocation());
 	}
 	else
 	{
 		GetSoundSubsystem()->PlayAt(ESFX::SubmitOre, GetActorLocation());
 	}
-	
+
+	SetLightColor(bReachedGoal ? FLinearColor::Green : FLinearColor::Red);
 }
+
+
+
 
 void AADDroneSeller::DisableSelling()
 {
@@ -83,14 +94,16 @@ void AADDroneSeller::OnRep_IsActive()
 void AADDroneSeller::OnRep_CurrentMoney()
 {
 	OnCurrentMoneyChangedDelegate.Broadcast(CurrentMoney);
-	if (CurrentMoney >= TargetMoney)
-	{
-		GetSoundSubsystem()->PlayAt(ESFX::ActivateDrone, GetActorLocation());
-	}
-	else
-	{
-		GetSoundSubsystem()->PlayAt(ESFX::SubmitOre, GetActorLocation());
-	}
+
+	bool bReachedGoal = (CurrentMoney >= TargetMoney);
+
+	GetSoundSubsystem()->PlayAt(
+		bReachedGoal ? ESFX::ActivateDrone : ESFX::SubmitOre,
+		GetActorLocation()
+	);
+
+	// ✅ 여기서도 색상 설정
+	SetLightColor(bReachedGoal ? FLinearColor::Green : FLinearColor::Red);
 }
 
 void AADDroneSeller::OnRep_TargetMoney()
@@ -163,4 +176,35 @@ USoundSubsystem* AADDroneSeller::GetSoundSubsystem()
 		return SoundSubsystem;
 	}
 	return nullptr;
+}
+
+void AADDroneSeller::SetLightColor(FLinearColor NewColor)
+{
+	if (!IsValid(CachedMesh))
+	{
+		UE_LOG(LogTemp, Error, TEXT("❌ CachedMesh is not valid"));
+		return;
+	}
+
+	UMaterialInterface* DesiredMaterial = nullptr;
+
+	if (NewColor == FLinearColor::Red)
+	{
+		DesiredMaterial = RedMaterial;
+	}
+	else if (NewColor == FLinearColor::Green)
+	{
+		DesiredMaterial = GreenMaterial;
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("⚠️ Unsupported color"));
+		return;
+	}
+
+	if (DesiredMaterial)
+	{
+		CachedMesh->SetMaterial(0, DesiredMaterial);
+		UE_LOG(LogTemp, Warning, TEXT("✅ Set material to %s"), *DesiredMaterial->GetName());
+	}
 }

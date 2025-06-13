@@ -1,129 +1,151 @@
+// SeaweedInteractiveActor.cpp
 #include "SeaweedInteractiveActor.h"
 #include "Components/SphereComponent.h"
-#include "Character/UnderwaterCharacter.h"
-#include "Net/UnrealNetwork.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "GameFramework/Character.h"
+#include "Kismet/GameplayStatics.h"
+#include "Animation/AnimInstance.h"
+#include "PhysicsEngine/PhysicsAsset.h"
+#include "PhysicsEngine/PhysicsConstraintTemplate.h"
+#include "PhysicsEngine/ConstraintInstance.h"
+#include "SeaweedAnimInstance.h"
 
 ASeaweedInteractiveActor::ASeaweedInteractiveActor()
 {
     PrimaryActorTick.bCanEverTick = true;
-    bReplicates = true;
 
     SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
     RootComponent = SceneRoot;
 
-    SeaweedMesh = CreateDefaultSubobject<UPoseableMeshComponent>(TEXT("SeaweedMesh"));
-    SeaweedMesh->SetupAttachment(SceneRoot);
-    SeaweedMesh->SetRelativeLocation(FVector(0.f, 0.f, -100.f));
+    SeaweedMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SeaweedMesh"));
+    SeaweedMesh->SetupAttachment(RootComponent);
+    SeaweedMesh->SetSimulatePhysics(true);
+    SeaweedMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+    SeaweedMesh->SetGenerateOverlapEvents(false);
 
     DetectionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("DetectionSphere"));
-    DetectionSphere->SetupAttachment(SceneRoot);
-    DetectionSphere->SetSphereRadius(100.f);
+    DetectionSphere->SetupAttachment(RootComponent);
+    DetectionSphere->SetSphereRadius(300.f);
     DetectionSphere->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
+
+    AllStemBoneNames = {
+        "Bone_000", "Bone_001", "Bone_002", "Bone_003",
+        "Bone_004", "Bone_005", "Bone_006", "Bone_007"
+    };
 }
 
 void ASeaweedInteractiveActor::BeginPlay()
 {
     Super::BeginPlay();
 
-    SetActorTickEnabled(false); // Tick 비활성화 시작
-
     DetectionSphere->OnComponentBeginOverlap.AddDynamic(this, &ASeaweedInteractiveActor::OnOverlapBegin);
     DetectionSphere->OnComponentEndOverlap.AddDynamic(this, &ASeaweedInteractiveActor::OnOverlapEnd);
 
-    for (const FName& BoneName : BendingBoneNames)
-    {
-        if (!SeaweedMesh->DoesSocketExist(BoneName)) continue;
-        FTransform BoneTransform = SeaweedMesh->GetBoneTransformByName(BoneName, EBoneSpaces::ComponentSpace);
-        OriginalBoneRotations.Add(BoneName, BoneTransform.GetRotation());
-    }
+    PlayerActor = UGameplayStatics::GetPlayerCharacter(GetWorld(), 0);
+
+    ConfigureAngularDrives(); // 🔥 물리 세팅 한번에 초기화
 }
 
 void ASeaweedInteractiveActor::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
-
-    const float TargetAlpha = bShouldBend ? 1.f : 0.f;
-    CurrentAlpha = FMath::FInterpTo(CurrentAlpha, TargetAlpha, DeltaTime, BendSpeed);
-
-    const int32 NumBones = BendingBoneNames.Num();
-    for (int32 i = 0; i < NumBones; ++i)
-    {
-        const FName& BoneName = BendingBoneNames[i];
-        if (!OriginalBoneRotations.Contains(BoneName)) continue;
-
-        float Ratio = static_cast<float>(i + 1) / NumBones;
-        float CurveAlpha = FMath::SmoothStep(0.f, 1.f, Ratio);
-        CurveAlpha = FMath::Pow(CurveAlpha, 1.5f);
-
-        float Angle = CurveAlpha * CurrentAlpha * BendAmount;
-
-        FQuat AddRot = FQuat(BendAxis, FMath::DegreesToRadians(Angle));
-        FQuat BaseRot = OriginalBoneRotations[BoneName];
-        FQuat FinalRot = AddRot * BaseRot;
-
-        FTransform BoneTransform = SeaweedMesh->GetBoneTransformByName(BoneName, EBoneSpaces::ComponentSpace);
-        BoneTransform.SetRotation(FinalRot);
-        SeaweedMesh->SetBoneTransformByName(BoneName, BoneTransform, EBoneSpaces::ComponentSpace);
-    }
-
-    // ✅ 목표에 도달하면 Tick 비활성화
-    if (FMath::IsNearlyEqual(CurrentAlpha, TargetAlpha, 0.01f))
-    {
-        SetActorTickEnabled(false);
-    }
+    ApplyPlayerProximityTorque();
+    UpdatePhysicsBlendWeight();
 }
 
 void ASeaweedInteractiveActor::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
     UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-    if (!HasAuthority()) return;
-
-    if (Cast<AUnderwaterCharacter>(OtherActor))
-    {
-        OverlappingCharacterCount++;
-
-        if (OverlappingCharacterCount == 1)
-        {
-            FVector Dir = (OtherActor->GetActorLocation() - GetActorLocation());
-            Dir.Z = 0.f;
-            Dir.Normalize();
-
-            FVector PitchAxis = FVector::CrossProduct(Dir, FVector::UpVector).GetSafeNormal();
-            if (PitchAxis.IsNearlyZero()) PitchAxis = FVector::RightVector;
-
-            BendAxis = PitchAxis;
-            bShouldBend = true;
-
-            SetActorTickEnabled(true); // ✅ 휘어짐 시작 → Tick 활성화
-            ForceNetUpdate();
-        }
-    }
+    // Optional
 }
 
 void ASeaweedInteractiveActor::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
     UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-    if (!HasAuthority()) return;
+    // Optional
+}
 
-    if (Cast<AUnderwaterCharacter>(OtherActor))
+void ASeaweedInteractiveActor::ApplyPlayerProximityTorque()
+{
+    if (!PlayerActor || !SeaweedMesh) return;
+
+    FVector PlayerLocation = PlayerActor->GetActorLocation();
+
+    for (int32 i = 0; i < AllStemBoneNames.Num(); ++i)
     {
-        OverlappingCharacterCount = FMath::Max(0, OverlappingCharacterCount - 1);
-        if (OverlappingCharacterCount == 0)
+        const FName& BoneName = AllStemBoneNames[i];
+        FVector BoneLocation = SeaweedMesh->GetSocketLocation(BoneName);
+        float Distance = FVector::Dist(BoneLocation, PlayerLocation);
+
+        float Influence = FMath::Clamp(1.f - (Distance / 300.f), 0.f, 1.f);
+        float Multiplier = 1.f - (i / static_cast<float>(AllStemBoneNames.Num()));
+
+        if (Influence > 0.f)
         {
-            bShouldBend = false;
-            SetActorTickEnabled(true); // ✅ 되돌아가기 시작 → Tick 유지
-            ForceNetUpdate();
+            FVector ToPlayer = (BoneLocation - PlayerLocation).GetSafeNormal(); // ← 밀어내는 방향
+            FVector Force = ToPlayer * Influence * Multiplier * 10000.f;
+
+            SeaweedMesh->AddForce(Force, BoneName, true);
         }
     }
 }
 
-void ASeaweedInteractiveActor::OnRep_BendState() {
-    SetActorTickEnabled(true);
+
+void ASeaweedInteractiveActor::UpdatePhysicsBlendWeight()
+{
+    if (!SeaweedMesh || !PlayerActor) return;
+
+    float Distance = FVector::Dist(SeaweedMesh->GetComponentLocation(), PlayerActor->GetActorLocation());
+    float Alpha = FMath::Clamp((Distance - 50.f) / (300.f - 50.f), 0.f, 1.f);
+
+    USeaweedAnimInstance* AnimInstance = Cast<USeaweedAnimInstance>(SeaweedMesh->GetAnimInstance());
+    if (AnimInstance)
+    {
+        AnimInstance->PhysicsBlendAlpha = Alpha;
+    }
 }
 
-void ASeaweedInteractiveActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+void ASeaweedInteractiveActor::ConfigureAngularDrives()
 {
-    Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-    DOREPLIFETIME(ASeaweedInteractiveActor, bShouldBend);
-    DOREPLIFETIME(ASeaweedInteractiveActor, BendAxis);
+    if (!SeaweedMesh || !SeaweedMesh->GetPhysicsAsset()) return;
+
+    UPhysicsAsset* Asset = SeaweedMesh->GetPhysicsAsset();
+
+    // Constraint 하나당 한 번만 적용
+    for (UPhysicsConstraintTemplate* Template : Asset->ConstraintSetup)
+    {
+        if (!Template) continue;
+
+        FConstraintInstance& Inst = Template->DefaultInstance;
+
+        // 현재 Constraint에 연결된 두 Bone 중 하나라도 해초 Stem에 포함돼야 함
+        int32 Index = AllStemBoneNames.IndexOfByKey(Inst.ConstraintBone1);
+        if (Index == INDEX_NONE)
+        {
+            Index = AllStemBoneNames.IndexOfByKey(Inst.ConstraintBone2);
+            if (Index == INDEX_NONE) continue;
+        }
+
+        float Blend = static_cast<float>(Index) / AllStemBoneNames.Num();
+        float Stiffness = FMath::Lerp(1000.f, 500.f, Blend);   // 아래쪽은 강하게
+        float Damping = FMath::Lerp(150.f, 80.f, Blend);     // 감쇠력도 아래쪽 강하게
+        float SwingLimit = FMath::Lerp(18.f, 12.f, Blend);     // 지나친 휘어짐 방지
+
+
+        // SLERP 드라이브 적용
+        Inst.SetAngularDriveMode(EAngularDriveMode::SLERP);
+        Inst.ProfileInstance.AngularDrive.SlerpDrive.bEnablePositionDrive = true;
+        Inst.ProfileInstance.AngularDrive.SlerpDrive.bEnableVelocityDrive = false;
+        Inst.ProfileInstance.AngularDrive.SlerpDrive.Stiffness = Stiffness;
+        Inst.ProfileInstance.AngularDrive.SlerpDrive.Damping = Damping;
+
+        // 각도 제한
+        Inst.ProfileInstance.ConeLimit.Swing1Motion = ACM_Limited;
+        Inst.ProfileInstance.ConeLimit.Swing2Motion = ACM_Limited;
+        Inst.ProfileInstance.ConeLimit.Swing1LimitDegrees = SwingLimit;
+        Inst.ProfileInstance.ConeLimit.Swing2LimitDegrees = SwingLimit;
+    }
+
+    SeaweedMesh->SetEnableGravity(false); // 중력 OFF
+    SeaweedMesh->RecreatePhysicsState();  // 물리 적용
 }
