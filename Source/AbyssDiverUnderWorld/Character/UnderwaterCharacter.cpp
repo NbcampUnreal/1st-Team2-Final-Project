@@ -1072,6 +1072,7 @@ void AUnderwaterCharacter::StartCombat()
 
 	bIsInCombat = true;
 	StopHealthRegen();
+	OnCombatStartDelegate.Broadcast();
 }
 
 void AUnderwaterCharacter::EndCombat()
@@ -1082,11 +1083,11 @@ void AUnderwaterCharacter::EndCombat()
 	}
 
 	bIsInCombat = false;
-
 	if (GetCharacterState() == ECharacterState::Normal)
 	{
 		GetWorldTimerManager().SetTimer(HealthRegenStartTimer, this, &AUnderwaterCharacter::StartHealthRegen, HealthRegenDelay, false);
 	}
+	OnCombatEndDelegate.Broadcast();
 }
 
 void AUnderwaterCharacter::AdjustSpeed()

@@ -153,17 +153,12 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SetEnvironmentState(EEnvironmentState State);
 
-	/** 빠른 구현을 위해 Captrue를 현재 Multicast로 구현한다.
-	 * 이후 변경 모델
-	 * 1. Replicate 모델 사용 : Replicate 모델은 변수를 기반으로 작동하기 때문에 중도 참여자도 현재 상태를 판단할 수 있다.
-	 * 혹은 2개가 결합된 방식을 사용할 수 있다.
-	 * 2. State Pattern 사용 : 상태가 많아질 경우 해당 State Pattern을 사용해서 상태를 관리한다.
-	 */
-
 	// Monster 인식 시에 Target
 	// Monster가 놓칠 시에 UnTarget
 	// Monster가 사망했을 때 UnTarget
 	// Monster가 Target을 변경했을 때 UnTarget
+
+	// 추후, Combat State 진입 시에 로컬 효과가 존재한다면 Replicate를 통해서 전파한다.
 	
 	/** Monster에 의해 Target 되었을 때 호출된다. Authority Node에서만 유효하다. */
 	UFUNCTION(BlueprintCallable)
@@ -172,6 +167,13 @@ public:
 	/** Monster에 의해 UnTarget 되었을 때 호출된다. Authority Node에서만 유효하다. */
 	UFUNCTION(BlueprintCallable)
 	void OnUntargeted();
+
+	/** 빠른 구현을 위해 Captrue를 현재 Multicast로 구현한다.
+	 * 이후 변경 모델
+	 * 1. Replicate 모델 사용 : Replicate 모델은 변수를 기반으로 작동하기 때문에 중도 참여자도 현재 상태를 판단할 수 있다.
+	 * 혹은 2개가 결합된 방식을 사용할 수 있다.
+	 * 2. State Pattern 사용 : 상태가 많아질 경우 해당 State Pattern을 사용해서 상태를 관리한다.
+	 */
 	
 	/** 캐릭터 Capture 상태 실행 */
 	UFUNCTION(BlueprintCallable)
@@ -519,6 +521,7 @@ public:
 
 	// Knockback이 되는 상황은 LaunchCharacter 때이므로 LaunchCharacter를 오버라이드해서 처리한다.
 	// 복귀가 될 때는 MoveMode 변화를 통해서 처리한다.
+	// Launch Character는 Client에서도 호출되므로 Local 효과를 재생할 수 있다.
 	
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnKnockbacked, FVector, KnockbackVelocity);
 	/** 캐릭터가 넉백되었을 때 호출되는 델리게이트 */
@@ -549,6 +552,16 @@ public:
 	/** 캐릭터가 피해를 입었을 때 호출되는 델리게이트, DamageAmount = Health Damage Taken + Shield Damage Taken */
 	UPROPERTY(BlueprintAssignable)
 	FOnDamageTaken OnDamageTakenDelegate;
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnComatStart);
+	/** 캐릭터가 전투 상태에 진입했을 때 호출되는 델리게이트, Server에서만 호출 */
+	UPROPERTY(BlueprintAssignable)
+	FOnComatStart OnCombatStartDelegate;
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCombatEnd);
+	/** 캐릭터가 전투 상태에서 벗어났을 때 호출되는 델리게이트, Server에서만 호출 */
+	UPROPERTY(BlueprintAssignable)
+	FOnCombatEnd OnCombatEndDelegate;
 	
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnMontageEnd, UAnimMontage*, Montage, bool, bInterrupted);
 	/** 1인칭 메시 몽타주 종료 시 호출되는 델리게이트 */
@@ -1075,6 +1088,9 @@ public:
 	
 	/** 현재 캐릭터가 무기를 장착하고 있는지 여부를 반환 */
 	bool IsWeaponEquipped() const;
+
+	/** 현재 캐릭터 전투 중인지 여부를 반환. 현재는 Server에서만 작동 */
+	FORCEINLINE bool IsInCombat() const { return bIsInCombat; }
 	
 #pragma endregion
 };

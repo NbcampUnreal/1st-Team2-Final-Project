@@ -64,6 +64,10 @@ void UPlayerHUDWidget::BindWidget(APawn* PlayerPawn)
 	{
 		UnderwaterCharacter->OnCharacterStateChangedDelegate.AddDynamic(this, &UPlayerHUDWidget::OnCharacterStateChanged);
 		UpdateCharacterStateText(UnderwaterCharacter->GetCharacterState());
+
+		UnderwaterCharacter->OnCombatStartDelegate.AddDynamic(this, &UPlayerHUDWidget::OnCombatStart);
+		UnderwaterCharacter->OnCombatEndDelegate.AddDynamic(this, &UPlayerHUDWidget::OnCombatEnd);
+		UpdateCombatText(UnderwaterCharacter->IsInCombat());
 	}
 }
 
@@ -173,6 +177,18 @@ void UPlayerHUDWidget::UpdateGroggyText(float GroggyTime, float MaxGroggyTime)
 	}
 }
 
+void UPlayerHUDWidget::UpdateCombatText(bool bIsInCombat)
+{
+	if (CombatTextBlock)
+	{
+		const FText CombatText = FText::Format(
+			FText::FromString(TEXT("Combat : {0}")),
+			FText::FromString(bIsInCombat ? TEXT("On") : TEXT("Off"))
+		);
+		CombatTextBlock->SetText(CombatText);
+	}
+}
+
 void UPlayerHUDWidget::OnCharacterStateChanged(ECharacterState OldCharacterState, ECharacterState NewCharacterState)
 {
 	UpdateCharacterStateText(NewCharacterState);
@@ -188,3 +204,15 @@ void UPlayerHUDWidget::OnCharacterStateChanged(ECharacterState OldCharacterState
 		GroggyTextBlock->SetVisibility(ESlateVisibility::Collapsed);
 	}
 }
+
+void UPlayerHUDWidget::OnCombatStart()
+{
+	UpdateCombatText(true);
+}
+
+void UPlayerHUDWidget::OnCombatEnd()
+{
+	UpdateCombatText(false);
+}
+
+
