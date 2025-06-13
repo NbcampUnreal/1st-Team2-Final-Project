@@ -28,11 +28,15 @@ protected:
 	void OnTargetPerceptionUpdatedHandler(AActor* Actor, FAIStimulus Stimulus);
 
 private:
+	void BindToObstacleComponent();
 	void OnSightPerceptionSuccess(AUnderwaterCharacter* Player);
 	void OnSightPerceptionFail();
 	void OnHearingPerceptionSuccess(AUnderwaterCharacter* Player);
 	void SetBloodDetectedState();
 	void OnDamagePerceptionSuccess(AUnderwaterCharacter* Player);
+
+	UFUNCTION()
+	void OnObstacleComponentBeginOverlap(AUnderwaterCharacter* OverlappedPlayer);
 
 protected:
 	UPROPERTY(EditAnywhere)
