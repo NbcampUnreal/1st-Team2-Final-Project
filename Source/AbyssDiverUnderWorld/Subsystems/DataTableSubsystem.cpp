@@ -36,7 +36,7 @@ void UDataTableSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	}
 	else
 	{
-		LOGV(Error, TEXT("ItemDataTable is null"));
+		LOGV(Error, TEXT("ButtonDataTable is null"));
 	}
 
 	if (UDataTable* ShopItemTransformTable = GI->ShopMeshTransformTable)
@@ -49,15 +49,6 @@ void UDataTableSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	}
 	
 	ParseUpgradeDataTable(GI);
-	
-	//if (UDataTable* OreDropTable = GI->OreDropTable)
-	//{
-	//	OreDropTable->GetAllRows<FDropEntry>(TEXT("OreDropDataTable"), OreDropEntryTableArray);
-	//}
-	//else
-	//{
-	//	LOGV(Error, TEXT("OreDropTable is null"));
-	//}
 
 	Algo::Sort(ItemDataTableArray, [](const FFADItemDataRow* A, const FFADItemDataRow* B)
 		{
@@ -81,9 +72,7 @@ void UDataTableSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 	ParsePhaseGoalDataTable(GI);
 	ParseMapPathDataTable(GI);
-
-
-
+	ParseShopItemMeshTransformDataTable(GI);
 }
 
 
@@ -143,7 +132,7 @@ const FString& UDataTableSubsystem::GetMapPath(EMapName MapName) const
 
 FShopItemMeshTransformRow* UDataTableSubsystem::GetShopItemMeshTransformData(int32 ItemId) const
 {
-	return ShopItemMeshTransformTableArray[ItemId];
+	return ShopItemMeshTransformTableMap[ItemId];
 }
 
 void UDataTableSubsystem::ParseUpgradeDataTable(UADGameInstance* GameInstance)
@@ -192,7 +181,7 @@ void UDataTableSubsystem::ParsePhaseGoalDataTable(UADGameInstance* GameInstance)
 		PhaseGoalTableMap.Add(Key, Row);
 	}
 
-	LOGV(Error, TEXT("PhaseGoalTableMap size: %d"), PhaseGoalTableMap.Num());
+	LOGV(Log, TEXT("PhaseGoalTableMap size: %d"), PhaseGoalTableMap.Num());
 }
 
 void UDataTableSubsystem::ParseMapPathDataTable(UADGameInstance* GameInstance)
@@ -217,5 +206,30 @@ void UDataTableSubsystem::ParseMapPathDataTable(UADGameInstance* GameInstance)
 		MapPathDataTableMap.Add(Row->MapName, Row->MapPath);
 	}
 
-	LOGV(Error, TEXT("PhaseGoalTableMap size: %d"), MapPathDataTableMap.Num());
+	LOGV(Log, TEXT("MapPathDataTableMap size: %d"), MapPathDataTableMap.Num());
+}
+
+void UDataTableSubsystem::ParseShopItemMeshTransformDataTable(UADGameInstance* GameInstance)
+{
+	if (GameInstance == nullptr || GameInstance->ShopMeshTransformTable == nullptr)
+	{
+		LOGV(Error, TEXT("GameInstance or MapPathDataTable is null"));
+		return;
+	}
+
+	UDataTable* ShopMeshTransformTable = GameInstance->ShopMeshTransformTable;
+	ShopMeshTransformTable->GetAllRows<FShopItemMeshTransformRow>(TEXT("ShopMeshTransformTable"), ShopItemMeshTransformTableArray);
+
+	ShopItemMeshTransformTableMap.Empty(ShopItemMeshTransformTableArray.Num());
+	for (FShopItemMeshTransformRow* Row : ShopItemMeshTransformTableArray)
+	{
+		if (Row == nullptr)
+		{
+			continue;
+		}
+
+		ShopItemMeshTransformTableMap.Add(Row->ItemId, Row);
+	}
+
+	LOGV(Log, TEXT("ShopItemMeshTransformTableMap size: %d"), ShopItemMeshTransformTableMap.Num());
 }

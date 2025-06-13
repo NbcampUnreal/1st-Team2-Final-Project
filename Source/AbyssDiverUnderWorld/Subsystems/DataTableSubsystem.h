@@ -45,9 +45,11 @@ public:
 	FShopItemMeshTransformRow* GetShopItemMeshTransformData(int32 ItemId) const;
 
 private:
+
 	void ParseUpgradeDataTable(class UADGameInstance* GameInstance);
 	void ParsePhaseGoalDataTable(class UADGameInstance* GameInstance);
 	void ParseMapPathDataTable(class UADGameInstance* GameInstance);
+	void ParseShopItemMeshTransformDataTable(class UADGameInstance* GameInstance);
 	
 #pragma endregion
 
@@ -56,6 +58,8 @@ private:
 private:
 
 	TArray<FFADItemDataRow*> ItemDataTableArray;
+	TMap<uint8, FFADItemDataRow*> ItemDataTableMap;
+
 	TArray<FFADProjectileDataRow*> ProjectileDataTableArray;
 	TArray<FButtonDataRow*> ButtonDataTableArray;
 	TArray<FUpgradeDataRow*> UpgradeTableArray;
@@ -69,6 +73,7 @@ private:
 	TMap<EMapName, FString> MapPathDataTableMap;
 
 	TArray<FShopItemMeshTransformRow*> ShopItemMeshTransformTableArray;
+	TMap<uint8, FShopItemMeshTransformRow*> ShopItemMeshTransformTableMap;
 
 #pragma endregion
 

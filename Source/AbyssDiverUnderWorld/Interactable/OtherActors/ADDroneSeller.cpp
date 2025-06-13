@@ -141,17 +141,24 @@ int32 AADDroneSeller::SellAllExchangeableItems(AActor* InstigatorActor)
 				{
 					int32 Price = Inv->GetTotalPrice();
 					TArray<int8> TypeArray = Inv->GetInventoryIndexesByType(EItemType::Exchangable);
-					
-					for (int i = 0; i < TypeArray.Num(); ++i)
-					{
-						if (TypeArray[i] > -1)
-						{
-							uint8 OreId = Inv->GetInventoryList().Items[i].Id;
-							int32 OreMass = Inv->GetInventoryList().Items[i].Mass;
+					TypeArray.Sort();
 
-							Inv->RemoveBySlotIndex(i, EItemType::Exchangable, false);
-							OnSellOreDelegate.Broadcast(OreId, OreMass);
+					const TArray<FItemData>& Items = Inv->GetInventoryList().Items;
+
+					const int32 InterationCount = TypeArray.Num();
+					for (int32 i = 0; i < InterationCount; ++i)
+					{
+						const int8& InventoryIndex = TypeArray[InterationCount - i - 1];
+						if (InventoryIndex == INDEX_NONE)
+						{
+							break;
 						}
+
+						uint8 OreId = Items[InventoryIndex].Id;
+						int32 OreMass = Items[InventoryIndex].Mass;
+
+						Inv->RemoveBySlotIndex(InventoryIndex, EItemType::Exchangable, false);
+						OnSellOreDelegate.Broadcast(OreId, OreMass);
 					}
 
 					return Price;
