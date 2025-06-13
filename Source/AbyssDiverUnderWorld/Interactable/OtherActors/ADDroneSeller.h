@@ -48,6 +48,7 @@ public:
 	FOnTargetMoneyChangedDelegate OnTargetMoneyChangedDelegate;
 	FOnSellOreDelegate OnSellOreDelegate;
 
+	void SetLightColor(FLinearColor NewColor);
 protected:
 	int32 SellAllExchangeableItems(AActor* InstigatorActor);
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -56,7 +57,7 @@ private:
 
 #pragma region Variable
 public:
-	
+
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction")
 	uint8 bIsHold : 1;
@@ -76,6 +77,15 @@ protected:
 	TObjectPtr<USoundSubsystem> SoundSubsystem;
 	UPROPERTY()
 	TObjectPtr<UMissionSubsystem> MissionSubsystem;
+
+	UPROPERTY()
+	TObjectPtr<UStaticMeshComponent> CachedMesh = nullptr;
+
+	UPROPERTY(EditAnywhere, Category = "Material", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UMaterialInterface> RedMaterial = nullptr;
+
+	UPROPERTY(EditAnywhere, Category = "Material", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UMaterialInterface> GreenMaterial = nullptr;
 
 private:
 
