@@ -39,17 +39,18 @@ protected:
 
 protected:
     UPROPERTY(VisibleAnywhere)
-    USceneComponent* SceneRoot;
+    TObjectPtr<USceneComponent> SceneRoot;
 
     UPROPERTY(VisibleAnywhere)
-    USkeletalMeshComponent* SeaweedMesh;
+    TObjectPtr<USkeletalMeshComponent> SeaweedMesh;
 
     UPROPERTY(VisibleAnywhere)
-    USphereComponent* DetectionSphere;
+    TObjectPtr<USphereComponent> DetectionSphere;
 
     UPROPERTY(EditAnywhere, Category = "Seaweed")
     TArray<FName> AllStemBoneNames;
 
     UPROPERTY()
-    AActor* PlayerActor;
+    TObjectPtr<AActor> PlayerActor;
+
 };
