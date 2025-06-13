@@ -6,9 +6,11 @@
 #include "ADDroneSeller.generated.h"
 
 class USoundSubsystem;
+class UMissionSubsystem;
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnCurrentMoneyChangedDelegate, int32/*Changed Money*/);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnTargetMoneyChangedDelegate, int32/*Changed Money*/);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnSellOreDelegate, uint8 /*OreId*/, int32 /*OreMass*/);
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADDroneSeller : public AActor, public IIADInteractable
@@ -21,6 +23,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void Destroyed() override;
 
 #pragma region Method
 public:
@@ -43,6 +46,7 @@ public:
 
 	FOnCurrentMoneyChangedDelegate OnCurrentMoneyChangedDelegate;
 	FOnTargetMoneyChangedDelegate OnTargetMoneyChangedDelegate;
+	FOnSellOreDelegate OnSellOreDelegate;
 
 protected:
 	int32 SellAllExchangeableItems(AActor* InstigatorActor);
@@ -70,6 +74,8 @@ protected:
 	TObjectPtr<class UADInteractableComponent> InteractableComp;
 	UPROPERTY()
 	TObjectPtr<USoundSubsystem> SoundSubsystem;
+	UPROPERTY()
+	TObjectPtr<UMissionSubsystem> MissionSubsystem;
 
 private:
 
@@ -104,6 +110,7 @@ private:
 	}
 	
 	USoundSubsystem* GetSoundSubsystem();
+	UMissionSubsystem* GetMissionSubsystem();
 #pragma endregion
 
 };

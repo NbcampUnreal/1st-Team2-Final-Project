@@ -22,4 +22,10 @@ struct FItemCollectMissionRow : public FMissionBaseRow
 	
 	UPROPERTY(EditDefaultsOnly, Category = "ItemCollectMission")
 	EItemCollectMission Mission;
+
+	UPROPERTY(EditDefaultsOnly, Category = "ItemCollectMission")
+	uint8 ItemId;
+
+	UPROPERTY(EditDefaultsOnly, Category = "ItemCollectMission")
+	uint8 bIsOreMission : 1;
 };
