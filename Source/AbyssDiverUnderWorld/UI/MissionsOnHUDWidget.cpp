@@ -66,7 +66,6 @@ void UMissionsOnHUDWidget::UpdateMission(EMissionType MissionType, uint8 Mission
 	int8 ActualIndex = INDEX_NONE;
 	if (WidgetEntryIndex)
 	{
-		ChangeImage(MissionData->MissionImage, *WidgetEntryIndex);
 		ActualIndex = *WidgetEntryIndex;
 	}
 	else
@@ -75,6 +74,8 @@ void UMissionsOnHUDWidget::UpdateMission(EMissionType MissionType, uint8 Mission
 		ActualIndex = MissionListBox->GetChildrenCount() - 1;
 		ContainedMissions.Add({ MissionType, MissionIndex }, ActualIndex);
 	}
+
+	ChangeImage(MissionData->MissionImage, ActualIndex);
 
 	UpdateMissionEntryColor(InGameState->GetActivatedMissionList().MissionInfoList[ActualIndex].bIsCompleted, ActualIndex);
 }
