@@ -84,7 +84,7 @@ void UPlayerHUDWidget::UpdateShieldText(float OldShieldValue, float NewShieldVal
 {
 	if (ShieldTextBlock)
 	{
-		FText ShieldText = FText::Format(FText::FromString(TEXT("Shield : {0}")), FText::AsNumber(OldShieldValue));
+		FText ShieldText = FText::Format(FText::FromString(TEXT("Shield : {0}")), FText::AsNumber(NewShieldValue));
 		ShieldTextBlock->SetText(ShieldText);
 	}
 	else
