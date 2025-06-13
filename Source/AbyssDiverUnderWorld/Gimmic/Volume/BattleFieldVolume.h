@@ -6,7 +6,7 @@
 
 class AUnderwaterCharacter;
 
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnBattleFieldEndOverlap, uint8, BattlePlayerNum);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnBattleFieldEndOverlap, uint8);
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API ABattleFieldVolume : public ATriggerBox
