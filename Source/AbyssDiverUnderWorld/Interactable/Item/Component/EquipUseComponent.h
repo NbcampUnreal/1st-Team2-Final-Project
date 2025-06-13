@@ -8,11 +8,13 @@
 #include "EquipUseComponent.generated.h"
 
 UENUM(BlueprintType)
-enum class EWeaponType : uint8
+enum class EEquipmentType : uint8
 {
 	HarpoonGun = 0,
 	FlareGun = 1,
-	Max = 2 UMETA(Hidden)
+	DPV = 2,
+	NightVision = 3,
+	Max = 4 UMETA(Hidden)
 };
 
 
@@ -20,6 +22,7 @@ enum class EWeaponType : uint8
 class AADProjectileBase;
 class UUserWidget;
 class AADSpearGunBullet;
+class AADFlareGunBullet;
 class UADNightVisionGoggle;
 class UChargeBatteryWidget;
 class USoundSubsystem;
@@ -125,7 +128,8 @@ public:
 	// 상태 초기화 함수
 	void DeinitializeEquip();
 	EAction TagToAction(const FGameplayTag& Tag);
-	
+	EEquipmentType TagToEquipmentType(const FGameplayTag& Tag);
+
 	//void ResetEquipState();
 
 	void InitializeAmmoUI();
@@ -138,8 +142,9 @@ public:
 	FVector CalculateTargetPoint(const FVector& CamLoc, const FVector& AimDir) const;
 	FVector GetMuzzleLocation(const FVector& CamLoc, const FVector& AimDir) const;
 	AADSpearGunBullet* SpawnHarpoon(const FVector& Loc, const FRotator& Rot);
-	void ConfigureProjectile(AADSpearGunBullet* Proj, const FVector& TargetPoint, const FVector& MuzzleLoc);
-
+	AADFlareGunBullet* SpawnFlareBullet(const FVector& Loc, const FRotator& Rot);
+	void ConfigureProjectile(AADProjectileBase* Proj, const FVector& TargetPoint, const FVector& MuzzleLoc);
+	void SelectSpearType(AADSpearGunBullet* Proj);
 
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -226,7 +231,9 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UADInventoryComponent> Inventory = nullptr;
 	UPROPERTY(EditAnywhere, Category = "Projectile")
-	TSubclassOf<AADSpearGunBullet> ProjectileClass = nullptr;
+	TSubclassOf<AADSpearGunBullet> SpearGunBulletClass = nullptr;
+	UPROPERTY(EditAnywhere, Category = "Projectile")
+	TSubclassOf<AADFlareGunBullet> FlareGunBulletClass = nullptr;
 	UPROPERTY()
 	TObjectPtr<USoundSubsystem> SoundSubsystem;
 
@@ -239,6 +246,7 @@ protected:
 
 	EAction LeftAction;
 	EAction RKeyAction;
+	EEquipmentType EquipType;
 
 private:
 	float CurrentMultiplier = 1.f;
@@ -258,8 +266,10 @@ private:
 #pragma region Getter, Setteer
 public:
 	uint8 IsBoost() const { return bBoostActive; }
+	EEquipmentType GetEquipType() { return EquipType; }
 
 private:
 	USoundSubsystem* GetSoundSubsystem();
+	
 #pragma endregion		
 };

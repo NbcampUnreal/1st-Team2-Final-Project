@@ -23,6 +23,7 @@
 #include "Subsystems/SoundSubsystem.h"
 #include "Framework/ADInGameMode.h"
 #include "Projectile/GenericPool.h"
+#include "Projectile/ADFlareGunBullet.h"
 
 const FName UEquipUseComponent::BASIC_SPEAR_GUN_NAME = TEXT("BasicSpearGun");
 
@@ -430,7 +431,8 @@ void UEquipUseComponent::Initialize(FItemData& ItemData)
 		RKeyAction = TagToAction(InItemMeta->RKeyTag);
 	}
 
-	bIsWeapon = (LeftAction == EAction::HarpoonFire || RKeyAction == EAction::HarpoonFire);
+	EquipType = TagToEquipmentType(InItemMeta->LeftTag);
+	bIsWeapon = (EquipType == EEquipmentType::HarpoonGun || EquipType == EEquipmentType::FlareGun);
 	bHasNoAnimation = (LeftAction == EAction::ToggleNVGToggle);
 	
 
@@ -572,6 +574,15 @@ EAction UEquipUseComponent::TagToAction(const FGameplayTag& Tag)
 	return EAction::None;
 }
 
+EEquipmentType UEquipUseComponent::TagToEquipmentType(const FGameplayTag& Tag)
+{
+	if (Tag.MatchesTagExact(TAG_EquipUse_Fire))           return EEquipmentType::HarpoonGun;
+	else if (Tag.MatchesTagExact(TAG_EquipUse_FireFlareGun)) return EEquipmentType::FlareGun;
+	else if (Tag.MatchesTagExact(TAG_EquipUse_DPVToggle))    return EEquipmentType::DPV;
+	else if (Tag.MatchesTagExact(TAG_EquipUse_NVToggle))     return EEquipmentType::NightVision;
+	return EEquipmentType::Max;
+}
+
 void UEquipUseComponent::HandleLeftClick()
 {
 	S_LeftClick();
@@ -610,10 +621,10 @@ void UEquipUseComponent::FireHarpoon()
 
 	// 3) 발사체 스폰 및 초기화
 	const FRotator SpawnRot = (TargetPoint - MuzzleLoc).Rotation();
-	AADSpearGunBullet* Proj = SpawnHarpoon(MuzzleLoc, SpawnRot);
-	if (Proj)
+	AADSpearGunBullet* Bullet = SpawnHarpoon(MuzzleLoc, SpawnRot);
+	if (Bullet)
 	{
-		ConfigureProjectile(Proj, TargetPoint, MuzzleLoc);
+		ConfigureProjectile(Bullet, TargetPoint, MuzzleLoc);
 	}
 }
 
@@ -631,7 +642,11 @@ void UEquipUseComponent::FireFlare()
 	FVector MuzzleLoc = GetMuzzleLocation(CamLoc, AimDir);
 
 	const FRotator SpawnRot = (TargetPoint - MuzzleLoc).Rotation();
-	
+	AADFlareGunBullet* FlareBullet = SpawnFlareBullet(MuzzleLoc, SpawnRot);
+	if (FlareBullet)
+	{
+		ConfigureProjectile(FlareBullet, TargetPoint, MuzzleLoc);
+	}
 }
 
 void UEquipUseComponent::ToggleBoost()
@@ -889,7 +904,7 @@ bool UEquipUseComponent::IsSpearGun() const
 
 bool UEquipUseComponent::CanFire() const
 {
-	return bCanFire && CurrentAmmoInMag > 0 && ProjectileClass && OwningCharacter.IsValid();
+	return bCanFire && CurrentAmmoInMag > 0 && (SpearGunBulletClass || FlareGunBulletClass) && OwningCharacter.IsValid();
 }
 
 void UEquipUseComponent::GetCameraView(FVector& OutLoc, FRotator& OutRot) const
@@ -919,11 +934,6 @@ FVector UEquipUseComponent::GetMuzzleLocation(const FVector& CamLoc, const FVect
 
 AADSpearGunBullet* UEquipUseComponent::SpawnHarpoon(const FVector& Loc, const FRotator& Rot)
 {
-	//FActorSpawnParameters Params;
-	//Params.Owner = GetOwner();
-	//Params.Instigator = OwningCharacter.Get();
-	//Params.SpawnCollisionHandlingOverride =
-	//	ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 	APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController());
 	if (GetWorld())
 	{
@@ -931,7 +941,7 @@ AADSpearGunBullet* UEquipUseComponent::SpawnHarpoon(const FVector& Loc, const FR
 		if (GM)
 		{
 			AADSpearGunBullet* SpawnedBullet = nullptr;
-			AGenericPool* GenericPool = GM->GetGenericPool();
+			AGenericPool* GenericPool = GM->GetSpearGenericPool();
 			if (GenericPool)
 			{
 				SpawnedBullet = GenericPool->GetObject<AADSpearGunBullet>();
@@ -951,11 +961,69 @@ AADSpearGunBullet* UEquipUseComponent::SpawnHarpoon(const FVector& Loc, const FR
 		}
 	}
 	return nullptr;
-	//return GetWorld()->SpawnActor<AADSpearGunBullet>(
-	//	ProjectileClass, Loc, Rot, Params);
 }
 
-void UEquipUseComponent::ConfigureProjectile(AADSpearGunBullet* Proj, const FVector& TargetPoint, const FVector& MuzzleLoc)
+AADFlareGunBullet* UEquipUseComponent::SpawnFlareBullet(const FVector& Loc, const FRotator& Rot)
+{
+	APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController());
+	if (GetWorld())
+	{
+		AADInGameMode* GM = Cast<AADInGameMode>(GetWorld()->GetAuthGameMode());
+		if (GM)
+		{
+			AADFlareGunBullet* FlareBullet = nullptr;
+			AGenericPool* GenericPool = GM->GetFlareGenericPool();
+			if (GenericPool)
+			{
+				FlareBullet = GenericPool->GetObject<AADFlareGunBullet>();
+				if (FlareBullet)
+				{
+					APawn* PawnOwner = Cast<APawn>(PC->GetPawn());
+					if (PawnOwner)
+					{
+						FlareBullet->SetInstigator(PawnOwner);
+					}
+					FlareBullet->SetOwner(PC);
+					FlareBullet->InitializeTransform(Loc, Rot);
+				}
+				return FlareBullet;
+			}
+		}
+	}
+	return nullptr;
+}
+
+void UEquipUseComponent::ConfigureProjectile(AADProjectileBase* Proj, const FVector& TargetPoint, const FVector& MuzzleLoc)
+{
+	if (EquipType == EEquipmentType::HarpoonGun)
+	{
+		AADSpearGunBullet* SpearBullet = Cast<AADSpearGunBullet>(Proj);
+		if (SpearBullet)
+		{
+			SelectSpearType(SpearBullet);
+			FVector LaunchDir = (TargetPoint - MuzzleLoc).GetSafeNormal();
+			Proj->InitializeSpeed(LaunchDir, 4000.0f);
+		}
+	}
+	else if (EquipType == EEquipmentType::FlareGun)
+	{
+		FVector LaunchDir = (TargetPoint - MuzzleLoc).GetSafeNormal();
+		Proj->InitializeSpeed(LaunchDir, 1000.0f);
+		LOGIC(Log, TEXT("Flare completes Configuration!!"));
+	}
+	
+	// 3) 탄약·쿨다운
+	--CurrentAmmoInMag;
+	OnRep_CurrentAmmoInMag();
+	bCanFire = false;
+	float Delay = 1.f / RateOfFire;
+	GetWorld()->GetTimerManager().SetTimer(
+		TimerHandle_HandleRefire,
+		[this]() { bCanFire = true; },
+		Delay, false);
+}
+
+void UEquipUseComponent::SelectSpearType(AADSpearGunBullet* Proj)
 {
 	// FText 변수로 수정
 	if (CurrentItemData->Name == SpearGunTypeNames[0])
@@ -971,21 +1039,5 @@ void UEquipUseComponent::ConfigureProjectile(AADSpearGunBullet* Proj, const FVec
 		Proj->SetBulletType(ESpearGunType::Bomb);
 	}
 
-	FVector LaunchDir = (TargetPoint - MuzzleLoc).GetSafeNormal();
-	Proj->InitializeSpeed(LaunchDir, 4000.0f);
-	//UProjectileMovementComponent* ProjectileMovementComp = Proj->GetProjectileMovementComp();
-	//float Speed = (ProjectileMovementComp->InitialSpeed > 0.f) ? ProjectileMovementComp->InitialSpeed : 3000.f;
-	//// ProjectileMovementComp->ProjectileGravityScale = 0.f; // 필요 시 비활성화
-	//ProjectileMovementComp->Velocity = LaunchDir * Speed;
-	//ProjectileMovementComp->Activate(true);
-
-	// 3) 탄약·쿨다운
-	--CurrentAmmoInMag;
-	OnRep_CurrentAmmoInMag();
-	bCanFire = false;
-	float Delay = 1.f / RateOfFire;
-	GetWorld()->GetTimerManager().SetTimer(
-		TimerHandle_HandleRefire,
-		[this]() { bCanFire = true; },
-		Delay, false);
 }
+

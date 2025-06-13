@@ -110,6 +110,7 @@ void UADInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	DOREPLIFETIME(UADInventoryComponent, CurrentEquipmentInstance);
 	DOREPLIFETIME(UADInventoryComponent, CurrentEquipItem);
 	DOREPLIFETIME(UADInventoryComponent, bIsWeapon);
+	DOREPLIFETIME(UADInventoryComponent, EquipmentType);
 
 }
 
@@ -495,18 +496,19 @@ void UADInventoryComponent::OnRep_CurrentEquipItem()
 	}
 	if (CurrentEquipItem)
 	{
+		FName Socket = NAME_None;
+		switch (EquipmentType)
+		{
+		case EEquipmentType::HarpoonGun:	Socket = HarpoonSocketName; break;
+		case EEquipmentType::FlareGun:		Socket = FlareSocketName;   break;
+		case EEquipmentType::DPV:			Socket = DPVSocketName;     break;
+		default:														break;
+		}
+
 		if (USkeletalMeshComponent* SkeletalMeshComp = CurrentEquipItem->FindComponentByClass<USkeletalMeshComponent>())
 		{
 			SkeletalMeshComp->SetVisibility(false, true);
-			if (bIsWeapon)
-			{
-				EquipRenderComp->AttachItem(CurrentEquipItem, HarpoonSocketName);
-			}
-			else
-			{
-				EquipRenderComp->AttachItem(CurrentEquipItem, DPVSocketName);
-			}
-			PrevEquipItem = CurrentEquipItem;
+			EquipRenderComp->AttachItem(CurrentEquipItem, Socket);
 		}
 	}
 }
@@ -784,8 +786,8 @@ void UADInventoryComponent::Equip(FItemData& ItemData, int8 SlotIndex)
 	{
 		if (MeshComp->DoesSocketExist(HarpoonSocketName) && MeshComp->DoesSocketExist(DPVSocketName))
 		{
-			const FName SocketName = bIsWeapon ? HarpoonSocketName : DPVSocketName;
-			FTransform AttachTM = MeshComp->GetSocketTransform(SocketName);
+			//const FName SocketName = bIsWeapon ? HarpoonSocketName : DPVSocketName;
+			//FTransform AttachTM = MeshComp->GetSocketTransform(SocketName);
 
 			AADUseItem* SpawnedItem = GetWorld()->SpawnActor<AADUseItem>(
 				AADUseItem::StaticClass(),
@@ -811,6 +813,7 @@ void UADInventoryComponent::Equip(FItemData& ItemData, int8 SlotIndex)
 				{
 					EquipComp->Initialize(*GetCurrentEquipmentItemData());
 					bIsWeapon = EquipComp->bIsWeapon;
+					EquipmentType = EquipComp->GetEquipType();
 					bHasNoAnimation = EquipComp->bHasNoAnimation;
 				}
 			}
