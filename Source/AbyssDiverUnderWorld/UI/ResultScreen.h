@@ -53,22 +53,22 @@ protected:
 public:
 
 	// Player Index는 1부터 시작
-	void Update(int32 PlayerIndexBased_1, const FResultScreenParams& Params);
+	void Update(int32 PlayerIndex, const FResultScreenParams& Params);
 
 	// Player Index는 1부터 시작
-	void ChangePlayerNickNameText(int32 PlayerIndexBased_1, const FString& NewText);
+	void ChangePlayerNickNameText(int32 PlayerIndex, const FString& NewText);
 
 	// Player Index는 1부터 시작
-	void ChangePlayerAliveText(int32 PlayerIndexBased_1, EAliveInfo AliveInfo);
-	void ChangePlayerAliveText(int32 PlayerIndexBased_1, const FString& NewText);
+	void ChangePlayerAliveText(int32 PlayerIndex, EAliveInfo AliveInfo);
+	void ChangePlayerAliveText(int32 PlayerIndex, const FString& NewText);
 
 	// Player Index는 1부터 시작
-	void ChangePlayerContributionText(int32 PlayerIndexBased_1, int32 ContributionScore);
-	void ChangePlayerContributionText(int32 PlayerIndexBased_1, const FString& NewText);
+	void ChangePlayerContributionText(int32 PlayerIndex, int32 ContributionScore);
+	void ChangePlayerContributionText(int32 PlayerIndex, const FString& NewText);
 
 	// Player Index는 1부터 시작
-	void ChangePlayerOreText(int32 PlayerIndexBased_1, int32 OreScore);
-	void ChangePlayerOreText(int32 PlayerIndexBased_1, const FString& NewText);
+	void ChangePlayerOreText(int32 PlayerIndex, int32 OreScore);
+	void ChangePlayerOreText(int32 PlayerIndex, const FString& NewText);
 
 	// Player Index는 1부터 시작
 	void ChangeTeamMoneyText(int32 NewTeamMoney);

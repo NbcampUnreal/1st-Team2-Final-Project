@@ -21,7 +21,7 @@ EBTNodeResult::Type UBTTask_EnhancedIdle::ExecuteTask(UBehaviorTreeComponent& Co
 	if (!TaskMemory) return EBTNodeResult::Failed;
 
 	TaskMemory->AIController = Cast<AEnhancedBossAIController>(Comp.GetAIOwner());
-	TaskMemory->Boss = Cast<ABoss>(TaskMemory->AIController->GetPawn());
+	TaskMemory->Boss = Cast<ABoss>(Comp.GetAIOwner()->GetCharacter());
 	
 	if (!TaskMemory->Boss.IsValid() || !TaskMemory->AIController.IsValid()) return EBTNodeResult::Failed;
 	

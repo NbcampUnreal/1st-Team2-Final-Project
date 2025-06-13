@@ -16,6 +16,7 @@
 #include "Framework/ADCampGameMode.h"
 #include "Framework/ADPlayerController.h"
 #include "Character/PlayerComponent/PlayerHUDComponent.h"
+#include "UI/MissionsOnHUDWidget.h"
 
 #pragma region FastArraySerializer Methods
 
@@ -51,14 +52,14 @@ bool FActivatedMissionInfoList::NetDeltaSerialize(FNetDeltaSerializeInfo& DeltaP
 	return FFastArraySerializer::FastArrayDeltaSerialize<FActivatedMissionInfo, FActivatedMissionInfoList>(MissionInfoList, DeltaParams, *this);
 }
 
-void FActivatedMissionInfoList::Add(const EMissionType& MissionType, const uint8& MissionIndex)
+void FActivatedMissionInfoList::Add(const EMissionType& MissionType, const uint8& MissionIndex, bool bIsCompletedAlready = false)
 {
 	FActivatedMissionInfo NewInfo;
 	NewInfo.MissionType = MissionType;
 	NewInfo.MissionIndex = MissionIndex;
 	NewInfo.CurrentProgress = 0;
-	NewInfo.bIsCompleted = false;
-
+	NewInfo.bIsCompleted = bIsCompletedAlready;
+	
 	MissionInfoList.Emplace(MoveTemp(NewInfo));
 	MarkItemDirty(MissionInfoList.Last());
 }
@@ -75,7 +76,7 @@ void FActivatedMissionInfoList::Remove(const EMissionType& MissionType, const ui
 	MarkArrayDirty();
 }
 
-void FActivatedMissionInfoList::ModifyProgress(const EMissionType& MissionType, const uint8& MissionIndex, const uint8& NewProgress)
+void FActivatedMissionInfoList::ModifyProgress(const EMissionType& MissionType, const uint8& MissionIndex, const uint8& NewProgress, bool bIsCompletedAlready = false)
 {
 	const int32 Index = Contains(MissionType, MissionIndex);
 	if (Index == INDEX_NONE)
@@ -84,17 +85,19 @@ void FActivatedMissionInfoList::ModifyProgress(const EMissionType& MissionType, 
 	}
 
 	MissionInfoList[Index].CurrentProgress = NewProgress;
+	MissionInfoList[Index].bIsCompleted = bIsCompletedAlready;
+
 	MarkItemDirty(MissionInfoList[Index]);
 }
 
-void FActivatedMissionInfoList::AddOrModify(const EMissionType& MissionType, const uint8& MissionIndex, const uint8& NewProgress)
+void FActivatedMissionInfoList::AddOrModify(const EMissionType& MissionType, const uint8& MissionIndex, const uint8& NewProgress, bool bIsCompletedAlready = false)
 {
 	if (Contains(MissionType, MissionIndex) == INDEX_NONE)
 	{
-		Add(MissionType, MissionIndex);
+		Add(MissionType, MissionIndex, bIsCompletedAlready);
 	}
 
-	ModifyProgress(MissionType, MissionIndex, NewProgress);
+	ModifyProgress(MissionType, MissionIndex, NewProgress, bIsCompletedAlready);
 }
 
 int32 FActivatedMissionInfoList::Contains(const EMissionType& MissionType, const uint8& MissionIndex)
@@ -133,6 +136,8 @@ void AADInGameState::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
 
+#if WITH_EDITOR
+
 	// 게임 중이 아닌 경우 리턴(블루프린트 상일 경우)
 	// PostInitializeComponents는 블루프린트에서도 발동함
 	UWorld* World = GetWorld();
@@ -140,6 +145,8 @@ void AADInGameState::PostInitializeComponents()
 	{
 		return;
 	}
+
+#endif
 
 	if (HasAuthority())
 	{
@@ -163,7 +170,6 @@ void AADInGameState::BeginPlay()
 
 	TeamCreditsChangedDelegate.Broadcast(TeamCredits);
 	CurrentPhaseChangedDelegate.Broadcast(CurrentPhase);
-	CurrentPhaseGoalChangedDelegate.Broadcast(CurrentPhaseGoal);
 }
 
 void AADInGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -184,7 +190,6 @@ void AADInGameState::PostNetInit()
 
 	TeamCreditsChangedDelegate.Broadcast(TeamCredits);
 	CurrentPhaseChangedDelegate.Broadcast(CurrentPhase);
-	CurrentPhaseGoalChangedDelegate.Broadcast(CurrentPhaseGoal);
 }
 
 void AADInGameState::AddTeamCredit(int32 Credit)
@@ -214,6 +219,27 @@ void AADInGameState::SendDataToGameInstance()
 	LOGVN(Error, TEXT("SelectedLevelName: %d / TeamCredits: %d"), SelectedLevelName, TeamCredits);
 }
 
+void AADInGameState::OnRep_ReplicatedHasBegunPlay()
+{
+	Super::OnRep_ReplicatedHasBegunPlay();
+
+	UPlayerHUDComponent* HudComp = GetPlayerHudComponent();
+	if (HudComp == nullptr)
+	{
+		LOGV(Error, TEXT("HudComp == nullptr"));
+		return;
+	}
+
+	UMissionsOnHUDWidget* MissionsWidget = HudComp->GetMissionsOnHudWidget();
+	if (MissionsWidget == nullptr)
+	{
+		LOGV(Error, TEXT("MissionsWidget == nullptr"));
+		return;
+	}
+
+	MissionsWidget->InitWiget();
+}
+
 void AADInGameState::OnRep_Money()
 {
 	// UI 업데이트
@@ -226,12 +252,6 @@ void AADInGameState::OnRep_Phase()
 	// UI 업데이트
 	UE_LOG(LogTemp, Log, TEXT("Phase updated: %d/%d"), CurrentPhase, MaxPhase);
 	CurrentPhaseChangedDelegate.Broadcast(CurrentPhase);
-}
-
-void AADInGameState::OnRep_PhaseGoal()
-{
-	LOGVN(Error, TEXT("PhaseGoal updated: %d"), CurrentPhaseGoal);
-	CurrentPhaseGoalChangedDelegate.Broadcast(CurrentPhaseGoal);
 }
 
 void AADInGameState::OnRep_CurrentDroneSeller()
@@ -278,14 +298,7 @@ void AADInGameState::OnRep_CurrentDroneSeller()
 
 void AADInGameState::OnRep_DestinationTarget()
 {
-	AADPlayerController* PC = Cast<AADPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
-	if (PC == nullptr)
-	{
-		LOGV(Error, TEXT("PC == nullptr"));
-		return;
-	}
-
-	UPlayerHUDComponent* HudComp = PC->GetPlayerHUDComponent();
+	UPlayerHUDComponent* HudComp = GetPlayerHudComponent();
 	if (HudComp == nullptr)
 	{
 		LOGV(Error, TEXT("HudComp == nullptr"));
@@ -308,13 +321,7 @@ void AADInGameState::ReceiveDataFromGameInstance()
 	{
 		SelectedLevelName = ADGameInstance->SelectedLevelName;
 		TeamCredits = ADGameInstance->TeamCredits;
-		if (const FPhaseGoalRow* GoalData = ADGameInstance->GetSubsystem<UDataTableSubsystem>()->GetPhaseGoalData(SelectedLevelName, CurrentPhase))
-		{
-			CurrentPhaseGoal = GoalData->GoalCredit;
-		}
 	}
-
-	LOGVN(Error, TEXT("SelectedLevelName: %d / TeamCredits: %d / CurrentPhaseGoal : %d"), SelectedLevelName, TeamCredits, CurrentPhaseGoal);
 }
 
 void AADInGameState::SetDestinationTarget(AActor* NewDestinationTarget)
@@ -326,6 +333,19 @@ void AADInGameState::SetDestinationTarget(AActor* NewDestinationTarget)
 
 	DestinationTarget = NewDestinationTarget;
 	OnRep_DestinationTarget();
+}
+
+UPlayerHUDComponent* AADInGameState::GetPlayerHudComponent()
+{
+	AADPlayerController* PC = Cast<AADPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
+	if (PC == nullptr)
+	{
+		LOGV(Error, TEXT("PC == nullptr"));
+		return nullptr;
+	}
+
+	UPlayerHUDComponent* HudComp = PC->GetPlayerHUDComponent();
+	return HudComp;
 }
 
 FString AADInGameState::GetMapDisplayName() const
@@ -351,11 +371,11 @@ void AADInGameState::RefreshActivatedMissionList()
 	}
 
 	const TArray<UMissionBase*>& Missions = GetGameInstance()->GetSubsystem<UMissionSubsystem>()->GetActivatedMissions();
-	ActivatedMissionList.Clear(Missions.Num());
+	//ActivatedMissionList.Clear(Missions.Num());
 
 	for (const UMissionBase* Mission : Missions)
 	{
-		ActivatedMissionList.Add(Mission->GetMissionType(), Mission->GetMissionIndex());
+		ActivatedMissionList.AddOrModify(Mission->GetMissionType(), Mission->GetMissionIndex(), Mission->GetCurrentCount(), Mission->IsCompletedAlready());
 	}
 
 	OnMissionListRefreshedDelegate.Broadcast();

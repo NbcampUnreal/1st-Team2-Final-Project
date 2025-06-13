@@ -47,10 +47,11 @@ void AMonsterAIController::Tick(float DeltaSeconds)
 
 	if (!bIsLosingTarget) return;
 
+	if (!IsValid(Monster)) return;
+
 	float Elapsed = GetWorld()->GetTimeSeconds() - LostTargetTime;
 	if (Elapsed > SightConfig->GetMaxAge())
 	{
-		BlackboardComponent->SetValueAsEnum("MonsterState", static_cast<uint8>(EMonsterState::Patrol));
 		bIsLosingTarget = false;
 		Monster->SetMonsterState(EMonsterState::Patrol);
 		Monster->bIsChasing = false;
@@ -115,18 +116,23 @@ void AMonsterAIController::InitializePatrolPoint()
 
 void AMonsterAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
+	if (!IsValid(Monster)) return;
+
 	if (Actor->IsA(AUnderwaterCharacter::StaticClass()))
 	{
 		BlackboardComponent = GetBlackboardComponent();
 
 		if (Stimulus.WasSuccessfullySensed())
 		{
-			LOG(TEXT("[Perception] : %s"), *Actor->GetName());
-
 			Monster->AddDetection(Actor);
 			Monster->SetMonsterState(EMonsterState::Chase);
-			Blackboard->SetValueAsEnum("MonsterState", static_cast<uint8>(EMonsterState::Chase));
+			Blackboard->SetValueAsObject("TargetActor", Actor);
 			bIsLosingTarget = false;
+
+			if (Monster->GetMonsterState() != EMonsterState::Chase)
+			{
+				Monster->SetMonsterState(EMonsterState::Chase);
+			}
 		}
 		else
 		{

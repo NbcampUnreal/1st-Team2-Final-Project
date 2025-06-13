@@ -2,17 +2,20 @@
 
 #include "AbyssDiverUnderWorld.h"
 #include "Character/PlayerHUDWidget.h"
-#include "Framework/ADInGameState.h"
-#include "Framework/ADPlayerState.h"
-#include "UI/ResultScreen.h"
-#include "UI/PlayerStatusWidget.h"
 #include "Character/UnderwaterCharacter.h"
 #include "Character/PlayerComponent/OxygenComponent.h"
 #include "Character/PlayerComponent/StaminaComponent.h"
 #include "Character/StatComponent.h"
+#include "Framework/ADInGameState.h"
+#include "Framework/ADPlayerState.h"
+#include "UI/ResultScreen.h"
+#include "UI/PlayerStatusWidget.h"
+#include "UI/MissionsOnHUDWidget.h"
 #include "GameFramework/PlayerController.h"
 #include "EngineUtils.h"
-#include "Logging/StructuredLogFormat.h"
+#include "Components/CanvasPanel.h"
+#include "GameFramework/SpringArmComponent.h"
+#include "UI/CrosshairWidget.h"
 
 UPlayerHUDComponent::UPlayerHUDComponent()
 {
@@ -30,7 +33,7 @@ void UPlayerHUDComponent::BeginPlay()
 	}
 
 	PlayerController->OnPossessedPawnChanged.AddDynamic(this, &UPlayerHUDComponent::OnPossessedPawnChanged);
-
+	
 	// 메인 HUD 생성
 	if (HudWidgetClass)
 	{
@@ -42,6 +45,16 @@ void UPlayerHUDComponent::BeginPlay()
 		}
 	}
 	SetTestHUDVisibility(false);
+
+	if (CrosshairWidgetClass)
+	{
+		CrosshairWidget = CreateWidget<UCrosshairWidget>(PlayerController, CrosshairWidgetClass);
+		if (CrosshairWidget)
+		{
+			CrosshairWidget->AddToViewport();
+			CrosshairWidget->BindWidget(PlayerController->GetPawn());
+		}
+	}
 
 	// 상태 UI 생성
 	if (PlayerStatusWidgetClass)
@@ -57,6 +70,12 @@ void UPlayerHUDComponent::BeginPlay()
 	if (ResultScreenWidgetClass)
 	{
 		ResultScreenWidget = CreateWidget<UResultScreen>(PlayerController, ResultScreenWidgetClass);
+	}
+
+	if (MissionsOnHUDWidgetClass)
+	{
+		MissionsOnHUDWidget = CreateWidget<UMissionsOnHUDWidget>(PlayerController, MissionsOnHUDWidgetClass);
+		MissionsOnHUDWidget->AddToViewport();
 	}
 
 	// 올바른 수정
@@ -142,6 +161,11 @@ void UPlayerHUDComponent::C_ShowResultScreen_Implementation()
 	SetResultScreenVisible(true);
 }
 
+void UPlayerHUDComponent::UpdateMissionsOnHUD(EMissionType MissionType, uint8 MissionIndex, int32 CurrentProgress)
+{
+	MissionsOnHUDWidget->UpdateMission(MissionType, MissionIndex, CurrentProgress);
+}
+
 void UPlayerHUDComponent::SetTestHUDVisibility(const bool NewVisible) const
 {
 	if (HudWidget)
@@ -187,6 +211,8 @@ void UPlayerHUDComponent::UpdateResultScreen(int32 PlayerIndexBased_1, const FRe
 
 void UPlayerHUDComponent::OnPossessedPawnChanged(APawn* OldPawn, APawn* NewPawn)
 {
+	// UnPossess 상황에서 변화가 필요하면 OldPawn, NewPawn의 변화를 체크해서 구현할 것
+	
 	if (!NewPawn) return;
 
 	APlayerController* PlayerController = Cast<APlayerController>(GetOwner());
@@ -199,6 +225,16 @@ void UPlayerHUDComponent::OnPossessedPawnChanged(APawn* OldPawn, APawn* NewPawn)
 	{
 		HudWidget->AddToViewport();
 		HudWidget->BindWidget(NewPawn);
+	}
+
+	if (!IsValid(CrosshairWidget))
+	{
+		CrosshairWidget = CreateWidget<UCrosshairWidget>(PlayerController, CrosshairWidgetClass);
+	}
+	if (CrosshairWidget)
+	{
+		CrosshairWidget->AddToViewport();
+		CrosshairWidget->BindWidget(NewPawn);
 	}
 
 	if (!IsValid(PlayerStatusWidget))
@@ -214,6 +250,16 @@ void UPlayerHUDComponent::OnPossessedPawnChanged(APawn* OldPawn, APawn* NewPawn)
 	if (ResultScreenWidgetClass && IsValid(ResultScreenWidget) == false)
 	{
 		ResultScreenWidget = CreateWidget<UResultScreen>(PlayerController, ResultScreenWidgetClass);
+	}
+
+	if (MissionsOnHUDWidgetClass && IsValid(MissionsOnHUDWidget) == false)
+	{
+		MissionsOnHUDWidget = CreateWidget<UMissionsOnHUDWidget>(PlayerController, MissionsOnHUDWidgetClass);
+	}
+
+	if (MissionsOnHUDWidget)
+	{
+		MissionsOnHUDWidget->AddToViewport();
 	}
 
 	if (AUnderwaterCharacter* UWCharacter = Cast<AUnderwaterCharacter>(NewPawn))
@@ -285,4 +331,9 @@ void UPlayerHUDComponent::SetSpearUIVisibility(bool bVisible)
 bool UPlayerHUDComponent::IsTestHUDVisible() const
 {
 	return HudWidget && HudWidget->GetVisibility() == ESlateVisibility::Visible;
+}
+
+UMissionsOnHUDWidget* UPlayerHUDComponent::GetMissionsOnHudWidget() const
+{
+	return MissionsOnHUDWidget;
 }

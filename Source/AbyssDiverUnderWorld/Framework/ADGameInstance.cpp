@@ -5,7 +5,8 @@
 
 #include "Kismet/GameplayStatics.h"
 
-UADGameInstance::UADGameInstance()
+UADGameInstance::UADGameInstance(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
 {
 }
 
@@ -16,7 +17,13 @@ void UADGameInstance::Init()
 	bIsHost = false;
     PlayerIdMap.Empty(MAX_PLAYER_NUMBER);
     ValidPlayerIndexArray.Init(false, MAX_PLAYER_NUMBER);
+
+    SettingsManager = NewObject<USettingsManager>(this);
+    SettingsManager->LoadAllSettings(GetFirstLocalPlayerController());
+
+    SettingsManager->InitializeActionMap(GetInputActionMap());
 }
+
 
 bool UADGameInstance::TryGetPlayerIndex(const FString& NetId, int32& OutPlayerIndex)
 {
@@ -39,7 +46,7 @@ void UADGameInstance::AddPlayerNetId(const FString& NetId)
         }
 
         ValidPlayerIndexArray[i] = true;
-        PlayerIdMap.Add(NetId, i + 1);
+        PlayerIdMap.Add(NetId, i);
         return;
     }
 
@@ -49,14 +56,13 @@ void UADGameInstance::AddPlayerNetId(const FString& NetId)
 void UADGameInstance::RemovePlayerNetId(const FString& NetId)
 {
     int32 PlayerIndex = 0;
-
     if(TryGetPlayerIndex(NetId, PlayerIndex) == false)
     {
         LOGV(Warning, TEXT("Remove Failed Because of Not Valid NetId"));
         return;
     }
 
-    ValidPlayerIndexArray[PlayerIndex - 1] = false;
+    ValidPlayerIndexArray[PlayerIndex] = false;
     PlayerIdMap.Remove(NetId);
 }
 

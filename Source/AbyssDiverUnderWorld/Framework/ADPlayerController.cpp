@@ -6,6 +6,8 @@
 #include "EnhancedInputSubsystems.h"
 #include "InputMappingContext.h"
 #include "EnhancedInputComponent.h"
+#include "SettingsManager.h"
+#include "ADGameInstance.h"
 #include "Character/PlayerComponent/PlayerHUDComponent.h"
 #include "Inventory/ADInventoryComponent.h"
 #include "DataRow/PhaseGoalRow.h"
@@ -13,6 +15,7 @@
 #include "UI/InteractionDescriptionWidget.h"
 #include "Character/UnderwaterCharacter.h"
 #include "Interactable/Item/Component/ADInteractionComponent.h"
+
 
 AADPlayerController::AADPlayerController()
 {
@@ -35,6 +38,7 @@ void AADPlayerController::BeginPlay()
 
 	if (IsLocalController())
 	{
+
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = GetLocalPlayer()->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
 		{
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);

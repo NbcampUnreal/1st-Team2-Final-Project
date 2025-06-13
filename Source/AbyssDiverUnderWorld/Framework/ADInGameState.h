@@ -59,10 +59,10 @@ public:
 
 	bool NetDeltaSerialize(FNetDeltaSerializeInfo& DeltaParams);
 
-	void Add(const EMissionType& MissionType, const uint8& MissionIndex);
+	void Add(const EMissionType& MissionType, const uint8& MissionIndex, bool bIsCompletedAlready);
 	void Remove(const EMissionType& MissionType, const uint8& MissionIndex);
-	void ModifyProgress(const EMissionType& MissionType, const uint8& MissionIndex, const uint8& NewProgress);
-	void AddOrModify(const EMissionType& MissionType, const uint8& MissionIndex, const uint8& NewProgress);
+	void ModifyProgress(const EMissionType& MissionType, const uint8& MissionIndex, const uint8& NewProgress, bool bIsCompletedAlready);
+	void AddOrModify(const EMissionType& MissionType, const uint8& MissionIndex, const uint8& NewProgress, bool bIsCompletedAlready);
 
 	// 인덱스 반환, 없으면 INDEX_NONE 반환
 	int32 Contains(const EMissionType& MissionType, const uint8& MissionIndex);
@@ -124,19 +124,17 @@ public:
 
 	FOnGameStatePropertyChangedDelegate TeamCreditsChangedDelegate;
 	FOnGameStatePropertyChangedDelegate CurrentPhaseChangedDelegate;
-	FOnGameStatePropertyChangedDelegate CurrentPhaseGoalChangedDelegate;
 	FOnMissionListRefreshedDelegate OnMissionListRefreshedDelegate;
 
 protected:
+
+	virtual void OnRep_ReplicatedHasBegunPlay() override;
 
 	UFUNCTION()
 	void OnRep_Money();
 
 	UFUNCTION()
 	void OnRep_Phase();
-
-	UFUNCTION()
-	void OnRep_PhaseGoal();
 
 	UFUNCTION()
 	void OnRep_CurrentDroneSeller();
@@ -162,9 +160,6 @@ protected:
 
 	UPROPERTY(ReplicatedUsing = OnRep_Phase, BlueprintReadOnly)
 	uint8 CurrentPhase;
-
-	UPROPERTY(ReplicatedUsing = OnRep_PhaseGoal, BlueprintReadOnly)
-	int32 CurrentPhaseGoal = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	uint8 MaxPhase = 3;
@@ -213,19 +208,6 @@ public:
 
 	uint8 GetMaxPhase() const { return MaxPhase; }
 
-	FORCEINLINE void SetCurrentPhaseGoal(int32 NewPhaseGoal) 
-	{ 
-		if (HasAuthority() == false)
-		{
-			return;
-		}
-
-		CurrentPhaseGoal = NewPhaseGoal;
-		CurrentPhaseGoalChangedDelegate.Broadcast(NewPhaseGoal);
-	}
-
-	int32 GetCurrentPhaseGoal() const { return CurrentPhaseGoal; }
-
 	void SetSelectedLevel(EMapName LevelName) { SelectedLevelName = LevelName; }
 	EMapName GetSelectedLevel() const { return SelectedLevelName; }
 
@@ -246,7 +228,12 @@ public:
 	AActor* GetDestinationTarget() const { return DestinationTarget; }
 	void SetDestinationTarget(AActor* NewDestinationTarget);
 
-	FActivatedMissionInfoList& GetActivatedMissionList() { return ActivatedMissionList; }
+	FActivatedMissionInfoList& GetActivatedMissionList()
+	{ 
+		return ActivatedMissionList;
+	}
+
+	class UPlayerHUDComponent* GetPlayerHudComponent();
 
 #pragma endregion
 

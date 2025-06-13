@@ -117,6 +117,7 @@ void ACurrentZone::OnDeepTriggerOverlapBegin(UPrimitiveComponent* OverlappedComp
         }
 
         AffectedCharacters[Character] = true;
+        LOGV(Log, TEXT(" %s is In DeepCurrent"), *Character->GetName());
     }
 }
 
@@ -130,6 +131,7 @@ void ACurrentZone::OnDeepTriggerOverlapEnd(UPrimitiveComponent* OverlappedComp, 
         }
 
         AffectedCharacters[Character] = false;
+        LOGV(Log, TEXT(" %s is Out of DeepCurrent"), *Character->GetName());
     }
 }
 
@@ -150,6 +152,17 @@ void ACurrentZone::ApplyCurrentForce()
         }
 
         // 캐릭터 속도 0.1배 만들기 필요
+        bool bIsInDeepCurrentZone = CharacterPair.Value;
+        if (bIsInDeepCurrentZone)
+        {
+            Character->SetZoneSpeedMultiplier(0.1f);
+            LOGV(Log, TEXT(" %s : 0.1"), *Character->GetName());
+        }
+        else
+        {
+            Character->SetZoneSpeedMultiplier(1.0f);
+            LOGV(Log, TEXT(" %s : 1.0"), *Character->GetName());
+        }
 
         FVector PushDir = PushDirection.GetSafeNormal();
         float FinalFlowStrength = FlowStrength;

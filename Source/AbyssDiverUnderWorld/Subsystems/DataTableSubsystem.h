@@ -9,6 +9,7 @@ enum class EUpgradeType : uint8;
 enum class EMapName : uint8;
 struct FFADItemDataRow;
 struct FFADProjectileDataRow;
+struct FButtonDataRow;
 struct FUpgradeDataRow;
 struct FDropEntry;
 struct FPhaseGoalRow;
@@ -31,6 +32,7 @@ public:
 	FFADItemDataRow* GetItemData(int32 ItemId) const;
 	FFADItemDataRow* GetItemDataByName(FName ItemName) const;
 	FFADProjectileDataRow* GetProjectileData(int32 ProjectileId) const;
+	FButtonDataRow* GetButtonData(int32 ProjectileId) const;
 	FUpgradeDataRow* GetUpgradeDataTableArray(int32 Index) const;
 	FDropEntry* GetOreDropEntryTableArray(int32 Id) const;
 
@@ -55,6 +57,7 @@ private:
 
 	TArray<FFADItemDataRow*> ItemDataTableArray;
 	TArray<FFADProjectileDataRow*> ProjectileDataTableArray;
+	TArray<FButtonDataRow*> ButtonDataTableArray;
 	TArray<FUpgradeDataRow*> UpgradeTableArray;
 	TMap<TPair<EUpgradeType, uint8>, FUpgradeDataRow*> UpgradeTableMap;
 	TArray<FDropEntry*> OreDropEntryTableArray;

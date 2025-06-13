@@ -5,6 +5,7 @@
 #include "AbyssDiverUnderWorld.h"
 #include "Interface/IADInteractable.h"
 #include "Net/UnrealNetwork.h"
+#include "Character/UnderwaterCharacter.h"
 
 // Sets default values for this component's properties
 UADInteractionComponent::UADInteractionComponent()
@@ -59,7 +60,7 @@ void UADInteractionComponent::TickComponent(float DeltaTime, ELevelTick TickType
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 	PerformFocusCheck();
-	if (!bIsFocusing && bIsInteractingStart)
+	if (!bIsFocusing && bIsInteractingStart && !FocusedInteractable)
 	{
 		if (IsLocallyControlled())
 		{
@@ -183,13 +184,16 @@ void UADInteractionComponent::TryInteract()
 
 void UADInteractionComponent::PerformFocusCheck()
 {
-	if (!IsLocallyControlled()) return;
-	if (NearbyInteractables.Num() == 0) return;
+	if (!IsLocallyControlled())
+	{
+		return;
+	}
 
 	FVector CamLocation;
 	FVector TraceEnd;
-	if (!ComputeViewTrace(CamLocation, TraceEnd))
+	if (!ComputeViewTrace(CamLocation, TraceEnd) || NearbyInteractables.Num() == 0)
 	{
+		bIsFocusing = false;
 		ClearFocus();
 		return;
 	}
@@ -299,7 +303,8 @@ void UADInteractionComponent::ClearFocus()
 
 void UADInteractionComponent::OnInteractPressed()
 {
-	if (!FocusedInteractable) return;
+	if (!FocusedInteractable || !FocusedInteractable->CanInteractable()) return;
+
 	bIsInteractingStart = true;
 	if (AActor* Owner = FocusedInteractable->GetOwner())
 	{
@@ -426,4 +431,3 @@ void UADInteractionComponent::GetLifetimeReplicatedProps(TArray<FLifetimePropert
 	DOREPLIFETIME(UADInteractionComponent, bHoldTriggered);
 	DOREPLIFETIME(UADInteractionComponent, bIsFocusing);
 }
-
