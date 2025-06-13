@@ -170,7 +170,6 @@ void AADInGameState::BeginPlay()
 
 	TeamCreditsChangedDelegate.Broadcast(TeamCredits);
 	CurrentPhaseChangedDelegate.Broadcast(CurrentPhase);
-	CurrentPhaseGoalChangedDelegate.Broadcast(CurrentPhaseGoal);
 }
 
 void AADInGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -191,7 +190,6 @@ void AADInGameState::PostNetInit()
 
 	TeamCreditsChangedDelegate.Broadcast(TeamCredits);
 	CurrentPhaseChangedDelegate.Broadcast(CurrentPhase);
-	CurrentPhaseGoalChangedDelegate.Broadcast(CurrentPhaseGoal);
 }
 
 void AADInGameState::AddTeamCredit(int32 Credit)
@@ -254,12 +252,6 @@ void AADInGameState::OnRep_Phase()
 	// UI 업데이트
 	UE_LOG(LogTemp, Log, TEXT("Phase updated: %d/%d"), CurrentPhase, MaxPhase);
 	CurrentPhaseChangedDelegate.Broadcast(CurrentPhase);
-}
-
-void AADInGameState::OnRep_PhaseGoal()
-{
-	LOGVN(Error, TEXT("PhaseGoal updated: %d"), CurrentPhaseGoal);
-	CurrentPhaseGoalChangedDelegate.Broadcast(CurrentPhaseGoal);
 }
 
 void AADInGameState::OnRep_CurrentDroneSeller()
@@ -329,13 +321,7 @@ void AADInGameState::ReceiveDataFromGameInstance()
 	{
 		SelectedLevelName = ADGameInstance->SelectedLevelName;
 		TeamCredits = ADGameInstance->TeamCredits;
-		if (const FPhaseGoalRow* GoalData = ADGameInstance->GetSubsystem<UDataTableSubsystem>()->GetPhaseGoalData(SelectedLevelName, CurrentPhase))
-		{
-			CurrentPhaseGoal = GoalData->GoalCredit;
-		}
 	}
-
-	LOGVN(Error, TEXT("SelectedLevelName: %d / TeamCredits: %d / CurrentPhaseGoal : %d"), SelectedLevelName, TeamCredits, CurrentPhaseGoal);
 }
 
 void AADInGameState::SetDestinationTarget(AActor* NewDestinationTarget)

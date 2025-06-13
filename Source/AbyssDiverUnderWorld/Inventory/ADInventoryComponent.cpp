@@ -34,9 +34,9 @@ UADInventoryComponent::UADInventoryComponent() :
 	ToggleWidgetClass(nullptr),
 	TotalWeight(0),
 	TotalPrice(0),
-	WeightMax(100),
 	CurrentEquipmentSlotIndex(INDEX_NONE),
 	CurrentEquipmentInstance(nullptr),
+	WeightMax(100),
 	ToggleWidgetInstance(nullptr),
 	bCanUseItem(true),
 	DataTableSubsystem(nullptr),
@@ -314,7 +314,8 @@ void UADInventoryComponent::C_SetButtonActive_Implementation(EChargeBatteryType 
 
 void UADInventoryComponent::C_UpdateBatteryInfo_Implementation()
 {
-	ChargeBatteryWidget->UpdateBatteryInfo();
+	if(ChargeBatteryWidget)
+		ChargeBatteryWidget->UpdateBatteryInfo();
 }
 
 void UADInventoryComponent::C_SetEquipBatteryAmount_Implementation(EChargeBatteryType ItemChargeBatteryType)

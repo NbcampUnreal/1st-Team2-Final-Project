@@ -937,6 +937,11 @@ AADSpearGunBullet* UEquipUseComponent::SpawnHarpoon(const FVector& Loc, const FR
 				SpawnedBullet = GenericPool->GetObject<AADSpearGunBullet>();
 				if (SpawnedBullet)
 				{
+					APawn* PawnOwner = Cast<APawn>(PC->GetPawn());
+					if (PawnOwner)
+					{
+						SpawnedBullet->SetInstigator(PawnOwner);
+					}
 					SpawnedBullet->SetOwner(PC);
 					SpawnedBullet->InitializeTransform(Loc, Rot);
 				}

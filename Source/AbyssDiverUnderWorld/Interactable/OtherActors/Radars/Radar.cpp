@@ -118,7 +118,23 @@ void ARadar::Tick(float DeltaTime)
 			}
 			else
 			{
-				FindIfReturnIsValidResponseForRader(FoundActor);
+				TArray<URadarReturnComponent*> RadarReturns;
+				FoundActor->GetComponents<URadarReturnComponent>(RadarReturns);
+
+				bool bIsRemoved = false;
+				for (auto& RadarReturn : RadarReturns)
+				{
+					if (RadarReturn->GetIgnore())
+					{
+						RemoveReturn(RadarReturn, 0);
+						bIsRemoved = true;
+					}
+				}
+
+				if (bIsRemoved == false)
+				{
+					FindIfReturnIsValidResponseForRader(FoundActor);
+				}
 			}
 		}
 	}

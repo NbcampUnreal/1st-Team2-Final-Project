@@ -53,7 +53,7 @@ void AADInGameMode::BeginPlay()
 		UDataTableSubsystem* DataTableSubsystem = GetGameInstance()->GetSubsystem<UDataTableSubsystem>();
 
 		SpearGunBulletPool = GetWorld()->SpawnActor<AGenericPool>();
-		SpearGunBulletPool->InitPool<AADSpearGunBullet>(10, BulletClass);
+		SpearGunBulletPool->InitPool<AADSpearGunBullet>(30, BulletClass);
 		LOGVN(Warning, TEXT("SpawnSpearGunBulletPool"));
 
 		int32 LastDroneNumber = 0;
@@ -100,20 +100,23 @@ void AADInGameMode::Logout(AController* Exiting)
 {
 	Super::Logout(Exiting);
 
-	if (ensure(Exiting) == false)
+	if (IsValid(Exiting) == false)
 	{
+		LOGV(Error, TEXT("IsValid(Exiting) == false"));
 		return;
 	}
 
 	AADPlayerState* PS = Exiting->GetPlayerState<AADPlayerState>();
-	if (ensure(PS) == false)
+	if (IsValid(PS) == false)
 	{
+		LOGV(Error, TEXT("IsValid(PS) == false"));
 		return;
 	}
 
 	const FUniqueNetIdRepl& UniqueNetIdRepl = PS->GetUniqueId();
-	if (ensure(&UniqueNetIdRepl) == false)
+	if (UniqueNetIdRepl.IsValid() == false)
 	{
+		LOGV(Error, TEXT("UniqueNetIdRepl.IsValid() == false"));
 		return;
 	}
 

@@ -23,8 +23,6 @@ void AADCampGameMode::SetSelectedLevel(const EMapName InLevelName)
 
 void AADCampGameMode::PostLogin(APlayerController* NewPlayer)
 {
-	Super::PostLogin(NewPlayer);
-
 	FString NewPlayerId = NewPlayer->GetPlayerState<AADPlayerState>()->GetUniqueId()->ToString();
 
 	LOGV(Warning, TEXT("%s Has Entered"), *NewPlayerId);
@@ -46,6 +44,8 @@ void AADCampGameMode::PostLogin(APlayerController* NewPlayer)
 		ADPlayerState->SetPlayerNickname(NewPlayerId);
 		ADPlayerState->SetPlayerIndex(NewPlayerIndex);
 	}
+
+	Super::PostLogin(NewPlayer);
 }
 
 void AADCampGameMode::Logout(AController* Exiting)
