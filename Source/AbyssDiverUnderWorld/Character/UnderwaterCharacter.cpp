@@ -35,6 +35,7 @@
 #include "PlayerComponent/UnderwaterEffectComponent.h"
 #include "Interactable/EquipableComponent/EquipRenderComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "PlayerComponent/CombatEffectComponent.h"
 #include "PlayerComponent/NameWidgetComponent.h"
 
 DEFINE_LOG_CATEGORY(LogAbyssDiverCharacter);
@@ -152,6 +153,7 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	LanternComponent = CreateDefaultSubobject<ULanternComponent>(TEXT("LanternComponent"));
 
 	UnderwaterEffectComponent = CreateDefaultSubobject<UUnderwaterEffectComponent>(TEXT("UnderwaterEffectComponent"));
+	CombatEffectComponent = CreateDefaultSubobject<UCombatEffectComponent>(TEXT("CombatEffectComponent"));
 	FootstepComponent = CreateDefaultSubobject<UFootstepComponent>(TEXT("FootstepComponent"));
 	
 	bIsRadarOn = false;
@@ -593,16 +595,16 @@ void AUnderwaterCharacter::M_PlayMontageOnBothMesh_Implementation(UAnimMontage* 
 	}
 }
 
-void AUnderwaterCharacter::M_StopAllMontagesOnBothMesh_Implementation(float BlendOUt)
+void AUnderwaterCharacter::M_StopAllMontagesOnBothMesh_Implementation(float BlendOut)
 {
 	if (UAnimInstance* AnimInstance = Mesh1P->GetAnimInstance())
 	{
-		AnimInstance->StopAllMontages(BlendOUt);
+		AnimInstance->StopAllMontages(BlendOut);
 	}
 
 	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
 	{
-		AnimInstance->StopAllMontages(BlendOUt);
+		AnimInstance->StopAllMontages(BlendOut);
 	}
 }
 
