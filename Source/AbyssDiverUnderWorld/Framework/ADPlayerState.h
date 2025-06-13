@@ -75,9 +75,6 @@ protected:
 	UPROPERTY(Replicated)
 	int8 PlayerIndex;
 
-	UPROPERTY(Replicated)
-	uint8 bIsHost : 1;
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TObjectPtr<UADInventoryComponent> InventoryComp;
 
@@ -141,12 +138,6 @@ public:
 	void SetIsSafeReturn(bool bValue) { bIsSafeReturn = bValue; }
 	UFUNCTION(BlueprintPure)
 	bool IsSafeReturn() const { return bIsSafeReturn; }
-
-	// bIsHost
-	UFUNCTION(BlueprintCallable)
-	void SetIsHost(bool bValue) { bIsHost = bValue; }
-	UFUNCTION(BlueprintPure)
-	bool IsHost() const { return bIsHost; }
 
 	FORCEINLINE UADInventoryComponent* GetInventory() const { return InventoryComp; };
 	FORCEINLINE UUpgradeComponent* GetUpgradeComp() const { return UpgradeComp; };

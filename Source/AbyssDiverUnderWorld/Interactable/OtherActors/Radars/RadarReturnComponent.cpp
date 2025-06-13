@@ -355,3 +355,13 @@ bool URadarReturnComponent::ShouldLimitOpacityToRadarDisplayForPing() const
 	return bShouldLimitOpacityToRadarDisplayForPing;
 }
 
+bool URadarReturnComponent::GetIgnore() const
+{
+	return bShouldIgnore;
+}
+
+void URadarReturnComponent::SetIgnore(bool bIgnore)
+{
+	bShouldIgnore = bIgnore;
+}
+

@@ -56,20 +56,21 @@ void UResultScreen::NativeOnInitialized()
 	check(PlayerOreTextArray.IsEmpty() == false);
 }
 
-void UResultScreen::Update(int32 PlayerIndexBased_1, const FResultScreenParams& Params)
+void UResultScreen::Update(int32 PlayerIndex, const FResultScreenParams& Params)
 {
-	ChangePlayerNickNameText(PlayerIndexBased_1, Params.PlayerNickName);
-	ChangePlayerAliveText(PlayerIndexBased_1, Params.AliveInfo);
-	ChangePlayerContributionText(PlayerIndexBased_1, Params.ContributionScore);
-	ChangePlayerOreText(PlayerIndexBased_1, Params.OreScore);
+	ChangePlayerNickNameText(PlayerIndex, Params.PlayerNickName);
+	ChangePlayerAliveText(PlayerIndex, Params.AliveInfo);
+	ChangePlayerContributionText(PlayerIndex, Params.ContributionScore);
+	ChangePlayerOreText(PlayerIndex, Params.OreScore);
 }
 
-void UResultScreen::ChangePlayerNickNameText(int32 PlayerIndexBased_1, const FString& NewText)
+void UResultScreen::ChangePlayerNickNameText(int32 PlayerIndex, const FString& NewText)
 {
-	PlayerNickNameTextArray[PlayerIndexBased_1 - 1]->SetText(FText::FromString(NewText));
+	checkf(PlayerIndex >= 0 && PlayerIndex < PlayerNickNameTextArray.Num(), TEXT("인덱스 범위 초과, 범위 : 0~%d, 받은 인덱스 : %d"), PlayerNickNameTextArray.Num(), PlayerIndex);
+	PlayerNickNameTextArray[PlayerIndex]->SetText(FText::FromString(NewText));
 }
 
-void UResultScreen::ChangePlayerAliveText(int32 PlayerIndexBased_1, EAliveInfo AliveInfo)
+void UResultScreen::ChangePlayerAliveText(int32 PlayerIndex, EAliveInfo AliveInfo)
 {
 	if (AliveInfo >= EAliveInfo::MAX)
 	{
@@ -95,32 +96,35 @@ void UResultScreen::ChangePlayerAliveText(int32 PlayerIndexBased_1, EAliveInfo A
 		return;
 	}
 
-	ChangePlayerAliveText(PlayerIndexBased_1, NewText);
+	ChangePlayerAliveText(PlayerIndex, NewText);
 }
 
-void UResultScreen::ChangePlayerAliveText(int32 PlayerIndexBased_1, const FString& NewText)
+void UResultScreen::ChangePlayerAliveText(int32 PlayerIndex, const FString& NewText)
 {
-	PlayerAliveTextArray[PlayerIndexBased_1 - 1]->SetText(FText::FromString(NewText));
+	checkf(PlayerIndex >= 0 && PlayerIndex < PlayerAliveTextArray.Num(), TEXT("인덱스 범위 초과, 범위 : 0~%d, 받은 인덱스 : %d"), PlayerAliveTextArray.Num(), PlayerIndex);
+	PlayerAliveTextArray[PlayerIndex]->SetText(FText::FromString(NewText));
 }
 
-void UResultScreen::ChangePlayerContributionText(int32 PlayerIndexBased_1, int32 ContributionScore)
+void UResultScreen::ChangePlayerContributionText(int32 PlayerIndex, int32 ContributionScore)
 {
-	ChangePlayerContributionText(PlayerIndexBased_1, FString::FromInt(ContributionScore));
+	ChangePlayerContributionText(PlayerIndex, FString::FromInt(ContributionScore));
 }
 
-void UResultScreen::ChangePlayerContributionText(int32 PlayerIndexBased_1, const FString& NewText)
+void UResultScreen::ChangePlayerContributionText(int32 PlayerIndex, const FString& NewText)
 {
-	PlayerContributionTextArray[PlayerIndexBased_1 - 1]->SetText(FText::FromString(NewText));
+	checkf(PlayerIndex >= 0 && PlayerIndex < PlayerContributionTextArray.Num(), TEXT("인덱스 범위 초과, 범위 : 0~%d, 받은 인덱스 : %d"), PlayerContributionTextArray.Num(), PlayerIndex);
+	PlayerContributionTextArray[PlayerIndex]->SetText(FText::FromString(NewText));
 }
 
-void UResultScreen::ChangePlayerOreText(int32 PlayerIndexBased_1, int32 OreScore)
+void UResultScreen::ChangePlayerOreText(int32 PlayerIndex, int32 OreScore)
 {
-	ChangePlayerOreText(PlayerIndexBased_1, FString::FromInt(OreScore));
+	ChangePlayerOreText(PlayerIndex, FString::FromInt(OreScore));
 }
 
-void UResultScreen::ChangePlayerOreText(int32 PlayerIndexBased_1, const FString& NewText)
+void UResultScreen::ChangePlayerOreText(int32 PlayerIndex, const FString& NewText)
 {
-	PlayerOreTextArray[PlayerIndexBased_1 - 1]->SetText(FText::FromString(NewText));
+	checkf(PlayerIndex >= 0 && PlayerIndex < PlayerOreTextArray.Num(), TEXT("인덱스 범위 초과, 범위 : 0~%d, 받은 인덱스 : %d"), PlayerOreTextArray.Num(), PlayerIndex);
+	PlayerOreTextArray[PlayerIndex]->SetText(FText::FromString(NewText));
 }
 
 void UResultScreen::ChangeTeamMoneyText(int32 NewTeamMoney)

@@ -14,9 +14,11 @@ void UMissionBase::InitMission(const FMissionInitParams& Params)
 	MissionDescription = Params.MissionDescription;
 
 	ExtraValues = Params.ExtraValues;
+	bIsCompletedAlready = false;
 }
 
 void UMissionBase::OnConditionMet()
 {
+	bIsCompletedAlready = true;
 	OnCompleteMissionDelegate.ExecuteIfBound(MissionType, GetMissionIndex());
 }

@@ -7,11 +7,10 @@
 #include "Framework/ADPlayerState.h"
 #include "Framework/ADGameInstance.h"
 #include "Subsystems/SoundSubsystem.h"
+#include "Subsystems/MissionSubsystem.h"
 
-// Sets default values
 AADDroneSeller::AADDroneSeller()
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
 	InteractableComp = CreateDefaultSubobject<UADInteractableComponent>(TEXT("InteractableComp"));
 	bReplicates = true;
@@ -22,7 +21,6 @@ AADDroneSeller::AADDroneSeller()
 	bAlwaysRelevant = true;
 }
 
-// Called when the game starts or when spawned
 void AADDroneSeller::BeginPlay()
 {
 	Super::BeginPlay();
@@ -34,9 +32,39 @@ void AADDroneSeller::BeginPlay()
 
 	// ✅ StaticMeshComponent를 가져와서 캐싱 (머테리얼 교체용)
 	CachedMesh = FindComponentByClass<UStaticMeshComponent>();
+
+	if (IsValid(GetMissionSubsystem()) == false)
+	{
+		LOGV(Error, TEXT("IsValid(GetMissionSubsystem()) == false"));
+		return;
+	}
+
+	MissionSubsystem->RequestBinding(this);
 }
 
+void AADDroneSeller::Destroyed()
+{
+#if WITH_EDITOR
 
+	// 게임 중이 아닌 경우 리턴(블루프린트 상일 경우)
+	UWorld* World = GetWorld();
+	if (World == nullptr || World->IsGameWorld() == false)
+	{
+		return;
+	}
+
+#endif
+
+	if (IsValid(GetMissionSubsystem()) == false)
+	{
+		LOGV(Error, TEXT("IsValid(GetMissionSubsystem()) == false"));
+		return;
+	}
+
+	MissionSubsystem->RequestUnbinding(this);
+
+	Super::Destroyed();
+}
 
 void AADDroneSeller::Interact_Implementation(AActor* InstigatorActor)
 {
@@ -68,9 +96,6 @@ void AADDroneSeller::Interact_Implementation(AActor* InstigatorActor)
 
 	SetLightColor(bReachedGoal ? FLinearColor::Green : FLinearColor::Red);
 }
-
-
-
 
 void AADDroneSeller::DisableSelling()
 {
@@ -125,13 +150,19 @@ int32 AADDroneSeller::SellAllExchangeableItems(AActor* InstigatorActor)
 				{
 					int32 Price = Inv->GetTotalPrice();
 					TArray<int8> TypeArray = Inv->GetInventoryIndexesByType(EItemType::Exchangable);
-					for (int i = 0; i<TypeArray.Num(); ++i)
+					
+					for (int i = 0; i < TypeArray.Num(); ++i)
 					{
 						if (TypeArray[i] > -1)
 						{
+							uint8 OreId = Inv->GetInventoryList().Items[i].Id;
+							int32 OreMass = Inv->GetInventoryList().Items[i].Mass;
+
 							Inv->RemoveBySlotIndex(i, EItemType::Exchangable, false);
+							OnSellOreDelegate.Broadcast(OreId, OreMass);
 						}
 					}
+
 					return Price;
 				}
 			}
@@ -165,17 +196,18 @@ FString AADDroneSeller::GetInteractionDescription() const
 
 USoundSubsystem* AADDroneSeller::GetSoundSubsystem()
 {
-	if (SoundSubsystem)
-	{
-		return SoundSubsystem;
-	}
-
 	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
 	{
 		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
-		return SoundSubsystem;
 	}
-	return nullptr;
+
+	return SoundSubsystem;
+}
+
+UMissionSubsystem* AADDroneSeller::GetMissionSubsystem()
+{
+	MissionSubsystem = GetGameInstance()->GetSubsystem<UMissionSubsystem>();
+	return MissionSubsystem;
 }
 
 void AADDroneSeller::SetLightColor(FLinearColor NewColor)
