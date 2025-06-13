@@ -7,6 +7,14 @@
 #include "Interactable/Item/ADUseItem.h"
 #include "EquipUseComponent.generated.h"
 
+UENUM(BlueprintType)
+enum class EWeaponType : uint8
+{
+	HarpoonGun = 0,
+	FlareGun = 1,
+	Max = 2 UMETA(Hidden)
+};
+
 
 
 class AADProjectileBase;
@@ -19,7 +27,8 @@ class USoundSubsystem;
 enum class EAction : uint8
 {
 	None,
-	WeaponFire,
+	HarpoonFire,
+	FlareFire,
 	WeaponReload,
 	ToggleBoost,
 	ToggleNVGToggle,
@@ -81,6 +90,8 @@ public:
 	// 내부 실행 함수
 	UFUNCTION(BlueprintCallable)
 	void FireHarpoon();
+	UFUNCTION(BlueprintCallable)
+	void FireFlare();
 	UFUNCTION(BlueprintCallable)
 	void ToggleBoost();
 	UFUNCTION(BlueprintCallable)

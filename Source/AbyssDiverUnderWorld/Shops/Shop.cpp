@@ -392,6 +392,8 @@ EBuyResult AShop::BuyItem(uint8 ItemId, uint8 Quantity, AUnderwaterCharacter* Bu
 
 	FItemData ItemData;
 	ItemData.Amount = ItemDataRow->Amount;
+	ItemData.CurrentAmmoInMag = ItemDataRow->CurrentAmmoInMag;
+	ItemData.ReserveAmmo = ItemDataRow->ReserveAmmo;
 	ItemData.Id = ItemDataRow->Id;
 	ItemData.ItemType = ItemDataRow->ItemType;
 	ItemData.Mass = ItemDataRow->Weight;

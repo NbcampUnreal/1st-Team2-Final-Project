@@ -2,6 +2,7 @@
 #include "Net/UnrealNetwork.h"
 #include "AbyssDiverUnderWorld.h"
 #include "GameFramework/ProjectileMovementComponent.h"
+#include "Components/PointLightComponent.h"
 
 AADExchangeableItem::AADExchangeableItem()
 {

@@ -208,7 +208,8 @@ void UEquipUseComponent::S_LeftClick_Implementation()
 {
 	switch (LeftAction)
 	{
-	case EAction::WeaponFire:      FireHarpoon();       break;
+	case EAction::HarpoonFire:     FireHarpoon();       break;
+	case EAction::FlareFire:       FireFlare();	        break;
 	case EAction::ToggleBoost:     BoostOn();			break;
 	case EAction::ToggleNVGToggle: ToggleNightVision(); break;
 	default:                      break;
@@ -429,7 +430,7 @@ void UEquipUseComponent::Initialize(FItemData& ItemData)
 		RKeyAction = TagToAction(InItemMeta->RKeyTag);
 	}
 
-	bIsWeapon = (LeftAction == EAction::WeaponFire || RKeyAction == EAction::WeaponFire);
+	bIsWeapon = (LeftAction == EAction::HarpoonFire || RKeyAction == EAction::HarpoonFire);
 	bHasNoAnimation = (LeftAction == EAction::ToggleNVGToggle);
 	
 
@@ -562,7 +563,8 @@ void UEquipUseComponent::DeinitializeEquip()
 
 EAction UEquipUseComponent::TagToAction(const FGameplayTag& Tag)
 {
-	if (Tag.MatchesTagExact(TAG_EquipUse_Fire))                 return EAction::WeaponFire;
+	if (Tag.MatchesTagExact(TAG_EquipUse_Fire))                 return EAction::HarpoonFire;
+	else if (Tag.MatchesTagExact(TAG_EquipUse_FireFlareGun))	return EAction::FlareFire;
 	else if (Tag.MatchesTagExact(TAG_EquipUse_Reload))          return EAction::WeaponReload;
 	else if (Tag.MatchesTagExact(TAG_EquipUse_DPVToggle))       return EAction::ToggleBoost;
 	else if (Tag.MatchesTagExact(TAG_EquipUse_NVToggle))        return EAction::ToggleNVGToggle;
@@ -613,6 +615,23 @@ void UEquipUseComponent::FireHarpoon()
 	{
 		ConfigureProjectile(Proj, TargetPoint, MuzzleLoc);
 	}
+}
+
+void UEquipUseComponent::FireFlare()
+{
+	if (!CanFire()) return;
+
+	M_PlayFireHarpoonSound();
+
+	FVector CamLoc; FRotator CamRot;
+	GetCameraView(CamLoc, CamRot);
+	const FVector AimDir = CamRot.Vector();
+
+	FVector TargetPoint = CalculateTargetPoint(CamLoc, AimDir);
+	FVector MuzzleLoc = GetMuzzleLocation(CamLoc, AimDir);
+
+	const FRotator SpawnRot = (TargetPoint - MuzzleLoc).Rotation();
+	
 }
 
 void UEquipUseComponent::ToggleBoost()

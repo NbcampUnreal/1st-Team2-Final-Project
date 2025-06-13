@@ -269,6 +269,8 @@ void AADInGameMode::GetOre()
 		99,
 		1,
 		1,
+		0,
+		0,
 		10000,
 		EItemType::Exchangable,
 		nullptr

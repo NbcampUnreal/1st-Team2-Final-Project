@@ -5,6 +5,7 @@
 #include "ADExchangeableItem.generated.h"
 
 class UProjectileMovementComponent;
+class UPointLightComponent;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADExchangeableItem : public AADItemBase
@@ -57,8 +58,6 @@ protected:
 	int32 ValuePerUnit = 10;
 	UPROPERTY(ReplicatedUsing = OnRep_TotalPrice, EditAnywhere, BlueprintReadWrite, Category = "Exchange")
 	int32 TotalPrice = 0;
-
-	
 
 
 private:
