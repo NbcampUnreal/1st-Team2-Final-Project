@@ -7,6 +7,7 @@
 #include "SelectMachine.generated.h"
 
 enum class EMapName : uint8;
+class UWidgetComponent;
 	
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API ASelectMachine : public AActor
@@ -44,6 +45,9 @@ private:
 
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<UStaticMeshComponent> MeshComp;
+
+	UPROPERTY(EditAnywhere)
+	TObjectPtr<UWidgetComponent> SelectMissionWidgetComp;
 
 	TArray<EMapName> LevelIDs;
 
