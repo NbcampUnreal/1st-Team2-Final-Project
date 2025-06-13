@@ -25,6 +25,17 @@ AIndicatingTarget::AIndicatingTarget()
 
 void AIndicatingTarget::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
+	APawn* Player = Cast<APawn>(OtherActor);
+	if (Player == nullptr)
+	{
+		return;
+	}
+
+	if (Player->IsLocallyControlled() == false)
+	{
+		return;
+	}
+
 	OnIndicatingTargetBeginOverlapDelegate.Broadcast(TargetOrder);
 }
 
