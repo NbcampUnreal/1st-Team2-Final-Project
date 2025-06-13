@@ -5,7 +5,8 @@
 
 #include "Kismet/GameplayStatics.h"
 
-UADGameInstance::UADGameInstance()
+UADGameInstance::UADGameInstance(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
 {
 }
 
@@ -16,7 +17,13 @@ void UADGameInstance::Init()
 	bIsHost = false;
     PlayerIdMap.Empty(MAX_PLAYER_NUMBER);
     ValidPlayerIndexArray.Init(false, MAX_PLAYER_NUMBER);
+
+    SettingsManager = NewObject<USettingsManager>(this);
+    SettingsManager->LoadAllSettings(GetFirstLocalPlayerController());
+
+    SettingsManager->InitializeActionMap(GetInputActionMap());
 }
+
 
 bool UADGameInstance::TryGetPlayerIndex(const FString& NetId, int32& OutPlayerIndex)
 {

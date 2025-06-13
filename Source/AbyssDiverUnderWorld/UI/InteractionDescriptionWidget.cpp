@@ -21,6 +21,7 @@ void UInteractionDescriptionWidget::HandleFocus(AActor* Actor, FString Descripti
 
 void UInteractionDescriptionWidget::HandleFocusLost()
 {
+    StopAllAnimations();
     RemoveFromParent();
 
 }

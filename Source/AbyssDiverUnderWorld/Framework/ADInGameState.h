@@ -124,7 +124,6 @@ public:
 
 	FOnGameStatePropertyChangedDelegate TeamCreditsChangedDelegate;
 	FOnGameStatePropertyChangedDelegate CurrentPhaseChangedDelegate;
-	FOnGameStatePropertyChangedDelegate CurrentPhaseGoalChangedDelegate;
 	FOnMissionListRefreshedDelegate OnMissionListRefreshedDelegate;
 
 protected:
@@ -136,9 +135,6 @@ protected:
 
 	UFUNCTION()
 	void OnRep_Phase();
-
-	UFUNCTION()
-	void OnRep_PhaseGoal();
 
 	UFUNCTION()
 	void OnRep_CurrentDroneSeller();
@@ -164,9 +160,6 @@ protected:
 
 	UPROPERTY(ReplicatedUsing = OnRep_Phase, BlueprintReadOnly)
 	uint8 CurrentPhase;
-
-	UPROPERTY(ReplicatedUsing = OnRep_PhaseGoal, BlueprintReadOnly)
-	int32 CurrentPhaseGoal = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	uint8 MaxPhase = 3;
@@ -214,19 +207,6 @@ public:
 	uint8 GetPhase() const { return CurrentPhase; }
 
 	uint8 GetMaxPhase() const { return MaxPhase; }
-
-	FORCEINLINE void SetCurrentPhaseGoal(int32 NewPhaseGoal) 
-	{ 
-		if (HasAuthority() == false)
-		{
-			return;
-		}
-
-		CurrentPhaseGoal = NewPhaseGoal;
-		CurrentPhaseGoalChangedDelegate.Broadcast(NewPhaseGoal);
-	}
-
-	int32 GetCurrentPhaseGoal() const { return CurrentPhaseGoal; }
 
 	void SetSelectedLevel(EMapName LevelName) { SelectedLevelName = LevelName; }
 	EMapName GetSelectedLevel() const { return SelectedLevelName; }

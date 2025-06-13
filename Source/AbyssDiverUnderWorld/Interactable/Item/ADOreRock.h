@@ -48,6 +48,7 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+	virtual void Destroyed() override;
 
 #pragma region Method
 public:
@@ -139,6 +140,7 @@ private:
 	TArray<float>  CumulativeWeights;
 	float TotalWeight = 0.f;
 	int32 PreviousEquipIndex = 0;
+	TArray<TWeakObjectPtr<APawn>> ActiveInstigators;
 
 
 #pragma endregion
