@@ -5,6 +5,8 @@
 #include "Engine/TargetPoint.h"
 #include "Kraken.generated.h"
 
+class ABattleFieldVolume;
+
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AKraken : public ABoss
 {
@@ -24,6 +26,7 @@ protected:
 	void SetEmissiveTransition();
 	
 private:
+	void GetBattleFieldVolume();
 #pragma endregion
 
 #pragma region Variable
@@ -43,6 +46,8 @@ protected:
 	TObjectPtr<UCapsuleComponent> PickAttackCollision;
 
 private:
+	UPROPERTY()
+	TObjectPtr<ABattleFieldVolume> BattleFieldVolume;
 #pragma endregion
 
 #pragma region Getter, Setter
