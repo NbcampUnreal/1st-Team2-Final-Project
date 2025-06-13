@@ -36,6 +36,7 @@ private:
 	static const FName bCanAttackKey;
 	static const FName bIsHidingKey;
 	static const FName bIsPlayerHiddenKey;
+	static const FName TargetPlayerKey;
 	
 	uint8 bHasAttacked : 1 = false;
 

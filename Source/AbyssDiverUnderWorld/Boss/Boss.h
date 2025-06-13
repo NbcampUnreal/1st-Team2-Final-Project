@@ -146,6 +146,10 @@ public:
 	virtual void M_PlayAnimation(UAnimMontage* AnimMontage, float InPlayRate = 1, FName StartSectionName = NAME_None);
 	virtual void M_PlayAnimation_Implementation(UAnimMontage* AnimMontage, float InPlayRate = 1, FName StartSectionName = NAME_None);
 
+	UFUNCTION(NetMulticast, Reliable)
+	void M_OnDeath();
+	void M_OnDeath_Implementation();
+
 	UFUNCTION()
 	void OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 
