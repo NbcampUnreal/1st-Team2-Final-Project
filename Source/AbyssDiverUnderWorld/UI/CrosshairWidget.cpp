@@ -107,8 +107,6 @@ void UCrosshairWidget::BindWidget(APawn* Pawn)
 		return;
 	}
 
-	UE_LOG(LogTemp,Display, TEXT("CrosshairWidget::BindWidget - Character: %s"), *Character->GetName());
-	
 	SetSimulatedLaggedRotationComponent(Character->GetMesh1PSpringArm(), Character->GetMesh1PSpringArm()->SocketName);
 	SetUsingLaggedRotation(Character->GetEnvironmentState() == EEnvironmentState::Underwater);
 	Character->OnEnvironmentStateChangedDelegate.AddDynamic(this, &UCrosshairWidget::OnEnvironmentStateChanged);
