@@ -52,11 +52,17 @@ private:
 	UPROPERTY()
 	TObjectPtr<AIndicatingTarget> CurrentTarget;
 
+	uint8 bIsActivated : 1;
+
 #pragma endregion
 
 #pragma region Getters / Setters
 
 public:
+
+	UFUNCTION(BlueprintCallable, Category = "TargetIndicatorManager")
+	void SetActive(bool bShouldActivate);
+	bool IsActivated();
 
 	bool TryGetTargetLocation(FVector& OutLocation);
 	bool TryGetCurrentTarget(AIndicatingTarget*& OutTarget);

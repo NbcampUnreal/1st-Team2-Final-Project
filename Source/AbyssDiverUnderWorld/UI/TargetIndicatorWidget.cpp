@@ -15,6 +15,12 @@ void UTargetIndicatorWidget::NativeTick(const FGeometry& MyGeometry, float InDel
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);
 
+	if (OwningManager->IsActivated() == false)
+	{
+		SetVisible(false);
+		return;
+	}
+
 	CalcAndSetCorrectTargetPosition();
 }
 

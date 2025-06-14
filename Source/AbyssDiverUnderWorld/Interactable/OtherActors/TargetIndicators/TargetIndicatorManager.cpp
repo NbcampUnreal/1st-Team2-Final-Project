@@ -14,6 +14,7 @@ ATargetIndicatorManager::ATargetIndicatorManager()
 
 	PrimaryActorTick.bCanEverTick = false;
 	bReplicates = false;
+	bIsActivated = true;
 }
 
 void ATargetIndicatorManager::BeginPlay()
@@ -75,6 +76,11 @@ void ATargetIndicatorManager::BeginPlay()
 
 void ATargetIndicatorManager::OnIndicatingTargetOverlapped(int32 TargetOrder)
 {
+	if (bIsActivated == false)
+	{
+		return;
+	}
+
 	AIndicatingTarget* Target = nullptr;
 	if (TryGetCurrentTarget(Target) == false)
 	{
@@ -96,6 +102,16 @@ void ATargetIndicatorManager::OnIndicatingTargetOverlapped(int32 TargetOrder)
 	}
 
 	TargetIndicatorWidgetInstance->ChangeTargetImage(NextTarget->GetTargetIcon());
+}
+
+void ATargetIndicatorManager::SetActive(bool bShouldActivate)
+{
+	bIsActivated = bShouldActivate;
+}
+
+bool ATargetIndicatorManager::IsActivated()
+{
+	return bIsActivated;
 }
 
 bool ATargetIndicatorManager::TryGetTargetLocation(FVector& OutLocation)
