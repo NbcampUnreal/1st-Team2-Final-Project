@@ -4,6 +4,7 @@
 #include "Framework/ADInGameMode.h"
 #include "Framework/ADCampGameMode.h"
 #include "Character/UnderwaterCharacter.h"
+#include "Interactable/OtherActors/ADDrone.h"
 
 ALevelTraveler::ALevelTraveler()
 {
@@ -29,7 +30,7 @@ void ALevelTraveler::Interact_Implementation(AActor* InstigatorActor)
 {
 	if (IsConditionMet() == false)
 	{
-		LOGVN(Warning, TEXT("Condition Is not Met"));
+		LOGVN(Log, TEXT("Condition Is not Met"));
 		return;
 	}
 
@@ -61,7 +62,7 @@ void ALevelTraveler::Interact_Implementation(AActor* InstigatorActor)
 
 bool ALevelTraveler::IsConditionMet()
 {
-	return true;
+	return (LastDrone == nullptr || IsValid(LastDrone) == false || LastDrone->IsPendingKillPending());
 }
 
 UADInteractableComponent* ALevelTraveler::GetInteractableComponent() const
