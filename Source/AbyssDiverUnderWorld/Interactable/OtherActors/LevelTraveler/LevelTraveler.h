@@ -7,6 +7,8 @@
 
 #include "LevelTraveler.generated.h"
 
+class AADDrone;
+
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API ALevelTraveler : public AActor, public IIADInteractable
 {
@@ -37,8 +39,11 @@ private:
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UStaticMeshComponent> MeshComp;
 
-	UPROPERTY(EditAnywhere, Category = "LevelTraveler")
+	UPROPERTY(EditAnywhere, Category = "LevelTravelerSettings")
 	uint8 bIsHoldMode : 1;
+
+	UPROPERTY(EditInstanceOnly, Category = "LevelTravelerSettings")
+	TObjectPtr<AADDrone> LastDrone;
 
 	UPROPERTY()
 	TObjectPtr<UADInteractableComponent> InteractableComp;
