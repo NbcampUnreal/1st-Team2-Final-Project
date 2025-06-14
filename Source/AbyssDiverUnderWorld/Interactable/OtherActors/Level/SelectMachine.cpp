@@ -5,11 +5,14 @@
 #include "Interactable/OtherActors/Level/InteractableButton.h"
 #include "Framework/ADGameInstance.h"
 #include "Subsystems/DataTableSubsystem.h"
+#include "Subsystems/MissionSubsystem.h"
 #include "DataRow/ButtonDataRow.h"
 #include "DataRow/PhaseGoalRow.h"
 #include "Framework/ADInGameMode.h"
 #include "Framework/ADCampGameMode.h"
 #include "Character/UnderwaterCharacter.h"
+#include "Components/WidgetComponent.h"
+#include "UI/MissionSelectWidget.h"
 #include "AbyssDiverUnderWorld.h"
 
 ASelectMachine::ASelectMachine()
@@ -22,6 +25,19 @@ ASelectMachine::ASelectMachine()
 	MeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh Comp"));
 	MeshComp->SetupAttachment(RootComponent);
 
+	SelectMissionWidgetComp = CreateDefaultSubobject<UWidgetComponent>(TEXT("Select Mission Comp"));
+	SelectMissionWidgetComp->SetupAttachment(RootComponent);
+	
+	SelectMissionWidgetComp->SetWidgetSpace(EWidgetSpace::World);
+	SelectMissionWidgetComp->SetDrawSize(FVector2D(1930.0f, 1160.f));
+	SelectMissionWidgetComp->SetPivot(FVector2D(0.5, 0.5));
+	SelectMissionWidgetComp->SetTintColorAndOpacity(FLinearColor(0.05f, 0.05f, 0.05f, 1.0f));
+
+	ConstructorHelpers::FClassFinder<UUserWidget> MisionSelectWidgetFinder(TEXT("/Game/_AbyssDiver/Blueprints/UI/UI/WBP_MissionSelect"));
+	if (MisionSelectWidgetFinder.Succeeded())
+	{
+		SelectMissionWidgetComp->SetWidgetClass(MisionSelectWidgetFinder.Class);
+	}
 }
 
 void ASelectMachine::BeginPlay()
@@ -33,6 +49,13 @@ void ASelectMachine::BeginPlay()
 
 	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
 	{
+		UMissionSubsystem* MissionSubsystem = GI->GetSubsystem<UMissionSubsystem>();
+		UUserWidget* Widget = SelectMissionWidgetComp->GetWidget();
+		if (Widget)
+		{
+			UMissionSelectWidget* MissionSelectWidget = Cast<UMissionSelectWidget>(Widget);
+			MissionSelectWidget->OnStartButtonClickedDelegate.BindUObject(MissionSubsystem, &UMissionSubsystem::ReceiveMissionDataFromUIData);
+		}
 		if (UDataTableSubsystem* DTSubsystem = GI->GetSubsystem<UDataTableSubsystem>())
 		{
 			for(int8 i = 0; i < static_cast<int8>(EButtonAction::MAX); ++i)

@@ -104,6 +104,7 @@ void UMissionsOnHUDWidget::CreateAndAddEntry(UTexture2D* Image)
 {
 	UMissionEntryOnHUDWidget* Entry = CreateWidget<UMissionEntryOnHUDWidget>(this, MissionEntryClass);
 	check(Entry);
+	Entry->ChangeImage(Image);
 	MissionListBox->AddChild(Entry);
 }
 

@@ -24,22 +24,28 @@ void USelectedMissionListWidget::NativeConstruct()
 
 void USelectedMissionListWidget::AddElement(const FString& ElementText)
 {
-    UTextBlock* MissionText = NewObject<UTextBlock>(this);
-    MissionText->SetText(FText::FromString(ElementText));
-    MissionText->SetFont(FSlateFontInfo(FCoreStyle::GetDefaultFontStyle("Bold", 24)));
-    MissionText->SetColorAndOpacity(FSlateColor(FLinearColor::White));
+    //미션 구조체 추가
 
-    VerticalBox_MissionList->AddChildToVerticalBox(MissionText);
-    LOGV(Warning, TEXT("%s"), *ElementText);
+    //UTextBlock* MissionText = NewObject<UTextBlock>(this);
+    //MissionText->SetText(FText::FromString(ElementText));
+    //MissionText->SetFont(FSlateFontInfo(FCoreStyle::GetDefaultFontStyle("Bold", 24)));
+    //MissionText->SetColorAndOpacity(FSlateColor(FLinearColor::White));
+
+    //VerticalBox_MissionList->AddChildToVerticalBox(MissionText);
+    //LOGV(Warning, TEXT("%s"), *ElementText);
 }
 
 void USelectedMissionListWidget::RemoveElementAt(const int32& Index)
 {
-    VerticalBox_MissionList->RemoveChildAt(Index);
+    //이게 필요한가?
+
+    //VerticalBox_MissionList->RemoveChildAt(Index);
 }
 
 void USelectedMissionListWidget::ModifyElementAt(const FString& NewText, const int32& Index)
 {
+    //인덱스 받아서 텍스트의 색깔을 바꾸거나 줄 긋기
+
     UTextBlock* Element = CastChecked<UTextBlock>(VerticalBox_MissionList->GetChildAt(Index));
 
     Element->SetText(FText::FromString(NewText));

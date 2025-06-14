@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -53,7 +53,7 @@ private:
 	TObjectPtr<UStaticMeshComponent> MeshComp;
 
 	UPROPERTY(ReplicatedUsing = OnRep_SetMesh)
-	UStaticMesh* ReplicatedMesh;
+	TObjectPtr<UStaticMesh> ReplicatedMesh; //추후 MeshComponent Replicate 설정 동기화 확인해보기
 
 	UPROPERTY()
 	TObjectPtr<UADInteractableComponent> InteractableComp;

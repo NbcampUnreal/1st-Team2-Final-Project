@@ -7,10 +7,12 @@
 #include "MissionSelectWidget.generated.h"
 
 DECLARE_DELEGATE_OneParam(FOnStartButtonClickedDelegate, const TArray<FMissionData>&/*SelectedMissions*/);
+DECLARE_DELEGATE(FOnMisionResetButtonClickedDelegate);
 
 class UButton;
 class UScrollBox;
 class UMissionEntryWidget;
+class UBorder;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API UMissionSelectWidget : public UUserWidget
@@ -27,12 +29,21 @@ public:
     void OnStartButtonClicked();
 
     UFUNCTION()
+    void OnMissionResetButtonClicked();
+
+    UFUNCTION()
     void OnMissionClicked(const FMissionData& Data, bool bSelected);
+
 
     // 내부 함수
     void AddMissionEntry(const FMissionData& Data);
 
+    void UpdateEntrys();
+
+	void UpdateSelectedMissionBox();
+
     FOnStartButtonClickedDelegate OnStartButtonClickedDelegate;
+    FOnMisionResetButtonClickedDelegate OnMisionResetButtonClickedDelegate;
 #pragma endregion
 
 #pragma region Variable
@@ -44,12 +55,26 @@ protected:
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UButton> Button_Start;
 
+    UPROPERTY(meta = (BindWidget))
+    TObjectPtr<UButton> Button_MissionReset;
+
     // 미션 엔트리 위젯 클래스
     UPROPERTY(EditAnywhere, Category = "UI")
     TSubclassOf<UMissionEntryWidget> MissionEntryClass;
 
     UPROPERTY(EditDefaultsOnly, Category = "UI")
     TSubclassOf<USelectedMissionListWidget> WBP_SelectedMissionListClass;
+
+    UPROPERTY(meta = (BindWidget))
+    TObjectPtr<UBorder> WarningBorder;
+
+    UPROPERTY(meta = (BindWidget))
+    TObjectPtr<UTextBlock> WarningText;
+
+    UPROPERTY(meta = (BindWidget))
+    TObjectPtr<UVerticalBox> SelectedMissionsBox;
+
+    uint8 bIsMissionGained : 1;
 
 private:
     // 미션 데이터
