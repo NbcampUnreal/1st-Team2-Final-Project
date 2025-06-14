@@ -375,7 +375,7 @@ bool UADInventoryComponent::AddInventoryItem(const FItemData& ItemData)
 {
 	if (TotalWeight + ItemData.Mass <= WeightMax)
 	{
-		FFADItemDataRow* FoundRow = DataTableSubsystem->GetItemData(ItemData.Id); 
+		FFADItemDataRow* FoundRow = DataTableSubsystem->GetItemDataByName(ItemData.Name); 
 		if (FoundRow)
 		{
 			int8 ItemIndex = FindItemIndexByName(ItemData.Name);
