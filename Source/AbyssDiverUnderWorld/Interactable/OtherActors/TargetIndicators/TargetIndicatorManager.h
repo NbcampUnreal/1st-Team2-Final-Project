@@ -34,6 +34,9 @@ private:
 
 protected:
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "TargetIndicatorManagerSettings")
+	uint8 bIsActivated : 1;
+
 	UPROPERTY(VisibleAnywhere, Category = "TargetIndicatorManager")
 	TObjectPtr<UBillboardComponent> BillboardSprite;
 
@@ -51,8 +54,6 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<AIndicatingTarget> CurrentTarget;
-
-	uint8 bIsActivated : 1;
 
 #pragma endregion
 
