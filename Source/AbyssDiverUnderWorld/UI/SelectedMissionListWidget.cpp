@@ -6,6 +6,7 @@
 #include "Subsystems/MissionSubsystem.h"
 
 #include "Components/VerticalBox.h"
+#include "Components/VerticalBoxSlot.h"
 #include "Components/TextBlock.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -26,20 +27,24 @@ void USelectedMissionListWidget::AddElement(const FString& ElementText)
 {
     //미션 구조체 추가
 
-    //UTextBlock* MissionText = NewObject<UTextBlock>(this);
-    //MissionText->SetText(FText::FromString(ElementText));
-    //MissionText->SetFont(FSlateFontInfo(FCoreStyle::GetDefaultFontStyle("Bold", 24)));
-    //MissionText->SetColorAndOpacity(FSlateColor(FLinearColor::White));
+    UTextBlock* MissionText = NewObject<UTextBlock>(this);
+    MissionText->SetText(FText::FromString(ElementText));
+    MissionText->SetFont(FSlateFontInfo(FCoreStyle::GetDefaultFontStyle("Bold", 17)));
+    MissionText->SetColorAndOpacity(FSlateColor(FLinearColor::White));
 
-    //VerticalBox_MissionList->AddChildToVerticalBox(MissionText);
-    //LOGV(Warning, TEXT("%s"), *ElementText);
+    UVerticalBoxSlot* VerticalSlot = VerticalBox_MissionList->AddChildToVerticalBox(MissionText);
+    if (VerticalSlot)
+    {
+        VerticalSlot->SetSize(ESlateSizeRule::Fill);
+        VerticalSlot->SetHorizontalAlignment(HAlign_Left); // (선택) 가로로도 채우기
+        VerticalSlot->SetVerticalAlignment(VAlign_Center);
+    }
+    LOGV(Warning, TEXT("%s"), *ElementText);
 }
 
 void USelectedMissionListWidget::RemoveElementAt(const int32& Index)
 {
-    //이게 필요한가?
-
-    //VerticalBox_MissionList->RemoveChildAt(Index);
+    VerticalBox_MissionList->RemoveChildAt(Index);
 }
 
 void USelectedMissionListWidget::ModifyElementAt(const FString& NewText, const int32& Index)
