@@ -27,15 +27,17 @@ public:
 	AInteractableButton();
 
 #pragma region Methods
-
+public:
 	virtual void Interact_Implementation(AActor* InstigatorActor) override;
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
 
 	UFUNCTION()
 	void OnRep_SetMesh();
 
 	void SetStaticMesh(UStaticMesh* Mesh);
+
 
 	FOnButtonPressed OnButtonPressed;
 #pragma endregion
@@ -58,15 +60,19 @@ private:
 	UPROPERTY()
 	TObjectPtr<UADInteractableComponent> InteractableComp;
 
+	FString ButtonDescription = TEXT("호스트만 조작 가능합니다.");
+
 #pragma endregion
 
 #pragma region Getters / Setters
 
 public:
 	virtual UADInteractableComponent* GetInteractableComponent() const override;
+	virtual FString GetInteractionDescription() const override;
 	virtual bool IsHoldMode() const override;
 	EButtonAction GetButtonAction() const { return ButtonAction; }
 	void SetButtonAction(EButtonAction ButtonType) { ButtonAction = ButtonType; }
+	void SetButtonDescription(const FString& Description);
 #pragma endregion
 
 };

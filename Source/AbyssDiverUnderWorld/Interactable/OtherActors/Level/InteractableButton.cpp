@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Interactable/OtherActors/Level/InteractableButton.h"
@@ -56,7 +56,25 @@ UADInteractableComponent* AInteractableButton::GetInteractableComponent() const
 	return InteractableComp;
 }
 
+FString AInteractableButton::GetInteractionDescription() const
+{
+	return ButtonDescription;
+}
+
 bool AInteractableButton::IsHoldMode() const
 {
 	return false;
 }
+
+void AInteractableButton::SetButtonDescription(const FString& Description)
+{
+	if (HasAuthority())
+	{
+		ButtonDescription = Description;
+	}
+	else
+	{
+		ButtonDescription = TEXT("호스트만 조작 가능합니다.");
+	}
+}
+

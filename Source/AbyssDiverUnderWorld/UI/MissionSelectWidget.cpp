@@ -119,7 +119,8 @@ void UMissionSelectWidget::OnStartButtonClicked()
 {
     if (SelectedMissions.Num() >= 3)
     {
-        OnStartButtonClickedDelegate.ExecuteIfBound(SelectedMissions);
+        if(OnStartButtonClickedDelegate.IsBound())
+            OnStartButtonClickedDelegate.Broadcast(SelectedMissions);
         bIsMissionGained = true;
 
         SelectedMissions.Empty();

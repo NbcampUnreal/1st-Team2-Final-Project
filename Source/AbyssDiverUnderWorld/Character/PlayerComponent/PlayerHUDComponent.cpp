@@ -16,6 +16,7 @@
 #include "Components/CanvasPanel.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "UI/CrosshairWidget.h"
+#include "Interactable/OtherActors/ADDroneSeller.h"
 
 UPlayerHUDComponent::UPlayerHUDComponent()
 {
@@ -105,6 +106,29 @@ void UPlayerHUDComponent::BeginPlay()
 			}
 		}
 	}
+
+	AADInGameState* GS = Cast<AADInGameState>(GetWorld()->GetGameState());
+	if (GS == nullptr)
+	{
+		LOGV(Warning, TEXT("GS == nullptr"));
+		return;
+	}
+
+	AADDroneSeller* CurrentDroneSeller = GS->GetCurrentDroneSeller();
+	if (CurrentDroneSeller == nullptr)
+	{
+		LOGV(Warning, TEXT("CurrentDroneSeller == nullptr, Server? : %d"), GetOwner()->GetNetMode() != ENetMode::NM_Client);
+		return;
+	}
+
+	PlayerStatusWidget->SetDroneTargetText(CurrentDroneSeller->GetTargetMoney());
+	PlayerStatusWidget->SetDroneCurrentText(CurrentDroneSeller->GetCurrentMoney());
+
+	CurrentDroneSeller->OnCurrentMoneyChangedDelegate.RemoveAll(PlayerStatusWidget);
+	CurrentDroneSeller->OnCurrentMoneyChangedDelegate.AddUObject(PlayerStatusWidget, &UPlayerStatusWidget::SetDroneCurrentText);
+
+	CurrentDroneSeller->OnTargetMoneyChangedDelegate.RemoveAll(PlayerStatusWidget);
+	CurrentDroneSeller->OnTargetMoneyChangedDelegate.AddUObject(PlayerStatusWidget, &UPlayerStatusWidget::SetDroneTargetText);
 }
 
 void UPlayerHUDComponent::C_ShowResultScreen_Implementation()
