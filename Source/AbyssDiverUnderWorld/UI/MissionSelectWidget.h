@@ -6,7 +6,7 @@
 #include "UI/SelectedMissionListWidget.h"
 #include "MissionSelectWidget.generated.h"
 
-DECLARE_DELEGATE_OneParam(FOnStartButtonClickedDelegate, const TArray<FMissionData>&/*SelectedMissions*/);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnStartButtonClickedDelegate, const TArray<FMissionData>&/*SelectedMissions*/);
 DECLARE_DELEGATE(FOnMisionResetButtonClickedDelegate);
 
 class UButton;
