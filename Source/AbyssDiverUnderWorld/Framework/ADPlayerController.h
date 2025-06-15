@@ -19,6 +19,7 @@ protected:
 	virtual void SetPawn(APawn* InPawn) override;
 
 #pragma region Method
+public:
 	UFUNCTION(Server, Reliable)
 	void S_SetPlayerInfo(const FUniqueNetIdRepl& Id, const FString& Nickname);
 	void S_SetPlayerInfo_Implementation(const FUniqueNetIdRepl& Id, const FString& Nickname);
@@ -31,6 +32,10 @@ protected:
 	void S_RequestStartGame();
 	void S_RequestStartGame_Implementation();
 
+
+	UFUNCTION(Client, Reliable)
+	void C_PreTravelCleanup();
+	void C_PreTravelCleanup_Imeplemation();
 
 
 	virtual void SetupInputComponent() override;

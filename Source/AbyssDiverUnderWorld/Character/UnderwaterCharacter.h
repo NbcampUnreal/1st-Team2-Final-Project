@@ -1,6 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
-
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "InputActionValue.h"
@@ -34,6 +32,15 @@ DECLARE_LOG_CATEGORY_EXTERN(LogAbyssDiverCharacter, Log, LOG_ABYSS_DIVER_COMPILE
 enum class ELocomotionMode : uint8;
 
 /* 캐릭터의 지상, 수중을 결정, Move 로직, Animation이 변경되고 사용 가능 기능이 제한된다. */
+
+UENUM(BlueprintType)
+enum class EVoiceMode : uint8
+{
+	None UMETA(DisplayName = "None"),
+	Positional UMETA(DisplayName = "Positional Chat")
+	
+};
+
 UENUM(BlueprintType)
 enum class EEnvironmentState : uint8
 {
@@ -234,6 +241,30 @@ public:
 	UFUNCTION()
 	void OnRep_CurrentTool();
 	
+
+	//VOIP Function
+	UFUNCTION(BlueprintImplementableEvent)
+	void InitVOIP();
+
+	UFUNCTION(NetMulticast, Reliable, BlueprintCallable)
+	void M_InitVOIP();
+	void M_InitVOIP_Implementation();
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void SetVoiceMode(EVoiceMode VoiceMode);
+
+	UFUNCTION(Server, Reliable, BlueprintCallable)
+	void S_SetVoiceMode(EVoiceMode VoiceMode);
+	void S_SetVoiceMode_Implementation(EVoiceMode VoiceMode);
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void CloseVoiceLine();
+
+	UFUNCTION(Client, Reliable, BlueprintCallable)
+	void C_CloseVoiceLine();
+	void C_CloseVoiceLine_Implementation();
+	
+
 protected:
 
 	/** Stat Component의 기본 속도가 변경됬을 때 호출된다. */

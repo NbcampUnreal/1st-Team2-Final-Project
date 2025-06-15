@@ -28,6 +28,10 @@ public:
 	UFUNCTION(Exec, Category = "Cheat")
 	void GetMoney();
 
+	UFUNCTION(BlueprintCallable)
 	void TravelToInGameLevel();
+	
+	UFUNCTION(BlueprintImplementableEvent)
+	void ServerTravelToInGameLevel();
 
 };

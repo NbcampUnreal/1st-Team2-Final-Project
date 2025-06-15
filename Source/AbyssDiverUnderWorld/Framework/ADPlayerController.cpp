@@ -15,6 +15,7 @@
 #include "UI/InteractionDescriptionWidget.h"
 #include "Character/UnderwaterCharacter.h"
 #include "Interactable/Item/Component/ADInteractionComponent.h"
+#include "OnlineSubsystem.h"
 
 
 AADPlayerController::AADPlayerController()
@@ -125,6 +126,32 @@ void AADPlayerController::S_RequestStartGame_Implementation()
 			ADGameMode->TryStartGame();
 		}
 	}
+}
+
+void AADPlayerController::C_PreTravelCleanup_Implementation()
+{
+	//// 1. ToggleSpeaking 0
+	//ConsoleCommand("ToggleSpeaking 0");
+
+	//// 2. UnregisterLocalTalker
+	//if (IOnlineVoicePtr VoiceInterface = Online::GetVoiceInterface())
+	//{
+	//	VoiceInterface->UnregisterLocalTalker(0);
+	//}
+
+	//// 3. Destroy VOIPTalker
+	//if (VOIPTalker)
+	//{
+	//	VOIPTalker->UnregisterComponent();
+	//	VOIPTalker->DestroyComponent();
+	//}
+
+	//// 4. Stop all sounds
+	//FAudioDeviceHandle Handle = GEngine->GetMainAudioDevice();
+	//if (Handle.IsValid())
+	//{
+	//	Handle.GetAudioDevice()->StopAllSounds();
+	//}
 }
 
 void AADPlayerController::SetupInputComponent()

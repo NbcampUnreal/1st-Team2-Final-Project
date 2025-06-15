@@ -51,7 +51,7 @@ void ALevelTraveler::Interact_Implementation(AActor* InstigatorActor)
 			return;
 		}
 
-		CampGameMode->TravelToInGameLevel();
+		CampGameMode->ServerTravelToInGameLevel();
 	}
 	else
 	{

@@ -2,11 +2,13 @@
 #include "Framework/ADInGameState.h"
 #include "Framework/ADPlayerState.h"
 #include "Framework/ADGameInstance.h"
+#include "Framework/ADPlayerController.h"
 #include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
 #include "DataRow/PhaseGoalRow.h"
 #include "AbyssDiverUnderWorld.h"
 #include "Subsystems/DataTableSubsystem.h"
+#include "Character/UnderwaterCharacter.h"
 
 void AADCampGameMode::ADCampGameMode()
 {
@@ -93,9 +95,30 @@ void AADCampGameMode::TravelToInGameLevel()
 			return;
 		}
 
+
+		/*for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+		{
+			if (AADPlayerController* PC = Cast<AADPlayerController>(It->Get()))
+			{
+				APawn* RawPawn = PC->GetPawn();
+				if (!RawPawn) continue; 
+
+				LOG(TEXT("Pawn exists!!"));
+				AUnderwaterCharacter* Pawn = Cast<AUnderwaterCharacter>(RawPawn);
+				if (Pawn)
+				{
+					LOG(TEXT("success Casting to UnderwaterCharacter"));
+					Pawn->C_CloseVoiceLine(); 
+					LOG(TEXT("success CloseVoiceLine"));
+				}
+			}
+		}*/
+
 		ADInGameState->SendDataToGameInstance();
 		//input spot level name
 		FString TravelURL = FString::Printf(TEXT("%s?listen"), *LevelLoad);
 		GetWorld()->ServerTravel(TravelURL);
+		
 	}
 }
+

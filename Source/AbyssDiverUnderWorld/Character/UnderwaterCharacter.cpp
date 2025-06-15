@@ -1,8 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
-
-
-#include "UnderwaterCharacter.h"
-
+﻿#include "UnderwaterCharacter.h"
 #include "AbyssDiverUnderWorld.h"
 #include "EnhancedInputComponent.h"
 #include "LocomotionMode.h"
@@ -36,6 +32,7 @@
 #include "Interactable/EquipableComponent/EquipRenderComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "PlayerComponent/NameWidgetComponent.h"
+
 
 DEFINE_LOG_CATEGORY(LogAbyssDiverCharacter);
 
@@ -676,6 +673,23 @@ void AUnderwaterCharacter::OnRep_CurrentTool()
 		PrevTool = CurrentTool;                   // 다음 Detach 대비
 		LOG(TEXT("CurrentTool's Owner : %s"), *CurrentTool->GetOwner()->GetName());
 	}
+}
+
+
+
+void AUnderwaterCharacter::M_InitVOIP_Implementation()
+{
+	InitVOIP();
+}
+
+void AUnderwaterCharacter::S_SetVoiceMode_Implementation(EVoiceMode VoiceMode)
+{
+	SetVoiceMode(VoiceMode);
+}
+
+void AUnderwaterCharacter::C_CloseVoiceLine_Implementation()
+{
+	CloseVoiceLine();
 }
 
 
