@@ -8,6 +8,7 @@
 
 class UTextBlock;
 class UProgressBar;
+class UOverlay;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API UPlayerStatusWidget : public UUserWidget
@@ -33,6 +34,10 @@ public:
 	void SetOxygenPercent(float InPercent);
 	void SetHealthPercent(float InPercent);
 	void SetStaminaPercent(float InPercent);
+	void SetDroneCurrentText(int32 Current);
+	void SetDroneTargetText(int32 Target);
+
+	void NextPhase();
 #pragma endregion
 
 #pragma region Variable
@@ -67,6 +72,18 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Compass")
 	TObjectPtr<AActor> CompassTargetObject;
 
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> CurrentMoneyText;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> TargetMoneyText;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UOverlay> NextPhaseInfo;
+
+	UPROPERTY(meta = (BindWidgetAnim), Translent)
+	TObjectPtr<UWidgetAnimation> NextPhaseAnim;
+
 private:
 	UPROPERTY()
 	TArray<TObjectPtr<UImage>> HealthSegments;
@@ -77,6 +94,7 @@ public:
 	// getter / setter
 	FORCEINLINE int32 GetCurrentSpear() const { return CurrentSpear; }
 	FORCEINLINE int32 GetTotalSpear() const { return TotalSpearCount; }
+	int8 GetNextPhaseAnimEndTime() const;
 	void SetCurrentSpear(int32 InValue);
 	void SetTotalSpear(int32 InValue);
 	void SetSpearVisibility(bool bVisible);

@@ -2,6 +2,8 @@
 
 #include "Components/TextBlock.h"
 #include "Components/ProgressBar.h"
+#include "Components/Overlay.h"
+#include "Animation/WidgetAnimation.h"
 #include "Components/Image.h"
 
 UPlayerStatusWidget::UPlayerStatusWidget(const FObjectInitializer& ObjectInitializer)
@@ -29,6 +31,11 @@ void UPlayerStatusWidget::SetSpearCount(int32 Current, int32 Total)
     {
         TotalSpear->SetText(FText::AsNumber(TotalSpearCount));
     }
+}
+
+int8 UPlayerStatusWidget::GetNextPhaseAnimEndTime() const
+{
+    return NextPhaseAnim->GetEndTime();
 }
 
 void UPlayerStatusWidget::SetCurrentSpear(int32 InValue)
@@ -78,6 +85,30 @@ void UPlayerStatusWidget::SetStaminaPercent(float InPercent)
     }
 }
 
+void UPlayerStatusWidget::SetDroneCurrentText(int32 Current)
+{
+    // 현재 가치 텍스트 갱신
+    if (CurrentMoneyText && CurrentMoneyText->IsValidLowLevel())
+    {
+        CurrentMoneyText->SetText(FText::FromString(FString::Printf(TEXT("%d"), Current)));
+    }
+}
+
+void UPlayerStatusWidget::SetDroneTargetText(int32 Target)
+{
+    // 목표 가치 텍스트 갱신
+    if (TargetMoneyText && TargetMoneyText->IsValidLowLevel())
+    {
+        TargetMoneyText->SetText(FText::FromString(FString::Printf(TEXT("%d"), Target)));
+    }
+}
+
+void UPlayerStatusWidget::NextPhase()
+{
+    NextPhaseInfo->SetVisibility(ESlateVisibility::Visible);
+    PlayAnimation(NextPhaseAnim);
+}
+
 void UPlayerStatusWidget::SetSpearVisibility(bool bVisible)
 {
     if (SpearPanel)
@@ -90,3 +121,4 @@ void UPlayerStatusWidget::SetCompassObject(AActor* NewTargetObject)
 {
     CompassTargetObject = NewTargetObject;
 }
+
