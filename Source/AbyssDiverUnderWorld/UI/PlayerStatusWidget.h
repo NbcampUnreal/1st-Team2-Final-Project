@@ -42,7 +42,6 @@ public:
 	void SetDroneCurrentText(int32 Current);
 	void SetDroneTargetText(int32 Target);
 
-	void NextPhase();
 #pragma endregion
 
 #pragma region Variable

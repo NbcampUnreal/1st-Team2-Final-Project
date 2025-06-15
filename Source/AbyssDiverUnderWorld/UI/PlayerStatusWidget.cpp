@@ -103,12 +103,6 @@ void UPlayerStatusWidget::SetDroneTargetText(int32 Target)
     }
 }
 
-void UPlayerStatusWidget::NextPhase()
-{
-    NextPhaseInfo->SetVisibility(ESlateVisibility::Visible);
-    PlayAnimation(NextPhaseAnim);
-}
-
 void UPlayerStatusWidget::SetSpearVisibility(bool bVisible)
 {
     if (SpearPanel)
