@@ -391,6 +391,7 @@ protected:
 	UFUNCTION()
 	void OnHealthChanged(int32 CurrentHealth, int32 MaxHealth);
 
+	/** 물리 볼륨이 변경되었을 때 호출되는 함수 */
 	UFUNCTION()
 	void OnPhysicsVolumeChanged(class APhysicsVolume* NewVolume);
 	
@@ -963,6 +964,10 @@ private:
 	/** 상호작용 대상이 되게 하는 컴포넌트 */
 	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UADInteractableComponent> InteractableComponent;
+
+	/** 래그돌 컴포넌트 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class URagdollReplicationComponent> RagdollComponent;
 
 	/** 인벤토리 컴포넌트 캐시 */
 	UPROPERTY()

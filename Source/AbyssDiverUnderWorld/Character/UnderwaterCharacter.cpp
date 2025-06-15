@@ -37,6 +37,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "PlayerComponent/CombatEffectComponent.h"
 #include "PlayerComponent/NameWidgetComponent.h"
+#include "PlayerComponent/RagdollReplicationComponent.h"
 
 DEFINE_LOG_CATEGORY(LogAbyssDiverCharacter);
 
@@ -155,6 +156,8 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	UnderwaterEffectComponent = CreateDefaultSubobject<UUnderwaterEffectComponent>(TEXT("UnderwaterEffectComponent"));
 	CombatEffectComponent = CreateDefaultSubobject<UCombatEffectComponent>(TEXT("CombatEffectComponent"));
 	FootstepComponent = CreateDefaultSubobject<UFootstepComponent>(TEXT("FootstepComponent"));
+
+	RagdollComponent = CreateDefaultSubobject<URagdollReplicationComponent>(TEXT("RagdollComponent"));
 	
 	bIsRadarOn = false;
 	RadarOffset = FVector(150.0f, 0.0f, 0.0f);
@@ -975,6 +978,8 @@ void AUnderwaterCharacter::HandleEnterDeath()
 	K2_OnDeath();
 	OnDeathDelegate.Broadcast();
 	InteractableComponent->SetInteractable(true);
+
+	RagdollComponent->SetRagdollEnabled(true);
 }
 
 void AUnderwaterCharacter::S_Revive_Implementation()
