@@ -10,6 +10,11 @@ class UTextBlock;
 class UProgressBar;
 class UOverlay;
 
+enum class EDestinationName : uint8
+{
+
+};
+
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API UPlayerStatusWidget : public UUserWidget
 {
@@ -79,9 +84,15 @@ protected:
 	TObjectPtr<UTextBlock> TargetMoneyText;
 
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UOverlay> NextPhaseInfo;
+	TObjectPtr<UTextBlock> CurrentPhaseText;
 
-	UPROPERTY(meta = (BindWidgetAnim), Translent)
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UOverlay> NextPhaseOverlay;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> NextPhaseText;
+
+	UPROPERTY(meta = (BindWidgetAnim), Transient)
 	TObjectPtr<UWidgetAnimation> NextPhaseAnim;
 
 private:
