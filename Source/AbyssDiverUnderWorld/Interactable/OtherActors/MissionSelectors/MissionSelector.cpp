@@ -48,7 +48,7 @@ void AMissionSelector::PostInitializeComponents()
 		return;
 	}
 
-	MissionSelectWidget->OnStartButtonClickedDelegate.BindUObject(MissionSubsystem, &UMissionSubsystem::ReceiveMissionDataFromUIData);
+	MissionSelectWidget->OnStartButtonClickedDelegate.AddUObject(MissionSubsystem, &UMissionSubsystem::ReceiveMissionDataFromUIData);
 }
 
 void AMissionSelector::BeginPlay()
