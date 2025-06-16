@@ -46,7 +46,7 @@ void UADGameInstance::AddPlayerNetId(const FString& NetId)
         }
 
         ValidPlayerIndexArray[i] = true;
-        PlayerIdMap.Add(NetId, i + 1);
+        PlayerIdMap.Add(NetId, i);
         return;
     }
 
@@ -56,14 +56,13 @@ void UADGameInstance::AddPlayerNetId(const FString& NetId)
 void UADGameInstance::RemovePlayerNetId(const FString& NetId)
 {
     int32 PlayerIndex = 0;
-
     if(TryGetPlayerIndex(NetId, PlayerIndex) == false)
     {
         LOGV(Warning, TEXT("Remove Failed Because of Not Valid NetId"));
         return;
     }
 
-    ValidPlayerIndexArray[PlayerIndex - 1] = false;
+    ValidPlayerIndexArray[PlayerIndex] = false;
     PlayerIdMap.Remove(NetId);
 }
 

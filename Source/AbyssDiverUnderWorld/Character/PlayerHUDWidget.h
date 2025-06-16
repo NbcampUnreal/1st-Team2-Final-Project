@@ -31,7 +31,7 @@ public:
 
 	/** 실드 택스트를 갱신 */
 	UFUNCTION(BlueprintCallable)
-	void UpdateShieldText(float ShieldValue);
+	void UpdateShieldText(float OldShieldValue, float NewShieldValue);
 
 	/** 산소 택스트를 갱신 */
 	UFUNCTION(BlueprintCallable)

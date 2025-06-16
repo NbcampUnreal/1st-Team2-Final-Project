@@ -279,8 +279,7 @@ void AUnderwaterCharacter::ApplyUpgradeFactor(UUpgradeComponent* UpgradeComponen
 			continue;
 		}
 		
-		// Stat Factor는 정수형으로 저장되어 있다.
-		const float StatFactor = UpgradeData->StatFactor;
+		const int StatFactor = UpgradeData->StatFactor;
 		
 	    switch (Type)
 	    {
@@ -297,7 +296,8 @@ void AUnderwaterCharacter::ApplyUpgradeFactor(UUpgradeComponent* UpgradeComponen
 			case EUpgradeType::Light:
 	    		if (Grade > 1)
 	    		{
-	    			LanternLength *= StatFactor / 100.0f;
+	    			// 정수 곱하기 연산을 먼저하고 나누기 연산을 나중에 해서 소수점 오차를 줄인다.
+	    			LanternLength = LanternLength * (100 + StatFactor) / 100.0f;
 	    			LanternComponent->SetLightLength(LanternLength);
 	    		}
 	    		break;
