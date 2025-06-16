@@ -73,7 +73,7 @@ private:
 	TArray<FName> CaptureBoneNames;
 
 	/** 래그돌 활성화 여부 */
-	bool bIsRagdoll;
+	uint8 bIsRagdoll : 1;
 
 	/** 트랜스폼을 저장하는 간격 */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Ragdoll")
