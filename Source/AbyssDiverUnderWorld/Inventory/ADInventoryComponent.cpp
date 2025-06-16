@@ -510,6 +510,7 @@ void UADInventoryComponent::OnRep_CurrentEquipItem()
 			SkeletalMeshComp->SetVisibility(false, true);
 			EquipRenderComp->AttachItem(CurrentEquipItem, Socket);
 		}
+		PrevEquipItem = CurrentEquipItem;
 	}
 }
 

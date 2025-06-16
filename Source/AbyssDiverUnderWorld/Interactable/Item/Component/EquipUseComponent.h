@@ -17,6 +17,18 @@ enum class EEquipmentType : uint8
 	Max = 4 UMETA(Hidden)
 };
 
+USTRUCT(BlueprintType)
+struct FRecoilConfig
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditDefaultsOnly) 
+	float PitchKick = 2.0f;
+	UPROPERTY(EditDefaultsOnly) 
+	float YawKick = 0.4f;
+	UPROPERTY(EditDefaultsOnly) 
+	float RecoverySpeed = 10.0f;
+};
 
 
 class AADProjectileBase;
@@ -73,7 +85,9 @@ public:
 	UFUNCTION(NetMulticast, Unreliable)
 	void M_PlayFireHarpoonSound();
 	void M_PlayFireHarpoonSound_Implementation();
-
+	UFUNCTION(Client, Reliable)
+	void C_ApplyRecoil(const FRecoilConfig& Config);
+	void C_ApplyRecoil_Implementation(const FRecoilConfig& Config);
 
 	UFUNCTION()
 	void OnRep_Amount();
@@ -110,7 +124,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void HideChargeBatteryWidget();
 	UFUNCTION(BlueprintCallable)
-	void StartReload();
+	void StartReload(int32 InMagazineSize);
 	UFUNCTION(BlueprintCallable)
 	void OpenChargeWidget();
 	UFUNCTION(BlueprintCallable)
@@ -122,7 +136,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void HandleRKeyRelease();
 	
-	void FinishReload();
+	void FinishReload(int32 InMagazineSize);
 
 	void Initialize(FItemData& ItemData);
 	// 상태 초기화 함수
@@ -154,6 +168,9 @@ private:
 	bool IsInterpolating() const;
 	
 	void SetEquipBatteryAmountText();
+
+	void ApplyRecoil(const FRecoilConfig& Config);
+	bool RecoverRecoil(float DeltaTime);
 #pragma endregion
 
 #pragma region Variable
@@ -166,7 +183,10 @@ public:
 	int32 ReserveAmmo = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
-	int32 MagazineSize = 5;
+	int32 HarpoonMagazineSize = 5;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	int32 FlareMagazineSize = 1;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Weapon")
 	float RateOfFire = 2.f; 
@@ -259,7 +279,15 @@ private:
 	uint8 bOriginalExposureCached : 1;
 	static const FName BASIC_SPEAR_GUN_NAME;
 
-	
+	UPROPERTY(EditDefaultsOnly, Category = "Recoil")
+	FRecoilConfig HarpoonRecoil;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Recoil")
+	FRecoilConfig FlareRecoil;
+
+	float ActiveRecoverySpeed = 0.f;
+	float PendingPitch = 0.f;
+	float PendingYaw = 0.f;
 
 #pragma endregion
 

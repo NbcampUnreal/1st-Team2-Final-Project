@@ -198,8 +198,10 @@ void UEquipUseComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAc
 		}	
 	}
 
+	const bool bRecoilActive = RecoverRecoil(DeltaTime);
+
 	// Tick 끄기
-	const bool bStillNeed = bBoostActive || bNightVisionOn || IsInterpolating();
+	const bool bStillNeed = bBoostActive || bNightVisionOn || IsInterpolating() || bRecoilActive;
 	if (!bStillNeed)
 		SetComponentTickEnabled(false);
 		
@@ -229,7 +231,16 @@ void UEquipUseComponent::S_RKey_Implementation()
 {
 	switch (RKeyAction)
 	{
-	case EAction::WeaponReload:   StartReload();			  break;
+	case EAction::WeaponReload:   
+		if (EquipType == EEquipmentType::HarpoonGun)
+		{
+			StartReload(HarpoonMagazineSize);
+		}
+		else if (EquipType == EEquipmentType::FlareGun)
+		{
+			StartReload(FlareMagazineSize);
+		}		 
+		break;
 	case EAction::ApplyChargeUI:  ShowChargeBatteryWidget();  break;
 	default:                      break;
 	}
@@ -275,6 +286,11 @@ void UEquipUseComponent::S_IncreaseAmount_Implementation(int8 AddAmount)
 void UEquipUseComponent::M_PlayFireHarpoonSound_Implementation()
 {
 	GetSoundSubsystem()->PlayAt(ESFX::FireHarpoon, OwningCharacter->GetActorLocation());
+}
+
+void UEquipUseComponent::C_ApplyRecoil_Implementation(const FRecoilConfig& Config)
+{
+	ApplyRecoil(Config);
 }
 
 void UEquipUseComponent::OnRep_Amount()
@@ -626,6 +642,9 @@ void UEquipUseComponent::FireHarpoon()
 	{
 		ConfigureProjectile(Bullet, TargetPoint, MuzzleLoc);
 	}
+
+	ApplyRecoil(HarpoonRecoil);
+	C_ApplyRecoil(HarpoonRecoil);
 }
 
 void UEquipUseComponent::FireFlare()
@@ -647,6 +666,9 @@ void UEquipUseComponent::FireFlare()
 	{
 		ConfigureProjectile(FlareBullet, TargetPoint, MuzzleLoc);
 	}
+
+	ApplyRecoil(FlareRecoil);
+	C_ApplyRecoil(FlareRecoil);
 }
 
 void UEquipUseComponent::ToggleBoost()
@@ -808,19 +830,25 @@ void UEquipUseComponent::HideChargeBatteryWidget()
 	PC->SetInputMode(FInputModeGameOnly());
 }
 
-void UEquipUseComponent::StartReload()
+void UEquipUseComponent::StartReload(int32 InMagazineSize)
 {
-	if (!bIsWeapon || ReserveAmmo <= 0 || CurrentAmmoInMag == MagazineSize)
+	if (!bIsWeapon || ReserveAmmo <= 0 || CurrentAmmoInMag == InMagazineSize)
 		return;
 	bCanFire = false;
 	GetWorld()->GetTimerManager().ClearTimer(TimerHandle_HandleRefire);
 	
-	GetWorld()->GetTimerManager().SetTimer(
-		TimerHandle_HandleReload,
-		this, &UEquipUseComponent::FinishReload,
-		ReloadDuration, false
+	FTimerDelegate ReloadDel = FTimerDelegate::CreateUObject(
+		this,
+		&UEquipUseComponent::FinishReload,
+		InMagazineSize
 	);
 
+	GetWorld()->GetTimerManager().SetTimer(
+		TimerHandle_HandleReload,
+		ReloadDel,
+		ReloadDuration,
+		false
+	);
 }
 
 void UEquipUseComponent::OpenChargeWidget()
@@ -830,9 +858,9 @@ void UEquipUseComponent::OpenChargeWidget()
 	ToggleChargeBatteryWidget();
 }
 
-void UEquipUseComponent::FinishReload()
+void UEquipUseComponent::FinishReload(int32 InMagazineSize)
 {
-	const int32 Needed = MagazineSize - CurrentAmmoInMag;
+	const int32 Needed = InMagazineSize - CurrentAmmoInMag;
 	const int32 ToReload = FMath::Min(Needed, ReserveAmmo);
 	
 	CurrentAmmoInMag += ToReload;
@@ -874,6 +902,52 @@ void UEquipUseComponent::SetEquipBatteryAmountText()
 	{
 		ChargeBatteryInstance->SetEquipBatteryAmount(EChargeBatteryType::DPV, Amount);
 	}
+}
+
+void UEquipUseComponent::ApplyRecoil(const FRecoilConfig& Config)
+{
+	APlayerController* PC = Cast<APlayerController>(OwningCharacter.Get() ? OwningCharacter->GetController() : nullptr);
+	if (!PC || !PC->IsLocalController()) 
+		return;
+
+	const float PitchKick = Config.PitchKick;
+	const float YawKick = FMath::RandRange(-Config.YawKick, Config.YawKick);
+
+	PC->AddPitchInput(-PitchKick);
+	PC->AddYawInput(YawKick);
+
+	PendingPitch += PitchKick;
+	PendingYaw -= YawKick;
+	ActiveRecoverySpeed = Config.RecoverySpeed;
+
+	SetComponentTickEnabled(true);
+}
+
+bool UEquipUseComponent::RecoverRecoil(float DeltaTime)
+{
+	if (FMath::IsNearlyZero(PendingPitch, 0.01f) &&
+		FMath::IsNearlyZero(PendingYaw, 0.01f))
+	{
+		PendingPitch = PendingYaw = 0.f;
+		SetComponentTickEnabled(false);                     // 충분히 복구되면 중단
+		return false;
+	}
+
+	const float Step = ActiveRecoverySpeed * DeltaTime;
+	const float PitchStep = FMath::Clamp(PendingPitch, -Step, Step);
+	const float YawStep = FMath::Clamp(PendingYaw, -Step, Step);
+
+	APlayerController* PC = Cast<APlayerController>(OwningCharacter.Get() ? OwningCharacter->GetController() : nullptr);
+	if (PC && PC->IsLocalController())
+	{
+		PC->AddPitchInput(PitchStep);
+		PC->AddYawInput(YawStep);
+	}
+
+	PendingPitch -= PitchStep;
+	PendingYaw -= YawStep;
+
+	return true;
 }
 
 USoundSubsystem* UEquipUseComponent::GetSoundSubsystem()
@@ -923,7 +997,16 @@ FVector UEquipUseComponent::CalculateTargetPoint(const FVector& CamLoc, const FV
 
 FVector UEquipUseComponent::GetMuzzleLocation(const FVector& CamLoc, const FVector& AimDir) const
 {
-	const FName SocketName(TEXT("Muzzle"));
+	FName SocketName;
+	if (EquipType == EEquipmentType::HarpoonGun)
+	{
+		SocketName = TEXT("Muzzle");
+	}
+	else if (EquipType == EEquipmentType::FlareGun)
+	{
+		SocketName = TEXT("FlareMuzzle");
+	}
+	
 	if (auto* Mesh = OwningCharacter->GetMesh();
 		Mesh && Mesh->DoesSocketExist(SocketName))
 	{
@@ -1008,7 +1091,7 @@ void UEquipUseComponent::ConfigureProjectile(AADProjectileBase* Proj, const FVec
 	else if (EquipType == EEquipmentType::FlareGun)
 	{
 		FVector LaunchDir = (TargetPoint - MuzzleLoc).GetSafeNormal();
-		Proj->InitializeSpeed(LaunchDir, 1000.0f);
+		Proj->InitializeSpeed(LaunchDir, 2000.0f);
 		LOGIC(Log, TEXT("Flare completes Configuration!!"));
 	}
 	
