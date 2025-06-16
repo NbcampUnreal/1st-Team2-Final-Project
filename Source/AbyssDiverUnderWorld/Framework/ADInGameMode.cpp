@@ -174,28 +174,41 @@ void AADInGameMode::ReadyForTravelToCamp()
 	}
 
 	TimerManager.ClearTimer(ResultTimerHandle);
+
 	
+
 	const float Interval = 5.0f;
 	TimerManager.SetTimer(ResultTimerHandle, this, &AADInGameMode::TravelToCamp, 1, false, Interval);
 }
 
 void AADInGameMode::TravelToCamp()
 {
-	if (AADInGameState* ADInGameState = GetGameState<AADInGameState>())
+	for (AADPlayerController* PC : TActorRange<AADPlayerController>(GetWorld()))
 	{
-		FString LevelLoad = CampMapName;
-		if (LevelLoad == "invalid")
-		{
-			UE_LOG(LogTemp, Error, TEXT("LevelLoad is empty"));
-			LevelLoad = TEXT("DefaultInGameLevel");
-			return;
-		}
-
-		ADInGameState->SendDataToGameInstance();
-		//input spot level name
-		FString TravelURL = FString::Printf(TEXT("%s?listen"), *LevelLoad);
-		GetWorld()->ServerTravel(TravelURL);
+		PC->C_OnPreClientTravel();
 	}
+
+	const float WaitForStopVoice = 1.0f;
+
+	FTimerHandle WaitForVoiceTimerHandle;
+	GetWorldTimerManager().SetTimer(WaitForVoiceTimerHandle, [&]()
+		{
+			if (AADInGameState* ADInGameState = GetGameState<AADInGameState>())
+			{
+				FString LevelLoad = CampMapName;
+				if (LevelLoad == "invalid")
+				{
+					UE_LOG(LogTemp, Error, TEXT("LevelLoad is empty"));
+					return;
+				}
+
+				ADInGameState->SendDataToGameInstance();
+				//input spot level name
+				FString TravelURL = FString::Printf(TEXT("%s?listen"), *LevelLoad);
+				GetWorld()->ServerTravel(TravelURL);
+			}
+
+		}, WaitForStopVoice, false);
 }
 
 bool AADInGameMode::IsAllPhaseCleared()

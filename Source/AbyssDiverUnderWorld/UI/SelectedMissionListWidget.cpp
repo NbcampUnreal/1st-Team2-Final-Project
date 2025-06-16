@@ -6,6 +6,7 @@
 #include "Subsystems/MissionSubsystem.h"
 
 #include "Components/VerticalBox.h"
+#include "Components/VerticalBoxSlot.h"
 #include "Components/TextBlock.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -24,12 +25,20 @@ void USelectedMissionListWidget::NativeConstruct()
 
 void USelectedMissionListWidget::AddElement(const FString& ElementText)
 {
+    //미션 구조체 추가
+
     UTextBlock* MissionText = NewObject<UTextBlock>(this);
     MissionText->SetText(FText::FromString(ElementText));
-    MissionText->SetFont(FSlateFontInfo(FCoreStyle::GetDefaultFontStyle("Bold", 24)));
+    MissionText->SetFont(FSlateFontInfo(FCoreStyle::GetDefaultFontStyle("Bold", 17)));
     MissionText->SetColorAndOpacity(FSlateColor(FLinearColor::White));
 
-    VerticalBox_MissionList->AddChildToVerticalBox(MissionText);
+    UVerticalBoxSlot* VerticalSlot = VerticalBox_MissionList->AddChildToVerticalBox(MissionText);
+    if (VerticalSlot)
+    {
+        VerticalSlot->SetSize(ESlateSizeRule::Fill);
+        VerticalSlot->SetHorizontalAlignment(HAlign_Left); // (선택) 가로로도 채우기
+        VerticalSlot->SetVerticalAlignment(VAlign_Center);
+    }
     LOGV(Warning, TEXT("%s"), *ElementText);
 }
 
@@ -40,6 +49,8 @@ void USelectedMissionListWidget::RemoveElementAt(const int32& Index)
 
 void USelectedMissionListWidget::ModifyElementAt(const FString& NewText, const int32& Index)
 {
+    //인덱스 받아서 텍스트의 색깔을 바꾸거나 줄 긋기
+
     UTextBlock* Element = CastChecked<UTextBlock>(VerticalBox_MissionList->GetChildAt(Index));
 
     Element->SetText(FText::FromString(NewText));

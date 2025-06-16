@@ -1,12 +1,12 @@
-#include "UI/MissionsOnHUDWidget.h"
+﻿#include "UI/MissionsOnHUDWidget.h"
 
 #include "AbyssDiverUnderWorld.h"
 #include "UI/MissionEntryOnHUDWidget.h"
 #include "DataRow/MissionDataRow/MissionBaseRow.h"
 #include "Subsystems/MissionSubsystem.h"
 #include "Framework/ADInGameState.h"
-
 #include "Components/VerticalBox.h"
+#include "Components/VerticalBoxSlot.h"
 #include "Kismet/GameplayStatics.h"
 
 void UMissionsOnHUDWidget::NativeConstruct()
@@ -104,7 +104,14 @@ void UMissionsOnHUDWidget::CreateAndAddEntry(UTexture2D* Image)
 {
 	UMissionEntryOnHUDWidget* Entry = CreateWidget<UMissionEntryOnHUDWidget>(this, MissionEntryClass);
 	check(Entry);
-	MissionListBox->AddChild(Entry);
+	Entry->ChangeImage(Image);
+	UVerticalBoxSlot* VerticalSlot = MissionListBox->AddChildToVerticalBox(Entry);
+	if (VerticalSlot)
+	{
+		VerticalSlot->SetSize(ESlateSizeRule::Fill);
+		VerticalSlot->SetHorizontalAlignment(HAlign_Center); // (선택) 가로로도 채우기
+		VerticalSlot->SetVerticalAlignment(VAlign_Center);
+	}
 }
 
 void UMissionsOnHUDWidget::ChangeImage(UTexture2D* Image, int32 ElementIndex)
