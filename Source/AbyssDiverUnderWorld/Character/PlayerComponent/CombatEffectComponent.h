@@ -85,4 +85,11 @@ private:
 	TObjectPtr<USoundBase> ShieldHitSound;
 
 #pragma endregion
+
+#pragma region Getter Setter
+
+	/** 실드 히트 위젯을 반환한다. */
+	UUserWidget* GetShieldHitWidget();
+	
+#pragma endregion
 };

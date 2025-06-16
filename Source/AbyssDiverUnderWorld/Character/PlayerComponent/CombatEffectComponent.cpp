@@ -133,3 +133,8 @@ UWidgetAnimation* UCombatEffectComponent::FindAnimationByName(UUserWidget* Widge
 	
 	return  nullptr;
 }
+
+UUserWidget* UCombatEffectComponent::GetShieldHitWidget()
+{
+	return ShieldHitWidget;
+}

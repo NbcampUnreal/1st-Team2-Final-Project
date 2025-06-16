@@ -1117,6 +1117,9 @@ public:
 
 	/** 현재 캐릭터 전투 중인지 여부를 반환. 현재는 Server에서만 작동 */
 	FORCEINLINE bool IsInCombat() const { return bIsInCombat; }
+
+	/** 현재 생성된 실드 히트 위젯을 반환 */
+	UUserWidget* GetShieldHitWidget() const;
 	
 #pragma endregion
 };

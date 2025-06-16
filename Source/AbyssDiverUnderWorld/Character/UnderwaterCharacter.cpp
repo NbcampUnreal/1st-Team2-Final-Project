@@ -2033,3 +2033,8 @@ bool AUnderwaterCharacter::IsWeaponEquipped() const
 {
 	return EquipUseComponent ? EquipUseComponent->bIsWeapon : false;
 }
+
+UUserWidget* AUnderwaterCharacter::GetShieldHitWidget() const
+{
+	return CombatEffectComponent ? CombatEffectComponent->GetShieldHitWidget() : nullptr;
+}
