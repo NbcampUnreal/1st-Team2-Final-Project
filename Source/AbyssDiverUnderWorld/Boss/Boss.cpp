@@ -92,6 +92,8 @@ void ABoss::BeginPlay()
 	OriginDeceleration = GetCharacterMovement()->BrakingDecelerationSwimming;
 	CurrentMoveSpeed = StatComponent->MoveSpeed;
 
+	SphereOverlapRadius = GetCapsuleComponent()->GetScaledCapsuleRadius() * 0.5f;
+
 	Params.AddIgnoredActor(this);
 }
 
@@ -255,13 +257,22 @@ void ABoss::SmoothMoveAlongSurface(const float& InDeltaTime)
     FHitResult NearestHit;
     float NearestDistance = TNumericLimits<float>::Max();
     
-    TArray<FVector> Directions = {
-        -GetActorUpVector(),
-        GetActorUpVector(),
-        GetActorRightVector(),
-        -GetActorRightVector()
-    };
-    
+    // 월드 기준 절대적인 방향으로 변경
+    TArray<FVector> Directions;
+
+	if (bEnableDownTrace)
+	{
+		Directions.Emplace(-FVector::UpVector * 1.75f);
+	}
+
+	if (bEnableHorizontalTrace)
+	{
+		Directions.Emplace(FVector::RightVector);
+		Directions.Emplace(-FVector::RightVector);
+		Directions.Emplace(FVector::ForwardVector);
+		Directions.Emplace(-FVector::ForwardVector);
+	}
+	
     for (const FVector& Dir : Directions)
     {
         FHitResult HitResult;
@@ -287,10 +298,10 @@ void ABoss::SmoothMoveAlongSurface(const float& InDeltaTime)
             }
         }
 #if WITH_EDITOR
-    	if (bDrawDebugLine)
-    	{
-    		DrawDebugLine(GetWorld(), Start, End, FColor::Blue, false, 0.1f, 0, 2.0f);
-    	}
+        if (bDrawDebugLine)
+        {
+           DrawDebugLine(GetWorld(), Start, End, FColor::Blue, false, 0.1f, 0, 2.0f);
+        }
 #endif
     }
 
@@ -511,34 +522,44 @@ void ABoss::StartTurn()
     	const FVector Start = GetActorLocation();
     	const FVector End = Start + Direction * TurnTraceDistance;
         
-    	FHitResult HitResult;
-    	bool bHit = GetWorld()->LineTraceSingleByChannel(
-			HitResult,
-			Start,
-			End,
-			ECC_Visibility,
-			Params
+    	// 목표 지점에서 Sphere Overlap 검사
+    	const bool bOverlap = GetWorld()->OverlapAnyTestByChannel(
+			End,                                                    // 검사할 위치
+			FQuat::Identity,                                                   // 회전 없음
+			ECC_Visibility,                                                    // 충돌 채널
+			FCollisionShape::MakeSphere(SphereOverlapRadius), // Sphere 크기
+			Params                                                             // 충돌 파라미터
 		);
 
+    	// NavMesh 검사
     	if (!IsLocationOnNavMesh(End))
     	{
     		continue;
     	}
+
 #if WITH_EDITOR
-    	// 디버그 라인 표시 (더 오래 표시)
+    	// 디버그 표시
     	if (bDrawDebugLine)
     	{
-    		DrawDebugLine(GetWorld(), Start, End, bHit ? FColor::Red : FColor::Green, false, 5.0f, 0, 5.0f);
+    		// 방향 라인
+    		DrawDebugLine(GetWorld(), Start, End, bOverlap ? FColor::Red : FColor::Green, false, 5.0f, 0, 3.0f);
+        
+    		// 목표 지점에 Sphere 표시
+    		DrawDebugSphere(GetWorld(), End, SphereOverlapRadius, 
+						   16, bOverlap ? FColor::Red : FColor::Green, false, 5.0f, 0, 2.0f);
     	}
 #endif
-    	if (!bHit)
+
+    	// Overlap이 없으면 (빈 공간이면) 해당 방향 선택
+    	if (!bOverlap)
     	{
+    		LOG(TEXT("No overlap detected, turning towards: %s"), *Direction.ToString());
     		TurnDirection = Direction;
-    		
-    		// 즉시 한 번 회전 시도 (디버깅용)
-    		//LOG(TEXT("Attempting immediate turn..."));
-    		
     		return;
+    	}
+    	else
+    	{
+    		LOG(TEXT("Overlap detected at location: %s, Direction: %s"), *TargetLocation.ToString(), *Direction.ToString());
     	}
     }
 	
@@ -608,17 +629,11 @@ void ABoss::PerformTurn(const float& InDeltaTime)
 			}
 		}
 	}
-
-	const bool bHasObstacleAhead = EnhancedAIController->GetBlackboardComponent()->GetValueAsBool("bHasObstacleAhead");
-	if (bHasObstacleAhead)
-	{
-		StartTurn();
-		return;
-	}
+	
 	// 목표 회전 값과 현재 회전 값의 차이가 15도 미만이거나
 	// 회전을 시작한 지 2.0초를 초과했다면 회전을 종료하고 목표 지점을 재설정한다.
 	const float AngleDifference = FMath::Abs(FMath::FindDeltaAngleDegrees(CurrentRotation.Yaw, TargetRotation.Yaw));
-	if (AngleDifference < 15.0f || TurnTimer > 2.0f)
+	if (AngleDifference < 1.0f || TurnTimer > 2.0f)
 	{
 		EnhancedAIController->GetBlackboardComponent()->SetValueAsBool("bIsTurning", false);
 		TurnTimer = 0.0f;
