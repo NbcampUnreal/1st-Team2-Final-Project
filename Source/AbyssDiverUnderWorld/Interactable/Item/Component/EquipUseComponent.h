@@ -30,7 +30,7 @@ struct FRecoilConfig
 	float RecoverySpeed = 10.0f;
 };
 
-
+class AUnderwaterCharacter;
 class AADProjectileBase;
 class UUserWidget;
 class AADSpearGunBullet;
@@ -136,8 +136,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void HandleRKeyRelease();
 	
-	void FinishReload(int32 InMagazineSize);
-
+	void FinishReload(int32 InMagazineSize, AUnderwaterCharacter* Diver);
+	void PlayReloadAnimation(EEquipmentType InEquipType, AUnderwaterCharacter* Diver);
+	void PlayDrawAnimation(AUnderwaterCharacter* Diver);
 	void Initialize(FItemData& ItemData);
 	// 상태 초기화 함수
 	void DeinitializeEquip();
@@ -256,6 +257,14 @@ protected:
 	TSubclassOf<AADFlareGunBullet> FlareGunBulletClass = nullptr;
 	UPROPERTY()
 	TObjectPtr<USoundSubsystem> SoundSubsystem;
+
+
+	UPROPERTY(EditAnywhere, Category = "Weapon")
+	TObjectPtr<UAnimMontage> HarpoonReloadMontage;
+	UPROPERTY(EditAnywhere, Category = "Weapon")
+	TObjectPtr<UAnimMontage> FlareReloadMontage;
+	UPROPERTY(EditAnywhere, Category = "Weapon")
+	TObjectPtr<UAnimMontage> WeaponIdleMontage;
 
 
 	FItemData* CurrentItemData = nullptr;

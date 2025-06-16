@@ -229,12 +229,14 @@ void UEquipUseComponent::S_LeftRelease_Implementation()
 
 void UEquipUseComponent::S_RKey_Implementation()
 {
+	
 	switch (RKeyAction)
 	{
 	case EAction::WeaponReload:   
 		if (EquipType == EEquipmentType::HarpoonGun)
 		{
 			StartReload(HarpoonMagazineSize);
+			
 		}
 		else if (EquipType == EEquipmentType::FlareGun)
 		{
@@ -837,10 +839,22 @@ void UEquipUseComponent::StartReload(int32 InMagazineSize)
 	bCanFire = false;
 	GetWorld()->GetTimerManager().ClearTimer(TimerHandle_HandleRefire);
 	
+	if (!OwningCharacter.IsValid())
+		return;
+
+	AUnderwaterCharacter* Diver = Cast<AUnderwaterCharacter>(OwningCharacter);
+	if (!Diver)
+		return;
+
+	const float MontageStopSeconds = 0.f;
+
+	Diver->M_StopAllMontagesOnBothMesh(MontageStopSeconds);
+	PlayReloadAnimation(EquipType, Diver);
+
 	FTimerDelegate ReloadDel = FTimerDelegate::CreateUObject(
 		this,
 		&UEquipUseComponent::FinishReload,
-		InMagazineSize
+		InMagazineSize, Diver
 	);
 
 	GetWorld()->GetTimerManager().SetTimer(
@@ -858,16 +872,67 @@ void UEquipUseComponent::OpenChargeWidget()
 	ToggleChargeBatteryWidget();
 }
 
-void UEquipUseComponent::FinishReload(int32 InMagazineSize)
+void UEquipUseComponent::FinishReload(int32 InMagazineSize, AUnderwaterCharacter* Diver)
 {
 	const int32 Needed = InMagazineSize - CurrentAmmoInMag;
 	const int32 ToReload = FMath::Min(Needed, ReserveAmmo);
-	
+	/*const float MontageStopSeconds = 0.f;*/
+
 	CurrentAmmoInMag += ToReload;
 	ReserveAmmo -= ToReload;
 	bCanFire = true;
 
 	InitializeAmmoUI();
+
+	//Diver->M_StopAllMontagesOnBothMesh(MontageStopSeconds);
+	//PlayDrawAnimation(Diver);
+}
+
+void UEquipUseComponent::PlayReloadAnimation(EEquipmentType InEquipType, AUnderwaterCharacter* Diver)
+{
+	FAnimSyncState SyncState;
+	SyncState.bEnableRightHandIK = true;
+	SyncState.bEnableLeftHandIK = false;
+	SyncState.bEnableFootIK = true;
+	SyncState.bIsStrafing = false;
+	switch (InEquipType)
+	{
+	case EEquipmentType::HarpoonGun : 
+		Diver->M_PlayMontageOnBothMesh(
+			HarpoonReloadMontage,
+			1.0f,
+			NAME_None,
+			SyncState
+		);
+		break;
+	case EEquipmentType::FlareGun :
+		Diver->M_PlayMontageOnBothMesh(
+			FlareReloadMontage,
+			1.0f,
+			NAME_None,
+			SyncState
+		);
+		break;
+		
+	default:
+		break;
+	}
+}
+
+void UEquipUseComponent::PlayDrawAnimation(AUnderwaterCharacter* Diver)
+{
+	FAnimSyncState SyncState;
+	SyncState.bEnableRightHandIK = true;
+	SyncState.bEnableLeftHandIK = false;
+	SyncState.bEnableFootIK = true;
+	SyncState.bIsStrafing = false;
+
+	Diver->M_PlayMontageOnBothMesh(
+		WeaponIdleMontage,
+		1.0f,
+		NAME_None,
+		SyncState
+	);
 }
 
 void UEquipUseComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
