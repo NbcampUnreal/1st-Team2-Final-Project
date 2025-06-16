@@ -1,10 +1,15 @@
 #include "UI/PlayerStatusWidget.h"
 
+#include "AbyssDiverUnderWorld.h"
+
 #include "Components/TextBlock.h"
 #include "Components/ProgressBar.h"
 #include "Components/Overlay.h"
 #include "Animation/WidgetAnimation.h"
 #include "Components/Image.h"
+
+const FName UPlayerStatusWidget::OnNextPhaseAnimFinishedName = TEXT("OnNextPhaseAnimFinished");
+const int32 UPlayerStatusWidget::MaxPhaseNumber = 3;
 
 UPlayerStatusWidget::UPlayerStatusWidget(const FObjectInitializer& ObjectInitializer)
     : Super(ObjectInitializer)
@@ -14,7 +19,19 @@ UPlayerStatusWidget::UPlayerStatusWidget(const FObjectInitializer& ObjectInitial
 void UPlayerStatusWidget::NativeConstruct()
 {
     Super::NativeConstruct();
+
     SetSpearVisibility(false); 
+
+    if (IsValid(NextPhaseAnim) == false)
+    {
+        LOGV(Error, TEXT("IsValid(NextPhaseAnim) == false"));
+        return;
+    }
+
+    FWidgetAnimationDynamicEvent OnNextPhaseAnimFinishedDelegate;
+    OnNextPhaseAnimFinishedDelegate.BindUFunction(this, OnNextPhaseAnimFinishedName);
+    UnbindAllFromAnimationFinished(NextPhaseAnim);
+    BindToAnimationFinished(NextPhaseAnim, OnNextPhaseAnimFinishedDelegate);
 }
 
 void UPlayerStatusWidget::SetSpearCount(int32 Current, int32 Total)
@@ -56,7 +73,7 @@ void UPlayerStatusWidget::SetOxygenPercent(float InPercent)
     }
     else
     {
-        UE_LOG(LogTemp, Error, TEXT("OxygenBar is nullptr!"));
+        LOGV(Error, TEXT("OxygenBar is nullptr!"));
     }
 }
 
@@ -68,7 +85,7 @@ void UPlayerStatusWidget::SetHealthPercent(float InPercent)
     }
     else
     {
-        UE_LOG(LogTemp, Error, TEXT("HealthBar is nullptr!"));
+        LOGV(Error, TEXT("HealthBar is nullptr!"));
     }
 }
 
@@ -81,7 +98,7 @@ void UPlayerStatusWidget::SetStaminaPercent(float InPercent)
     }
     else
     {
-        UE_LOG(LogTemp, Error, TEXT("❌ StaminaBar is nullptr!"));
+        LOGV(Error, TEXT("StaminaBar is nullptr!"));
     }
 }
 
@@ -101,6 +118,77 @@ void UPlayerStatusWidget::SetDroneTargetText(int32 Target)
     {
         TargetMoneyText->SetText(FText::FromString(FString::Printf(TEXT("%d"), Target)));
     }
+}
+
+void UPlayerStatusWidget::PlayNextPhaseAnim(int32 NextPhaseNumber)
+{
+    // 나중에 테이블로 텍스트 정리할수도?
+    if (NextPhaseNumber > MaxPhaseNumber)
+    {
+        SetNextPhaseText(TEXT("잠수정으로 돌아가라."));
+    }
+    else
+    {
+        SetNextPhaseText(FString::Printf(TEXT("Phase%d"), NextPhaseNumber));
+    }
+
+    CachedNextPhaseNumber = NextPhaseNumber;
+
+    if (TryPlayAnim(NextPhaseAnim) == false)
+    {
+        return;
+    }
+
+    NextPhaseOverlay->SetVisibility(ESlateVisibility::HitTestInvisible);
+}
+
+void UPlayerStatusWidget::SetCurrentPhaseText(const FString& PhaseText)
+{
+    CurrentPhaseText->SetText(FText::FromString(PhaseText));
+}
+
+void UPlayerStatusWidget::SetNextPhaseText(const FString& PhaseText)
+{
+    NextPhaseText->SetText(FText::FromString(PhaseText));
+}
+
+void UPlayerStatusWidget::SetCurrentPhaseOverlayVisible(bool bShouldVisible)
+{
+    if (bShouldVisible)
+    {
+        CurrentPhaseOverlay->SetVisibility(ESlateVisibility::HitTestInvisible);
+    }
+    else
+    {
+        CurrentPhaseOverlay->SetVisibility(ESlateVisibility::Hidden);
+    }
+}
+
+void UPlayerStatusWidget::OnNextPhaseAnimFinished()
+{
+    LOGV(Warning, TEXT("NextPhaseAnim Finished"));
+
+    // 나중에 테이블로 텍스트 정리할수도?
+    if (CachedNextPhaseNumber > MaxPhaseNumber)
+    {
+        SetCurrentPhaseText(TEXT("잠수정으로 돌아가라."));
+    }
+    else
+    {
+        SetCurrentPhaseText(FString::Printf(TEXT("Phase%d"), CachedNextPhaseNumber));
+    }
+}
+
+bool UPlayerStatusWidget::TryPlayAnim(UWidgetAnimation* Anim)
+{
+    if (Anim == nullptr || IsValid(Anim) == false || Anim->IsValidLowLevel() == false)
+    {
+        return false;
+    }
+
+    PlayAnimation(Anim);
+
+    return true;
 }
 
 void UPlayerStatusWidget::SetSpearVisibility(bool bVisible)

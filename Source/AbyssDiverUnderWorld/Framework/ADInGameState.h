@@ -105,6 +105,8 @@ protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void PostNetInit() override;
 
+	
+
 #pragma region Method
 
 public:
@@ -145,6 +147,7 @@ protected:
 private:
 
 	void ReceiveDataFromGameInstance();
+	void StartPhaseUIAnim();
 
 #pragma endregion
 
