@@ -62,6 +62,7 @@ void AMonster::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLi
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(AMonster, MonsterState);
+	DOREPLIFETIME(AMonster, bIsChasing);
 }
 
 FVector AMonster::GetPatrolLocation(int32 Index) const
@@ -213,6 +214,9 @@ void AMonster::NotifyLightExposure(float DeltaTime, float TotalExposedTime, cons
 		{
 			AddDetection(PlayerActor);
 		}
+		break;
+
+	case EMonsterState::Flee:
 		break;
 	
 	default:

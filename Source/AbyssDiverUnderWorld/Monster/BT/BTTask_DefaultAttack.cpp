@@ -12,6 +12,7 @@ UBTTask_DefaultAttack::UBTTask_DefaultAttack()
 	bCreateNodeInstance = true;
 	bNotifyTick = false;
 	CachedOwnerComp = nullptr;
+	
 }
 
 EBTNodeResult::Type UBTTask_DefaultAttack::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
