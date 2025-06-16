@@ -16,6 +16,20 @@ void AADExchangeableItem::BeginPlay()
 {
 	Super::BeginPlay();
 	CalculateTotalPrice();
+
+	DynamicMaterial = MeshComponent->CreateAndSetMaterialInstanceDynamic(0);
+	if (DynamicMaterial)
+	{
+		DynamicMaterial->SetScalarParameterValue(TEXT("GlowPower"), MinGlow);
+	}
+
+	GetWorld()->GetTimerManager().SetTimer(
+		PulseTimerHandle,
+		this,
+		&AADExchangeableItem::UpdateGlow,
+		0.03f,
+		true
+	);
 }
 
 void AADExchangeableItem::OnRep_TotalPrice()
@@ -51,4 +65,18 @@ void AADExchangeableItem::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AADExchangeableItem, TotalPrice);
+}
+
+void AADExchangeableItem::UpdateGlow()
+{
+	if (!DynamicMaterial) return;
+
+	const float TimeSec = GetWorld()->GetTimeSeconds();
+	const float Raw = FMath::Sin(TimeSec * PulseFrequency * 2 * PI);
+
+	const float Normalized = (Raw + 1.f) * 0.5f;
+
+	const float GlowValue = FMath::Lerp(MinGlow, MaxGlow, Normalized);
+
+	DynamicMaterial->SetScalarParameterValue(TEXT("GlowPower"), GlowValue);
 }
