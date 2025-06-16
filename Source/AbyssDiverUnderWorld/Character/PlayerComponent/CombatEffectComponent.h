@@ -88,6 +88,8 @@ private:
 
 #pragma region Getter Setter
 
+public:
+	
 	/** 실드 히트 위젯을 반환한다. */
 	UUserWidget* GetShieldHitWidget();
 	
