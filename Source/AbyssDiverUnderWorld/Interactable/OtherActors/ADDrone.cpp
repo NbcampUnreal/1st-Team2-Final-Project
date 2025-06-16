@@ -22,7 +22,7 @@ AADDrone::AADDrone()
 	bReplicates = true;
 	SetReplicateMovement(true); // 위치 상승하는 것 보이도록
 	bIsActive = false;
-
+	bIsFlying = false;
 	bIsHold = false;
 }
 
@@ -71,7 +71,7 @@ void AADDrone::Tick(float DeltaSeconds)
 
 void AADDrone::Interact_Implementation(AActor* InstigatorActor)
 {
-	if (!HasAuthority() || !bIsActive || !IsValid(CurrentSeller)) return;
+	if (!HasAuthority() || !bIsActive || !IsValid(CurrentSeller) || bIsFlying) return;
 
 	// 차액 계산
 	int32 Diff = CurrentSeller->GetCurrentMoney() - CurrentSeller->GetTargetMoney();
@@ -97,6 +97,7 @@ void AADDrone::Interact_Implementation(AActor* InstigatorActor)
 	}
 	CurrentSeller->DisableSelling();
 	StartRising();
+	bIsFlying = true;
 	if (SpawnManager && NextSeller)
 	{
 		SpawnManager->SpawnByGroup();
@@ -178,6 +179,7 @@ void AADDrone::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetime
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AADDrone, bIsActive);
+	DOREPLIFETIME(AADDrone, bIsFlying);
 }
 
 UADInteractableComponent* AADDrone::GetInteractableComponent() const
