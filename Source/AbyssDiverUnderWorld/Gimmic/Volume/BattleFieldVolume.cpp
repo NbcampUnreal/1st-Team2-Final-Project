@@ -26,17 +26,23 @@ AUnderwaterCharacter* ABattleFieldVolume::GetBattleFieldPlayer()
 
 void ABattleFieldVolume::OnComponentBeginOverlap(AActor* OverlappedActor, AActor* OtherActor)
 {
-	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(OverlappedActor);
+	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(OtherActor);
 	if (!IsValid(Player)) return;
 
 	if (BattleFieldPlayers.Contains(Player)) return;
 	
 	BattleFieldPlayers.Add(Player);
+
+	if (OnBattleFieldBeginOverlapDelegate.IsBound())
+	{
+		LOG(TEXT(" Broadcast Begin Overlap: %s"), *Player->GetName());
+		OnBattleFieldBeginOverlapDelegate.Broadcast();
+	}
 }
 
 void ABattleFieldVolume::OnComponentEndOverlap(AActor* OverlappedActor, AActor* OtherActor)
 {
-	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(OverlappedActor);
+	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(OtherActor);
 	if (!IsValid(Player)) return;
 
 	if (!BattleFieldPlayers.Contains(Player)) return;
@@ -45,6 +51,7 @@ void ABattleFieldVolume::OnComponentEndOverlap(AActor* OverlappedActor, AActor* 
 
 	if (OnBattleFieldEndOverlapDelegate.IsBound())
 	{
+		LOG(TEXT("Broadcast End Overlap: %s"), *Player->GetName());
 		OnBattleFieldEndOverlapDelegate.Broadcast(BattleFieldPlayers.Num());
 	}
 	
