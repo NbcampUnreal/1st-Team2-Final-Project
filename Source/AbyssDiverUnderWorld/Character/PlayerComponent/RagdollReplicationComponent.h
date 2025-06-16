@@ -45,6 +45,9 @@ protected:
 	UFUNCTION()
 	void OnRep_BoneTransforms();
 
+	/** 캡슐 컴포넌트의 위치와 회전을 래그돌의 특정 본에 맞추어 업데이트한다. */
+	void UpdateCapsuleTransform();
+
 #pragma endregion
 
 #pragma region Variable
@@ -61,7 +64,11 @@ private:
 	UPROPERTY()
 	TObjectPtr<class USkeletalMeshComponent> SkeletalMesh;
 
-	/** 캡처할 본 이름 */
+	// @ToDo: 불필요한 본을 제거해서 네트워크 최적화
+	
+	/** 캡처할 본 이름. Bone Instances를 복제하기 때문에 PA에서 정의된 Bone의 이름을 지정해야 한다.
+	 * Root는 현재 이유는 알 수 없으나 포함되어 있어야 제대로 동작한다.
+	 */
 	UPROPERTY(EditDefaultsOnly)
 	TArray<FName> CaptureBoneNames;
 
@@ -74,6 +81,18 @@ private:
 
 	/** 가장 최근에 트랜스폼을 캡처한 시간 */
 	float TimeSinceLastSnapshot;
+
+	/** 캡슐 컴포넌트의 위치와 회전을 따라갈 본의 이름 */
+	UPROPERTY(EditDefaultsOnly, Category = "Character|Ragdoll")
+	FName CapsuleTargetBoneName;
+
+	/** 캡슐과 본 사이의 오프셋 */
+	UPROPERTY(EditDefaultsOnly, Category = "Character|Ragdoll")
+	FVector CapsuleBoneOffset;
+
+	/** 캡슐 컴포넌트 레퍼런스 캐싱 */
+	UPROPERTY()
+	TObjectPtr<class UCapsuleComponent> CapsuleComponent;
 
 #pragma endregion
 };

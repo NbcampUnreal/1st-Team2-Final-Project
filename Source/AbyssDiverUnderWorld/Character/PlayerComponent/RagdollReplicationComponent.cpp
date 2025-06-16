@@ -13,6 +13,15 @@ URagdollReplicationComponent::URagdollReplicationComponent()
 	SetIsReplicatedByDefault(true);
 
 	bIsRagdoll = false;
+
+	SnapshotInterval = 0.01f;
+	TimeSinceLastSnapshot = 0.0f;
+
+	// Pelvis를 기준으로 하면 위치가 일정하지 않다. Root는 항상 고정적으로 존재하므로 해당 좌표를 이용하도록 한다.
+	CapsuleTargetBoneName = TEXT("root");
+	// Capsule Component 기준으로 Mesh가 -90 위치에 존재한다.
+	// 위치 관계를 다시 설정할려면 Capsule을 +90 위치에 두어야 한다.
+	CapsuleBoneOffset = FVector::UpVector * 90.0f;
 }
 
 
@@ -21,13 +30,15 @@ void URagdollReplicationComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (AActor* Owner = GetOwner())
+	if (AUnderwaterCharacter* Owner = GetOwner<AUnderwaterCharacter>())
 	{
-		SkeletalMesh = Owner->FindComponentByClass<USkeletalMeshComponent>();
+		SkeletalMesh = Owner->GetMesh();
 		if (!SkeletalMesh)
 		{
 			UE_LOG(LogAbyssDiverCharacter, Warning, TEXT("URagdollReplicationComponent: SkeletalMeshComponent not found on %s"), *Owner->GetName());
 		}
+
+		CapsuleComponent = Owner->GetCapsuleComponent();
 	}
 }
 
@@ -52,6 +63,11 @@ void URagdollReplicationComponent::TickComponent(float DeltaTime, ELevelTick Tic
 			TimeSinceLastSnapshot = 0.0f;
 		}
 	}
+
+	if (bIsRagdoll && SkeletalMesh && CapsuleComponent)
+	{
+		UpdateCapsuleTransform();
+	}
 }
 
 void URagdollReplicationComponent::SetRagdollEnabled(bool bEnable)
@@ -65,6 +81,9 @@ void URagdollReplicationComponent::SetRagdollEnabled(bool bEnable)
 
 	if (bIsRagdoll)
 	{
+		// SkeletalMesh->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+		SkeletalMesh->SetUsingAbsoluteLocation(true);
+		SkeletalMesh->SetUsingAbsoluteRotation(true);
 		SkeletalMesh->SetSimulatePhysics(true);
 		SkeletalMesh->SetCollisionProfileName(TEXT("Ragdoll"));
 		SkeletalMesh->SetCollisionResponseToChannel(ECC_Pawn, ECollisionResponse::ECR_Block);
@@ -130,6 +149,7 @@ void URagdollReplicationComponent::OnRep_BoneTransforms()
 			{
 				if (FBodyInstance* BodyInstance = SkeletalMesh->GetBodyInstance(BoneName))
 				{
+					// 본의 위치와 회전을 업데이트하고 Physics는 Reset해서 수동으로 속도를 설정한다.
 					BodyInstance->SetBodyTransform(BoneTransform.ToTransform(), ETeleportType::ResetPhysics);
 					BodyInstance->SetLinearVelocity(BoneTransform.LinearVelocity, false);
 					BodyInstance->SetAngularVelocityInRadians(BoneTransform.AngularVelocity, false);
@@ -138,5 +158,22 @@ void URagdollReplicationComponent::OnRep_BoneTransforms()
 		}
 	}
 
+	// 물리 시뮬레이션은 상호작용이 없으면 느리게 업데이트되므로 강제로 업데이트를 진행한다.
+	// 이 부분이 없으면 클라이언트에서 래그돌이 충돌이 발생하기 전에 느리게 업데이트되는 문제가 발생한다.
 	SkeletalMesh->WakeAllRigidBodies();
+}
+
+void URagdollReplicationComponent::UpdateCapsuleTransform()
+{
+	int32 BoneIndex = SkeletalMesh->GetBoneIndex(CapsuleTargetBoneName);
+	if (BoneIndex != INDEX_NONE && CapsuleComponent)
+	{
+		// const FTransform BoneTransform = SkeletalMesh->GetBoneTransform(CapsuleTargetBoneName, RTS_World);
+		const FTransform BoneTransform = SkeletalMesh->GetSocketTransform(CapsuleTargetBoneName, RTS_World);
+		
+		const FVector CapsuleLocation = BoneTransform.GetLocation() + CapsuleBoneOffset;
+		const FRotator CapsuleRotation = BoneTransform.GetRotation().Rotator();
+
+		CapsuleComponent->SetWorldLocationAndRotation(CapsuleLocation, CapsuleRotation);
+	}
 }
