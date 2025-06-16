@@ -170,6 +170,8 @@ void AADInGameState::BeginPlay()
 
 	TeamCreditsChangedDelegate.Broadcast(TeamCredits);
 	CurrentPhaseChangedDelegate.Broadcast(CurrentPhase);
+
+	StartPhaseUIAnim();
 }
 
 void AADInGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -190,6 +192,8 @@ void AADInGameState::PostNetInit()
 
 	TeamCreditsChangedDelegate.Broadcast(TeamCredits);
 	CurrentPhaseChangedDelegate.Broadcast(CurrentPhase);
+
+	StartPhaseUIAnim();
 }
 
 void AADInGameState::AddTeamCredit(int32 Credit)
@@ -336,6 +340,35 @@ void AADInGameState::ReceiveDataFromGameInstance()
 		SelectedLevelName = ADGameInstance->SelectedLevelName;
 		TeamCredits = ADGameInstance->TeamCredits;
 	}
+}
+
+void AADInGameState::StartPhaseUIAnim()
+{
+	AADPlayerController* PC = GetWorld()->GetFirstPlayerController<AADPlayerController>();
+	if (PC == nullptr)
+	{
+		LOGV(Error, TEXT("PC == nullptr"));
+		return;
+	}
+
+	UPlayerHUDComponent* PlayerHudComp = PC->GetPlayerHUDComponent();
+	if (PlayerHudComp == nullptr)
+	{
+		LOGV(Error, TEXT("PlayerHudComp == nullptr"));
+		return;
+	}
+
+	if (SelectedLevelName == EMapName::test1 || SelectedLevelName == EMapName::test2)
+	{
+		PlayerHudComp->PlayNextPhaseAnim(1);
+		PlayerHudComp->SetCurrentPhaseOverlayVisible(true);
+	}
+	else
+	{
+		PlayerHudComp->SetCurrentPhaseOverlayVisible(false);
+	}
+
+	LOGVN(Error, TEXT("SelectedLevelName : %d"), SelectedLevelName);
 }
 
 void AADInGameState::SetDestinationTarget(AActor* NewDestinationTarget)

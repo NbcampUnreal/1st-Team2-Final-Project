@@ -61,6 +61,13 @@ void AADCampGameMode::Logout(AController* Exiting)
 	GI->RemovePlayerNetId(ExitingId);
 }
 
+void AADCampGameMode::InitGameState()
+{
+	Super::InitGameState();
+
+	SetSelectedLevel(EMapName::Description);
+}
+
 void AADCampGameMode::TryStartGame()
 {
 	TravelToInGameLevel();

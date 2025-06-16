@@ -86,7 +86,7 @@ void AADDroneSeller::Interact_Implementation(AActor* InstigatorActor)
 	if (bReachedGoal && IsValid(CurrentDrone))
 	{
 		LOGD(Log, TEXT("목표 달성! Drone 활성화 호출"))
-			CurrentDrone->Activate();
+		CurrentDrone->Activate();
 		GetSoundSubsystem()->PlayAt(ESFX::ActivateDrone, GetActorLocation());
 	}
 	else
