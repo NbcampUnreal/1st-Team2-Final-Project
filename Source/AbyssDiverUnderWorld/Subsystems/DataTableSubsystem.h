@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
@@ -40,6 +40,7 @@ public:
 
 	FPhaseGoalRow* GetPhaseGoalData(EMapName MapName, int32 Phase) const;
 
+	// 유효하지 않으면 "invalid" 반환
 	FString GetMapPath(EMapName MapName) const;
 
 	FShopItemMeshTransformRow* GetShopItemMeshTransformData(int32 ItemId) const;

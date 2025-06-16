@@ -191,7 +191,6 @@ void AADInGameMode::TravelToCamp()
 				if (LevelLoad == "invalid")
 				{
 					UE_LOG(LogTemp, Error, TEXT("LevelLoad is empty"));
-					LevelLoad = TEXT("DefaultInGameLevel");
 					return;
 				}
 
