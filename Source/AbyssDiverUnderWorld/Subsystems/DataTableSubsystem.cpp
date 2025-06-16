@@ -125,8 +125,14 @@ FPhaseGoalRow* UDataTableSubsystem::GetPhaseGoalData(EMapName MapName, int32 Pha
 	return PhaseGoalTableMap.FindRef(TPair<EMapName, int32>(MapName, Phase));
 }
 
-const FString& UDataTableSubsystem::GetMapPath(EMapName MapName) const
+FString UDataTableSubsystem::GetMapPath(EMapName MapName) const
 {
+	if (MapPathDataTableMap.Contains(MapName) == false)
+	{
+		LOGV(Error, TEXT("%d is not valid map name"), MapName);
+		return "invalid";
+	}
+
 	return MapPathDataTableMap[MapName];
 }
 

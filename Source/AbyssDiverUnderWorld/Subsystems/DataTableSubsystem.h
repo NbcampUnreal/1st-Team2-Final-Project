@@ -40,7 +40,7 @@ public:
 
 	FPhaseGoalRow* GetPhaseGoalData(EMapName MapName, int32 Phase) const;
 
-	const FString& GetMapPath(EMapName MapName) const;
+	FString GetMapPath(EMapName MapName) const;
 
 	FShopItemMeshTransformRow* GetShopItemMeshTransformData(int32 ItemId) const;
 

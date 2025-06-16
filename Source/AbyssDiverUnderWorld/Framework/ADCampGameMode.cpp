@@ -1,12 +1,16 @@
 #include "Framework/ADCampGameMode.h"
+
 #include "Framework/ADInGameState.h"
 #include "Framework/ADPlayerState.h"
 #include "Framework/ADGameInstance.h"
-#include "GameFramework/PlayerController.h"
-#include "Kismet/GameplayStatics.h"
+#include "Framework/ADPlayerController.h"
+
 #include "DataRow/PhaseGoalRow.h"
 #include "AbyssDiverUnderWorld.h"
 #include "Subsystems/DataTableSubsystem.h"
+
+#include "Kismet/GameplayStatics.h"
+#include "EngineUtils.h"
 
 void AADCampGameMode::ADCampGameMode()
 {
@@ -81,21 +85,32 @@ void AADCampGameMode::TravelToInGameLevel()
 		return;
 	}
 
-	if (AADInGameState* ADInGameState = GetGameState<AADInGameState>())
+	for (AADPlayerController* PC : TActorRange<AADPlayerController>(GetWorld()))
 	{
-		EMapName MapName = ADInGameState->GetSelectedLevel();
-
-		FString LevelLoad = GetGameInstance()->GetSubsystem<UDataTableSubsystem>()->GetMapPath(MapName);
-		if (LevelLoad == "invalid")
-		{
-			UE_LOG(LogTemp, Error, TEXT("LevelLoad is empty"));
-			LevelLoad = TEXT("DefaultInGameLevel");
-			return;
-		}
-
-		ADInGameState->SendDataToGameInstance();
-		//input spot level name
-		FString TravelURL = FString::Printf(TEXT("%s?listen"), *LevelLoad);
-		GetWorld()->ServerTravel(TravelURL);
+		PC->C_OnPreClientTravel();
 	}
+
+	FTimerHandle TravelTimerHandle;
+	GetWorldTimerManager().SetTimer(TravelTimerHandle, [&]()
+		{
+
+			if (AADInGameState* ADInGameState = GetGameState<AADInGameState>())
+			{
+				EMapName MapName = ADInGameState->GetSelectedLevel();
+
+				FString LevelLoad = GetGameInstance()->GetSubsystem<UDataTableSubsystem>()->GetMapPath(MapName);
+				if (LevelLoad == "invalid")
+				{
+					UE_LOG(LogTemp, Error, TEXT("LevelLoad is empty"));
+					LevelLoad = TEXT("DefaultInGameLevel");
+					return;
+				}
+
+				ADInGameState->SendDataToGameInstance();
+				//input spot level name
+				FString TravelURL = FString::Printf(TEXT("%s?listen"), *LevelLoad);
+				GetWorld()->ServerTravel(TravelURL);
+			}
+
+		}, 1.0f, false);
 }
