@@ -2,7 +2,7 @@
 #include "Character/UnderwaterCharacter.h"
 #include "Interactable/Item/Component/EquipUseComponent.h"
 
-void UAnimNotify_PlayWeaponIlde::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation)
+void UAnimNotify_PlayWeaponIlde::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, const FAnimNotifyEventReference& EventReference)
 {
 	Super::Notify(MeshComp, Animation);
 

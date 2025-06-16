@@ -10,5 +10,5 @@ class ABYSSDIVERUNDERWORLD_API UAnimNotify_PlayWeaponIlde : public UAnimNotify
 	GENERATED_BODY()
 	
 public:
-	virtual void Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation) override;
+	virtual void Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, const FAnimNotifyEventReference& EventReference) override;
 };
