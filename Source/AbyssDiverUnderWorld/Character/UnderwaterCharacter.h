@@ -592,8 +592,6 @@ public:
 	/** 현재 1p에 장착된 Tool 인스턴스 */
 	TObjectPtr<AActor> SpawnedTool;
 
-	TObjectPtr<USkeletalMeshComponent> CachedSkeletalMesh;
-
 	UPROPERTY(ReplicatedUsing = OnRep_CurrentTool)
 	TObjectPtr<AActor> CurrentTool = nullptr;
 
