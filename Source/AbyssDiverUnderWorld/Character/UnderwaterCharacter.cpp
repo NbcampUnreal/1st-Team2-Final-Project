@@ -29,7 +29,6 @@
 #include "Shops/ShopInteractionComponent.h"
 #include "Subsystems/DataTableSubsystem.h"
 #include "UI/HoldInteractionWidget.h"
-#include "Laser/ADLaserCutter.h"
 #include "PlayerComponent/LanternComponent.h"
 #include "PlayerComponent/ShieldComponent.h"
 #include "PlayerComponent/UnderwaterEffectComponent.h"
@@ -170,6 +169,11 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	NameWidgetComponent = CreateDefaultSubobject<UNameWidgetComponent>(TEXT("NameWidgetComponent"));
 	NameWidgetComponent->SetupAttachment(GetCapsuleComponent());
 	NameWidgetComponent->SetRelativeLocation(FVector::UpVector * GetCapsuleComponent()->GetScaledCapsuleHalfHeight() * 2.0f);
+
+	InteractionDescription = TEXT("");
+	GroggyInteractionDescription = TEXT("Revive Character!");
+	DeathInteractionDescription = TEXT("Grab Character!");
+	DeathGrabReleaseDescription = TEXT("Release Character!");
 }
 
 void AUnderwaterCharacter::BeginPlay()
@@ -903,7 +907,9 @@ void AUnderwaterCharacter::HandleEnterGroggy()
 	{
 		AnimInstance->StopAllMontages(0.0f);
 	}
+	
 	InteractableComponent->SetInteractable(true);
+	InteractionDescription = GroggyInteractionDescription;
 }
 
 void AUnderwaterCharacter::HandleExitGroggy()
@@ -935,6 +941,7 @@ void AUnderwaterCharacter::HandleEnterNormal()
 
 		LookSensitivity = NormalLookSensitivity;
 	}
+	
 	InteractableComponent->SetInteractable(false);
 }
 
@@ -978,6 +985,7 @@ void AUnderwaterCharacter::HandleEnterDeath()
 	K2_OnDeath();
 	OnDeathDelegate.Broadcast();
 	InteractableComponent->SetInteractable(true);
+	InteractionDescription = DeathInteractionDescription;
 
 	RagdollComponent->SetRagdollEnabled(true);
 }
@@ -1518,12 +1526,19 @@ float AUnderwaterCharacter::TakeDamage(float DamageAmount, struct FDamageEvent c
 void AUnderwaterCharacter::InteractHold_Implementation(AActor* InstigatorActor)
 {
 	LOGN(TEXT("Interact Hold : %s"), *GetName());
-	if (!HasAuthority() || CharacterState != ECharacterState::Groggy)
+	if (!HasAuthority())
 	{
 		return;
 	}
-
-	RequestRevive();
+	
+	if (CharacterState == ECharacterState::Groggy)
+	{
+		RequestRevive();
+	}
+	else if (CharacterState == ECharacterState::Death)
+	{
+		LOGN(TEXT("Grab Character"));
+	}
 }
 
 void AUnderwaterCharacter::OnHoldStart_Implementation(APawn* InstigatorPawn)
@@ -1536,7 +1551,8 @@ void AUnderwaterCharacter::OnHoldStop_Implementation(APawn* InstigatorPawn)
 
 bool AUnderwaterCharacter::CanHighlight_Implementation() const
 {
-	return CharacterState == ECharacterState::Groggy;
+	UE_LOG(LogTemp,Display, TEXT("CanHighlight called for %s"), *GetName());
+	return InteractableComponent->CanInteractable();
 }
 
 float AUnderwaterCharacter::GetHoldDuration_Implementation() const
@@ -1552,6 +1568,11 @@ UADInteractableComponent* AUnderwaterCharacter::GetInteractableComponent() const
 bool AUnderwaterCharacter::IsHoldMode() const
 {
 	return  true;
+}
+
+FString AUnderwaterCharacter::GetInteractionDescription() const
+{
+	return InteractionDescription;
 }
 
 void AUnderwaterCharacter::RequestRevive()

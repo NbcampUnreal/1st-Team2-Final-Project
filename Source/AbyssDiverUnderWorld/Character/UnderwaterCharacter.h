@@ -135,6 +135,9 @@ public:
 	/** Interactable Hold 모드 설정 */
 	virtual bool IsHoldMode() const override;
 
+	/** 상호작용 타입 반환 */
+	virtual FString GetInteractionDescription() const override;
+	
 	// Interactable Interface End
 
 	// Launch Character
@@ -990,6 +993,21 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Emote", meta = (AllowPrivateAccess = "true"))
 	TArray<TObjectPtr<UAnimMontage>> EmoteAnimationMontages;
 
+	/** 현재 상호 작용 택스트 */
+	FString InteractionDescription;
+
+	/** 그로기 상태 상호 작용 택스트. 구조 상황에 출력 */
+	UPROPERTY(EditDefaultsOnly, Category= "Character|Interaction", meta = (AllowPrivateAccess = "true"))
+	FString GroggyInteractionDescription;
+
+	/** 사망 상태 상호 작용 택스트. 시체 들기 상황에 출력 */
+	UPROPERTY(EditDefaultsOnly, Category= "Character|Interaction", meta = (AllowPrivateAccess = "true"))
+	FString DeathInteractionDescription;
+
+	/** 사망 상태에서 시체 들은 상황에서 출력 */
+	UPROPERTY(EditDefaultsOnly, Category= "Character|Interaction", meta = (AllowPrivateAccess = "true"))
+	FString DeathGrabReleaseDescription;
+	
 #pragma endregion
 
 #pragma region Getter Setter
@@ -1079,9 +1097,6 @@ public:
 	/** 3인칭 메시 Strafe 여부 반환 */
 	FORCEINLINE bool Is3PStrafe() const {return bIsAnim3PSyncStateOverride ? AnimSyncState.bIsStrafing : OverrideAnimSyncState.bIsStrafing;}
 	
-	/** 상호작용 타입 반환 */
-	virtual FString GetInteractionDescription() const override { return TEXT("Revive Character!"); }
-
 	/** 스프린트 적용 속도 반환 */
 	FORCEINLINE float GetSprintSpeed() const { return StatComponent->MoveSpeed * SprintMultiplier; }
 

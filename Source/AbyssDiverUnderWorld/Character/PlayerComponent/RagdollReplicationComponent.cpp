@@ -68,6 +68,9 @@ void URagdollReplicationComponent::SetRagdollEnabled(bool bEnable)
 		SkeletalMesh->SetSimulatePhysics(true);
 		SkeletalMesh->SetCollisionProfileName(TEXT("Ragdoll"));
 		SkeletalMesh->SetCollisionResponseToChannel(ECC_Pawn, ECollisionResponse::ECR_Block);
+		// Interaction 채널에서 검출하기 위해서는 Visibility에서 Block으로 설정해야 한다.
+		SkeletalMesh->SetCollisionResponseToChannel(ECC_Visibility, ECollisionResponse::ECR_Block);
+		
 		SkeletalMesh->SetEnableGravity(false);
 		SkeletalMesh->SetLinearDamping(4.0f);
 		SkeletalMesh->SetAngularDamping(4.0f);
