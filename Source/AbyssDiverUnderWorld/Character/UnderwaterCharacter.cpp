@@ -460,7 +460,7 @@ void AUnderwaterCharacter::OnUntargeted()
 
 void AUnderwaterCharacter::StartCaptureState()
 {
-	if(bIsCaptured || !HasAuthority())
+	if(bIsCaptured || !HasAuthority() || CharacterState != ECharacterState::Normal)
 	{
 		return;
 	}
@@ -961,7 +961,7 @@ void AUnderwaterCharacter::HandleEnterDeath()
 	{
 		if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
 		{
-			PlayerController->SetIgnoreLookInput(true);
+			PlayerController->SetIgnoreLookInput(false);
 			PlayerController->SetIgnoreMoveInput(true);
 		}
 
@@ -1551,7 +1551,6 @@ void AUnderwaterCharacter::OnHoldStop_Implementation(APawn* InstigatorPawn)
 
 bool AUnderwaterCharacter::CanHighlight_Implementation() const
 {
-	UE_LOG(LogTemp,Display, TEXT("CanHighlight called for %s"), *GetName());
 	return InteractableComponent->CanInteractable();
 }
 
