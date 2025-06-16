@@ -171,6 +171,7 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	NameWidgetComponent->SetRelativeLocation(FVector::UpVector * GetCapsuleComponent()->GetScaledCapsuleHalfHeight() * 2.0f);
 
 	InteractionDescription = TEXT("");
+	bIsInteractionHoldMode = true;
 	GroggyInteractionDescription = TEXT("Revive Character!");
 	DeathInteractionDescription = TEXT("Grab Character!");
 	DeathGrabReleaseDescription = TEXT("Release Character!");
@@ -910,6 +911,7 @@ void AUnderwaterCharacter::HandleEnterGroggy()
 	
 	InteractableComponent->SetInteractable(true);
 	InteractionDescription = GroggyInteractionDescription;
+	bIsInteractionHoldMode = true;
 }
 
 void AUnderwaterCharacter::HandleExitGroggy()
@@ -986,6 +988,7 @@ void AUnderwaterCharacter::HandleEnterDeath()
 	OnDeathDelegate.Broadcast();
 	InteractableComponent->SetInteractable(true);
 	InteractionDescription = DeathInteractionDescription;
+	bIsInteractionHoldMode = false;
 
 	RagdollComponent->SetRagdollEnabled(true);
 }
@@ -1523,6 +1526,20 @@ float AUnderwaterCharacter::TakeDamage(float DamageAmount, struct FDamageEvent c
 	return ActualDamage;
 }
 
+void AUnderwaterCharacter::Interact_Implementation(AActor* InstigatorActor)
+{
+	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Interact : %s"), *InstigatorActor->GetName());
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	if (CharacterState == ECharacterState::Death)
+	{
+		// grap
+	}
+}
+
 void AUnderwaterCharacter::InteractHold_Implementation(AActor* InstigatorActor)
 {
 	LOGN(TEXT("Interact Hold : %s"), *GetName());
@@ -1535,10 +1552,6 @@ void AUnderwaterCharacter::InteractHold_Implementation(AActor* InstigatorActor)
 	{
 		RequestRevive();
 	}
-	else if (CharacterState == ECharacterState::Death)
-	{
-		LOGN(TEXT("Grab Character"));
-	}
 }
 
 void AUnderwaterCharacter::OnHoldStart_Implementation(APawn* InstigatorPawn)
@@ -1547,6 +1560,7 @@ void AUnderwaterCharacter::OnHoldStart_Implementation(APawn* InstigatorPawn)
 
 void AUnderwaterCharacter::OnHoldStop_Implementation(APawn* InstigatorPawn)
 {
+	// Hold 모드가 아닐 경우에도 호출이 되므로 주의
 }
 
 bool AUnderwaterCharacter::CanHighlight_Implementation() const
@@ -1566,7 +1580,7 @@ UADInteractableComponent* AUnderwaterCharacter::GetInteractableComponent() const
 
 bool AUnderwaterCharacter::IsHoldMode() const
 {
-	return  true;
+	return bIsInteractionHoldMode;
 }
 
 FString AUnderwaterCharacter::GetInteractionDescription() const

@@ -114,6 +114,9 @@ protected:
 public:
 	// Interactable Interface Begin
 
+	/** Interact 함수가 호출되면 실행되는 함수 */
+	virtual void Interact_Implementation(AActor* InstigatorActor) override;
+	
 	/** Interact Hold됬을 때 호출될 함수 */
 	virtual void InteractHold_Implementation(AActor* InstigatorActor) override;
 
@@ -995,6 +998,9 @@ private:
 
 	/** 현재 상호 작용 택스트 */
 	FString InteractionDescription;
+
+	/** 현재 상호 작용이 Hold 모드인지 여부 */
+	bool bIsInteractionHoldMode;
 
 	/** 그로기 상태 상호 작용 택스트. 구조 상황에 출력 */
 	UPROPERTY(EditDefaultsOnly, Category= "Character|Interaction", meta = (AllowPrivateAccess = "true"))
