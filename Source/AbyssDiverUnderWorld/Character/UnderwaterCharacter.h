@@ -1000,7 +1000,7 @@ private:
 	FString InteractionDescription;
 
 	/** 현재 상호 작용이 Hold 모드인지 여부 */
-	bool bIsInteractionHoldMode;
+	uint8 bIsInteractionHoldMode : 1;
 
 	/** 그로기 상태 상호 작용 택스트. 구조 상황에 출력 */
 	UPROPERTY(EditDefaultsOnly, Category= "Character|Interaction", meta = (AllowPrivateAccess = "true"))
