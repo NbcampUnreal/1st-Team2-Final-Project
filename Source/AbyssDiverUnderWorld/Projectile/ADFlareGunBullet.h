@@ -45,16 +45,16 @@ protected:
 	float FlareRadius = 3500.f;
 
 	UPROPERTY(EditAnywhere, Category = "Flare Light")
-	bool bUseInverseFalloff = false;
+	uint8 bUseInverseFalloff : 1 = false;
 
 	UPROPERTY(EditAnywhere, Category = "Flare Light")
 	FLinearColor FlareColor = FLinearColor(1.0f, 0.85f, 0.60f, 1.0f);
 
 	UPROPERTY(EditAnywhere, Category = "Flare Light")
-	bool bCastShadows = false;
+	uint8 bCastShadows : 1 = false;
 
 	UPROPERTY(EditAnywhere, Category = "Flare Light")
-	bool bAffectTranslucent = true;
+	uint8 bAffectTranslucent : 1 = true;
 
 private:
 	FTimerHandle HitDestroyHandle;
