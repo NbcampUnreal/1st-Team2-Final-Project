@@ -643,7 +643,7 @@ void AShop::InitUpgradeView()
 		FUpgradeDataRow* UpgradeDataRow = DataTableSubsystem->GetUpgradeData(UpgradeType, Grade);
 
 		UShopItemEntryData* UpgradeEntryData = NewObject<UShopItemEntryData>();
-		UpgradeEntryData->Init(i, nullptr, FString(TEXT("Temp Tooltip")));
+		UpgradeEntryData->Init(i, UpgradeDataRow->UpgradeIcon, FString(TEXT("Temp Tooltip")));
 		UpgradeEntryData->OnEntryUpdatedFromDataDelegate.AddUObject(this, &AShop::OnSlotEntryWidgetUpdated);
 		UpgradeTabEntryDataList[i] = UpgradeEntryData;
 
@@ -949,7 +949,7 @@ void AShop::OnUpgradeSlotEntryClicked(int32 ClickedSlotIndex)
 
 	FUpgradeDataRow* UpgradeDataRow = DataTableSubSystem->GetUpgradeData(UpgradeType, CurrentGrade);
 	int32 Price = bIsMaxGrade ? 0 : DataTableSubSystem->GetUpgradeData(UpgradeType, CurrentGrade + 1)->Price;
-	ShopWidget->ShowUpgradeInfos(nullptr, CurrentGrade, bIsMaxGrade, Price, TEXT("임시 텍스트"));
+	ShopWidget->ShowUpgradeInfos(UpgradeType, CurrentGrade, bIsMaxGrade);
 	CurrentSelectedUpgradeType = UpgradeType;
 
 	LOGS(Log, TEXT("UpgradeViewSlotClicked, Index : %d"), ClickedSlotIndex);

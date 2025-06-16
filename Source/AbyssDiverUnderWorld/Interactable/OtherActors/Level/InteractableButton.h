@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -27,15 +27,17 @@ public:
 	AInteractableButton();
 
 #pragma region Methods
-
+public:
 	virtual void Interact_Implementation(AActor* InstigatorActor) override;
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
 
 	UFUNCTION()
 	void OnRep_SetMesh();
 
 	void SetStaticMesh(UStaticMesh* Mesh);
+
 
 	FOnButtonPressed OnButtonPressed;
 #pragma endregion
@@ -53,10 +55,12 @@ private:
 	TObjectPtr<UStaticMeshComponent> MeshComp;
 
 	UPROPERTY(ReplicatedUsing = OnRep_SetMesh)
-	UStaticMesh* ReplicatedMesh;
+	TObjectPtr<UStaticMesh> ReplicatedMesh; //추후 MeshComponent Replicate 설정 동기화 확인해보기
 
 	UPROPERTY()
 	TObjectPtr<UADInteractableComponent> InteractableComp;
+
+	FString ButtonDescription = TEXT("호스트만 조작 가능합니다.");
 
 #pragma endregion
 
@@ -64,9 +68,11 @@ private:
 
 public:
 	virtual UADInteractableComponent* GetInteractableComponent() const override;
+	virtual FString GetInteractionDescription() const override;
 	virtual bool IsHoldMode() const override;
 	EButtonAction GetButtonAction() const { return ButtonAction; }
 	void SetButtonAction(EButtonAction ButtonType) { ButtonAction = ButtonType; }
+	void SetButtonDescription(const FString& Description);
 #pragma endregion
 
 };

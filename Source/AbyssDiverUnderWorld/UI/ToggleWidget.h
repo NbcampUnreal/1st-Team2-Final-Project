@@ -19,8 +19,6 @@ class ABYSSDIVERUNDERWORLD_API UToggleWidget : public UUserWidget
 public:
     void InitializeInventoriesInfo(UADInventoryComponent* InventoryComp);
     void RefreshExchangableInventoryInfo(int32 Mass, int32 Price);
-    void SetDroneCurrentText(int32 Current);
-    void SetDroneTargetText(int32 Target);
     void PlaySlideAnimation(bool bIsVisible);
 
 protected:
@@ -48,12 +46,6 @@ protected:
 
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<URichTextBlock> PriceText;
-
-    UPROPERTY(meta = (BindWidget))
-    TObjectPtr<UTextBlock> CurrentMoneyText;
-
-    UPROPERTY(meta = (BindWidget))
-    TObjectPtr<UTextBlock> TargetMoneyText;
 
     FTimerHandle HiddenTimerHandle;
 

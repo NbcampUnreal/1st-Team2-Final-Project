@@ -56,6 +56,12 @@ protected:
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UBorder> Border_Outline;
 
+    UPROPERTY(EditAnywhere)
+    TObjectPtr<UTexture2D> SelectedImage;
+
+	UPROPERTY(EditAnywhere)
+	TObjectPtr<UTexture2D> UnselectedImage;
+
 private:
     // 선택 여부
     UPROPERTY()

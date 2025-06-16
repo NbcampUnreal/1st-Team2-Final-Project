@@ -7,6 +7,9 @@
 #include "SelectMachine.generated.h"
 
 enum class EMapName : uint8;
+class UWidgetComponent;
+struct FMissionData;
+class AInteractableButton;
 	
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API ASelectMachine : public AActor
@@ -25,8 +28,10 @@ public:
 
 	void HandlePrevLevel(AActor* InteractInstigator);
 	void HandleNextLevel(AActor* InteractInstigator);
-	void HandleSelectLevel(AActor* InteractInstigator);
+	void AutoSelectLevel(AActor* InteractInstigator);
 	void HandleTravelLevel(AActor* InteractInstigator);
+	void SwitchbSelectMission(const TArray<FMissionData>& MissionsFromUI);
+	void UpdateState();
 
 	bool IsConditionMet();
 #pragma endregion
@@ -45,10 +50,18 @@ private:
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<UStaticMeshComponent> MeshComp;
 
+	UPROPERTY(EditAnywhere)
+	TObjectPtr<UWidgetComponent> SelectMissionWidgetComp;
+
 	TArray<EMapName> LevelIDs;
 
 	uint8 bSelectLevel : 1 = false;
+	uint8 bSelectMission : 1 = false;
+
 	EMapName LevelID;
+
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<AInteractableButton> GameStartButton;
 #pragma endregion
 
 #pragma region Getter/Setter
