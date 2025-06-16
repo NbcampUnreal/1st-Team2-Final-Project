@@ -34,7 +34,7 @@ public:
 	void Deactivate() override;
 
 	void InitializeTransform(const FVector& Location, const FRotator& Rotation);
-	void InitializeSpeed(const FVector& ShootDirection, const uint32 Speed);
+	virtual void InitializeSpeed(const FVector& ShootDirection, const uint32 Speed);
 
 protected:
 	UFUNCTION()

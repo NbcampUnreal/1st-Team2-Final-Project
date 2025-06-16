@@ -32,6 +32,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 Amount;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 CurrentAmmoInMag;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 ReserveAmmo;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 Weight;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	uint8 Stackable : 1;
