@@ -113,7 +113,7 @@ void UPlayerHUDComponent::BeginPlay()
 		LOGV(Warning, TEXT("GS == nullptr"));
 		return;
 	}
-
+	
 	AADDroneSeller* CurrentDroneSeller = GS->GetCurrentDroneSeller();
 	if (CurrentDroneSeller == nullptr)
 	{
@@ -188,6 +188,21 @@ void UPlayerHUDComponent::C_ShowResultScreen_Implementation()
 void UPlayerHUDComponent::UpdateMissionsOnHUD(EMissionType MissionType, uint8 MissionIndex, int32 CurrentProgress)
 {
 	MissionsOnHUDWidget->UpdateMission(MissionType, MissionIndex, CurrentProgress);
+}
+
+void UPlayerHUDComponent::PlayNextPhaseAnim(int32 NextPhaseNumber)
+{
+	PlayerStatusWidget->PlayNextPhaseAnim(NextPhaseNumber);
+}
+
+void UPlayerHUDComponent::SetCurrentPhaseOverlayVisible(bool bShouldVisible)
+{
+	if (IsValid(PlayerStatusWidget) == false)
+	{
+		return;
+	}
+
+	PlayerStatusWidget->SetCurrentPhaseOverlayVisible(bShouldVisible);
 }
 
 void UPlayerHUDComponent::SetTestHUDVisibility(const bool NewVisible) const

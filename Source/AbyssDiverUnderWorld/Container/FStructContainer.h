@@ -48,16 +48,14 @@ struct FItemData : public FFastArraySerializerItem
 
 
 	FItemData()
-		: Name(NAME_None), Id(0), Quantity(0), SlotIndex(99), Amount(0), Mass(0), Price(0), ItemType(EItemType::Max), Thumbnail(nullptr)
+		: Name(NAME_None), Id(0), Quantity(0), SlotIndex(99), Amount(0), CurrentAmmoInMag(0), ReserveAmmo(0), Mass(0), Price(0), ItemType(EItemType::Max), Thumbnail(nullptr)
 	{
-		CurrentAmmoInMag = 0;
-		ReserveAmmo = 0;
+
 	}
-	FItemData(FName InName, uint8 InId, uint8 InQuantity, uint8 InSlotIndex, int32 InAmount, int32 InMass, int32 InPrice, EItemType InType, UTexture2D* InThumbnail)
-		: Name(InName), Id(InId), Quantity(InQuantity), SlotIndex(InSlotIndex), Amount(InAmount), Mass(InMass), Price(InPrice), ItemType(InType), Thumbnail(InThumbnail)
+	FItemData(FName InName, uint8 InId, uint8 InQuantity, uint8 InSlotIndex, int32 InAmount, int32 CurrentAmmoInMag, int32 ReserveAmmo, int32 InMass, int32 InPrice, EItemType InType, UTexture2D* InThumbnail)
+		: Name(InName), Id(InId), Quantity(InQuantity), SlotIndex(InSlotIndex), Amount(InAmount), CurrentAmmoInMag(CurrentAmmoInMag), ReserveAmmo(ReserveAmmo), Mass(InMass), Price(InPrice), ItemType(InType), Thumbnail(InThumbnail)
 	{
-		CurrentAmmoInMag = 5;
-		ReserveAmmo = Amount - CurrentAmmoInMag;
+
 	}
 
 	// 이 값이 바뀌면 Replication에 포함됨
@@ -90,7 +88,7 @@ struct FInventoryList : public FFastArraySerializer
 		NewItem.SlotIndex = Item.SlotIndex;
 		NewItem.Amount = Item.Amount;
 		NewItem.CurrentAmmoInMag = Item.CurrentAmmoInMag;
-		NewItem.ReserveAmmo= Item.ReserveAmmo;
+		NewItem.ReserveAmmo = Item.ReserveAmmo;
 		NewItem.Mass = Item.Mass;
 		NewItem.Price = Item.Price;
 		NewItem.ItemType = Item.ItemType;

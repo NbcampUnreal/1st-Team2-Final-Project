@@ -15,10 +15,31 @@ class ABYSSDIVERUNDERWORLD_API AADPlayerController : public APlayerController
 	AADPlayerController();
 	
 protected:
+
 	virtual void BeginPlay() override;
 	virtual void SetPawn(APawn* InPawn) override;
+	virtual void PostNetInit() override;
+	virtual void PostSeamlessTravel() override;
 
 #pragma region Method
+
+public:
+
+	UFUNCTION(Client, Reliable)
+	void C_OnPreClientTravel();
+	void C_OnPreClientTravel_Implementation();
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void OnPreClientTravel();
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void OnPostNetInit();
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void OnPostSeamlessTravel();
+
+protected:
+
 	UFUNCTION(Server, Reliable)
 	void S_SetPlayerInfo(const FUniqueNetIdRepl& Id, const FString& Nickname);
 	void S_SetPlayerInfo_Implementation(const FUniqueNetIdRepl& Id, const FString& Nickname);
@@ -30,8 +51,6 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void S_RequestStartGame();
 	void S_RequestStartGame_Implementation();
-
-
 
 	virtual void SetupInputComponent() override;
 	void ShowInventory(const FInputActionValue& InputActionValue);

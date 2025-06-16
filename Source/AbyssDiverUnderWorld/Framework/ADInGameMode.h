@@ -63,9 +63,12 @@ private:
 	UPROPERTY()
 	TObjectPtr<class AADDrone> LastDrone;
 
-	TSubclassOf<class AADSpearGunBullet> BulletClass;
+	TSubclassOf<class AADSpearGunBullet> SpearBulletClass;
+	TSubclassOf<class AADFlareGunBullet> FlareBulletClass;
 	UPROPERTY()
 	TObjectPtr<AGenericPool> SpearGunBulletPool = nullptr;
+	UPROPERTY()
+	TObjectPtr<AGenericPool> FlareGunBulletPool = nullptr;
 	UPROPERTY()
 	TObjectPtr<USoundSubsystem> SoundSubsystem;
 
@@ -77,6 +80,7 @@ private:
 #pragma endregion
 
 public:
-	FORCEINLINE AGenericPool* GetGenericPool() const { return SpearGunBulletPool; }
+	FORCEINLINE AGenericPool* GetSpearGenericPool() const { return SpearGunBulletPool; }
+	FORCEINLINE AGenericPool* GetFlareGenericPool() const { return FlareGunBulletPool; }
 	USoundSubsystem* GetSoundSubsystem();
 };

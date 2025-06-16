@@ -98,6 +98,8 @@ void AADSpearGunBullet::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AAct
                     GetOwner(),
                     UDamageType::StaticClass()
                 );
+                ProjectileMovementComp->StopMovementImmediately();
+                ProjectileMovementComp->Deactivate();
                 AttachToHitActor(OtherComp, SweepResult, true);
                 M_AdjustTransform(GetActorTransform()); //위치 보정
             }
@@ -105,8 +107,7 @@ void AADSpearGunBullet::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AAct
             ApplyAdditionalDamage();
         }
         LOGP(Warning, TEXT("SetProjectileMovementAttribute"));
-        ProjectileMovementComp->StopMovementImmediately();
-        ProjectileMovementComp->Deactivate();
+  
     }
 
 }
