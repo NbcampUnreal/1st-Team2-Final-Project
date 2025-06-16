@@ -1,9 +1,11 @@
 #include "Boss/EnhancedBossAIController.h"
 #include "AbyssDiverUnderWorld.h"
 #include "Boss.h"
+#include "EngineUtils.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Character/UnderwaterCharacter.h"
 #include "Enum/EPerceptionType.h"
+#include "Gimmic/Volume/ObstacleVolume.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Hearing.h"
 #include "Perception/AISense_Damage.h"
@@ -42,6 +44,14 @@ void AEnhancedBossAIController::BeginPlay()
 	{
 		AIPerceptionComponent->OnTargetPerceptionUpdated.AddDynamic(this, &AEnhancedBossAIController::OnTargetPerceptionUpdatedHandler);
 	}
+
+	
+	// BeginPlay에서 모든 EnhancedAIController가 모든 AObstacleVolume을 찾아 이벤트를 바인딩한다.
+	// BeginPlay 호출 시에 약간의 프레임 드랍이 발생할 우려가 있지만 일회성 호출이므로 예외로 처리한다.
+	// Tick에서 플레이어가 Overlapped 되었는지 확인하는 방법에 비해 메모리 효율적이다.
+	FTimerHandle BindingTimerHandle;
+	GetWorldTimerManager().SetTimer(BindingTimerHandle, this, &AEnhancedBossAIController::BindToObstacleComponent, 1.0f, false);
+	
 }
 
 void AEnhancedBossAIController::OnPossess(APawn* InPawn)
@@ -145,6 +155,8 @@ void AEnhancedBossAIController::OnSightPerceptionSuccess(AUnderwaterCharacter* P
 	// 플레이어가 NavMesh 위에 있지 않다면 얼리 리턴
 	if (!Boss->IsLocationOnNavMesh(Player->GetActorLocation()))	return;
 
+	LOG(TEXT("Sight Perception Success !"));
+
 	// AlienShark와 다른 AI의 동작방식이 다르다.
 	// 코드가 난잡해지긴 하지만, 개발속도 차원에서 일단 bool 값으로 대체한다.
 	if (bIsAlienShark)
@@ -174,6 +186,8 @@ void AEnhancedBossAIController::OnSightPerceptionSuccess(AUnderwaterCharacter* P
 
 void AEnhancedBossAIController::OnSightPerceptionFail()
 {
+	LOG(TEXT("Sight Perception Fail !"));
+
 	// 플레이어 사라짐 인지 변수 초기화
 	bIsDisappearPlayer = true;
 	BlackboardComponent->SetValueAsBool(bHasSeenPlayerKey, false);
@@ -182,6 +196,8 @@ void AEnhancedBossAIController::OnSightPerceptionFail()
 void AEnhancedBossAIController::OnHearingPerceptionSuccess(AUnderwaterCharacter* Player)
 {
 	if (!IsValid(GetCharacter())) return;
+
+	LOG(TEXT("Hearing Perception Success !"));
 	
 	// 실제 수중에서 피를 흘린 경우 상어는 현재 위치에 따라 피를 감지하는 시간이 다를 것이다.
 	// 또한 영구적으로 피를 흘린 위치를 기억하는 것이 아닌, 피를 감지한 이후 5초 정도의 유효 시간이 존재한다.
@@ -233,11 +249,40 @@ void AEnhancedBossAIController::SetBloodDetectedState()
 
 void AEnhancedBossAIController::OnDamagePerceptionSuccess(AUnderwaterCharacter* Player)
 {
+	LOG(TEXT("Blood Perception Success !"));
+	
 	SetBlackboardPerceptionType(EPerceptionType::Damage);
 
 	if (bIsAlienShark)
 	{
 		GetBlackboardComponent()->SetValueAsObject(TargetPlayerKey, Player);
 		GetBlackboardComponent()->SetValueAsBool(bIsChasingPlayerKey, true);
+	}
+}
+
+void AEnhancedBossAIController::OnObstacleComponentBeginOverlap(AUnderwaterCharacter* OverlappedPlayer)
+{
+	if (!IsValid(OverlappedPlayer)) return;
+	
+	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(GetBlackboardComponent()->GetValueAsObject(TargetPlayerKey));
+	if (!IsValid(Player)) return;
+	
+	if (Player == OverlappedPlayer)
+	{
+		GetBlackboardComponent()->SetValueAsBool(bIsChasingPlayerKey, false);
+		GetBlackboardComponent()->SetValueAsBool(bIsPlayerHiddenKey, false);
+		GetBlackboardComponent()->SetValueAsObject(TargetPlayerKey, nullptr);
+	}
+	
+}
+
+void AEnhancedBossAIController::BindToObstacleComponent()
+{
+	for (AObstacleVolume* Volume : TActorRange<AObstacleVolume>(GetWorld()))
+	{
+		if (IsValid(Volume))
+		{
+			Volume->OnObstacleComponentBeginOverlapDelegate.AddDynamic(this, &AEnhancedBossAIController::OnObstacleComponentBeginOverlap);
+		}
 	}
 }

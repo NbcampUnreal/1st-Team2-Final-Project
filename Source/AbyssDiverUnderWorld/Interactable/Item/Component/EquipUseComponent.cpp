@@ -35,8 +35,8 @@ UEquipUseComponent::UEquipUseComponent()
 	SetIsReplicatedByDefault(true);
 
 	Amount = 0;
-	DrainPerSecond = 5.f;
-	NightVisionDrainPerSecond = 2.f;
+	DrainPerSecond = 0.1f;
+	NightVisionDrainPerSecond = 0.1f;
 	DrainAcc = 0.f;
 	bBoostActive = false;
 	bOriginalExposureCached = false;
@@ -918,6 +918,11 @@ AADSpearGunBullet* UEquipUseComponent::SpawnHarpoon(const FVector& Loc, const FR
 				SpawnedBullet = GenericPool->GetObject<AADSpearGunBullet>();
 				if (SpawnedBullet)
 				{
+					APawn* PawnOwner = Cast<APawn>(PC->GetPawn());
+					if (PawnOwner)
+					{
+						SpawnedBullet->SetInstigator(PawnOwner);
+					}
 					SpawnedBullet->SetOwner(PC);
 					SpawnedBullet->InitializeTransform(Loc, Rot);
 				}

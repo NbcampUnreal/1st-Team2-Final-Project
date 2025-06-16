@@ -170,7 +170,6 @@ void AADInGameState::BeginPlay()
 
 	TeamCreditsChangedDelegate.Broadcast(TeamCredits);
 	CurrentPhaseChangedDelegate.Broadcast(CurrentPhase);
-	CurrentPhaseGoalChangedDelegate.Broadcast(CurrentPhaseGoal);
 }
 
 void AADInGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -191,7 +190,6 @@ void AADInGameState::PostNetInit()
 
 	TeamCreditsChangedDelegate.Broadcast(TeamCredits);
 	CurrentPhaseChangedDelegate.Broadcast(CurrentPhase);
-	CurrentPhaseGoalChangedDelegate.Broadcast(CurrentPhaseGoal);
 }
 
 void AADInGameState::AddTeamCredit(int32 Credit)
@@ -256,32 +254,40 @@ void AADInGameState::OnRep_Phase()
 	CurrentPhaseChangedDelegate.Broadcast(CurrentPhase);
 }
 
-void AADInGameState::OnRep_PhaseGoal()
-{
-	LOGVN(Error, TEXT("PhaseGoal updated: %d"), CurrentPhaseGoal);
-	CurrentPhaseGoalChangedDelegate.Broadcast(CurrentPhaseGoal);
-}
-
 void AADInGameState::OnRep_CurrentDroneSeller()
 {
-	AADPlayerState* PS = UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetPlayerState<AADPlayerState>();
-	if (PS == nullptr)
+	//AADPlayerState* PS = UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetPlayerState<AADPlayerState>();
+	//if (PS == nullptr)
+	//{
+	//	LOGVN(Warning, TEXT("PS == nullptr"));
+	//	return;
+	//}
+
+	//UADInventoryComponent* Inventory = PS->GetInventory();
+	//if (Inventory == nullptr)
+	//{
+	//	LOGVN(Warning, TEXT("Inventory == nullptr"));
+	//	return;
+	//}
+
+	//UToggleWidget* ToggleWidget = Inventory->GetToggleWidgetInstance();
+	//if (IsValid(ToggleWidget) == false)
+	//{
+	//	LOGVN(Warning, TEXT("ToggleWidget is Invalid"));
+	//	return;
+	//}
+
+	UPlayerHUDComponent* HudComp = GetPlayerHudComponent();
+	if (HudComp == nullptr)
 	{
-		LOGVN(Warning, TEXT("PS == nullptr"));
+		LOGV(Error, TEXT("HudComp == nullptr"));
 		return;
 	}
 
-	UADInventoryComponent* Inventory = PS->GetInventory();
-	if (Inventory == nullptr)
+	UPlayerStatusWidget* PlayerStatusWidget = HudComp->GetPlayerStatusWidget();
+	if (PlayerStatusWidget == nullptr)
 	{
-		LOGVN(Warning, TEXT("Inventory == nullptr"));
-		return;
-	}
-
-	UToggleWidget* ToggleWidget = Inventory->GetToggleWidgetInstance();
-	if (IsValid(ToggleWidget) == false)
-	{
-		LOGVN(Warning, TEXT("ToggleWidget is Invalid"));
+		LOGV(Error, TEXT("PlayerStatusWidget == nullptr"));
 		return;
 	}
 
@@ -293,15 +299,15 @@ void AADInGameState::OnRep_CurrentDroneSeller()
 		TargetMoney = CurrentDroneSeller->GetTargetMoney();
 		CurrentMoney = CurrentDroneSeller->GetCurrentMoney();
 
-		CurrentDroneSeller->OnCurrentMoneyChangedDelegate.RemoveAll(ToggleWidget);
-		CurrentDroneSeller->OnCurrentMoneyChangedDelegate.AddUObject(ToggleWidget, &UToggleWidget::SetDroneCurrentText);
+		CurrentDroneSeller->OnCurrentMoneyChangedDelegate.RemoveAll(PlayerStatusWidget);
+		CurrentDroneSeller->OnCurrentMoneyChangedDelegate.AddUObject(PlayerStatusWidget, &UPlayerStatusWidget::SetDroneCurrentText);
 
-		CurrentDroneSeller->OnTargetMoneyChangedDelegate.RemoveAll(ToggleWidget);
-		CurrentDroneSeller->OnTargetMoneyChangedDelegate.AddUObject(ToggleWidget, &UToggleWidget::SetDroneTargetText);
+		CurrentDroneSeller->OnTargetMoneyChangedDelegate.RemoveAll(PlayerStatusWidget);
+		CurrentDroneSeller->OnTargetMoneyChangedDelegate.AddUObject(PlayerStatusWidget, &UPlayerStatusWidget::SetDroneTargetText);
 	}
 
-	ToggleWidget->SetDroneTargetText(TargetMoney);
-	ToggleWidget->SetDroneCurrentText(CurrentMoney);
+	PlayerStatusWidget->SetDroneTargetText(TargetMoney);
+	PlayerStatusWidget->SetDroneCurrentText(CurrentMoney);
 }
 
 void AADInGameState::OnRep_DestinationTarget()
@@ -329,13 +335,7 @@ void AADInGameState::ReceiveDataFromGameInstance()
 	{
 		SelectedLevelName = ADGameInstance->SelectedLevelName;
 		TeamCredits = ADGameInstance->TeamCredits;
-		if (const FPhaseGoalRow* GoalData = ADGameInstance->GetSubsystem<UDataTableSubsystem>()->GetPhaseGoalData(SelectedLevelName, CurrentPhase))
-		{
-			CurrentPhaseGoal = GoalData->GoalCredit;
-		}
 	}
-
-	LOGVN(Error, TEXT("SelectedLevelName: %d / TeamCredits: %d / CurrentPhaseGoal : %d"), SelectedLevelName, TeamCredits, CurrentPhaseGoal);
 }
 
 void AADInGameState::SetDestinationTarget(AActor* NewDestinationTarget)

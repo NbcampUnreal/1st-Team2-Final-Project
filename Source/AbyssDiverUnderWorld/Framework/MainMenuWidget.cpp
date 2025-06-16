@@ -22,7 +22,7 @@ void UMainMenuWidget::NativeConstruct()
 		Button_Credits->OnClicked.AddDynamic(this, &UMainMenuWidget::OnCreditsClicked);
 
 	if (Button_Quit)
-		Button_Quit->OnClicked.AddDynamic(this, &UMainMenuWidget::OnQuitClicked);
+		Button_Quit->OnClicked.AddDynamic(this, &	UMainMenuWidget::OnQuitClicked);
 
 }
 
@@ -35,6 +35,7 @@ void UMainMenuWidget::OnCreateClicked()
 	}
 	else if (CreateTeamWidgetInstance)
 	{
+		CreateTeamWidgetInstance->StopAllAnimations();
 		CreateTeamWidgetInstance->RemoveFromParent();
 		CreateTeamWidgetInstance = nullptr;
 	}
@@ -72,6 +73,7 @@ void UMainMenuWidget::OnCreateTeamWidgetClosed()
 {
 	if (CreateTeamWidgetInstance)
 	{
+		CreateTeamWidgetInstance->StopAllAnimations();
 		CreateTeamWidgetInstance->RemoveFromParent();
 		CreateTeamWidgetInstance = nullptr; 
 	}
@@ -83,6 +85,7 @@ void UMainMenuWidget::OnSessionListWidgetClosed()
 {
 	if (SessionListWidgetInstance)
 	{
+		CreateTeamWidgetInstance->StopAllAnimations();
 		CreateTeamWidgetInstance->RemoveFromParent();
 		CreateTeamWidgetInstance = nullptr;
 	}

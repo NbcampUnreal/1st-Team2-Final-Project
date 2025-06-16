@@ -40,6 +40,7 @@ protected:
 	UFUNCTION(Exec)
 	void ToggleTestHUD();
 	
+
 #pragma endregion
 	
 #pragma region Variable

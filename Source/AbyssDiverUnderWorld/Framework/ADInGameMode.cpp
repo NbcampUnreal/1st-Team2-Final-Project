@@ -53,7 +53,7 @@ void AADInGameMode::BeginPlay()
 		UDataTableSubsystem* DataTableSubsystem = GetGameInstance()->GetSubsystem<UDataTableSubsystem>();
 
 		SpearGunBulletPool = GetWorld()->SpawnActor<AGenericPool>();
-		SpearGunBulletPool->InitPool<AADSpearGunBullet>(10, BulletClass);
+		SpearGunBulletPool->InitPool<AADSpearGunBullet>(30, BulletClass);
 		LOGVN(Warning, TEXT("SpawnSpearGunBulletPool"));
 
 		int32 LastDroneNumber = 0;
@@ -91,6 +91,28 @@ void AADInGameMode::BeginPlay()
 
 void AADInGameMode::PostLogin(APlayerController* NewPlayer)
 {
+	FString NewPlayerId = NewPlayer->GetPlayerState<AADPlayerState>()->GetUniqueId()->ToString();
+
+	LOGV(Warning, TEXT("%s Has Entered"), *NewPlayerId);
+	UADGameInstance* GI = GetGameInstance<UADGameInstance>();
+	check(GI);
+
+	if (AADPlayerState* ADPlayerState = NewPlayer->GetPlayerState<AADPlayerState>())
+	{
+		ADPlayerState->ResetLevelResults();
+		GI->AddPlayerNetId(NewPlayerId);
+
+		int32 NewPlayerIndex = INDEX_NONE;
+		if (GI->TryGetPlayerIndex(NewPlayerId, NewPlayerIndex) == false)
+		{
+			LOGV(Error, TEXT("Fail To Get Player Index"));
+			return;
+		}
+
+		ADPlayerState->SetPlayerNickname(NewPlayerId);
+		ADPlayerState->SetPlayerIndex(NewPlayerIndex);
+	}
+
 	Super::PostLogin(NewPlayer);
 
 	InitPlayer(NewPlayer);
@@ -100,20 +122,23 @@ void AADInGameMode::Logout(AController* Exiting)
 {
 	Super::Logout(Exiting);
 
-	if (ensure(Exiting) == false)
+	if (IsValid(Exiting) == false)
 	{
+		LOGV(Error, TEXT("IsValid(Exiting) == false"));
 		return;
 	}
 
 	AADPlayerState* PS = Exiting->GetPlayerState<AADPlayerState>();
-	if (ensure(PS) == false)
+	if (IsValid(PS) == false)
 	{
+		LOGV(Error, TEXT("IsValid(PS) == false"));
 		return;
 	}
 
 	const FUniqueNetIdRepl& UniqueNetIdRepl = PS->GetUniqueId();
-	if (ensure(&UniqueNetIdRepl) == false)
+	if (UniqueNetIdRepl.IsValid() == false)
 	{
+		LOGV(Error, TEXT("UniqueNetIdRepl.IsValid() == false"));
 		return;
 	}
 

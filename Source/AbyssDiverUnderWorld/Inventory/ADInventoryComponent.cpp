@@ -18,7 +18,6 @@
 #include "UI/ChargeBatteryWidget.h"
 #include "Character/UnderwaterCharacter.h"
 #include "Kismet/GameplayStatics.h"
-#include "Interactable/OtherActors/ADDroneSeller.h"
 #include "Framework/ADInGameState.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
@@ -34,9 +33,9 @@ UADInventoryComponent::UADInventoryComponent() :
 	ToggleWidgetClass(nullptr),
 	TotalWeight(0),
 	TotalPrice(0),
-	WeightMax(100),
 	CurrentEquipmentSlotIndex(INDEX_NONE),
 	CurrentEquipmentInstance(nullptr),
+	WeightMax(100),
 	ToggleWidgetInstance(nullptr),
 	bCanUseItem(true),
 	DataTableSubsystem(nullptr),
@@ -314,7 +313,8 @@ void UADInventoryComponent::C_SetButtonActive_Implementation(EChargeBatteryType 
 
 void UADInventoryComponent::C_UpdateBatteryInfo_Implementation()
 {
-	ChargeBatteryWidget->UpdateBatteryInfo();
+	if(ChargeBatteryWidget)
+		ChargeBatteryWidget->UpdateBatteryInfo();
 }
 
 void UADInventoryComponent::C_SetEquipBatteryAmount_Implementation(EChargeBatteryType ItemChargeBatteryType)
@@ -343,29 +343,6 @@ void UADInventoryComponent::InventoryInitialize()
 	ToggleWidgetInstance->AddToViewport();
 	ToggleWidgetInstance->InitializeInventoriesInfo(this);
 	ToggleWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
-
-	AADInGameState* GS = Cast<AADInGameState>(UGameplayStatics::GetGameState(GetWorld()));
-	if (GS == nullptr)
-	{
-		LOGINVEN(Warning, TEXT("GS == nullptr"));
-		return;
-	}
-
-	AADDroneSeller* CurrentDroneSeller = GS->GetCurrentDroneSeller();
-	if (CurrentDroneSeller == nullptr)
-	{
-		LOGINVEN(Warning, TEXT("CurrentDroneSeller == nullptr, Server? : %d"), GetOwner()->GetNetMode() != ENetMode::NM_Client);
-		return;
-	}
-
-	ToggleWidgetInstance->SetDroneTargetText(CurrentDroneSeller->GetTargetMoney());
-	ToggleWidgetInstance->SetDroneCurrentText(CurrentDroneSeller->GetCurrentMoney());
-
-	CurrentDroneSeller->OnCurrentMoneyChangedDelegate.RemoveAll(ToggleWidgetInstance);
-	CurrentDroneSeller->OnCurrentMoneyChangedDelegate.AddUObject(ToggleWidgetInstance, &UToggleWidget::SetDroneCurrentText);
-
-	CurrentDroneSeller->OnTargetMoneyChangedDelegate.RemoveAll(ToggleWidgetInstance);
-	CurrentDroneSeller->OnTargetMoneyChangedDelegate.AddUObject(ToggleWidgetInstance, &UToggleWidget::SetDroneTargetText);
 
 	InventoryUIUpdate();
 }

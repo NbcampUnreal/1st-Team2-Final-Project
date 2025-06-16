@@ -8,6 +8,7 @@
 UENUM(BlueprintType)
 enum class EMapName : uint8
 {
+	Description UMETA(Hidden),
 	test1  UMETA(DisplayName = "Shallow"),
 	test2  UMETA(DisplayName = "level2"),
 	Max UMETA(Hidden)

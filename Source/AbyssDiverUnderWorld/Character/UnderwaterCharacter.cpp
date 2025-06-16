@@ -219,7 +219,7 @@ void AUnderwaterCharacter::BeginPlay()
 
 		GM->BindDelegate(this);
 	}
-	
+	InteractableComponent->SetInteractable(false);
 }
 
 void AUnderwaterCharacter::InitFromPlayerState(AADPlayerState* ADPlayerState)
@@ -279,8 +279,7 @@ void AUnderwaterCharacter::ApplyUpgradeFactor(UUpgradeComponent* UpgradeComponen
 			continue;
 		}
 		
-		// Stat Factor는 정수형으로 저장되어 있다.
-		const float StatFactor = UpgradeData->StatFactor;
+		const int StatFactor = UpgradeData->StatFactor;
 		
 	    switch (Type)
 	    {
@@ -297,7 +296,8 @@ void AUnderwaterCharacter::ApplyUpgradeFactor(UUpgradeComponent* UpgradeComponen
 			case EUpgradeType::Light:
 	    		if (Grade > 1)
 	    		{
-	    			LanternLength *= StatFactor / 100.0f;
+	    			// 정수 곱하기 연산을 먼저하고 나누기 연산을 나중에 해서 소수점 오차를 줄인다.
+	    			LanternLength = LanternLength * (100 + StatFactor) / 100.0f;
 	    			LanternComponent->SetLightLength(LanternLength);
 	    		}
 	    		break;
@@ -898,6 +898,7 @@ void AUnderwaterCharacter::HandleEnterGroggy()
 	{
 		AnimInstance->StopAllMontages(0.0f);
 	}
+	InteractableComponent->SetInteractable(true);
 }
 
 void AUnderwaterCharacter::HandleExitGroggy()
@@ -929,6 +930,7 @@ void AUnderwaterCharacter::HandleEnterNormal()
 
 		LookSensitivity = NormalLookSensitivity;
 	}
+	InteractableComponent->SetInteractable(false);
 }
 
 void AUnderwaterCharacter::HandleExitNormal()
@@ -970,6 +972,7 @@ void AUnderwaterCharacter::HandleEnterDeath()
 	
 	K2_OnDeath();
 	OnDeathDelegate.Broadcast();
+	InteractableComponent->SetInteractable(true);
 }
 
 void AUnderwaterCharacter::S_Revive_Implementation()
@@ -1007,6 +1010,7 @@ void AUnderwaterCharacter::M_StartCaptureState_Implementation()
 
 	SetActorHiddenInGame(true);
 	SetActorEnableCollision(false);
+	InteractionComponent->OnInteractReleased();
 }
 
 void AUnderwaterCharacter::M_StopCaptureState_Implementation()

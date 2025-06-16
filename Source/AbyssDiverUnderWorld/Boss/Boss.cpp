@@ -470,12 +470,6 @@ void ABoss::StartTurn()
     
     TArray<FVector> PossibleDirections = {
     	
-    	// 대각선 방향들
-    	Forward.RotateAngleAxis(45.0f, Up).RotateAngleAxis(30.0f, Right),
-		Forward.RotateAngleAxis(-45.0f, Up).RotateAngleAxis(30.0f, Right),
-		Forward.RotateAngleAxis(45.0f, Up).RotateAngleAxis(-30.0f, Right),
-		Forward.RotateAngleAxis(-45.0f, Up).RotateAngleAxis(-30.0f, Right),
-    	
         // 수평 방향들
         Forward.RotateAngleAxis(30.0f, Up),
         Forward.RotateAngleAxis(-30.0f, Up),
@@ -493,6 +487,12 @@ void ABoss::StartTurn()
 	    Forward.RotateAngleAxis(-120.0f, Up),
 	    Forward.RotateAngleAxis(150.0f, Up),
 	    Forward.RotateAngleAxis(-150.0f, Up),
+
+    	// 대각선 방향들
+		Forward.RotateAngleAxis(45.0f, Up).RotateAngleAxis(30.0f, Right),
+		Forward.RotateAngleAxis(-45.0f, Up).RotateAngleAxis(30.0f, Right),
+		Forward.RotateAngleAxis(45.0f, Up).RotateAngleAxis(-30.0f, Right),
+		Forward.RotateAngleAxis(-45.0f, Up).RotateAngleAxis(-30.0f, Right),
 
 		// 후방 대각선 방향들
     	Forward.RotateAngleAxis(135.0f, Up).RotateAngleAxis(30.0f, Right),
@@ -785,21 +785,13 @@ float ABoss::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
 
 void ABoss::OnDeath()
 {
-	GetCharacterMovement()->StopMovementImmediately();
-
-	// 이동을 멈추고 모든 애니메이션 출력 정지
-	AIController->StopMovement();
-	AnimInstance->StopAllMontages(0.5f);
+	if (IsValid(AIController))
+	{
+		AIController->StopMovement();
+		AIController->UnPossess();	
+	}
 	
-	// 사망 상태로 전이
-	SetBossState(EBossState::Death);
-
-	// AIController 작동 중지
-	AIController->UnPossess();
-
-	// 피직스 에셋 물리엔진 적용
-	FTimerHandle TimerHandle;
-	GetWorldTimerManager().SetTimer(TimerHandle, this, &ABoss::ApplyPhysicsSimulation, 0.5f, false);	
+	M_OnDeath();
 }
 #pragma endregion
 
@@ -871,6 +863,21 @@ void ABoss::SetMoveSpeed(const float& SpeedMultiplier)
 void ABoss::M_PlayAnimation_Implementation(class UAnimMontage* AnimMontage, float InPlayRate, FName StartSectionName)
 {
 	PlayAnimMontage(AnimMontage, InPlayRate, StartSectionName);
+}
+
+void ABoss::M_OnDeath_Implementation()
+{
+	GetCharacterMovement()->StopMovementImmediately();
+
+	// 모든 애니메이션 출력 정지
+	AnimInstance->StopAllMontages(0.5f);
+	
+	// 사망 상태로 전이
+	SetBossState(EBossState::Death);
+	
+	// 피직스 에셋 물리엔진 적용
+	FTimerHandle TimerHandle;
+	GetWorldTimerManager().SetTimer(TimerHandle, this, &ABoss::ApplyPhysicsSimulation, 0.5f, false);
 }
 
 void ABoss::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted)
