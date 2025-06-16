@@ -6,6 +6,7 @@
 #include "ShopWidget.generated.h"
 
 enum class EShopCategoryTab : uint8;
+enum class EUpgradeType : uint8;
 class UShopCategoryTabWidget;
 class UShopItemEntryData;
 class UShopElementInfoWidget;
@@ -44,7 +45,7 @@ public:
 	void RefreshItemView();
 
 	void ShowItemInfos(int32 ItemId);
-	void ShowUpgradeInfos(USkeletalMesh* NewUpgradeItemMesh, int32 CurrentUpgradeLevel, bool bIsMaxLevel, int32 CurrentUpgradeCost, const FString& ExtraInfoText);
+	void ShowUpgradeInfos(EUpgradeType UpgradeType, uint8 Grade, bool bIsMaxLevel);
 
 	void SetTeamMoneyText(int32 NewTeamMoney);
 

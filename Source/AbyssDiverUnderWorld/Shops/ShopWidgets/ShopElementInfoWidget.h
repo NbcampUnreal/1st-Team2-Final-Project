@@ -11,6 +11,8 @@ class URichTextBlock;
 class UShopItemMeshPanel;
 class UButton;
 
+enum class EUpgradeType : uint8;
+
 /**
  * 상점에서 아이템, 장비, 업글에 대한 정보를 띄우는 위젯
  */
@@ -32,8 +34,7 @@ public:
 	void Init(USkeletalMeshComponent* NewItemMeshComp);
 
 	void ShowItemInfos(int32 ItemId);
-	void ShowUpgradeInfos(USkeletalMesh* NewUpgradeItemMesh, int32 CurrentUpgradeLevel, bool bIsMaxLevel, int32 CurrentUpgradeCost, const FString& ExtraInfoText);
-
+	void ShowUpgradeInfos(EUpgradeType UpgradeType, uint8 Grade, bool bIsMaxLevel);
 	void ChangeItemDescription(const FString& NewDescription);
 	void ChangeNameInfoText(const FString& NewInfoText);
 	void ChangeItemMesh(USkeletalMesh* NewMesh, int32 ItemId);

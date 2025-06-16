@@ -246,9 +246,9 @@ void UShopWidget::ShowItemInfos(int32 ItemId)
 	InfoWidget->ShowItemInfos(ItemId);
 }
 
-void UShopWidget::ShowUpgradeInfos(USkeletalMesh* NewUpgradeItemMesh, int32 CurrentUpgradeLevel, bool bIsMaxLevel, int32 CurrentUpgradeCost, const FString& ExtraInfoText)
+void UShopWidget::ShowUpgradeInfos(EUpgradeType UpgradeType, uint8 Grade, bool bIsMaxLevel)
 {
-	InfoWidget->ShowUpgradeInfos(NewUpgradeItemMesh, CurrentUpgradeLevel, bIsMaxLevel, CurrentUpgradeCost, ExtraInfoText);
+	InfoWidget->ShowUpgradeInfos(UpgradeType, Grade, bIsMaxLevel);
 }
 
 void UShopWidget::SetTeamMoneyText(int32 NewTeamMoney)
