@@ -101,7 +101,11 @@ void AADDroneSeller::Interact_Implementation(AActor* InstigatorActor)
 	{
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 		LOGD(Log, TEXT("목표 달성! Drone 활성화 호출"))
+=======
+		LOGD(Log, TEXT("목표 달성! Drone 활성화 호출"));
+>>>>>>> Stashed changes
 =======
 		LOGD(Log, TEXT("목표 달성! Drone 활성화 호출"));
 >>>>>>> Stashed changes
