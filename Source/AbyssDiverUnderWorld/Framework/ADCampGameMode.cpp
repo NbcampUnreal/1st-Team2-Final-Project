@@ -1,14 +1,16 @@
 #include "Framework/ADCampGameMode.h"
+
 #include "Framework/ADInGameState.h"
 #include "Framework/ADPlayerState.h"
 #include "Framework/ADGameInstance.h"
 #include "Framework/ADPlayerController.h"
-#include "GameFramework/PlayerController.h"
-#include "Kismet/GameplayStatics.h"
+
 #include "DataRow/PhaseGoalRow.h"
 #include "AbyssDiverUnderWorld.h"
 #include "Subsystems/DataTableSubsystem.h"
-#include "Character/UnderwaterCharacter.h"
+
+#include "Kismet/GameplayStatics.h"
+#include "EngineUtils.h"
 
 void AADCampGameMode::ADCampGameMode()
 {
@@ -25,8 +27,6 @@ void AADCampGameMode::SetSelectedLevel(const EMapName InLevelName)
 
 void AADCampGameMode::PostLogin(APlayerController* NewPlayer)
 {
-	Super::PostLogin(NewPlayer);
-
 	FString NewPlayerId = NewPlayer->GetPlayerState<AADPlayerState>()->GetUniqueId()->ToString();
 
 	LOGV(Warning, TEXT("%s Has Entered"), *NewPlayerId);
@@ -48,6 +48,8 @@ void AADCampGameMode::PostLogin(APlayerController* NewPlayer)
 		ADPlayerState->SetPlayerNickname(NewPlayerId);
 		ADPlayerState->SetPlayerIndex(NewPlayerIndex);
 	}
+
+	Super::PostLogin(NewPlayer);
 }
 
 void AADCampGameMode::Logout(AController* Exiting)
@@ -57,6 +59,13 @@ void AADCampGameMode::Logout(AController* Exiting)
 	FString ExitingId = Exiting->GetPlayerState<AADPlayerState>()->GetUniqueId().GetUniqueNetId()->ToString();
 	UADGameInstance* GI = GetGameInstance<UADGameInstance>();
 	GI->RemovePlayerNetId(ExitingId);
+}
+
+void AADCampGameMode::InitGameState()
+{
+	Super::InitGameState();
+
+	SetSelectedLevel(EMapName::Description);
 }
 
 void AADCampGameMode::TryStartGame()
@@ -83,42 +92,31 @@ void AADCampGameMode::TravelToInGameLevel()
 		return;
 	}
 
-	if (AADInGameState* ADInGameState = GetGameState<AADInGameState>())
+	for (AADPlayerController* PC : TActorRange<AADPlayerController>(GetWorld()))
 	{
-		EMapName MapName = ADInGameState->GetSelectedLevel();
-
-		FString LevelLoad = GetGameInstance()->GetSubsystem<UDataTableSubsystem>()->GetMapPath(MapName);
-		if (LevelLoad == "invalid")
-		{
-			UE_LOG(LogTemp, Error, TEXT("LevelLoad is empty"));
-			LevelLoad = TEXT("DefaultInGameLevel");
-			return;
-		}
-
-
-		/*for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
-		{
-			if (AADPlayerController* PC = Cast<AADPlayerController>(It->Get()))
-			{
-				APawn* RawPawn = PC->GetPawn();
-				if (!RawPawn) continue; 
-
-				LOG(TEXT("Pawn exists!!"));
-				AUnderwaterCharacter* Pawn = Cast<AUnderwaterCharacter>(RawPawn);
-				if (Pawn)
-				{
-					LOG(TEXT("success Casting to UnderwaterCharacter"));
-					Pawn->C_CloseVoiceLine(); 
-					LOG(TEXT("success CloseVoiceLine"));
-				}
-			}
-		}*/
-
-		ADInGameState->SendDataToGameInstance();
-		//input spot level name
-		FString TravelURL = FString::Printf(TEXT("%s?listen"), *LevelLoad);
-		GetWorld()->ServerTravel(TravelURL);
-		
+		PC->C_OnPreClientTravel();
 	}
-}
 
+	FTimerHandle TravelTimerHandle;
+	GetWorldTimerManager().SetTimer(TravelTimerHandle, [&]()
+		{
+
+			if (AADInGameState* ADInGameState = GetGameState<AADInGameState>())
+			{
+				EMapName MapName = ADInGameState->GetSelectedLevel();
+
+				FString LevelLoad = GetGameInstance()->GetSubsystem<UDataTableSubsystem>()->GetMapPath(MapName);
+				if (LevelLoad == "invalid")
+				{
+					UE_LOG(LogTemp, Error, TEXT("LevelLoad is empty"));
+					return;
+				}
+
+				ADInGameState->SendDataToGameInstance();
+				//input spot level name
+				FString TravelURL = FString::Printf(TEXT("%s?listen"), *LevelLoad);
+				GetWorld()->ServerTravel(TravelURL);
+			}
+
+		}, 1.0f, false);
+}

@@ -16,12 +16,11 @@
 #include "Components/CanvasPanel.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "UI/CrosshairWidget.h"
+#include "Interactable/OtherActors/ADDroneSeller.h"
 
 UPlayerHUDComponent::UPlayerHUDComponent()
 {
-	PrimaryComponentTick.bCanEverTick = true;
-	
-	CrosshairPosition = FVector2D::ZeroVector;
+	PrimaryComponentTick.bCanEverTick = false;
 }
 
 void UPlayerHUDComponent::BeginPlay()
@@ -35,7 +34,7 @@ void UPlayerHUDComponent::BeginPlay()
 	}
 
 	PlayerController->OnPossessedPawnChanged.AddDynamic(this, &UPlayerHUDComponent::OnPossessedPawnChanged);
-
+	
 	// 메인 HUD 생성
 	if (HudWidgetClass)
 	{
@@ -54,6 +53,7 @@ void UPlayerHUDComponent::BeginPlay()
 		if (CrosshairWidget)
 		{
 			CrosshairWidget->AddToViewport();
+			CrosshairWidget->BindWidget(PlayerController->GetPawn());
 		}
 	}
 
@@ -106,48 +106,29 @@ void UPlayerHUDComponent::BeginPlay()
 			}
 		}
 	}
-}
 
-void UPlayerHUDComponent::TickComponent(float DeltaTime, enum ELevelTick TickType,
-	FActorComponentTickFunction* ThisTickFunction)
-{
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-	
-	APlayerController* PlayerController = Cast<APlayerController>(GetOwner());
-	if (!PlayerController || !PlayerController->IsLocalController())
+	AADInGameState* GS = Cast<AADInGameState>(GetWorld()->GetGameState());
+	if (GS == nullptr)
 	{
+		LOGV(Warning, TEXT("GS == nullptr"));
+		return;
+	}
+	
+	AADDroneSeller* CurrentDroneSeller = GS->GetCurrentDroneSeller();
+	if (CurrentDroneSeller == nullptr)
+	{
+		LOGV(Warning, TEXT("CurrentDroneSeller == nullptr, Server? : %d"), GetOwner()->GetNetMode() != ENetMode::NM_Client);
 		return;
 	}
 
-	AUnderwaterCharacter* Character = PlayerController->GetPawn<AUnderwaterCharacter>();
-	if (!Character)
-	{
-		return;
-	}
+	PlayerStatusWidget->SetDroneTargetText(CurrentDroneSeller->GetTargetMoney());
+	PlayerStatusWidget->SetDroneCurrentText(CurrentDroneSeller->GetCurrentMoney());
 
-	// Viewport 크기와 DPI를 가져오는 방법
-	// 현재는 SetPotionInViewport에서 DPI를 계산해주므로 사용하지 않는다.
-	// FVector2D ViewportSize;
-	// GEngine->GameViewport->GetViewportSize(ViewportSize);
-	// UE_LOG(LogTemp,Display, TEXT("Viewport Size: %s"), *ViewportSize.ToString());
+	CurrentDroneSeller->OnCurrentMoneyChangedDelegate.RemoveAll(PlayerStatusWidget);
+	CurrentDroneSeller->OnCurrentMoneyChangedDelegate.AddUObject(PlayerStatusWidget, &UPlayerStatusWidget::SetDroneCurrentText);
 
-	// UGameViewportClient* ViewportClient = GEngine->GameViewport;
-	// float DPI = ViewportClient->GetDPIScale();
-	// UE_LOG(LogTemp,Display, TEXT("DPI: %f"), DPI);
-	
-	const FVector CameraLocation = PlayerController->PlayerCameraManager->GetCameraLocation();
-	const FRotator LaggedRotation = Character->GetMesh1PSpringArm()->GetSocketRotation(Character->GetMesh1PSpringArm()->SocketName);
-	const FVector LaggedLookTarget = CameraLocation + LaggedRotation.Vector() * 1000.0f;
-
-	FVector2D ScreenPosition;
-	PlayerController->ProjectWorldLocationToScreen(LaggedLookTarget, ScreenPosition);
-
-	CrosshairPosition = FMath::Vector2DInterpTo(CrosshairPosition, ScreenPosition, DeltaTime, 20.0f);
-	
-	if (CrosshairWidget)
-	{
-		CrosshairWidget->SetPositionInViewport(CrosshairPosition);
-	}	
+	CurrentDroneSeller->OnTargetMoneyChangedDelegate.RemoveAll(PlayerStatusWidget);
+	CurrentDroneSeller->OnTargetMoneyChangedDelegate.AddUObject(PlayerStatusWidget, &UPlayerStatusWidget::SetDroneTargetText);
 }
 
 void UPlayerHUDComponent::C_ShowResultScreen_Implementation()
@@ -207,6 +188,21 @@ void UPlayerHUDComponent::C_ShowResultScreen_Implementation()
 void UPlayerHUDComponent::UpdateMissionsOnHUD(EMissionType MissionType, uint8 MissionIndex, int32 CurrentProgress)
 {
 	MissionsOnHUDWidget->UpdateMission(MissionType, MissionIndex, CurrentProgress);
+}
+
+void UPlayerHUDComponent::PlayNextPhaseAnim(int32 NextPhaseNumber)
+{
+	PlayerStatusWidget->PlayNextPhaseAnim(NextPhaseNumber);
+}
+
+void UPlayerHUDComponent::SetCurrentPhaseOverlayVisible(bool bShouldVisible)
+{
+	if (IsValid(PlayerStatusWidget) == false)
+	{
+		return;
+	}
+
+	PlayerStatusWidget->SetCurrentPhaseOverlayVisible(bShouldVisible);
 }
 
 void UPlayerHUDComponent::SetTestHUDVisibility(const bool NewVisible) const
@@ -270,9 +266,14 @@ void UPlayerHUDComponent::OnPossessedPawnChanged(APawn* OldPawn, APawn* NewPawn)
 		HudWidget->BindWidget(NewPawn);
 	}
 
-	if (IsValid(CrosshairWidget))
+	if (!IsValid(CrosshairWidget))
 	{
-		
+		CrosshairWidget = CreateWidget<UCrosshairWidget>(PlayerController, CrosshairWidgetClass);
+	}
+	if (CrosshairWidget)
+	{
+		CrosshairWidget->AddToViewport();
+		CrosshairWidget->BindWidget(NewPawn);
 	}
 
 	if (!IsValid(PlayerStatusWidget))

@@ -121,6 +121,9 @@ protected:
 public:
 	// Interactable Interface Begin
 
+	/** Interact 함수가 호출되면 실행되는 함수 */
+	virtual void Interact_Implementation(AActor* InstigatorActor) override;
+	
 	/** Interact Hold됬을 때 호출될 함수 */
 	virtual void InteractHold_Implementation(AActor* InstigatorActor) override;
 
@@ -142,6 +145,9 @@ public:
 	/** Interactable Hold 모드 설정 */
 	virtual bool IsHoldMode() const override;
 
+	/** 상호작용 타입 반환 */
+	virtual FString GetInteractionDescription() const override;
+	
 	// Interactable Interface End
 
 	// Launch Character
@@ -160,17 +166,12 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SetEnvironmentState(EEnvironmentState State);
 
-	/** 빠른 구현을 위해 Captrue를 현재 Multicast로 구현한다.
-	 * 이후 변경 모델
-	 * 1. Replicate 모델 사용 : Replicate 모델은 변수를 기반으로 작동하기 때문에 중도 참여자도 현재 상태를 판단할 수 있다.
-	 * 혹은 2개가 결합된 방식을 사용할 수 있다.
-	 * 2. State Pattern 사용 : 상태가 많아질 경우 해당 State Pattern을 사용해서 상태를 관리한다.
-	 */
-
 	// Monster 인식 시에 Target
 	// Monster가 놓칠 시에 UnTarget
 	// Monster가 사망했을 때 UnTarget
 	// Monster가 Target을 변경했을 때 UnTarget
+
+	// 추후, Combat State 진입 시에 로컬 효과가 존재한다면 Replicate를 통해서 전파한다.
 	
 	/** Monster에 의해 Target 되었을 때 호출된다. Authority Node에서만 유효하다. */
 	UFUNCTION(BlueprintCallable)
@@ -179,6 +180,13 @@ public:
 	/** Monster에 의해 UnTarget 되었을 때 호출된다. Authority Node에서만 유효하다. */
 	UFUNCTION(BlueprintCallable)
 	void OnUntargeted();
+
+	/** 빠른 구현을 위해 Captrue를 현재 Multicast로 구현한다.
+	 * 이후 변경 모델
+	 * 1. Replicate 모델 사용 : Replicate 모델은 변수를 기반으로 작동하기 때문에 중도 참여자도 현재 상태를 판단할 수 있다.
+	 * 혹은 2개가 결합된 방식을 사용할 수 있다.
+	 * 2. State Pattern 사용 : 상태가 많아질 경우 해당 State Pattern을 사용해서 상태를 관리한다.
+	 */
 	
 	/** 캐릭터 Capture 상태 실행 */
 	UFUNCTION(BlueprintCallable)
@@ -420,6 +428,7 @@ protected:
 	UFUNCTION()
 	void OnHealthChanged(int32 CurrentHealth, int32 MaxHealth);
 
+	/** 물리 볼륨이 변경되었을 때 호출되는 함수 */
 	UFUNCTION()
 	void OnPhysicsVolumeChanged(class APhysicsVolume* NewVolume);
 	
@@ -550,6 +559,7 @@ public:
 
 	// Knockback이 되는 상황은 LaunchCharacter 때이므로 LaunchCharacter를 오버라이드해서 처리한다.
 	// 복귀가 될 때는 MoveMode 변화를 통해서 처리한다.
+	// Launch Character는 Client에서도 호출되므로 Local 효과를 재생할 수 있다.
 	
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnKnockbacked, FVector, KnockbackVelocity);
 	/** 캐릭터가 넉백되었을 때 호출되는 델리게이트 */
@@ -580,6 +590,16 @@ public:
 	/** 캐릭터가 피해를 입었을 때 호출되는 델리게이트, DamageAmount = Health Damage Taken + Shield Damage Taken */
 	UPROPERTY(BlueprintAssignable)
 	FOnDamageTaken OnDamageTakenDelegate;
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnComatStart);
+	/** 캐릭터가 전투 상태에 진입했을 때 호출되는 델리게이트, Server에서만 호출 */
+	UPROPERTY(BlueprintAssignable)
+	FOnComatStart OnCombatStartDelegate;
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCombatEnd);
+	/** 캐릭터가 전투 상태에서 벗어났을 때 호출되는 델리게이트, Server에서만 호출 */
+	UPROPERTY(BlueprintAssignable)
+	FOnCombatEnd OnCombatEndDelegate;
 	
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnMontageEnd, UAnimMontage*, Montage, bool, bInterrupted);
 	/** 1인칭 메시 몽타주 종료 시 호출되는 델리게이트 */
@@ -602,8 +622,6 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = "Mining")
 	/** 현재 1p에 장착된 Tool 인스턴스 */
 	TObjectPtr<AActor> SpawnedTool;
-
-	TObjectPtr<USkeletalMeshComponent> CachedSkeletalMesh;
 
 	UPROPERTY(ReplicatedUsing = OnRep_CurrentTool)
 	TObjectPtr<AActor> CurrentTool = nullptr;
@@ -966,6 +984,10 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class ULanternComponent> LanternComponent;
 
+	/** 전투 효과 컴포넌트 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UCombatEffectComponent> CombatEffectComponent;
+	
 	/** 수중 효과 컴포넌트 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UUnderwaterEffectComponent> UnderwaterEffectComponent;
@@ -977,6 +999,10 @@ private:
 	/** 상호작용 대상이 되게 하는 컴포넌트 */
 	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UADInteractableComponent> InteractableComponent;
+
+	/** 래그돌 컴포넌트 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class URagdollReplicationComponent> RagdollComponent;
 
 	/** 인벤토리 컴포넌트 캐시 */
 	UPROPERTY()
@@ -999,6 +1025,24 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Emote", meta = (AllowPrivateAccess = "true"))
 	TArray<TObjectPtr<UAnimMontage>> EmoteAnimationMontages;
 
+	/** 현재 상호 작용 택스트 */
+	FString InteractionDescription;
+
+	/** 현재 상호 작용이 Hold 모드인지 여부 */
+	uint8 bIsInteractionHoldMode : 1;
+
+	/** 그로기 상태 상호 작용 택스트. 구조 상황에 출력 */
+	UPROPERTY(EditDefaultsOnly, Category= "Character|Interaction", meta = (AllowPrivateAccess = "true"))
+	FString GroggyInteractionDescription;
+
+	/** 사망 상태 상호 작용 택스트. 시체 들기 상황에 출력 */
+	UPROPERTY(EditDefaultsOnly, Category= "Character|Interaction", meta = (AllowPrivateAccess = "true"))
+	FString DeathInteractionDescription;
+
+	/** 사망 상태에서 시체 들은 상황에서 출력 */
+	UPROPERTY(EditDefaultsOnly, Category= "Character|Interaction", meta = (AllowPrivateAccess = "true"))
+	FString DeathGrabReleaseDescription;
+	
 #pragma endregion
 
 #pragma region Getter Setter
@@ -1088,9 +1132,6 @@ public:
 	/** 3인칭 메시 Strafe 여부 반환 */
 	FORCEINLINE bool Is3PStrafe() const {return bIsAnim3PSyncStateOverride ? AnimSyncState.bIsStrafing : OverrideAnimSyncState.bIsStrafing;}
 	
-	/** 상호작용 타입 반환 */
-	virtual FString GetInteractionDescription() const override { return TEXT("Revive Character!"); }
-
 	/** 스프린트 적용 속도 반환 */
 	FORCEINLINE float GetSprintSpeed() const { return StatComponent->MoveSpeed * SprintMultiplier; }
 
@@ -1102,6 +1143,12 @@ public:
 	
 	/** 현재 캐릭터가 무기를 장착하고 있는지 여부를 반환 */
 	bool IsWeaponEquipped() const;
+
+	/** 현재 캐릭터 전투 중인지 여부를 반환. 현재는 Server에서만 작동 */
+	FORCEINLINE bool IsInCombat() const { return bIsInCombat; }
+
+	/** 현재 생성된 실드 히트 위젯을 반환 */
+	UUserWidget* GetShieldHitWidget() const;
 	
 #pragma endregion
 };

@@ -49,6 +49,10 @@ public:
 		static_assert(std::is_base_of<APoolableItem, T>::value, "T must be a subclass of APoolableItem");
 		for (APoolableItem* Object : ObjectPool)
 		{
+			if (!IsValid(Object))
+			{
+				continue;
+			}
 			if (!Object->GetIsActive())
 			{
 				Object->SetObjectPool(this);
@@ -64,12 +68,9 @@ public:
 		T* NewObject = GetWorld()->SpawnActor<T>(PoolableClass);
 		if (NewObject)
 		{
-			NewObject->Activate();
 			ObjectPool.Add(NewObject);
-			return NewObject;
 		}
-
-		return nullptr;
+		return NewObject;
 	}
 
 	void ReturnObject()

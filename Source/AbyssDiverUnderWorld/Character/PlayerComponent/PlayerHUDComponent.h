@@ -16,11 +16,11 @@ public:
     UPlayerHUDComponent();
 
 protected:
-
+    
     virtual void BeginPlay() override;
-    virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 #pragma region Method
+    
 public:
     UFUNCTION(Client, Reliable)
     void C_ShowResultScreen();
@@ -56,6 +56,9 @@ public:
 
     void UpdateMissionsOnHUD(EMissionType MissionType, uint8 MissionIndex, int32 CurrentProgress);
 
+    void PlayNextPhaseAnim(int32 NextPhaseNumber);
+    void SetCurrentPhaseOverlayVisible(bool bShouldVisible);
+
 private:
 #pragma endregion
 
@@ -72,8 +75,6 @@ private:
 
     UPROPERTY()
     TObjectPtr<class UCrosshairWidget> CrosshairWidget;
-
-    FVector2D CrosshairPosition;
 
     UPROPERTY(EditDefaultsOnly, Category = UI, meta = (AllowPrivateAccess = "true"))
     TSubclassOf<class UResultScreen> ResultScreenWidgetClass;

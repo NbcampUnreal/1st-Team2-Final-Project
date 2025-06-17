@@ -6,6 +6,7 @@
 #include "Blueprint/UserWidget.h"
 #include "PlayerHUDWidget.generated.h"
 
+class URichTextBlock;
 enum class ECharacterState : uint8;
 
 /**
@@ -31,7 +32,7 @@ public:
 
 	/** 실드 택스트를 갱신 */
 	UFUNCTION(BlueprintCallable)
-	void UpdateShieldText(float ShieldValue);
+	void UpdateShieldText(float OldShieldValue, float NewShieldValue);
 
 	/** 산소 택스트를 갱신 */
 	UFUNCTION(BlueprintCallable)
@@ -48,12 +49,23 @@ public:
 	/** Groggy 시간을 갱신 */
 	UFUNCTION(BlueprintCallable)
 	void UpdateGroggyText(float GroggyTime, float MaxGroggyTime);
-	
+
+	UFUNCTION()
+	void UpdateCombatText(bool bIsInCombat);
+
 protected:
 
 	/** Character State 변화 처리 */
 	UFUNCTION()
 	void OnCharacterStateChanged(ECharacterState OldCharacterState, ECharacterState NewCharacterState);
+
+	/** Combat 시작 시 처리 */
+	UFUNCTION()
+	void OnCombatStart();
+
+	/** Combat 종료 시 처리 */
+	UFUNCTION()
+	void OnCombatEnd();
 	
 #pragma endregion
 
@@ -63,26 +75,29 @@ private:
 
 	/** 체력 택스트, 임시용이고 디버깅용으로 수정 예정 */
 	UPROPERTY(meta = (BindWidget))
-	class URichTextBlock* HealthTextBlock;
+	TObjectPtr<URichTextBlock> HealthTextBlock;
 
 	UPROPERTY(meta = (BindWidget))
-	class URichTextBlock* ShieldTextBlock;
+	TObjectPtr<URichTextBlock> ShieldTextBlock;
 
 	/** 산소 택스트, 임시용이고 디버깅용으로 수정 예정 */
 	UPROPERTY(meta = (BindWidget))
-	class URichTextBlock* OxygenTextBlock;
+	TObjectPtr<URichTextBlock> OxygenTextBlock;
 
 	/** 스태미나 택스트, 임시용이고 디버깅용으로 수정 예정 */
 	UPROPERTY(meta = (BindWidget))
-	class URichTextBlock* StaminaTextBlock;
+	TObjectPtr<URichTextBlock> StaminaTextBlock;
 
 	/** 캐릭터 스테이트 택스트, 디버깅용으로 수정 예정 */
 	UPROPERTY(meta = (BindWidget))
-	URichTextBlock* CharacterStateTextBlock;
+	TObjectPtr<URichTextBlock> CharacterStateTextBlock;
 
 	/** 그로기 시간 텍스트, 디버깅용으로 수정 예정 */
 	UPROPERTY(meta = (BindWidget))
-	URichTextBlock* GroggyTextBlock;
+	TObjectPtr<URichTextBlock> GroggyTextBlock;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<URichTextBlock> CombatTextBlock;
 	
 #pragma endregion
 	

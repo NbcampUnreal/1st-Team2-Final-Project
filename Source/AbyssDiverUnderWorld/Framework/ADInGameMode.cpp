@@ -16,6 +16,7 @@
 
 #include "Projectile/GenericPool.h"
 #include "Projectile/ADSpearGunBullet.h"
+#include "Projectile/ADFlareGunBullet.h"
 
 #include "DataRow/PhaseGoalRow.h"
 #include "Container/FStructContainer.h"
@@ -32,7 +33,12 @@ AADInGameMode::AADInGameMode()
 	ConstructorHelpers::FClassFinder<AADSpearGunBullet> SpearGunBulletFinder(TEXT("/Game/_AbyssDiver/Blueprints/Projectile/BP_ADSpearGunBullet"));
 	if (SpearGunBulletFinder.Succeeded())
 	{
-		BulletClass = SpearGunBulletFinder.Class;
+		SpearBulletClass = SpearGunBulletFinder.Class;
+	}
+	ConstructorHelpers::FClassFinder<AADFlareGunBullet> FlareGunBulletFinder(TEXT("/Game/_AbyssDiver/Blueprints/Projectile/BP_ADFlareGunBullet"));
+	if (FlareGunBulletFinder.Succeeded())
+	{
+		FlareBulletClass = FlareGunBulletFinder.Class;
 	}
 }
 
@@ -53,7 +59,9 @@ void AADInGameMode::BeginPlay()
 		UDataTableSubsystem* DataTableSubsystem = GetGameInstance()->GetSubsystem<UDataTableSubsystem>();
 
 		SpearGunBulletPool = GetWorld()->SpawnActor<AGenericPool>();
-		SpearGunBulletPool->InitPool<AADSpearGunBullet>(10, BulletClass);
+		SpearGunBulletPool->InitPool<AADSpearGunBullet>(30, SpearBulletClass);
+		FlareGunBulletPool = GetWorld()->SpawnActor<AGenericPool>();
+		FlareGunBulletPool->InitPool<AADFlareGunBullet>(30, FlareBulletClass);
 		LOGVN(Warning, TEXT("SpawnSpearGunBulletPool"));
 
 		int32 LastDroneNumber = 0;
@@ -91,6 +99,28 @@ void AADInGameMode::BeginPlay()
 
 void AADInGameMode::PostLogin(APlayerController* NewPlayer)
 {
+	FString NewPlayerId = NewPlayer->GetPlayerState<AADPlayerState>()->GetUniqueId()->ToString();
+
+	LOGV(Warning, TEXT("%s Has Entered"), *NewPlayerId);
+	UADGameInstance* GI = GetGameInstance<UADGameInstance>();
+	check(GI);
+
+	if (AADPlayerState* ADPlayerState = NewPlayer->GetPlayerState<AADPlayerState>())
+	{
+		ADPlayerState->ResetLevelResults();
+		GI->AddPlayerNetId(NewPlayerId);
+
+		int32 NewPlayerIndex = INDEX_NONE;
+		if (GI->TryGetPlayerIndex(NewPlayerId, NewPlayerIndex) == false)
+		{
+			LOGV(Error, TEXT("Fail To Get Player Index"));
+			return;
+		}
+
+		ADPlayerState->SetPlayerNickname(NewPlayerId);
+		ADPlayerState->SetPlayerIndex(NewPlayerIndex);
+	}
+
 	Super::PostLogin(NewPlayer);
 
 	InitPlayer(NewPlayer);
@@ -100,20 +130,23 @@ void AADInGameMode::Logout(AController* Exiting)
 {
 	Super::Logout(Exiting);
 
-	if (ensure(Exiting) == false)
+	if (IsValid(Exiting) == false)
 	{
+		LOGV(Error, TEXT("IsValid(Exiting) == false"));
 		return;
 	}
 
 	AADPlayerState* PS = Exiting->GetPlayerState<AADPlayerState>();
-	if (ensure(PS) == false)
+	if (IsValid(PS) == false)
 	{
+		LOGV(Error, TEXT("IsValid(PS) == false"));
 		return;
 	}
 
 	const FUniqueNetIdRepl& UniqueNetIdRepl = PS->GetUniqueId();
-	if (ensure(&UniqueNetIdRepl) == false)
+	if (UniqueNetIdRepl.IsValid() == false)
 	{
+		LOGV(Error, TEXT("UniqueNetIdRepl.IsValid() == false"));
 		return;
 	}
 
@@ -141,28 +174,41 @@ void AADInGameMode::ReadyForTravelToCamp()
 	}
 
 	TimerManager.ClearTimer(ResultTimerHandle);
+
 	
+
 	const float Interval = 5.0f;
 	TimerManager.SetTimer(ResultTimerHandle, this, &AADInGameMode::TravelToCamp, 1, false, Interval);
 }
 
 void AADInGameMode::TravelToCamp()
 {
-	if (AADInGameState* ADInGameState = GetGameState<AADInGameState>())
+	for (AADPlayerController* PC : TActorRange<AADPlayerController>(GetWorld()))
 	{
-		FString LevelLoad = CampMapName;
-		if (LevelLoad == "invalid")
-		{
-			UE_LOG(LogTemp, Error, TEXT("LevelLoad is empty"));
-			LevelLoad = TEXT("DefaultInGameLevel");
-			return;
-		}
-
-		ADInGameState->SendDataToGameInstance();
-		//input spot level name
-		FString TravelURL = FString::Printf(TEXT("%s?listen"), *LevelLoad);
-		GetWorld()->ServerTravel(TravelURL);
+		PC->C_OnPreClientTravel();
 	}
+
+	const float WaitForStopVoice = 1.0f;
+
+	FTimerHandle WaitForVoiceTimerHandle;
+	GetWorldTimerManager().SetTimer(WaitForVoiceTimerHandle, [&]()
+		{
+			if (AADInGameState* ADInGameState = GetGameState<AADInGameState>())
+			{
+				FString LevelLoad = CampMapName;
+				if (LevelLoad == "invalid")
+				{
+					UE_LOG(LogTemp, Error, TEXT("LevelLoad is empty"));
+					return;
+				}
+
+				ADInGameState->SendDataToGameInstance();
+				//input spot level name
+				FString TravelURL = FString::Printf(TEXT("%s?listen"), *LevelLoad);
+				GetWorld()->ServerTravel(TravelURL);
+			}
+
+		}, WaitForStopVoice, false);
 }
 
 bool AADInGameMode::IsAllPhaseCleared()
@@ -269,6 +315,8 @@ void AADInGameMode::GetOre()
 		99,
 		1,
 		1,
+		0,
+		0,
 		10000,
 		EItemType::Exchangable,
 		nullptr

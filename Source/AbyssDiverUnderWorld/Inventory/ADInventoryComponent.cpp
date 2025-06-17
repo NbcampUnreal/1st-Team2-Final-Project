@@ -18,7 +18,6 @@
 #include "UI/ChargeBatteryWidget.h"
 #include "Character/UnderwaterCharacter.h"
 #include "Kismet/GameplayStatics.h"
-#include "Interactable/OtherActors/ADDroneSeller.h"
 #include "Framework/ADInGameState.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
@@ -34,9 +33,9 @@ UADInventoryComponent::UADInventoryComponent() :
 	ToggleWidgetClass(nullptr),
 	TotalWeight(0),
 	TotalPrice(0),
-	WeightMax(100),
 	CurrentEquipmentSlotIndex(INDEX_NONE),
 	CurrentEquipmentInstance(nullptr),
+	WeightMax(100),
 	ToggleWidgetInstance(nullptr),
 	bCanUseItem(true),
 	DataTableSubsystem(nullptr),
@@ -110,6 +109,7 @@ void UADInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	DOREPLIFETIME(UADInventoryComponent, CurrentEquipmentInstance);
 	DOREPLIFETIME(UADInventoryComponent, CurrentEquipItem);
 	DOREPLIFETIME(UADInventoryComponent, bIsWeapon);
+	DOREPLIFETIME(UADInventoryComponent, EquipmentType);
 
 }
 
@@ -314,7 +314,8 @@ void UADInventoryComponent::C_SetButtonActive_Implementation(EChargeBatteryType 
 
 void UADInventoryComponent::C_UpdateBatteryInfo_Implementation()
 {
-	ChargeBatteryWidget->UpdateBatteryInfo();
+	if(ChargeBatteryWidget)
+		ChargeBatteryWidget->UpdateBatteryInfo();
 }
 
 void UADInventoryComponent::C_SetEquipBatteryAmount_Implementation(EChargeBatteryType ItemChargeBatteryType)
@@ -344,29 +345,6 @@ void UADInventoryComponent::InventoryInitialize()
 	ToggleWidgetInstance->InitializeInventoriesInfo(this);
 	ToggleWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
 
-	AADInGameState* GS = Cast<AADInGameState>(UGameplayStatics::GetGameState(GetWorld()));
-	if (GS == nullptr)
-	{
-		LOGINVEN(Warning, TEXT("GS == nullptr"));
-		return;
-	}
-
-	AADDroneSeller* CurrentDroneSeller = GS->GetCurrentDroneSeller();
-	if (CurrentDroneSeller == nullptr)
-	{
-		LOGINVEN(Warning, TEXT("CurrentDroneSeller == nullptr, Server? : %d"), GetOwner()->GetNetMode() != ENetMode::NM_Client);
-		return;
-	}
-
-	ToggleWidgetInstance->SetDroneTargetText(CurrentDroneSeller->GetTargetMoney());
-	ToggleWidgetInstance->SetDroneCurrentText(CurrentDroneSeller->GetCurrentMoney());
-
-	CurrentDroneSeller->OnCurrentMoneyChangedDelegate.RemoveAll(ToggleWidgetInstance);
-	CurrentDroneSeller->OnCurrentMoneyChangedDelegate.AddUObject(ToggleWidgetInstance, &UToggleWidget::SetDroneCurrentText);
-
-	CurrentDroneSeller->OnTargetMoneyChangedDelegate.RemoveAll(ToggleWidgetInstance);
-	CurrentDroneSeller->OnTargetMoneyChangedDelegate.AddUObject(ToggleWidgetInstance, &UToggleWidget::SetDroneTargetText);
-
 	InventoryUIUpdate();
 }
 
@@ -374,56 +352,59 @@ bool UADInventoryComponent::AddInventoryItem(const FItemData& ItemData)
 {
 	if (TotalWeight + ItemData.Mass <= WeightMax)
 	{
-		FFADItemDataRow* FoundRow = DataTableSubsystem->GetItemDataByName(ItemData.Name); 
-		if (FoundRow)
+		if (DataTableSubsystem)
 		{
-			int8 ItemIndex = FindItemIndexByName(ItemData.Name);
-			if (ItemData.ItemType == EItemType::Equipment)
+			FFADItemDataRow* FoundRow = DataTableSubsystem->GetItemData(ItemData.Id);
+			if (FoundRow)
 			{
-				if (ItemIndex != -1)
-					return false;
-			}
-			LOGINVEN(Warning, TEXT("AddInventoryItem ItemIndex : %d"), ItemIndex);
-			bool bIsUpdateSuccess = false;
+				int8 ItemIndex = FindItemIndexByName(ItemData.Name);
+				if (ItemData.ItemType == EItemType::Equipment)
+				{
+					if (ItemIndex != -1)
+						return false;
+				}
+				LOGINVEN(Warning, TEXT("AddInventoryItem ItemIndex : %d"), ItemIndex);
+				bool bIsUpdateSuccess = false;
 
-			if (FoundRow->Stackable && ItemIndex != -1)
-			{
-				bIsUpdateSuccess = InventoryList.UpdateQuantity(ItemIndex, ItemData.Quantity);
-				if(InventoryList.Items[ItemIndex].Amount > ItemData.Amount)
-					InventoryList.SetAmount(ItemIndex, ItemData.Amount);
+				if (FoundRow->Stackable && ItemIndex != -1)
+				{
+					bIsUpdateSuccess = InventoryList.UpdateQuantity(ItemIndex, ItemData.Quantity);
+					if (InventoryList.Items[ItemIndex].Amount > ItemData.Amount)
+						InventoryList.SetAmount(ItemIndex, ItemData.Amount);
+					if (bIsUpdateSuccess)
+					{
+						LOGINVEN(Warning, TEXT("Item Update, ItemName : %s, Id : %d"), *InventoryList.Items[ItemIndex].Name.ToString(), InventoryList.Items[ItemIndex].Id);
+					}
+					else
+						LOGINVEN(Warning, TEXT("Update fail"));
+				}
+				else
+				{
+					if (InventoryIndexMapByType.Contains(ItemData.ItemType) && GetTypeInventoryEmptyIndex(ItemData.ItemType) != INDEX_NONE)
+					{
+						bIsUpdateSuccess = true;
+						uint8 SlotIndex = GetTypeInventoryEmptyIndex(ItemData.ItemType);
+
+						FItemData NewItem = { FoundRow->Name, FoundRow->Id, ItemData.Quantity, SlotIndex, ItemData.Amount, ItemData.CurrentAmmoInMag, ItemData.ReserveAmmo, ItemData.Mass,ItemData.Price, FoundRow->ItemType, FoundRow->Thumbnail };
+						InventoryList.AddItem(NewItem);
+						if (ItemData.ItemType == EItemType::Exchangable)
+						{
+							OnInventoryInfoUpdate(NewItem.Mass, NewItem.Price);
+						}
+						LOGINVEN(Warning, TEXT("Add New Item %s SlotIndex : %d"), *NewItem.Name.ToString(), SlotIndex);
+					}
+					else
+					{
+						LOGINVEN(Warning, TEXT("%s Inventory is full"), *StaticEnum<EItemType>()->GetNameStringByValue((int64)ItemData.ItemType));
+					}
+				}
+
 				if (bIsUpdateSuccess)
 				{
-					LOGINVEN(Warning, TEXT("Item Update, ItemName : %s, Id : %d"), *InventoryList.Items[ItemIndex].Name.ToString(), InventoryList.Items[ItemIndex].Id);
+					InventoryUIUpdate();
+					CheckItemsForBattery();
+					return true;
 				}
-				else
-					LOGINVEN(Warning, TEXT("Update fail"));
-			}
-			else
-			{
-				if (InventoryIndexMapByType.Contains(ItemData.ItemType) && GetTypeInventoryEmptyIndex(ItemData.ItemType) != INDEX_NONE)
-				{
-					bIsUpdateSuccess = true;
-					uint8 SlotIndex = GetTypeInventoryEmptyIndex(ItemData.ItemType);
-				
-					FItemData NewItem = { FoundRow->Name, FoundRow->Id, ItemData.Quantity, SlotIndex, ItemData.Amount, ItemData.Mass,ItemData.Price, FoundRow->ItemType, FoundRow->Thumbnail };
-					InventoryList.AddItem(NewItem);
-					if (ItemData.ItemType == EItemType::Exchangable)
-					{
-						OnInventoryInfoUpdate(NewItem.Mass, NewItem.Price);
-					}
-					LOGINVEN(Warning, TEXT("Add New Item %s SlotIndex : %d"), *NewItem.Name.ToString(), SlotIndex);
-				}
-				else
-				{
-					LOGINVEN(Warning, TEXT("%s Inventory is full"), *StaticEnum<EItemType>()->GetNameStringByValue((int64)ItemData.ItemType));
-				}
-			}
-
-			if (bIsUpdateSuccess)
-			{
-				InventoryUIUpdate();
-				CheckItemsForBattery();
-				return true;
 			}
 		}
 	}
@@ -491,19 +472,21 @@ void UADInventoryComponent::OnRep_CurrentEquipItem()
 	}
 	if (CurrentEquipItem)
 	{
+		FName Socket = NAME_None;
+		switch (EquipmentType)
+		{
+		case EEquipmentType::HarpoonGun:	Socket = HarpoonSocketName; break;
+		case EEquipmentType::FlareGun:		Socket = FlareSocketName;   break;
+		case EEquipmentType::DPV:			Socket = DPVSocketName;     break;
+		default:														break;
+		}
+
 		if (USkeletalMeshComponent* SkeletalMeshComp = CurrentEquipItem->FindComponentByClass<USkeletalMeshComponent>())
 		{
 			SkeletalMeshComp->SetVisibility(false, true);
-			if (bIsWeapon)
-			{
-				EquipRenderComp->AttachItem(CurrentEquipItem, HarpoonSocketName);
-			}
-			else
-			{
-				EquipRenderComp->AttachItem(CurrentEquipItem, DPVSocketName);
-			}
-			PrevEquipItem = CurrentEquipItem;
+			EquipRenderComp->AttachItem(CurrentEquipItem, Socket);
 		}
+		PrevEquipItem = CurrentEquipItem;
 	}
 }
 
@@ -780,8 +763,8 @@ void UADInventoryComponent::Equip(FItemData& ItemData, int8 SlotIndex)
 	{
 		if (MeshComp->DoesSocketExist(HarpoonSocketName) && MeshComp->DoesSocketExist(DPVSocketName))
 		{
-			const FName SocketName = bIsWeapon ? HarpoonSocketName : DPVSocketName;
-			FTransform AttachTM = MeshComp->GetSocketTransform(SocketName);
+			//const FName SocketName = bIsWeapon ? HarpoonSocketName : DPVSocketName;
+			//FTransform AttachTM = MeshComp->GetSocketTransform(SocketName);
 
 			AADUseItem* SpawnedItem = GetWorld()->SpawnActor<AADUseItem>(
 				AADUseItem::StaticClass(),
@@ -807,6 +790,7 @@ void UADInventoryComponent::Equip(FItemData& ItemData, int8 SlotIndex)
 				{
 					EquipComp->Initialize(*GetCurrentEquipmentItemData());
 					bIsWeapon = EquipComp->bIsWeapon;
+					EquipmentType = EquipComp->GetEquipType();
 					bHasNoAnimation = EquipComp->bHasNoAnimation;
 				}
 			}

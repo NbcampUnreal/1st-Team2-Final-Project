@@ -11,6 +11,17 @@ UENUM(BlueprintType)
 enum class EUnitId : uint8
 {
 	PlayerCharacter,
+	GobleFish,
+	HorrorCreature,
+	MegaTentacle,
+	Tentacle,
+	Blowfish,
+	Limadon,
+	SeaObserver,
+	MiniSerpmare,
+	BigSerpmare,
+	Kraken,
+	AlienShark,
 	Max UMETA(Hidden)
 };
 

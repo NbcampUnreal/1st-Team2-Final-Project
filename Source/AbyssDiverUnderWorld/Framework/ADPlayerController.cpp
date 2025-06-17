@@ -98,6 +98,23 @@ void AADPlayerController::SetPawn(APawn* InPawn)
 	}
 }
 
+void AADPlayerController::PostNetInit()
+{
+	Super::PostNetInit();
+	OnPostNetInit();
+}
+
+void AADPlayerController::PostSeamlessTravel()
+{
+	Super::PostSeamlessTravel();
+	OnPostSeamlessTravel();
+}
+
+void AADPlayerController::C_OnPreClientTravel_Implementation()
+{
+	OnPreClientTravel();
+}
+
 void AADPlayerController::S_SetPlayerInfo_Implementation(const FUniqueNetIdRepl& Id, const FString& Nickname)
 {
 	if (AADPlayerState* PS = GetPlayerState<AADPlayerState>())

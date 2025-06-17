@@ -47,12 +47,16 @@ protected:
 private:
 	int32 CustomStencilValue = 1;
 	uint8 bHighlighted : 1 = false;
+	uint8 bCanInteractable : 1 = true;
 
 #pragma endregion
 
 #pragma region Getter, Setteer
 public:
 	bool IsHighlighted() const { return bHighlighted; }
+	bool CanInteractable() const { return bCanInteractable; }
+
+	void SetInteractable(bool InCanInteractable) { bCanInteractable = InCanInteractable; }
 
 #pragma endregion
 	

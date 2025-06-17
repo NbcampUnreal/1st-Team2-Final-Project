@@ -4,6 +4,7 @@
 #include "Shops/ShopWidgets/ShopItemMeshPanel.h"
 #include "Framework/ADInGameState.h"
 #include "DataRow/FADItemDataRow.h"
+#include "DataRow/UpgradeDataRow.h"
 #include "Subsystems/DataTableSubsystem.h"
 #include "Subsystems/SoundSubsystem.h"
 
@@ -77,6 +78,8 @@ void UShopElementInfoWidget::Init(USkeletalMeshComponent* NewItemMeshComp)
 	SetCostInfoActive(false);
 	SetQuantityOverlayActive(false);
 	SetRemainingMoneyAfterPurchaseTextActive(false);
+
+	ItemMeshPanel->SetUpgradeImageActive(false);
 }
 
 void UShopElementInfoWidget::ShowItemInfos(int32 ItemId)
@@ -116,11 +119,46 @@ void UShopElementInfoWidget::ShowItemInfos(int32 ItemId)
 	ChangeRemainingMoneyAfterPurchaseTextFromCost(ItemData->Price);
 
 	bIsShowingUpgradeView = false;
+
+	ItemMeshPanel->SetUpgradeImageActive(false);
 }
 
-void UShopElementInfoWidget::ShowUpgradeInfos(USkeletalMesh* NewUpgradeItemMesh, int32 CurrentUpgradeLevel, bool bIsMaxLevel, int32 CurrentUpgradeCost, const FString& ExtraInfoText)
+void UShopElementInfoWidget::ShowUpgradeInfos(EUpgradeType UpgradeType, uint8 Grade, bool bIsMaxLevel)
 {
-	CurrentCost = CurrentUpgradeCost;
+	UDataTableSubsystem* DataTableSubsystem = GetGameInstance()->GetSubsystem<UDataTableSubsystem>();
+	if (DataTableSubsystem == nullptr)
+	{
+		LOGV(Warning, TEXT("DataTableSubsystem == nullptr"));
+		return;
+	}
+
+	FUpgradeDataRow* UpgradeData = nullptr;
+	if (bIsMaxLevel)
+	{
+		UpgradeData = DataTableSubsystem->GetUpgradeData(UpgradeType, Grade);
+		if (UpgradeData == nullptr)
+		{
+			LOGV(Error, TEXT("UpgradeData == nullptr"));
+			return;
+		}
+
+		CurrentCost = 0;
+	}
+	else
+	{
+		UpgradeData = DataTableSubsystem->GetUpgradeData(UpgradeType, Grade + 1);
+		if (UpgradeData == nullptr)
+		{
+			LOGV(Error, TEXT("UpgradeData == nullptr"));
+			return;
+		}
+
+		CurrentCost = UpgradeData->Price;
+	}
+
+	ItemMeshPanel->ChangeUpgradeImage(UpgradeData->UpgradeIcon);
+	ItemMeshPanel->SetUpgradeImageActive(true);
+
 	bIsShowingUpgradeView = true;
 	ChangeCurrentQuantityNumber(1);
 
@@ -133,11 +171,11 @@ void UShopElementInfoWidget::ShowUpgradeInfos(USkeletalMesh* NewUpgradeItemMesh,
 	SetQuantityOverlayActive(false);
 	SetRemainingMoneyAfterPurchaseTextActive(true);
 
-	ChangeItemMesh(NewUpgradeItemMesh, INDEX_NONE);
-	ChangeUpgradeLevelInfo(CurrentUpgradeLevel, bIsMaxLevel);
-	ChangeCostInfo(CurrentUpgradeCost, true);
+	ChangeItemMesh(nullptr, INDEX_NONE);
+	ChangeUpgradeLevelInfo(Grade, bIsMaxLevel);
+	ChangeCostInfo(CurrentCost, true);
 
-	ChangeRemainingMoneyAfterPurchaseTextFromCost(CurrentUpgradeCost);
+	ChangeRemainingMoneyAfterPurchaseTextFromCost(CurrentCost);
 }
 
 void UShopElementInfoWidget::ChangeItemDescription(const FString& NewDescription)
