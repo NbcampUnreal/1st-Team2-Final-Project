@@ -89,10 +89,8 @@ void AEnhancedBossAIController::OnTargetPerceptionUpdatedHandler(AActor* Actor, 
 	
 	// --------------------- 시각 자극 ---------------------
 	// 플레이어가 시야각에 들어오는 경우
-	if (Stimulus.Type == UAISense::GetSenseID<UAISense_Sight>())
+	if (bIsPerceptionSight && Stimulus.Type == UAISense::GetSenseID<UAISense_Sight>())
 	{
-		if (!bIsPerceptionSight) return;
-		
 		// 플레이어가 사망 상태인 경우 얼리 리턴
 		if (Player->GetCharacterState() == ECharacterState::Death)
 		{
@@ -117,10 +115,8 @@ void AEnhancedBossAIController::OnTargetPerceptionUpdatedHandler(AActor* Actor, 
 
 	// --------------------- 촉각 자극 ---------------------
 	// 데미지를 받는 경우
-	else if (Stimulus.Type == UAISense::GetSenseID<UAISense_Damage>())
+	else if (bIsPerceptionDamage && Stimulus.Type == UAISense::GetSenseID<UAISense_Damage>())
 	{
-		if (!bIsPerceptionDamage) return;
-		
 		if (Stimulus.WasSuccessfullySensed())
 		{
 			OnDamagePerceptionSuccess(Player);
@@ -129,10 +125,8 @@ void AEnhancedBossAIController::OnTargetPerceptionUpdatedHandler(AActor* Actor, 
 	
 	// --------------------- 청각 자극 ---------------------
 	// 플레이어가 피를 흘리는 경우
-	else if (Stimulus.Type == UAISense::GetSenseID<UAISense_Hearing>())
+	else if (bIsPerceptionHearing && Stimulus.Type == UAISense::GetSenseID<UAISense_Hearing>())
 	{
-		if (!bIsPerceptionHearing) return;
-
 		// 현재 추적중인 플레이어가 피를 흘렸다면 무시한다.
 		AUnderwaterCharacter* ChasingPlayer = Cast<AUnderwaterCharacter>(GetBlackboardComponent()->GetValueAsObject(TargetPlayerKey));
 		if (IsValid(ChasingPlayer))
@@ -154,9 +148,7 @@ void AEnhancedBossAIController::OnSightPerceptionSuccess(AUnderwaterCharacter* P
 	
 	// 플레이어가 NavMesh 위에 있지 않다면 얼리 리턴
 	if (!Boss->IsLocationOnNavMesh(Player->GetActorLocation()))	return;
-
-	LOG(TEXT("Sight Perception Success !"));
-
+	
 	// AlienShark와 다른 AI의 동작방식이 다르다.
 	// 코드가 난잡해지긴 하지만, 개발속도 차원에서 일단 bool 값으로 대체한다.
 	if (bIsAlienShark)
@@ -173,12 +165,13 @@ void AEnhancedBossAIController::OnSightPerceptionSuccess(AUnderwaterCharacter* P
 		// 블랙보드 키 값 세팅
 		BlackboardComponent->SetValueAsBool(bIsChasingKey, true);
 		BlackboardComponent->SetValueAsBool(bHasSeenPlayerKey, true);
+		BlackboardComponent->SetValueAsObject(TargetPlayerKey, Player);	
 		SetBlackboardPerceptionType(EPerceptionType::Player);
 			
 		// 타겟 세팅
 		Boss->SetTarget(Player);
 		Boss->SetCachedTarget(Player);
-
+		
 		// 플레이어 사라짐 인지 변수 초기화
 		bIsDisappearPlayer = false;	
 	}

@@ -88,5 +88,9 @@ public:
 	FORCEINLINE bool GetIsDetectedBlood() const { return bIsDamagedByPlayer; }
 	FORCEINLINE bool GetIsDamagedByPlayer() const { return bIsDamagedByPlayer; }
 	FORCEINLINE bool GetIsDisappearPlayer() const { return bIsDisappearPlayer; }
+
+	FORCEINLINE void SetPerceptionSight(bool bIsEnabled) { bIsPerceptionSight = bIsEnabled; }
+	FORCEINLINE void SetPerceptionHearing(bool bIsEnabled) { bIsPerceptionHearing = bIsEnabled; }
+	FORCEINLINE void SetPerceptionDamage(bool bIsEnabled) { bIsPerceptionDamage = bIsEnabled; }
 	
 };
