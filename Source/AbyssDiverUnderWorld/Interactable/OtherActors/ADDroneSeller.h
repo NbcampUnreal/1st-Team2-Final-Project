@@ -49,6 +49,10 @@ public:
 	FOnSellOreDelegate OnSellOreDelegate;
 
 	void SetLightColor(FLinearColor NewColor);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_TemporarilyHighlightGreen(bool bReachedGoal);
+
 protected:
 	int32 SellAllExchangeableItems(AActor* InstigatorActor);
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
