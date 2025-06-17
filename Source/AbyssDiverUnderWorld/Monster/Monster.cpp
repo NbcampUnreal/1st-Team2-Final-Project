@@ -9,6 +9,7 @@
 #include "Net/UnrealNetwork.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "AbyssDiverUnderWorld.h"
+#include "Components/CapsuleComponent.h"
 #include "Interactable/OtherActors/Radars/RadarReturnComponent.h"
 
 const FName AMonster::MonsterStateKey = "MonsterState";
@@ -32,7 +33,11 @@ AMonster::AMonster()
 	bUseControllerRotationYaw = false;
 	bReplicates = true;
 	SetReplicatingMovement(true);
+	
+	// Set Default PossessSetting
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
+	// Set Collision Channel == Monster
+	GetCapsuleComponent()->SetCollisionObjectType(ECC_GameTraceChannel3);
 
 	RadarReturnComponent->FactionTags.Init(TEXT("Hostile"), 1);
 }
@@ -53,7 +58,7 @@ void AMonster::BeginPlay()
 	if (UCharacterMovementComponent* MovementComp = GetCharacterMovement())
 	{
 		MovementComp->bOrientRotationToMovement = true;
-		MovementComp->RotationRate = FRotator(0.0f, 180.0f, 0.0f);
+		MovementComp->RotationRate = FRotator(0.0f, 90.0f, 0.0f);
 	}
 }
 
@@ -143,9 +148,15 @@ void AMonster::PlayAttackMontage()
 {
 	const uint8 AttackType = FMath::RandRange(0, AttackAnimations.Num() - 1);
 
-	if (IsValid(AttackAnimations[AttackType]))
+	UAnimMontage* SelectedMontage = AttackAnimations[AttackType];
+
+	if (IsValid(SelectedMontage))
 	{
-		M_PlayMontage(AttackAnimations[AttackType]);
+		UAnimInstance* AnimInst = GetMesh()->GetAnimInstance();
+		if (AnimInst && !AnimInst->Montage_IsPlaying(SelectedMontage))
+		{
+			M_PlayMontage(SelectedMontage);
+		}
 	}
 }
 
