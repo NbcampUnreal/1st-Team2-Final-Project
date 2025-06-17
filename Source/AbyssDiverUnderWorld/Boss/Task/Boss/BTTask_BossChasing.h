@@ -24,6 +24,8 @@ protected:
 	float TickInterval = 1.f;
 	
 private:
-	static const FName BossStateKey;
+	static const FName bCanAttackKey;
+	static const FName bIsChasingKey;
+	
 	float AccumulatedTime = 0.0f;
 };

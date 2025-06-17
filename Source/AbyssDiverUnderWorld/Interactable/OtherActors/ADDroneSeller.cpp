@@ -74,18 +74,20 @@ void AADDroneSeller::Interact_Implementation(AActor* InstigatorActor)
 	int32 Gained = SellAllExchangeableItems(InstigatorActor);
 	if (Gained <= 0)
 	{
-		LOGD(Log, TEXT("Gained < 0"))
-			return;
+		LOGD(Log, TEXT("Gained < 0"));
+		return;
 	}
 
 	SetCurrentMoeny(CurrentMoney + Gained);
 	LOGD(Log, TEXT("→ 누적 금액: %d / %d"), CurrentMoney, TargetMoney);
 
-	bool bReachedGoal = (CurrentMoney >= TargetMoney);
+	// 🔸 모든 클라이언트에서 색상 전환 연출
+	const bool bReachedGoal = (CurrentMoney >= TargetMoney);
+	Multicast_TemporarilyHighlightGreen(bReachedGoal);
 
 	if (bReachedGoal && IsValid(CurrentDrone))
 	{
-		LOGD(Log, TEXT("목표 달성! Drone 활성화 호출"))
+		LOGD(Log, TEXT("목표 달성! Drone 활성화 호출"));
 		CurrentDrone->Activate();
 		GetSoundSubsystem()->PlayAt(ESFX::ActivateDrone, GetActorLocation());
 	}
@@ -93,9 +95,9 @@ void AADDroneSeller::Interact_Implementation(AActor* InstigatorActor)
 	{
 		GetSoundSubsystem()->PlayAt(ESFX::SubmitOre, GetActorLocation());
 	}
-
-	SetLightColor(bReachedGoal ? FLinearColor::Green : FLinearColor::Red);
 }
+
+
 
 void AADDroneSeller::DisableSelling()
 {
@@ -243,4 +245,20 @@ void AADDroneSeller::SetLightColor(FLinearColor NewColor)
 		CachedMesh->SetMaterial(0, DesiredMaterial);
 		UE_LOG(LogTemp, Warning, TEXT("✅ Set material to %s"), *DesiredMaterial->GetName());
 	}
+}
+
+void AADDroneSeller::Multicast_TemporarilyHighlightGreen_Implementation(bool bReachedGoal)
+{
+	SetLightColor(FLinearColor::Green);
+
+	FTimerHandle TimerHandle;
+	GetWorld()->GetTimerManager().SetTimer(
+		TimerHandle,
+		[this, bReachedGoal]()
+		{
+			SetLightColor(bReachedGoal ? FLinearColor::Green : FLinearColor::Red);
+		},
+		0.5f,
+		false
+	);
 }
