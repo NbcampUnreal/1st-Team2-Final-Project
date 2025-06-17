@@ -9,10 +9,13 @@
 #include "Monster/EMonsterState.h"
 #include "Monster/Monster.h"
 #include "GenericTeamAgentInterface.h"
+#include "Monster/HorrorCreature/HorrorCreature.h"
 #include "AbyssDiverUnderWorld.h"
 
 AMonsterAIController::AMonsterAIController()
 {
+	PrimaryActorTick.bCanEverTick = true;
+
 	BehaviorTreeComponent = CreateDefaultSubobject<UBehaviorTreeComponent>(TEXT("BehaviorTreeComponent"));
 	AIPerceptionComponent = CreateDefaultSubobject<UAIPerceptionComponent>(TEXT("PerceptionComponent"));
 	SightConfig = CreateDefaultSubobject<UAISenseConfig_Sight>(TEXT("SightConfig"));
@@ -45,9 +48,7 @@ void AMonsterAIController::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	if (!bIsLosingTarget) return;
-
-	if (!IsValid(Monster)) return;
+	if (!bIsLosingTarget || !IsValid(Monster)) return;
 
 	float Elapsed = GetWorld()->GetTimeSeconds() - LostTargetTime;
 	if (Elapsed > SightConfig->GetMaxAge())
@@ -122,16 +123,15 @@ void AMonsterAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus 
 	{
 		BlackboardComponent = GetBlackboardComponent();
 
-		if (Stimulus.WasSuccessfullySensed())
+ 		if (Stimulus.WasSuccessfullySensed() && Monster->GetMonsterState() != EMonsterState::Flee)
 		{
 			Monster->AddDetection(Actor);
-			Monster->SetMonsterState(EMonsterState::Chase);
-			Blackboard->SetValueAsObject("TargetActor", Actor);
 			bIsLosingTarget = false;
 
 			if (Monster->GetMonsterState() != EMonsterState::Chase)
 			{
 				Monster->SetMonsterState(EMonsterState::Chase);
+				Monster->bIsChasing = true;
 			}
 		}
 		else
@@ -141,6 +141,14 @@ void AMonsterAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus 
 			Monster->RemoveDetection(Actor);
 			LostTargetTime = GetWorld()->GetTimeSeconds(); // Timer On.
 		}
+	}
+}
+
+void AMonsterAIController::SetbIsLosingTarget(bool IsLosingTargetValue)
+{
+	if (bIsLosingTarget != IsLosingTargetValue)
+	{
+		bIsLosingTarget = IsLosingTargetValue;
 	}
 }
 

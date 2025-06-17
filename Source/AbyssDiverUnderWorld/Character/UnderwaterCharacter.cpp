@@ -29,13 +29,14 @@
 #include "Shops/ShopInteractionComponent.h"
 #include "Subsystems/DataTableSubsystem.h"
 #include "UI/HoldInteractionWidget.h"
-#include "Laser/ADLaserCutter.h"
 #include "PlayerComponent/LanternComponent.h"
 #include "PlayerComponent/ShieldComponent.h"
 #include "PlayerComponent/UnderwaterEffectComponent.h"
 #include "Interactable/EquipableComponent/EquipRenderComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "PlayerComponent/CombatEffectComponent.h"
 #include "PlayerComponent/NameWidgetComponent.h"
+#include "PlayerComponent/RagdollReplicationComponent.h"
 
 DEFINE_LOG_CATEGORY(LogAbyssDiverCharacter);
 
@@ -152,7 +153,10 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	LanternComponent = CreateDefaultSubobject<ULanternComponent>(TEXT("LanternComponent"));
 
 	UnderwaterEffectComponent = CreateDefaultSubobject<UUnderwaterEffectComponent>(TEXT("UnderwaterEffectComponent"));
+	CombatEffectComponent = CreateDefaultSubobject<UCombatEffectComponent>(TEXT("CombatEffectComponent"));
 	FootstepComponent = CreateDefaultSubobject<UFootstepComponent>(TEXT("FootstepComponent"));
+
+	RagdollComponent = CreateDefaultSubobject<URagdollReplicationComponent>(TEXT("RagdollComponent"));
 	
 	bIsRadarOn = false;
 	RadarOffset = FVector(150.0f, 0.0f, 0.0f);
@@ -165,6 +169,12 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	NameWidgetComponent = CreateDefaultSubobject<UNameWidgetComponent>(TEXT("NameWidgetComponent"));
 	NameWidgetComponent->SetupAttachment(GetCapsuleComponent());
 	NameWidgetComponent->SetRelativeLocation(FVector::UpVector * GetCapsuleComponent()->GetScaledCapsuleHalfHeight() * 2.0f);
+
+	InteractionDescription = TEXT("");
+	bIsInteractionHoldMode = true;
+	GroggyInteractionDescription = TEXT("Revive Character!");
+	DeathInteractionDescription = TEXT("Grab Character!");
+	DeathGrabReleaseDescription = TEXT("Release Character!");
 }
 
 void AUnderwaterCharacter::BeginPlay()
@@ -451,7 +461,7 @@ void AUnderwaterCharacter::OnUntargeted()
 
 void AUnderwaterCharacter::StartCaptureState()
 {
-	if(bIsCaptured || !HasAuthority())
+	if(bIsCaptured || !HasAuthority() || CharacterState != ECharacterState::Normal)
 	{
 		return;
 	}
@@ -593,16 +603,16 @@ void AUnderwaterCharacter::M_PlayMontageOnBothMesh_Implementation(UAnimMontage* 
 	}
 }
 
-void AUnderwaterCharacter::M_StopAllMontagesOnBothMesh_Implementation(float BlendOUt)
+void AUnderwaterCharacter::M_StopAllMontagesOnBothMesh_Implementation(float BlendOut)
 {
 	if (UAnimInstance* AnimInstance = Mesh1P->GetAnimInstance())
 	{
-		AnimInstance->StopAllMontages(BlendOUt);
+		AnimInstance->StopAllMontages(BlendOut);
 	}
 
 	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
 	{
-		AnimInstance->StopAllMontages(BlendOUt);
+		AnimInstance->StopAllMontages(BlendOut);
 	}
 }
 
@@ -898,7 +908,10 @@ void AUnderwaterCharacter::HandleEnterGroggy()
 	{
 		AnimInstance->StopAllMontages(0.0f);
 	}
+	
 	InteractableComponent->SetInteractable(true);
+	InteractionDescription = GroggyInteractionDescription;
+	bIsInteractionHoldMode = true;
 }
 
 void AUnderwaterCharacter::HandleExitGroggy()
@@ -930,6 +943,7 @@ void AUnderwaterCharacter::HandleEnterNormal()
 
 		LookSensitivity = NormalLookSensitivity;
 	}
+	
 	InteractableComponent->SetInteractable(false);
 }
 
@@ -949,7 +963,7 @@ void AUnderwaterCharacter::HandleEnterDeath()
 	{
 		if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
 		{
-			PlayerController->SetIgnoreLookInput(true);
+			PlayerController->SetIgnoreLookInput(false);
 			PlayerController->SetIgnoreMoveInput(true);
 		}
 
@@ -973,6 +987,10 @@ void AUnderwaterCharacter::HandleEnterDeath()
 	K2_OnDeath();
 	OnDeathDelegate.Broadcast();
 	InteractableComponent->SetInteractable(true);
+	InteractionDescription = DeathInteractionDescription;
+	bIsInteractionHoldMode = false;
+
+	RagdollComponent->SetRagdollEnabled(true);
 }
 
 void AUnderwaterCharacter::S_Revive_Implementation()
@@ -1070,6 +1088,7 @@ void AUnderwaterCharacter::StartCombat()
 
 	bIsInCombat = true;
 	StopHealthRegen();
+	OnCombatStartDelegate.Broadcast();
 }
 
 void AUnderwaterCharacter::EndCombat()
@@ -1080,11 +1099,11 @@ void AUnderwaterCharacter::EndCombat()
 	}
 
 	bIsInCombat = false;
-
 	if (GetCharacterState() == ECharacterState::Normal)
 	{
 		GetWorldTimerManager().SetTimer(HealthRegenStartTimer, this, &AUnderwaterCharacter::StartHealthRegen, HealthRegenDelay, false);
 	}
+	OnCombatEndDelegate.Broadcast();
 }
 
 void AUnderwaterCharacter::AdjustSpeed()
@@ -1507,15 +1526,32 @@ float AUnderwaterCharacter::TakeDamage(float DamageAmount, struct FDamageEvent c
 	return ActualDamage;
 }
 
-void AUnderwaterCharacter::InteractHold_Implementation(AActor* InstigatorActor)
+void AUnderwaterCharacter::Interact_Implementation(AActor* InstigatorActor)
 {
-	LOGN(TEXT("Interact Hold : %s"), *GetName());
-	if (!HasAuthority() || CharacterState != ECharacterState::Groggy)
+	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Interact : %s"), *InstigatorActor->GetName());
+	if (!HasAuthority())
 	{
 		return;
 	}
 
-	RequestRevive();
+	if (CharacterState == ECharacterState::Death)
+	{
+		// grap
+	}
+}
+
+void AUnderwaterCharacter::InteractHold_Implementation(AActor* InstigatorActor)
+{
+	LOGN(TEXT("Interact Hold : %s"), *GetName());
+	if (!HasAuthority())
+	{
+		return;
+	}
+	
+	if (CharacterState == ECharacterState::Groggy)
+	{
+		RequestRevive();
+	}
 }
 
 void AUnderwaterCharacter::OnHoldStart_Implementation(APawn* InstigatorPawn)
@@ -1524,11 +1560,12 @@ void AUnderwaterCharacter::OnHoldStart_Implementation(APawn* InstigatorPawn)
 
 void AUnderwaterCharacter::OnHoldStop_Implementation(APawn* InstigatorPawn)
 {
+	// Hold 모드가 아닐 경우에도 호출이 되므로 주의
 }
 
 bool AUnderwaterCharacter::CanHighlight_Implementation() const
 {
-	return CharacterState == ECharacterState::Groggy;
+	return InteractableComponent->CanInteractable();
 }
 
 float AUnderwaterCharacter::GetHoldDuration_Implementation() const
@@ -1543,7 +1580,12 @@ UADInteractableComponent* AUnderwaterCharacter::GetInteractableComponent() const
 
 bool AUnderwaterCharacter::IsHoldMode() const
 {
-	return  true;
+	return bIsInteractionHoldMode;
+}
+
+FString AUnderwaterCharacter::GetInteractionDescription() const
+{
+	return InteractionDescription;
 }
 
 void AUnderwaterCharacter::RequestRevive()
@@ -1990,4 +2032,9 @@ void AUnderwaterCharacter::SetZoneSpeedMultiplier(float NewMultiplier)
 bool AUnderwaterCharacter::IsWeaponEquipped() const
 {
 	return EquipUseComponent ? EquipUseComponent->bIsWeapon : false;
+}
+
+UUserWidget* AUnderwaterCharacter::GetShieldHitWidget() const
+{
+	return CombatEffectComponent ? CombatEffectComponent->GetShieldHitWidget() : nullptr;
 }

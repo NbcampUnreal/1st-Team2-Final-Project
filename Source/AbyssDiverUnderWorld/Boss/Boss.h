@@ -293,6 +293,12 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	uint8 bDrawDebugLine : 1 = false;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	uint8 bEnableDownTrace : 1 = true;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	uint8 bEnableHorizontalTrace : 1 = true;
+
 	UPROPERTY()
 	FVector DamagedLocation;
 
@@ -301,6 +307,7 @@ protected:
 
 	FCollisionQueryParams Params;
 	uint8 bIsTurning : 1 = false;
+	uint8 bIsAttacking : 1 = false;
 
 private:
 	static const FName BossStateKey;
@@ -309,6 +316,7 @@ private:
 	uint8 bIsAttackCollisionOverlappedPlayer : 1;
 	float TurnTimer = 0.0f;
 	float OriginDeceleration;
+	float SphereOverlapRadius = 100.0f;
 	FVector TargetLocation;
 	FVector CachedSpawnLocation;
 	FVector TurnDirection;

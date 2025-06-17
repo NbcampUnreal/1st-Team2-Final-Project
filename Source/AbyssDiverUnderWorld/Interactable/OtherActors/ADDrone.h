@@ -9,6 +9,8 @@
 
 DECLARE_LOG_CATEGORY_EXTERN(DroneLog, Log, All);
 
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnPhaseChangeDelegate, int32/*NextPhaseNumber*/);
+
 class UADInteractableComponent;
 class AADDroneSeller;
 class ASpawnManager;
@@ -20,13 +22,15 @@ class ABYSSDIVERUNDERWORLD_API AADDrone : public AActor,  public IIADInteractabl
 	GENERATED_BODY()
 	
 public:	
-	// Sets default values for this actor's properties
+
 	AADDrone();
 
 protected:
-	// Called when the game starts or when spawned
+
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
+	virtual void Destroyed() override;
+
 
 #pragma region Method
 public:
@@ -47,6 +51,8 @@ public:
 	void OnRep_IsActive();
 	void StartRising();
 	void OnDestroyTimer();
+
+	FOnPhaseChangeDelegate OnPhaseChangeDelegate;
 
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -87,6 +93,7 @@ protected:
 	int32 DronePhaseNumber = 0;
 
 private:
+
 	FTimerHandle DestroyHandle;
 	int32 CachedSoundNumber;
 

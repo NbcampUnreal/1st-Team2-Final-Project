@@ -34,14 +34,34 @@ AADProjectileBase::AADProjectileBase() :
     TrailEffect = CreateDefaultSubobject<UNiagaraComponent>(TEXT("TrailEffect"));
     TrailEffect->SetupAttachment(RootComponent);
     TrailEffect->SetAutoActivate(false);
+	TrailEffect->SetIsReplicated(true);
 
     ProjectileMovementComp = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));
     ProjectileMovementComp->bAutoActivate = false;
+	ProjectileMovementComp->SetIsReplicated(true);
 
     CollisionComponent->OnComponentBeginOverlap.AddDynamic(this, &AADProjectileBase::OnOverlapBegin);
 
     bReplicates = true;
     SetReplicateMovement(true);
+    SetNetDormancy(DORM_Awake);
+}
+
+
+void AADProjectileBase::BeginPlay()
+{
+    Super::BeginPlay();
+
+    if (!HasAuthority())
+    {
+        if (IsValid(TrailEffect) &&
+            TrailEffect->GetAsset() &&
+            TrailEffect->IsRegistered())
+        {
+            TrailEffect->SetForceSolo(true);
+            TrailEffect->Activate();
+        }
+    }
 }
 
 void AADProjectileBase::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -73,21 +93,14 @@ void AADProjectileBase::Activate()
 {
 	Super::Activate();
     LOGP(Warning, TEXT("Activate"));
-    float DeactivateDelay = 10.0f;
-	GetWorld()->GetTimerManager().SetTimer(LifeTimerHandle, this, &AADProjectileBase::Deactivate, DeactivateDelay, false);
-    ProjectileMovementComp->SetActive(true);
     if (HasAuthority())
     {
-        FTimerHandle FXDelayHandle;
-        float FXActivateDelay = 0.1f;
-        GetWorld()->GetTimerManager().SetTimer(FXDelayHandle, [this]() {
-            if (HasAuthority()) M_EffectActivate(true);
-            }, FXActivateDelay, false);
+        ProjectileMovementComp->SetActive(true);
 
-        float TrailDeactivateDelay = 9.0f;
-        GetWorld()->GetTimerManager().SetTimer(TrailDeactivateTimerHandle, [this]() {
-            if (HasAuthority()) M_EffectActivate(false);
-            }, 9.0f, false);
+        float DeactivateDelay = 10.0f;
+	    GetWorld()->GetTimerManager().SetTimer(LifeTimerHandle, this, &AADProjectileBase::Deactivate, DeactivateDelay, false);
+        TrailEffect->SetForceSolo(true);
+        TrailEffect->Activate();
     }
 }
 
@@ -95,6 +108,13 @@ void AADProjectileBase::Deactivate()
 {
 	Super::Deactivate();
     LOGP(Warning, TEXT("Deactivate"));
+
+    if (!TrailEffect->IsActive())
+    {
+        M_EffectActivate(false);
+        TrailEffect->Deactivate();
+    }
+
     if(ObjectPool)
         ObjectPool->ReturnObject();
 	GetWorld()->GetTimerManager().ClearTimer(LifeTimerHandle);

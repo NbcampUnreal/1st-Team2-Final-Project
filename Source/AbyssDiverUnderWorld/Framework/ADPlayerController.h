@@ -18,6 +18,8 @@ protected:
 
 	virtual void BeginPlay() override;
 	virtual void SetPawn(APawn* InPawn) override;
+	virtual void PostNetInit() override;
+	virtual void PostSeamlessTravel() override;
 
 #pragma region Method
 
@@ -29,6 +31,12 @@ public:
 
 	UFUNCTION(BlueprintImplementableEvent)
 	void OnPreClientTravel();
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void OnPostNetInit();
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void OnPostSeamlessTravel();
 
 protected:
 

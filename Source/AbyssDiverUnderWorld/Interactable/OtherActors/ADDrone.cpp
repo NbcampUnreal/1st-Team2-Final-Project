@@ -1,21 +1,25 @@
 ﻿#include "Interactable/OtherActors/ADDrone.h"
+
 #include "Interactable/Item/Component/ADInteractableComponent.h"
 #include "Interactable/OtherActors/Portals/PortalToSubmarine.h"
-#include "Inventory/ADInventoryComponent.h"
+
 #include "FrameWork/ADInGameState.h"
-#include "ADDroneSeller.h"
-#include "Net/UnrealNetwork.h"
-#include "Gimmic/Spawn/SpawnManager.h"
-#include "Kismet/GameplayStatics.h"
 #include "Framework/ADGameInstance.h"
+#include "Framework/ADPlayerController.h"
+
+#include "Inventory/ADInventoryComponent.h"
+#include "ADDroneSeller.h"
+#include "Gimmic/Spawn/SpawnManager.h"
 #include "Subsystems/SoundSubsystem.h"
+#include "Character/PlayerComponent/PlayerHUDComponent.h"
+
+#include "Net/UnrealNetwork.h"
+#include "Kismet/GameplayStatics.h"
 
 DEFINE_LOG_CATEGORY(DroneLog);
 
-// Sets default values
 AADDrone::AADDrone()
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = false;
 	InteractableComp = CreateDefaultSubobject<UADInteractableComponent>(TEXT("InteractableComp"));
@@ -26,7 +30,6 @@ AADDrone::AADDrone()
 	bIsHold = false;
 }
 
-// Called when the game starts or when spawned
 void AADDrone::BeginPlay()
 {
 	Super::BeginPlay();
@@ -67,6 +70,32 @@ void AADDrone::Tick(float DeltaSeconds)
 			CurrentSeller->SetActorLocation(SellerLoc);
 		}
 	}
+}
+
+void AADDrone::Destroyed()
+{
+	AADPlayerController* PC = GetWorld()->GetFirstPlayerController<AADPlayerController>();
+	if (IsValid(PC) == false)
+	{
+		LOGVN(Error, TEXT("Player Controller is not Valid"));
+		Super::Destroyed();
+		return;
+	}
+
+	UPlayerHUDComponent* PlayerHudComponent = PC->GetPlayerHUDComponent();
+	if (PlayerHudComponent == nullptr)
+	{
+		LOGVN(Error, TEXT("PlayerHudComponent == nullptr"));
+		Super::Destroyed();
+		return;
+	}
+
+	LOGVN(Log, TEXT("OnPhaseChangeDelegate Bound"));
+	OnPhaseChangeDelegate.AddUObject(PlayerHudComponent, &UPlayerHUDComponent::PlayNextPhaseAnim);
+
+	LOGV(Log, TEXT("OnPhaseChangeDelegate Broadcast : %d"), DronePhaseNumber + 1);
+	OnPhaseChangeDelegate.Broadcast(DronePhaseNumber + 1);
+	Super::Destroyed();
 }
 
 void AADDrone::Interact_Implementation(AActor* InstigatorActor)

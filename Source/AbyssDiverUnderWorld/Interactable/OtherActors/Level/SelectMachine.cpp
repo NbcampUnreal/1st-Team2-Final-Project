@@ -187,11 +187,15 @@ void ASelectMachine::UpdateState()
 	}
 	else if (bSelectMission && !bSelectLevel)
 	{
-		GameStartButton->SetButtonDescription(TEXT("맵 선택하기"));
+		GameStartButton->SetButtonDescription(TEXT("미션 선택 완료 \n맵을 선택해주세요."));
 	}
 	else if (!bSelectMission && bSelectLevel)
 	{
-		GameStartButton->SetButtonDescription(TEXT("미션 선택하기"));
+		GameStartButton->SetButtonDescription(TEXT("맵 선택 완료 \n미션을 선택해주세요."));
+	}
+	else
+	{
+		GameStartButton->SetButtonDescription(TEXT("미션과 맵을 선택해주세요."));
 	}
 }
 

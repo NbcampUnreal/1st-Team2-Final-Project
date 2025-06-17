@@ -97,11 +97,21 @@ void AADPlayerController::SetPawn(APawn* InPawn)
 	}
 }
 
+void AADPlayerController::PostNetInit()
+{
+	Super::PostNetInit();
+	OnPostNetInit();
+}
+
+void AADPlayerController::PostSeamlessTravel()
+{
+	Super::PostSeamlessTravel();
+	OnPostSeamlessTravel();
+}
+
 void AADPlayerController::C_OnPreClientTravel_Implementation()
 {
-	LOGVN(Log, TEXT("PreClientTravel Start"));
 	OnPreClientTravel();
-	LOGVN(Log, TEXT("PreClientTraveled"));
 }
 
 void AADPlayerController::S_SetPlayerInfo_Implementation(const FUniqueNetIdRepl& Id, const FString& Nickname)

@@ -27,4 +27,9 @@ protected:
 
 	UPROPERTY(EditAnywhere)
 	float AcceptableRadius;
+
+	UPROPERTY(EditAnywhere)
+	float WaitTime;
+
+	uint8 bIsMoving : 1;
 };
