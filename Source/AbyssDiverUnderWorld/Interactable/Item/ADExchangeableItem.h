@@ -5,6 +5,7 @@
 #include "ADExchangeableItem.generated.h"
 
 class UProjectileMovementComponent;
+class UPointLightComponent;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADExchangeableItem : public AADItemBase
@@ -34,6 +35,7 @@ protected:
 
 private:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	void UpdateGlow();
 
 #pragma endregion
 
@@ -58,12 +60,17 @@ protected:
 	UPROPERTY(ReplicatedUsing = OnRep_TotalPrice, EditAnywhere, BlueprintReadWrite, Category = "Exchange")
 	int32 TotalPrice = 0;
 
-	
-
 
 private:
-	//float WaterGravityScale = 0.3f;
-	//float WaterDampingFactor = 1.f;
+	UPROPERTY()
+	TObjectPtr<UMaterialInstanceDynamic> DynamicMaterial = nullptr;
+	FTimerHandle PulseTimerHandle;
+	UPROPERTY(EditDefaultsOnly, Category = "Glow")
+	float PulseFrequency = 0.5f;    // 0.5Hz = 2초에 한 사이클
+	UPROPERTY(EditDefaultsOnly, Category = "Glow")
+	float MinGlow = 1.0f;
+	UPROPERTY(EditDefaultsOnly, Category = "Glow")
+	float MaxGlow = 5.0f;
 
 #pragma endregion
 

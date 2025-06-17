@@ -7,11 +7,34 @@
 #include "Interactable/Item/ADUseItem.h"
 #include "EquipUseComponent.generated.h"
 
+UENUM(BlueprintType)
+enum class EEquipmentType : uint8
+{
+	HarpoonGun = 0,
+	FlareGun = 1,
+	DPV = 2,
+	NightVision = 3,
+	Max = 4 UMETA(Hidden)
+};
 
+USTRUCT(BlueprintType)
+struct FRecoilConfig
+{
+	GENERATED_BODY()
 
+	UPROPERTY(EditDefaultsOnly) 
+	float PitchKick = 2.0f;
+	UPROPERTY(EditDefaultsOnly) 
+	float YawKick = 0.4f;
+	UPROPERTY(EditDefaultsOnly) 
+	float RecoverySpeed = 10.0f;
+};
+
+class AUnderwaterCharacter;
 class AADProjectileBase;
 class UUserWidget;
 class AADSpearGunBullet;
+class AADFlareGunBullet;
 class UADNightVisionGoggle;
 class UChargeBatteryWidget;
 class USoundSubsystem;
@@ -19,7 +42,8 @@ class USoundSubsystem;
 enum class EAction : uint8
 {
 	None,
-	WeaponFire,
+	HarpoonFire,
+	FlareFire,
 	WeaponReload,
 	ToggleBoost,
 	ToggleNVGToggle,
@@ -61,7 +85,9 @@ public:
 	UFUNCTION(NetMulticast, Unreliable)
 	void M_PlayFireHarpoonSound();
 	void M_PlayFireHarpoonSound_Implementation();
-
+	UFUNCTION(Client, Reliable)
+	void C_ApplyRecoil(const FRecoilConfig& Config);
+	void C_ApplyRecoil_Implementation(const FRecoilConfig& Config);
 
 	UFUNCTION()
 	void OnRep_Amount();
@@ -82,6 +108,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void FireHarpoon();
 	UFUNCTION(BlueprintCallable)
+	void FireFlare();
+	UFUNCTION(BlueprintCallable)
 	void ToggleBoost();
 	UFUNCTION(BlueprintCallable)
 	void BoostOn();
@@ -96,7 +124,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void HideChargeBatteryWidget();
 	UFUNCTION(BlueprintCallable)
-	void StartReload();
+	void StartReload(int32 InMagazineSize);
 	UFUNCTION(BlueprintCallable)
 	void OpenChargeWidget();
 	UFUNCTION(BlueprintCallable)
@@ -108,13 +136,15 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void HandleRKeyRelease();
 	
-	void FinishReload();
-
+	void FinishReload(int32 InMagazineSize, AUnderwaterCharacter* Diver);
+	void PlayReloadAnimation(EEquipmentType InEquipType, AUnderwaterCharacter* Diver);
+	void PlayDrawAnimation(AUnderwaterCharacter* Diver);
 	void Initialize(FItemData& ItemData);
 	// 상태 초기화 함수
 	void DeinitializeEquip();
 	EAction TagToAction(const FGameplayTag& Tag);
-	
+	EEquipmentType TagToEquipmentType(const FGameplayTag& Tag);
+
 	//void ResetEquipState();
 
 	void InitializeAmmoUI();
@@ -127,8 +157,9 @@ public:
 	FVector CalculateTargetPoint(const FVector& CamLoc, const FVector& AimDir) const;
 	FVector GetMuzzleLocation(const FVector& CamLoc, const FVector& AimDir) const;
 	AADSpearGunBullet* SpawnHarpoon(const FVector& Loc, const FRotator& Rot);
-	void ConfigureProjectile(AADSpearGunBullet* Proj, const FVector& TargetPoint, const FVector& MuzzleLoc);
-
+	AADFlareGunBullet* SpawnFlareBullet(const FVector& Loc, const FRotator& Rot);
+	void ConfigureProjectile(AADProjectileBase* Proj, const FVector& TargetPoint, const FVector& MuzzleLoc);
+	void SelectSpearType(AADSpearGunBullet* Proj);
 
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -138,6 +169,9 @@ private:
 	bool IsInterpolating() const;
 	
 	void SetEquipBatteryAmountText();
+
+	void ApplyRecoil(const FRecoilConfig& Config);
+	bool RecoverRecoil(float DeltaTime);
 #pragma endregion
 
 #pragma region Variable
@@ -150,7 +184,10 @@ public:
 	int32 ReserveAmmo = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
-	int32 MagazineSize = 5;
+	int32 HarpoonMagazineSize = 5;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	int32 FlareMagazineSize = 1;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Weapon")
 	float RateOfFire = 2.f; 
@@ -215,9 +252,19 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UADInventoryComponent> Inventory = nullptr;
 	UPROPERTY(EditAnywhere, Category = "Projectile")
-	TSubclassOf<AADSpearGunBullet> ProjectileClass = nullptr;
+	TSubclassOf<AADSpearGunBullet> SpearGunBulletClass = nullptr;
+	UPROPERTY(EditAnywhere, Category = "Projectile")
+	TSubclassOf<AADFlareGunBullet> FlareGunBulletClass = nullptr;
 	UPROPERTY()
 	TObjectPtr<USoundSubsystem> SoundSubsystem;
+
+
+	UPROPERTY(EditAnywhere, Category = "Weapon")
+	TObjectPtr<UAnimMontage> HarpoonReloadMontage;
+	UPROPERTY(EditAnywhere, Category = "Weapon")
+	TObjectPtr<UAnimMontage> FlareReloadMontage;
+	UPROPERTY(EditAnywhere, Category = "Weapon")
+	TObjectPtr<UAnimMontage> WeaponIdleMontage;
 
 
 	FItemData* CurrentItemData = nullptr;
@@ -228,6 +275,7 @@ protected:
 
 	EAction LeftAction;
 	EAction RKeyAction;
+	EEquipmentType EquipType;
 
 private:
 	float CurrentMultiplier = 1.f;
@@ -240,15 +288,25 @@ private:
 	uint8 bOriginalExposureCached : 1;
 	static const FName BASIC_SPEAR_GUN_NAME;
 
-	
+	UPROPERTY(EditDefaultsOnly, Category = "Recoil")
+	FRecoilConfig HarpoonRecoil;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Recoil")
+	FRecoilConfig FlareRecoil;
+
+	float ActiveRecoverySpeed = 0.f;
+	float PendingPitch = 0.f;
+	float PendingYaw = 0.f;
 
 #pragma endregion
 
 #pragma region Getter, Setteer
 public:
 	uint8 IsBoost() const { return bBoostActive; }
+	EEquipmentType GetEquipType() { return EquipType; }
 
 private:
 	USoundSubsystem* GetSoundSubsystem();
+	
 #pragma endregion		
 };

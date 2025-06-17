@@ -4,6 +4,7 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "Container/FStructContainer.h"
+#include "Interactable/Item/Component/EquipUseComponent.h"
 #include "Net/Serialization/FastArraySerializer.h"
 #include "ADInventoryComponent.generated.h"
 
@@ -158,6 +159,8 @@ private:
 	TObjectPtr<AADUseItem> CurrentEquipmentInstance;
 	UPROPERTY(Replicated)
 	uint8 bIsWeapon : 1 = false;
+	UPROPERTY(Replicated)
+	EEquipmentType EquipmentType;
 	uint8 bHasNoAnimation : 1 = false;
 	UPROPERTY()
 	TObjectPtr<UToggleWidget> ToggleWidgetInstance;
@@ -191,6 +194,7 @@ private:
 
 	const FName HarpoonSocketName = TEXT("Harpoon");
 	const FName DPVSocketName = TEXT("DPV");
+	const FName FlareSocketName = TEXT("Flare");
 #pragma endregion
 
 

@@ -73,7 +73,10 @@ void AADOreRock::Destroyed()
 
 void AADOreRock::M_CleanupToolAndEffects_Implementation(AUnderwaterCharacter* UnderwaterCharacter)
 {
-	UnderwaterCharacter->CleanupToolAndEffects();
+	if (UnderwaterCharacter)
+	{
+		UnderwaterCharacter->CleanupToolAndEffects();
+	}
 }
 
 void AADOreRock::Interact_Implementation(AActor* InstigatorActor)
