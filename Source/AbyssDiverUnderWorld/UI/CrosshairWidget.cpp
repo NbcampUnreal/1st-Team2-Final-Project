@@ -107,8 +107,6 @@ void UCrosshairWidget::BindWidget(APawn* Pawn)
 		return;
 	}
 
-	UE_LOG(LogTemp,Display, TEXT("CrosshairWidget::BindWidget - Character: %s"), *Character->GetName());
-	
 	SetSimulatedLaggedRotationComponent(Character->GetMesh1PSpringArm(), Character->GetMesh1PSpringArm()->SocketName);
 	SetUsingLaggedRotation(Character->GetEnvironmentState() == EEnvironmentState::Underwater);
 	Character->OnEnvironmentStateChangedDelegate.AddDynamic(this, &UCrosshairWidget::OnEnvironmentStateChanged);
@@ -130,5 +128,5 @@ void UCrosshairWidget::ResetCrosshairPosition()
 {
 	int32 ViewPortSizeX, ViewPortSizeY;
 	GetOwningPlayer()->GetViewportSize(ViewPortSizeX, ViewPortSizeY);
-	SetPositionInViewport({ ViewPortSizeX * 0.5f, ViewPortSizeY * 0.5f });
+	CrosshairPosition = FVector2D(0.5f * ViewPortSizeX, 0.5f * ViewPortSizeY);
 }

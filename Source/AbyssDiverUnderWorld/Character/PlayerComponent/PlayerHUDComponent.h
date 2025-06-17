@@ -56,6 +56,9 @@ public:
 
     void UpdateMissionsOnHUD(EMissionType MissionType, uint8 MissionIndex, int32 CurrentProgress);
 
+    void PlayNextPhaseAnim(int32 NextPhaseNumber);
+    void SetCurrentPhaseOverlayVisible(bool bShouldVisible);
+
 private:
 #pragma endregion
 

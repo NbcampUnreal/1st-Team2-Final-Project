@@ -26,6 +26,8 @@ public:
 
 #pragma region Method
 public:
+	virtual void BeginPlay() override;
+
 	UFUNCTION(NetMulticast, Reliable)
 	void M_EffectActivate(bool bActivate);
 	void M_EffectActivate_Implementation(bool bActivate);
@@ -34,7 +36,7 @@ public:
 	void Deactivate() override;
 
 	void InitializeTransform(const FVector& Location, const FRotator& Rotation);
-	void InitializeSpeed(const FVector& ShootDirection, const uint32 Speed);
+	virtual void InitializeSpeed(const FVector& ShootDirection, const uint32 Speed);
 
 protected:
 	UFUNCTION()
@@ -59,9 +61,11 @@ protected:
 
 	int16 Damage;
 	uint8 bWasHit : 1;
+
 private:
 	FTimerHandle LifeTimerHandle;
 	FTimerHandle TrailDeactivateTimerHandle;
+
 #pragma endregion
 
 #pragma region Getter, Setter

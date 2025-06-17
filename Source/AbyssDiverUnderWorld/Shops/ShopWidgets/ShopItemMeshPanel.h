@@ -5,6 +5,8 @@
 
 #include "ShopItemMeshPanel.generated.h"
 
+class UImage;
+
 /**
  * 
  */
@@ -23,8 +25,10 @@ public:
 
 	void Init(USkeletalMeshComponent* NewItemMeshComp);
 	void ChangeItemMesh(USkeletalMesh* NewMesh, int32 ItemId);
+	void ChangeUpgradeImage(UTexture2D* UpgradeIcon);
 
 	void SetItemMeshActive(bool bShouldActivate);
+	void SetUpgradeImageActive(bool bShouldActivate);
 
 	void AddMeshRotationYaw(float Yaw);
 	void SetMeshRotation(const FRotator& NewRotator);
@@ -39,7 +43,10 @@ private:
 	TObjectPtr<USkeletalMeshComponent> ItemMeshComponent;
 
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<class UImage> ItemMeshImage;
+	TObjectPtr<UImage> ItemMeshImage;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UImage> UpgradeImage;
 
 	uint8 bIsMouseDown : 1;
 	

@@ -6,6 +6,8 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Monster/EMonsterState.h"
 #include "Monster/Monster.h"
+#include "NavigationSystem.h"
+#include "Navigation/PathFollowingComponent.h"
 
 UBTTask_InvestigateMoveTo::UBTTask_InvestigateMoveTo()
 {
@@ -13,6 +15,8 @@ UBTTask_InvestigateMoveTo::UBTTask_InvestigateMoveTo()
 	bNotifyTick = true;
 	bNotifyTaskFinished = true;
 	AcceptableRadius = 200.0f;
+	WaitTime = 1.5f;
+	bIsMoving = false;
 }
 
 EBTNodeResult::Type UBTTask_InvestigateMoveTo::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
@@ -33,7 +37,7 @@ void UBTTask_InvestigateMoveTo::TickTask(UBehaviorTreeComponent& OwnerComp, uint
 		return;
 	}
 
-	if (Monster->TargetActor)
+	if (IsValid(Monster->TargetActor))
 	{
 		Monster->SetMonsterState(EMonsterState::Chase);
 		Blackboard->ClearValue(InvestigateLocationKey.SelectedKeyName);
@@ -47,8 +51,30 @@ void UBTTask_InvestigateMoveTo::TickTask(UBehaviorTreeComponent& OwnerComp, uint
 
 	if (Distance <= AcceptableRadius)
 	{
-		Monster->SetMonsterState(EMonsterState::Patrol);
-		Blackboard->ClearValue(InvestigateLocationKey.SelectedKeyName);
+		bIsMoving = false;
+
+		Blackboard->ClearValue(InvestigateLocationKey.SelectedKeyName);	
+		FTimerHandle TempHandle;
+		AIPawn->GetWorldTimerManager().SetTimer(TempHandle, [Monster]()
+			{
+				if (IsValid(Monster))
+				{
+					Monster->SetMonsterState(EMonsterState::Patrol);
+				}
+			}, WaitTime, false);
 		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 	}
+	else
+	{
+		if (!bIsMoving)
+		{
+			FAIMoveRequest MoveRequest;
+			MoveRequest.SetGoalLocation(InvestigateLocation);
+			MoveRequest.SetAcceptanceRadius(AcceptableRadius);
+			AIController->MoveTo(MoveRequest);
+			bIsMoving = true;
+		}
+	}
+
+	FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 }

@@ -16,8 +16,14 @@ public:
 
 	void ADCampGameMode();
 
+protected:
+
 	virtual void PostLogin(APlayerController* NewPlayer) override;
 	virtual void Logout(AController* Exiting) override;
+
+	virtual void InitGameState() override;
+
+public:
 
 	UFUNCTION(BlueprintCallable)
 	void SetSelectedLevel(const EMapName InLevelName);

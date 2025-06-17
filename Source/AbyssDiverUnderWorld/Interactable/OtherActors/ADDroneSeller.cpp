@@ -86,7 +86,7 @@ void AADDroneSeller::Interact_Implementation(AActor* InstigatorActor)
 	if (bReachedGoal && IsValid(CurrentDrone))
 	{
 		LOGD(Log, TEXT("목표 달성! Drone 활성화 호출"))
-			CurrentDrone->Activate();
+		CurrentDrone->Activate();
 		GetSoundSubsystem()->PlayAt(ESFX::ActivateDrone, GetActorLocation());
 	}
 	else
@@ -149,25 +149,22 @@ int32 AADDroneSeller::SellAllExchangeableItems(AActor* InstigatorActor)
 				if (UADInventoryComponent* Inv = PS->GetInventory())
 				{
 					int32 Price = Inv->GetTotalPrice();
-					TArray<int8> TypeArray = Inv->GetInventoryIndexesByType(EItemType::Exchangable);
-					TypeArray.Sort();
-
 					const TArray<FItemData>& Items = Inv->GetInventoryList().Items;
 
-					const int32 InterationCount = TypeArray.Num();
-					for (int32 i = 0; i < InterationCount; ++i)
+					int32 ItemCount = Items.Num();
+					for (int32 i = 0; i < ItemCount; ++i)
 					{
-						const int8& InventoryIndex = TypeArray[InterationCount - i - 1];
-						if (InventoryIndex == INDEX_NONE)
+						int32 Index = ItemCount - i - 1;
+						if (Items[Index].ItemType == EItemType::Exchangable)
 						{
-							break;
+							int32 SlotIndex = Items[Index].SlotIndex;
+
+							uint8 OreId = Items[Index].Id;
+							int32 OreMass = Items[Index].Mass;
+
+							Inv->RemoveBySlotIndex(SlotIndex, EItemType::Exchangable, false);
+							OnSellOreDelegate.Broadcast(OreId, OreMass);
 						}
-
-						uint8 OreId = Items[InventoryIndex].Id;
-						int32 OreMass = Items[InventoryIndex].Mass;
-
-						Inv->RemoveBySlotIndex(InventoryIndex, EItemType::Exchangable, false);
-						OnSellOreDelegate.Broadcast(OreId, OreMass);
 					}
 
 					return Price;

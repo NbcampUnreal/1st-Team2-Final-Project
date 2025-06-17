@@ -4,6 +4,7 @@
 #include "Blueprint/UserWidget.h"
 #include "Components/Image.h"
 #include "Components/ProgressBar.h"
+
 #include "PlayerStatusWidget.generated.h"
 
 class UTextBlock;
@@ -29,6 +30,7 @@ protected:
 	virtual void NativeConstruct() override;
 
 #pragma region Method
+
 public:
 
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Compass")
@@ -42,9 +44,24 @@ public:
 	void SetDroneCurrentText(int32 Current);
 	void SetDroneTargetText(int32 Target);
 
+	void PlayNextPhaseAnim(int32 NextPhaseNumber);
+
+	void SetCurrentPhaseText(const FString& PhaseText);
+	void SetNextPhaseText(const FString& PhaseText);
+
+	void SetCurrentPhaseOverlayVisible(bool bShouldVisible);
+
+private:
+
+	UFUNCTION()
+	void OnNextPhaseAnimFinished();
+
+	bool TryPlayAnim(UWidgetAnimation* Anim);
+
 #pragma endregion
 
 #pragma region Variable
+
 protected:
 
 	// 작살 수치
@@ -83,6 +100,9 @@ protected:
 	TObjectPtr<UTextBlock> TargetMoneyText;
 
 	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UOverlay> CurrentPhaseOverlay;
+
+	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UTextBlock> CurrentPhaseText;
 
 	UPROPERTY(meta = (BindWidget))
@@ -95,13 +115,22 @@ protected:
 	TObjectPtr<UWidgetAnimation> NextPhaseAnim;
 
 private:
+
 	UPROPERTY()
 	TArray<TObjectPtr<UImage>> HealthSegments;
+
+	static const FName OnNextPhaseAnimFinishedName;
+
+	int32 CachedNextPhaseNumber = 0;
+
+	static const int32 MaxPhaseNumber;
+
 #pragma endregion
 
 #pragma region Getter, Setter
+
 public:
-	// getter / setter
+
 	FORCEINLINE int32 GetCurrentSpear() const { return CurrentSpear; }
 	FORCEINLINE int32 GetTotalSpear() const { return TotalSpearCount; }
 	int8 GetNextPhaseAnimEndTime() const;
@@ -109,5 +138,6 @@ public:
 	void SetTotalSpear(int32 InValue);
 	void SetSpearVisibility(bool bVisible);
 	void SetCompassObject(AActor* NewTargetObject);
+
 #pragma endregion
 };
