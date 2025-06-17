@@ -307,6 +307,7 @@ protected:
 
 	FCollisionQueryParams Params;
 	uint8 bIsTurning : 1 = false;
+	uint8 bIsAttacking : 1 = false;
 
 private:
 	static const FName BossStateKey;
