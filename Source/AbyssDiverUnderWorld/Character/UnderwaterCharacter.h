@@ -189,6 +189,19 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void StopCaptureState();
 
+	/*
+	 * Bind Character : 로프를 묶은 캐릭터
+	 * Bound Character : 로프에 묶인 캐릭터
+	 * Bound Character 중심으로 로직을 작성
+	 * Bind Character, Bound Character를 Replicate해서 구현
+	 */
+
+	/** 캐릭터가 로프에 묶이는 요청을 한다. Authority Node에서만 실행되어야 한다. */
+	void RequestBind(AUnderwaterCharacter* RequestBinderCharacter);
+
+	/** 현재 캐릭터를 UnBind 한다. Binder가 시체를 들고 있을 수 없는 상황에서도 호출된다. */
+	void UnBind();
+	
 	/** 출혈을 모델링하는 소리를 발생한다. */
 	UFUNCTION(BlueprintCallable)
 	void EmitBloodNoise();
@@ -510,7 +523,30 @@ protected:
 	/** 감정 표현 몽타주가 끝났을 때 호출되는 함수 */
 	UFUNCTION()
 	void OnEmoteEnd(UAnimMontage* AnimMontage, bool bArg);
+
+	/** Binder Character 함수. Bound Characters를 저장한다. */
+	void BindToCharacter(AUnderwaterCharacter* BoundCharacter);
+
+	/** Binder Character 함수 */
+	void UnbindToCharacter(AUnderwaterCharacter* BoundCharacter);
 	
+	/** Bound Character 함수. Binder Character와 로프를 연결한다. */
+	void ConnectRope(AUnderwaterCharacter* BinderCharacter);
+
+	/** Bound Character 함수. Machine 기준으로 현재의 Interactable을 설정한다.
+	 * Binder Character가 Machine의 Local이면 Interactable을 활성화하고 해제 기능을 활성화
+	 * Binder Character가 Machine의 Local이 아니면 Interactable을 비활성화하고 해제 기능을 비활성화
+	 */
+	void UpdateBindInteractable();
+
+	/** Bound Character 함수. BindCharacter의 Replicate 함수. Bound Characters는 Bind Character에서 갱신되므로 Bind Character의 기능만 구현하면 된다. */
+	UFUNCTION()
+	void OnRep_BindCharacter();
+
+	/** Binder Character 함수. BoundCharacters의 Replicate 함수. 들고 있는 캐릭터에 따라서 감속 처리 */
+	UFUNCTION()
+	void OnRep_BoundCharacters();
+
 private:
 
 	/** Montage 콜백을 등록 */
@@ -1006,11 +1042,19 @@ private:
 
 	/** 사망 상태 상호 작용 택스트. 시체 들기 상황에 출력 */
 	UPROPERTY(EditDefaultsOnly, Category= "Character|Interaction", meta = (AllowPrivateAccess = "true"))
-	FString DeathInteractionDescription;
+	FString DeathGrabDescription;
 
-	/** 사망 상태에서 시체 들은 상황에서 출력 */
+	/** 사망 상태에서 시체 놓기 상황에서 출력 */
 	UPROPERTY(EditDefaultsOnly, Category= "Character|Interaction", meta = (AllowPrivateAccess = "true"))
 	FString DeathGrabReleaseDescription;
+
+	/** 사망 상태에서 시체를 들은 캐릭터. Bind Character가 존재하면 BoundCharacter이다. */
+	UPROPERTY(ReplicatedUsing = OnRep_BindCharacter, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<AUnderwaterCharacter> BindCharacter;
+
+	/** 현재 들고 있는 시체 캐릭터. 한 번에 여러개의 시체를 들 수 있다. */
+	UPROPERTY(ReplicatedUsing = OnRep_BoundCharacters, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TArray<TObjectPtr<AUnderwaterCharacter>> BoundCharacters;
 	
 #pragma endregion
 

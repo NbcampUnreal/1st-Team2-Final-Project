@@ -173,7 +173,7 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	InteractionDescription = TEXT("");
 	bIsInteractionHoldMode = true;
 	GroggyInteractionDescription = TEXT("Revive Character!");
-	DeathInteractionDescription = TEXT("Grab Character!");
+	DeathGrabDescription = TEXT("Grab Character!");
 	DeathGrabReleaseDescription = TEXT("Release Character!");
 }
 
@@ -229,6 +229,7 @@ void AUnderwaterCharacter::BeginPlay()
 
 		GM->BindDelegate(this);
 	}
+
 	InteractableComponent->SetInteractable(false);
 }
 
@@ -371,6 +372,8 @@ void AUnderwaterCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProp
 
 	DOREPLIFETIME(AUnderwaterCharacter, bIsRadarOn);
 	DOREPLIFETIME(AUnderwaterCharacter, CurrentTool);
+	DOREPLIFETIME(AUnderwaterCharacter, BindCharacter);
+	DOREPLIFETIME(AUnderwaterCharacter, BoundCharacters);
 }
 
 void AUnderwaterCharacter::OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode)
@@ -461,7 +464,7 @@ void AUnderwaterCharacter::OnUntargeted()
 
 void AUnderwaterCharacter::StartCaptureState()
 {
-	if(bIsCaptured || !HasAuthority() || CharacterState != ECharacterState::Normal)
+	if (bIsCaptured || !HasAuthority() || CharacterState != ECharacterState::Normal)
 	{
 		return;
 	}
@@ -482,6 +485,46 @@ void AUnderwaterCharacter::StopCaptureState()
 
 	bIsCaptured = false;
 	M_StopCaptureState();
+}
+
+void AUnderwaterCharacter::RequestBind(AUnderwaterCharacter* RequestBinderCharacter)
+{
+	LOGVN(Display, TEXT("Character %s bind to %s"), *GetName(), *RequestBinderCharacter->GetName());
+	
+	if (!HasAuthority() || RequestBinderCharacter == nullptr || CharacterState != ECharacterState::Death)
+	{
+		UE_LOG(LogAbyssDiverCharacter, Error, TEXT("RequestBind called in invalid state or not authority: %s"), *GetName());
+		return;
+	}
+	if (BindCharacter == RequestBinderCharacter)
+	{
+		UnBind();
+		return;
+	}
+
+	BindCharacter = RequestBinderCharacter;
+	RequestBinderCharacter->BindToCharacter(this);
+
+	ConnectRope(BindCharacter);
+
+	UpdateBindInteractable();
+}
+
+void AUnderwaterCharacter::UnBind()
+{
+	if (!HasAuthority() || CharacterState != ECharacterState::Death)
+	{
+		UE_LOG(LogAbyssDiverCharacter, Error, TEXT("UnBind called in invalid state or not authority: %s"), *GetName());
+		return;
+	}
+
+	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Character %s unbind from %s"), *GetName(), BindCharacter ? *BindCharacter->GetName() : TEXT("None"));
+	
+	BindCharacter->UnbindToCharacter(this);
+	BindCharacter = nullptr;
+
+	// if connected, disconnect the rope
+	UpdateBindInteractable();
 }
 
 void AUnderwaterCharacter::EmitBloodNoise()
@@ -638,7 +681,6 @@ void AUnderwaterCharacter::CleanupToolAndEffects()
 		SpawnedTool = nullptr;
 		CurrentTool = nullptr;
 	}
-	
 }
 
 void AUnderwaterCharacter::SpawnAndAttachTool(TSubclassOf<AActor> ToolClass)
@@ -885,8 +927,12 @@ void AUnderwaterCharacter::HandleEnterGroggy()
 	// 추후에 오차가 커질 경우 Timer를 사용하지 않고 시작 시간을 기점으로 계산하도록 한다.
 	// Transition 4
 
-	GetWorldTimerManager().SetTimer(GroggyTimer, FTimerDelegate::CreateUObject(this, &AUnderwaterCharacter::SetCharacterState, ECharacterState::Death), GroggyDuration, false);
-	
+	GetWorldTimerManager().SetTimer(GroggyTimer,
+	                                FTimerDelegate::CreateUObject(this, &AUnderwaterCharacter::SetCharacterState,
+	                                ECharacterState::Death),
+									GroggyDuration,
+									false);
+
 	if (IsLocallyControlled())
 	{
 		if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
@@ -986,8 +1032,9 @@ void AUnderwaterCharacter::HandleEnterDeath()
 	
 	K2_OnDeath();
 	OnDeathDelegate.Broadcast();
+	
 	InteractableComponent->SetInteractable(true);
-	InteractionDescription = DeathInteractionDescription;
+	InteractionDescription = DeathGrabDescription;
 	bIsInteractionHoldMode = false;
 
 	RagdollComponent->SetRagdollEnabled(true);
@@ -1101,14 +1148,20 @@ void AUnderwaterCharacter::EndCombat()
 	bIsInCombat = false;
 	if (GetCharacterState() == ECharacterState::Normal)
 	{
-		GetWorldTimerManager().SetTimer(HealthRegenStartTimer, this, &AUnderwaterCharacter::StartHealthRegen, HealthRegenDelay, false);
+		GetWorldTimerManager().SetTimer(HealthRegenStartTimer,
+									this,
+									&AUnderwaterCharacter::StartHealthRegen,
+		                            HealthRegenDelay,
+		                            false);
 	}
 	OnCombatEndDelegate.Broadcast();
 }
 
 void AUnderwaterCharacter::AdjustSpeed()
 {
-	const float BaseSpeed = StaminaComponent->IsSprinting() ? StatComponent->MoveSpeed * SprintMultiplier : StatComponent->MoveSpeed;
+	const float BaseSpeed = StaminaComponent->IsSprinting()
+		                        ? StatComponent->MoveSpeed * SprintMultiplier
+		                        : StatComponent->MoveSpeed;
 
 	// Effective Speed = BaseSpeed * (1 - OverloadSpeedFactor) * ZoneSpeedMultiplier
 	float Multiplier = 1.0f;
@@ -1477,7 +1530,11 @@ float AUnderwaterCharacter::TakeDamage(float DamageAmount, struct FDamageEvent c
 		}
 		else
 		{
-			GetWorldTimerManager().SetTimer(GroggyTimer, FTimerDelegate::CreateUObject(this, &AUnderwaterCharacter::SetCharacterState, ECharacterState::Death), NewRemainGroggyTime, false);
+			GetWorldTimerManager().SetTimer(GroggyTimer,
+			                                FTimerDelegate::CreateUObject(
+				                                this, &AUnderwaterCharacter::SetCharacterState, ECharacterState::Death),
+			                                NewRemainGroggyTime,
+			                                false);
 			return 0.0f;
 		}
 	}
@@ -1485,7 +1542,7 @@ float AUnderwaterCharacter::TakeDamage(float DamageAmount, struct FDamageEvent c
 	{
 		return 0.0f;
 	}
-	
+
 	// 정해져야 할 것
 	// 1. EmitBloodNoise를 Shield만 소모됬을 때 호출할 것인지
 
@@ -1536,7 +1593,10 @@ void AUnderwaterCharacter::Interact_Implementation(AActor* InstigatorActor)
 
 	if (CharacterState == ECharacterState::Death)
 	{
-		// grap
+		if (AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(InstigatorActor))
+		{
+			RequestBind(UnderwaterCharacter);
+		}
 	}
 }
 
@@ -1977,6 +2037,81 @@ void AUnderwaterCharacter::OnEmoteEnd(UAnimMontage* AnimMontage, bool bArg)
 {
 	bPlayingEmote = false;
 	bUseControllerRotationYaw = true;
+}
+
+void AUnderwaterCharacter::OnRep_BindCharacter()
+{
+	// if BindCharacter is nullptr, Disconnect Rope and Hide Rope
+
+	// else, Connect Rope
+
+	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("OnRep_BindCharacter : %s"), *GetName());
+	if (BindCharacter)
+	{
+		// Connect
+	}
+
+	UpdateBindInteractable();
+}
+
+void AUnderwaterCharacter::OnRep_BoundCharacters()
+{
+	AdjustSpeed();
+}
+
+void AUnderwaterCharacter::BindToCharacter(AUnderwaterCharacter* BoundCharacter)
+{
+	if (BoundCharacter == nullptr)
+	{
+		return;
+	}
+
+	BoundCharacters.Add(BoundCharacter);
+	AdjustSpeed();
+
+	LOGVN(Display, TEXT("Binder : %s, Bound : %s"), *GetName(), *BoundCharacter->GetName());
+}
+
+void AUnderwaterCharacter::UnbindToCharacter(AUnderwaterCharacter* BoundCharacter)
+{
+	BoundCharacters.Remove(BoundCharacter);
+	AdjustSpeed();
+}
+
+void AUnderwaterCharacter::ConnectRope(AUnderwaterCharacter* BinderCharacter)
+{
+	LOGVN(Display, TEXT("Connect Rope to %s"), *BinderCharacter->GetName());
+	
+	// if rope does not exist, create a new rope
+	// connect rope to the BinderCharacter
+	// show rope
+}
+
+void AUnderwaterCharacter::UpdateBindInteractable()
+{
+	// Bind 상태는 Death일 경우에만 호출
+	if (CharacterState != ECharacterState::Death)
+	{
+		return;
+	}
+	
+	// Binder Character가 nullptr일 경우 연결된 Bind 상태가 아니므로 활성화
+	if (BindCharacter == nullptr)
+	{
+		InteractableComponent->SetInteractable(true);
+		InteractionDescription = DeathGrabDescription;
+	}
+	// Binder Character가 Local Controller일 경우 활성화해서 Unbind를 가능하도록 수정
+	else if (BindCharacter->IsLocallyControlled())
+	{
+		InteractableComponent->SetInteractable(true);
+		InteractionDescription = DeathGrabReleaseDescription;
+	}
+	else
+	{
+		InteractableComponent->SetInteractable(false);
+		InteractionDescription = DeathGrabDescription;
+	}
 }
 
 void AUnderwaterCharacter::SetupMontageCallbacks()
