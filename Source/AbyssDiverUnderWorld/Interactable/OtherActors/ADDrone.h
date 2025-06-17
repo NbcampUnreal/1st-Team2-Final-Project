@@ -71,6 +71,8 @@ public:
 	int32 AccumulatedMoney = 0;
 	UPROPERTY(ReplicatedUsing = OnRep_IsActive, EditAnywhere, BlueprintReadWrite)
 	uint8 bIsActive : 1;
+	UPROPERTY(Replicated)
+	uint8 bIsFlying : 1;
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<AADDroneSeller> CurrentSeller = nullptr;
 	UPROPERTY(EditAnywhere)

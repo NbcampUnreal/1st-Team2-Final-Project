@@ -37,8 +37,6 @@ void AObstacleVolume::OnComponentBeginOverlap(AActor* OverlappedActor, AActor* O
 	}
 
 	Player->SetHideInSeaweed(true);
-
-	LOG(TEXT("Overlapped Begin With Obstacle Volume"));
 }
 
 void AObstacleVolume::OnComponentEndOverlap(AActor* OverlappedActor, AActor* OtherActor)
@@ -49,6 +47,4 @@ void AObstacleVolume::OnComponentEndOverlap(AActor* OverlappedActor, AActor* Oth
 	if(!IsValid(Player)) return;
 	
 	Player->SetHideInSeaweed(false);
-
-	LOG(TEXT("Overlapped End With Obstacle Volume"));
 }

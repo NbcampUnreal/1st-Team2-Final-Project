@@ -27,14 +27,15 @@ protected:
 	UFUNCTION()
 	void OnTargetPerceptionUpdatedHandler(AActor* Actor, FAIStimulus Stimulus);
 
+	virtual void OnSightPerceptionSuccess(AUnderwaterCharacter* Player);
+	virtual void OnSightPerceptionFail();
+	virtual void OnHearingPerceptionSuccess(AUnderwaterCharacter* Player);
+	virtual void SetBloodDetectedState();
+	virtual void OnDamagePerceptionSuccess(AUnderwaterCharacter* Player);
+		
 private:
 	void BindToObstacleComponent();
-	void OnSightPerceptionSuccess(AUnderwaterCharacter* Player);
-	void OnSightPerceptionFail();
-	void OnHearingPerceptionSuccess(AUnderwaterCharacter* Player);
-	void SetBloodDetectedState();
-	void OnDamagePerceptionSuccess(AUnderwaterCharacter* Player);
-
+	
 	UFUNCTION()
 	void OnObstacleComponentBeginOverlap(AUnderwaterCharacter* OverlappedPlayer);
 
@@ -87,5 +88,9 @@ public:
 	FORCEINLINE bool GetIsDetectedBlood() const { return bIsDamagedByPlayer; }
 	FORCEINLINE bool GetIsDamagedByPlayer() const { return bIsDamagedByPlayer; }
 	FORCEINLINE bool GetIsDisappearPlayer() const { return bIsDisappearPlayer; }
+
+	FORCEINLINE void SetPerceptionSight(bool bIsEnabled) { bIsPerceptionSight = bIsEnabled; }
+	FORCEINLINE void SetPerceptionHearing(bool bIsEnabled) { bIsPerceptionHearing = bIsEnabled; }
+	FORCEINLINE void SetPerceptionDamage(bool bIsEnabled) { bIsPerceptionDamage = bIsEnabled; }
 	
 };

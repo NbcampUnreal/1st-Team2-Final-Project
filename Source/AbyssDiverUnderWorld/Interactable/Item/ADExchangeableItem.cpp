@@ -10,6 +10,7 @@ AADExchangeableItem::AADExchangeableItem()
 	RootComponent = MeshComponent;
 	MeshComponent->SetMobility(EComponentMobility::Movable); 
 	MeshComponent->SetIsReplicated(true);
+	MeshComponent->SetCollisionProfileName(TEXT("BlockAllDynamicAndInteraction"));
 	bReplicates = true;
 }
 void AADExchangeableItem::BeginPlay()
@@ -40,9 +41,6 @@ void AADExchangeableItem::OnRep_TotalPrice()
 void AADExchangeableItem::Interact_Implementation(AActor* InstigatorActor)
 {
 	if (!HasAuthority()) return;
-	LOGI(Log, TEXT("Mineral's Mass : %d"), ItemData.Mass);
-	ItemData.Price = TotalPrice;
-	LOGI(Log, TEXT("Mineral's Price : %d"), ItemData.Price);
 
 	HandlePickup(Cast<APawn>(InstigatorActor));
 }
@@ -50,6 +48,9 @@ void AADExchangeableItem::Interact_Implementation(AActor* InstigatorActor)
 void AADExchangeableItem::CalculateTotalPrice()
 {
 	TotalPrice = ItemData.Mass * ValuePerUnit;
+	LOGI(Log, TEXT("Mineral's Mass : %d"), ItemData.Mass);
+	ItemData.Price = TotalPrice;
+	LOGI(Log, TEXT("Mineral's Price : %d"), ItemData.Price);
 }
 
 void AADExchangeableItem::HandlePickup(APawn* InstigatorPawn)

@@ -1,40 +1,21 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Boss/BossAIController.h"
+#include "Boss/EnhancedBossAIController.h"
 #include "KrakenAIController.generated.h"
 
 UCLASS()
-class ABYSSDIVERUNDERWORLD_API AKrakenAIController : public ABossAIController
+class ABYSSDIVERUNDERWORLD_API AKrakenAIController : public AEnhancedBossAIController
 {
 	GENERATED_BODY()
 
 public:
-	AKrakenAIController();
-
-protected:
 	virtual void BeginPlay() override;
 	virtual void OnPossess(APawn* InPawn) override;
-
-#pragma region Method
-public:
-	
-protected:
-
-private:
-#pragma endregion
-
-#pragma region Variable
-public:
+	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 
 protected:
-
-private:
-#pragma endregion
-
-#pragma region Getter, Setter
-public:
-
-#pragma endregion
+	virtual void OnSightPerceptionSuccess(AUnderwaterCharacter* Player) override;
+	virtual void OnDamagePerceptionSuccess(AUnderwaterCharacter* Player) override;
 	
 };

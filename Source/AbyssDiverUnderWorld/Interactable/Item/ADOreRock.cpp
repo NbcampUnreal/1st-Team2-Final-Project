@@ -202,6 +202,7 @@ void AADOreRock::SpawnDrops()
 	FDropEntry* E = CachedEntries[Index];
 
 	int8 Count = FMath::RandRange(E->MinCount, E->MaxCount);
+	PendingLoadCount = Count;
 	for (int8 i = 0; i < Count; i++)
 	{
 		int32 Mass = SampleDropMass(E->MinMass, E->MaxMass);
@@ -245,7 +246,10 @@ void AADOreRock::OnAssetLoaded(FDropEntry* Entry, int32 Mass)
 		// Item->SetMass(Mass);
 	}
 
-	Destroy();
+	if (--PendingLoadCount <= 0)
+	{
+		Destroy();
+	}
 }
 
 void AADOreRock::PlayMiningFX()

@@ -34,6 +34,12 @@ public:
 	TObjectPtr<UTextBlock> TextAction;
 
 	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> NameText;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> PriceText;
+
+	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UImage> ImageKeyE;
 
 	UPROPERTY(meta = (BindWidgetAnim), Transient)

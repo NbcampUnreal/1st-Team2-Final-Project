@@ -14,6 +14,7 @@ AInteractableButton::AInteractableButton()
 
 	MeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh Comp"));
 	MeshComp->SetupAttachment(RootComponent);
+	MeshComp->SetCollisionProfileName(TEXT("BlockAllDynamicAndInteraction"));
 
 	InteractableComp = CreateDefaultSubobject<UADInteractableComponent>(TEXT("Interactable Comp"));
 

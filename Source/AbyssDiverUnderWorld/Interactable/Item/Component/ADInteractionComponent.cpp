@@ -233,9 +233,10 @@ UADInteractableComponent* UADInteractionComponent::PerformLineTrace(const FVecto
 	FCollisionQueryParams Params;
 	Params.AddIgnoredActor(GetOwner());
 
-	if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params))
+	constexpr ECollisionChannel InteractionChannel = ECC_GameTraceChannel4;
+	if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, InteractionChannel, Params))
 	{
-		if (IIADInteractable * IADInteractable = Cast<IIADInteractable>(Hit.GetActor()))
+		if (IIADInteractable* IADInteractable = Cast<IIADInteractable>(Hit.GetActor()))
 		{
 			return IADInteractable->GetInteractableComponent();
 		}

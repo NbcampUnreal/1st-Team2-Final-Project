@@ -14,6 +14,14 @@ UBTTask_SerpmareIdle::UBTTask_SerpmareIdle()
 
 EBTNodeResult::Type UBTTask_SerpmareIdle::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
+	FBTSerpmareIdleTaskMemory* TaskMemory = (FBTSerpmareIdleTaskMemory*)NodeMemory;
+	if (!TaskMemory) return EBTNodeResult::Failed;
+
+	TaskMemory->AIController = Cast<ABossAIController>(OwnerComp.GetAIOwner());
+	TaskMemory->Serpmare = Cast<ASerpmare>(OwnerComp.GetAIOwner()->GetCharacter());
+
+	if (!TaskMemory->AIController.IsValid() || !TaskMemory->Serpmare.IsValid()) return EBTNodeResult::Failed;
+	
 	return EBTNodeResult::InProgress;
 }
 
@@ -23,11 +31,6 @@ void UBTTask_SerpmareIdle::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* No
 
 	FBTSerpmareIdleTaskMemory* TaskMemory = (FBTSerpmareIdleTaskMemory*)NodeMemory;
 	if (!TaskMemory) return;
-
-	TaskMemory->AIController = Cast<ABossAIController>(OwnerComp.GetAIOwner());
-	TaskMemory->Serpmare = Cast<ASerpmare>(TaskMemory->AIController->GetCharacter());
-
-	if (!TaskMemory->AIController.IsValid() || !TaskMemory->Serpmare.IsValid()) return;
 
 	// 공격 범위 내에 플레이어가 들어온 경우
 	if (TaskMemory->Serpmare->GetIsAttackCollisionOverlappedPlayer())

@@ -17,10 +17,9 @@ AADUseItem::AADUseItem()
 	RootComponent = SkeletalMesh;
 	//SkeletalMesh->SetMobility(EComponentMobility::Movable);
 	//SkeletalMesh->SetIsReplicated(true);
-
 	SkeletalMesh->SetGenerateOverlapEvents(true);
 	SkeletalMesh->SetSimulatePhysics(true);
-	SkeletalMesh->SetCollisionProfileName("BlockAllDynamic");
+	SkeletalMesh->SetCollisionProfileName(TEXT("BlockAllDynamicAndInteraction"));
 	EquipableComp = CreateDefaultSubobject<UEquipableComponent>(TEXT("EquipableComponent"));
 
 
@@ -95,7 +94,7 @@ void AADUseItem::M_UnEquipMode_Implementation()
 {
 	SkeletalMesh->SetGenerateOverlapEvents(true);
 	SkeletalMesh->SetSimulatePhysics(true);
-	SkeletalMesh->SetCollisionProfileName("BlockAllDynamic");
+	SkeletalMesh->SetCollisionProfileName(TEXT("BlockAllDynamicAndInteraction"));
 }
 
 void AADUseItem::M_EquipMode_Implementation()

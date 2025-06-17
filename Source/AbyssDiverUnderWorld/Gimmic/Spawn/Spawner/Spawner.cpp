@@ -36,7 +36,7 @@ ASpawnPoint* ASpawner::GetPossibleSpawnPoint()
 		
 		for (ASpawnPoint* UsedPoint : SpawnSuccessPoints)
 		{
-			if (IsValid(UsedPoint)) continue;
+			if (!IsValid(UsedPoint)) continue;
 
 			const float Distance = FVector::Dist(UsedPoint->GetActorLocation(), Candidate->GetActorLocation());
 			if (Distance >= MinDistance)

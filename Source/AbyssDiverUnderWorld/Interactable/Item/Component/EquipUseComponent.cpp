@@ -51,6 +51,7 @@ UEquipUseComponent::UEquipUseComponent()
 	bNVGWidgetVisible = false;
 	bChargeBatteryWidgetVisible = false;
 	bAlreadyCursorShowed = false;
+	bIsReloading = false;
 
 	// 테스트용
 	if (ACharacter* Char = Cast<ACharacter>(GetOwner()))
@@ -834,9 +835,10 @@ void UEquipUseComponent::HideChargeBatteryWidget()
 
 void UEquipUseComponent::StartReload(int32 InMagazineSize)
 {
-	if (!bIsWeapon || ReserveAmmo <= 0 || CurrentAmmoInMag == InMagazineSize)
+	if (!bIsWeapon || ReserveAmmo <= 0 || CurrentAmmoInMag == InMagazineSize || bIsReloading)
 		return;
 	bCanFire = false;
+	bIsReloading = true;
 	GetWorld()->GetTimerManager().ClearTimer(TimerHandle_HandleRefire);
 	
 	if (!OwningCharacter.IsValid())
@@ -883,6 +885,7 @@ void UEquipUseComponent::FinishReload(int32 InMagazineSize, AUnderwaterCharacter
 	bCanFire = true;
 
 	InitializeAmmoUI();
+	bIsReloading = false;
 
 	//Diver->M_StopAllMontagesOnBothMesh(MontageStopSeconds);
 	//PlayDrawAnimation(Diver);
@@ -1053,11 +1056,30 @@ void UEquipUseComponent::GetCameraView(FVector& OutLoc, FRotator& OutRot) const
 
 FVector UEquipUseComponent::CalculateTargetPoint(const FVector& CamLoc, const FVector& AimDir) const
 {
-	FVector TraceEnd = CamLoc + AimDir * TraceMaxRange;
-	FHitResult Impact;
+	constexpr ECollisionChannel InteractionChannel = ECC_GameTraceChannel4;
+	const FVector TraceEnd = CamLoc + AimDir * TraceMaxRange;
 	FCollisionQueryParams Params(TEXT("HarpoonTrace"), true, GetOwner());
-	GetWorld()->LineTraceSingleByChannel(Impact, CamLoc, TraceEnd, ECC_Visibility, Params);
-	return Impact.bBlockingHit ? Impact.ImpactPoint : TraceEnd;
+
+	// ① InteractionRay
+	FHitResult HitInt;
+	const bool bHitInt = GetWorld()->LineTraceSingleByChannel(
+		HitInt, CamLoc, TraceEnd, InteractionChannel, Params);
+
+	// ② Visibility
+	FHitResult HitVis;
+	const bool bHitVis = GetWorld()->LineTraceSingleByChannel(
+		HitVis, CamLoc, TraceEnd, ECC_Visibility, Params);
+
+	// ③ 두 결과 중 더 가까운 지점 선택
+	if (bHitInt && bHitVis)
+	{
+		return (HitInt.Distance < HitVis.Distance) ? HitInt.ImpactPoint : HitVis.ImpactPoint;
+	}
+	if (bHitInt) return HitInt.ImpactPoint;
+	if (bHitVis) return HitVis.ImpactPoint;
+
+	// ④ 아무것도 맞히지 못하면 최대 사거리
+	return TraceEnd;
 }
 
 FVector UEquipUseComponent::GetMuzzleLocation(const FVector& CamLoc, const FVector& AimDir) const

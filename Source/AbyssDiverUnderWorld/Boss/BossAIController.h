@@ -20,7 +20,6 @@ class ABYSSDIVERUNDERWORLD_API ABossAIController : public AAIController
 {
 	GENERATED_BODY()
 
-
 public:
 	ABossAIController();
 
@@ -30,22 +29,11 @@ protected:
 
 #pragma region Method
 public:
-	void SetVisionAngle(float& Angle);
+	void SetSightRadius(float InRadius);
+	void SetVisionAngle(float Angle);
 	bool IsStateSame(EBossState State);
-	EPathFollowingRequestResult::Type MoveToActorWithRadius();
+	EPathFollowingRequestResult::Type MoveToActorWithRadius(AActor* TargetActor);
 	EPathFollowingRequestResult::Type MoveToLocationWithRadius(const FVector& Location);
-	
-protected:
-	UFUNCTION()
-	void OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
-
-	UFUNCTION(NetMulticast, Reliable)
-	void M_AddDetectedPlayer(AUnderwaterCharacter* Target);
-	void M_AddDetectedPlayer_Implementation(AUnderwaterCharacter* Target);
-
-	UFUNCTION(NetMulticast, Reliable)
-	void M_RemoveDetectedPlayer(AUnderwaterCharacter* Target);
-	void M_RemoveDetectedPlayer_Implementation(AUnderwaterCharacter* Target);
 
 private:
 #pragma endregion
@@ -77,9 +65,6 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Perception")
 	TObjectPtr<UAISenseConfig_Hearing> HearingConfig;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI|Target")
-	TArray<TObjectPtr<AUnderwaterCharacter>> DetectedPlayers;
-
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Sight")
 	float DetectedStateInterval;
 
@@ -89,22 +74,17 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Radius")
 	float MoveToLocationAcceptanceRadius;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AI|Perception")
-	uint8 bIsSightDetectionPossible : 1;
-
 	UPROPERTY()
 	TObjectPtr<ABoss> Boss;
+
+	FTimerHandle DetectedStateTimerHandle;
 	
 private:
 	static const FName BossStateKey;
-	uint8 bIsDetectedStatePossible : 1;
-	float AccumulatedTime;
-	FTimerHandle DetectedStateTimerHandle;
+	
 #pragma endregion
 
 #pragma region Getter, Setter
-public:
-	void SetDetectedStatePossible();
 
 #pragma endregion
 	

@@ -12,7 +12,7 @@ ASerpmare::ASerpmare()
 void ASerpmare::BeginPlay()
 {
 	Super::BeginPlay();
-	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	GetMesh()->OnComponentBeginOverlap.AddDynamic(this, &ABoss::OnMeshOverlapBegin);
 }
 

@@ -16,7 +16,7 @@ EBTNodeResult::Type UBTTask_SerpmareAttack::ExecuteTask(UBehaviorTreeComponent& 
 	if (!TaskMemory) return EBTNodeResult::Failed;
 
 	TaskMemory->AIController = Cast<ABossAIController>(OwnerComp.GetAIOwner());
-	TaskMemory->Serpmare = Cast<ASerpmare>(TaskMemory->AIController->GetCharacter());
+	TaskMemory->Serpmare = Cast<ASerpmare>(OwnerComp.GetAIOwner()->GetCharacter());
 
 	if (!TaskMemory->AIController.IsValid() || !TaskMemory->Serpmare.IsValid()) return EBTNodeResult::Failed;
 
@@ -31,11 +31,6 @@ void UBTTask_SerpmareAttack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* 
 
 	FBTSerpmareAttackTaskMemory* TaskMemory = (FBTSerpmareAttackTaskMemory*)NodeMemory;
 	if (!TaskMemory) return;
-
-	TaskMemory->AIController = Cast<ABossAIController>(OwnerComp.GetAIOwner());
-	TaskMemory->Serpmare = Cast<ASerpmare>(TaskMemory->AIController->GetCharacter());
-
-	if (!TaskMemory->AIController.IsValid() || !TaskMemory->Serpmare.IsValid()) return;
 
 	if (!TaskMemory->AIController->IsStateSame(EBossState::Attack))
 	{
