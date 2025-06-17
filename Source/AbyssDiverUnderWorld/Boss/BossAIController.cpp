@@ -49,9 +49,6 @@ ABossAIController::ABossAIController()
 	AIPerceptionComponent->SetDominantSense(SightConfig->GetSenseImplementation());
 
 	DetectedStateInterval = 20.0f;
-
-	// 시야 감지 가능한 상태로 설정
-	bIsSightDetectionPossible = true;
 }
 
 void ABossAIController::BeginPlay()
