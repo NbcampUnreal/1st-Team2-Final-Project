@@ -293,6 +293,12 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	uint8 bDrawDebugLine : 1 = false;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	uint8 bEnableDownTrace : 1 = true;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	uint8 bEnableHorizontalTrace : 1 = true;
+
 	UPROPERTY()
 	FVector DamagedLocation;
 
@@ -309,6 +315,7 @@ private:
 	uint8 bIsAttackCollisionOverlappedPlayer : 1;
 	float TurnTimer = 0.0f;
 	float OriginDeceleration;
+	float SphereOverlapRadius = 100.0f;
 	FVector TargetLocation;
 	FVector CachedSpawnLocation;
 	FVector TurnDirection;

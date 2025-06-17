@@ -54,7 +54,7 @@ void UBTTask_PlayerChase::TickTask(UBehaviorTreeComponent& Comp, uint8* NodeMemo
 	
 
 	// 추적중인 액터에게 MoveTo를 호출하는 코드이다.
-	Result = TaskMemory->AIController->MoveToActorWithRadius();
+	Result = TaskMemory->AIController->MoveToActorWithRadius(TaskMemory->Boss->GetTarget());
 
 	// 추적 중인 플레이어가 사망 상태인 경우 추적을 중단한다.
 	if (IsValid(TaskMemory->Boss->GetTarget()))
