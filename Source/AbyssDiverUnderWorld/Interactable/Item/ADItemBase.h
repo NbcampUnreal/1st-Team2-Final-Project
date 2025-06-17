@@ -79,6 +79,8 @@ public:
 	virtual UADInteractableComponent* GetInteractableComponent() const override;
 	virtual bool IsHoldMode() const override;
 	virtual FString GetInteractionDescription() const override;
+	FName GetItemName() const { return ItemData.Name; }
+	int32 GetItemPrice() const { return ItemData.Price; }
 
 private:
 	USoundSubsystem* GetSoundSubsystem();

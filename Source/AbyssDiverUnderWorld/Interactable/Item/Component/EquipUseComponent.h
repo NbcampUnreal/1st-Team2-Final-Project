@@ -196,7 +196,7 @@ public:
 	float ReloadDuration = 3.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Weapon|Trace")
-	float TraceMaxRange = 20000.f;
+	float TraceMaxRange = 2000.f;
 
 	uint8 bCanFire : 1;
 	uint8 bIsWeapon : 1;
