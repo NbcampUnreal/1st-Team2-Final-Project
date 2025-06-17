@@ -298,6 +298,8 @@ private:
 	float PendingPitch = 0.f;
 	float PendingYaw = 0.f;
 
+	uint8 bIsReloading : 1;
+
 #pragma endregion
 
 #pragma region Getter, Setteer

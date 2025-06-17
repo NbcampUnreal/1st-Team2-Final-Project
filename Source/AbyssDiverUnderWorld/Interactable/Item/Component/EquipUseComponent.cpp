@@ -51,6 +51,7 @@ UEquipUseComponent::UEquipUseComponent()
 	bNVGWidgetVisible = false;
 	bChargeBatteryWidgetVisible = false;
 	bAlreadyCursorShowed = false;
+	bIsReloading = false;
 
 	// 테스트용
 	if (ACharacter* Char = Cast<ACharacter>(GetOwner()))
@@ -834,9 +835,10 @@ void UEquipUseComponent::HideChargeBatteryWidget()
 
 void UEquipUseComponent::StartReload(int32 InMagazineSize)
 {
-	if (!bIsWeapon || ReserveAmmo <= 0 || CurrentAmmoInMag == InMagazineSize)
+	if (!bIsWeapon || ReserveAmmo <= 0 || CurrentAmmoInMag == InMagazineSize || bIsReloading)
 		return;
 	bCanFire = false;
+	bIsReloading = true;
 	GetWorld()->GetTimerManager().ClearTimer(TimerHandle_HandleRefire);
 	
 	if (!OwningCharacter.IsValid())
@@ -883,6 +885,7 @@ void UEquipUseComponent::FinishReload(int32 InMagazineSize, AUnderwaterCharacter
 	bCanFire = true;
 
 	InitializeAmmoUI();
+	bIsReloading = false;
 
 	//Diver->M_StopAllMontagesOnBothMesh(MontageStopSeconds);
 	//PlayDrawAnimation(Diver);
