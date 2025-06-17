@@ -841,10 +841,13 @@ void ABoss::Attack()
 		AnimInstance->OnMontageEnded.AddDynamic(this, &ABoss::OnAttackMontageEnded);
 		M_PlayAnimation(NormalAttackAnimations[AttackType]);
 	}
+
+	bIsAttacking = true;
 }
 
 void ABoss::OnAttackEnded()
 {
+	bIsAttacking = false; 
 	AttackedPlayers.Empty();
 }
 
@@ -893,6 +896,9 @@ void ABoss::OnMeshOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* Othe
 {
 	// 사망 상태면 얼리 리턴
 	if (BossState == EBossState::Death) return;
+
+	// 공격 가능한 상태가 아니라면 리턴
+	if (!bIsAttacking) return;
 	
 	// 공격 대상이 플레이어가 아닌 경우 얼리 리턴
 	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(OtherActor);
