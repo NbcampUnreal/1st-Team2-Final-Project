@@ -74,18 +74,33 @@ void AADDroneSeller::Interact_Implementation(AActor* InstigatorActor)
 	int32 Gained = SellAllExchangeableItems(InstigatorActor);
 	if (Gained <= 0)
 	{
-		LOGD(Log, TEXT("Gained < 0"))
-			return;
+		LOGD(Log, TEXT("Gained < 0"));
+		return;
 	}
 
 	SetCurrentMoeny(CurrentMoney + Gained);
 	LOGD(Log, TEXT("→ 누적 금액: %d / %d"), CurrentMoney, TargetMoney);
 
-	bool bReachedGoal = (CurrentMoney >= TargetMoney);
+	// 🔸 잠깐 초록색으로 바꾸기
+	SetLightColor(FLinearColor::Green);
 
-	if (bReachedGoal && IsValid(CurrentDrone))
+	// 🔸 0.5초 후 목표 금액 조건에 따라 다시 색상 적용
+	FTimerHandle TimerHandle;
+	GetWorld()->GetTimerManager().SetTimer(
+		TimerHandle,
+		[this]()
+		{
+			const bool bReachedGoal = (CurrentMoney >= TargetMoney);
+			SetLightColor(bReachedGoal ? FLinearColor::Green : FLinearColor::Red);
+		},
+		0.5f,  // 초록 유지 시간
+		false
+	);
+
+	if (CurrentMoney >= TargetMoney && IsValid(CurrentDrone))
 	{
-		LOGD(Log, TEXT("목표 달성! Drone 활성화 호출"))
+
+		LOGD(Log, TEXT("목표 달성! Drone 활성화 호출"));
 		CurrentDrone->Activate();
 		GetSoundSubsystem()->PlayAt(ESFX::ActivateDrone, GetActorLocation());
 	}
@@ -93,9 +108,8 @@ void AADDroneSeller::Interact_Implementation(AActor* InstigatorActor)
 	{
 		GetSoundSubsystem()->PlayAt(ESFX::SubmitOre, GetActorLocation());
 	}
-
-	SetLightColor(bReachedGoal ? FLinearColor::Green : FLinearColor::Red);
 }
+
 
 void AADDroneSeller::DisableSelling()
 {
@@ -149,25 +163,22 @@ int32 AADDroneSeller::SellAllExchangeableItems(AActor* InstigatorActor)
 				if (UADInventoryComponent* Inv = PS->GetInventory())
 				{
 					int32 Price = Inv->GetTotalPrice();
-					TArray<int8> TypeArray = Inv->GetInventoryIndexesByType(EItemType::Exchangable);
-					TypeArray.Sort();
-
 					const TArray<FItemData>& Items = Inv->GetInventoryList().Items;
 
-					const int32 InterationCount = TypeArray.Num();
-					for (int32 i = 0; i < InterationCount; ++i)
+					int32 ItemCount = Items.Num();
+					for (int32 i = 0; i < ItemCount; ++i)
 					{
-						const int8& InventoryIndex = TypeArray[InterationCount - i - 1];
-						if (InventoryIndex == INDEX_NONE)
+						int32 Index = ItemCount - i - 1;
+						if (Items[Index].ItemType == EItemType::Exchangable)
 						{
-							break;
+							int32 SlotIndex = Items[Index].SlotIndex;
+
+							uint8 OreId = Items[Index].Id;
+							int32 OreMass = Items[Index].Mass;
+
+							Inv->RemoveBySlotIndex(SlotIndex, EItemType::Exchangable, false);
+							OnSellOreDelegate.Broadcast(OreId, OreMass);
 						}
-
-						uint8 OreId = Items[InventoryIndex].Id;
-						int32 OreMass = Items[InventoryIndex].Mass;
-
-						Inv->RemoveBySlotIndex(InventoryIndex, EItemType::Exchangable, false);
-						OnSellOreDelegate.Broadcast(OreId, OreMass);
 					}
 
 					return Price;
