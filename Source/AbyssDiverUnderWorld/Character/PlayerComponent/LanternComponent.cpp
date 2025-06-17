@@ -7,6 +7,7 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/SpotLightComponent.h"
 #include "Monster/Monster.h"
+#include "Engine/CollisionProfile.h"
 #include "Net/UnrealNetwork.h"
 
 ULanternComponent::ULanternComponent()
@@ -149,7 +150,8 @@ void ULanternComponent::SpawnLight(USceneComponent* AttachToComponent, const flo
 		LightDetectionComponent = NewObject<UCapsuleComponent>(this, UCapsuleComponent::StaticClass(), TEXT("LanternDetectionComponent"));
 		LightDetectionComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		LightDetectionComponent->SetCollisionResponseToAllChannels(ECR_Ignore);
-		LightDetectionComponent->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+		// ECC_GameTraceChannel3 == Monster (ProjectSetting)
+		LightDetectionComponent->SetCollisionResponseToChannel(ECC_GameTraceChannel3, ECR_Overlap);
 		LightDetectionComponent->SetGenerateOverlapEvents(true);
 		LightDetectionComponent->AttachToComponent(LanternLightComponent, FAttachmentTransformRules::SnapToTargetIncludingScale);
 		LightDetectionComponent->RegisterComponent();

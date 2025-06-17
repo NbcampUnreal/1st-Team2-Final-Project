@@ -4,32 +4,30 @@
 
 #include "CoreMinimal.h"
 #include "BehaviorTree/Tasks/BTTask_BlackboardBase.h"
-#include "BTTask_InvestigateMoveTo.generated.h"
+#include "BTTask_MoveToPredictedTarget.generated.h"
 
 
 UCLASS()
-class ABYSSDIVERUNDERWORLD_API UBTTask_InvestigateMoveTo : public UBTTask_BlackboardBase
+class ABYSSDIVERUNDERWORLD_API UBTTask_MoveToPredictedTarget : public UBTTask_BlackboardBase
 {
 	GENERATED_BODY()
 	
 public:
-	UBTTask_InvestigateMoveTo();
+	UBTTask_MoveToPredictedTarget();
 
+protected:
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
 	virtual void TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;
 
-protected:
 	UPROPERTY(EditAnywhere, Category = "Blackboard")
-	struct FBlackboardKeySelector MonsterStateKey;
+	struct FBlackboardKeySelector TargetActorKey;
 
-	UPROPERTY(EditAnywhere, Category = "Blackboard")
-	struct FBlackboardKeySelector InvestigateLocationKey;
+	UPROPERTY(EditAnywhere, Category = "Movement")
+	float PredictTime;
 
-	UPROPERTY(EditAnywhere)
-	float AcceptableRadius;
+	UPROPERTY(EditAnywhere, Category = "Movement")
+	float AcceptanceRadius;
 
-	UPROPERTY(EditAnywhere)
-	float WaitTime;
-
-	uint8 bIsMoving : 1;
+	UPROPERTY(EditAnywhere, Category = "Movement")
+	float MoveUpdateThreshold;
 };

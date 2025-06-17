@@ -4,7 +4,8 @@
 #include "Monster/HorrorCreature/HorrorCreature.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Character/UnderwaterCharacter.h"
-#include "TimerManager.h"
+#include "Monster/HorrorCreature/HorrorCreatureAIController.h"
+#include "Kismet/GameplayStatics.h"
 
 
 AHorrorCreature::AHorrorCreature()
@@ -19,7 +20,8 @@ AHorrorCreature::AHorrorCreature()
 	bCanSwallow = true;
 	LanchStrength = 150.0f;
 	DisableSightTime = 1.5f;
-	FleeTime = 2.5f;
+	FleeTime = 4.5f;
+	SwallowDamage = 900.0f;
 
 	HorrorCreatureHitSphere = CreateDefaultSubobject<USphereComponent>(TEXT("HorrorCreatureHitSphere"));
 	HorrorCreatureHitSphere->SetupAttachment(GetMesh(), TEXT("AttackSocket"));
@@ -38,6 +40,7 @@ void AHorrorCreature::BeginPlay()
 	}
 	HorrorCreatureHitSphere->OnComponentBeginOverlap.AddDynamic(this, &AHorrorCreature::OnSwallowTriggerOverlap);
 }
+
 
 void AHorrorCreature::PossessedBy(AController* NewController)
 {
@@ -70,6 +73,8 @@ void AHorrorCreature::SwallowPlayer(AUnderwaterCharacter* Victim)
 	SwallowedPlayer = Victim;
 	bCanSwallow = false;
 
+	DamageToVictim(Victim, SwallowDamage);
+
 	// Attach to mouth or body socket
 	Victim->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("MouthSocket"));
 	Victim->SetActorRelativeLocation(FVector::ZeroVector); // Safely reset location
@@ -77,7 +82,6 @@ void AHorrorCreature::SwallowPlayer(AUnderwaterCharacter* Victim)
 
 	SetMonsterState(EMonsterState::Flee);
 	BlackboardComponent->ClearValue(TargetActorKey);
-	BlackboardComponent->SetValueAsEnum(MonsterStateKey, static_cast<uint8>(EMonsterState::Flee));
 }
 
 void AHorrorCreature::EjectPlayer(AUnderwaterCharacter* Victim)
@@ -88,7 +92,7 @@ void AHorrorCreature::EjectPlayer(AUnderwaterCharacter* Victim)
 	TemporarilyDisalbeSightPerception(DisableSightTime);
 
 	Victim->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
-	Victim->SetActorHiddenInGame(false);
+	Victim->SetActorRotation(FRotator(0.f, Victim->GetActorRotation().Yaw, 0.f));
 	Victim->StopCaptureState();
 	
 	// Launch the player upward and forward from the mouth
@@ -115,6 +119,10 @@ void AHorrorCreature::EjectPlayer(AUnderwaterCharacter* Victim)
 		false
 	);
 
+	SwallowedPlayer = nullptr;
+	bCanSwallow = true;
+	InitializeAggroVariable();
+
 	FTimerHandle SetPatrolTimeHandle;
 	GetWorld()->GetTimerManager().SetTimer(
 		SetPatrolTimeHandle,
@@ -123,8 +131,13 @@ void AHorrorCreature::EjectPlayer(AUnderwaterCharacter* Victim)
 		FleeTime,
 		false
 	);
-	SwallowedPlayer = nullptr;
-	bCanSwallow = true;
+}
+
+void AHorrorCreature::NotifyLightExposure(float DeltaTime, float TotalExposedTime, const FVector& PlayerLocation, AActor* PlayerActor)
+{
+	if (SwallowedPlayer) return;
+
+	Super::NotifyLightExposure(DeltaTime, TotalExposedTime, PlayerLocation, PlayerActor);
 }
 
 void AHorrorCreature::TemporarilyDisalbeSightPerception(float Duration)
@@ -154,7 +167,31 @@ void AHorrorCreature::SightPerceptionOn()
 void AHorrorCreature::SetPatrolStateAfterEject()
 {
 	SetMonsterState(EMonsterState::Patrol);
-	BlackboardComponent->SetValueAsEnum(MonsterStateKey, static_cast<uint8>(EMonsterState::Patrol));
 	BlackboardComponent->ClearValue(TargetActorKey);
 }
+
+void AHorrorCreature::DamageToVictim(AUnderwaterCharacter* Victim, float Damage)
+{
+	if (AIController && IsValid(Victim) && IsValid(this))
+	{
+		UGameplayStatics::ApplyDamage(
+			Victim,
+			Damage,
+			AIController,
+			this,
+			UDamageType::StaticClass()
+		);
+	}
+}
+	
+void AHorrorCreature::InitializeAggroVariable()
+{
+	if (!AIController || !IsValid(this) || !BlackboardComponent) return;
+	
+	AIController->SetbIsLosingTarget(false);
+	bIsChasing = false;
+	TargetActor = nullptr;
+	BlackboardComponent->ClearValue(InvestigateLocationKey);
+}
+
 

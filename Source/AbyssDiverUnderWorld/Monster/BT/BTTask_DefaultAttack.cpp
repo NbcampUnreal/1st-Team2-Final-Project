@@ -12,6 +12,8 @@ UBTTask_DefaultAttack::UBTTask_DefaultAttack()
 	bCreateNodeInstance = true;
 	bNotifyTick = false;
 	CachedOwnerComp = nullptr;
+	bIsAttacking = false;
+	
 }
 
 EBTNodeResult::Type UBTTask_DefaultAttack::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
@@ -26,11 +28,11 @@ EBTNodeResult::Type UBTTask_DefaultAttack::ExecuteTask(UBehaviorTreeComponent& O
 	if (!Monster) return EBTNodeResult::Failed;
 
 	// In Server
-	AIController->StopMovement();
-	if (Monster->HasAuthority())
+	if (Monster->HasAuthority() && !bIsAttacking)
 	{
 		// Sync to Client
 		Monster->PlayAttackMontage();
+		bIsAttacking = true;
 
 		// Detect end of montage ¡æ End BTTask
 		if (UAnimInstance* AnimInst = AIPawn->GetMesh()->GetAnimInstance())
@@ -73,6 +75,7 @@ void UBTTask_DefaultAttack::HandleAttackMontageEnded(UAnimMontage* Montage, bool
 			// Reverting back to tracking now that the attack is over
 			Blackboard->SetValueAsEnum(MonsterStateKey.SelectedKeyName, static_cast<uint8>(EMonsterState::Chase));
 		}
-		FinishLatentTask(*CachedOwnerComp, bInterrupted ? EBTNodeResult::Failed : EBTNodeResult::Succeeded);
+		FinishLatentTask(*CachedOwnerComp, EBTNodeResult::Succeeded);
+		bIsAttacking = false;
 	}
 }
