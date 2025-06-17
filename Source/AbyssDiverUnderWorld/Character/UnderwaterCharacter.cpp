@@ -392,6 +392,8 @@ void AUnderwaterCharacter::OnMovementModeChanged(EMovementMode PrevMovementMode,
 {
 	Super::OnMovementModeChanged(PrevMovementMode, PreviousCustomMode);
 
+	UE_LOG(LogAbyssDiverCharacter,Display, TEXT("Movement Changed : %s"), *UEnum::GetValueAsString(GetCharacterMovement()->MovementMode)s);
+
 	if (EnvironmentState != EEnvironmentState::Underwater)
 	{
 		return;
@@ -417,11 +419,15 @@ void AUnderwaterCharacter::SetEnvironmentState(EEnvironmentState State)
 {
 	if (EnvironmentState == State)
 	{
+		UE_LOG(LogAbyssDiverCharacter, Warning, TEXT("EnvironmentState is already set to %s"), *UEnum::GetValueAsString(State));
 		return;
 	}
 	const EEnvironmentState OldState = EnvironmentState;
 	EnvironmentState = State;
 
+	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Environment State : %s -> %s"),
+		*UEnum::GetValueAsString(OldState), *UEnum::GetValueAsString(EnvironmentState));
+	
 	switch (EnvironmentState)
 	{
 	case EEnvironmentState::Underwater:
@@ -434,7 +440,7 @@ void AUnderwaterCharacter::SetEnvironmentState(EEnvironmentState State)
 		break;
 	case EEnvironmentState::Ground:
 		// 지상에서는 이동 방향으로 회전을 하게 한다.
-		GetCharacterMovement()->GravityScale = GetWorld()->GetGravityZ() / ExpectedGravityZ;
+		GetCharacterMovement()->GravityScale = ExpectedGravityZ / GetWorld()->GetGravityZ();
 		SetFlipperMeshVisibility(false);
 		FirstPersonCameraArm->bEnableCameraRotationLag = false;
 		Mesh1PSpringArm->bEnableCameraRotationLag = false;
@@ -1320,9 +1326,11 @@ void AUnderwaterCharacter::OnHealthChanged(int32 CurrentHealth, int32 MaxHealth)
 
 void AUnderwaterCharacter::OnPhysicsVolumeChanged(class APhysicsVolume* NewVolume) // Delegate에 const가 없기 떄문에 NewVolume 앞에 const를 붙이지 않는다.
 {
-	LOG_NETWORK(LogAbyssDiverCharacter, Display, TEXT("Physics Volume Changed : %s"), *NewVolume->GetName());
 
 	const EEnvironmentState NewEnvironmentState = NewVolume->bWaterVolume ? EEnvironmentState::Underwater : EEnvironmentState::Ground;
+	LOG_NETWORK(LogAbyssDiverCharacter, Display, TEXT("Physics Volume Changed : %s / State : %s"),
+		*NewVolume->GetName(),
+		NewVolume->bWaterVolume ? TEXT("Underwater") : TEXT("Ground"));
 	SetEnvironmentState(NewEnvironmentState);
 }
 
