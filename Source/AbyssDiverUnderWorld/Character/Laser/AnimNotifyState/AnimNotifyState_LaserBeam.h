@@ -40,7 +40,7 @@ public:
 
 	// 총구 소켓 이름
 	UPROPERTY(EditAnywhere, Category = "Laser")
-	FName MuzzleSocket = "Muzzle";
+	FName MuzzleSocket = "LaserMuzzle";
 
 	// Niagara 빔에서 사용자 파라미터 이름(EndPoint)
 	UPROPERTY(EditAnywhere, Category = "Laser")
