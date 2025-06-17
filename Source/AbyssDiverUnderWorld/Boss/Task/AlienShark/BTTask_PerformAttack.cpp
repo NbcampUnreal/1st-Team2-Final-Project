@@ -9,7 +9,7 @@ UBTTask_PerformAttack::UBTTask_PerformAttack()
 {
 	NodeName = TEXT("Perform Attack");
 	bNotifyTick = false;
-	bNotifyTaskFinished = true;
+	bNotifyTaskFinished = false;
 	bCreateNodeInstance = false;
 }
 

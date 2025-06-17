@@ -1,8 +1,12 @@
 #include "Boss/Kraken/Kraken.h"
 #include "AbyssDiverUnderWorld.h"
+#include "EngineUtils.h"
+#include "BehaviorTree/BlackboardComponent.h"
+#include "Boss/EnhancedBossAIController.h"
 #include "Boss/Enum/EBossState.h"
 #include "Character/UnderwaterCharacter.h"
 #include "Components/CapsuleComponent.h"
+#include "Gimmic/Volume/BattleFieldVolume.h"
 
 AKraken::AKraken()
 {
@@ -38,6 +42,14 @@ AKraken::AKraken()
 void AKraken::BeginPlay()
 {
 	Super::BeginPlay();
+
+	GetBattleFieldVolumeInWorld();
+
+	if (IsValid(BattleFieldVolume))
+	{
+		BattleFieldVolume->OnBattleFieldBeginOverlapDelegate.AddUObject(this, &AKraken::OnBattleFieldBeginOverlap);
+		BattleFieldVolume->OnBattleFieldEndOverlapDelegate.AddUObject(this, &AKraken::OnBattleFieldEndOverlap);
+	}
 	
 	BiteAttackCollision->OnComponentBeginOverlap.AddDynamic(this, &ABoss::OnMeshOverlapBegin);
 	TakeDownAttackCollision->OnComponentBeginOverlap.AddDynamic(this, &ABoss::OnMeshOverlapBegin);
@@ -51,4 +63,39 @@ void AKraken::OnDeath()
 	SetEmissiveTransition();
 	
 	Super::OnDeath();
+}
+
+void AKraken::OnBattleFieldBeginOverlap()
+{
+	bCanBattle = true;
+	EnhancedAIController->SetSightRadius(4000.f);
+}
+
+void AKraken::OnBattleFieldEndOverlap(const uint8& PlayerCount)
+{
+	if (PlayerCount == 0)
+	{
+		bCanBattle = false;
+		
+		AIController->GetBlackboardComponent()->SetValueAsBool("bIsChasing", false);
+		AIController->GetBlackboardComponent()->SetValueAsBool("bCanAttack", false);
+		EnhancedAIController->SetSightRadius(0.f);
+	}
+}
+
+void AKraken::GetBattleFieldVolumeInWorld()
+{
+	for (ABattleFieldVolume* Volume : TActorRange<ABattleFieldVolume>(GetWorld()))
+	{
+		if (!IsValid(Volume)) continue;
+
+		if (IsOverlappingActor(Volume))
+		{
+			LOG(TEXT("BattleFieldVolume Find Success !"))
+			BattleFieldVolume = Volume;
+			return;
+		}
+	}
+
+	LOG(TEXT("-------------- Bug : Can't Find BattleFieldVolume !! --------------"));
 }
