@@ -183,11 +183,6 @@ void ABoss::SetNewTargetLocation()
         if (!bHit)
         {
             TargetLocation = PotentialTarget;
-            
-            LOG(TEXT("Forward-biased target set (Attempt %d): %s (Distance: %f)"), 
-                   Attempts + 1,
-                   *TargetLocation.ToString(), 
-                   FVector::Dist(CurrentLocation, TargetLocation));
 
 #if WITH_EDITOR
         	if (bDrawDebugLine)
@@ -339,7 +334,6 @@ void ABoss::PerformNormalMovement(const float& InDeltaTime)
     // 목표점이 없거나 Nav Mesh를 벗어났으면 목표점을 새로 설정한다.
     if (TargetLocation.IsZero() || !IsLocationOnNavMesh(TargetLocation))
     {
-        LOG(TEXT("Target invalid or outside NavMesh, setting new target"));
         SetNewTargetLocation();
         return;
     }
@@ -349,7 +343,6 @@ void ABoss::PerformNormalMovement(const float& InDeltaTime)
     // 목표점에 도달했으면 새 목표점 설정
     if (DistanceToTarget < MinTargetDistance)
     {
-        LOG(TEXT("Reached target (Distance: %f), setting new target"), DistanceToTarget);
         SetNewTargetLocation();
         return;
     }
@@ -368,7 +361,6 @@ void ABoss::PerformNormalMovement(const float& InDeltaTime)
     // 목표점이 너무 뒤쪽에 있거나 접근하기 어려운 경우 새로 목표점을 지정한다.
     if (DistanceToTarget > WanderRadius * 2.0f)
     {
-        LOG(TEXT("Target too far , setting new target"));
         SetNewTargetLocation();
         return;
     }
@@ -553,19 +545,13 @@ void ABoss::StartTurn()
     	// Overlap이 없으면 (빈 공간이면) 해당 방향 선택
     	if (!bOverlap)
     	{
-    		LOG(TEXT("No overlap detected, turning towards: %s"), *Direction.ToString());
     		TurnDirection = Direction;
     		return;
-    	}
-    	else
-    	{
-    		LOG(TEXT("Overlap detected at location: %s, Direction: %s"), *TargetLocation.ToString(), *Direction.ToString());
     	}
     }
 	
 	// 모든 방향이 막혔으면 뒤로 돌기
 	TurnDirection = -GetActorForwardVector();
-    LOG(TEXT("All directions blocked, turning toward random NavMesh point"));
 }
 
 void ABoss::ReturnToNavMeshArea()
@@ -586,8 +572,6 @@ void ABoss::ReturnToNavMeshArea()
         
 		TargetLocation = FVector::ZeroVector;
 		SetNewTargetLocation();
-        
-		LOG(TEXT("Returned to NavMesh at: %s"), *ClosestNavLocation.Location.ToString());
 	}
 }
 
@@ -622,11 +606,7 @@ void ABoss::PerformTurn(const float& InDeltaTime)
         
 		if (!bHit)
 		{
-			const bool bLocationSet = SetActorLocation(NextLocation, true);
-			if (!bLocationSet)
-			{
-				LOG(TEXT("Failed to move during turn"));
-			}
+			SetActorLocation(NextLocation, true);
 		}
 	}
 	
@@ -643,8 +623,6 @@ void ABoss::PerformTurn(const float& InDeltaTime)
 		{
 			SetNewTargetLocation();	
 		}
-        
-		LOG(TEXT("Turn completed, setting new target"));
 	}
 }
 
@@ -872,7 +850,7 @@ void ABoss::OnAttackEnded()
 
 void ABoss::SetMoveSpeed(const float& SpeedMultiplier)
 {
-	GetCharacterMovement()->MaxFlySpeed = StatComponent->MoveSpeed * SpeedMultiplier;
+	GetCharacterMovement()->MaxSwimSpeed = StatComponent->MoveSpeed * SpeedMultiplier;
 }
 
 void ABoss::M_PlayAnimation_Implementation(class UAnimMontage* AnimMontage, float InPlayRate, FName StartSectionName)
