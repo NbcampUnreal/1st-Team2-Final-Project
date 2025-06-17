@@ -9,6 +9,8 @@
 
 AGobleFish::AGobleFish()
 {
+	PrimaryActorTick.bCanEverTick = true;
+
 	GobleFishHitSphere = CreateDefaultSubobject<USphereComponent>(TEXT("GobleFishHitSphere"));
 	GobleFishHitSphere->SetupAttachment(GetMesh(), TEXT("AttackSocket"));
 	GobleFishHitSphere->InitSphereRadius(20.0f);

@@ -27,6 +27,8 @@ public:
 	UFUNCTION()
 	void EjectPlayer(AUnderwaterCharacter* Victim);
 
+	virtual void NotifyLightExposure(float DeltaTime, float TotalExposedTime, const FVector& PlayerLocation, AActor* PlayerActor) override;
+
 protected:
 	UFUNCTION()
 	void OnSwallowTriggerOverlap(
@@ -44,7 +46,10 @@ protected:
 	void SightPerceptionOn();
 	UFUNCTION()
 	void SetPatrolStateAfterEject();
+	UFUNCTION()
+	void DamageToVictim(AUnderwaterCharacter* Victim, float Damage);
 
+	void InitializeAggroVariable();
 #pragma endregion
 
 #pragma region Variable
@@ -64,8 +69,10 @@ private:
 	float LanchStrength;
 	UPROPERTY(EditAnywhere, Category = "Sight")
 	float DisableSightTime;
-	UPROPERTY(EditAnywhere, Category = "Sight")
+	UPROPERTY(EditAnywhere, Category = "Behavior")
 	float FleeTime;
+	UPROPERTY(EditAnywhere, Category = "Sight")
+	float SwallowDamage;
 
 	uint8 bCanSwallow : 1;
 #pragma endregion

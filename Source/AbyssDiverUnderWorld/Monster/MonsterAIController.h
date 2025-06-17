@@ -31,7 +31,7 @@ protected:
 	void InitializePatrolPoint();
 
 	UFUNCTION()
-	void OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus); // Perception Callback Method
+	virtual void OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus); // Perception Callback Method
 
 #pragma endregion
 
@@ -67,4 +67,9 @@ private:
 
 #pragma endregion
 
+#pragma region Getter, Setter
+public:
+	void SetbIsLosingTarget(bool IsLosingTargetValue);
+
+#pragma endregion
 };
