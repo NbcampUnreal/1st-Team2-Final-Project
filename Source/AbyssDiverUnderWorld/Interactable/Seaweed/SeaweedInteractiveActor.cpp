@@ -40,6 +40,7 @@ void ASeaweedInteractiveActor::BeginPlay()
 
     DetectionSphere->OnComponentBeginOverlap.AddDynamic(this, &ASeaweedInteractiveActor::OnOverlapBegin);
     DetectionSphere->OnComponentEndOverlap.AddDynamic(this, &ASeaweedInteractiveActor::OnOverlapEnd);
+    SeaweedMesh->OnComponentHit.AddDynamic(this, &ASeaweedInteractiveActor::OnHit);
 
     PlayerActor = UGameplayStatics::GetPlayerCharacter(GetWorld(), 0);
 
@@ -57,6 +58,7 @@ void ASeaweedInteractiveActor::OnOverlapBegin(UPrimitiveComponent* OverlappedCom
     UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
     // Optional
+    LastHitLocation = SweepResult.ImpactPoint;
 }
 
 void ASeaweedInteractiveActor::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
@@ -67,24 +69,28 @@ void ASeaweedInteractiveActor::OnOverlapEnd(UPrimitiveComponent* OverlappedComp,
 
 void ASeaweedInteractiveActor::ApplyPlayerProximityTorque()
 {
-    if (!PlayerActor || !SeaweedMesh) return;
-
-    FVector PlayerLocation = PlayerActor->GetActorLocation();
+    if (!SeaweedMesh || LastHitLocation.IsZero()) return;
 
     for (int32 i = 0; i < AllStemBoneNames.Num(); ++i)
     {
         const FName& BoneName = AllStemBoneNames[i];
         FVector BoneLocation = SeaweedMesh->GetSocketLocation(BoneName);
-        float Distance = FVector::Dist(BoneLocation, PlayerLocation);
+        float Distance = FVector::Dist(BoneLocation, LastHitLocation);
 
-        float Influence = FMath::Clamp(1.f - (Distance / 300.f), 0.f, 1.f);
-        float Multiplier = 1.f - (i / static_cast<float>(AllStemBoneNames.Num()));
+        if (Distance > 120.f) continue;
 
-        if (Influence > 0.f)
+        float Influence = 1.f - (Distance / 120.f);
+        float Strength = FMath::Pow(Influence, 2.f);
+
+        if (Strength > 0.f)
         {
-            FVector ToPlayer = (BoneLocation - PlayerLocation).GetSafeNormal(); // ← 밀어내는 방향
-            FVector Force = ToPlayer * Influence * Multiplier * 10000.f;
+            FVector Direction = (BoneLocation - LastHitLocation).GetSafeNormal();
+            Direction.Z = 0.25f; // 살짝 위로 밀려나듯이
+            Direction.Normalize();
 
+            FVector Force = Direction * Strength * 18000.f;
+
+            UE_LOG(LogTemp, Warning, TEXT("ApplyForce to %s | Strength: %.2f"), *BoneName.ToString(), Strength);
             SeaweedMesh->AddForce(Force, BoneName, true);
         }
     }
@@ -111,41 +117,41 @@ void ASeaweedInteractiveActor::ConfigureAngularDrives()
 
     UPhysicsAsset* Asset = SeaweedMesh->GetPhysicsAsset();
 
-    // Constraint 하나당 한 번만 적용
-    for (UPhysicsConstraintTemplate* Template : Asset->ConstraintSetup)
+    for (int32 i = 0; i < AllStemBoneNames.Num(); ++i)
     {
-        if (!Template) continue;
+        const FName& BoneName = AllStemBoneNames[i];
 
-        FConstraintInstance& Inst = Template->DefaultInstance;
+        float Blend = static_cast<float>(i) / AllStemBoneNames.Num();
 
-        // 현재 Constraint에 연결된 두 Bone 중 하나라도 해초 Stem에 포함돼야 함
-        int32 Index = AllStemBoneNames.IndexOfByKey(Inst.ConstraintBone1);
-        if (Index == INDEX_NONE)
+        // 아래는 단단하게, 위는 유연하게
+        float Stiffness = FMath::Lerp(3000.f, 500.f, Blend);   // 아래 = 3000, 위 = 500
+        float Damping = FMath::Lerp(250.f, 80.f, Blend);     // 위로 갈수록 여유롭게 흔들림
+
+        for (UPhysicsConstraintTemplate* Template : Asset->ConstraintSetup)
         {
-            Index = AllStemBoneNames.IndexOfByKey(Inst.ConstraintBone2);
-            if (Index == INDEX_NONE) continue;
+            if (!Template || Template->DefaultInstance.JointName != BoneName) continue;
+
+            FConstraintInstance& Constraint = Template->DefaultInstance;
+
+            Constraint.SetAngularDriveMode(EAngularDriveMode::SLERP);
+            Constraint.ProfileInstance.ConeLimit.bSoftConstraint = true;
+            Constraint.ProfileInstance.TwistLimit.bSoftConstraint = true;
+
+            Constraint.SetOrientationDriveSLERP(true);
+            Constraint.SetAngularVelocityDriveSLERP(false);
+
+            Constraint.SetAngularDriveParams(Stiffness, Damping, 100000.f); // MaxForce 꼭 높게
         }
-
-        float Blend = static_cast<float>(Index) / AllStemBoneNames.Num();
-        float Stiffness = FMath::Lerp(1000.f, 500.f, Blend);   // 아래쪽은 강하게
-        float Damping = FMath::Lerp(150.f, 80.f, Blend);     // 감쇠력도 아래쪽 강하게
-        float SwingLimit = FMath::Lerp(18.f, 12.f, Blend);     // 지나친 휘어짐 방지
-
-
-        // SLERP 드라이브 적용
-        Inst.SetAngularDriveMode(EAngularDriveMode::SLERP);
-        Inst.ProfileInstance.AngularDrive.SlerpDrive.bEnablePositionDrive = true;
-        Inst.ProfileInstance.AngularDrive.SlerpDrive.bEnableVelocityDrive = false;
-        Inst.ProfileInstance.AngularDrive.SlerpDrive.Stiffness = Stiffness;
-        Inst.ProfileInstance.AngularDrive.SlerpDrive.Damping = Damping;
-
-        // 각도 제한
-        Inst.ProfileInstance.ConeLimit.Swing1Motion = ACM_Limited;
-        Inst.ProfileInstance.ConeLimit.Swing2Motion = ACM_Limited;
-        Inst.ProfileInstance.ConeLimit.Swing1LimitDegrees = SwingLimit;
-        Inst.ProfileInstance.ConeLimit.Swing2LimitDegrees = SwingLimit;
     }
 
-    SeaweedMesh->SetEnableGravity(false); // 중력 OFF
-    SeaweedMesh->RecreatePhysicsState();  // 물리 적용
+    SeaweedMesh->RecreatePhysicsState(); // 물리 적용
+}
+
+
+void ASeaweedInteractiveActor::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
+    UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+{
+    LastHitLocation = Hit.ImpactPoint;
+
+    UE_LOG(LogTemp, Warning, TEXT("[Seaweed] Hit at: %s"), *LastHitLocation.ToString());
 }
