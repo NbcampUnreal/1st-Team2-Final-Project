@@ -42,7 +42,7 @@ public:
 	virtual void OnDeath();
 	virtual void PlayAttackMontage();
 	void StopMovement();
-	void NotifyLightExposure(float DeltaTime, float TotalExposedTime, const FVector& PlayerLocation, AActor* PlayerActor);
+	virtual void NotifyLightExposure(float DeltaTime, float TotalExposedTime, const FVector& PlayerLocation, AActor* PlayerActor);
 	void AddDetection(AActor* Actor);
 	void RemoveDetection(AActor* Actor);
 
@@ -52,7 +52,7 @@ public:
 public:
 	UPROPERTY(BlueprintAssignable, Category = "Event")
 	FOnMonsterDeadSignature OnMonsterDead;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly)
 	uint8 bIsChasing : 1;
 	UPROPERTY()
 	TObjectPtr<AActor> TargetActor;

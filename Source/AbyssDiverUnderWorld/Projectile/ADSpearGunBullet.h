@@ -27,11 +27,14 @@ class ABYSSDIVERUNDERWORLD_API AADSpearGunBullet : public AADProjectileBase
 	AADSpearGunBullet();
 
 #pragma region Method
+public:
+	virtual void Deactivate() override;
 protected:
 	virtual void BeginPlay() override;
 	virtual void OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
 		bool bFromSweep, const FHitResult& SweepResult) override;
+
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	UFUNCTION(NetMulticast, Reliable)
@@ -74,6 +77,8 @@ private:
 	int8 PoisonDuration;
 
 	uint8 bWasAdditionalDamage : 1;
+
+	FRotator InitialRotator = FRotator::ZeroRotator;
 
 #pragma endregion
 

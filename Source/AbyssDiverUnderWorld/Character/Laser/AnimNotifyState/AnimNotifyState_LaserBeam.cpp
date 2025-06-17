@@ -41,12 +41,12 @@ void UAnimNotifyState_LaserBeam::NotifyBegin(USkeletalMeshComponent* MeshComp, U
         CamRot = Diver->GetBaseAimRotation();
         CamLoc = MeshComp->GetSocketLocation(MuzzleSocket);
     }
-
+    constexpr ECollisionChannel InteractionChannel = ECC_GameTraceChannel4;
     const FVector TraceEnd = CamLoc + CamRot.Vector() * MaxDistance;
 
     FHitResult Hit;
     World->LineTraceSingleByChannel(
-        Hit, CamLoc, TraceEnd, ECC_Visibility,
+        Hit, CamLoc, TraceEnd, InteractionChannel,
         FCollisionQueryParams(TEXT("LaserTraceCam"), true, Owner));
 
     const FVector TargetPoint = Hit.bBlockingHit ? Hit.ImpactPoint : TraceEnd;
@@ -134,10 +134,11 @@ void UAnimNotifyState_LaserBeam::NotifyTick(USkeletalMeshComponent* MeshComp, UA
         CamLoc = MeshComp->GetSocketLocation(MuzzleSocket);
     }
 
+    constexpr ECollisionChannel InteractionChannel = ECC_GameTraceChannel4;
     const FVector TraceEnd = CamLoc + CamRot.Vector() * MaxDistance;
     FHitResult Hit;
     World->LineTraceSingleByChannel(
-        Hit, CamLoc, TraceEnd, ECC_Visibility,
+        Hit, CamLoc, TraceEnd, InteractionChannel,
         FCollisionQueryParams(TEXT("LaserTraceCam"), true, Owner));
 
     const FVector TargetPoint = Hit.bBlockingHit ? Hit.ImpactPoint : TraceEnd;

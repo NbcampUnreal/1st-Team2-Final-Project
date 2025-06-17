@@ -392,7 +392,7 @@ void AUnderwaterCharacter::OnMovementModeChanged(EMovementMode PrevMovementMode,
 {
 	Super::OnMovementModeChanged(PrevMovementMode, PreviousCustomMode);
 
-	UE_LOG(LogAbyssDiverCharacter,Display, TEXT("Movement Changed : %s"), *UEnum::GetValueAsString(GetCharacterMovement()->MovementMode)s);
+	UE_LOG(LogAbyssDiverCharacter,Display, TEXT("Movement Changed : %s"), *UEnum::GetValueAsString(GetCharacterMovement()->MovementMode));
 
 	if (EnvironmentState != EEnvironmentState::Underwater)
 	{
