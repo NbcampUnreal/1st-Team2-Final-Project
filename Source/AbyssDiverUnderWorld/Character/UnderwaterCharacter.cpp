@@ -329,6 +329,7 @@ void AUnderwaterCharacter::PossessedBy(AController* NewController)
 		{
 			NameWidgetComponent->SetNameText(ADPlayerState->GetPlayerNickname());
 			NameWidgetComponent->SetEnable(true);
+			UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Set Player Nick Name On Possess : %s"), *ADPlayerState->GetPlayerNickname());
 		}
 	}
 	else
@@ -358,6 +359,7 @@ void AUnderwaterCharacter::OnRep_PlayerState()
 		{
 			NameWidgetComponent->SetNameText(ADPlayerState->GetPlayerNickname());
 			NameWidgetComponent->SetEnable(true);
+			UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Set Player Nick Name On Rep : %s"), *ADPlayerState->GetPlayerNickname());
 		}
 	}
 	else
@@ -496,18 +498,20 @@ void AUnderwaterCharacter::RequestBind(AUnderwaterCharacter* RequestBinderCharac
 		UE_LOG(LogAbyssDiverCharacter, Error, TEXT("RequestBind called in invalid state or not authority: %s"), *GetName());
 		return;
 	}
+	
 	if (BindCharacter == RequestBinderCharacter)
 	{
 		UnBind();
-		return;
 	}
+	else
+	{
+		BindCharacter = RequestBinderCharacter;
+		RequestBinderCharacter->BindToCharacter(this);
+		
+		ConnectRope(BindCharacter);
 
-	BindCharacter = RequestBinderCharacter;
-	RequestBinderCharacter->BindToCharacter(this);
-
-	ConnectRope(BindCharacter);
-
-	UpdateBindInteractable();
+		UpdateBindInteractable();
+	}
 }
 
 void AUnderwaterCharacter::UnBind()
@@ -2085,6 +2089,7 @@ void AUnderwaterCharacter::ConnectRope(AUnderwaterCharacter* BinderCharacter)
 	// if rope does not exist, create a new rope
 	// connect rope to the BinderCharacter
 	// show rope
+	
 }
 
 void AUnderwaterCharacter::UpdateBindInteractable()
