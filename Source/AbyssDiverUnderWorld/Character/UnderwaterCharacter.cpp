@@ -115,7 +115,8 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 
 	OverloadWeight = 40.0f;
 	OverloadSpeedFactor = 0.4f;
-	MinSpeed = 50.0f;
+	MinSpeed = 150.0f;
+	BaseGroundSpeed = 600.0f;
 	
 	StatComponent->MoveSpeed = 400.0f;
 	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
@@ -230,7 +231,9 @@ void AUnderwaterCharacter::BeginPlay()
 		GM->BindDelegate(this);
 	}
 
+	// @ToDo : Enter Normal로 처리가 가능한 부분은 Enter Normal로 처리
 	InteractableComponent->SetInteractable(false);
+	AdjustSpeed();
 }
 
 void AUnderwaterCharacter::InitFromPlayerState(AADPlayerState* ADPlayerState)
@@ -302,7 +305,7 @@ void AUnderwaterCharacter::ApplyUpgradeFactor(UUpgradeComponent* UpgradeComponen
 			    break;
 	    	case EUpgradeType::Speed:
 	    		// 최종 속도는 나중에 AdjustSpeed를 통해서 계산된다. 현재는 BaseSpeed만 조정하면 된다.
-	    		StatComponent->MoveSpeed += StatFactor;
+	    		BaseSwimSpeed += StatFactor;
 	    		break;
 			case EUpgradeType::Light:
 	    		if (Grade > 1)
@@ -336,6 +339,13 @@ void AUnderwaterCharacter::PossessedBy(AController* NewController)
 	{
 		LOGVN(Error, TEXT("Player State Init failed : %d"), GetUniqueID());
 	}
+}
+
+void AUnderwaterCharacter::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+
+	BaseSwimSpeed = StatComponent->MoveSpeed;	
 }
 
 void AUnderwaterCharacter::PostNetInit()
@@ -421,7 +431,6 @@ void AUnderwaterCharacter::SetEnvironmentState(EEnvironmentState State)
 		Mesh1PSpringArm->bEnableCameraRotationLag = true;
 		OxygenComponent->SetShouldConsumeOxygen(true);
 		bCanUseEquipment = true;
-		UpdateBlurEffect();
 		break;
 	case EEnvironmentState::Ground:
 		// 지상에서는 이동 방향으로 회전을 하게 한다.
@@ -431,13 +440,15 @@ void AUnderwaterCharacter::SetEnvironmentState(EEnvironmentState State)
 		Mesh1PSpringArm->bEnableCameraRotationLag = false;
 		OxygenComponent->SetShouldConsumeOxygen(false);
 		bCanUseEquipment = false;
-		UpdateBlurEffect();
 		break;
 	default:
 		UE_LOG(AbyssDiver, Error, TEXT("Invalid Character State"));
 		break;
 	}
 
+	AdjustSpeed();
+	UpdateBlurEffect();
+	
 	OnEnvironmentStateChangedDelegate.Broadcast(OldState, EnvironmentState);
 	K2_OnEnvironmentStateChanged(OldState, EnvironmentState);
 }
@@ -1161,7 +1172,7 @@ void AUnderwaterCharacter::EndCombat()
 	OnCombatEndDelegate.Broadcast();
 }
 
-void AUnderwaterCharacter::AdjustSpeed()
+float AUnderwaterCharacter::GetSwimEffectiveSpeed() const
 {
 	const float BaseSpeed = StaminaComponent->IsSprinting()
 		                        ? StatComponent->MoveSpeed * SprintMultiplier
@@ -1176,8 +1187,16 @@ void AUnderwaterCharacter::AdjustSpeed()
 	Multiplier *= ZoneSpeedMultiplier;
 	Multiplier = FMath::Max(0.0f, Multiplier);
 	
-	EffectiveSpeed = BaseSpeed * Multiplier;
-	EffectiveSpeed = FMath::Max(EffectiveSpeed, MinSpeed);
+	return FMath::Max(MinSpeed, BaseSpeed * Multiplier);
+}
+
+void AUnderwaterCharacter::AdjustSpeed()
+{
+	EffectiveSpeed = EnvironmentState == EEnvironmentState::Underwater
+		? GetSwimEffectiveSpeed()
+		: BaseGroundSpeed;
+
+	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Adjust Speed : %s, EffectiveSpeed = %f"), *GetName(), EffectiveSpeed);
 	
 	if (EnvironmentState == EEnvironmentState::Underwater)
 	{
@@ -2105,17 +2124,20 @@ void AUnderwaterCharacter::UpdateBindInteractable()
 	{
 		InteractableComponent->SetInteractable(true);
 		InteractionDescription = DeathGrabDescription;
+		InteractionComponent->PerformFocusCheck();
 	}
 	// Binder Character가 Local Controller일 경우 활성화해서 Unbind를 가능하도록 수정
 	else if (BindCharacter->IsLocallyControlled())
 	{
 		InteractableComponent->SetInteractable(true);
 		InteractionDescription = DeathGrabReleaseDescription;
+		InteractionComponent->PerformFocusCheck();
 	}
 	else
 	{
 		InteractableComponent->SetInteractable(false);
 		InteractionDescription = DeathGrabDescription;
+		InteractionComponent->PerformFocusCheck();
 	}
 }
 

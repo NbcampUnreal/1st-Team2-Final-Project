@@ -100,6 +100,7 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	virtual void PossessedBy(AController* NewController) override;
+	virtual void PostInitializeComponents() override;
 	virtual void PostNetInit() override;
 	virtual void OnRep_PlayerState() override;
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
@@ -368,7 +369,8 @@ protected:
 
 	/** 전투 종료 시에 호출되는 함수 */
 	void EndCombat();
-	
+	float GetSwimEffectiveSpeed() const;
+
 	/** 현재 상태 속도 갱신.(무게, Sprint) */
 	UFUNCTION()
 	void AdjustSpeed();
@@ -821,6 +823,13 @@ private:
 	/** 캐릭터가 감속할 수 있는 최소 속도 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float MinSpeed;
+
+	/** 지상에서 기본 속도. 지상은 업그레이드 영향을 받지 않는다. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	float BaseGroundSpeed;
+
+	/** Upgrade가 적용된 최종 속도. Ground, Water을 전환할 때 속도를 갱신하기 위해 속도를 저장한다. 초기값은 StatComponent의 값을 참조한다. */
+	float BaseSwimSpeed;
 
 	// @ToDo: Multiplier를 통합 적용
 	// @ToDo: DPV 상황 추가
