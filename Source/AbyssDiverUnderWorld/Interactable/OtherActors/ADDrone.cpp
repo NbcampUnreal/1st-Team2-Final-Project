@@ -109,11 +109,11 @@ void AADDrone::Interact_Implementation(AActor* InstigatorActor)
 	{
 		if (AADInGameMode* GameMode = GetWorld()->GetAuthGameMode<AADInGameMode>())
 		{
-			// GameMode->RevivePlayersAtRandomLocation(CurrentSeller->GetSubmittedPlayerIndexes(),
-			// 	GetActorLocation(),
-			// 	ReviveDistance
-			// );
-			// CurrentSeller->GetSubmittedPlayerIndexes().Empty();
+			GameMode->RevivePlayersAtRandomLocation(CurrentSeller->GetSubmittedPlayerIndexes(),
+				GetActorLocation(),
+				ReviveDistance
+			);
+			CurrentSeller->GetSubmittedPlayerIndexes().Empty();
 		}
 	}
 	
