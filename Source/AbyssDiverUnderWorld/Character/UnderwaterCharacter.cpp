@@ -4,6 +4,7 @@
 #include "UnderwaterCharacter.h"
 
 #include "AbyssDiverUnderWorld.h"
+#include "CableBindingActor.h"
 #include "EnhancedInputComponent.h"
 #include "LocomotionMode.h"
 #include "PlayerComponent/OxygenComponent.h"
@@ -176,6 +177,10 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	GroggyInteractionDescription = TEXT("Revive Character!");
 	DeathGrabDescription = TEXT("Grab Character!");
 	DeathGrabReleaseDescription = TEXT("Release Character!");
+
+	BindMultiplier = 0.15f;
+
+	bIsAttackedByEyeStalker = false;
 }
 
 void AUnderwaterCharacter::BeginPlay()
@@ -528,6 +533,7 @@ void AUnderwaterCharacter::RequestBind(AUnderwaterCharacter* RequestBinderCharac
 		ConnectRope(BindCharacter);
 
 		UpdateBindInteractable();
+		AdjustSpeed();
 	}
 }
 
@@ -544,8 +550,9 @@ void AUnderwaterCharacter::UnBind()
 	BindCharacter->UnbindToCharacter(this);
 	BindCharacter = nullptr;
 
-	// if connected, disconnect the rope
+	DisconnectRope();
 	UpdateBindInteractable();
+	AdjustSpeed();
 }
 
 void AUnderwaterCharacter::EmitBloodNoise()
@@ -1185,12 +1192,18 @@ float AUnderwaterCharacter::GetSwimEffectiveSpeed() const
 		                        : StatComponent->MoveSpeed;
 
 	// Effective Speed = BaseSpeed * (1 - OverloadSpeedFactor) * ZoneSpeedMultiplier
+	//					* (1 - BindMultiplier)
 	float Multiplier = 1.0f;
 	if (IsOverloaded())
 	{
 		Multiplier = 1 - OverloadSpeedFactor;
 	}
 	Multiplier *= ZoneSpeedMultiplier;
+	if (!BoundCharacters.IsEmpty())
+	{
+		Multiplier *= (1 - BindMultiplier * BoundCharacters.Num());
+	}
+	
 	Multiplier = FMath::Max(0.0f, Multiplier);
 	
 	return FMath::Max(MinSpeed, BaseSpeed * Multiplier);
@@ -2072,16 +2085,17 @@ void AUnderwaterCharacter::OnEmoteEnd(UAnimMontage* AnimMontage, bool bArg)
 
 void AUnderwaterCharacter::OnRep_BindCharacter()
 {
-	// if BindCharacter is nullptr, Disconnect Rope and Hide Rope
-
-	// else, Connect Rope
-
 	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("OnRep_BindCharacter : %s"), *GetName());
 	if (BindCharacter)
 	{
-		// Connect
+		ConnectRope(BindCharacter);
+	}
+	else
+	{
+		DisconnectRope();
 	}
 
+	AdjustSpeed();
 	UpdateBindInteractable();
 }
 
@@ -2111,12 +2125,31 @@ void AUnderwaterCharacter::UnbindToCharacter(AUnderwaterCharacter* BoundCharacte
 
 void AUnderwaterCharacter::ConnectRope(AUnderwaterCharacter* BinderCharacter)
 {
-	LOGVN(Display, TEXT("Connect Rope to %s"), *BinderCharacter->GetName());
-	
-	// if rope does not exist, create a new rope
-	// connect rope to the BinderCharacter
-	// show rope
-	
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	CableBindingActor = GetWorld()->SpawnActor<ACableBindingActor>(	
+		CableBindingActorClass, 
+		BinderCharacter->GetActorLocation(), 
+		FRotator::ZeroRotator, 
+		SpawnParams
+	);
+
+	if (CableBindingActor)
+	{
+		CableBindingActor->ConnectActors(BinderCharacter, this);
+	}
+}
+
+void AUnderwaterCharacter::DisconnectRope()
+{
+	if (CableBindingActor)
+	{
+		UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Disconnect Rope : %s / Node : %s"), *GetName(), HasAuthority() ? TEXT("Host") : TEXT("Client"));
+		CableBindingActor->DisconnectActors();
+
+		CableBindingActor->Destroy();
+		CableBindingActor = nullptr;
+	}
 }
 
 void AUnderwaterCharacter::UpdateBindInteractable()
