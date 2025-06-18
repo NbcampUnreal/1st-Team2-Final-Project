@@ -247,10 +247,10 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Shop")
 	TObjectPtr<UPointLightComponent> LightComp;
 
-	UPROPERTY(EditDefaultsOnly, Category = "ShopSettings");
+	UPROPERTY(EditDefaultsOnly, Category = "ShopSettings")
 	TArray<uint8> DefaultConsumableItemIdList; // 블루프린트 노출용
 
-	UPROPERTY(EditDefaultsOnly, Category = "ShopSettings");
+	UPROPERTY(EditDefaultsOnly, Category = "ShopSettings")
 	TArray<uint8> DefaultEquipmentItemIdList; // 블루프린트 노출용
 	
 	UPROPERTY(EditInstanceOnly, Category = "ShopSettings")
