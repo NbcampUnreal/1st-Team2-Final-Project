@@ -1221,7 +1221,7 @@ void AUnderwaterCharacter::AdjustSpeed()
 		? GetSwimEffectiveSpeed()
 		: BaseGroundSpeed;
 
-	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Adjust Speed : %s, EffectiveSpeed = %f"), *GetName(), EffectiveSpeed);
+	// UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Adjust Speed : %s, EffectiveSpeed = %f"), *GetName(), EffectiveSpeed);
 	
 	if (EnvironmentState == EEnvironmentState::Underwater)
 	{
