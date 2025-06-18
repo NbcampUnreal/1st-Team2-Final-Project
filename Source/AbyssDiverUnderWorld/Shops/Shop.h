@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
@@ -51,6 +51,9 @@ class UShopItemEntryData;
 class AUnderwaterCharacter;
 class USceneCaptureComponent2D;
 class UPointLightComponent;
+class ATargetPoint;
+class UDataTableSubsystem;
+class AADUseItem;
 
 struct FFADItemDataRow;
 struct FShopItemIdList;
@@ -112,12 +115,12 @@ public:
 
 	bool NetDeltaSerialize(FNetDeltaSerializeInfo& DeltaParams);
 
-	// ÀÎµ¦½º ¹İÈ¯, ¾øÀ¸¸é INDEX_NONE ¹İÈ¯
+	// ì¸ë±ìŠ¤ ë°˜í™˜, ì—†ìœ¼ë©´ INDEX_NONE ë°˜í™˜
 	int32 Contains(uint8 CompareId);
 
 	bool TryAdd(uint8 NewId);
 
-	// Áö¿öÁø ÀÎµ¦½º ¹İÈ¯
+	// ì§€ì›Œì§„ ì¸ë±ìŠ¤ ë°˜í™˜
 	int32 Remove(uint8 Id);
 
 	void Modify(uint8 InIndex, uint8 NewId);
@@ -135,7 +138,7 @@ public:
 
 public:
 
-	// À¯È¿ÇÏÁö ¾ÊÀ¸¸é INDEX_NONE ¹İÈ¯
+	// ìœ íš¨í•˜ì§€ ì•Šìœ¼ë©´ INDEX_NONE ë°˜í™˜
 	uint8 GetId(uint8 InIndex) const;
 };
 
@@ -160,13 +163,16 @@ public:
 	AShop();
 
 protected:
+
 	virtual void PostInitializeComponents() override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaSeconds) override;
 
 #pragma region Methods
 
 public:
+
 	virtual void Interact_Implementation(AActor* InstigatorActor) override;
 
 	void OpenShop(AUnderwaterCharacter* Requester);
@@ -175,6 +181,7 @@ public:
 	void CloseShop(AUnderwaterCharacter* Requester);
 
 	EBuyResult BuyItem(uint8 ItemId, uint8 Quantity, AUnderwaterCharacter* Buyer);
+	EBuyResult BuyItems(const TArray<uint8>& ItemIdList, const TArray<int8>& ItemCountList);
 	ESellResult SellItem(uint8 ItemId, AUnderwaterCharacter* Seller);
 
 	void AddItems(const TArray<uint8>& Ids, EShopCategoryTab TabType);
@@ -182,10 +189,6 @@ public:
 	void RemoveItemToList(uint8 ItemId, EShopCategoryTab TabType);
 
 	void InitUpgradeView();
-
-	// Å×½ºÆ®¿ë, Ä³¸¯ÅÍÀÇ Interact¸¦ ´ë½ÅÇÔ.
-	UFUNCTION(BlueprintCallable, Category = "Shop", CallInEditor)
-	void Interact_Test(AActor* InstigatorActor);
 
 protected:
 
@@ -204,10 +207,27 @@ private:
 	void OnSlotEntryClicked(int32 ClickedSlotIndex);
 
 	UFUNCTION()
-	void OnBuyButtonClicked(int32 Quantity);
+	void OnBuyListEntryClicked(int32 ClickedSlotIndex);
 
+	void OnAddButtonClicked(int32 Quantity);
+	void OnBuyButtonClicked();
 	void OnCloseButtonClicked();
 	void OnUpgradeSlotEntryClicked(int32 ClickedSlotIndex);
+
+	// ë°˜í™˜ê°’ : ì¸ë±ìŠ¤, ì—†ìœ¼ë©´ INDEX_NONE 
+	int8 IsSelectedItem(uint8 ItemId) const;
+	void AddToSelectedItemArray(uint8 ItemId, int8 Amount);
+	void RemoveFromSelecteItemArray(uint8 ItemId, int8 Amount);
+	void RemoveFromSelecteItemArray(int32 BuyListSlotIndex, int8 Amount);
+
+	UDataTableSubsystem* GetDatatableSubsystem();
+
+	// ê³„ì‚° ì‹¤íŒ¨í•˜ë©´ INDEX_NONE ë°˜í™˜
+	int32 CalcTotalItemPrice(const TArray<uint8>& ItemIdList, const TArray<int8>& ItemCountList);
+
+	void LaunchItem();
+
+	void ClearSelectedInfos();
 
 #pragma endregion
 
@@ -227,11 +247,26 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Shop")
 	TObjectPtr<UPointLightComponent> LightComp;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Shop");
-	TArray<uint8> DefaultConsumableItemIdList; // ºí·çÇÁ¸°Æ® ³ëÃâ¿ë
+	UPROPERTY(EditDefaultsOnly, Category = "ShopSettings");
+	TArray<uint8> DefaultConsumableItemIdList; // ë¸”ë£¨í”„ë¦°íŠ¸ ë…¸ì¶œìš©
 
-	UPROPERTY(EditDefaultsOnly, Category = "Shop");
-	TArray<uint8> DefaultEquipmentItemIdList; // ºí·çÇÁ¸°Æ® ³ëÃâ¿ë
+	UPROPERTY(EditDefaultsOnly, Category = "ShopSettings");
+	TArray<uint8> DefaultEquipmentItemIdList; // ë¸”ë£¨í”„ë¦°íŠ¸ ë…¸ì¶œìš©
+	
+	UPROPERTY(EditInstanceOnly, Category = "ShopSettings")
+	TObjectPtr<ATargetPoint> OriginPoint;
+
+	UPROPERTY(EditInstanceOnly, Category = "ShopSettings")
+	TObjectPtr<ATargetPoint> DestinationPoint;
+
+	UPROPERTY(EditInstanceOnly, Category = "ShopSettings")
+	float ForceAmount = 1000.0f;
+
+	UPROPERTY(EditAnywhere, Category = "ShopSettings")
+	float LaunchItemInterval = 1.0f;
+
+	UPROPERTY(EditAnywhere, Category = "ShopSettings")
+	float LaunchItemIntervalAtFirst = 1.0f;
 
 	UPROPERTY(Replicated)
 	FShopItemIdList ShopConsumableItemIdList;
@@ -253,16 +288,31 @@ protected:
 
 private:
 
-	UPROPERTY()
 	TArray<uint8> CachedUpgradeGradeMap;
 
 	int32 CurrentSelectedItemId = INDEX_NONE;
 	EUpgradeType CurrentSelectedUpgradeType;
 	uint8 bIsOpened : 1;
 
+	// ItemId, ItemCount
+	TArray<uint8> SelectedItemIdArray;
+	TArray<int8> SelectedItemCountArray;
+
+	static const int8 MaxItemCount;
+
+	TQueue<uint8> ReadyQueueForLaunchItemById;
+
+	float ElapsedTime = 0.0f;
+
+	int32 TotalPriceOfBuyList = 0;
+
+	uint8 bIsFirstLaunch : 1 = true;
+
 #pragma endregion
 
 #pragma region Getters, Setters
+
+public:
 
 	virtual UADInteractableComponent* GetInteractableComponent() const override;
 	virtual bool IsHoldMode() const;
