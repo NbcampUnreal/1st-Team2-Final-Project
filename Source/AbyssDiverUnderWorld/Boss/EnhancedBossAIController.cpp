@@ -83,20 +83,16 @@ void AEnhancedBossAIController::InitVariables()
 
 void AEnhancedBossAIController::OnTargetPerceptionUpdatedHandler(AActor* Actor, FAIStimulus Stimulus)
 {
-	// 감지한 대상이 플레이어가 아닌 경우 얼리 리턴
+	// 감지한 대상이 플레이어가 아니거나 사망 상태인 경우 리턴
 	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor);
-	if (!IsValid(Player)) return;
+	if (!IsValid(Player) || Player->GetCharacterState() == ECharacterState::Death) return;
+
+	LOG(TEXT("OnTargetPerceptionUpdatedHandler : %s"), *Player->GetName());
 	
 	// --------------------- 시각 자극 ---------------------
 	// 플레이어가 시야각에 들어오는 경우
 	if (bIsPerceptionSight && Stimulus.Type == UAISense::GetSenseID<UAISense_Sight>())
 	{
-		// 플레이어가 사망 상태인 경우 얼리 리턴
-		if (Player->GetCharacterState() == ECharacterState::Death)
-		{
-			return;
-		}
-
 		// 전에 감지한 플레이어와 다른 경우 얼리 리턴
 		if (IsValid(Boss->GetTarget()))
 		{
@@ -148,6 +144,8 @@ void AEnhancedBossAIController::OnSightPerceptionSuccess(AUnderwaterCharacter* P
 	
 	// 플레이어가 NavMesh 위에 있지 않다면 얼리 리턴
 	if (!Boss->IsLocationOnNavMesh(Player->GetActorLocation()))	return;
+
+	LOG(TEXT(" Sight Perception Success !"));
 	
 	// AlienShark와 다른 AI의 동작방식이 다르다.
 	// 코드가 난잡해지긴 하지만, 개발속도 차원에서 일단 bool 값으로 대체한다.
