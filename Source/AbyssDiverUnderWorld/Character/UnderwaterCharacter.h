@@ -535,6 +535,9 @@ protected:
 	/** Bound Character 함수. Binder Character와 로프를 연결한다. */
 	void ConnectRope(AUnderwaterCharacter* BinderCharacter);
 
+	/** Bound Character 함수. 로프를 해제한다. */
+	void DisconnectRope();
+
 	/** Bound Character 함수. Machine 기준으로 현재의 Interactable을 설정한다.
 	 * Binder Character가 Machine의 Local이면 Interactable을 활성화하고 해제 기능을 활성화
 	 * Binder Character가 Machine의 Local이 아니면 Interactable을 비활성화하고 해제 기능을 비활성화
@@ -1064,6 +1067,12 @@ private:
 	/** 현재 들고 있는 시체 캐릭터. 한 번에 여러개의 시체를 들 수 있다. */
 	UPROPERTY(ReplicatedUsing = OnRep_BoundCharacters, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TArray<TObjectPtr<AUnderwaterCharacter>> BoundCharacters;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<class ACableBindingActor> CableBindingActorClass;
+	
+	UPROPERTY()
+	TObjectPtr<class ACableBindingActor> CableBindingActor;
 	
 #pragma endregion
 

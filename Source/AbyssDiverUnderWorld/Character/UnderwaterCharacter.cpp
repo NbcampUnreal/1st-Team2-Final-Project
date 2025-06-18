@@ -4,6 +4,7 @@
 #include "UnderwaterCharacter.h"
 
 #include "AbyssDiverUnderWorld.h"
+#include "CableBindingActor.h"
 #include "EnhancedInputComponent.h"
 #include "LocomotionMode.h"
 #include "PlayerComponent/OxygenComponent.h"
@@ -544,8 +545,8 @@ void AUnderwaterCharacter::UnBind()
 	BindCharacter->UnbindToCharacter(this);
 	BindCharacter = nullptr;
 
-	// if connected, disconnect the rope
 	UpdateBindInteractable();
+	DisconnectRope();
 }
 
 void AUnderwaterCharacter::EmitBloodNoise()
@@ -2072,14 +2073,14 @@ void AUnderwaterCharacter::OnEmoteEnd(UAnimMontage* AnimMontage, bool bArg)
 
 void AUnderwaterCharacter::OnRep_BindCharacter()
 {
-	// if BindCharacter is nullptr, Disconnect Rope and Hide Rope
-
-	// else, Connect Rope
-
 	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("OnRep_BindCharacter : %s"), *GetName());
 	if (BindCharacter)
 	{
-		// Connect
+		ConnectRope(BindCharacter);
+	}
+	else
+	{
+		DisconnectRope();
 	}
 
 	UpdateBindInteractable();
@@ -2111,12 +2112,31 @@ void AUnderwaterCharacter::UnbindToCharacter(AUnderwaterCharacter* BoundCharacte
 
 void AUnderwaterCharacter::ConnectRope(AUnderwaterCharacter* BinderCharacter)
 {
-	LOGVN(Display, TEXT("Connect Rope to %s"), *BinderCharacter->GetName());
-	
-	// if rope does not exist, create a new rope
-	// connect rope to the BinderCharacter
-	// show rope
-	
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	CableBindingActor = GetWorld()->SpawnActor<ACableBindingActor>(	
+		CableBindingActorClass, 
+		BinderCharacter->GetActorLocation(), 
+		FRotator::ZeroRotator, 
+		SpawnParams
+	);
+
+	if (CableBindingActor)
+	{
+		CableBindingActor->ConnectActors(BinderCharacter, this);
+	}
+}
+
+void AUnderwaterCharacter::DisconnectRope()
+{
+	if (CableBindingActor)
+	{
+		UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Disconnect Rope : %s / Node : %s"), *GetName(), HasAuthority() ? TEXT("Host") : TEXT("Client"));
+		CableBindingActor->DisconnectActors();
+
+		CableBindingActor->Destroy();
+		CableBindingActor = nullptr;
+	}
 }
 
 void AUnderwaterCharacter::UpdateBindInteractable()
