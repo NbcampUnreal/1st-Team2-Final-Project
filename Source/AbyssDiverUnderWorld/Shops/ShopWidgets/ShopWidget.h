@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
@@ -11,8 +11,13 @@ class UShopCategoryTabWidget;
 class UShopItemEntryData;
 class UShopElementInfoWidget;
 class UShopTileView;
+class UShopBuyListEntryData;
+class UButton;
+class UTextBlock;
+class UWidgetAnimation;
 
 DECLARE_MULTICAST_DELEGATE(FOnShopCloseButtonClickedDelegate);
+DECLARE_MULTICAST_DELEGATE(FOnShopBuyButtonClickedDelegate);
 
 /**
  * 
@@ -51,7 +56,18 @@ public:
 
 	void PlayCloseAnimation();
 
+	// return : 추가된 Entry data 반환, InOutIncreasedAmount : 증가할 양, 이후 실질적으로 증가한 량 반환
+	UShopBuyListEntryData* AddToBuyList(uint8 ItemId, int32& InOutIncreasedAmount);
+	void RemoveBuyListAt(int32 ListIndex, int32 Amount);
+	void RemoveBuyListAll();
+
+	// 존재하지 않으면 INDEX_NONE 반환, 존재하면 ListIndex 반환
+	int32 Contains(uint8 ItemId);
+
+	void ChangeTotalPriceText(int32 NewTotalPrice);
+
 	FOnShopCloseButtonClickedDelegate OnShopCloseButtonClickedDelegate;
+	FOnShopBuyButtonClickedDelegate OnShopBuyButtonClickedDelegate;
 
 private:
 
@@ -60,6 +76,9 @@ private:
 
 	UFUNCTION()
 	void OnCloseButtonClicked();
+
+	UFUNCTION()
+	void OnBuyButtonClicked();
 	
 #pragma endregion
 
@@ -83,16 +102,25 @@ private:
 	TObjectPtr<UShopTileView> UpgradeTileView;
 
 	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UShopTileView> BuyListTileView;
+
+	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UShopElementInfoWidget> InfoWidget;
 
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<class UButton> CloseButton;
+	TObjectPtr<UButton> CloseButton;
 
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<class URichTextBlock> TeamMoneyText;
+	TObjectPtr<UButton> BuyButton;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> TeamMoneyText;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> TotalPriceText;
 
 	UPROPERTY(meta = (BindWidgetAnim), Transient)
-	TObjectPtr<class UWidgetAnimation> CloseShopAnim;
+	TObjectPtr<UWidgetAnimation> CloseShopAnim;
 
 	UPROPERTY()
 	TArray<TObjectPtr<UShopItemEntryData>> ConsumableTabEntryDataList;
@@ -103,11 +131,15 @@ private:
 	UPROPERTY()
 	TArray<TObjectPtr<UShopItemEntryData>> UpgradeTabEntryDataList;
 
+	UPROPERTY()
+	TArray<TObjectPtr<UShopBuyListEntryData>> BuyListEntryDataList;
+	TArray<uint8> BuyListEntryItemIdList;
+
 	EShopCategoryTab CurrentActivatedTab;
 
 	const int8 MAX_TAB_COUNT = 3;
 	const float MESH_ROTATION_SPEED = 0.5f;
-
+	static const int32 MaxItemCount;
 #pragma endregion
 
 #pragma region Getters, Setters

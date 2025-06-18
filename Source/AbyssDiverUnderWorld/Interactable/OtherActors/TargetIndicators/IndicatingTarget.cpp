@@ -27,17 +27,25 @@ void AIndicatingTarget::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (SwitchActor == nullptr)
+	if (SwitchActor)
 	{
-		return;
+		if (SwitchActor->OnDestroyed.IsAlreadyBound(this, &AIndicatingTarget::OnSwitchActorDestroyed))
+		{
+			return;
+		}
+
+		SwitchActor->OnDestroyed.AddDynamic(this, &AIndicatingTarget::OnSwitchActorDestroyed);
 	}
 
-	if (SwitchActor->OnDestroyed.IsAlreadyBound(this, &AIndicatingTarget::OnSwitchActorDestroyed))
+	if (OwnerActor)
 	{
-		return;
-	}
+		if (OwnerActor->OnDestroyed.IsAlreadyBound(this, &AIndicatingTarget::OnOwnerActorDestroyed))
+		{
+			return;
+		}
 
-	SwitchActor->OnDestroyed.AddDynamic(this, &AIndicatingTarget::OnSwitchActorDestroyed);
+		OwnerActor->OnDestroyed.AddDynamic(this, &AIndicatingTarget::OnOwnerActorDestroyed);
+	}
 }
 
 bool AIndicatingTarget::IsActivateConditionMet()
@@ -63,7 +71,12 @@ void AIndicatingTarget::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent,
 
 void AIndicatingTarget::OnSwitchActorDestroyed(AActor* DestroyedActor)
 {
-	OnSwitchActorDestroyedDelegate.Broadcast(TargetOrder);
+	OnSwitchActorDestroyedDelegate.Broadcast();
+}
+
+void AIndicatingTarget::OnOwnerActorDestroyed(AActor* DestroyedActor)
+{
+	OnOwnerActorDestroyedDelegate.Broadcast(TargetOrder);
 }
 
 int32 AIndicatingTarget::GetTargetOrder() const
