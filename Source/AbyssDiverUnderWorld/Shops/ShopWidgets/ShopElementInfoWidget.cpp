@@ -73,7 +73,7 @@ void UShopElementInfoWidget::Init(USkeletalMeshComponent* NewItemMeshComp)
 	SetItemMeshActive(false);
 	SetDescriptionActive(false);
 	SetNameInfoTextActive(false);
-	SetBuyButtonActive(false);
+	SetAddButtonActive(false);
 	SetUpgradeLevelInfoActive(false);
 	SetCostInfoActive(false);
 	SetQuantityOverlayActive(false);
@@ -104,7 +104,7 @@ void UShopElementInfoWidget::ShowItemInfos(int32 ItemId)
 	SetItemMeshActive(true);
 	SetDescriptionActive(true);
 	SetNameInfoTextActive(true);
-	SetBuyButtonActive(true);
+	SetAddButtonActive(true);
 	SetUpgradeLevelInfoActive(false);
 	SetCostInfoActive(true);
 	SetQuantityOverlayActive(true); 
@@ -162,7 +162,7 @@ void UShopElementInfoWidget::ShowUpgradeInfos(EUpgradeType UpgradeType, uint8 Gr
 	SetItemMeshActive(false);
 	SetDescriptionActive(true);
 	SetNameInfoTextActive(true);
-	SetBuyButtonActive(true);
+	SetAddButtonActive(false);
 	SetUpgradeLevelInfoActive(true);
 	SetCostInfoActive(true);
 	SetQuantityOverlayActive(false);
@@ -287,7 +287,7 @@ void UShopElementInfoWidget::SetItemMeshActive(bool bShouldActivate)
 	ItemMeshPanel->SetItemMeshActive(bShouldActivate);
 }
 
-void UShopElementInfoWidget::SetBuyButtonActive(bool bShouldActivate)
+void UShopElementInfoWidget::SetAddButtonActive(bool bShouldActivate)
 {
 	if (bShouldActivate)
 	{
