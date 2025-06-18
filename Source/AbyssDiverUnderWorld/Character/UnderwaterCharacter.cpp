@@ -427,6 +427,10 @@ void AUnderwaterCharacter::SetEnvironmentState(EEnvironmentState State)
 		OxygenComponent->SetShouldConsumeOxygen(false);
 		bCanUseEquipment = false;
 		UpdateBlurEffect();
+		if (AADPlayerState* ADPlayerState = GetPlayerState<AADPlayerState>())
+		{
+			ADPlayerState->GetInventory()->UnEquip();
+		}
 		break;
 	default:
 		UE_LOG(AbyssDiver, Error, TEXT("Invalid Character State"));
