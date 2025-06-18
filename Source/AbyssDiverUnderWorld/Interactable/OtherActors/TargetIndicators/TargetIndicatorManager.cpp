@@ -59,6 +59,7 @@ void ATargetIndicatorManager::BeginPlay()
 
 		Target->OnIndicatingTargetBeginOverlapDelegate.AddUObject(this, &ATargetIndicatorManager::OnIndicatingTargetOverlapped);
 		Target->OnSwitchActorDestroyedDelegate.AddUObject(this, &ATargetIndicatorManager::TryActivateNextTarget);
+		Target->OnOwnerActorDestroyedDelegate.AddUObject(this, &ATargetIndicatorManager::SkipTarget);
 	}
 
 	Algo::Sort(TargetArrayByReverseOrder, [](const AIndicatingTarget* A, const AIndicatingTarget* B)
@@ -96,10 +97,10 @@ void ATargetIndicatorManager::OnIndicatingTargetOverlapped(int32 TargetOrder)
 	TargetArrayByReverseOrder.Pop(EAllowShrinking::Yes);
 	Target->Destroy();
 
-	TryActivateNextTarget(TargetOrder + 1);
+	TryActivateNextTarget();
 }
 
-void ATargetIndicatorManager::TryActivateNextTarget(int32 NextTargetOrder)
+void ATargetIndicatorManager::TryActivateNextTarget()
 {
 	AIndicatingTarget* NextTarget = nullptr;
 	if (TryGetCurrentTarget(NextTarget) == false)
@@ -108,13 +109,21 @@ void ATargetIndicatorManager::TryActivateNextTarget(int32 NextTargetOrder)
 		return;
 	}
 
-	if (NextTarget->GetTargetOrder() != NextTargetOrder)
-	{
-		TargetIndicatorWidgetInstance->SetVisible(false);
-		return;
-	}
-
 	TargetIndicatorWidgetInstance->ChangeTargetImage(NextTarget->GetTargetIcon());
+}
+
+void ATargetIndicatorManager::SkipTarget(int32 TargetOrderForSkip)
+{
+	for (AIndicatingTarget* Target : TargetArrayByReverseOrder)
+	{
+		if (TargetOrderForSkip == Target->GetTargetOrder())
+		{
+			TargetArrayByReverseOrder.Remove(Target);
+			Target->Destroy();
+			TryActivateNextTarget();
+			return;
+		}
+	}
 }
 
 void ATargetIndicatorManager::SetActive(bool bShouldActivate)

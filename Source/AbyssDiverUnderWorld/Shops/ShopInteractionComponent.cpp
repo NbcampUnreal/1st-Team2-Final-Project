@@ -40,6 +40,11 @@ void UShopInteractionComponent::S_RequestBuyItem_Implementation(uint8 ItemId, ui
 	CurrentInteractingShop->BuyItem(ItemId, Quantity, Cast<AUnderwaterCharacter>(GetOwner()));
 }
 
+void UShopInteractionComponent::S_RequestBuyItems_Implementation(const TArray<uint8>& ItemIdList, const TArray<int8>& ItemCountList)
+{
+	CurrentInteractingShop->BuyItems(ItemIdList, ItemCountList);
+}
+
 AShop* UShopInteractionComponent::GetCurrentInteractingShop() const
 {
 	return CurrentInteractingShop;
