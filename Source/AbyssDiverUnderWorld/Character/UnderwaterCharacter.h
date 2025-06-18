@@ -1190,8 +1190,8 @@ public:
 	/** 현재 생성된 실드 히트 위젯을 반환 */
 	UUserWidget* GetShieldHitWidget() const;
 
-	/** 현재 Bound된 Character를 반환 */
-	FORCEINLINE TArray<TObjectPtr<AUnderwaterCharacter>>& GetBoundCharacters() { return BoundCharacters; }
+	/** 현재 Bound된 Character를 반환. 복사본을 반환한다. */
+	TArray<AUnderwaterCharacter*> GetBoundCharacters() const { return BoundCharacters; }
 
 	FORCEINLINE int GetPlayerIndex() const { return PlayerIndex; }
 

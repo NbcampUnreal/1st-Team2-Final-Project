@@ -248,9 +248,17 @@ void AADInGameMode::RevivePlayersAtRandomLocation(TArray<int8> PlayerIndexes, co
 	for (int8 PlayerIndex : PlayerIndexes)
 	{
 		AADPlayerController* PlayerController = FindPlayerControllerFromIndex(PlayerIndex);
-		if (PlayerController == nullptr || PlayerController->GetPawn() != nullptr)
+		// 현재 관전이 없으므로 Hide 되어 있다.
+		// if (PlayerController == nullptr || PlayerController->GetPawn() != nullptr)
+		if (PlayerController == nullptr)
 		{
 			continue;
+		}
+
+		if (APawn* PlayerPawn = PlayerController->GetPawn())
+		{
+			PlayerController->UnPossess();
+			PlayerPawn->Destroy();
 		}
 		
 		FVector RandomLocation = GetRandomLocation(SpawnCenter, ReviveDistance);
