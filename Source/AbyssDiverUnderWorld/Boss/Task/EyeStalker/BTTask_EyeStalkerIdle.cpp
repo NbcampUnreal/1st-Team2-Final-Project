@@ -42,7 +42,7 @@ void UBTTask_EyeStalkerIdle::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* 
 	// TargetPlayers 전체를 대상으로 이동속도 확인
 	for (AUnderwaterCharacter* TargetPlayer : TaskMemory->AIController->GetTargetPlayers())
 	{
-		if (!IsValid(TargetPlayer) || !TargetPlayer->IsAlive()) continue;
+		if (!IsValid(TargetPlayer) || TargetPlayer->IsDeath() || TargetPlayer->IsGroggy()) continue;
 		
 		const float PlayerVelocity = TargetPlayer->GetVelocity().Size();
 		if (PlayerVelocity >= 5.0f)

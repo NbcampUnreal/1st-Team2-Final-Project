@@ -46,7 +46,7 @@ void UBTTask_EyeStalkerDetected::TickTask(UBehaviorTreeComponent& OwnerComp, uin
 
 	// 타겟이 유효하지 않거나 사망 상태인 경우 탐지 중단
 	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(TaskMemory->AIController->GetBlackboardComponent()->GetValueAsObject("TargetPlayer"));
-	if (!IsValid(Player) || !Player->IsAlive())
+	if (!IsValid(Player) || Player->IsDeath() || Player->IsGroggy())
 	{
 		TaskMemory->AIController->GetBlackboardComponent()->SetValueAsObject("TargetPlayer", nullptr);
 		TaskMemory->AIController->GetBlackboardComponent()->SetValueAsBool("bHasDetected", false);

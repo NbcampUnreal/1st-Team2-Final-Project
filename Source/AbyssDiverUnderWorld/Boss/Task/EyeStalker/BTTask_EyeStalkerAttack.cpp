@@ -47,7 +47,7 @@ void UBTTask_EyeStalkerAttack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8
 	// @TODO: 플레어건 반경에 존재할 경우 얼리 리턴
 
 	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(TaskMemory->AIController->GetBlackboardComponent()->GetValueAsObject("TargetPlayer"));
-	if (!IsValid(Player) || !Player->IsAlive())
+	if (!IsValid(Player) || Player->IsDeath() || Player->IsGroggy())
 	{
 		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 		return;

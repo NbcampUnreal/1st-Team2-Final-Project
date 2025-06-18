@@ -39,7 +39,7 @@ void UBTService_ApplyDamageToPlayer::TickNode(UBehaviorTreeComponent& OwnerComp,
 	if (!TaskMemory) return;
 	
 	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(TaskMemory->AIController->GetBlackboardComponent()->GetValueAsObject("TargetPlayer"));
-	if (!IsValid(Player) || !Player->IsAlive()) return;
+	if (!IsValid(Player) || Player->IsDeath() || Player->IsGroggy()) return;
 
 	if (!TaskMemory->bIsDamageApplied && Player->IsAttackedByEyeStalker()) return;
 
