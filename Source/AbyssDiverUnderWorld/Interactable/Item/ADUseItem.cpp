@@ -42,7 +42,7 @@ void AADUseItem::BeginPlay()
 	float UpdateTime = 0.01f;
 	GetWorld()->GetTimerManager().SetTimer(ApplyGravityTimerHandle, [this]()
 		{
-			if (!bIsEquip && SkeletalMesh)
+			if (!bIsEquip && IsValid(SkeletalMesh)&&SkeletalMesh->GetSkeletalMeshAsset())
 			{
 				SkeletalMesh->AddForce(SpawnedItemGravity, TEXT("Root"), true);
 			}
