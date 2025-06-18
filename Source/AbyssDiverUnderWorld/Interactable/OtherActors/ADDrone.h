@@ -34,7 +34,6 @@ protected:
 
 #pragma region Method
 public:
-
 	virtual void Interact_Implementation(AActor* InstigatorActor) override;
 
 	virtual bool CanHighlight_Implementation() const override { return bIsActive; }
@@ -92,6 +91,10 @@ protected:
 	UPROPERTY(EditAnywhere)
 	int32 DronePhaseNumber = 0;
 
+	/** 사망 부활 반경 */
+	UPROPERTY(EditAnywhere)
+	float ReviveDistance;
+	
 private:
 
 	FTimerHandle DestroyHandle;

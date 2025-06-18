@@ -649,6 +649,9 @@ public:
 
 private:
 
+	/** 현재 캐릭터를 Possess한 PlayerController의 Player Index */
+	int8 PlayerIndex;
+	
 	// Character State는 현재 State 종료 시에 따로 처리할 것이 없기 때문에 현재 상태 값만 Replicate하도록 한다.
 	
 	/* 현재 캐릭터 상태. Normal, Groggy, Death... */
@@ -1186,6 +1189,11 @@ public:
 
 	/** 현재 생성된 실드 히트 위젯을 반환 */
 	UUserWidget* GetShieldHitWidget() const;
+
+	/** 현재 Bound된 Character를 반환 */
+	FORCEINLINE TArray<TObjectPtr<AUnderwaterCharacter>>& GetBoundCharacters() { return BoundCharacters; }
+
+	FORCEINLINE int GetPlayerIndex() const { return PlayerIndex; }
 
 	/** 현재 Eye Stalker에게 공격받았는지 여부를 설정 */
 	FORCEINLINE void SetIsAttackedByEyeStalker(const bool bNewAttacked) { bIsAttackedByEyeStalker = bNewAttacked; }
