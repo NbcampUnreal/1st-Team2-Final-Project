@@ -8,6 +8,8 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "AbyssDiverUnderWorld.h"
 #include "Interactable/EquipableComponent/EquipableComponent.h"
+#include "Components/SphereComponent.h"
+#include "Character/UnderwaterCharacter.h"
 
 AADUseItem::AADUseItem()
 {
@@ -15,14 +17,14 @@ AADUseItem::AADUseItem()
 
 	SkeletalMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SkeletalMesh"));
 	RootComponent = SkeletalMesh;
-	//SkeletalMesh->SetMobility(EComponentMobility::Movable);
-	//SkeletalMesh->SetIsReplicated(true);
 
 	SkeletalMesh->SetGenerateOverlapEvents(true);
 	SkeletalMesh->SetSimulatePhysics(true);
-	SkeletalMesh->SetCollisionProfileName("BlockAllDynamic");
+	SkeletalMesh->SetCollisionProfileName("IgnoreOnlyPawnPhysics");
+	SkeletalMesh->SetEnableGravity(false);
 	EquipableComp = CreateDefaultSubobject<UEquipableComponent>(TEXT("EquipableComponent"));
 
+	DropMovement->SetActive(false);
 
 	bReplicates = true;
 	SetReplicateMovement(true);
@@ -36,7 +38,18 @@ void AADUseItem::BeginPlay()
 	{
 		SetActorHiddenInGame(true);
 	}
+
+	FTimerHandle ApplyGravityTimerHandle;
+	float UpdateTime = 0.01f;
+	GetWorld()->GetTimerManager().SetTimer(ApplyGravityTimerHandle, [this]()
+		{
+			if (!bIsEquip && SkeletalMesh)
+			{
+				SkeletalMesh->AddForce(SpawnedItemGravity, TEXT("Root"), true);
+			}
+		}, UpdateTime, true);
 }
+
 
 void AADUseItem::M_SetSkeletalMesh_Implementation(USkeletalMesh* NewMesh)
 {
@@ -48,7 +61,7 @@ void AADUseItem::M_SetItemVisible_Implementation(bool bVisible)
 	SetActorHiddenInGame(!bVisible);
 }
 
-void AADUseItem::SetItemInfo(FItemData& ItemInfo, bool bIsEquipMode)
+void AADUseItem::SetItemInfo(FItemData& ItemInfo, bool bIsEquipMode, AUnderwaterCharacter* Character)
 {
 
 	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
@@ -74,6 +87,7 @@ void AADUseItem::SetItemInfo(FItemData& ItemInfo, bool bIsEquipMode)
 			}
 		}
 	}
+	bIsEquip = bIsEquipMode;
 	if (bIsEquipMode)
 	{
 		M_EquipMode();
@@ -81,6 +95,11 @@ void AADUseItem::SetItemInfo(FItemData& ItemInfo, bool bIsEquipMode)
 	else
 	{
 		M_UnEquipMode();
+	}
+	if (Character)
+	{
+		EEnvironmentState CurrentEnviromnent = Character->GetEnvironmentState();
+		SpawnedItemGravity = CurrentEnviromnent == EEnvironmentState::Underwater ? FVector(0, 0, -50) : FVector(0, 0, -980);
 	}
 }
 
@@ -95,7 +114,7 @@ void AADUseItem::M_UnEquipMode_Implementation()
 {
 	SkeletalMesh->SetGenerateOverlapEvents(true);
 	SkeletalMesh->SetSimulatePhysics(true);
-	SkeletalMesh->SetCollisionProfileName("BlockAllDynamic");
+	SkeletalMesh->SetCollisionProfileName("IgnoreOnlyPawnPhysics");
 }
 
 void AADUseItem::M_EquipMode_Implementation()
