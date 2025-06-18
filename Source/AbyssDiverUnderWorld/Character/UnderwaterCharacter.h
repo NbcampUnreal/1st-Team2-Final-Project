@@ -39,6 +39,7 @@ enum class EEnvironmentState : uint8
 {
 	Underwater,
 	Ground,
+	MAX UMETA(Hidden)
 };
 
 UENUM(BlueprintType)
