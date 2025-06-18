@@ -10,28 +10,53 @@ UBTTask_EjectVictim::UBTTask_EjectVictim()
 {
 	NodeName = "Eject Victim";
 	bCreateNodeInstance = true;
-	bNotifyTick = false;
+	bNotifyTick = true;
+
+	ElapsedTime = 0.0f;
+	MaxEjectDelay = 5.0f;
 }
 
 EBTNodeResult::Type UBTTask_EjectVictim::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
+	ElapsedTime = 0.0f;
+
 	AAIController* AIController = OwnerComp.GetAIOwner();
 	if (!AIController) return EBTNodeResult::Failed;
 
 	APawn* AIPawn = AIController->GetPawn();
 	if (!AIPawn) return EBTNodeResult::Failed;
 
-	FVector FleeLoactaion = OwnerComp.GetBlackboardComponent()->GetValueAsVector(FleeLocationKey.SelectedKeyName);
+	return EBTNodeResult::InProgress;
+}
 
-	if (FVector::Dist(AIPawn->GetActorLocation(), FleeLoactaion) <= EjectTriggerDistance)
+void UBTTask_EjectVictim::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
+{
+	AAIController* AIController = OwnerComp.GetAIOwner();
+	APawn* AIPawn = AIController ? AIController->GetPawn() : nullptr;
+	if (!AIPawn)
 	{
-		AHorrorCreature* Creature = Cast<AHorrorCreature>(AIPawn);
-		if (Creature && Creature->GetSwallowedPlayer())
-		{
-			Creature->EjectPlayer(Creature->GetSwallowedPlayer());
-		}
-		return EBTNodeResult::Succeeded;
+		FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
+		return;
 	}
-	
-	return EBTNodeResult::Failed;
+
+	FVector FleeLocation = OwnerComp.GetBlackboardComponent()->GetValueAsVector(FleeLocationKey.SelectedKeyName);
+	float Distance = FVector::Dist(AIPawn->GetActorLocation(), FleeLocation);
+
+	ElapsedTime += DeltaSeconds;
+	UE_LOG(LogTemp, Log, TEXT("[EjectVictim] ElapsedTime: %.2f"), ElapsedTime);
+
+	if (Distance <= EjectTriggerDistance || ElapsedTime >= MaxEjectDelay)
+	{
+		EjectPlayerIfPossible(AIPawn);
+		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
+	}
+}
+
+void UBTTask_EjectVictim::EjectPlayerIfPossible(APawn* AIPawn)
+{
+	AHorrorCreature* Creature = Cast<AHorrorCreature>(AIPawn);
+	if (Creature && Creature->GetSwallowedPlayer())
+	{
+		Creature->EjectPlayer(Creature->GetSwallowedPlayer());
+	}
 }
