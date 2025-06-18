@@ -38,6 +38,8 @@ public:
 	UFUNCTION(BlueprintImplementableEvent)
 	void OnPostSeamlessTravel();
 
+
+
 protected:
 
 	UFUNCTION(Server, Reliable)

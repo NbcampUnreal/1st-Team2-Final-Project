@@ -9,7 +9,8 @@ class UBoxComponent;
 class UBillboardComponent;
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnIndicatingTargetBeginOverlapDelegate, int32 /*TargetOrder*/);
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnSwitchActorDestroyedDelegate, int32 /*TargetOrder*/);
+DECLARE_MULTICAST_DELEGATE(FOnSwitchActorDestroyedDelegate);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnOwnerActorDestroyedDelegate, int32 /*TargetOrder*/);
 
 
 UCLASS()
@@ -33,6 +34,7 @@ public:
 
 	FOnIndicatingTargetBeginOverlapDelegate OnIndicatingTargetBeginOverlapDelegate;
 	FOnSwitchActorDestroyedDelegate OnSwitchActorDestroyedDelegate;
+	FOnOwnerActorDestroyedDelegate OnOwnerActorDestroyedDelegate;
 
 private:
 
@@ -41,6 +43,9 @@ private:
 
 	UFUNCTION()
 	void OnSwitchActorDestroyed(AActor* DestroyedActor);
+
+	UFUNCTION()
+	void OnOwnerActorDestroyed(AActor* DestroyedActor);
 
 #pragma endregion
 
@@ -63,6 +68,10 @@ protected:
 	// 이 액터가 사라지면 활성화 조건 만족
 	UPROPERTY(EditInstanceOnly, Category = "IndicatingTargetSettings")
 	TObjectPtr<AActor> SwitchActor;
+
+	// 이 액터가 사라지면 해당 IndicatingTarget도 같이 삭제
+	UPROPERTY(EditInstanceOnly, Category = "IndicatingTargetSettings")
+	TObjectPtr<AActor> OwnerActor;
 
 #pragma endregion
 
