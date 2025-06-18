@@ -6,6 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "CableBindingActor.generated.h"
 
+class AUnderwaterCharacter;
 /*
  * 2개의 Actor를 연결하는 Actor
  * - Source Actor: Cable이 연결되어서 끌고 가는 Actor
@@ -35,7 +36,7 @@ public:
 	 * Target Actor는 물리 시뮬레이션이 활성화되어 있어야 한다.
 	 */
 	UFUNCTION(BlueprintCallable)
-	void ConnectActors(AActor* NewSourceActor, AActor* NewTargetActor);
+	void ConnectActors(AUnderwaterCharacter* NewSourceActor, AUnderwaterCharacter* NewTargetActor);
 
 	/** Source Actor와 Target Actor를 분리한다.
 	 * Cable을 제거하고, Physics Constraint를 비활성화한다.
@@ -66,11 +67,11 @@ protected:
 
 	/** Cable이 연결되는 Source Actor. Source Actor는 끌고가는 Actor이다.(Binder Actor) */
 	UPROPERTY(BlueprintReadOnly)
-	TObjectPtr<AActor> SourceActor;
+	TObjectPtr<AUnderwaterCharacter> SourceCharacter;
 
 	/** Cable이 연결되는 Target Actor. Target Actor는 끌려가는 Actor이다.(Bound Actor) */
 	UPROPERTY(BlueprintReadOnly)
-	TObjectPtr<AActor> TargetActor;
+	TObjectPtr<AUnderwaterCharacter> TargetCharacter;
 
 	/** Cable의 길이 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)

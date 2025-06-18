@@ -16,6 +16,7 @@ public:
 
 #pragma region Method
 public:
+	virtual void BeginPlay() override;
 	virtual void InitializeSpeed(const FVector& Dir, uint32 Speed) override;
 
 	virtual void OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
@@ -33,6 +34,9 @@ public:
 
 
 protected:
+	UPROPERTY(EditAnywhere)
+	TObjectPtr<USphereComponent> FlareSphereCollision;
+
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<USkeletalMeshComponent> FlareMesh;
 	UPROPERTY(VisibleAnywhere)
@@ -55,10 +59,13 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "Flare Light")
 	uint8 bAffectTranslucent : 1 = true;
+	UPROPERTY(EditAnywhere, Category = "Flare Light")
+	float Lifetime = 5.f;
 
 private:
 	FTimerHandle HitDestroyHandle;
 	float HitLifetime = 2.f;
+	
 
 #pragma endregion
 
