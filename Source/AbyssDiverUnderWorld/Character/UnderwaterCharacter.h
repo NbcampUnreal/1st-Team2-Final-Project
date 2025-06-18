@@ -1073,6 +1073,10 @@ private:
 	
 	UPROPERTY()
 	TObjectPtr<class ACableBindingActor> CableBindingActor;
+
+	/** 로프에 바인드할 때마다 속도 감소 수치. 0.15일 경우 Bound Characters의 개수마다 15%씩 속도가 감소한다. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true", ClampMax = "1.0", ClampMin = "0.0"))
+	float BindMultiplier;
 	
 #pragma endregion
 

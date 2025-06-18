@@ -177,6 +177,8 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	GroggyInteractionDescription = TEXT("Revive Character!");
 	DeathGrabDescription = TEXT("Grab Character!");
 	DeathGrabReleaseDescription = TEXT("Release Character!");
+
+	BindMultiplier = 0.15f;
 }
 
 void AUnderwaterCharacter::BeginPlay()
@@ -529,6 +531,7 @@ void AUnderwaterCharacter::RequestBind(AUnderwaterCharacter* RequestBinderCharac
 		ConnectRope(BindCharacter);
 
 		UpdateBindInteractable();
+		AdjustSpeed();
 	}
 }
 
@@ -545,8 +548,9 @@ void AUnderwaterCharacter::UnBind()
 	BindCharacter->UnbindToCharacter(this);
 	BindCharacter = nullptr;
 
-	UpdateBindInteractable();
 	DisconnectRope();
+	UpdateBindInteractable();
+	AdjustSpeed();
 }
 
 void AUnderwaterCharacter::EmitBloodNoise()
@@ -1186,12 +1190,18 @@ float AUnderwaterCharacter::GetSwimEffectiveSpeed() const
 		                        : StatComponent->MoveSpeed;
 
 	// Effective Speed = BaseSpeed * (1 - OverloadSpeedFactor) * ZoneSpeedMultiplier
+	//					* (1 - BindMultiplier)
 	float Multiplier = 1.0f;
 	if (IsOverloaded())
 	{
 		Multiplier = 1 - OverloadSpeedFactor;
 	}
 	Multiplier *= ZoneSpeedMultiplier;
+	if (!BoundCharacters.IsEmpty())
+	{
+		Multiplier *= (1 - BindMultiplier * BoundCharacters.Num());
+	}
+	
 	Multiplier = FMath::Max(0.0f, Multiplier);
 	
 	return FMath::Max(MinSpeed, BaseSpeed * Multiplier);
@@ -2083,6 +2093,7 @@ void AUnderwaterCharacter::OnRep_BindCharacter()
 		DisconnectRope();
 	}
 
+	AdjustSpeed();
 	UpdateBindInteractable();
 }
 
