@@ -88,7 +88,7 @@ void URagdollReplicationComponent::SetRagdollEnabled(bool bEnable)
 		SkeletalMesh->SetCollisionProfileName(TEXT("Ragdoll"));
 		SkeletalMesh->SetCollisionResponseToChannel(ECC_Pawn, ECollisionResponse::ECR_Block);
 		// Interaction 채널에서 검출하기 위해서는 Visibility에서 Block으로 설정해야 한다.
-		SkeletalMesh->SetCollisionResponseToChannel(ECC_Visibility, ECollisionResponse::ECR_Block);
+		SkeletalMesh->SetCollisionResponseToChannel(ECC_GameTraceChannel4, ECollisionResponse::ECR_Block);
 		
 		SkeletalMesh->SetEnableGravity(false);
 		SkeletalMesh->SetLinearDamping(4.0f);
@@ -96,7 +96,7 @@ void URagdollReplicationComponent::SetRagdollEnabled(bool bEnable)
 
 		if (AUnderwaterCharacter* Character = Cast<AUnderwaterCharacter>(GetOwner()))
 		{
-			Character->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			Character->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 			Character->GetCharacterMovement()->DisableMovement();
 		}
 	}

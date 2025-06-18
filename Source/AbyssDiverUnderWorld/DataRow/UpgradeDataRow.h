@@ -45,4 +45,10 @@ public:
 
 	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<UTexture2D> UpgradeIcon;
+
+	UPROPERTY(EditDefaultsOnly)
+	FString UpgradeName;
+
+	UPROPERTY(EditDefaultsOnly)
+	FString UpgradeDescription;
 };

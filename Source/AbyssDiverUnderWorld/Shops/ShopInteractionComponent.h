@@ -30,6 +30,10 @@ public:
 	void S_RequestBuyItem(uint8 ItemId, uint8 Quantity);
 	void S_RequestBuyItem_Implementation(uint8 ItemId, uint8 Quantity);
 
+	UFUNCTION(Server, Reliable)
+	void S_RequestBuyItems(const TArray<uint8>& ItemIdList, const TArray<int8>& ItemCountList);
+	void S_RequestBuyItems_Implementation(const TArray<uint8>& ItemIdList, const TArray<int8>& ItemCountList);
+
 #pragma endregion
 
 

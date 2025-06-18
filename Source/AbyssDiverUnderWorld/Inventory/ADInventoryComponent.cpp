@@ -664,6 +664,7 @@ void UADInventoryComponent::PlayEquipAnimation(AUnderwaterCharacter* Character, 
 
 	UAnimMontage* Montage = bIsHarpoon ? HarpoonDrawMontage : DPVDrawMontage;
 
+	Character->M_StopAllMontagesOnBothMesh(0.f);
 	Character->M_PlayMontageOnBothMesh(
 		Montage,
 		1.0f,
@@ -779,7 +780,7 @@ void UADInventoryComponent::Equip(FItemData& ItemData, int8 SlotIndex)
 			}
 
 			C_InventoryPlaySound(ESFX::Equip);
-			SpawnedItem->SetItemInfo(ItemData, true);
+			SpawnedItem->SetItemInfo(ItemData, true, EEnvironmentState::MAX);
 			CurrentEquipmentInstance = SpawnedItem;
 			LOGINVEN(Warning, TEXT("ItemToEquip Name: %s, Amount %d"), *ItemData.Name.ToString(), ItemData.Amount);
 			SetEquipInfo(SlotIndex, SpawnedItem);
@@ -815,30 +816,30 @@ void UADInventoryComponent::Equip(FItemData& ItemData, int8 SlotIndex)
 void UADInventoryComponent::UnEquip()
 {
 	// EquipComp의 장비 현재값 초기화
-	if (APlayerState* PS = Cast<APlayerState>(GetOwner()))
-	{
-		if (APawn* Pawn = PS->GetPawn())
-		{
-			AUnderwaterCharacter* Diver = Cast<AUnderwaterCharacter>(Pawn);
-			if (!Diver)
-				return;
-
-			const float MontageStopSeconds = 1.0f;
-			Diver->M_StopAllMontagesOnBothMesh(MontageStopSeconds);
-			if (UEquipUseComponent* EquipComp = Diver->GetEquipUseComponent())
-			{
-				EquipComp->DeinitializeEquip();
-				InventoryList.MarkItemDirty(InventoryList.Items[FindItemIndexByName(CurrentEquipmentInstance->ItemData.Name)]);
-			}
-			
-		}
-	}
-	C_InventoryPlaySound(ESFX::UnEquip);
-	/*LOGINVEN(Warning, TEXT("UnEquipItem %s"), *CurrentEquipmentInstance->ItemData.Name.ToString());
-	if(CurrentEquipmentInstance)
-		CurrentEquipmentInstance->Destroy();*/
 	if (CurrentEquipmentInstance)
 	{
+		if (APlayerState* PS = Cast<APlayerState>(GetOwner()))
+		{
+			if (APawn* Pawn = PS->GetPawn())
+			{
+				AUnderwaterCharacter* Diver = Cast<AUnderwaterCharacter>(Pawn);
+				if (!Diver)
+					return;
+
+				const float MontageStopSeconds = 1.0f;
+				Diver->M_StopAllMontagesOnBothMesh(MontageStopSeconds);
+				if (UEquipUseComponent* EquipComp = Diver->GetEquipUseComponent())
+				{
+					EquipComp->DeinitializeEquip();
+					InventoryList.MarkItemDirty(InventoryList.Items[FindItemIndexByName(CurrentEquipmentInstance->ItemData.Name)]);
+				}
+			
+			}
+		}
+		C_InventoryPlaySound(ESFX::UnEquip);
+		/*LOGINVEN(Warning, TEXT("UnEquipItem %s"), *CurrentEquipmentInstance->ItemData.Name.ToString());
+		if(CurrentEquipmentInstance)
+			CurrentEquipmentInstance->Destroy();*/
 		CachedDiver->GetEquipRenderComponent()->DetachItem(CurrentEquipmentInstance);
 		CurrentEquipmentInstance->Destroy();
 		CurrentEquipItem->Destroy();
@@ -879,7 +880,7 @@ void UADInventoryComponent::DropItem(FItemData& ItemData)
 		M_SpawnItemEffect(ESFX::DropItem, DropItemEffect, DropLocation);
 	}
 	SpawnItem->M_SetItemVisible(true);
-	SpawnItem->SetItemInfo(ItemData, false);
+	SpawnItem->SetItemInfo(ItemData, false, UnderwaterCharacter->GetEnvironmentState());
 	LOGINVEN(Warning, TEXT("Spawn Item To Drop : %s"), *ItemData.Name.ToString());
 }
 

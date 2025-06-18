@@ -170,17 +170,31 @@ void AADPlayerController::SetupInputComponent()
 
 void AADPlayerController::ShowInventory(const FInputActionValue& InputActionValue)
 {
-	if (AADPlayerState* PS = GetPlayerState<AADPlayerState>())
+	AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(GetPawn());
+	if (UnderwaterCharacter)
 	{
-		PS->GetInventory()->ShowInventory();
+		if (UnderwaterCharacter->IsNormal())
+		{
+			if (AADPlayerState* PS = GetPlayerState<AADPlayerState>())
+			{
+				PS->GetInventory()->ShowInventory();
+			}
+		}
 	}
 }
 
 void AADPlayerController::HideInventory(const FInputActionValue& InputActionValue)
 {
-	if (AADPlayerState* PS = GetPlayerState<AADPlayerState>())
+	AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(GetPawn());
+	if (UnderwaterCharacter)
 	{
-		PS->GetInventory()->HideInventory();
+		if (UnderwaterCharacter->IsNormal())
+		{
+			if (AADPlayerState* PS = GetPlayerState<AADPlayerState>())
+			{
+				PS->GetInventory()->HideInventory();
+			}
+		}
 	}
 }
 
