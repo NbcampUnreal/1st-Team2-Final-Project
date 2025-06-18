@@ -1,42 +1,82 @@
 #include "Framework/SettingsManager.h"
+
+#include "AbyssDiverUnderWorld.h"
+#include "ADGameInstance.h"
+#include "Subsystems/SoundSubsystem.h"
+
 #include "Kismet/GameplayStatics.h"
 #include "EnhancedInputSubsystems.h"
 #include "EnhancedInputComponent.h"
-#include "GameFramework/PlayerController.h"
 #include "InputAction.h"
 #include "InputMappingContext.h"
-#include "ADGameInstance.h"
-#include "Subsystems/SoundSubsystem.h"
 #include "GameFramework/InputSettings.h"
+#include "GameFramework/PlayerController.h"
+
+const FString USettingsManager::SlotName = TEXT("SettingsSlot");
 
 USettingsManager::USettingsManager()
 {
 	CachedAudioSettings = { 0.5, 0.5, 0.5, 0.5 };
 }
 
-void USettingsManager::SaveAudioSettings()
+bool USettingsManager::SaveAudioSettings()
 {
-	UADSettingsSaveGame* SaveGameInstance = Cast<UADSettingsSaveGame>(
-		UGameplayStatics::CreateSaveGameObject(UADSettingsSaveGame::StaticClass())
-	);
-
-	SaveGameInstance->AudioSettings = CachedAudioSettings;
-	UGameplayStatics::SaveGameToSlot(SaveGameInstance, SlotName, 0);
-
-}
-
-void USettingsManager::LoadAudioSettings()
-{
-	if (UGameplayStatics::DoesSaveGameExist(SlotName, 0))
+	UWorld* World = GetWorld();
+	if (World == nullptr)
 	{
-		if (UADSettingsSaveGame* Loaded = Cast<UADSettingsSaveGame>(
-			UGameplayStatics::LoadGameFromSlot(SlotName, 0)))
-		{
-			CachedAudioSettings = Loaded->AudioSettings;
-		}
+		LOGV(Error, TEXT("Fail to Save Audio settings"));
+		return false;
 	}
 
+	UGameInstance* GI = UGameplayStatics::GetGameInstance(World);
+	if (GI == nullptr)
+	{
+		LOGV(Error, TEXT("Fail to Save Audio settings"));
+		return false;
+	}
+
+	USoundSubsystem* SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
+	if (SoundSubsystem == nullptr)
+	{
+		LOGV(Error, TEXT("Fail to Save Audio settings"));
+		return false;
+	}
+
+	UADSettingsSaveGame* SaveGameInstance = Cast<UADSettingsSaveGame>(UGameplayStatics::CreateSaveGameObject(UADSettingsSaveGame::StaticClass()));
+	if (SaveGameInstance == nullptr)
+	{
+		LOGV(Error, TEXT("Fail to Save Audio settings"));
+		return false;
+	}
+
+	CachedAudioSettings.AmbientVolume = SoundSubsystem->GetAmbientVolume();
+	CachedAudioSettings.BGMVolume = SoundSubsystem->GetBGMVolume();
+	CachedAudioSettings.MasterVolume = SoundSubsystem->GetMasterVolume();
+	CachedAudioSettings.SFXVolume = SoundSubsystem->GetSFXVolume();
+
+	SaveGameInstance->AudioSettings = CachedAudioSettings;
+	return UGameplayStatics::SaveGameToSlot(SaveGameInstance, SlotName, 0);
+}
+
+bool USettingsManager::LoadAudioSettings()
+{
+	if (UGameplayStatics::DoesSaveGameExist(SlotName, 0) == false)
+	{
+		LOGV(Error, TEXT("Fail to Load AudioSettings"));
+		return false;
+	}
+
+	UADSettingsSaveGame* Loaded = Cast<UADSettingsSaveGame>(UGameplayStatics::LoadGameFromSlot(SlotName, 0));
+	if (Loaded == nullptr)
+	{
+		LOGV(Error, TEXT("Fail to Load AudioSettings"));
+		return false;
+	}
+
+	CachedAudioSettings = Loaded->AudioSettings;
 	ApplyAudioSettings(CachedAudioSettings);
+
+	return true;
 }
 
 void USettingsManager::ApplyAudioSettings(const FUserAudioSettings& InSettings)

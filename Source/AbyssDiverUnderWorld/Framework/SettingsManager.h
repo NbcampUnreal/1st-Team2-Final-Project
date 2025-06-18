@@ -12,17 +12,16 @@ class ABYSSDIVERUNDERWORLD_API USettingsManager : public UObject
 	GENERATED_BODY()
 
 public:
-	USettingsManager();
 
-	
-	
+	USettingsManager();
 public:
+
 	//Audio Settgins
 	UFUNCTION(BlueprintCallable, Category="Settings|Audio")
-	void SaveAudioSettings();
+	bool SaveAudioSettings();
 
 	UFUNCTION(BlueprintCallable, Category = "Settings|Audio")
-	void LoadAudioSettings();
+	bool LoadAudioSettings();
 
 	UFUNCTION(BlueprintCallable, Category = "Settings|Audio")
 	void ApplyAudioSettings(const FUserAudioSettings& InSettings);
@@ -72,7 +71,7 @@ protected:
 	UPROPERTY(BlueprintReadOnly)
 	TArray<FKeyBinding> CachedKeyBindings;
 
-	const FString SlotName = TEXT("SettingsSlot");
+	static const FString SlotName;
 
 public:
 	UFUNCTION(BlueprintPure, Category="Settings|Audio")
