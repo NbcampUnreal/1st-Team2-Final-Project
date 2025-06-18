@@ -242,14 +242,19 @@ void AEnhancedBossAIController::SetBloodDetectedState()
 
 void AEnhancedBossAIController::OnDamagePerceptionSuccess(AUnderwaterCharacter* Player)
 {
-	LOG(TEXT("Blood Perception Success !"));
+	LOG(TEXT("Damage Perception Success !"));
 	
 	SetBlackboardPerceptionType(EPerceptionType::Damage);
-
+	GetBlackboardComponent()->SetValueAsObject(TargetPlayerKey, Player);
+	
 	if (bIsAlienShark)
 	{
-		GetBlackboardComponent()->SetValueAsObject(TargetPlayerKey, Player);
 		GetBlackboardComponent()->SetValueAsBool(bIsChasingPlayerKey, true);
+	}
+	else
+	{
+		BlackboardComponent->SetValueAsBool(bIsChasingKey, true);
+		BlackboardComponent->SetValueAsBool(bHasSeenPlayerKey, true);
 	}
 }
 

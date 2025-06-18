@@ -79,7 +79,7 @@ void AADInGameMode::BeginPlay()
 
 			check(Drone->CurrentSeller);
 			Drone->CurrentSeller->SetTargetMoney(PhaseGoalRow->GoalCredit);
-
+				
 			// 마지막 드론을 기억해서 이 드론이 없으면 게임 클리어 조건 만족으로 사용하려고..
 			if (LastDroneNumber < DronePhaseNumber)
 			{
