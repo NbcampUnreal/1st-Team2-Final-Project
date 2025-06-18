@@ -1320,7 +1320,7 @@ void AShop::LaunchItem()
 		return;
 	}
 
-	SpawnedItem->SetItemInfo(ItemData, false, EEnvironmentState::MAX);
+	SpawnedItem->SetItemInfo(ItemData, false, EEnvironmentState::Ground);
 
 	UPrimitiveComponent* ItemRoot = Cast<UPrimitiveComponent>(SpawnedItem->GetRootComponent());
 	if (ItemRoot == nullptr)
