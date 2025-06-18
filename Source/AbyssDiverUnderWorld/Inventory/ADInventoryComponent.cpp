@@ -664,6 +664,7 @@ void UADInventoryComponent::PlayEquipAnimation(AUnderwaterCharacter* Character, 
 
 	UAnimMontage* Montage = bIsHarpoon ? HarpoonDrawMontage : DPVDrawMontage;
 
+	Character->M_StopAllMontagesOnBothMesh(0.f);
 	Character->M_PlayMontageOnBothMesh(
 		Montage,
 		1.0f,
