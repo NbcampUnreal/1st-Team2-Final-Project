@@ -237,12 +237,16 @@ void AMonster::NotifyLightExposure(float DeltaTime, float TotalExposedTime, cons
 
 void AMonster::AddDetection(AActor* Actor)
 {
-	if (!IsValid(Actor)) return;
-
-	if (!IsValid(this)) return;
+	if (!IsValid(Actor) || !IsValid(this)) return;
 
 	int32& Count = DetectionRefCounts.FindOrAdd(Actor);
 	Count++;
+
+	UE_LOG(LogTemp, Log, TEXT("[%s] AddDetection : %s | Count: %d"),
+		*GetName(),
+		*Actor->GetName(),
+		Count
+	);
 
 	// If Target is empty, set
 	if (TargetActor == nullptr || !IsValid(TargetActor))
@@ -258,14 +262,25 @@ void AMonster::AddDetection(AActor* Actor)
 
 void AMonster::RemoveDetection(AActor* Actor)
 {
-	if (!IsValid(Actor)) return;
-
 	if (!IsValid(this)) return;
+
+	if (!IsValid(Actor))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[%s] RemoveDetection : Invalid Player! Force remove."), *GetName());
+		DetectionRefCounts.Remove(Actor);
+		return;
+	}
 
 	int32* CountPtr = DetectionRefCounts.Find(Actor);
 	if (!CountPtr) return;
 
 	(*CountPtr)--;
+
+	UE_LOG(LogTemp, Log, TEXT("[%s] RemoveDetection : %s | New Count: %d"),
+		*GetName(),
+		*Actor->GetName(),
+		*CountPtr
+	);
 
 	if (*CountPtr <= 0)
 	{
@@ -278,6 +293,22 @@ void AMonster::RemoveDetection(AActor* Actor)
 			if (BlackboardComponent)
 			{
 				BlackboardComponent->ClearValue(TargetActorKey);
+			}
+
+			// Alternate targeting
+			for (const auto& Pair : DetectionRefCounts)
+			{
+				if (IsValid(Pair.Key))
+				{
+					TargetActor = Pair.Key;
+					if (BlackboardComponent)
+					{
+						BlackboardComponent->SetValueAsObject(TargetActorKey, TargetActor);
+					}
+					UE_LOG(LogTemp, Log, TEXT("[%s] New TargetActor: %s"), *GetName(), *TargetActor->GetName());
+
+					break;
+				}
 			}
 		}
 	}
@@ -293,7 +324,7 @@ void AMonster::SetMonsterState(EMonsterState NewState)
 	if (GetController() == nullptr) return;
 
 	MonsterState = NewState;
-	UE_LOG(LogTemp, Warning, TEXT("MonsterState changed: %d ¡æ %d"), (int32)MonsterState, (int32)NewState);
+	UE_LOG(LogTemp, Warning, TEXT("MonsterState changed: %d -> %d"), (int32)MonsterState, (int32)NewState);
 
 	if (UBlackboardComponent* BB = Cast<AAIController>(GetController())->GetBlackboardComponent())
 	{
@@ -320,6 +351,10 @@ void AMonster::SetMonsterState(EMonsterState NewState)
 
 	case EMonsterState::Patrol:
 		SetMaxSwimSpeed(PatrolSpeed);
+		if (UBlackboardComponent* BB = Cast<AAIController>(GetController())->GetBlackboardComponent())
+		{
+			BB->ClearValue(InvestigateLocationKey);
+		}
 		bIsChasing = false;
 		break;
 
@@ -341,6 +376,21 @@ void AMonster::SetMonsterState(EMonsterState NewState)
 void AMonster::SetMaxSwimSpeed(float Speed)
 {
 	GetCharacterMovement()->MaxSwimSpeed = Speed;
+}
+
+int32 AMonster::GetDetectionCount() const
+{
+	int32 ValidCount = 0;
+
+	for (const auto& Elem : DetectionRefCounts)
+	{
+		if (Elem.Value > 0 && IsValid(Elem.Key))
+		{
+			++ValidCount;
+		}
+	}
+
+	return ValidCount;
 }
 
 

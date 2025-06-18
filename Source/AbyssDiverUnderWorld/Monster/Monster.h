@@ -97,6 +97,7 @@ public:
 	EMonsterState GetMonsterState() { return MonsterState; }
 	virtual void SetMonsterState(EMonsterState NewState);
 	void SetMaxSwimSpeed(float Speed);
+	int32 GetDetectionCount() const;
 
 	// Virtual function to get collision components for attack range determination externally
 	virtual USphereComponent* GetAttackHitComponent() const { return nullptr; }
