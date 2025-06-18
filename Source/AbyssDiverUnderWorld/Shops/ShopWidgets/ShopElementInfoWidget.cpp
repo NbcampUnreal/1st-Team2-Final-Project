@@ -33,9 +33,9 @@ void UShopElementInfoWidget::NativeConstruct()
 
 	GS->TeamCreditsChangedDelegate.AddUObject(this, &UShopElementInfoWidget::OnTeamCreditChanged);
 
-	if (BuyButton->OnClicked.IsBound() == false)
+	if (AddButton->OnClicked.IsBound() == false)
 	{
-		BuyButton->OnClicked.AddDynamic(this, &UShopElementInfoWidget::OnBuyButtonClicked);
+		AddButton->OnClicked.AddDynamic(this, &UShopElementInfoWidget::OnAddButtonClicked);
 	}
 
 	if (IncreaseButton->OnClicked.IsBound() == false)
@@ -58,7 +58,7 @@ void UShopElementInfoWidget::NativeDestruct()
 	}
 
 	GS->TeamCreditsChangedDelegate.RemoveAll(this);
-	BuyButton->OnClicked.RemoveAll(this);
+	AddButton->OnClicked.RemoveAll(this);
 	IncreaseButton->OnClicked.RemoveAll(this);
 	DecreaseButton->OnClicked.RemoveAll(this);
 
@@ -73,11 +73,10 @@ void UShopElementInfoWidget::Init(USkeletalMeshComponent* NewItemMeshComp)
 	SetItemMeshActive(false);
 	SetDescriptionActive(false);
 	SetNameInfoTextActive(false);
-	SetBuyButtonActive(false);
+	SetAddButtonActive(false);
 	SetUpgradeLevelInfoActive(false);
 	SetCostInfoActive(false);
 	SetQuantityOverlayActive(false);
-	SetRemainingMoneyAfterPurchaseTextActive(false);
 
 	ItemMeshPanel->SetUpgradeImageActive(false);
 }
@@ -105,18 +104,16 @@ void UShopElementInfoWidget::ShowItemInfos(int32 ItemId)
 	SetItemMeshActive(true);
 	SetDescriptionActive(true);
 	SetNameInfoTextActive(true);
-	SetBuyButtonActive(true);
+	SetAddButtonActive(true);
 	SetUpgradeLevelInfoActive(false);
 	SetCostInfoActive(true);
 	SetQuantityOverlayActive(true); 
-	SetRemainingMoneyAfterPurchaseTextActive(true);
 
 	ChangeItemMesh(ItemData->SkeletalMesh, ItemId);
-	ChangeItemDescription(ItemData->Description);
+	ChangeDescription(ItemData->Description);
 	ChangeNameInfoText(ItemData->Name.ToString());
 	
 	ChangeCostInfo(ItemData->Price, false);
-	ChangeRemainingMoneyAfterPurchaseTextFromCost(ItemData->Price);
 
 	bIsShowingUpgradeView = false;
 
@@ -162,23 +159,22 @@ void UShopElementInfoWidget::ShowUpgradeInfos(EUpgradeType UpgradeType, uint8 Gr
 	bIsShowingUpgradeView = true;
 	ChangeCurrentQuantityNumber(1);
 
-	SetItemMeshActive(true);
-	SetDescriptionActive(false);
-	SetNameInfoTextActive(false);
-	SetBuyButtonActive(true);
+	SetItemMeshActive(false);
+	SetDescriptionActive(true);
+	SetNameInfoTextActive(true);
+	SetAddButtonActive(false);
 	SetUpgradeLevelInfoActive(true);
 	SetCostInfoActive(true);
 	SetQuantityOverlayActive(false);
-	SetRemainingMoneyAfterPurchaseTextActive(true);
-
+	
 	ChangeItemMesh(nullptr, INDEX_NONE);
+	ChangeDescription(UpgradeData->UpgradeDescription);
+	ChangeNameInfoText(UpgradeData->UpgradeName);
 	ChangeUpgradeLevelInfo(Grade, bIsMaxLevel);
 	ChangeCostInfo(CurrentCost, true);
-
-	ChangeRemainingMoneyAfterPurchaseTextFromCost(CurrentCost);
 }
 
-void UShopElementInfoWidget::ChangeItemDescription(const FString& NewDescription)
+void UShopElementInfoWidget::ChangeDescription(const FString& NewDescription)
 {
 	DescriptionText->SetText(FText::FromString(NewDescription));
 }
@@ -239,41 +235,27 @@ void UShopElementInfoWidget::ChangeCurrentQuantityNumber(int32 NewNumber)
 		return;
 	}
 
-	if (bIsStackableItem)
+	int32 MaxCount = (CurrentCost == 0) ? MAX_ITEM_COUNT : FMath::Min(MAX_ITEM_COUNT, GS->GetTotalTeamCredit() / CurrentCost);
+	if (MaxCount == 0)
 	{
-		int32 MaxCount = (CurrentCost == 0) ? MAX_ITEM_COUNT : FMath::Min(MAX_ITEM_COUNT, GS->GetTotalTeamCredit() / CurrentCost);
-		if (MaxCount == 0)
-		{
-			NewNumber = 0;
-		}
-		else //if (MaxCount < NewNumber)
-		{
-			NewNumber = FMath::Clamp(NewNumber, 1, MaxCount);
-		}
+		NewNumber = 0;
+	}
+	else //if (MaxCount < NewNumber)
+	{
+		NewNumber = FMath::Clamp(NewNumber, 1, MaxCount);
+	}
+
+	/*if (bIsStackableItem)
+	{
+		
 	}
 	else
 	{
 		NewNumber = (GS->GetTotalTeamCredit() >= CurrentCost) ? 1 : 0;
-	}
+	}*/
 
 	CurrentQuantityNumber = NewNumber;
 	CurrentQuantityNumberText->SetText(FText::FromString(FString::FromInt(CurrentQuantityNumber)));
-}
-
-void UShopElementInfoWidget::ChangeRemainingMoneyAfterPurchaseTextFromCost(int32 Cost)
-{
-	AADInGameState* GS = CastChecked<AADInGameState>(UGameplayStatics::GetGameState(GetWorld()));
-	int32 RemainingMoney = GS->GetTotalTeamCredit() - Cost * CurrentQuantityNumber;
-	ChangeRemainingMoneyAfterPurchaseText(RemainingMoney);
-}
-
-void UShopElementInfoWidget::ChangeRemainingMoneyAfterPurchaseText(int32 MoneyAmount)
-{
-	FString NewText = TEXT("<S>구매 후 남는 잔액 ");
-	NewText += FString::FromInt(MoneyAmount);
-	NewText += TEXT("Cr</>");
-
-	RemainingMoneyAfterPurchaseText->SetText(FText::FromString(NewText));
 }
 
 void UShopElementInfoWidget::SetDescriptionActive(bool bShouldActivate)
@@ -305,15 +287,15 @@ void UShopElementInfoWidget::SetItemMeshActive(bool bShouldActivate)
 	ItemMeshPanel->SetItemMeshActive(bShouldActivate);
 }
 
-void UShopElementInfoWidget::SetBuyButtonActive(bool bShouldActivate)
+void UShopElementInfoWidget::SetAddButtonActive(bool bShouldActivate)
 {
 	if (bShouldActivate)
 	{
-		BuyButton->SetVisibility(ESlateVisibility::Visible);
+		AddButton->SetVisibility(ESlateVisibility::Visible);
 	}
 	else
 	{
-		BuyButton->SetVisibility(ESlateVisibility::Hidden);
+		AddButton->SetVisibility(ESlateVisibility::Hidden);
 	}
 }
 
@@ -353,29 +335,16 @@ void UShopElementInfoWidget::SetQuantityOverlayActive(bool bShouldActivate)
 	}
 }
 
-void UShopElementInfoWidget::SetRemainingMoneyAfterPurchaseTextActive(bool bShouldActivate)
-{
-	if (bShouldActivate)
-	{
-		RemainingMoneyAfterPurchaseText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-	}
-	else
-	{
-		RemainingMoneyAfterPurchaseText->SetVisibility(ESlateVisibility::Hidden);
-	}
-}
-
-void UShopElementInfoWidget::OnBuyButtonClicked()
+void UShopElementInfoWidget::OnAddButtonClicked()
 {
 	GetGameInstance()->GetSubsystem<USoundSubsystem>()->Play2D(ESFX_UI::UIClicked);
-	OnBuyButtonClickedDelegate.Broadcast(CurrentQuantityNumber);
+	OnAddButtonClickedDelegate.Broadcast(CurrentQuantityNumber);
 }
 
 void UShopElementInfoWidget::OnIncreaseButtonClicked()
 {
 	GetGameInstance()->GetSubsystem<USoundSubsystem>()->Play2D(ESFX_UI::UIClicked);
 	ChangeCurrentQuantityNumber(CurrentQuantityNumber + 1);
-	ChangeRemainingMoneyAfterPurchaseTextFromCost(CurrentCost);
 	ChangeCostInfo(CurrentCost, bIsShowingUpgradeView);
 }
 
@@ -383,14 +352,12 @@ void UShopElementInfoWidget::OnDecreaseButtonClicked()
 {
 	GetGameInstance()->GetSubsystem<USoundSubsystem>()->Play2D(ESFX_UI::UIClicked);
 	ChangeCurrentQuantityNumber(CurrentQuantityNumber - 1);
-	ChangeRemainingMoneyAfterPurchaseTextFromCost(CurrentCost);
 	ChangeCostInfo(CurrentCost, bIsShowingUpgradeView);
 }
 
 void UShopElementInfoWidget::OnTeamCreditChanged(int32 ChangedValue)
 {
 	// 돈소리?
-	ChangeRemainingMoneyAfterPurchaseTextFromCost(CurrentCost);
 }
 
 UShopItemMeshPanel* UShopElementInfoWidget::GetItemMeshPanel() const

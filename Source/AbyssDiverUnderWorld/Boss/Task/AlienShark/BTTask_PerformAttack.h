@@ -24,9 +24,6 @@ private:
 	virtual uint16 GetInstanceMemorySize() const override { return sizeof(FBTPerformAttackMemory); }
 
 private:
-	UPROPERTY(EditAnywhere)
-	float AttackEndTime = 1.5f;
-
 	static const FName bCanAttackKey;
 	
 };

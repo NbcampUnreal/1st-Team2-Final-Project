@@ -135,6 +135,7 @@ void UADInteractionComponent::HandleEndOverlap(UPrimitiveComponent* OverlappedCo
 {
 	if (IIADInteractable* IADInteractable = Cast<IIADInteractable>(OtherActor))
 	{
+		LOGIC(Warning, TEXT("End Ovelap!! Interactable's Owner : %s"), *OtherActor->GetName());
 		if (UADInteractableComponent* ADIC = IADInteractable->GetInteractableComponent())
 		{
 			NearbyInteractables.Remove(ADIC);
@@ -233,9 +234,10 @@ UADInteractableComponent* UADInteractionComponent::PerformLineTrace(const FVecto
 	FCollisionQueryParams Params;
 	Params.AddIgnoredActor(GetOwner());
 
-	if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params))
+	constexpr ECollisionChannel InteractionChannel = ECC_GameTraceChannel4;
+	if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, InteractionChannel, Params))
 	{
-		if (IIADInteractable * IADInteractable = Cast<IIADInteractable>(Hit.GetActor()))
+		if (IIADInteractable* IADInteractable = Cast<IIADInteractable>(Hit.GetActor()))
 		{
 			return IADInteractable->GetInteractableComponent();
 		}
@@ -255,7 +257,8 @@ void UADInteractionComponent::UpdateFocus(UADInteractableComponent* NewFocus)
 
 			if (!bNeedHighlight)
 			{
-				OnFocusEnd.Broadcast();          // 설명 숨김
+				OnFocusEnd.Broadcast();   // 설명 숨김
+				CachedDesc.Empty();
 			}
 			else
 			{
@@ -265,6 +268,19 @@ void UADInteractionComponent::UpdateFocus(UADInteractableComponent* NewFocus)
 				}
 			}
 		}
+		if (bNeedHighlight)
+		{
+			if (IIADInteractable* IAD = Cast<IIADInteractable>(NewFocus->GetOwner()))
+			{
+				const FString NewDesc = IAD->GetInteractionDescription();
+				if (!NewDesc.Equals(CachedDesc))
+				{
+					CachedDesc = NewDesc;
+					OnFocus.Broadcast(NewFocus->GetOwner(), CachedDesc);
+				}
+			}
+		}
+
 		return;
 	}
 

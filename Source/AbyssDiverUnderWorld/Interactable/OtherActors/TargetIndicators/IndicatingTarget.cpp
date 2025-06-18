@@ -23,6 +23,36 @@ AIndicatingTarget::AIndicatingTarget()
 	bReplicates = false;
 }
 
+void AIndicatingTarget::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (SwitchActor)
+	{
+		if (SwitchActor->OnDestroyed.IsAlreadyBound(this, &AIndicatingTarget::OnSwitchActorDestroyed))
+		{
+			return;
+		}
+
+		SwitchActor->OnDestroyed.AddDynamic(this, &AIndicatingTarget::OnSwitchActorDestroyed);
+	}
+
+	if (OwnerActor)
+	{
+		if (OwnerActor->OnDestroyed.IsAlreadyBound(this, &AIndicatingTarget::OnOwnerActorDestroyed))
+		{
+			return;
+		}
+
+		OwnerActor->OnDestroyed.AddDynamic(this, &AIndicatingTarget::OnOwnerActorDestroyed);
+	}
+}
+
+bool AIndicatingTarget::IsActivateConditionMet()
+{
+	return (SwitchActor == nullptr || IsValid(SwitchActor) == false || SwitchActor->IsPendingKillPending());
+}
+
 void AIndicatingTarget::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	APawn* Player = Cast<APawn>(OtherActor);
@@ -37,6 +67,16 @@ void AIndicatingTarget::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent,
 	}
 
 	OnIndicatingTargetBeginOverlapDelegate.Broadcast(TargetOrder);
+}
+
+void AIndicatingTarget::OnSwitchActorDestroyed(AActor* DestroyedActor)
+{
+	OnSwitchActorDestroyedDelegate.Broadcast();
+}
+
+void AIndicatingTarget::OnOwnerActorDestroyed(AActor* DestroyedActor)
+{
+	OnOwnerActorDestroyedDelegate.Broadcast(TargetOrder);
 }
 
 int32 AIndicatingTarget::GetTargetOrder() const

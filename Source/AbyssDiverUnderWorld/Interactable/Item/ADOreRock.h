@@ -29,9 +29,9 @@ struct FDropEntry : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	uint8 MinCount = 1;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	uint8 MaxCount = 1;
+	uint8 MaxCount = 5;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	int32 MinMass = 5;
+	int32 MinMass = 6;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 MaxMass = 15;
 };
@@ -136,13 +136,17 @@ protected:
 	TObjectPtr<UAnimMontage> StowMontage;
 	
 private:
+	UPROPERTY(EditAnywhere, Category = "Drops")
+	int8 GlobalMinCount = 1;
+	UPROPERTY(EditAnywhere, Category = "Drops")
+	int8 GlobalMaxCount = 5;
 	TArray<FDropEntry*> CachedEntries;
 	TArray<float>  CumulativeWeights;
 	float TotalWeight = 0.f;
 	int32 PreviousEquipIndex = 0;
 	TArray<TWeakObjectPtr<APawn>> ActiveInstigators;
-
-
+	int32 PendingLoadCount = 0;
+	
 #pragma endregion
 
 #pragma region Getter, Setteer

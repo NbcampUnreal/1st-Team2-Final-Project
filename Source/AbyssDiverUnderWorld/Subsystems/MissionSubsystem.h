@@ -47,6 +47,8 @@ public:
 	void RequestBinding(UObject* Requester);
 	void RequestUnbinding(UObject* Requester);
 
+	void RemoveAllMissions();
+
 private:
 
 	void MakeAndAddMissionDataForUI(const FMissionBaseRow* MissionBaseData, const uint8& MissionIndex);

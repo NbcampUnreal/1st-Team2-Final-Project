@@ -51,6 +51,7 @@ UEquipUseComponent::UEquipUseComponent()
 	bNVGWidgetVisible = false;
 	bChargeBatteryWidgetVisible = false;
 	bAlreadyCursorShowed = false;
+	bIsReloading = false;
 
 	// 테스트용
 	if (ACharacter* Char = Cast<ACharacter>(GetOwner()))
@@ -533,6 +534,7 @@ void UEquipUseComponent::DeinitializeEquip()
 	bHasNoAnimation = true;
 	LeftAction = EAction::None;
 	RKeyAction = EAction::None;
+	bIsReloading = false;
 
 	// 탄약/배터리 현재값 초기화
 	CurrentAmmoInMag = 0;
@@ -834,9 +836,10 @@ void UEquipUseComponent::HideChargeBatteryWidget()
 
 void UEquipUseComponent::StartReload(int32 InMagazineSize)
 {
-	if (!bIsWeapon || ReserveAmmo <= 0 || CurrentAmmoInMag == InMagazineSize)
+	if (!bIsWeapon || ReserveAmmo <= 0 || CurrentAmmoInMag == InMagazineSize || bIsReloading)
 		return;
 	bCanFire = false;
+	bIsReloading = true;
 	GetWorld()->GetTimerManager().ClearTimer(TimerHandle_HandleRefire);
 	
 	if (!OwningCharacter.IsValid())
@@ -883,6 +886,7 @@ void UEquipUseComponent::FinishReload(int32 InMagazineSize, AUnderwaterCharacter
 	bCanFire = true;
 
 	InitializeAmmoUI();
+	bIsReloading = false;
 
 	//Diver->M_StopAllMontagesOnBothMesh(MontageStopSeconds);
 	//PlayDrawAnimation(Diver);
@@ -1053,16 +1057,38 @@ void UEquipUseComponent::GetCameraView(FVector& OutLoc, FRotator& OutRot) const
 
 FVector UEquipUseComponent::CalculateTargetPoint(const FVector& CamLoc, const FVector& AimDir) const
 {
-	FVector TraceEnd = CamLoc + AimDir * TraceMaxRange;
-	FHitResult Impact;
+	constexpr ECollisionChannel InteractionChannel = ECC_GameTraceChannel4;
+	const FVector TraceEnd = CamLoc + AimDir * TraceMaxRange;
 	FCollisionQueryParams Params(TEXT("HarpoonTrace"), true, GetOwner());
-	GetWorld()->LineTraceSingleByChannel(Impact, CamLoc, TraceEnd, ECC_Visibility, Params);
-	return Impact.bBlockingHit ? Impact.ImpactPoint : TraceEnd;
+
+	// ① InteractionRay
+	FHitResult HitInt;
+	const bool bHitInt = GetWorld()->LineTraceSingleByChannel(
+		HitInt, CamLoc, TraceEnd, InteractionChannel, Params);
+
+	// ② Visibility
+	FHitResult HitVis;
+	const bool bHitVis = GetWorld()->LineTraceSingleByChannel(
+		HitVis, CamLoc, TraceEnd, ECC_Visibility, Params);
+
+	// ③ 두 결과 중 더 가까운 지점 선택
+	if (bHitInt && bHitVis)
+	{
+		return (HitInt.Distance < HitVis.Distance) ? HitInt.ImpactPoint : HitVis.ImpactPoint;
+	}
+	if (bHitInt) return HitInt.ImpactPoint;
+	if (bHitVis) return HitVis.ImpactPoint;
+
+	// ④ 아무것도 맞히지 못하면 최대 사거리
+	return TraceEnd;
 }
 
 FVector UEquipUseComponent::GetMuzzleLocation(const FVector& CamLoc, const FVector& AimDir) const
 {
 	FName SocketName;
+	AUnderwaterCharacter* Diver = Cast<AUnderwaterCharacter>(OwningCharacter);
+	if (!Diver)
+		return CamLoc + AimDir * 30.f;
 	if (EquipType == EEquipmentType::HarpoonGun)
 	{
 		SocketName = TEXT("Muzzle");
@@ -1071,12 +1097,15 @@ FVector UEquipUseComponent::GetMuzzleLocation(const FVector& CamLoc, const FVect
 	{
 		SocketName = TEXT("FlareMuzzle");
 	}
-	
-	if (auto* Mesh = OwningCharacter->GetMesh();
-		Mesh && Mesh->DoesSocketExist(SocketName))
+	USkeletalMeshComponent* Mesh = Diver->GetMesh1P();
+
+	if (Mesh && Mesh->DoesSocketExist(SocketName))
 	{
+		LOGIC(Log, TEXT("Has MuzzleSocket : Name : %s"), *SocketName.ToString());
+		LOGIC(Log, TEXT("Has MuzzleSocket : Location : %s"), *Mesh->GetSocketLocation(SocketName).ToString());
 		return Mesh->GetSocketLocation(SocketName);
 	}
+	LOGIC(Log, TEXT("Not Have MuzzleSocket : Location : %s"), *(CamLoc + AimDir * 30.f).ToString());
 	return CamLoc + AimDir * 30.f; // 없을 경우 기본 값
 }
 

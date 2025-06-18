@@ -16,7 +16,6 @@ AADFlareGunBullet::AADFlareGunBullet()
 	FlareLight->SetLightColor(FlareColor);
 
 	FlareLight->CastShadows = bCastShadows;     // **그림자 OFF**
-	//FlareLight->bAffectTranslucentLighting = bAffectTranslucent;
 
 	FlareLight->IntensityUnits = ELightUnits::Candelas;
 }
