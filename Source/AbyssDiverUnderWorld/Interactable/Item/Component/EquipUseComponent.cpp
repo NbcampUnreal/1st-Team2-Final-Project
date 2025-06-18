@@ -534,6 +534,7 @@ void UEquipUseComponent::DeinitializeEquip()
 	bHasNoAnimation = true;
 	LeftAction = EAction::None;
 	RKeyAction = EAction::None;
+	bIsReloading = false;
 
 	// 탄약/배터리 현재값 초기화
 	CurrentAmmoInMag = 0;
@@ -1085,6 +1086,9 @@ FVector UEquipUseComponent::CalculateTargetPoint(const FVector& CamLoc, const FV
 FVector UEquipUseComponent::GetMuzzleLocation(const FVector& CamLoc, const FVector& AimDir) const
 {
 	FName SocketName;
+	AUnderwaterCharacter* Diver = Cast<AUnderwaterCharacter>(OwningCharacter);
+	if (!Diver)
+		return CamLoc + AimDir * 30.f;
 	if (EquipType == EEquipmentType::HarpoonGun)
 	{
 		SocketName = TEXT("Muzzle");
@@ -1093,12 +1097,15 @@ FVector UEquipUseComponent::GetMuzzleLocation(const FVector& CamLoc, const FVect
 	{
 		SocketName = TEXT("FlareMuzzle");
 	}
-	
-	if (auto* Mesh = OwningCharacter->GetMesh();
-		Mesh && Mesh->DoesSocketExist(SocketName))
+	USkeletalMeshComponent* Mesh = Diver->GetMesh1P();
+
+	if (Mesh && Mesh->DoesSocketExist(SocketName))
 	{
+		LOGIC(Log, TEXT("Has MuzzleSocket : Name : %s"), *SocketName.ToString());
+		LOGIC(Log, TEXT("Has MuzzleSocket : Location : %s"), *Mesh->GetSocketLocation(SocketName).ToString());
 		return Mesh->GetSocketLocation(SocketName);
 	}
+	LOGIC(Log, TEXT("Not Have MuzzleSocket : Location : %s"), *(CamLoc + AimDir * 30.f).ToString());
 	return CamLoc + AimDir * 30.f; // 없을 경우 기본 값
 }
 
