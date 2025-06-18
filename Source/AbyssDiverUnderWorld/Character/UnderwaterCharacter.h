@@ -1077,6 +1077,8 @@ private:
 	/** 로프에 바인드할 때마다 속도 감소 수치. 0.15일 경우 Bound Characters의 개수마다 15%씩 속도가 감소한다. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true", ClampMax = "1.0", ClampMin = "0.0"))
 	float BindMultiplier;
+
+	uint8 bIsAttackedByEyeStalker : 1;
 	
 #pragma endregion
 
@@ -1184,6 +1186,12 @@ public:
 
 	/** 현재 생성된 실드 히트 위젯을 반환 */
 	UUserWidget* GetShieldHitWidget() const;
+
+	/** 현재 Eye Stalker에게 공격받았는지 여부를 설정 */
+	FORCEINLINE void SetIsAttackedByEyeStalker(const bool bNewAttacked) { bIsAttackedByEyeStalker = bNewAttacked; }
+
+	/** 현재 Eye Stalker에게 공격받았는지 여부를 반환 */
+	FORCEINLINE bool IsAttackedByEyeStalker() const { return bIsAttackedByEyeStalker; }
 	
 #pragma endregion
 };

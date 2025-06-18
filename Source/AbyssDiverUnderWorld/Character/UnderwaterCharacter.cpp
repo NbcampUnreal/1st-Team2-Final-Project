@@ -179,6 +179,8 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	DeathGrabReleaseDescription = TEXT("Release Character!");
 
 	BindMultiplier = 0.15f;
+
+	bIsAttackedByEyeStalker = false;
 }
 
 void AUnderwaterCharacter::BeginPlay()
