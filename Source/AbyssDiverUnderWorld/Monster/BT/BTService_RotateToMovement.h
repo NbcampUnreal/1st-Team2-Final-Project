@@ -18,4 +18,10 @@ public:
 
 protected:
 	virtual void TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;
+
+#pragma region Variable
+	UPROPERTY(EditAnywhere)
+	float InterpSpeed;
+
+#pragma endregion
 };

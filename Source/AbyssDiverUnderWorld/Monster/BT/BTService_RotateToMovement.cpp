@@ -11,6 +11,8 @@ UBTService_RotateToMovement::UBTService_RotateToMovement()
 {
 	NodeName = "Rotate To Movement Direction";
 	bNotifyTick = true;
+
+	InterpSpeed = 5.0f;
 }
 
 void UBTService_RotateToMovement::TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
@@ -33,6 +35,6 @@ void UBTService_RotateToMovement::TickNode(UBehaviorTreeComponent& OwnerComp, ui
 	TargetRotation.Roll = 0.0f;
 
 	// Interpolation
-	FRotator NewRotation = FMath::RInterpTo(Monster->GetActorRotation(), TargetRotation, DeltaSeconds, 5.0f);
+	FRotator NewRotation = FMath::RInterpTo(Monster->GetActorRotation(), TargetRotation, DeltaSeconds, InterpSpeed);
 	Monster->SetActorRotation(NewRotation);
 }
