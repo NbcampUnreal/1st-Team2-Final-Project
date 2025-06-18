@@ -26,7 +26,7 @@ public:
 
 #pragma region Variables
 
-private:
+protected:
 
 	UPROPERTY()
 	TObjectPtr<UTexture2D> ItemImage;

@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
@@ -8,9 +8,10 @@
 
 DECLARE_DELEGATE_OneParam(FOnShopItemSlotWidgetClickedDelegate, int32 /*SlotIndex*/);
 
+class URichTextBlock;
 class UImage;
 /**
- * »óÁ¡¿¡¼­ ¼ÒºñÅÛ, Àåºñ, ¾÷±Û Ç¥½ÃÇÏ´Â ½½·Ô
+ * ìƒì ì—ì„œ ì†Œë¹„í…œ, ì¥ë¹„, ì—…ê¸€ í‘œì‹œí•˜ëŠ” ìŠ¬ë¡¯
  */
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API UShopItemSlotWidget : public UUserWidget, public IUserObjectListEntry
@@ -39,7 +40,7 @@ private:
 
 #pragma region Variables
 
-private:
+protected:
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UImage> SlotImage;
@@ -50,7 +51,7 @@ private:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<class URichTextBlock> ToolTipTextBlock;
 
-	// ½Ã°£ ÃøÁ¤ ÇÊ¿äÇÒ±î
+	// ì‹œê°„ ì¸¡ì • í•„ìš”í• ê¹Œ
 	FTimerHandle ToolTipTimerHandle;
 
 	int32 SlotIndex;
@@ -63,7 +64,6 @@ public:
 
 	void SetSlotImage(UTexture2D* NewTexture);
 	void SetToolTipText(const FString& NewText);
-
 
 #pragma endregion
 
