@@ -268,6 +268,9 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "ShopSettings")
 	float LaunchItemIntervalAtFirst = 1.0f;
 
+	UPROPERTY(EditAnywhere, Category = "ShopSettings")
+	float ErrorOfLaunchDirection = 1.0f;
+
 	UPROPERTY(Replicated)
 	FShopItemIdList ShopConsumableItemIdList;
 
