@@ -54,7 +54,8 @@ private:
 #pragma region Getter, Setter
 public:
 	UEquipableComponent* GetEquipableComponent() { return EquipableComp; }
-	void SetItemVisiblity(bool InVisible);
+	// 유효하지 않으면 0.0f 반환
+	float GetMeshMass() const;
 
 #pragma endregion
 };

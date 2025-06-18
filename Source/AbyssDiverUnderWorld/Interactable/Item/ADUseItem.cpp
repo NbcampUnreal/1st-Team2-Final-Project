@@ -90,6 +90,16 @@ void AADUseItem::SetVariableValues(int32 InAmount, int32 InCurrentAmmo, int32 In
 	ItemData.ReserveAmmo = InReserveAmmo;
 }
 
+float AADUseItem::GetMeshMass() const
+{
+	if (IsValid(SkeletalMesh) == false)
+	{
+		return 0.0f;
+	}
+
+	return SkeletalMesh->GetMass();
+}
+
 void AADUseItem::M_UnEquipMode_Implementation()
 {
 	SkeletalMesh->SetGenerateOverlapEvents(true);
