@@ -9,6 +9,7 @@
 class UEquipableComponent;
 class USphereComponent;
 class AUnderwaterCharacter;
+enum class EEnvironmentState : uint8;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADUseItem : public AADItemBase
@@ -37,7 +38,7 @@ public:
 	void M_EquipMode();
 	void M_EquipMode_Implementation();
 
-	void SetItemInfo(FItemData& ItemInfo, bool bIsEquipMode, AUnderwaterCharacter* Character);
+	void SetItemInfo(FItemData& ItemInfo, bool bIsEquipMode, EEnvironmentState CurrentEnviromnent);
 	void SetVariableValues(int32 InAmount, int32 InCurrentAmmo, int32 InReserveAmmo);
 
 #pragma endregion

@@ -779,7 +779,7 @@ void UADInventoryComponent::Equip(FItemData& ItemData, int8 SlotIndex)
 			}
 
 			C_InventoryPlaySound(ESFX::Equip);
-			SpawnedItem->SetItemInfo(ItemData, true, nullptr);
+			SpawnedItem->SetItemInfo(ItemData, true, EEnvironmentState::MAX);
 			CurrentEquipmentInstance = SpawnedItem;
 			LOGINVEN(Warning, TEXT("ItemToEquip Name: %s, Amount %d"), *ItemData.Name.ToString(), ItemData.Amount);
 			SetEquipInfo(SlotIndex, SpawnedItem);
@@ -879,7 +879,7 @@ void UADInventoryComponent::DropItem(FItemData& ItemData)
 		M_SpawnItemEffect(ESFX::DropItem, DropItemEffect, DropLocation);
 	}
 	SpawnItem->M_SetItemVisible(true);
-	SpawnItem->SetItemInfo(ItemData, false, UnderwaterCharacter);
+	SpawnItem->SetItemInfo(ItemData, false, UnderwaterCharacter->GetEnvironmentState());
 	LOGINVEN(Warning, TEXT("Spawn Item To Drop : %s"), *ItemData.Name.ToString());
 }
 
