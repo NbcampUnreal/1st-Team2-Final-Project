@@ -9,9 +9,11 @@
 
 #include "Inventory/ADInventoryComponent.h"
 #include "ADDroneSeller.h"
+#include "Character/UnderwaterCharacter.h"
 #include "Gimmic/Spawn/SpawnManager.h"
 #include "Subsystems/SoundSubsystem.h"
 #include "Character/PlayerComponent/PlayerHUDComponent.h"
+#include "Framework/ADInGameMode.h"
 
 #include "Net/UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"
@@ -28,6 +30,7 @@ AADDrone::AADDrone()
 	bIsActive = false;
 	bIsFlying = false;
 	bIsHold = false;
+	ReviveDistance = 1000.f;
 }
 
 void AADDrone::BeginPlay()
@@ -102,6 +105,18 @@ void AADDrone::Interact_Implementation(AActor* InstigatorActor)
 {
 	if (!HasAuthority() || !bIsActive || !IsValid(CurrentSeller) || bIsFlying) return;
 
+	if (!CurrentSeller->GetSubmittedPlayerIndexes().IsEmpty())
+	{
+		if (AADInGameMode* GameMode = GetWorld()->GetAuthGameMode<AADInGameMode>())
+		{
+			GameMode->RevivePlayersAtRandomLocation(CurrentSeller->GetSubmittedPlayerIndexes(),
+				GetActorLocation(),
+				ReviveDistance
+			);
+			CurrentSeller->GetSubmittedPlayerIndexes().Empty();
+		}
+	}
+	
 	// 차액 계산
 	int32 Diff = CurrentSeller->GetCurrentMoney() - CurrentSeller->GetTargetMoney();
 
@@ -240,3 +255,4 @@ USoundSubsystem* AADDrone::GetSoundSubsystem()
 	}
 	return nullptr;
 }
+

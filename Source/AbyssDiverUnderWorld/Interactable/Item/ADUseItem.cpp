@@ -13,7 +13,7 @@
 
 AADUseItem::AADUseItem()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 
 	SkeletalMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SkeletalMesh"));
 	RootComponent = SkeletalMesh;
@@ -40,13 +40,32 @@ void AADUseItem::BeginPlay()
 
 	FTimerHandle ApplyGravityTimerHandle;
 	float UpdateTime = 0.01f;
-	GetWorld()->GetTimerManager().SetTimer(ApplyGravityTimerHandle, [this]()
+
+	/*GetWorld()->GetTimerManager().SetTimer(ApplyGravityTimerHandle, [&]()
 		{
-			if (!bIsEquip && IsValid(SkeletalMesh)&&SkeletalMesh->GetSkeletalMeshAsset())
+			if (IsValid(this) == false || IsPendingKillPending() || IsValidLowLevel() == false)
 			{
-				SkeletalMesh->AddForce(SpawnedItemGravity, TEXT("Root"), true);
+				return;
 			}
-		}, UpdateTime, true);
+
+			if (!bIsEquip && IsValid(SkeletalMesh) && SkeletalMesh->IsValidLowLevel() && SkeletalMesh->GetSkeletalMeshAsset())
+			{
+				
+			}
+
+		}, UpdateTime, true);*/
+}
+
+void AADUseItem::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	if (bIsEquip || IsValid(SkeletalMesh) == false)
+	{
+		return;
+	}
+
+	SkeletalMesh->AddForce(SpawnedItemGravity, TEXT("Root"), true);
 }
 
 
