@@ -1,7 +1,6 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
-
-#include "CableComponent.h"
 #include "CableBindingActor.h"
+#include "CableComponent.h"
 
 #include "UnderwaterCharacter.h"
 #include "PhysicsEngine/PhysicsConstraintComponent.h"
