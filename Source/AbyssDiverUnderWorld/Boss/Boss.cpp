@@ -865,8 +865,12 @@ void ABoss::M_OnDeath_Implementation()
 {
 	GetCharacterMovement()->StopMovementImmediately();
 
-	// 모든 애니메이션 출력 정지
-	AnimInstance->StopAllMontages(0.5f);
+	if (IsValid(AnimInstance))
+	{
+		// 모든 애니메이션 출력 정지
+		AnimInstance->StopAllMontages(0.5f);
+	}
+	
 	
 	// 사망 상태로 전이
 	SetBossState(EBossState::Death);

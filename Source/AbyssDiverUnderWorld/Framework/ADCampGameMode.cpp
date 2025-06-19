@@ -55,8 +55,8 @@ void AADCampGameMode::PostLogin(APlayerController* NewPlayer)
 			return;
 		}
 
-		ADPlayerState->SetPlayerNickname(NewPlayerId);
 		ADPlayerState->SetPlayerIndex(NewPlayerIndex);
+		//ADPlayerState->SetPlayerNickname(ADPlayerState->GetPlayerController()->GetLocalPlayer()->GetNickname());
 	}
 
 	Super::PostLogin(NewPlayer);
