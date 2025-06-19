@@ -82,6 +82,7 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 
 	bCanUseEquipment = true;
 	bPlayingEmote = false;
+	PlayEmoteIndex = INDEX_NONE;
 
 	LanternLength = 3000.0f;
 	
@@ -1801,7 +1802,7 @@ void AUnderwaterCharacter::MoveGround(FVector MoveInput)
 	UAnimInstance* AnimInstance = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr;
 	if (bPlayingEmote && AnimInstance && AnimInstance->IsAnyMontagePlaying())
 	{
-		StopPlayingEmote();
+		RequestStopPlayingEmote(PlayEmoteIndex);
 	}
 	
 	const FRotator ControllerRotator = FRotator(0.f, Controller->GetControlRotation().Yaw, 0.f);
@@ -1832,7 +1833,7 @@ void AUnderwaterCharacter::JumpInputStart(const FInputActionValue& InputActionVa
 
 	if (bPlayingEmote && GetMesh()->GetAnimInstance() && GetMesh()->GetAnimInstance()->IsAnyMontagePlaying())
 	{
-		StopPlayingEmote();
+		RequestStopPlayingEmote(PlayEmoteIndex);
 	}
 	
 	Jump();
@@ -2011,7 +2012,7 @@ void AUnderwaterCharacter::PerformEmote1(const FInputActionValue& InputActionVal
 	if (EnvironmentState == EEnvironmentState::Ground && GetCharacterMovement()->IsMovingOnGround()
 		&& !bPlayingEmote)
 	{
-		PlayEmote(0);
+		RequestPlayEmote(0);
 	}
 }
 
@@ -2020,7 +2021,7 @@ void AUnderwaterCharacter::PerformEmote2(const FInputActionValue& InputActionVal
 	if (EnvironmentState == EEnvironmentState::Ground && GetCharacterMovement()->IsMovingOnGround()
 		&& !bPlayingEmote)
 	{
-		PlayEmote(1);
+		RequestPlayEmote(1);
 	}
 }
 
@@ -2029,7 +2030,7 @@ void AUnderwaterCharacter::PerformEmote3(const FInputActionValue& InputActionVal
 	if (EnvironmentState == EEnvironmentState::Ground && GetCharacterMovement()->IsMovingOnGround()
 		&& !bPlayingEmote)
 	{
-		PlayEmote(2);
+		RequestPlayEmote(2);
 	}
 }
 
@@ -2080,49 +2081,150 @@ void AUnderwaterCharacter::OnMesh3PMontageEnded(UAnimMontage* Montage, bool bInt
 	OnMesh3PMontageEndDelegate.Broadcast(Montage, bInterrupted);
 }
 
-void AUnderwaterCharacter::PlayEmote(uint8 EmoteIndex)
+void AUnderwaterCharacter::RequestPlayEmote(int8 EmoteIndex)
 {
+	// Server, Client 모두 Emote Index를 검증한다.
 	if (EmoteIndex >= EmoteAnimationMontages.Num())
 	{
 		UE_LOG(LogAbyssDiverCharacter, Warning, TEXT("Emote Index %d is out of range"), EmoteIndex);
 		return;
 	}
-
-	if (UAnimMontage* EmoteMontage = EmoteAnimationMontages[EmoteIndex])
+	
+	if (HasAuthority())
 	{
-		UAnimInstance* AnimInstance = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr;
-		if (AnimInstance && !AnimInstance->IsAnyMontagePlaying())
+		if (CanPlayEmote())
 		{
-			RequestPlayMontage(EmoteMontage, EmoteMontage, 1.0f, NAME_None);
-			bPlayingEmote = true;
-			bUseControllerRotationYaw = false;
-			
-			FOnMontageEnded MontageEndDelegate;
-			MontageEndDelegate.BindUObject(this, &AUnderwaterCharacter::OnEmoteEnd);
-			AnimInstance->Montage_SetEndDelegate(MontageEndDelegate, EmoteMontage);
-		}
-		else
-		{
-			UE_LOG(LogAbyssDiverCharacter, Warning, TEXT("Emote Montage is already playing or AnimInstance is not valid"));
+			M_BroadcastPlayEmote(EmoteIndex);
 		}
 	}
 	else
 	{
-		UE_LOG(LogAbyssDiverCharacter, Warning, TEXT("Emote Montage is not valid for index %d"), EmoteIndex);
+		S_PlayEmote(EmoteIndex);
 	}
 }
 
-void AUnderwaterCharacter::StopPlayingEmote()
+void AUnderwaterCharacter::S_PlayEmote_Implementation(uint8 EmoteIndex)
 {
-	RequestStopAllMontage(EPlayAnimationTarget::BothPersonMesh, 0.1f);
+	RequestPlayEmote(EmoteIndex);
+}
+
+void AUnderwaterCharacter::M_BroadcastPlayEmote_Implementation(int8 EmoteIndex)
+{
+	UAnimMontage* EmoteMontage = EmoteAnimationMontages[EmoteIndex];
+	if (EmoteMontage == nullptr)
+	{
+		UE_LOG(LogAbyssDiverCharacter, Warning, TEXT("Emote Montage is not valid for index %d"), EmoteIndex);
+		return;
+	}
+
+	bPlayingEmote = true;
+	PlayEmoteIndex = EmoteIndex;
+	
+	if (UAnimInstance* AnimInstance = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr)
+	{
+		UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Play Emote Montage : %s"), *EmoteMontage->GetName());
+		AnimInstance->Montage_Play(EmoteMontage, 1.0f);
+			
+		FOnMontageEnded MontageEndDelegate;
+		MontageEndDelegate.BindUObject(this, &AUnderwaterCharacter::OnEmoteEnd);
+		AnimInstance->Montage_SetEndDelegate(MontageEndDelegate, EmoteMontage);
+	}
+
+	// Control Rotation을 이용해서 Rotation을 갱신하기 때문에 모든 노드에서 동기화가 되어야 한다.
+	bUseControllerRotationYaw = false;
+}
+
+bool AUnderwaterCharacter::CanPlayEmote() const
+{
+	const UAnimInstance* AnimInstance = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr;
+	const bool bIsMontagePlaying = AnimInstance && AnimInstance->IsAnyMontagePlaying();
+	return !bPlayingEmote && !bIsMontagePlaying; 
+}
+
+UAnimMontage* AUnderwaterCharacter::GetEmoteMontage(int8 EmoteIndex) const
+{
+	return EmoteAnimationMontages.IsValidIndex(EmoteIndex)
+		? EmoteAnimationMontages[EmoteIndex]
+		: nullptr;
+}
+
+void AUnderwaterCharacter::RequestStopPlayingEmote(int8 EmoteIndex)
+{
+	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Request Stop Playing Emote / Emote Index : %d, bPlayingEmote : %s"),
+		EmoteIndex, bPlayingEmote ? TEXT("True") : TEXT("False"));
+	// Server, Client 모두 Emote Index를 검증한다.
+	if (!EmoteAnimationMontages.IsValidIndex(EmoteIndex))
+	{
+		UE_LOG(LogAbyssDiverCharacter, Warning, TEXT("Emote Index %d is out of range"), EmoteIndex);
+		return;
+	}
+	
+	if (HasAuthority())
+	{
+		M_BroadcastStopPlyingEmote(EmoteIndex);
+	}
+	else
+	{
+		S_StopPlayingEmote(EmoteIndex);
+	}
+}
+
+void AUnderwaterCharacter::M_BroadcastStopPlyingEmote_Implementation(int8 EmoteIndex)
+{
+	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Broadcast Stop Playing Emote / Emote Index : %d, bPlayingEmote : %s"),
+		EmoteIndex, bPlayingEmote ? TEXT("True") : TEXT("False"));
+	// Broadcast 도중에 Emote가 이미 종료되었다면 종료
+	if (bPlayingEmote == false)
+	{
+		return;	
+	}
+	
+	bPlayingEmote = false;
+
+	UAnimMontage* EmoteMontage = GetEmoteMontage(EmoteIndex);
+	if (EmoteMontage == nullptr)
+	{
+		UE_LOG(LogAbyssDiverCharacter, Error, TEXT("Emote Montage is not valid for index %d"), EmoteIndex);
+		return;
+	}
+
+	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Force Stop Playing Emote : %s"), *EmoteMontage->GetName());
+	if (UAnimInstance* AnimInstance = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr)
+	{
+		if (AnimInstance->Montage_IsPlaying(EmoteMontage))
+		{
+			AnimInstance->Montage_Stop(0.1f, EmoteMontage);
+		}
+	}
+
+	bUseControllerRotationYaw = true;
+}
+
+void AUnderwaterCharacter::S_StopPlayingEmote_Implementation(int8 EmoteIndex)
+{
+	RequestStopPlayingEmote(EmoteIndex);
+}
+
+void AUnderwaterCharacter::OnEmoteEnd(UAnimMontage* AnimMontage, bool bInterupted)
+{
+	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("OnEmoteEnd : %s, bArg : %d"), *AnimMontage->GetName(), bInterupted);
+	
 	bPlayingEmote = false;
 	bUseControllerRotationYaw = true;
 }
 
-void AUnderwaterCharacter::OnEmoteEnd(UAnimMontage* AnimMontage, bool bArg)
+void AUnderwaterCharacter::SwitchCameraMode()
 {
-	bPlayingEmote = false;
-	bUseControllerRotationYaw = true;
+	// 1인칭 시점에서 3인칭 시점으로 전환
+	if (bPlayingEmote)
+	{
+		bUseControllerRotationYaw = false;
+	}
+	// 3인칭 시점에서 1인칭 시점으로 전환
+	else
+	{
+		bUseControllerRotationYaw = true;
+	}
 }
 
 void AUnderwaterCharacter::OnRep_BindCharacter()

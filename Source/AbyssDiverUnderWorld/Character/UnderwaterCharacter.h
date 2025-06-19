@@ -499,7 +499,7 @@ protected:
 
 	/** 3번 감정 표현 실행 */
 	void PerformEmote3(const FInputActionValue& InputActionValue);
-	
+
 	/** 3인칭 디버그 카메라 활성화 설정 */
 	void SetDebugCameraMode(bool bDebugCameraEnable);
 
@@ -523,15 +523,44 @@ protected:
 	UFUNCTION()
 	virtual void OnMesh3PMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 
-	/** 감정 표현을 재생. Local에서 실행된다. */
-	void PlayEmote(uint8 EmoteIndex);
+	/** 감정 표현 재생 요청 */
+	void RequestPlayEmote(int8 EmoteIndex);
 
+	/** Server에 감정 표현 재생 요청 */
+	UFUNCTION(Server, Reliable)
+	void S_PlayEmote(uint8 EmoteIndex);
+	void S_PlayEmote_Implementation(uint8 EmoteIndex);
+
+	/** 감정 표현 재생 Multicast 전파 */
+	UFUNCTION(NetMulticast, Reliable)
+	void M_BroadcastPlayEmote(int8 EmoteIndex);
+	void M_BroadcastPlayEmote_Implementation(int8 EmoteIndex);
+
+	/** 감정 표현 재생 가능 여부를 반환 */
+	bool CanPlayEmote() const;
+
+	/** 감정 표현 몽타주를 반환. Index: 0~n-1 */
+	UAnimMontage* GetEmoteMontage(int8 EmoteIndex) const;
+	
 	/** 감정 표현을 중지 */
-	void StopPlayingEmote();
+	void RequestStopPlayingEmote(int8 EmoteIndex);
 
+	/** 감정 표현 중지 Multicast 전파 */
+	UFUNCTION(NetMulticast, Reliable)
+	void M_BroadcastStopPlyingEmote(int8 EmoteIndex);
+	void M_BroadcastStopPlyingEmote_Implementation(int8 EmoteIndex);
+
+	/** 감정 표현 중지 Server RPC */
+	UFUNCTION(Server, Reliable)
+	void S_StopPlayingEmote(int8 EmoteIndex);
+	void S_StopPlayingEmote_Implementation(int8 EmoteIndex);
+	
 	/** 감정 표현 몽타주가 끝났을 때 호출되는 함수 */
 	UFUNCTION()
-	void OnEmoteEnd(UAnimMontage* AnimMontage, bool bArg);
+	void OnEmoteEnd(UAnimMontage* AnimMontage, bool bInterupted);
+
+	/** 카메라 모드를 전환한다. 1인칭, 감정 표현을 위한 3인칭 모드로 전환한다. */
+	void SwitchCameraMode();
 
 	/** Binder Character 함수. Bound Characters를 저장한다. */
 	void BindToCharacter(AUnderwaterCharacter* BoundCharacter);
@@ -691,6 +720,16 @@ private:
 	/** 감정 표현 중 여부, Client 에서만 저장하고 따로 전파하지 않는다. */
 	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	uint8 bPlayingEmote : 1;
+
+	/** 현재 재생 중인 감정 표현 인덱스 */
+	int8 PlayEmoteIndex;
+
+	/** 감정 표현 몽타주 배열. 순서대로 Emote1, Emote2, Emote3에 해당한다. */
+	UPROPERTY(EditDefaultsOnly, Category = "Character|Emote", meta = (AllowPrivateAccess = "true"))
+	TArray<TObjectPtr<UAnimMontage>> EmoteAnimationMontages;
+
+	/** 감정 표현 중에 3인칭 카메라 전환을 위한 Timer */
+	FTimerHandle EmoteCameraTransitionTimer;
 	
 	/** 캐릭터 랜턴의 거리 */
 	UPROPERTY(EditDefaultsOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
@@ -1047,10 +1086,6 @@ private:
 
 	/** Tool 소켓 명 (1P/3P 공용) */
 	FName LaserSocketName = TEXT("Laser");
-
-	/** 감정 표현 몽타주 배열. 순서대로 Emote1, Emote2, Emote3에 해당한다. */
-	UPROPERTY(EditDefaultsOnly, Category = "Character|Emote", meta = (AllowPrivateAccess = "true"))
-	TArray<TObjectPtr<UAnimMontage>> EmoteAnimationMontages;
 
 	/** 현재 상호 작용 택스트 */
 	FString InteractionDescription;
