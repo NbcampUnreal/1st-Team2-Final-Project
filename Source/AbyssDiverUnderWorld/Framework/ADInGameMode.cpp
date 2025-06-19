@@ -10,6 +10,7 @@
 
 #include "Subsystems/SoundSubsystem.h"
 #include "Subsystems/DataTableSubsystem.h"
+#include "Subsystems/MissionSubsystem.h"
 
 #include "Character/PlayerComponent/PlayerHUDComponent.h"
 #include "Character/UnderwaterCharacter.h"
@@ -106,6 +107,15 @@ void AADInGameMode::PostLogin(APlayerController* NewPlayer)
 	UADGameInstance* GI = GetGameInstance<UADGameInstance>();
 	check(GI);
 
+	UMissionSubsystem* MissionSubsystem = GI->GetSubsystem<UMissionSubsystem>();
+	if (MissionSubsystem == nullptr)
+	{
+		LOGV(Error, TEXT("Fail to get MissionSubsystem"));
+		return;
+	}
+
+	MissionSubsystem->RemoveAllMissions();
+
 	if (AADPlayerState* ADPlayerState = NewPlayer->GetPlayerState<AADPlayerState>())
 	{
 		ADPlayerState->ResetLevelResults();
@@ -155,6 +165,15 @@ void AADInGameMode::Logout(AController* Exiting)
 	UADGameInstance* GI = GetGameInstance<UADGameInstance>();
 	GI->RemovePlayerNetId(ExitingId);
 
+	UMissionSubsystem* MissionSubsystem = GI->GetSubsystem<UMissionSubsystem>();
+	if (MissionSubsystem == nullptr)
+	{
+		LOGV(Error, TEXT("Fail to get MissionSubsystem"));
+		return;
+	}
+
+	MissionSubsystem->RemoveAllMissions();
+
 	LOGVN(Error, TEXT("Logout, Who : %s, NetId : %s"), *Exiting->GetName(), *ExitingId);
 
 }
@@ -176,8 +195,6 @@ void AADInGameMode::ReadyForTravelToCamp()
 
 	TimerManager.ClearTimer(ResultTimerHandle);
 
-	
-
 	const float Interval = 5.0f;
 	TimerManager.SetTimer(ResultTimerHandle, this, &AADInGameMode::TravelToCamp, 1, false, Interval);
 }
@@ -189,6 +206,14 @@ void AADInGameMode::TravelToCamp()
 		PC->C_OnPreClientTravel();
 	}
 
+	UMissionSubsystem* MissionSubsystem = GetGameInstance()->GetSubsystem<UMissionSubsystem>();
+	if (MissionSubsystem == nullptr)
+	{
+		LOGV(Error, TEXT("Fail to get MissionSubsystem"));
+		return;
+	}
+
+	MissionSubsystem->RemoveAllMissions();
 	const float WaitForStopVoice = 1.0f;
 
 	FTimerHandle WaitForVoiceTimerHandle;

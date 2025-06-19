@@ -47,7 +47,7 @@ public:
 	void SetDescriptionActive(bool bShouldActivate);
 	void SetNameInfoTextActive(bool bShouldActivate);
 	void SetItemMeshActive(bool bShouldActivate);
-	void SetBuyButtonActive(bool bShouldActivate);
+	void SetAddButtonActive(bool bShouldActivate);
 
 	void SetUpgradeLevelInfoActive(bool bShouldActivate);
 	void SetCostInfoActive(bool bShouldActivate);

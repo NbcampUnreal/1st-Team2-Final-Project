@@ -135,6 +135,7 @@ void UADInteractionComponent::HandleEndOverlap(UPrimitiveComponent* OverlappedCo
 {
 	if (IIADInteractable* IADInteractable = Cast<IIADInteractable>(OtherActor))
 	{
+		LOGIC(Warning, TEXT("End Ovelap!! Interactable's Owner : %s"), *OtherActor->GetName());
 		if (UADInteractableComponent* ADIC = IADInteractable->GetInteractableComponent())
 		{
 			NearbyInteractables.Remove(ADIC);
@@ -256,7 +257,8 @@ void UADInteractionComponent::UpdateFocus(UADInteractableComponent* NewFocus)
 
 			if (!bNeedHighlight)
 			{
-				OnFocusEnd.Broadcast();          // 설명 숨김
+				OnFocusEnd.Broadcast();   // 설명 숨김
+				CachedDesc.Empty();
 			}
 			else
 			{
@@ -266,6 +268,19 @@ void UADInteractionComponent::UpdateFocus(UADInteractableComponent* NewFocus)
 				}
 			}
 		}
+		if (bNeedHighlight)
+		{
+			if (IIADInteractable* IAD = Cast<IIADInteractable>(NewFocus->GetOwner()))
+			{
+				const FString NewDesc = IAD->GetInteractionDescription();
+				if (!NewDesc.Equals(CachedDesc))
+				{
+					CachedDesc = NewDesc;
+					OnFocus.Broadcast(NewFocus->GetOwner(), CachedDesc);
+				}
+			}
+		}
+
 		return;
 	}
 

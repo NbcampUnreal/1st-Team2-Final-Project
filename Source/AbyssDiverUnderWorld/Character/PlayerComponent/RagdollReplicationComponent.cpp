@@ -96,7 +96,7 @@ void URagdollReplicationComponent::SetRagdollEnabled(bool bEnable)
 
 		if (AUnderwaterCharacter* Character = Cast<AUnderwaterCharacter>(GetOwner()))
 		{
-			Character->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			Character->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 			Character->GetCharacterMovement()->DisableMovement();
 		}
 	}

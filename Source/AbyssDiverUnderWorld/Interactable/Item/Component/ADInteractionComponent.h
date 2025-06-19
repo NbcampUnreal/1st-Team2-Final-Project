@@ -127,6 +127,7 @@ protected:
 
 
 private:
+    FString CachedDesc;
 
 #pragma endregion
 
