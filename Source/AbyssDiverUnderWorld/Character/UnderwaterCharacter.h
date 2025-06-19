@@ -1194,6 +1194,7 @@ public:
 	/** 현재 Bound된 Character를 반환. 복사본을 반환한다. */
 	TArray<AUnderwaterCharacter*> GetBoundCharacters() const { return BoundCharacters; }
 
+	/** Player Index를 반환 */
 	FORCEINLINE int GetPlayerIndex() const { return PlayerIndex; }
 
 	/** 현재 Eye Stalker에게 공격받았는지 여부를 설정 */
