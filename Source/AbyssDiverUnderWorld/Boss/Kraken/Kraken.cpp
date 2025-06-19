@@ -73,14 +73,26 @@ void AKraken::OnBattleFieldBeginOverlap()
 
 void AKraken::OnBattleFieldEndOverlap(const uint8& PlayerCount)
 {
-	if (PlayerCount == 0)
+	if (PlayerCount != 0)
 	{
-		bCanBattle = false;
-		
-		AIController->GetBlackboardComponent()->SetValueAsBool("bIsChasing", false);
-		AIController->GetBlackboardComponent()->SetValueAsBool("bCanAttack", false);
-		EnhancedAIController->SetSightRadius(0.f);
+		return;
 	}
+
+	if (IsValid(AIController) == false || AIController->IsPendingKillPending() || AIController->IsValidLowLevel() == false)
+	{
+		return;
+	}
+
+	if (IsValid(EnhancedAIController) == false || EnhancedAIController->IsPendingKillPending() || EnhancedAIController->IsValidLowLevel() == false)
+	{
+		return;
+	}
+
+	bCanBattle = false;
+
+	AIController->GetBlackboardComponent()->SetValueAsBool("bIsChasing", false);
+	AIController->GetBlackboardComponent()->SetValueAsBool("bCanAttack", false);
+	EnhancedAIController->SetSightRadius(0.f);
 }
 
 void AKraken::GetBattleFieldVolumeInWorld()

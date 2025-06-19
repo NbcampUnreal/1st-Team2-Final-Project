@@ -99,9 +99,15 @@ void ACurrentZone::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* Oth
         FTimerHandle RecoverMovementTimer;
         GetWorld()->GetTimerManager().SetTimer(RecoverMovementTimer, [Character]()
             {
-                if (Character && Character->GetCharacterMovement())
+                if (IsValid(Character) && Character->IsPendingKillPending() == false && Character->IsValidLowLevel() && Character->GetCharacterMovement())
                 {
-                    Character->GetCharacterMovement()->SetMovementMode(MOVE_Swimming);
+                    UCharacterMovementComponent* CharacterMovement = Character->GetCharacterMovement();
+                    if (IsValid(CharacterMovement) == false || CharacterMovement->IsValidLowLevel() == false)
+                    {
+                        return;
+                    }
+
+                    CharacterMovement->SetMovementMode(MOVE_Swimming);
                 }
             }, 2.0f, false);
     }
