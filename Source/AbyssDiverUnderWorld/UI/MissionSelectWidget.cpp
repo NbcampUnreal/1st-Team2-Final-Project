@@ -27,18 +27,7 @@ void UMissionSelectWidget::NativeConstruct()
         Button_MissionReset->SetIsEnabled(true); 
     }
 
-    ScrollBox_MissionList->ClearChildren();
-
-    const TArray<FMissionData>& Missions = GetGameInstance()->GetSubsystem<UMissionSubsystem>()->GetMissionDataForUI();
-    Algo::Sort(Missions, [](const FMissionData& A, const FMissionData& B)
-        {
-            return A.Stage < B.Stage;
-        });
-
-    for (const FMissionData& Mission : Missions)
-    {
-        AddMissionEntry(Mission);
-    }
+    UpdateMissionList(0);
 
     WarningBorder->SetVisibility(ESlateVisibility::Hidden);
 
@@ -70,6 +59,25 @@ void UMissionSelectWidget::UpdateEntrys()
                     return Item.Title == Entry->GetMissionData().Title;
                 });
             Entry->SetSelected(bIsEntrySelected);
+        }
+    }
+}
+
+void UMissionSelectWidget::UpdateMissionList(int8 CurrentLevelIndex)
+{
+    if (CurrentLevelIndex == 0) return;
+    ScrollBox_MissionList->ClearChildren();
+
+    const TArray<FMissionData>& Missions = GetGameInstance()->GetSubsystem<UMissionSubsystem>()->GetMissionDataForUI();
+    Algo::Sort(Missions, [](const FMissionData& A, const FMissionData& B)
+        {
+            return A.Stage < B.Stage;
+        });
+    for (const FMissionData& Mission : Missions)
+    {
+        if (Mission.Stage == CurrentLevelIndex)
+        {
+            AddMissionEntry(Mission);
         }
     }
 }
@@ -117,9 +125,9 @@ void UMissionSelectWidget::OnMissionClicked(const FMissionData& Data, bool bSele
 
 void UMissionSelectWidget::OnStartButtonClicked()
 {
-    if (SelectedMissions.Num() >= 3)
+    if (!SelectedMissions.IsEmpty())
     {
-        if(OnStartButtonClickedDelegate.IsBound())
+        if (OnStartButtonClickedDelegate.IsBound())
             OnStartButtonClickedDelegate.Broadcast(SelectedMissions);
         bIsMissionGained = true;
 
@@ -129,7 +137,8 @@ void UMissionSelectWidget::OnStartButtonClicked()
     }
     else
     {
-        FText WarningMessage = bIsMissionGained ? FText::FromString(TEXT("이미 미션이 지급되었습니다.")) : FText::FromString(TEXT("3개를 선택해주세요."));
+        
+        FText WarningMessage = !bIsMissionGained ? FText::FromString(TEXT("미션을 골라주세요.")) :FText::FromString(TEXT("이미 미션이 지급되었습니다."));
 
         WarningText->SetText(WarningMessage);
         WarningBorder->SetVisibility(ESlateVisibility::Visible);
