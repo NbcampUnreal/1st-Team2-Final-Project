@@ -567,6 +567,12 @@ void AUnderwaterCharacter::UnBind()
 
 void AUnderwaterCharacter::UnbindAllBoundCharacters()
 {
+	if (!HasAuthority() || CharacterState != ECharacterState::Normal)
+	{
+		UE_LOG(LogAbyssDiverCharacter, Error, TEXT("UnbindAllBoundCharacters called in invalid state or not authority: %s"), *GetName());
+		return;
+	}
+	
 	// Flow
 	// - Binder Character : UnbindAllBoundCharacters
 	// -- Bound Character -> UnBind
