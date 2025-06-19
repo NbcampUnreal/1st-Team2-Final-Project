@@ -125,28 +125,32 @@ void UMissionSelectWidget::OnMissionClicked(const FMissionData& Data, bool bSele
 
 void UMissionSelectWidget::OnStartButtonClicked()
 {
+    if (!SelectedMissions.IsEmpty())
+    {
+        if (OnStartButtonClickedDelegate.IsBound())
+            OnStartButtonClickedDelegate.Broadcast(SelectedMissions);
+        bIsMissionGained = true;
 
-    if(OnStartButtonClickedDelegate.IsBound())
-        OnStartButtonClickedDelegate.Broadcast(SelectedMissions);
-    bIsMissionGained = true;
+        SelectedMissions.Empty();
+        UpdateEntrys();
+        UpdateSelectedMissionBox();
+    }
+    else
+    {
+        
+        FText WarningMessage = !bIsMissionGained ? FText::FromString(TEXT("미션을 골라주세요.")) :FText::FromString(TEXT("이미 미션이 지급되었습니다."));
 
-    SelectedMissions.Empty();
-    UpdateEntrys();
-    UpdateSelectedMissionBox();
+        WarningText->SetText(WarningMessage);
+        WarningBorder->SetVisibility(ESlateVisibility::Visible);
 
-
-    FText WarningMessage = FText::FromString(TEXT("이미 미션이 지급되었습니다."));
-
-    WarningText->SetText(WarningMessage);
-    WarningBorder->SetVisibility(ESlateVisibility::Visible);
-
-    FTimerHandle DeleteTimerHanle;
-    float DeleteDelay = 1.0f;
-    GetWorld()->GetTimerManager().SetTimer(DeleteTimerHanle,
-        FTimerDelegate::CreateLambda([this]()
-        {
-            WarningBorder->SetVisibility(ESlateVisibility::Hidden);
-        }), DeleteDelay, false);
+        FTimerHandle DeleteTimerHanle;
+        float DeleteDelay = 1.0f;
+        GetWorld()->GetTimerManager().SetTimer(DeleteTimerHanle,
+            FTimerDelegate::CreateLambda([this]()
+            {
+                WarningBorder->SetVisibility(ESlateVisibility::Hidden);
+            }), DeleteDelay, false);
+    }
 }
 
 void UMissionSelectWidget::OnMissionResetButtonClicked()

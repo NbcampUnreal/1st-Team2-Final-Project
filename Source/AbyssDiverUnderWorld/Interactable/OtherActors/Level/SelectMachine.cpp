@@ -95,7 +95,7 @@ void ASelectMachine::BeginPlay()
 					case EButtonAction::SelectLevel:
 						GameStartButton = ButtonActor;
 						ButtonActor->OnButtonPressed.BindUObject(this, &ASelectMachine::HandleTravelLevel);
-						ButtonActor->SetButtonDescription(TEXT("미션과 맵을 선택해주세요."));
+						ButtonActor->SetButtonDescription(TEXT("맵을 선택해주세요."));
 						break;
 					default:
 						break;
