@@ -43,8 +43,15 @@ public:
 	virtual void PlayAttackMontage();
 	void StopMovement();
 	virtual void NotifyLightExposure(float DeltaTime, float TotalExposedTime, const FVector& PlayerLocation, AActor* PlayerActor);
+	
+	UFUNCTION()
 	void AddDetection(AActor* Actor);
+	
+	UFUNCTION()
 	void RemoveDetection(AActor* Actor);
+	
+	UFUNCTION()
+	void ForceRemoveDetection(AActor* Actor);
 
 #pragma endregion
 

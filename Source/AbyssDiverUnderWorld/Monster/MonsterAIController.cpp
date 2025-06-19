@@ -72,7 +72,7 @@ void AMonsterAIController::Tick(float DeltaSeconds)
 		if (Elapsed > MaxAge)
 		{
 			UE_LOG(LogTemp, Log, TEXT("[Elapsed] : %.2f"), Elapsed);
-			Monster->RemoveDetection(Target.Get());
+			Monster->ForceRemoveDetection(Target.Get());
 			ToRemove.Add(Target);
 		}
 	}

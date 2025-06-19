@@ -314,6 +314,62 @@ void AMonster::RemoveDetection(AActor* Actor)
 	}
 }
 
+/**
+Quick fix : Because it is a 3D space, RefCount sometimes goes up abnormally when AddDetection is perceived by Perception.
+Therefore, when the TargetActor is lost for more than LoseRadius && MaxAge time after Perception.
+Methods to bring down abnormally high RefCount at once 
+**/
+void AMonster::ForceRemoveDetection(AActor* Actor)
+{
+	if (!IsValid(this)) return;
+
+	if (!IsValid(Actor))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[%s] RemoveDetection : Invalid Player! Force remove."), *GetName());
+		DetectionRefCounts.Remove(Actor);
+		return;
+	}
+
+	int32* CountPtr = DetectionRefCounts.Find(Actor);
+	if (CountPtr)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ForceRemoveDetection] Actor: %s, OldCount: %d -> 0"),
+			*Actor->GetName(), *CountPtr);
+
+		*CountPtr = 0;
+		RemoveDetection(Actor);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ForceRemoveDetection] Actor: %s not found in DetectionRefCounts"),
+			*Actor->GetName());
+	}
+
+	if (TargetActor == Actor)
+	{
+		TargetActor = nullptr;
+
+		if (BlackboardComponent)
+		{
+			BlackboardComponent->ClearValue(TargetActorKey);
+		}
+
+		// Alternate targeting
+		for (const auto& Pair : DetectionRefCounts)
+		{
+			if (IsValid(Pair.Key))
+			{
+				TargetActor = Pair.Key;
+				if (BlackboardComponent)
+				{
+					BlackboardComponent->SetValueAsObject(TargetActorKey, TargetActor);
+				}
+				break;
+			}
+		}
+	}
+}
+
 
 void AMonster::SetMonsterState(EMonsterState NewState)
 {
