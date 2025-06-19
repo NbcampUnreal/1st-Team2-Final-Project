@@ -201,8 +201,14 @@ public:
 	/** 캐릭터가 로프에 묶이는 요청을 한다. Authority Node에서만 실행되어야 한다. */
 	void RequestBind(AUnderwaterCharacter* RequestBinderCharacter);
 
-	/** 현재 캐릭터를 UnBind 한다. Binder가 시체를 들고 있을 수 없는 상황에서도 호출된다. */
+	/** Bound Character 함수. 현재 캐릭터를 UnBind 한다. Binder가 시체를 들고 있을 수 없는 상황에서도 호출된다.
+	 * UnBind 함수는 Binder에서 BoundCharacter Array를 수정하므로 Binder Character에서 루프를 순회하면서 UnBind를 호출하면 문제가 생긴다.
+	 * GetBoundCharacters는 복사본을 반환하므로 안전하게 순회가 가능하다.
+	 */
 	void UnBind();
+
+	/** Bind Character 함수. 현재 캐릭터를 UnBind 한다. Binder가 시체를 들고 있는 상황에서 호출된다. */
+	void UnbindAllBoundCharacters();
 	
 	/** 출혈을 모델링하는 소리를 발생한다. */
 	UFUNCTION(BlueprintCallable)

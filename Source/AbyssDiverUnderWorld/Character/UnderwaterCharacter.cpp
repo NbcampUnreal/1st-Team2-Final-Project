@@ -563,7 +563,25 @@ void AUnderwaterCharacter::UnBind()
 
 	DisconnectRope();
 	UpdateBindInteractable();
-	AdjustSpeed();
+}
+
+void AUnderwaterCharacter::UnbindAllBoundCharacters()
+{
+	// Flow
+	// - Binder Character : UnbindAllBoundCharacters
+	// -- Bound Character -> UnBind
+	// - Bound Character
+	// -- BindCharacter -> UnbindToCharacter
+	// --- BindCharacter::UnbindToCharacter : Remove Bound Characters
+
+	// UnBind는 내부적으로 BoundCharacters를 수정하므로 복사본을 이용해서 순회한다.
+	for (AUnderwaterCharacter* BoundCharacter : GetBoundCharacters())
+	{
+		if (IsValid(BoundCharacter))
+		{
+			BoundCharacter->UnBind();
+		}
+	}
 }
 
 void AUnderwaterCharacter::EmitBloodNoise()
@@ -1039,6 +1057,8 @@ void AUnderwaterCharacter::HandleExitNormal()
 	{
 		StaminaComponent->RequestStopSprint();
 		StopHealthRegen();
+
+		UnbindAllBoundCharacters();
 	}
 }
 
@@ -1091,6 +1111,11 @@ float AUnderwaterCharacter::CalculateGroggyTime(float CurrentGroggyDuration, uin
 
 void AUnderwaterCharacter::M_StartCaptureState_Implementation()
 {
+	if (HasAuthority())
+	{
+		UnbindAllBoundCharacters();
+	}
+	
 	if (IsLocallyControlled())
 	{
 		if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
