@@ -27,7 +27,6 @@ protected:
 
 #pragma region Method
 public:
-
 	virtual void Interact_Implementation(AActor* InstigatorActor) override;
 	virtual bool CanHighlight_Implementation() const override { return bIsActive; }
 	UFUNCTION()
@@ -53,6 +52,9 @@ public:
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_TemporarilyHighlightGreen(bool bReachedGoal);
 
+	/** InstigatorActor가 소유하고 있는 Bound Player를 제출한다. */
+	void SubmitPlayer(AActor* InstigatorActor);
+
 protected:
 	int32 SellAllExchangeableItems(AActor* InstigatorActor);
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -73,6 +75,9 @@ protected:
 	UPROPERTY(ReplicatedUsing = OnRep_TargetMoney)
 	int32 TargetMoney = 1000;
 
+	/* 현재 드론에 제출된 시체 플레이어의 Index 배열 */
+	TArray<int8> SubmittedPlayerIndexes;
+	
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<class AADDrone> CurrentDrone = nullptr;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction")
@@ -110,6 +115,9 @@ public:
 	virtual bool IsHoldMode() const override;
 	virtual FString GetInteractionDescription() const override;
 
+	/** 현재 드론에 제출된 시체 플레이어의 Index 배열을 반환한다. */
+	FORCEINLINE TArray<int8>& GetSubmittedPlayerIndexes() { return SubmittedPlayerIndexes; }
+	
 private:
 
 	void SetCurrentMoeny(const int32& NewCurrentMoney)

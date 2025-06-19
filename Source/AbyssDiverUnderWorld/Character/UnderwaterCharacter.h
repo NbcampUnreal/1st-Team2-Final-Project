@@ -201,8 +201,14 @@ public:
 	/** 캐릭터가 로프에 묶이는 요청을 한다. Authority Node에서만 실행되어야 한다. */
 	void RequestBind(AUnderwaterCharacter* RequestBinderCharacter);
 
-	/** 현재 캐릭터를 UnBind 한다. Binder가 시체를 들고 있을 수 없는 상황에서도 호출된다. */
+	/** Bound Character 함수. 현재 캐릭터를 UnBind 한다. Binder가 시체를 들고 있을 수 없는 상황에서도 호출된다.
+	 * UnBind 함수는 Binder에서 BoundCharacter Array를 수정하므로 Binder Character에서 루프를 순회하면서 UnBind를 호출하면 문제가 생긴다.
+	 * GetBoundCharacters는 복사본을 반환하므로 안전하게 순회가 가능하다.
+	 */
 	void UnBind();
+
+	/** Bind Character 함수. 현재 캐릭터를 UnBind 한다. Binder가 시체를 들고 있는 상황에서 호출된다. */
+	void UnbindAllBoundCharacters();
 	
 	/** 출혈을 모델링하는 소리를 발생한다. */
 	UFUNCTION(BlueprintCallable)
@@ -650,6 +656,9 @@ public:
 
 private:
 
+	/** 현재 캐릭터를 Possess한 PlayerController의 Player Index */
+	int8 PlayerIndex;
+	
 	// Character State는 현재 State 종료 시에 따로 처리할 것이 없기 때문에 현재 상태 값만 Replicate하도록 한다.
 	
 	/* 현재 캐릭터 상태. Normal, Groggy, Death... */
@@ -1136,7 +1145,7 @@ public:
 	FORCEINLINE bool IsDeath() const { return CharacterState == ECharacterState::Death; }
 
 	/** 캐릭터가 현재 살아있는지 여부를 반환. 살아 있으면 타겟팅될 수 있다. */
-	FORCEINLINE bool IsAlive() const;
+	bool IsAlive() const;
 
 	/** 캐릭터의 남은 그로기 시간을 반환 */
 	UFUNCTION(BlueprintCallable)
@@ -1187,6 +1196,12 @@ public:
 
 	/** 현재 생성된 실드 히트 위젯을 반환 */
 	UUserWidget* GetShieldHitWidget() const;
+
+	/** 현재 Bound된 Character를 반환. 복사본을 반환한다. */
+	TArray<AUnderwaterCharacter*> GetBoundCharacters() const { return BoundCharacters; }
+
+	/** Player Index를 반환 */
+	FORCEINLINE int GetPlayerIndex() const { return PlayerIndex; }
 
 	/** 현재 Eye Stalker에게 공격받았는지 여부를 설정 */
 	FORCEINLINE void SetIsAttackedByEyeStalker(const bool bNewAttacked) { bIsAttackedByEyeStalker = bNewAttacked; }

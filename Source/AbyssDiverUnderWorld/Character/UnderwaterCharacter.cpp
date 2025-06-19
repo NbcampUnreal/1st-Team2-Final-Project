@@ -247,6 +247,12 @@ void AUnderwaterCharacter::InitFromPlayerState(AADPlayerState* ADPlayerState)
 	{
 		return;
 	}
+
+	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("[%s] InitFromPlayerState/ NickName : %s / PlayerIndex : %d"),
+		HasAuthority() ? TEXT("Server") : TEXT("Client"), *ADPlayerState->GetPlayerNickname(), ADPlayerState->GetPlayerIndex());
+
+	// @ToDo: 패키징에서 데이터를 제대로 받지 못하는 문제가 있다. 패키징하기 전에 수정할 것
+	PlayerIndex = ADPlayerState->GetPlayerIndex();
 	
 	if (UADInventoryComponent* Inventory = ADPlayerState->GetInventory())
 	{
@@ -557,7 +563,31 @@ void AUnderwaterCharacter::UnBind()
 
 	DisconnectRope();
 	UpdateBindInteractable();
-	AdjustSpeed();
+}
+
+void AUnderwaterCharacter::UnbindAllBoundCharacters()
+{
+	if (!HasAuthority() || CharacterState != ECharacterState::Normal)
+	{
+		UE_LOG(LogAbyssDiverCharacter, Error, TEXT("UnbindAllBoundCharacters called in invalid state or not authority: %s"), *GetName());
+		return;
+	}
+	
+	// Flow
+	// - Binder Character : UnbindAllBoundCharacters
+	// -- Bound Character -> UnBind
+	// - Bound Character
+	// -- BindCharacter -> UnbindToCharacter
+	// --- BindCharacter::UnbindToCharacter : Remove Bound Characters
+
+	// UnBind는 내부적으로 BoundCharacters를 수정하므로 복사본을 이용해서 순회한다.
+	for (AUnderwaterCharacter* BoundCharacter : GetBoundCharacters())
+	{
+		if (IsValid(BoundCharacter))
+		{
+			BoundCharacter->UnBind();
+		}
+	}
 }
 
 void AUnderwaterCharacter::EmitBloodNoise()
@@ -1033,6 +1063,8 @@ void AUnderwaterCharacter::HandleExitNormal()
 	{
 		StaminaComponent->RequestStopSprint();
 		StopHealthRegen();
+
+		UnbindAllBoundCharacters();
 	}
 }
 
@@ -1085,6 +1117,11 @@ float AUnderwaterCharacter::CalculateGroggyTime(float CurrentGroggyDuration, uin
 
 void AUnderwaterCharacter::M_StartCaptureState_Implementation()
 {
+	if (HasAuthority())
+	{
+		UnbindAllBoundCharacters();
+	}
+	
 	if (IsLocallyControlled())
 	{
 		if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
@@ -1220,7 +1257,7 @@ void AUnderwaterCharacter::AdjustSpeed()
 		? GetSwimEffectiveSpeed()
 		: BaseGroundSpeed;
 
-	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Adjust Speed : %s, EffectiveSpeed = %f"), *GetName(), EffectiveSpeed);
+	// UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Adjust Speed : %s, EffectiveSpeed = %f"), *GetName(), EffectiveSpeed);
 	
 	if (EnvironmentState == EEnvironmentState::Underwater)
 	{

@@ -30,6 +30,8 @@ AMonsterAIController::AMonsterAIController()
 	AIPerceptionComponent->ConfigureSense(*SightConfig);
 	AIPerceptionComponent->SetDominantSense(SightConfig->GetSenseImplementation());
 	bIsLosingTarget = false;
+
+	
 }
 
 void AMonsterAIController::BeginPlay()
@@ -48,15 +50,45 @@ void AMonsterAIController::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	if (!bIsLosingTarget || !IsValid(Monster)) return;
+	if (!IsValid(Monster) || !SightConfig) return;
 
-	float Elapsed = GetWorld()->GetTimeSeconds() - LostTargetTime;
-	if (Elapsed > SightConfig->GetMaxAge())
+	const float CurrentTime = GetWorld()->GetTimeSeconds();
+	const float MaxAge = SightConfig->GetMaxAge();
+
+	TArray<TWeakObjectPtr<AActor>> ToRemove;
+
+	for (const auto& Elem : LostActorsMap)
 	{
-		bIsLosingTarget = false;
+		TWeakObjectPtr<AActor> Target = Elem.Key;
+		float LostTime = Elem.Value;
+
+		if (!Target.IsValid())
+		{
+			ToRemove.Add(Target);
+			continue;
+		}
+
+		float Elapsed = CurrentTime - LostTime;
+		if (Elapsed > MaxAge)
+		{
+			UE_LOG(LogTemp, Log, TEXT("[Elapsed] : %.2f"), Elapsed);
+			Monster->ForceRemoveDetection(Target.Get());
+			ToRemove.Add(Target);
+		}
+	}
+
+	for (TWeakObjectPtr<AActor> Actor : ToRemove)
+	{
+		LostActorsMap.Remove(Actor);
+	}
+
+	// Return to state when all detectors are clear
+	if (Monster->GetDetectionCount() == 0 &&
+		Monster->GetMonsterState() == EMonsterState::Chase)
+	{
 		Monster->SetMonsterState(EMonsterState::Patrol);
 		Monster->bIsChasing = false;
-		LOG(TEXT("Monster State : Patrol"));
+		LOG(TEXT("Monster State ¡æ Patrol"));
 	}
 }
 
@@ -121,12 +153,10 @@ void AMonsterAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus 
 
 	if (Actor->IsA(AUnderwaterCharacter::StaticClass()))
 	{
-		BlackboardComponent = GetBlackboardComponent();
-
  		if (Stimulus.WasSuccessfullySensed() && Monster->GetMonsterState() != EMonsterState::Flee)
 		{
+			LostActorsMap.Remove(Actor); // Remove when detected again
 			Monster->AddDetection(Actor);
-			bIsLosingTarget = false;
 
 			if (Monster->GetMonsterState() != EMonsterState::Chase)
 			{
@@ -137,9 +167,10 @@ void AMonsterAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus 
 		else
 		{
 			// Lost Perception. but Target Value still remains for MaxAge
-			bIsLosingTarget = true;
-			Monster->RemoveDetection(Actor);
-			LostTargetTime = GetWorld()->GetTimeSeconds(); // Timer On.
+			if (!LostActorsMap.Contains(Actor))
+			{
+				LostActorsMap.Add(Actor, GetWorld()->GetTimeSeconds());
+			}
 		}
 	}
 }

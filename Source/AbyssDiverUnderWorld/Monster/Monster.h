@@ -43,8 +43,15 @@ public:
 	virtual void PlayAttackMontage();
 	void StopMovement();
 	virtual void NotifyLightExposure(float DeltaTime, float TotalExposedTime, const FVector& PlayerLocation, AActor* PlayerActor);
+	
+	UFUNCTION()
 	void AddDetection(AActor* Actor);
+	
+	UFUNCTION()
 	void RemoveDetection(AActor* Actor);
+	
+	UFUNCTION()
+	void ForceRemoveDetection(AActor* Actor);
 
 #pragma endregion
 
@@ -97,6 +104,7 @@ public:
 	EMonsterState GetMonsterState() { return MonsterState; }
 	virtual void SetMonsterState(EMonsterState NewState);
 	void SetMaxSwimSpeed(float Speed);
+	int32 GetDetectionCount() const;
 
 	// Virtual function to get collision components for attack range determination externally
 	virtual USphereComponent* GetAttackHitComponent() const { return nullptr; }
