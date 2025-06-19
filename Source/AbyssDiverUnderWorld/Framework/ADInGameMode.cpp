@@ -26,6 +26,7 @@
 
 #include "Kismet/GameplayStatics.h"
 #include "EngineUtils.h"
+#include "Components/CapsuleComponent.h"
 
 AADInGameMode::AADInGameMode()
 {
@@ -266,6 +267,45 @@ void AADInGameMode::BindDelegate(AUnderwaterCharacter* PlayerCharacter)
 	PlayerCharacter->OnCharacterStateChangedDelegate.AddDynamic(this, &AADInGameMode::OnCharacterStateChanged);
 }
 
+void AADInGameMode::RevivePlayersAtRandomLocation(TArray<int8> PlayerIndexes, const FVector& SpawnCenter,
+	const float ReviveDistance)
+{
+	for (int8 PlayerIndex : PlayerIndexes)
+	{
+		AADPlayerController* PlayerController = FindPlayerControllerFromIndex(PlayerIndex);
+		// 현재 관전이 없으므로 Hide 되어 있다.
+		// if (PlayerController == nullptr || PlayerController->GetPawn() != nullptr)
+		if (PlayerController == nullptr)
+		{
+			continue;
+		}
+
+		if (APawn* PlayerPawn = PlayerController->GetPawn())
+		{
+			PlayerController->UnPossess();
+			PlayerPawn->Destroy();
+		}
+		
+		FVector RandomLocation = GetRandomLocation(SpawnCenter, ReviveDistance);
+		FRotator SpawnRotator = FRotator::ZeroRotator;
+		RestartPlayerAtTransform(PlayerController, FTransform(SpawnRotator, RandomLocation));
+	}
+}
+
+AADPlayerController* AADInGameMode::FindPlayerControllerFromIndex(int8 PlayerIndex) const
+{
+	for (AADPlayerController* PlayerController : TActorRange<AADPlayerController>(GetWorld()))
+	{
+		AADPlayerState* PlayerState = Cast<AADPlayerState>(PlayerController->PlayerState);
+		if (PlayerState && PlayerState->GetPlayerIndex() == PlayerIndex)
+		{
+			return PlayerController;
+		}
+	}
+
+	return nullptr;
+}
+
 void AADInGameMode::InitPlayer(APlayerController* PC)
 {
 	if (!PC)
@@ -275,6 +315,47 @@ void AADInGameMode::InitPlayer(APlayerController* PC)
 	{
 		RestartPlayer(PC);
 	}
+}
+
+FVector AADInGameMode::GetRandomLocation(const FVector& Location, float Distance) const
+{
+	float CapsuleRadius = 34.0f;
+	float CapsuleHalfHeight = 88.0f;
+	if (AUnderwaterCharacter* DefaultCharacter = DefaultPawnClass->GetDefaultObject<AUnderwaterCharacter>())
+	{
+		CapsuleRadius = DefaultCharacter->GetCapsuleComponent()->GetScaledCapsuleRadius();
+		CapsuleHalfHeight = DefaultCharacter->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+	}
+	
+	FVector RandomLocation = FVector::ZeroVector;
+	int MaxAttempts = 10;
+	while (MaxAttempts > 0)
+	{
+		RandomLocation = Location + FMath::VRand() * Distance;
+		MaxAttempts--;
+
+		FCollisionQueryParams Params;
+		Params.bTraceComplex = true;
+		FHitResult HitResult;
+		bool bHit = GetWorld()->SweepSingleByChannel(
+			HitResult,
+			RandomLocation,
+			RandomLocation,
+			FQuat::Identity,
+			ECC_Visibility,
+			FCollisionShape::MakeCapsule(CapsuleRadius, CapsuleHalfHeight),
+			Params
+		);
+
+		if (!bHit)
+		{
+			return RandomLocation;
+		}
+	}
+
+	// 랜덤한 위치를 찾지 못했을 경우 어쨌든 위치를 반환
+	UE_LOG(AbyssDiver, Warning, TEXT("Failed to find a random location after multiple attempts. Returning last calculated location."));
+	return RandomLocation;
 }
 
 void AADInGameMode::GameOver()

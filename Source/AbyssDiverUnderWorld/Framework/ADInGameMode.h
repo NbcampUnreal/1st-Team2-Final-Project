@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "ADPlayerController.h"
 #include "GameFramework/GameMode.h"
 #include "ADInGameMode.generated.h"
 
@@ -35,10 +36,19 @@ public:
 
 	void BindDelegate(AUnderwaterCharacter* PlayerCharacter);
 
+	/** Spawn Center 중심으로 지정된 거리 내에서 랜덤한 위치를 선택하여 플레이어들을 부활시킨다. */
+	void RevivePlayersAtRandomLocation(TArray<int8> PlayerIndexes, const FVector& SpawnCenter, float ReviveDistance);
+
+	/** 지정된 인덱스의 플레이어 컨트롤러를 찾는다. */
+	AADPlayerController* FindPlayerControllerFromIndex(int8 PlayerIndex) const;
+	
 protected:
 
 	void InitPlayer(APlayerController* PC);
 
+	/** 지정된 위치에서 지정된 거리 내에서 랜덤한 위치를 반환한다. */
+	FVector GetRandomLocation(const FVector& Location, float Distance) const;
+	
 private:
 
 	void GameOver();
