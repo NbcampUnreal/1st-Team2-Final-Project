@@ -27,7 +27,9 @@ protected:
 private:
 
 	void OnIndicatingTargetOverlapped(int32 TargetOrder);
-	void TryActivateNextTarget(int32 NextTargetOrder);
+	void TryActivateNextTarget();
+
+	void SkipTarget(int32 TargetOrderForSkip);
 
 #pragma endregion
 

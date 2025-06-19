@@ -171,7 +171,7 @@ void UMissionSubsystem::ReceiveMissionDataFromUIData(const TArray<FMissionData>&
 		return;
 	}
 
-	Missions.Empty(MissionsFromUI.Num());
+	Missions.Reset(MissionsFromUI.Num());
 
 	for (const FMissionData& MissionFromUI : MissionsFromUI)
 	{
@@ -307,6 +307,11 @@ void UMissionSubsystem::RequestUnbinding(UObject* Requester)
 	{
 		Mission->UnbindDelegates(Requester);
 	}
+}
+
+void UMissionSubsystem::RemoveAllMissions()
+{
+	Missions.Reset();
 }
 
 void UMissionSubsystem::MakeAndAddMissionDataForUI(const FMissionBaseRow* MissionBaseData, const uint8& MissionIndex)

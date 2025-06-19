@@ -8,6 +8,7 @@
 #include "DataRow/PhaseGoalRow.h"
 #include "AbyssDiverUnderWorld.h"
 #include "Subsystems/DataTableSubsystem.h"
+#include "Subsystems/MissionSubsystem.h"
 
 #include "Kismet/GameplayStatics.h"
 #include "EngineUtils.h"
@@ -32,6 +33,15 @@ void AADCampGameMode::PostLogin(APlayerController* NewPlayer)
 	LOGV(Warning, TEXT("%s Has Entered"), *NewPlayerId);
 	UADGameInstance* GI = GetGameInstance<UADGameInstance>();
 	check(GI);
+
+	UMissionSubsystem* MissionSubsystem = GI->GetSubsystem<UMissionSubsystem>();
+	if (MissionSubsystem == nullptr)
+	{
+		LOGV(Error, TEXT("Fail to get MissionSubsystem"));
+		return;
+	}
+
+	MissionSubsystem->RemoveAllMissions();
 
 	if (AADPlayerState* ADPlayerState = NewPlayer->GetPlayerState<AADPlayerState>())
 	{
@@ -59,6 +69,15 @@ void AADCampGameMode::Logout(AController* Exiting)
 	FString ExitingId = Exiting->GetPlayerState<AADPlayerState>()->GetUniqueId().GetUniqueNetId()->ToString();
 	UADGameInstance* GI = GetGameInstance<UADGameInstance>();
 	GI->RemovePlayerNetId(ExitingId);
+
+	UMissionSubsystem* MissionSubsystem = GI->GetSubsystem<UMissionSubsystem>();
+	if (MissionSubsystem == nullptr)
+	{
+		LOGV(Error, TEXT("Fail to get MissionSubsystem"));
+		return;
+	}
+
+	MissionSubsystem->RemoveAllMissions();
 }
 
 void AADCampGameMode::InitGameState()

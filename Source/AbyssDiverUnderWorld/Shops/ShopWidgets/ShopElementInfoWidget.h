@@ -1,4 +1,4 @@
-#pragma once
+Ôªø#pragma once
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
@@ -14,7 +14,7 @@ class UButton;
 enum class EUpgradeType : uint8;
 
 /**
- * ªÛ¡°ø°º≠ æ∆¿Ã≈€, ¿Â∫Ò, æ˜±€ø° ¥Î«— ¡§∫∏∏¶ ∂ÁøÏ¥¬ ¿ß¡¨
+ * ÏÉÅÏ†êÏóêÏÑú ÏïÑÏù¥ÌÖú, Ïû•ÎπÑ, ÏóÖÍ∏ÄÏóê ÎåÄÌïú Ï†ïÎ≥¥Î•º ÎùÑÏö∞Îäî ÏúÑÏ†Ø
  */
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API UShopElementInfoWidget : public UUserWidget
@@ -35,7 +35,7 @@ public:
 
 	void ShowItemInfos(int32 ItemId);
 	void ShowUpgradeInfos(EUpgradeType UpgradeType, uint8 Grade, bool bIsMaxLevel);
-	void ChangeItemDescription(const FString& NewDescription);
+	void ChangeDescription(const FString& NewDescription);
 	void ChangeNameInfoText(const FString& NewInfoText);
 	void ChangeItemMesh(USkeletalMesh* NewMesh, int32 ItemId);
 
@@ -44,27 +44,22 @@ public:
 
 	void ChangeCurrentQuantityNumber(int32 NewNumber);
 
-	void ChangeRemainingMoneyAfterPurchaseTextFromCost(int32 Cost);
-	void ChangeRemainingMoneyAfterPurchaseText(int32 MoneyAmount);
-
 	void SetDescriptionActive(bool bShouldActivate);
 	void SetNameInfoTextActive(bool bShouldActivate);
 	void SetItemMeshActive(bool bShouldActivate);
-	void SetBuyButtonActive(bool bShouldActivate);
+	void SetAddButtonActive(bool bShouldActivate);
 
 	void SetUpgradeLevelInfoActive(bool bShouldActivate);
 	void SetCostInfoActive(bool bShouldActivate);
 
 	void SetQuantityOverlayActive(bool bShouldActivate);
-
-	void SetRemainingMoneyAfterPurchaseTextActive(bool bShouldActivate);
-
-	FOnBuyButtonClickedDelegate OnBuyButtonClickedDelegate;
+	
+	FOnBuyButtonClickedDelegate OnAddButtonClickedDelegate;
 
 private:
 
 	UFUNCTION()
-	void OnBuyButtonClicked();
+	void OnAddButtonClicked();
 
 	UFUNCTION()
 	void OnIncreaseButtonClicked();
@@ -93,7 +88,7 @@ protected:
 	TObjectPtr<URichTextBlock> CostInfoText;
 
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UButton> BuyButton;
+	TObjectPtr<UButton> AddButton;
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UShopItemMeshPanel> ItemMeshPanel;
@@ -109,9 +104,6 @@ protected:
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<class UOverlay> QuantityOverlay;
-
-	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<URichTextBlock> RemainingMoneyAfterPurchaseText;
 
 private:
 

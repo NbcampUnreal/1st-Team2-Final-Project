@@ -31,6 +31,7 @@ public class AbyssDiverUnderWorld : ModuleRules
             , "GameplayTags"
             , "Voice"
             , "NavigationSystem"
+            , "CableComponent"
         });
 		
         PublicIncludePaths.AddRange(new string[] { "AbyssDiverUnderWorld" });

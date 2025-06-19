@@ -1,9 +1,10 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "UnderwaterCharacter.h"
 
 #include "AbyssDiverUnderWorld.h"
+#include "CableBindingActor.h"
 #include "EnhancedInputComponent.h"
 #include "LocomotionMode.h"
 #include "PlayerComponent/OxygenComponent.h"
@@ -115,7 +116,8 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 
 	OverloadWeight = 40.0f;
 	OverloadSpeedFactor = 0.4f;
-	MinSpeed = 50.0f;
+	MinSpeed = 150.0f;
+	BaseGroundSpeed = 600.0f;
 	
 	StatComponent->MoveSpeed = 400.0f;
 	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
@@ -173,8 +175,12 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	InteractionDescription = TEXT("");
 	bIsInteractionHoldMode = true;
 	GroggyInteractionDescription = TEXT("Revive Character!");
-	DeathInteractionDescription = TEXT("Grab Character!");
+	DeathGrabDescription = TEXT("Grab Character!");
 	DeathGrabReleaseDescription = TEXT("Release Character!");
+
+	BindMultiplier = 0.15f;
+
+	bIsAttackedByEyeStalker = false;
 }
 
 void AUnderwaterCharacter::BeginPlay()
@@ -229,7 +235,10 @@ void AUnderwaterCharacter::BeginPlay()
 
 		GM->BindDelegate(this);
 	}
+
+	// @ToDo : Enter Normal로 처리가 가능한 부분은 Enter Normal로 처리
 	InteractableComponent->SetInteractable(false);
+	AdjustSpeed();
 }
 
 void AUnderwaterCharacter::InitFromPlayerState(AADPlayerState* ADPlayerState)
@@ -301,7 +310,7 @@ void AUnderwaterCharacter::ApplyUpgradeFactor(UUpgradeComponent* UpgradeComponen
 			    break;
 	    	case EUpgradeType::Speed:
 	    		// 최종 속도는 나중에 AdjustSpeed를 통해서 계산된다. 현재는 BaseSpeed만 조정하면 된다.
-	    		StatComponent->MoveSpeed += StatFactor;
+	    		BaseSwimSpeed += StatFactor;
 	    		break;
 			case EUpgradeType::Light:
 	    		if (Grade > 1)
@@ -328,12 +337,20 @@ void AUnderwaterCharacter::PossessedBy(AController* NewController)
 		{
 			NameWidgetComponent->SetNameText(ADPlayerState->GetPlayerNickname());
 			NameWidgetComponent->SetEnable(true);
+			UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Set Player Nick Name On Possess : %s"), *ADPlayerState->GetPlayerNickname());
 		}
 	}
 	else
 	{
 		LOGVN(Error, TEXT("Player State Init failed : %d"), GetUniqueID());
 	}
+}
+
+void AUnderwaterCharacter::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+
+	BaseSwimSpeed = StatComponent->MoveSpeed;	
 }
 
 void AUnderwaterCharacter::PostNetInit()
@@ -357,6 +374,7 @@ void AUnderwaterCharacter::OnRep_PlayerState()
 		{
 			NameWidgetComponent->SetNameText(ADPlayerState->GetPlayerNickname());
 			NameWidgetComponent->SetEnable(true);
+			UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Set Player Nick Name On Rep : %s"), *ADPlayerState->GetPlayerNickname());
 		}
 	}
 	else
@@ -371,11 +389,15 @@ void AUnderwaterCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProp
 
 	DOREPLIFETIME(AUnderwaterCharacter, bIsRadarOn);
 	DOREPLIFETIME(AUnderwaterCharacter, CurrentTool);
+	DOREPLIFETIME(AUnderwaterCharacter, BindCharacter);
+	DOREPLIFETIME(AUnderwaterCharacter, BoundCharacters);
 }
 
 void AUnderwaterCharacter::OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode)
 {
 	Super::OnMovementModeChanged(PrevMovementMode, PreviousCustomMode);
+
+	UE_LOG(LogAbyssDiverCharacter,Display, TEXT("Movement Changed : %s"), *UEnum::GetValueAsString(GetCharacterMovement()->MovementMode));
 
 	if (EnvironmentState != EEnvironmentState::Underwater)
 	{
@@ -402,11 +424,15 @@ void AUnderwaterCharacter::SetEnvironmentState(EEnvironmentState State)
 {
 	if (EnvironmentState == State)
 	{
+		UE_LOG(LogAbyssDiverCharacter, Warning, TEXT("EnvironmentState is already set to %s"), *UEnum::GetValueAsString(State));
 		return;
 	}
 	const EEnvironmentState OldState = EnvironmentState;
 	EnvironmentState = State;
 
+	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Environment State : %s -> %s"),
+		*UEnum::GetValueAsString(OldState), *UEnum::GetValueAsString(EnvironmentState));
+	
 	switch (EnvironmentState)
 	{
 	case EEnvironmentState::Underwater:
@@ -416,23 +442,29 @@ void AUnderwaterCharacter::SetEnvironmentState(EEnvironmentState State)
 		Mesh1PSpringArm->bEnableCameraRotationLag = true;
 		OxygenComponent->SetShouldConsumeOxygen(true);
 		bCanUseEquipment = true;
-		UpdateBlurEffect();
 		break;
 	case EEnvironmentState::Ground:
 		// 지상에서는 이동 방향으로 회전을 하게 한다.
-		GetCharacterMovement()->GravityScale = GetWorld()->GetGravityZ() / ExpectedGravityZ;
+		GetCharacterMovement()->GravityScale = ExpectedGravityZ / GetWorld()->GetGravityZ();
 		SetFlipperMeshVisibility(false);
 		FirstPersonCameraArm->bEnableCameraRotationLag = false;
 		Mesh1PSpringArm->bEnableCameraRotationLag = false;
 		OxygenComponent->SetShouldConsumeOxygen(false);
 		bCanUseEquipment = false;
 		UpdateBlurEffect();
+		if (AADPlayerState* ADPlayerState = GetPlayerState<AADPlayerState>())
+		{
+			ADPlayerState->GetInventory()->UnEquip();
+		}
 		break;
 	default:
 		UE_LOG(AbyssDiver, Error, TEXT("Invalid Character State"));
 		break;
 	}
 
+	AdjustSpeed();
+	UpdateBlurEffect();
+	
 	OnEnvironmentStateChangedDelegate.Broadcast(OldState, EnvironmentState);
 	K2_OnEnvironmentStateChanged(OldState, EnvironmentState);
 }
@@ -461,7 +493,7 @@ void AUnderwaterCharacter::OnUntargeted()
 
 void AUnderwaterCharacter::StartCaptureState()
 {
-	if(bIsCaptured || !HasAuthority() || CharacterState != ECharacterState::Normal)
+	if (bIsCaptured || !HasAuthority() || CharacterState != ECharacterState::Normal)
 	{
 		return;
 	}
@@ -482,6 +514,50 @@ void AUnderwaterCharacter::StopCaptureState()
 
 	bIsCaptured = false;
 	M_StopCaptureState();
+}
+
+void AUnderwaterCharacter::RequestBind(AUnderwaterCharacter* RequestBinderCharacter)
+{
+	LOGVN(Display, TEXT("Character %s bind to %s"), *GetName(), *RequestBinderCharacter->GetName());
+	
+	if (!HasAuthority() || RequestBinderCharacter == nullptr || CharacterState != ECharacterState::Death)
+	{
+		UE_LOG(LogAbyssDiverCharacter, Error, TEXT("RequestBind called in invalid state or not authority: %s"), *GetName());
+		return;
+	}
+	
+	if (BindCharacter == RequestBinderCharacter)
+	{
+		UnBind();
+	}
+	else
+	{
+		BindCharacter = RequestBinderCharacter;
+		RequestBinderCharacter->BindToCharacter(this);
+		
+		ConnectRope(BindCharacter);
+
+		UpdateBindInteractable();
+		AdjustSpeed();
+	}
+}
+
+void AUnderwaterCharacter::UnBind()
+{
+	if (!HasAuthority() || CharacterState != ECharacterState::Death)
+	{
+		UE_LOG(LogAbyssDiverCharacter, Error, TEXT("UnBind called in invalid state or not authority: %s"), *GetName());
+		return;
+	}
+
+	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Character %s unbind from %s"), *GetName(), BindCharacter ? *BindCharacter->GetName() : TEXT("None"));
+	
+	BindCharacter->UnbindToCharacter(this);
+	BindCharacter = nullptr;
+
+	DisconnectRope();
+	UpdateBindInteractable();
+	AdjustSpeed();
 }
 
 void AUnderwaterCharacter::EmitBloodNoise()
@@ -638,7 +714,6 @@ void AUnderwaterCharacter::CleanupToolAndEffects()
 		SpawnedTool = nullptr;
 		CurrentTool = nullptr;
 	}
-	
 }
 
 void AUnderwaterCharacter::SpawnAndAttachTool(TSubclassOf<AActor> ToolClass)
@@ -885,8 +960,12 @@ void AUnderwaterCharacter::HandleEnterGroggy()
 	// 추후에 오차가 커질 경우 Timer를 사용하지 않고 시작 시간을 기점으로 계산하도록 한다.
 	// Transition 4
 
-	GetWorldTimerManager().SetTimer(GroggyTimer, FTimerDelegate::CreateUObject(this, &AUnderwaterCharacter::SetCharacterState, ECharacterState::Death), GroggyDuration, false);
-	
+	GetWorldTimerManager().SetTimer(GroggyTimer,
+	                                FTimerDelegate::CreateUObject(this, &AUnderwaterCharacter::SetCharacterState,
+	                                ECharacterState::Death),
+									GroggyDuration,
+									false);
+
 	if (IsLocallyControlled())
 	{
 		if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
@@ -986,8 +1065,9 @@ void AUnderwaterCharacter::HandleEnterDeath()
 	
 	K2_OnDeath();
 	OnDeathDelegate.Broadcast();
+	
 	InteractableComponent->SetInteractable(true);
-	InteractionDescription = DeathInteractionDescription;
+	InteractionDescription = DeathGrabDescription;
 	bIsInteractionHoldMode = false;
 
 	RagdollComponent->SetRagdollEnabled(true);
@@ -1101,26 +1181,46 @@ void AUnderwaterCharacter::EndCombat()
 	bIsInCombat = false;
 	if (GetCharacterState() == ECharacterState::Normal)
 	{
-		GetWorldTimerManager().SetTimer(HealthRegenStartTimer, this, &AUnderwaterCharacter::StartHealthRegen, HealthRegenDelay, false);
+		GetWorldTimerManager().SetTimer(HealthRegenStartTimer,
+									this,
+									&AUnderwaterCharacter::StartHealthRegen,
+		                            HealthRegenDelay,
+		                            false);
 	}
 	OnCombatEndDelegate.Broadcast();
 }
 
-void AUnderwaterCharacter::AdjustSpeed()
+float AUnderwaterCharacter::GetSwimEffectiveSpeed() const
 {
-	const float BaseSpeed = StaminaComponent->IsSprinting() ? StatComponent->MoveSpeed * SprintMultiplier : StatComponent->MoveSpeed;
+	const float BaseSpeed = StaminaComponent->IsSprinting()
+		                        ? StatComponent->MoveSpeed * SprintMultiplier
+		                        : StatComponent->MoveSpeed;
 
 	// Effective Speed = BaseSpeed * (1 - OverloadSpeedFactor) * ZoneSpeedMultiplier
+	//					* (1 - BindMultiplier)
 	float Multiplier = 1.0f;
 	if (IsOverloaded())
 	{
 		Multiplier = 1 - OverloadSpeedFactor;
 	}
 	Multiplier *= ZoneSpeedMultiplier;
+	if (!BoundCharacters.IsEmpty())
+	{
+		Multiplier *= (1 - BindMultiplier * BoundCharacters.Num());
+	}
+	
 	Multiplier = FMath::Max(0.0f, Multiplier);
 	
-	EffectiveSpeed = BaseSpeed * Multiplier;
-	EffectiveSpeed = FMath::Max(EffectiveSpeed, MinSpeed);
+	return FMath::Max(MinSpeed, BaseSpeed * Multiplier);
+}
+
+void AUnderwaterCharacter::AdjustSpeed()
+{
+	EffectiveSpeed = EnvironmentState == EEnvironmentState::Underwater
+		? GetSwimEffectiveSpeed()
+		: BaseGroundSpeed;
+
+	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Adjust Speed : %s, EffectiveSpeed = %f"), *GetName(), EffectiveSpeed);
 	
 	if (EnvironmentState == EEnvironmentState::Underwater)
 	{
@@ -1244,9 +1344,11 @@ void AUnderwaterCharacter::OnHealthChanged(int32 CurrentHealth, int32 MaxHealth)
 
 void AUnderwaterCharacter::OnPhysicsVolumeChanged(class APhysicsVolume* NewVolume) // Delegate에 const가 없기 떄문에 NewVolume 앞에 const를 붙이지 않는다.
 {
-	LOG_NETWORK(LogAbyssDiverCharacter, Display, TEXT("Physics Volume Changed : %s"), *NewVolume->GetName());
 
 	const EEnvironmentState NewEnvironmentState = NewVolume->bWaterVolume ? EEnvironmentState::Underwater : EEnvironmentState::Ground;
+	LOG_NETWORK(LogAbyssDiverCharacter, Display, TEXT("Physics Volume Changed : %s / State : %s"),
+		*NewVolume->GetName(),
+		NewVolume->bWaterVolume ? TEXT("Underwater") : TEXT("Ground"));
 	SetEnvironmentState(NewEnvironmentState);
 }
 
@@ -1477,7 +1579,11 @@ float AUnderwaterCharacter::TakeDamage(float DamageAmount, struct FDamageEvent c
 		}
 		else
 		{
-			GetWorldTimerManager().SetTimer(GroggyTimer, FTimerDelegate::CreateUObject(this, &AUnderwaterCharacter::SetCharacterState, ECharacterState::Death), NewRemainGroggyTime, false);
+			GetWorldTimerManager().SetTimer(GroggyTimer,
+			                                FTimerDelegate::CreateUObject(
+				                                this, &AUnderwaterCharacter::SetCharacterState, ECharacterState::Death),
+			                                NewRemainGroggyTime,
+			                                false);
 			return 0.0f;
 		}
 	}
@@ -1485,7 +1591,7 @@ float AUnderwaterCharacter::TakeDamage(float DamageAmount, struct FDamageEvent c
 	{
 		return 0.0f;
 	}
-	
+
 	// 정해져야 할 것
 	// 1. EmitBloodNoise를 Shield만 소모됬을 때 호출할 것인지
 
@@ -1536,7 +1642,10 @@ void AUnderwaterCharacter::Interact_Implementation(AActor* InstigatorActor)
 
 	if (CharacterState == ECharacterState::Death)
 	{
-		// grap
+		if (AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(InstigatorActor))
+		{
+			RequestBind(UnderwaterCharacter);
+		}
 	}
 }
 
@@ -1977,6 +2086,105 @@ void AUnderwaterCharacter::OnEmoteEnd(UAnimMontage* AnimMontage, bool bArg)
 {
 	bPlayingEmote = false;
 	bUseControllerRotationYaw = true;
+}
+
+void AUnderwaterCharacter::OnRep_BindCharacter()
+{
+	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("OnRep_BindCharacter : %s"), *GetName());
+	if (BindCharacter)
+	{
+		ConnectRope(BindCharacter);
+	}
+	else
+	{
+		DisconnectRope();
+	}
+
+	AdjustSpeed();
+	UpdateBindInteractable();
+}
+
+void AUnderwaterCharacter::OnRep_BoundCharacters()
+{
+	AdjustSpeed();
+}
+
+void AUnderwaterCharacter::BindToCharacter(AUnderwaterCharacter* BoundCharacter)
+{
+	if (BoundCharacter == nullptr)
+	{
+		return;
+	}
+
+	BoundCharacters.Add(BoundCharacter);
+	AdjustSpeed();
+
+	LOGVN(Display, TEXT("Binder : %s, Bound : %s"), *GetName(), *BoundCharacter->GetName());
+}
+
+void AUnderwaterCharacter::UnbindToCharacter(AUnderwaterCharacter* BoundCharacter)
+{
+	BoundCharacters.Remove(BoundCharacter);
+	AdjustSpeed();
+}
+
+void AUnderwaterCharacter::ConnectRope(AUnderwaterCharacter* BinderCharacter)
+{
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	CableBindingActor = GetWorld()->SpawnActor<ACableBindingActor>(	
+		CableBindingActorClass, 
+		BinderCharacter->GetActorLocation(), 
+		FRotator::ZeroRotator, 
+		SpawnParams
+	);
+
+	if (CableBindingActor)
+	{
+		CableBindingActor->ConnectActors(BinderCharacter, this);
+	}
+}
+
+void AUnderwaterCharacter::DisconnectRope()
+{
+	if (CableBindingActor)
+	{
+		UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Disconnect Rope : %s / Node : %s"), *GetName(), HasAuthority() ? TEXT("Host") : TEXT("Client"));
+		CableBindingActor->DisconnectActors();
+
+		CableBindingActor->Destroy();
+		CableBindingActor = nullptr;
+	}
+}
+
+void AUnderwaterCharacter::UpdateBindInteractable()
+{
+	// Bind 상태는 Death일 경우에만 호출
+	if (CharacterState != ECharacterState::Death)
+	{
+		return;
+	}
+	
+	// Binder Character가 nullptr일 경우 연결된 Bind 상태가 아니므로 활성화
+	if (BindCharacter == nullptr)
+	{
+		InteractableComponent->SetInteractable(true);
+		InteractionDescription = DeathGrabDescription;
+		InteractionComponent->PerformFocusCheck();
+	}
+	// Binder Character가 Local Controller일 경우 활성화해서 Unbind를 가능하도록 수정
+	else if (BindCharacter->IsLocallyControlled())
+	{
+		InteractableComponent->SetInteractable(true);
+		InteractionDescription = DeathGrabReleaseDescription;
+		InteractionComponent->PerformFocusCheck();
+	}
+	else
+	{
+		InteractableComponent->SetInteractable(false);
+		InteractionDescription = DeathGrabDescription;
+		InteractionComponent->PerformFocusCheck();
+	}
 }
 
 void AUnderwaterCharacter::SetupMontageCallbacks()
