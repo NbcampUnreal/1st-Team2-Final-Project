@@ -122,7 +122,7 @@ void ASelectMachine::OnOpenWindowOverlapBegin(UPrimitiveComponent* OverlappedCom
 void ASelectMachine::OnOpenWindowOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
 	if (!HasAuthority()) return;
-	if (!Cast<AUnderwaterCharacter>(OtherActor)) return;
+	if (!IsA<AUnderwaterCharacter>()) return;
 
 	if (bIsEnterHost)
 	{
