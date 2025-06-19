@@ -58,6 +58,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
 	TObjectPtr<class AMonster> Monster;
 
+	UPROPERTY()
+	TMap<TWeakObjectPtr<AActor>, float> LostActorsMap;
+
 	UPROPERTY(EditDefaultsOnly, Category = "AI|SightData")
 	FName MonsterID;
 
