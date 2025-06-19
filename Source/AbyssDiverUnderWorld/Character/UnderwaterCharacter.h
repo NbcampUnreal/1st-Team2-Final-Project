@@ -1145,7 +1145,7 @@ public:
 	FORCEINLINE bool IsDeath() const { return CharacterState == ECharacterState::Death; }
 
 	/** 캐릭터가 현재 살아있는지 여부를 반환. 살아 있으면 타겟팅될 수 있다. */
-	FORCEINLINE bool IsAlive() const;
+	bool IsAlive() const;
 
 	/** 캐릭터의 남은 그로기 시간을 반환 */
 	UFUNCTION(BlueprintCallable)
