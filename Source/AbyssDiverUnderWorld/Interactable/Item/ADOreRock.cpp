@@ -54,6 +54,8 @@ void AADOreRock::BeginPlay()
 	{
 		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
 	}
+	InteractableComp->SetAlwaysHighlight(true);
+	
 }
 
 void AADOreRock::Destroyed()
@@ -112,7 +114,7 @@ void AADOreRock::OnHoldStart_Implementation(APawn* InstigatorPawn)
 				if (InventoryComp->HasEquippedItem())
 				{
 					PreviousEquipIndex = InventoryComp->GetSlotIndex();
-					InventoryComp->S_UseInventoryItem_Implementation(EItemType::Equipment, PreviousEquipIndex);
+					InventoryComp->S_UseInventoryItem_Implementation(EItemType::Equipment, PreviousEquipIndex, true);
 				}
 				else
 				{
@@ -129,6 +131,7 @@ void AADOreRock::OnHoldStop_Implementation(APawn* InstigatorPawn)
 {
 	AUnderwaterCharacter* Diver = Cast<AUnderwaterCharacter>(InstigatorPawn);
 	if (!Diver) return;
+	ActiveInstigators.Remove(InstigatorPawn);
 
 	if (PreviousEquipIndex != INDEX_NONE)
 	{
@@ -138,7 +141,7 @@ void AADOreRock::OnHoldStop_Implementation(APawn* InstigatorPawn)
 			{
 				const float MontageStopDuration = 0.f;
 				Diver->M_StopAllMontagesOnBothMesh(MontageStopDuration);
-				InventoryComp->S_UseInventoryItem_Implementation(EItemType::Equipment, PreviousEquipIndex);
+				InventoryComp->S_UseInventoryItem_Implementation(EItemType::Equipment, PreviousEquipIndex, true);
 				M_CleanupToolAndEffects(Diver);
 				LOGI(Log, TEXT("Skip Mining Stops"));
 				return;
@@ -147,7 +150,6 @@ void AADOreRock::OnHoldStop_Implementation(APawn* InstigatorPawn)
 	}
 	LOGI(Log, TEXT("Mining Stops"));
 	PlayStowAnim(InstigatorPawn);
-	ActiveInstigators.Remove(InstigatorPawn);
 }
 
 void AADOreRock::HandleMineRequest(APawn* InstigatorPawn)
@@ -189,6 +191,7 @@ void AADOreRock::HandleMineRequest(APawn* InstigatorPawn)
 	if (this->GetClass()->ImplementsInterface(UIADInteractable::StaticClass()))
 	{
 		IIADInteractable::Execute_OnHoldStop(this, InstigatorPawn);
+		LOGV(Warning, TEXT("Mine Completes and Call OnHoldStop"));
 	}
 }
 
@@ -239,13 +242,6 @@ void AADOreRock::OnAssetLoaded(FDropEntry* Entry, int32 Mass)
 			FCollisionShape::MakeSphere(SphereRadius),
 			QueryParams
 		);
-
-		if (bBlocked)
-		{
-			// 충돌한 경우 충돌 법선 방향으로 밀어내기
-			float Offset = SphereRadius + 5.f;  // 5cm 여유 공간
-			DesiredLoc = Hit.ImpactPoint + Hit.ImpactNormal * Offset;
-		}
 
 		FActorSpawnParameters Params;
 		Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
