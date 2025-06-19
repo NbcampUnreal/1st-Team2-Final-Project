@@ -8,6 +8,7 @@
 #include "Interface/IADInteractable.h"
 #include "AbyssDiverUnderWorld.h"
 #include "StatComponent.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "UnderwaterCharacter.generated.h"
 
 #if UE_BUILD_SHIPPING
@@ -559,8 +560,16 @@ protected:
 	UFUNCTION()
 	void OnEmoteEnd(UAnimMontage* AnimMontage, bool bInterupted);
 
-	/** 카메라 모드를 전환한다. 1인칭, 감정 표현을 위한 3인칭 모드로 전환한다. */
-	void SwitchCameraMode();
+	/** 카메라 모드를 전환한다. 1인칭, 감정 표현을 위한 3인칭 모드로 전환한다.
+	 * PreCondition : 1인칭 카메라 Transition이 완료되어야 한다. Transition 도중에 시작하는 경우는 없다.
+	 */
+	void StartEmoteCameraTransition();
+
+	/** Mesh Visibility를 카메라 모드에 맞춰서 설정한다. */
+	void SetCameraFirstPerson(bool bFirstPersonCamera);
+	
+	/** 카메라 Transition Update */
+	void UpdateCameraTransition();
 
 	/** Binder Character 함수. Bound Characters를 저장한다. */
 	void BindToCharacter(AUnderwaterCharacter* BoundCharacter);
@@ -717,13 +726,36 @@ private:
 	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	uint8 bCanUseEquipment : 1;
 
-	/** 감정 표현 중 여부, Client 에서만 저장하고 따로 전파하지 않는다. */
+	/** 감정 표현 여부. 감정 표현을 실행하면 True가 되고 False가 되는 시점은 First Person Camera로의 Transition이 종료됬을 때이다. */
 	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	uint8 bPlayingEmote : 1;
 
 	/** 현재 재생 중인 감정 표현 인덱스 */
 	int8 PlayEmoteIndex;
 
+	/** Camera Transition 시에 Timer Update 함수 Interval */
+	UPROPERTY(EditDefaultsOnly, Category = "Character|Emote", meta = (AllowPrivateAccess = "true", ClampMin = "0.0"))
+	float CameraTransitionUpdateInterval;
+
+	/** 카메라 Transition Alpha 방향. 1.0f이면 Emote Camera로 이동, -1.0f이면 First Person Camera로 이동한다.
+	 * 카메라 Transition이 시작되면 1.0f가 되고 애니메이션이 종료되거나 취소되면 -1.0f가 된다. */
+	float CameraTransitionDirection;
+	
+	/** 카메라 Transition 시에 경과 시간. Alpha = CameraTransitionTimeElapsed / CameraTransitionDuration */
+	float CameraTransitionTimeElapsed;
+
+	/** 카메라 Transition에 걸리는 시간 */
+	UPROPERTY(EditDefaultsOnly, Category = "Character|Emote", meta = (AllowPrivateAccess = "true", ClampMin = "0.0"))
+	float CameraTransitionDuration;
+
+	/** Emote Camera 시에 Spring Arm 길이 */
+	UPROPERTY(EditDefaultsOnly, Category = "Character|Emote", meta = (AllowPrivateAccess = "true", ClampMin = "0.0"))
+	float EmoteCameraTransitionLength;
+
+	/** Emote Camera Transition 시에 Spring Arm Easing Type */
+	UPROPERTY(EditDefaultsOnly, Category = "Character|Emote", meta = (AllowPrivateAccess = "true"))
+	TEnumAsByte<EEasingFunc::Type> EmoteCameraTransitionEasingType;
+	
 	/** 감정 표현 몽타주 배열. 순서대로 Emote1, Emote2, Emote3에 해당한다. */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Emote", meta = (AllowPrivateAccess = "true"))
 	TArray<TObjectPtr<UAnimMontage>> EmoteAnimationMontages;

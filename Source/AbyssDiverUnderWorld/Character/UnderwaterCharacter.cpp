@@ -81,8 +81,15 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	bIsInvincible = false;
 
 	bCanUseEquipment = true;
+	
 	bPlayingEmote = false;
 	PlayEmoteIndex = INDEX_NONE;
+	CameraTransitionUpdateInterval = 0.01f;
+	CameraTransitionDirection = 1.0f;
+	CameraTransitionTimeElapsed = 0.0f;
+	CameraTransitionDuration = 0.25f;
+	EmoteCameraTransitionLength = 500.0f;
+	EmoteCameraTransitionEasingType = EEasingFunc::EaseInOut;
 
 	LanternLength = 3000.0f;
 	
@@ -2132,6 +2139,12 @@ void AUnderwaterCharacter::M_BroadcastPlayEmote_Implementation(int8 EmoteIndex)
 
 	// Control Rotation을 이용해서 Rotation을 갱신하기 때문에 모든 노드에서 동기화가 되어야 한다.
 	bUseControllerRotationYaw = false;
+
+	if (IsLocallyControlled())
+	{
+		StartEmoteCameraTransition();
+	}
+	StartEmoteCameraTransition();
 }
 
 bool AUnderwaterCharacter::CanPlayEmote() const
@@ -2179,8 +2192,6 @@ void AUnderwaterCharacter::M_BroadcastStopPlyingEmote_Implementation(int8 EmoteI
 		return;	
 	}
 	
-	bPlayingEmote = false;
-
 	UAnimMontage* EmoteMontage = GetEmoteMontage(EmoteIndex);
 	if (EmoteMontage == nullptr)
 	{
@@ -2197,6 +2208,7 @@ void AUnderwaterCharacter::M_BroadcastStopPlyingEmote_Implementation(int8 EmoteI
 		}
 	}
 
+	// Control Rotation은 Emote Camera Transition을 기다리지 않고 바로 반영한다.
 	bUseControllerRotationYaw = true;
 }
 
@@ -2208,23 +2220,61 @@ void AUnderwaterCharacter::S_StopPlayingEmote_Implementation(int8 EmoteIndex)
 void AUnderwaterCharacter::OnEmoteEnd(UAnimMontage* AnimMontage, bool bInterupted)
 {
 	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("OnEmoteEnd : %s, bArg : %d"), *AnimMontage->GetName(), bInterupted);
-	
-	bPlayingEmote = false;
-	bUseControllerRotationYaw = true;
+
+	CameraTransitionDirection = -1.0f;
 }
 
-void AUnderwaterCharacter::SwitchCameraMode()
+void AUnderwaterCharacter::StartEmoteCameraTransition()
 {
-	// 1인칭 시점에서 3인칭 시점으로 전환
-	if (bPlayingEmote)
+	CameraTransitionDirection = 1.0f;
+	CameraTransitionTimeElapsed = 0.0f;
+	SetCameraFirstPerson(false);
+	// FirstPersonCameraArm->bInheritRoll = true;
+	GetWorldTimerManager().SetTimer(
+		EmoteCameraTransitionTimer,
+		this,
+		&AUnderwaterCharacter::UpdateCameraTransition,
+		CameraTransitionUpdateInterval,
+		true
+	);
+}
+
+void AUnderwaterCharacter::SetCameraFirstPerson(bool bFirstPersonCamera)
+{
+	GetMesh()->SetOwnerNoSee(bFirstPersonCamera);
+	GetMesh1P()->SetOwnerNoSee(!bFirstPersonCamera);
+}
+
+void AUnderwaterCharacter::UpdateCameraTransition()
+{
+	if (CameraTransitionDuration <= 0.0f || CameraTransitionUpdateInterval <= 0.0f)
 	{
-		bUseControllerRotationYaw = false;
+		UE_LOG(LogAbyssDiverCharacter, Error, TEXT("Camera Transition Duration or Update Interval is not set properly. Duration: %f, Update Interval: %f"),
+			CameraTransitionDuration, CameraTransitionUpdateInterval);
+		return;
 	}
-	// 3인칭 시점에서 1인칭 시점으로 전환
-	else
+	
+	CameraTransitionTimeElapsed += CameraTransitionUpdateInterval * CameraTransitionDirection;
+	CameraTransitionTimeElapsed = FMath::Clamp(CameraTransitionTimeElapsed, 0.0f, CameraTransitionDuration);
+	const float Alpha = CameraTransitionTimeElapsed / CameraTransitionDuration;
+
+	// First Person Camera Transition End
+	if (Alpha <= 0.0f && CameraTransitionDirection < 0.0f)
 	{
-		bUseControllerRotationYaw = true;
+		GetWorldTimerManager().ClearTimer(EmoteCameraTransitionTimer);
+		bPlayingEmote = false;
+		SetCameraFirstPerson(true);
+		// FirstPersonCameraArm->bInheritRoll = false;
+		return;
 	}
+	
+	const float NewSpringArmLength = UKismetMathLibrary::Ease(
+		0.0f,
+		EmoteCameraTransitionLength,
+		Alpha,
+		EmoteCameraTransitionEasingType
+	);
+	FirstPersonCameraArm->TargetArmLength = NewSpringArmLength;
 }
 
 void AUnderwaterCharacter::OnRep_BindCharacter()
