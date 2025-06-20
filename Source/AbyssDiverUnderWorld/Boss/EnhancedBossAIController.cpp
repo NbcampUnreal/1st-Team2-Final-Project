@@ -85,7 +85,7 @@ void AEnhancedBossAIController::OnTargetPerceptionUpdatedHandler(AActor* Actor, 
 {
 	// 감지한 대상이 플레이어가 아니거나 사망 상태인 경우 리턴
 	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor);
-	if (!IsValid(Player) || Player->GetCharacterState() == ECharacterState::Death) return;
+	if (!IsValid(Player) || Player->IsDeath() || Player->IsGroggy()) return;
 
 	LOG(TEXT("OnTargetPerceptionUpdatedHandler : %s"), *Player->GetName());
 	
