@@ -55,8 +55,6 @@ void AADPlayerController::BeginPlay()
 
 		S_SetPlayerInfo(Id, Nickname);
 	}
-
-	
 }
 
 void AADPlayerController::SetPawn(APawn* InPawn)
@@ -101,6 +99,26 @@ void AADPlayerController::PostNetInit()
 {
 	Super::PostNetInit();
 	OnPostNetInit();
+
+	if (IsLocalController())
+	{
+
+		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = GetLocalPlayer()->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
+		{
+			Subsystem->AddMappingContext(DefaultMappingContext, 0);
+		}
+
+		FString Nickname = TEXT("Guest");
+		FUniqueNetIdRepl Id;
+
+		if (GetLocalPlayer())
+		{
+			Id = GetLocalPlayer()->GetPreferredUniqueNetId();
+			Nickname = GetLocalPlayer()->GetNickname();
+		}
+
+		S_SetPlayerInfo(Id, Nickname);
+	}
 }
 
 void AADPlayerController::PostSeamlessTravel()

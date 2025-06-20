@@ -12,8 +12,10 @@
 #include "Framework/ADCampGameMode.h"
 #include "Character/UnderwaterCharacter.h"
 #include "Components/WidgetComponent.h"
+#include "Components/SphereComponent.h"
 #include "UI/MissionSelectWidget.h"
 #include "AbyssDiverUnderWorld.h"
+#include "InteractableButton.h"
 
 ASelectMachine::ASelectMachine()
 {
@@ -32,6 +34,14 @@ ASelectMachine::ASelectMachine()
 	SelectMissionWidgetComp->SetDrawSize(FVector2D(1930.0f, 1160.f));
 	SelectMissionWidgetComp->SetPivot(FVector2D(0.5, 0.5));
 	SelectMissionWidgetComp->SetTintColorAndOpacity(FLinearColor(0.05f, 0.05f, 0.05f, 1.0f));
+
+	OpenWindowCollision = CreateDefaultSubobject<USphereComponent>(TEXT("OpenWindowCollision"));
+	OpenWindowCollision->SetupAttachment(MeshComp);
+	OpenWindowCollision->InitSphereRadius(200.0f);
+	OpenWindowCollision->SetCollisionProfileName(TEXT("OverlapAllDynamics"));
+
+	OpenWindowCollision->OnComponentBeginOverlap.AddDynamic(this, &ASelectMachine::OnOpenWindowOverlapBegin);
+	OpenWindowCollision->OnComponentEndOverlap.AddDynamic(this, &ASelectMachine::OnOpenWindowOverlapEnd);
 
 	ConstructorHelpers::FClassFinder<UUserWidget> MisionSelectWidgetFinder(TEXT("/Game/_AbyssDiver/Blueprints/UI/UI/WBP_MissionSelect"));
 	if (MisionSelectWidgetFinder.Succeeded())
@@ -85,7 +95,7 @@ void ASelectMachine::BeginPlay()
 					case EButtonAction::SelectLevel:
 						GameStartButton = ButtonActor;
 						ButtonActor->OnButtonPressed.BindUObject(this, &ASelectMachine::HandleTravelLevel);
-						ButtonActor->SetButtonDescription(TEXT("미션과 맵을 선택해주세요."));
+						ButtonActor->SetButtonDescription(TEXT("맵을 선택해주세요."));
 						break;
 					default:
 						break;
@@ -96,12 +106,42 @@ void ASelectMachine::BeginPlay()
 	}
 }
 
+void ASelectMachine::OnOpenWindowOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if (!HasAuthority()) return;
+	AUnderwaterCharacter* Char = Cast<AUnderwaterCharacter>(OtherActor);
+	if (!Char || !Char->IsLocallyControlled()) return;
+
+	if (!bIsEnterHost)
+	{
+		bIsEnterHost = true;
+		SetSelectMachineStateType(ESelectMachineStateType::MapOpenState);
+	}
+}
+
+void ASelectMachine::OnOpenWindowOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	if (!HasAuthority()) return;
+	if (!OtherActor->IsA<AUnderwaterCharacter>()) return;
+
+	if (bIsEnterHost)
+	{
+		bIsEnterHost = false;
+		SetSelectMachineStateType(ESelectMachineStateType::CloseState);
+	}
+}
+
+void ASelectMachine::UpdateWidgetReaction_Implementation(ESelectMachineStateType OldType, ESelectMachineStateType NewType)
+{
+}
+
 void ASelectMachine::UpdatelevelImage_Implementation()
 {
 }
 
 void ASelectMachine::HandlePrevLevel(AActor* InteractInstigator)
 {
+	if (SelectMachineStateType == ESelectMachineStateType::CloseState) return;
 	LOGV(Warning, TEXT("PrevLevel Button Pressed"));
 	--CurrentLevelIndex;
 	CurrentLevelIndex = FMath::Clamp(CurrentLevelIndex, 0, LevelIDs.Num() - 1);
@@ -110,6 +150,7 @@ void ASelectMachine::HandlePrevLevel(AActor* InteractInstigator)
 
 void ASelectMachine::HandleNextLevel(AActor* InteractInstigator)
 {
+	if (SelectMachineStateType == ESelectMachineStateType::CloseState) return;
 	LOGV(Warning, TEXT("NextLevel Button Pressed"));
 	++CurrentLevelIndex;
 	CurrentLevelIndex = FMath::Clamp(CurrentLevelIndex, 0, LevelIDs.Num() - 1);
@@ -129,14 +170,19 @@ void ASelectMachine::AutoSelectLevel(AActor* InteractInstigator)
 	{
 		GM->SetSelectedLevel(LevelID);
 		bSelectLevel = true;
+		SetSelectMachineStateType(ESelectMachineStateType::MissionOpenState);
 	}
 	else
 	{
 		bSelectLevel = false;
+		SetSelectMachineStateType(ESelectMachineStateType::MapOpenState);
 	}
 
+	UMissionSelectWidget* SelectWidgetInstance = Cast<UMissionSelectWidget>(SelectMissionWidgetComp->GetWidget());
+	SelectWidgetInstance->UpdateMissionList(CurrentLevelIndex);
+
 	UpdatelevelImage();
-	UpdateState();
+	UpdateButtonDescription();
 }
 
 void ASelectMachine::HandleTravelLevel(AActor* InteractInstigator)
@@ -175,35 +221,36 @@ void ASelectMachine::HandleTravelLevel(AActor* InteractInstigator)
 
 void ASelectMachine::SwitchbSelectMission(const TArray<FMissionData>& MissionsFromUI)
 {
-	bSelectMission = !bSelectMission;
-	UpdateState();
+	//bSelectMission = !bSelectMission;
+	//UpdateButtonDescription();
 }
 
-void ASelectMachine::UpdateState()
+void ASelectMachine::UpdateButtonDescription()
 {
-	if (bSelectMission && bSelectLevel)
+	if (bSelectLevel)
 	{
 		GameStartButton->SetButtonDescription(TEXT("게임 시작하기"));
 	}
-	else if (bSelectMission && !bSelectLevel)
-	{
-		GameStartButton->SetButtonDescription(TEXT("미션 선택 완료 \n맵을 선택해주세요."));
-	}
-	else if (!bSelectMission && bSelectLevel)
-	{
-		GameStartButton->SetButtonDescription(TEXT("맵 선택 완료 \n미션을 선택해주세요."));
-	}
 	else
 	{
-		GameStartButton->SetButtonDescription(TEXT("미션과 맵을 선택해주세요."));
+		GameStartButton->SetButtonDescription(TEXT("맵을 선택해주세요."));
 	}
 }
 
 bool ASelectMachine::IsConditionMet()
 {
-	if (bSelectMission && bSelectLevel)
+	if (bSelectLevel)
 	{
 		return true;
 	}
 	return false;
+}
+
+void ASelectMachine::SetSelectMachineStateType(ESelectMachineStateType StateType)
+{
+	if (SelectMachineStateType != StateType)
+	{
+		UpdateWidgetReaction(SelectMachineStateType, StateType);
+		SelectMachineStateType = StateType;
+	}
 }

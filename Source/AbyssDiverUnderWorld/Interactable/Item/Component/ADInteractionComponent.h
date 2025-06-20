@@ -128,6 +128,7 @@ protected:
 
 private:
     FString CachedDesc;
+    float InteractionRadius = 400.f;
 
 #pragma endregion
 

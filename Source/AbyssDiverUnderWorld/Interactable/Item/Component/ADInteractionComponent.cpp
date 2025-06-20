@@ -45,7 +45,7 @@ void UADInteractionComponent::BeginPlay()
 		FAttachmentTransformRules::KeepRelativeTransform
 	);
 
-	RangeSphere->InitSphereRadius(400.f);
+	RangeSphere->InitSphereRadius(800.f);
 	RangeSphere->SetCollisionProfileName(TEXT("Interaction"));
 	RangeSphere->SetGenerateOverlapEvents(true);
 
@@ -125,6 +125,10 @@ void UADInteractionComponent::HandleBeginOverlap(UPrimitiveComponent* Overlapped
 		if (UADInteractableComponent* ADIC = IADInteractable->GetInteractableComponent())
 		{
 			NearbyInteractables.Add(ADIC);
+			if (ADIC->IsAlwaysHighlight())
+			{
+				ADIC->SetHighLight(true);
+			}
 			SetComponentTickEnabled(true);
 			//		LOG(TEXT("Overlapped!"));
 		}
@@ -139,6 +143,10 @@ void UADInteractionComponent::HandleEndOverlap(UPrimitiveComponent* OverlappedCo
 		if (UADInteractableComponent* ADIC = IADInteractable->GetInteractableComponent())
 		{
 			NearbyInteractables.Remove(ADIC);
+			if (ADIC->IsAlwaysHighlight())
+			{
+				ADIC->SetHighLight(false);
+			}
 			if (NearbyInteractables.Num() == 0)
 			{
 				SetComponentTickEnabled(false);
@@ -146,7 +154,10 @@ void UADInteractionComponent::HandleEndOverlap(UPrimitiveComponent* OverlappedCo
 				if (FocusedInteractable)
 				{
 					// 외곽선 제거
-					FocusedInteractable->SetHighLight(false);
+					if (!FocusedInteractable->IsAlwaysHighlight())
+					{
+						FocusedInteractable->SetHighLight(false);
+					}
 					OnFocusEnd.Broadcast();
 					FocusedInteractable = nullptr;
 					//				LOG(TEXT("Remove Border"));
@@ -224,7 +235,7 @@ bool UADInteractionComponent::ComputeViewTrace(FVector& OutStart, FVector& OutEn
 	PC->GetPlayerViewPoint(CamLoc, CamRot);
 
 	OutStart = CamLoc;
-	OutEnd = CamLoc + CamRot.Vector() * RangeSphere->GetScaledSphereRadius();
+	OutEnd = CamLoc + CamRot.Vector() * InteractionRadius;
 	return true;
 }
 
@@ -247,14 +258,16 @@ UADInteractableComponent* UADInteractionComponent::PerformLineTrace(const FVecto
 
 void UADInteractionComponent::UpdateFocus(UADInteractableComponent* NewFocus)
 {
-
 	if (NewFocus == FocusedInteractable)
 	{
 		const bool bNeedHighlight = ShouldHighlight(NewFocus);
 		if (bNeedHighlight != NewFocus->IsHighlighted())
 		{
-			NewFocus->SetHighLight(bNeedHighlight);
-
+			if (!NewFocus->IsAlwaysHighlight())
+			{
+				NewFocus->SetHighLight(bNeedHighlight);
+			}
+			
 			if (!bNeedHighlight)
 			{
 				OnFocusEnd.Broadcast();   // 설명 숨김
@@ -287,7 +300,10 @@ void UADInteractionComponent::UpdateFocus(UADInteractableComponent* NewFocus)
 
 	if (FocusedInteractable)
 	{
-		FocusedInteractable->SetHighLight(false);
+		if (!FocusedInteractable->IsAlwaysHighlight())
+		{
+			FocusedInteractable->SetHighLight(false);
+		}
 		OnFocusEnd.Broadcast();
 	}
 
@@ -311,7 +327,10 @@ void UADInteractionComponent::ClearFocus()
 //	if (!IsLocallyControlled()) return;
 	if (FocusedInteractable)
 	{
-		FocusedInteractable->SetHighLight(false);
+		if (!FocusedInteractable->IsAlwaysHighlight())
+		{
+			FocusedInteractable->SetHighLight(false);
+		}
 		OnFocusEnd.Broadcast();
 		FocusedInteractable = nullptr;
 	}
