@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "InputActionValue.h"
 #include "GameFramework/PlayerController.h"
+
 #include "ADPlayerController.generated.h"
 
 enum class EMapName : uint8;
@@ -38,13 +39,7 @@ public:
 	UFUNCTION(BlueprintImplementableEvent)
 	void OnPostSeamlessTravel();
 
-
-
 protected:
-
-	UFUNCTION(Server, Reliable)
-	void S_SetPlayerInfo(const FUniqueNetIdRepl& Id, const FString& Nickname);
-	void S_SetPlayerInfo_Implementation(const FUniqueNetIdRepl& Id, const FString& Nickname);
 
 	UFUNCTION(Server, Reliable)
 	void S_RequestSelectLevel(const EMapName InLevelName);
