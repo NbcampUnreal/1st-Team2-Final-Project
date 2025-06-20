@@ -1153,6 +1153,7 @@ private:
 
 	uint8 bIsAttackedByEyeStalker : 1;
 
+	/** Post Process를 관리하는 컴포넌트 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UPostProcessSettingComponent> PostProcessSettingComponent;
 	
@@ -1275,6 +1276,7 @@ public:
 	/** 현재 Eye Stalker에게 공격받았는지 여부를 반환 */
 	FORCEINLINE bool IsAttackedByEyeStalker() const { return bIsAttackedByEyeStalker; }
 
+	/** Post Process Setting Component를 반환 */
 	FORCEINLINE UPostProcessSettingComponent* GetPostProcessSettingComponent() const { return PostProcessSettingComponent; }
 	
 #pragma endregion
