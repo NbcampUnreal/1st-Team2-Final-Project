@@ -16,6 +16,7 @@
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
 #include "AbyssDiverUnderWorld.h"
+#include "Character/UnderwaterCharacter.h"
 
 AADSpearGunBullet::AADSpearGunBullet() : 
 	StaticMesh(nullptr),
@@ -81,6 +82,7 @@ void AADSpearGunBullet::BeginPlay()
 void AADSpearGunBullet::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
     if (!HasAuthority()) return;
+    if (OtherActor->IsA<AUnderwaterCharacter>()) return;
     if (!bWasHit)
     {
         bWasHit = true;
@@ -90,8 +92,9 @@ void AADSpearGunBullet::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AAct
             M_EffectActivate(false);
         }
         LOGP(Warning, TEXT("SetProjectileMovementAttribute"));
-        ProjectileMovementComp->StopMovementImmediately();
+        LOGP(Warning, TEXT("Hit Basic Damage To %s"), *OtherActor->GetName());
         ProjectileMovementComp->Deactivate();
+
         if (OtherActor && OtherActor != this && OtherComp && OtherComp->GetOwner() != this)
         {
             GetSoundSubsystem()->PlayAt(ESFX::Hit, SweepResult.Location);
@@ -111,7 +114,6 @@ void AADSpearGunBullet::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AAct
             );
             AttachToHitActor(OtherComp, SweepResult, true);
             M_AdjustTransform(GetActorTransform()); //위치 보정
-            LOGP(Warning, TEXT("Hit Basic Damage To %s"), *OtherActor->GetName());
             ApplyAdditionalDamage();
         }
     }
@@ -122,6 +124,8 @@ void AADSpearGunBullet::Deactivate()
 {
     Super::Deactivate();
     bWasHit = false;
+
+    LOGP(Warning, TEXT("ADSpearGunBulletDeactivate"));
 
     // StaticMesh 상태 복원
     StaticMesh->SetSimulatePhysics(false);
