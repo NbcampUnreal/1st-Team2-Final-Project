@@ -14,6 +14,11 @@ const int32 UPlayerStatusWidget::MaxPhaseNumber = 3;
 UPlayerStatusWidget::UPlayerStatusWidget(const FObjectInitializer& ObjectInitializer)
     : Super(ObjectInitializer)
 {
+    ConstructorHelpers::FObjectFinder<UMaterialInterface> MaterialFinder(TEXT("/Game/_AbyssDiver/Materials/M_Hit"));
+    if (MaterialFinder.Succeeded())
+    {
+        LoadedMaterial = MaterialFinder.Object;
+    }
 }
 
 void UPlayerStatusWidget::NativeConstruct()
@@ -32,6 +37,17 @@ void UPlayerStatusWidget::NativeConstruct()
     OnNextPhaseAnimFinishedDelegate.BindUFunction(this, OnNextPhaseAnimFinishedName);
     UnbindAllFromAnimationFinished(NextPhaseAnim);
     BindToAnimationFinished(NextPhaseAnim, OnNextPhaseAnimFinishedDelegate);
+
+    if (HealthScreenEffect && LoadedMaterial)
+    {
+        // 다이나믹 머티리얼 인스턴스 생성
+        DynamicMaterial = UMaterialInstanceDynamic::Create(LoadedMaterial, this);
+
+        // Brush에 머티리얼 적용
+        FSlateBrush NewBrush;
+        NewBrush.SetResourceObject(DynamicMaterial);
+        HealthScreenEffect->SetBrush(NewBrush);
+    }
 }
 
 void UPlayerStatusWidget::SetSpearCount(int32 Current, int32 Total)
@@ -81,7 +97,8 @@ void UPlayerStatusWidget::SetHealthPercent(float InPercent)
 {
     if (HealthBar)
     {
-        HealthBar->SetPercent(FMath::Clamp(InPercent, 0.0f, 1.0f));
+        //HealthBar->SetPercent(FMath::Clamp(InPercent, 0.0f, 1.0f));
+        DynamicMaterial->SetScalarParameterValue("Range", 1-FMath::Clamp(InPercent, 0.0f, 1.0f));
     }
     else
     {
