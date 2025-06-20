@@ -10,6 +10,8 @@
 
 AHorrorCreature::AHorrorCreature()
 {
+	PrimaryActorTick.bCanEverTick = true;
+
 	// Initialize Variable
 	ChaseTriggerTime = 2.0f;
 	ChaseSpeed = 1400.0f;
@@ -25,7 +27,7 @@ AHorrorCreature::AHorrorCreature()
 
 	HorrorCreatureHitSphere = CreateDefaultSubobject<USphereComponent>(TEXT("HorrorCreatureHitSphere"));
 	HorrorCreatureHitSphere->SetupAttachment(GetMesh(), TEXT("AttackSocket"));
-	HorrorCreatureHitSphere->InitSphereRadius(20.0f);
+	HorrorCreatureHitSphere->InitSphereRadius(70.0f);
 	HorrorCreatureHitSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	HorrorCreatureHitSphere->SetHiddenInGame(true);
 }
@@ -39,6 +41,34 @@ void AHorrorCreature::BeginPlay()
 		CachedPerceptionComponent = AIController->FindComponentByClass<UAIPerceptionComponent>();
 	}
 	HorrorCreatureHitSphere->OnComponentBeginOverlap.AddDynamic(this, &AHorrorCreature::OnSwallowTriggerOverlap);
+}
+
+void AHorrorCreature::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	if (bSwallowingInProgress && SwallowedPlayer && IsValid(SwallowedPlayer))
+	{
+		SwallowLerpAlpha += DeltaTime * 1.5f;
+		const float Alpha = FMath::Clamp(SwallowLerpAlpha, 0.f, 1.f);
+		const FVector NewLoc = FMath::Lerp(SwallowStartLocation, SwallowTargetLocation, Alpha);
+
+		SwallowedPlayer->SetActorLocation(NewLoc);
+
+		if (Alpha >= 1.f)
+		{
+			// Attach
+			SwallowedPlayer->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepWorldTransform, TEXT("MouthSocket"));
+			SwallowedPlayer->SetActorRelativeLocation(FVector::ZeroVector);
+
+			// 상태 전이
+			SetMonsterState(EMonsterState::Flee);
+			BlackboardComponent->ClearValue(TargetActorKey);
+
+			// 연출 종료
+			bSwallowingInProgress = false;
+		}
+	}
 }
 
 
@@ -75,10 +105,13 @@ void AHorrorCreature::SwallowPlayer(AUnderwaterCharacter* Victim)
 
 	DamageToVictim(Victim, SwallowDamage);
 
-	// Attach to mouth or body socket
-	Victim->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("MouthSocket"));
-	Victim->SetActorRelativeLocation(FVector::ZeroVector); // Safely reset location
 	Victim->StartCaptureState();
+
+	// Set the Victim movement start position
+	SwallowStartLocation = Victim->GetActorLocation();
+	SwallowTargetLocation = GetMesh()->GetSocketLocation("MouthSocket");
+	SwallowLerpAlpha = 0.f;
+	bSwallowingInProgress = true;
 
 	SetMonsterState(EMonsterState::Flee);
 	BlackboardComponent->ClearValue(TargetActorKey);
