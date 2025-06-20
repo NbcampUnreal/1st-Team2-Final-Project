@@ -75,13 +75,13 @@ void AADItemBase::HandlePickup(APawn* InstigatorPawn)
 			const bool bIsMatchedEquipInInventory = Inv->TryGiveAmmoToEquipment(ItemData.BulletType, AmmoPerPickup);
 			if (bIsMatchedEquipInInventory)
 			{
+				LOGI(Log, TEXT("Matched Bullet!! Add Ammo!!"));
 				M_PlayPickupSound();
 				Destroy();
 			}
-			LOGI(Log, TEXT("Matched Bullet!! Add Ammo!!"));
+			LOGI(Log, TEXT("No Matched Bullet!! Buy Matched Gun"));
 			return;
 		}
-		LOGI(Log, TEXT("No Matched Bullet!! Buy Matched Gun"));
 		return;
 	}
 	LOGI(Log, TEXT("Add to Inventory"));
