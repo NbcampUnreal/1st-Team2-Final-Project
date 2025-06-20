@@ -242,8 +242,12 @@ void AEnhancedBossAIController::OnDamagePerceptionSuccess(AUnderwaterCharacter* 
 {
 	LOG(TEXT("Damage Perception Success !"));
 	
-	SetBlackboardPerceptionType(EPerceptionType::Damage);
 	GetBlackboardComponent()->SetValueAsObject(TargetPlayerKey, Player);
+	
+	if (IsValid(Boss))
+	{
+		Boss->SetTarget(Player);
+	}
 	
 	if (bIsAlienShark)
 	{
