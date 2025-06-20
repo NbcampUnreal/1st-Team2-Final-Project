@@ -239,6 +239,9 @@ protected:
 	TObjectPtr<UStaticMeshComponent> ShopMeshComponent;
 
 	UPROPERTY(VisibleAnywhere, Category = "Shop")
+	TObjectPtr<USkeletalMeshComponent> ShopMerchantMeshComponent;
+
+	UPROPERTY(VisibleAnywhere, Category = "Shop")
 	TObjectPtr<USkeletalMeshComponent> ItemMeshComponent;
 
 	UPROPERTY(VisibleAnywhere, Category = "Shop")
