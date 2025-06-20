@@ -43,6 +43,8 @@ void AADCampGameMode::PostLogin(APlayerController* NewPlayer)
 
 	MissionSubsystem->RemoveAllMissions();
 
+	Super::PostLogin(NewPlayer);
+
 	if (AADPlayerState* ADPlayerState = NewPlayer->GetPlayerState<AADPlayerState>())
 	{
 		ADPlayerState->ResetLevelResults();
@@ -56,10 +58,7 @@ void AADCampGameMode::PostLogin(APlayerController* NewPlayer)
 		}
 
 		ADPlayerState->SetPlayerIndex(NewPlayerIndex);
-		//ADPlayerState->SetPlayerNickname(ADPlayerState->GetPlayerController()->GetLocalPlayer()->GetNickname());
 	}
-
-	Super::PostLogin(NewPlayer);
 }
 
 void AADCampGameMode::Logout(AController* Exiting)
