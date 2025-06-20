@@ -1,4 +1,6 @@
 #include "Boss/Task/EyeStalker/BTTask_EyeStalkerDetected.h"
+
+#include "Boss/Effect/PostProcessSettingComponent.h"
 #include "Boss/EyeStalker/EyeStalker.h"
 #include "Boss/EyeStalker/EyeStalkerAIController.h"
 #include "Character/UnderwaterCharacter.h"
@@ -27,6 +29,12 @@ EBTNodeResult::Type UBTTask_EyeStalkerDetected::ExecuteTask(UBehaviorTreeCompone
 	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(TaskMemory->AIController->GetBlackboardComponent()->GetValueAsObject("TargetPlayer"));
 	if (!IsValid(Player)) return EBTNodeResult::Failed;
 
+	UPostProcessSettingComponent* PostProcessSettingComponent = Player->GetPostProcessSettingComponent();
+	if (!IsValid(PostProcessSettingComponent)) return EBTNodeResult::Failed;
+
+	// 비네트 효과 적용
+	PostProcessSettingComponent->C_ActivateVignetteEffect();
+
 	// EyeStalker 상태 초기화
 	TaskMemory->EyeStalker->M_SetEyeOpenness(1.0f);		// 눈 뜨기
 	TaskMemory->EyeStalker->M_SetTargetPlayer(Player);	// 플레이어 타겟 초기화
@@ -48,7 +56,7 @@ void UBTTask_EyeStalkerDetected::TickTask(UBehaviorTreeComponent& OwnerComp, uin
 	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(TaskMemory->AIController->GetBlackboardComponent()->GetValueAsObject("TargetPlayer"));
 	if (!IsValid(Player) || Player->IsDeath() || Player->IsGroggy())
 	{
-		TaskMemory->AIController->GetBlackboardComponent()->SetValueAsObject("TargetPlayer", nullptr);
+		TaskMemory->AIController->InitTargetPlayer();
 		TaskMemory->AIController->GetBlackboardComponent()->SetValueAsBool("bHasDetected", false);
 		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 		return;
@@ -79,7 +87,7 @@ void UBTTask_EyeStalkerDetected::TickTask(UBehaviorTreeComponent& OwnerComp, uin
 		}
 		else
 		{
-			TaskMemory->AIController->GetBlackboardComponent()->SetValueAsObject("TargetPlayer", nullptr);
+			TaskMemory->AIController->InitTargetPlayer();
 			TaskMemory->AIController->GetBlackboardComponent()->SetValueAsBool("bHasDetected", false);
 		}
 		
