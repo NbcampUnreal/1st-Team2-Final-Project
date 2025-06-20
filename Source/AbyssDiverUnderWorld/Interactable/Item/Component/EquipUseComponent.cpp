@@ -151,6 +151,7 @@ void UEquipUseComponent::EndPlay(const EEndPlayReason::Type Reason)
 void UEquipUseComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+	LOGIC(Warning, TEXT("CurrentMultiplier : %f, TargetMultiplier : %f"), CurrentMultiplier, TargetMultiplier);
 	// DPV 소모
 	if (bBoostActive && Amount > 0)
 	{
@@ -189,6 +190,7 @@ void UEquipUseComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAc
 	// 부스트 속도 보간
 	if (IsInterpolating())
 	{
+		
 		CurrentMultiplier = FMath::FInterpTo(CurrentMultiplier,
 			TargetMultiplier,
 			DeltaTime,
@@ -196,6 +198,7 @@ void UEquipUseComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAc
 		if (UCharacterMovementComponent* Move = OwningCharacter->GetCharacterMovement())
 		{
 			Move->MaxSwimSpeed = DefaultSpeed * CurrentMultiplier;
+			LOGIC(Warning, TEXT("MaxSwimSpeed : %f"), Move->MaxSwimSpeed);
 		}	
 	}
 
@@ -203,8 +206,12 @@ void UEquipUseComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAc
 
 	// Tick 끄기
 	const bool bStillNeed = bBoostActive || bNightVisionOn || IsInterpolating() || bRecoilActive;
+	LOGIC(Warning, TEXT("bStillNeed: %s"), bStillNeed ? TEXT("True") : TEXT("False"));
 	if (!bStillNeed)
-		SetComponentTickEnabled(false);
+	{
+		SetComponentTickEnabled(bStillNeed);
+	}
+		
 		
 }
 
@@ -225,6 +232,7 @@ void UEquipUseComponent::S_LeftRelease_Implementation()
 	if (bBoostActive)
 	{
 		BoostOff();
+		LOGIC(Error, TEXT("BoostOff!!"));
 	}
 }
 
@@ -696,6 +704,7 @@ void UEquipUseComponent::BoostOn()
 	bBoostActive = true;
 	TargetMultiplier = BoostMultiplier;  
 	SetComponentTickEnabled(true);
+	LOGIC(Warning, TEXT("Boost On"));
 }
 
 void UEquipUseComponent::BoostOff()
@@ -998,7 +1007,7 @@ bool UEquipUseComponent::RecoverRecoil(float DeltaTime)
 		FMath::IsNearlyZero(PendingYaw, 0.01f))
 	{
 		PendingPitch = PendingYaw = 0.f;
-		SetComponentTickEnabled(false);                     // 충분히 복구되면 중단
+		/*SetComponentTickEnabled(false);  */                   // 충분히 복구되면 중단
 		return false;
 	}
 

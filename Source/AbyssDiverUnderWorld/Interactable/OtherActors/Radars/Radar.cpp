@@ -529,6 +529,18 @@ void ARadar::FindIfReturnsInVisibleRange()
 		return;
 	}
 
+	if (IsValid(RadarSourceLocationComponent) == false || RadarSourceLocationComponent->IsValidLowLevel() == false)
+	{
+		LOGV(Error, TEXT("RadarSourceLocationComponent is not valid"));
+		return;
+	}
+
+	if (IsValid(RadarSourceRotationComponent) == false || RadarSourceRotationComponent->IsValidLowLevel() == false)
+	{
+		LOGV(Error, TEXT("RadarSourceRotationComponent is not valid"));
+		return;
+	}
+
 	switch (CurrentFOFStatus)
 	{
 	case EFriendOrFoe::Friendly:
@@ -733,6 +745,12 @@ void ARadar::RotateRadarGrid()
 {
 	if (GridCenterMesh == nullptr)
 	{
+		return;
+	}
+
+	if (IsValid(RadarSourceRotationComponent) == false || RadarSourceRotationComponent->IsValidLowLevel() == false)
+	{
+		LOGV(Error, TEXT("RadarSourceRotationComponent is not valid"));
 		return;
 	}
 
@@ -1350,4 +1368,3 @@ void ARadar::SetGridRotationOption(EGridRotationOption Option)
 {
 	GridRotationOption = Option;
 }
-
