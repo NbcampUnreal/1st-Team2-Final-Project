@@ -8,6 +8,7 @@
 #include "Interface/IADInteractable.h"
 #include "AbyssDiverUnderWorld.h"
 #include "StatComponent.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "UnderwaterCharacter.generated.h"
 
 #if UE_BUILD_SHIPPING
@@ -39,6 +40,7 @@ enum class EEnvironmentState : uint8
 {
 	Underwater,
 	Ground,
+	MAX UMETA(Hidden)
 };
 
 UENUM(BlueprintType)
@@ -200,8 +202,14 @@ public:
 	/** 캐릭터가 로프에 묶이는 요청을 한다. Authority Node에서만 실행되어야 한다. */
 	void RequestBind(AUnderwaterCharacter* RequestBinderCharacter);
 
-	/** 현재 캐릭터를 UnBind 한다. Binder가 시체를 들고 있을 수 없는 상황에서도 호출된다. */
+	/** Bound Character 함수. 현재 캐릭터를 UnBind 한다. Binder가 시체를 들고 있을 수 없는 상황에서도 호출된다.
+	 * UnBind 함수는 Binder에서 BoundCharacter Array를 수정하므로 Binder Character에서 루프를 순회하면서 UnBind를 호출하면 문제가 생긴다.
+	 * GetBoundCharacters는 복사본을 반환하므로 안전하게 순회가 가능하다.
+	 */
 	void UnBind();
+
+	/** Bind Character 함수. 현재 캐릭터를 UnBind 한다. Binder가 시체를 들고 있는 상황에서 호출된다. */
+	void UnbindAllBoundCharacters();
 	
 	/** 출혈을 모델링하는 소리를 발생한다. */
 	UFUNCTION(BlueprintCallable)
@@ -492,7 +500,7 @@ protected:
 
 	/** 3번 감정 표현 실행 */
 	void PerformEmote3(const FInputActionValue& InputActionValue);
-	
+
 	/** 3인칭 디버그 카메라 활성화 설정 */
 	void SetDebugCameraMode(bool bDebugCameraEnable);
 
@@ -516,15 +524,52 @@ protected:
 	UFUNCTION()
 	virtual void OnMesh3PMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 
-	/** 감정 표현을 재생. Local에서 실행된다. */
-	void PlayEmote(uint8 EmoteIndex);
+	/** 감정 표현 재생 요청 */
+	void RequestPlayEmote(int8 EmoteIndex);
 
+	/** Server에 감정 표현 재생 요청 */
+	UFUNCTION(Server, Reliable)
+	void S_PlayEmote(uint8 EmoteIndex);
+	void S_PlayEmote_Implementation(uint8 EmoteIndex);
+
+	/** 감정 표현 재생 Multicast 전파 */
+	UFUNCTION(NetMulticast, Reliable)
+	void M_BroadcastPlayEmote(int8 EmoteIndex);
+	void M_BroadcastPlayEmote_Implementation(int8 EmoteIndex);
+
+	/** 감정 표현 재생 가능 여부를 반환 */
+	bool CanPlayEmote() const;
+
+	/** 감정 표현 몽타주를 반환. Index: 0~n-1 */
+	UAnimMontage* GetEmoteMontage(int8 EmoteIndex) const;
+	
 	/** 감정 표현을 중지 */
-	void StopPlayingEmote();
+	void RequestStopPlayingEmote(int8 EmoteIndex);
 
+	/** 감정 표현 중지 Multicast 전파 */
+	UFUNCTION(NetMulticast, Reliable)
+	void M_BroadcastStopPlyingEmote(int8 EmoteIndex);
+	void M_BroadcastStopPlyingEmote_Implementation(int8 EmoteIndex);
+
+	/** 감정 표현 중지 Server RPC */
+	UFUNCTION(Server, Reliable)
+	void S_StopPlayingEmote(int8 EmoteIndex);
+	void S_StopPlayingEmote_Implementation(int8 EmoteIndex);
+	
 	/** 감정 표현 몽타주가 끝났을 때 호출되는 함수 */
 	UFUNCTION()
-	void OnEmoteEnd(UAnimMontage* AnimMontage, bool bArg);
+	void OnEmoteEnd(UAnimMontage* AnimMontage, bool bInterupted);
+
+	/** 카메라 모드를 전환한다. 1인칭, 감정 표현을 위한 3인칭 모드로 전환한다.
+	 * PreCondition : 1인칭 카메라 Transition이 완료되어야 한다. Transition 도중에 시작하는 경우는 없다.
+	 */
+	void StartEmoteCameraTransition();
+
+	/** Mesh Visibility를 카메라 모드에 맞춰서 설정한다. */
+	void SetCameraFirstPerson(bool bFirstPersonCamera);
+	
+	/** 카메라 Transition Update */
+	void UpdateCameraTransition();
 
 	/** Binder Character 함수. Bound Characters를 저장한다. */
 	void BindToCharacter(AUnderwaterCharacter* BoundCharacter);
@@ -649,6 +694,9 @@ public:
 
 private:
 
+	/** 현재 캐릭터를 Possess한 PlayerController의 Player Index */
+	int8 PlayerIndex;
+	
 	// Character State는 현재 State 종료 시에 따로 처리할 것이 없기 때문에 현재 상태 값만 Replicate하도록 한다.
 	
 	/* 현재 캐릭터 상태. Normal, Groggy, Death... */
@@ -678,9 +726,42 @@ private:
 	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	uint8 bCanUseEquipment : 1;
 
-	/** 감정 표현 중 여부, Client 에서만 저장하고 따로 전파하지 않는다. */
+	/** 감정 표현 여부. 감정 표현을 실행하면 True가 되고 False가 되는 시점은 First Person Camera로의 Transition이 종료됬을 때이다. */
 	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	uint8 bPlayingEmote : 1;
+
+	/** 현재 재생 중인 감정 표현 인덱스 */
+	int8 PlayEmoteIndex;
+
+	/** Camera Transition 시에 Timer Update 함수 Interval */
+	UPROPERTY(EditDefaultsOnly, Category = "Character|Emote", meta = (AllowPrivateAccess = "true", ClampMin = "0.0"))
+	float CameraTransitionUpdateInterval;
+
+	/** 카메라 Transition Alpha 방향. 1.0f이면 Emote Camera로 이동, -1.0f이면 First Person Camera로 이동한다.
+	 * 카메라 Transition이 시작되면 1.0f가 되고 애니메이션이 종료되거나 취소되면 -1.0f가 된다. */
+	float CameraTransitionDirection;
+	
+	/** 카메라 Transition 시에 경과 시간. Alpha = CameraTransitionTimeElapsed / CameraTransitionDuration */
+	float CameraTransitionTimeElapsed;
+
+	/** 카메라 Transition에 걸리는 시간 */
+	UPROPERTY(EditDefaultsOnly, Category = "Character|Emote", meta = (AllowPrivateAccess = "true", ClampMin = "0.0"))
+	float CameraTransitionDuration;
+
+	/** Emote Camera 시에 Spring Arm 길이 */
+	UPROPERTY(EditDefaultsOnly, Category = "Character|Emote", meta = (AllowPrivateAccess = "true", ClampMin = "0.0"))
+	float EmoteCameraTransitionLength;
+
+	/** Emote Camera Transition 시에 Spring Arm Easing Type */
+	UPROPERTY(EditDefaultsOnly, Category = "Character|Emote", meta = (AllowPrivateAccess = "true"))
+	TEnumAsByte<EEasingFunc::Type> EmoteCameraTransitionEasingType;
+	
+	/** 감정 표현 몽타주 배열. 순서대로 Emote1, Emote2, Emote3에 해당한다. */
+	UPROPERTY(EditDefaultsOnly, Category = "Character|Emote", meta = (AllowPrivateAccess = "true"))
+	TArray<TObjectPtr<UAnimMontage>> EmoteAnimationMontages;
+
+	/** 감정 표현 중에 3인칭 카메라 전환을 위한 Timer */
+	FTimerHandle EmoteCameraTransitionTimer;
 	
 	/** 캐릭터 랜턴의 거리 */
 	UPROPERTY(EditDefaultsOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
@@ -1038,10 +1119,6 @@ private:
 	/** Tool 소켓 명 (1P/3P 공용) */
 	FName LaserSocketName = TEXT("Laser");
 
-	/** 감정 표현 몽타주 배열. 순서대로 Emote1, Emote2, Emote3에 해당한다. */
-	UPROPERTY(EditDefaultsOnly, Category = "Character|Emote", meta = (AllowPrivateAccess = "true"))
-	TArray<TObjectPtr<UAnimMontage>> EmoteAnimationMontages;
-
 	/** 현재 상호 작용 택스트 */
 	FString InteractionDescription;
 
@@ -1135,7 +1212,7 @@ public:
 	FORCEINLINE bool IsDeath() const { return CharacterState == ECharacterState::Death; }
 
 	/** 캐릭터가 현재 살아있는지 여부를 반환. 살아 있으면 타겟팅될 수 있다. */
-	FORCEINLINE bool IsAlive() const;
+	bool IsAlive() const;
 
 	/** 캐릭터의 남은 그로기 시간을 반환 */
 	UFUNCTION(BlueprintCallable)
@@ -1186,6 +1263,12 @@ public:
 
 	/** 현재 생성된 실드 히트 위젯을 반환 */
 	UUserWidget* GetShieldHitWidget() const;
+
+	/** 현재 Bound된 Character를 반환. 복사본을 반환한다. */
+	TArray<AUnderwaterCharacter*> GetBoundCharacters() const { return BoundCharacters; }
+
+	/** Player Index를 반환 */
+	FORCEINLINE int GetPlayerIndex() const { return PlayerIndex; }
 
 	/** 현재 Eye Stalker에게 공격받았는지 여부를 설정 */
 	FORCEINLINE void SetIsAttackedByEyeStalker(const bool bNewAttacked) { bIsAttackedByEyeStalker = bNewAttacked; }

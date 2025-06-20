@@ -7,26 +7,36 @@
 
 void UAnimNotifyState_Swallow::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float TotalDuration)
 {
-	if (AHorrorCreature* Monster = Cast<AHorrorCreature>(MeshComp->GetOwner()))
-	{
-		if (Monster->GetAttackHitComponent())
-		{
-			Monster->GetAttackHitComponent()->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-			Monster->GetAttackHitComponent()->SetCollisionResponseToAllChannels(ECR_Ignore);
-			Monster->GetAttackHitComponent()->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
-			LOG(TEXT("ShallowAttack Begin"));
-		}
-	}
+	if (!MeshComp) return;
+
+	AHorrorCreature* Monster = Cast<AHorrorCreature>(MeshComp->GetOwner());
+	if (!Monster || !Monster->HasAuthority()) return;
+
+	if (Monster->GetSwallowedPlayer() != nullptr) return; 
+
+	UPrimitiveComponent* HitComp = Monster->GetAttackHitComponent();
+	if (!HitComp) return;
+
+	HitComp->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	HitComp->SetCollisionResponseToAllChannels(ECR_Ignore);
+	HitComp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+	HitComp->SetGenerateOverlapEvents(true);
+
+	LOG(TEXT("[Swallow] Attack Collision Enabled"));
 }
 
 void UAnimNotifyState_Swallow::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation)
 {
-	if (AHorrorCreature* Monster = Cast<AHorrorCreature>(MeshComp->GetOwner()))
-	{
-		if (Monster->GetAttackHitComponent())
-		{
-			Monster->GetAttackHitComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-			LOG(TEXT("ShallowAttack End"));
-		}
-	}
+	if (!MeshComp) return;
+
+	AHorrorCreature* Monster = Cast<AHorrorCreature>(MeshComp->GetOwner());
+	if (!Monster || !Monster->HasAuthority()) return;
+
+	UPrimitiveComponent* HitComp = Monster->GetAttackHitComponent();
+	if (!HitComp) return;
+
+	HitComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	HitComp->SetGenerateOverlapEvents(false);
+
+	LOG(TEXT("[Swallow] Attack Collision Disabled"))
 }

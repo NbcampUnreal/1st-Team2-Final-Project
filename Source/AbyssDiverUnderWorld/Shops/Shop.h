@@ -239,6 +239,9 @@ protected:
 	TObjectPtr<UStaticMeshComponent> ShopMeshComponent;
 
 	UPROPERTY(VisibleAnywhere, Category = "Shop")
+	TObjectPtr<USkeletalMeshComponent> ShopMerchantMeshComponent;
+
+	UPROPERTY(VisibleAnywhere, Category = "Shop")
 	TObjectPtr<USkeletalMeshComponent> ItemMeshComponent;
 
 	UPROPERTY(VisibleAnywhere, Category = "Shop")
@@ -267,6 +270,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "ShopSettings")
 	float LaunchItemIntervalAtFirst = 1.0f;
+
+	UPROPERTY(EditAnywhere, Category = "ShopSettings")
+	float ErrorOfLaunchDirection = 1.0f;
 
 	UPROPERTY(Replicated)
 	FShopItemIdList ShopConsumableItemIdList;

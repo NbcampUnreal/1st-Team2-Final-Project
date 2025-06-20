@@ -72,6 +72,11 @@ void ABossAIController::OnPossess(APawn* InPawn)
 
 void ABossAIController::SetSightRadius(float InRadius)
 {
+	if (IsValid(this) == false || IsPendingKillPending())
+	{
+		return;
+	}
+	
 	if (!IsValid(AIPerceptionComponent)) return;
     
 	UAISenseConfig_Sight* SightConfigInstance = Cast<UAISenseConfig_Sight>(

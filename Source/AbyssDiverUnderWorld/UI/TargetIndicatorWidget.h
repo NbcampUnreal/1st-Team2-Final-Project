@@ -52,6 +52,4 @@ protected:
 	TObjectPtr<ATargetIndicatorManager> OwningManager;
 
 #pragma endregion
-
-
 };

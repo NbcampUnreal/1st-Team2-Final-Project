@@ -153,6 +153,9 @@ AShop::AShop()
 	SetRootComponent(ShopMeshComponent);
 	ShopMeshComponent->SetMobility(EComponentMobility::Static);
 
+	ShopMerchantMeshComponent = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Merchant Mesh"));
+	ShopMerchantMeshComponent->SetupAttachment(RootComponent);
+
 	ItemMeshComponent = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("ItemMesh"));
 	ItemMeshComponent->SetupAttachment(RootComponent);
 	ItemMeshComponent->SetVisibleInSceneCaptureOnly(true);
@@ -975,71 +978,15 @@ void AShop::OnBuyListEntryClicked(int32 ClickedSlotIndex)
 
 void AShop::OnAddButtonClicked(int32 Quantity)
 {
-	AADInGameState* GS = CastChecked<AADInGameState>(UGameplayStatics::GetGameState(GetWorld()));
-	UDataTableSubsystem* DataTableSubsystem = GetGameInstance()->GetSubsystem<UDataTableSubsystem>();
-
-	int32 TotalTeamCredit = GS->GetTotalTeamCredit();
-
 	EShopCategoryTab CurrentTab = ShopWidget->GetCurrentActivatedTab();
-
 	if (CurrentTab == EShopCategoryTab::Upgrade)
 	{
-		APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
-		AADPlayerState* PS = PC->GetPlayerState<AADPlayerState>();
-		if (PS == nullptr)
-		{
-			LOGS(Error, TEXT("PS == nullptr"));
-			return;
-		}
-
-		UUpgradeComponent* UpgradeComp = PS->GetUpgradeComp();
-		if (UpgradeComp == nullptr)
-		{
-			LOGS(Error, TEXT("UpgradeComp == nullptr"));
-			return;
-		}
-
-		bool bIsMaxGrade = UpgradeComp->IsMaxGrade(CurrentSelectedUpgradeType);
-		if (bIsMaxGrade)
-		{
-			LOGS(Log, TEXT("This Upgrade Type Has Reached to Max Level"));
-			return;
-		}
-
-		int32 Grade = UpgradeComp->GetCurrentGrade(CurrentSelectedUpgradeType);
-		FUpgradeDataRow* UpgradeData = DataTableSubsystem->GetUpgradeData(CurrentSelectedUpgradeType, Grade + 1);
-
-		if (TotalTeamCredit < UpgradeData->Price)
-		{
-			LOGS(Warning, TEXT("업그레이드 돈부족!! 남은 돈 : %d, 필요한 돈 : %d"), TotalTeamCredit, UpgradeData->Price);
-			return;
-		}
-		
-		UpgradeComp->S_RequestUpgrade(CurrentSelectedUpgradeType);
 		return;
 	}
 
-	/*AUnderwaterCharacter* BuyingCharacter = Cast<AUnderwaterCharacter>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetPawn());
-	if (BuyingCharacter == nullptr)
-	{
-		LOGS(Warning, TEXT("BuyingCharacter == nullptr"));
-		return;
-	}
-
-	UShopInteractionComponent* ShopInteractionComp = BuyingCharacter->GetShopInteractionComponent();
-	if (ShopInteractionComp == nullptr)
-	{
-		LOGS(Warning, TEXT("ShopInteractionComp == nullptr"));
-		return;
-	}*/
-
+	AADInGameState* GS = CastChecked<AADInGameState>(UGameplayStatics::GetGameState(GetWorld()));
+	UDataTableSubsystem* DataTableSubsystem = GetGameInstance()->GetSubsystem<UDataTableSubsystem>();
 	FFADItemDataRow* ItemData = DataTableSubsystem->GetItemData(CurrentSelectedItemId);
-
-	/*if (TotalTeamCredit < ItemData->Price * Quantity)
-	{
-		LOGS(Warning, TEXT("아이템 구매 돈부족!! 남은 돈 : %d, 필요한 돈 : %d"), TotalTeamCredit, ItemData->Price * Quantity);
-		return;
-	}*/
 
 	UShopBuyListEntryData* BuyListEntryData = ShopWidget->AddToBuyList(CurrentSelectedItemId, Quantity);
 	if (BuyListEntryData == nullptr)
@@ -1059,44 +1006,84 @@ void AShop::OnAddButtonClicked(int32 Quantity)
 	}
 
 	BuyListEntryData->OnEntryUpdatedFromDataDelegate.AddUObject(this, &AShop::OnSlotEntryWidgetUpdated);
-
-	//ShopInteractionComp->S_RequestBuyItem(CurrentSelectedItemId, Quantity);
 }
 
 void AShop::OnBuyButtonClicked()
 {
-	int32 TotalItemPrice = CalcTotalItemPrice(SelectedItemIdArray, SelectedItemCountArray);
-	if (TotalItemPrice == INDEX_NONE)
+	AADInGameState* GS = CastChecked<AADInGameState>(UGameplayStatics::GetGameState(GetWorld()));
+	UDataTableSubsystem* DataTableSubsystem = GetGameInstance()->GetSubsystem<UDataTableSubsystem>();
+
+	int32 TotalTeamCredit = GS->GetTotalTeamCredit();
+
+	EShopCategoryTab CurrentTab = ShopWidget->GetCurrentActivatedTab();
+
+	if (CurrentTab == EShopCategoryTab::Upgrade && CurrentSelectedUpgradeType != EUpgradeType::Max)
 	{
-		LOGV(Error, TEXT("Fail to Calculate Total Item Price"));
-		return;
+		APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+		AADPlayerState* PS = PC->GetPlayerState<AADPlayerState>();
+		if (PS == nullptr)
+		{
+			LOGV(Error, TEXT("PS == nullptr"));
+			return;
+		}
+
+		UUpgradeComponent* UpgradeComp = PS->GetUpgradeComp();
+		if (UpgradeComp == nullptr)
+		{
+			LOGV(Error, TEXT("UpgradeComp == nullptr"));
+			return;
+		}
+
+		bool bIsMaxGrade = UpgradeComp->IsMaxGrade(CurrentSelectedUpgradeType);
+		if (bIsMaxGrade)
+		{
+			LOGV(Log, TEXT("This Upgrade Type Has Reached to Max Level"));
+			return;
+		}
+
+		int32 Grade = UpgradeComp->GetCurrentGrade(CurrentSelectedUpgradeType);
+		FUpgradeDataRow* UpgradeData = DataTableSubsystem->GetUpgradeData(CurrentSelectedUpgradeType, Grade + 1);
+
+		if (TotalTeamCredit < UpgradeData->Price)
+		{
+			LOGV(Log, TEXT("업그레이드 돈부족!! 남은 돈 : %d, 필요한 돈 : %d"), TotalTeamCredit, UpgradeData->Price);
+			return;
+		}
+
+		UpgradeComp->S_RequestUpgrade(CurrentSelectedUpgradeType);
 	}
-
-	AADInGameState* GS = Cast<AADInGameState>(UGameplayStatics::GetGameState(GetWorld()));
-	check(GS);
-
-	int32 TeamCredits = GS->GetTotalTeamCredit();
-	if (TeamCredits < TotalItemPrice)
+	else
 	{
-		LOGV(Log, TEXT("Not Enough Money, Needed : %d, Held : %d"), TotalItemPrice, TeamCredits);
-		return;
-	}
+		int32 TotalItemPrice = CalcTotalItemPrice(SelectedItemIdArray, SelectedItemCountArray);
+		if (TotalItemPrice == INDEX_NONE)
+		{
+			LOGV(Error, TEXT("Fail to Calculate Total Item Price"));
+			return;
+		}
 
-	AUnderwaterCharacter* BuyingCharacter = Cast<AUnderwaterCharacter>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetPawn());
-	if (BuyingCharacter == nullptr)
-	{
-		LOGV(Warning, TEXT("BuyingCharacter == nullptr"));
-		return;
-	}
+		if (TotalTeamCredit < TotalItemPrice)
+		{
+			LOGV(Log, TEXT("Not Enough Money, Needed : %d, Held : %d"), TotalItemPrice, TotalTeamCredit);
+			return;
+		}
 
-	UShopInteractionComponent* ShopInteractionComp = BuyingCharacter->GetShopInteractionComponent();
-	if (ShopInteractionComp == nullptr)
-	{
-		LOGV(Warning, TEXT("ShopInteractionComp == nullptr"));
-		return;
-	}
+		AUnderwaterCharacter* BuyingCharacter = Cast<AUnderwaterCharacter>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetPawn());
+		if (BuyingCharacter == nullptr)
+		{
+			LOGV(Warning, TEXT("BuyingCharacter == nullptr"));
+			return;
+		}
 
-	ShopInteractionComp->S_RequestBuyItems(SelectedItemIdArray, SelectedItemCountArray);
+		UShopInteractionComponent* ShopInteractionComp = BuyingCharacter->GetShopInteractionComponent();
+		if (ShopInteractionComp == nullptr)
+		{
+			LOGV(Warning, TEXT("ShopInteractionComp == nullptr"));
+			return;
+		}
+
+		ShopInteractionComp->S_RequestBuyItems(SelectedItemIdArray, SelectedItemCountArray);
+		ClearSelectedInfos();
+	}
 }
 
 void AShop::OnCloseButtonClicked()
@@ -1124,7 +1111,7 @@ void AShop::OnUpgradeSlotEntryClicked(int32 ClickedSlotIndex)
 	UUpgradeComponent* UpgradeComp = PS->GetUpgradeComp();
 	if (UpgradeComp == nullptr)
 	{
-		LOGS(Error, TEXT("UpgradeComp == nullptr"));
+		LOGV(Error, TEXT("UpgradeComp == nullptr"));
 		return;
 	}
 
@@ -1133,14 +1120,14 @@ void AShop::OnUpgradeSlotEntryClicked(int32 ClickedSlotIndex)
 	uint8 CurrentGrade = UpgradeComp->GetCurrentGrade(UpgradeType);
 	if (CurrentGrade == 0)
 	{
-		LOGS(Log, TEXT("Weird Upgrade Type Detected : %d"), UpgradeType);
+		LOGV(Log, TEXT("Weird Upgrade Type Detected : %d"), UpgradeType);
 		return;
 	}
 
 	UDataTableSubsystem* DataTableSubSystem = GetGameInstance()->GetSubsystem<UDataTableSubsystem>();
 	if (DataTableSubSystem == nullptr)
 	{
-		LOGS(Error, TEXT("DataTableSubSystem == nullptr"));
+		LOGV(Error, TEXT("DataTableSubSystem == nullptr"));
 		return;
 	}
 
@@ -1151,7 +1138,7 @@ void AShop::OnUpgradeSlotEntryClicked(int32 ClickedSlotIndex)
 	ShopWidget->ShowUpgradeInfos(UpgradeType, CurrentGrade, bIsMaxGrade);
 	CurrentSelectedUpgradeType = UpgradeType;
 
-	LOGS(Log, TEXT("UpgradeViewSlotClicked, Index : %d"), ClickedSlotIndex);
+	LOGV(Log, TEXT("UpgradeViewSlotClicked, Index : %d"), ClickedSlotIndex);
 }
 
 int8 AShop::IsSelectedItem(uint8 ItemId) const
@@ -1337,7 +1324,7 @@ void AShop::LaunchItem()
 		return;
 	}
 
-	SpawnedItem->SetItemInfo(ItemData, false);
+	SpawnedItem->SetItemInfo(ItemData, false, EEnvironmentState::Ground);
 
 	UPrimitiveComponent* ItemRoot = Cast<UPrimitiveComponent>(SpawnedItem->GetRootComponent());
 	if (ItemRoot == nullptr)
@@ -1347,12 +1334,24 @@ void AShop::LaunchItem()
 	}
 
 	SpawnedItem->M_SetItemVisible(true);
-	//SpawnedItem->FinishSpawning(OriginPoint->GetActorTransform(), false);
 
-	FVector LaunchDirection = DestinationPoint->GetActorLocation() - OriginPoint->GetActorLocation();
+	FVector Destination = DestinationPoint->GetActorLocation();
+	Destination.X += FMath::RandRange(-ErrorOfLaunchDirection, ErrorOfLaunchDirection);
+	Destination.Y += FMath::RandRange(-ErrorOfLaunchDirection, ErrorOfLaunchDirection);
+	Destination.Z += FMath::RandRange(-ErrorOfLaunchDirection, ErrorOfLaunchDirection);
+
+	FVector LaunchDirection = Destination - OriginPoint->GetActorLocation();
 	LaunchDirection.Normalize();
 
-	ItemRoot->AddImpulse(LaunchDirection * ForceAmount);
+	float ItemMeshMass = SpawnedItem->GetMeshMass();
+	if (ItemMeshMass == 0.0f)
+	{
+		LOGV(Error, TEXT("Invalid Mesh"));
+		return;
+	}
+
+	float ActualForce = ForceAmount * ItemMeshMass;
+	ItemRoot->AddImpulse(LaunchDirection * ActualForce);
 }
 
 void AShop::ClearSelectedInfos()

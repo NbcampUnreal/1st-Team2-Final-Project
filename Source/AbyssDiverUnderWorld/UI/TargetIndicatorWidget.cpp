@@ -9,7 +9,7 @@
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
 #include "Components/CanvasPanelSlot.h"
-#include "Kismet/GameplayStatics.h"
+#include "Blueprint/WidgetLayoutLibrary.h"
 
 void UTargetIndicatorWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
@@ -110,8 +110,9 @@ void UTargetIndicatorWidget::CalcAndSetCorrectTargetPosition()
 
 	TargetScreenPos.X = FMath::Clamp(TargetScreenPos.X, 0, ViewportSize.X);
 	TargetScreenPos.Y = FMath::Clamp(TargetScreenPos.Y, 0, ViewportSize.Y);
-
-	ChangeTargetPosition(TargetScreenPos);
+	
+	float DPIScale = UWidgetLayoutLibrary::GetViewportScale(GetWorld());
+	ChangeTargetPosition(TargetScreenPos / DPIScale);
 	ChangeTargetDistanceText(DistanceToTarget / 100.0f); // 미터 단위
 }
 

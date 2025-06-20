@@ -40,6 +40,8 @@ public:
 
     void UpdateEntrys();
 
+    void UpdateMissionList(int8 CurrentLevelIndex);
+
 	void UpdateSelectedMissionBox();
 
     FOnStartButtonClickedDelegate OnStartButtonClickedDelegate;

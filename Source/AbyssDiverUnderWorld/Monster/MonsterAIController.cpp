@@ -9,6 +9,8 @@
 #include "Monster/EMonsterState.h"
 #include "Monster/Monster.h"
 #include "GenericTeamAgentInterface.h"
+#include "Navigation/PathFollowingComponent.h"
+#include "NavigationSystem.h"
 #include "Monster/HorrorCreature/HorrorCreature.h"
 #include "AbyssDiverUnderWorld.h"
 
@@ -30,6 +32,7 @@ AMonsterAIController::AMonsterAIController()
 	AIPerceptionComponent->ConfigureSense(*SightConfig);
 	AIPerceptionComponent->SetDominantSense(SightConfig->GetSenseImplementation());
 	bIsLosingTarget = false;
+	FallbackMoveDistance = 300.0f;
 }
 
 void AMonsterAIController::BeginPlay()
@@ -48,15 +51,45 @@ void AMonsterAIController::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	if (!bIsLosingTarget || !IsValid(Monster)) return;
+	if (!IsValid(Monster) || !SightConfig) return;
 
-	float Elapsed = GetWorld()->GetTimeSeconds() - LostTargetTime;
-	if (Elapsed > SightConfig->GetMaxAge())
+	const float CurrentTime = GetWorld()->GetTimeSeconds();
+	const float MaxAge = SightConfig->GetMaxAge();
+
+	TArray<TWeakObjectPtr<AActor>> ToRemove;
+
+	for (const auto& Elem : LostActorsMap)
 	{
-		bIsLosingTarget = false;
+		TWeakObjectPtr<AActor> Target = Elem.Key;
+		float LostTime = Elem.Value;
+
+		if (!Target.IsValid())
+		{
+			ToRemove.Add(Target);
+			continue;
+		}
+
+		float Elapsed = CurrentTime - LostTime;
+		if (Elapsed > MaxAge)
+		{
+			UE_LOG(LogTemp, Log, TEXT("[Elapsed] : %.2f"), Elapsed);
+			Monster->ForceRemoveDetection(Target.Get());
+			ToRemove.Add(Target);
+		}
+	}
+
+	for (TWeakObjectPtr<AActor> Actor : ToRemove)
+	{
+		LostActorsMap.Remove(Actor);
+	}
+
+	// Return to state when all detectors are clear
+	if (Monster->GetDetectionCount() == 0 &&
+		Monster->GetMonsterState() == EMonsterState::Chase)
+	{
 		Monster->SetMonsterState(EMonsterState::Patrol);
 		Monster->bIsChasing = false;
-		LOG(TEXT("Monster State : Patrol"));
+		LOG(TEXT("Monster State ¡æ Patrol"));
 	}
 }
 
@@ -121,12 +154,10 @@ void AMonsterAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus 
 
 	if (Actor->IsA(AUnderwaterCharacter::StaticClass()))
 	{
-		BlackboardComponent = GetBlackboardComponent();
-
  		if (Stimulus.WasSuccessfullySensed() && Monster->GetMonsterState() != EMonsterState::Flee)
 		{
+			LostActorsMap.Remove(Actor); // Remove when detected again
 			Monster->AddDetection(Actor);
-			bIsLosingTarget = false;
 
 			if (Monster->GetMonsterState() != EMonsterState::Chase)
 			{
@@ -137,9 +168,10 @@ void AMonsterAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus 
 		else
 		{
 			// Lost Perception. but Target Value still remains for MaxAge
-			bIsLosingTarget = true;
-			Monster->RemoveDetection(Actor);
-			LostTargetTime = GetWorld()->GetTimeSeconds(); // Timer On.
+			if (!LostActorsMap.Contains(Actor))
+			{
+				LostActorsMap.Add(Actor, GetWorld()->GetTimeSeconds());
+			}
 		}
 	}
 }
@@ -152,4 +184,77 @@ void AMonsterAIController::SetbIsLosingTarget(bool IsLosingTargetValue)
 	}
 }
 
+void AMonsterAIController::HandleMoveFailure()
+{
+	FVector AvoidDirection = ComputeAvoidanceDirection();
+	if (!AvoidDirection.IsNearlyZero())
+	{
+		FVector FallbackLocation = Monster->GetActorLocation() + AvoidDirection * 300.f;
+		if (UNavigationSystemV1* NavSys = UNavigationSystemV1::GetCurrent(GetWorld()))
+		{
+			FNavLocation ProjectedLocation;
+			if (NavSys->ProjectPointToNavigation(FallbackLocation, ProjectedLocation))
+			{
+				MoveToLocation(ProjectedLocation.Location, 100.f);
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Fallback location not on NavMesh."));
+			}
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No valid avoidance direction found!"));
+	}
+}
 
+FVector AMonsterAIController::ComputeAvoidanceDirection()
+{
+	const FVector Start = Monster->GetActorLocation();
+	const FVector Forward = Monster->GetActorForwardVector();
+	FVector AccumulatedDir = FVector::ZeroVector;
+
+	for (int32 Angle = -60; Angle <= 60; Angle += 30)
+	{
+		FVector Dir = Forward.RotateAngleAxis(Angle, FVector::UpVector);
+		FVector End = Start + Dir * 300.f;
+		FHitResult Hit;
+		if (!GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility))
+		{
+			AccumulatedDir += Dir;
+		}
+	}
+
+	if (AccumulatedDir.IsNearlyZero())
+	{
+		return -Forward; // Fallback: go backward
+	}
+
+	AccumulatedDir.Normalize();
+	return AccumulatedDir;
+}
+
+void AMonsterAIController::OnMoveCompleted(FAIRequestID RequestID, const FPathFollowingResult& Result)
+{
+	Super::OnMoveCompleted(RequestID, Result);
+
+	if (Result.Code != EPathFollowingResult::Success)
+	{
+		MoveFailCount++;
+		if (MoveFailCount <= MaxMoveFailRetries)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Move failed. Retry %d/%d"), MoveFailCount, MaxMoveFailRetries);
+			HandleMoveFailure();
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("Move failed too many times. Aborting fallback."));
+			MoveFailCount = 0;
+		}
+	}
+	else
+	{
+		MoveFailCount = 0;
+	}
+}

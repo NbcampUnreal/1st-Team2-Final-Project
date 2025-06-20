@@ -21,7 +21,8 @@ FReply UInventorySlotWidget::NativeOnMouseButtonDown(const FGeometry& InGeometry
 		}
 
 	}
-	return Super::NativeOnMouseButtonDown(InGeometry, InMouseEvent);
+	return FReply::Handled();
+	//return Super::NativeOnMouseButtonDown(InGeometry, InMouseEvent);
 }
 
 FReply UInventorySlotWidget::NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
@@ -38,7 +39,8 @@ FReply UInventorySlotWidget::NativeOnMouseButtonUp(const FGeometry& InGeometry, 
 		}
 
 	}
-	return Super::NativeOnMouseButtonUp(InGeometry, InMouseEvent);
+	//return Super::NativeOnMouseButtonUp(InGeometry, InMouseEvent);
+	return FReply::Handled();
 }
 
 void UInventorySlotWidget::NativeOnDragDetected(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent, UDragDropOperation*& Operation)
