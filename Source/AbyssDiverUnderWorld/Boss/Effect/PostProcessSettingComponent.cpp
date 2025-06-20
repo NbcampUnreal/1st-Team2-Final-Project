@@ -24,6 +24,7 @@ void UPostProcessSettingComponent::BeginPlay()
     if (!IsValid(CameraComponent))
 	{
 		LOG(TEXT("PostProcessSettingComponent requires a CameraComponent on the owner actor!"));
+        return;
 	}
 
     CameraComponent->PostProcessSettings.bOverride_VignetteIntensity = true;
