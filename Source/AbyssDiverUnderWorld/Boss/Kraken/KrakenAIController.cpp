@@ -33,11 +33,14 @@ void AKrakenAIController::OnSightPerceptionSuccess(AUnderwaterCharacter* Player)
 	const bool bCanDetect = GetBlackboardComponent()->GetValueAsBool("bCanDetect");
 	if (bCanDetect)
 	{
-		GetWorldTimerManager().SetTimer(DetectedStateTimerHandle, [this]()
+		// WeakPtr 사용으로 안전한 참조 보장
+		TWeakObjectPtr<AKrakenAIController> WeakThis = this;
+		
+		GetWorldTimerManager().SetTimer(DetectedStateTimerHandle, [WeakThis]()
 		{
-			if (IsValid(GetBlackboardComponent()))
+			if (WeakThis.IsValid() && IsValid(WeakThis->GetBlackboardComponent()))
 			{
-				GetBlackboardComponent()->SetValueAsBool("bCanDetect", true);
+				WeakThis->GetBlackboardComponent()->SetValueAsBool("bCanDetect", true);
 			}
 		}, DetectedStateInterval, false);
 	}
