@@ -153,6 +153,9 @@ AShop::AShop()
 	SetRootComponent(ShopMeshComponent);
 	ShopMeshComponent->SetMobility(EComponentMobility::Static);
 
+	ShopMerchantMeshComponent = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Merchant Mesh"));
+	ShopMerchantMeshComponent->SetupAttachment(RootComponent);
+
 	ItemMeshComponent = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("ItemMesh"));
 	ItemMeshComponent->SetupAttachment(RootComponent);
 	ItemMeshComponent->SetVisibleInSceneCaptureOnly(true);
