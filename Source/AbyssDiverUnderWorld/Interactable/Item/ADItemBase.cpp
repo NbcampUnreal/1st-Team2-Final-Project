@@ -8,6 +8,7 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Framework/ADGameInstance.h"
 #include "Subsystems/SoundSubsystem.h"
+#include "Character/UnderwaterCharacter.h"
 
 DEFINE_LOG_CATEGORY(ItemLog);
 
@@ -57,11 +58,34 @@ void AADItemBase::Interact_Implementation(AActor* InstigatorActor)
 void AADItemBase::HandlePickup(APawn* InstigatorPawn)
 {
 	if (!HasAuthority() || !InstigatorPawn) return;
+	
 	APlayerController* PC = Cast<APlayerController>(InstigatorPawn->GetController());
 	AADPlayerState* PS = Cast<AADPlayerState>(PC->PlayerState);
+	AUnderwaterCharacter* Diver = Cast<AUnderwaterCharacter>(InstigatorPawn);
+	if (!PC || !PS || !Diver) return;
 
+	//-------------------------------- Bullet 아이템 처리
+	
+
+	if (ItemData.ItemType == EItemType::Bullet)
+	{
+		int32 AmmoPerPickup = ItemData.Amount;
+		if (UADInventoryComponent* Inv = PS->GetInventory())
+		{
+			const bool bIsMatchedEquipInInventory = Inv->TryGiveAmmoToEquipment(ItemData.BulletType, AmmoPerPickup);
+			if (bIsMatchedEquipInInventory)
+			{
+				M_PlayPickupSound();
+				Destroy();
+			}
+			LOGI(Log, TEXT("Matched Bullet!! Add Ammo!!"));
+			return;
+		}
+		LOGI(Log, TEXT("No Matched Bullet!! Buy Matched Gun"));
+		return;
+	}
 	LOGI(Log, TEXT("Add to Inventory"));
-	// TODO 인벤토리 추가 로직과 획득 효과 추가
+	//-------------------------------- 일반 아이템 처리
 	if (UADInventoryComponent* Inventory = PS->GetInventory())
 	{
 		LOGI(Log, TEXT("Find Inventory"));

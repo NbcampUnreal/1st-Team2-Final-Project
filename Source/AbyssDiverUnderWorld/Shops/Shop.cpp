@@ -1323,6 +1323,7 @@ void AShop::LaunchItem()
 		ItemDataRow->Weight,
 		ItemDataRow->Price,
 		ItemDataRow->ItemType,
+		ItemDataRow->BulletType,
 		ItemDataRow->Thumbnail
 	);
 

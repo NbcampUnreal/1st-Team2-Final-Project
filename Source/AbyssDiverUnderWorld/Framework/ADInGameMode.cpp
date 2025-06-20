@@ -319,6 +319,7 @@ void AADInGameMode::GetOre()
 		0,
 		10000,
 		EItemType::Exchangable,
+		EBulletType::None,
 		nullptr
 	);
 
