@@ -18,6 +18,7 @@ public:
 	AHorrorCreature();
 	
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaTime) override;
 	virtual void PossessedBy(AController* NewController) override;
 
 #pragma region Method
@@ -73,6 +74,12 @@ private:
 	float FleeTime;
 	UPROPERTY(EditAnywhere, Category = "Sight")
 	float SwallowDamage;
+
+	// Variable about SwallowPlayer Location Lerp
+	FVector SwallowStartLocation;
+	FVector SwallowTargetLocation;
+	float SwallowLerpAlpha = 0.0f;
+	uint8 bSwallowingInProgress : 1 = false;
 
 	uint8 bCanSwallow : 1;
 #pragma endregion
