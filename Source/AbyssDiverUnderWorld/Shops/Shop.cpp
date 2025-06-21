@@ -457,6 +457,7 @@ EBuyResult AShop::BuyItem(uint8 ItemId, uint8 Quantity, AUnderwaterCharacter* Bu
 	ItemData.ReserveAmmo = ItemDataRow->ReserveAmmo;
 	ItemData.Id = ItemDataRow->Id;
 	ItemData.ItemType = ItemDataRow->ItemType;
+	ItemData.BulletType = ItemDataRow->BulletType;
 	ItemData.Mass = ItemDataRow->Weight;
 	ItemData.Name = ItemDataRow->Name;
 	ItemData.Price = ItemDataRow->Price;
@@ -1310,6 +1311,7 @@ void AShop::LaunchItem()
 		ItemDataRow->Weight,
 		ItemDataRow->Price,
 		ItemDataRow->ItemType,
+		ItemDataRow->BulletType,
 		ItemDataRow->Thumbnail
 	);
 

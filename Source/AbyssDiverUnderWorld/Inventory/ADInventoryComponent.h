@@ -211,6 +211,7 @@ public:
 	FItemData* GetEditableItemDataByName(FName ItemNameToEdit);
 
 	const FInventoryList& GetInventoryList() { return InventoryList; } 
+	bool TryGiveAmmoToEquipment(EBulletType BulletType, int32 AmountPerPickup);
 
 	const TArray<int8>& GetInventoryIndexesByType(EItemType ItemType) const { return InventoryIndexMapByType[ItemType]; } //타입별 인벤토리에 저장된 InventoryList 인벤토리 인덱스 배열 반환
 	const TArray<int8>& GetInventorySizeByType() const { return InventorySizeByType; } //인벤토리 사이즈 배열 반환
