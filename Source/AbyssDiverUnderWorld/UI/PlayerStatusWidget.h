@@ -114,6 +114,11 @@ protected:
 	UPROPERTY(meta = (BindWidgetAnim), Transient)
 	TObjectPtr<UWidgetAnimation> NextPhaseAnim;
 
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UImage> HealthScreenEffect;
+
+	TObjectPtr <UMaterialInstanceDynamic> DynamicMaterial;
+	TObjectPtr <UMaterialInterface> LoadedMaterial;
 private:
 
 	UPROPERTY()

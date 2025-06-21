@@ -131,7 +131,6 @@ void AADInGameMode::PostLogin(APlayerController* NewPlayer)
 			return;
 		}
 
-		ADPlayerState->SetPlayerNickname(NewPlayerId);
 		ADPlayerState->SetPlayerIndex(NewPlayerIndex);
 	}
 

@@ -12,6 +12,7 @@
 #include "StatComponent.h"
 #include "UpgradeComponent.h"
 #include "AbyssDiverUnderWorld/Interactable/Item/Component/ADInteractionComponent.h"
+#include "Boss/Effect/PostProcessSettingComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/PawnNoiseEmitterComponent.h"
@@ -189,6 +190,8 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	BindMultiplier = 0.15f;
 
 	bIsAttackedByEyeStalker = false;
+
+	PostProcessSettingComponent = CreateDefaultSubobject<UPostProcessSettingComponent>(TEXT("PostProcessSettingComponent"));
 }
 
 void AUnderwaterCharacter::BeginPlay()
