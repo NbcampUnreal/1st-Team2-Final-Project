@@ -43,7 +43,8 @@ enum class EShopItemChangeType
 	Max
 };
 
-enum class EDoorState
+UENUM()
+enum class EDoorState : uint8
 {
 	Opened,
 	Closed,
@@ -141,6 +142,7 @@ public:
 	void Modify(uint8 InIndex, uint8 NewId);
 
 	FOnShopItemListChangedDelegate OnShopItemListChangedDelegate;
+
 public:
 
 	UPROPERTY()
@@ -348,7 +350,10 @@ private:
 
 	ELaunchType CurrentLaunchType = ELaunchType::First;
 
+
+	UPROPERTY(Replicated)
 	EDoorState CurrentDoorState = EDoorState::Closed;
+
 	float CurrentDoorRate = 0.0f;
 
 #pragma endregion
