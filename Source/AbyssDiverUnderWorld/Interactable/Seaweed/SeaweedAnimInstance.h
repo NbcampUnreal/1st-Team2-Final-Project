@@ -15,9 +15,10 @@ class ABYSSDIVERUNDERWORLD_API USeaweedAnimInstance : public UAnimInstance
     GENERATED_BODY()
 
 public:
-    UPROPERTY(BlueprintReadOnly, EditAnywhere)
-    float PhysicsBlendAlpha = 1.0f;
+    float PhysicsBlendAlpha = 1.f;
+    float CurrentBlendTime = 0.f;
+    float MaxHoldTime = 2.f; // 이 시간동안은 강제적으로 1.0 유지
+    virtual void NativeUpdateAnimation(float DeltaSeconds) override;
 
     void SetPhysicsBlendAlpha(float Alpha);
-
 };
