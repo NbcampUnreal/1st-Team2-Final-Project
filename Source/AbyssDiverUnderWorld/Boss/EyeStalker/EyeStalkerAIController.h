@@ -13,6 +13,10 @@ public:
 	virtual void BeginPlay() override;
 	virtual void OnPossess(APawn* InPawn) override;
 
+
+public:
+	void InitTargetPlayer();
+
 protected:
 	void OnSightPerceptionSuccess(AUnderwaterCharacter* Player);
 	void OnSightPerceptionFail(AUnderwaterCharacter* Player);

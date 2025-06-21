@@ -65,6 +65,8 @@ void UBTService_ApplyDamageToPlayer::OnCeaseRelevant(UBehaviorTreeComponent& Own
 	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(TaskMemory->AIController->GetBlackboardComponent()->GetValueAsObject("TargetPlayer"));
 	if (!IsValid(Player) || !Player->IsAlive()) return;
 
+	if (!TaskMemory->bIsDamageApplied && Player->IsAttackedByEyeStalker()) return;
+	
 	Player->SetIsAttackedByEyeStalker(false);
 	TaskMemory->bIsDamageApplied = false;
 }
