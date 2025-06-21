@@ -29,6 +29,8 @@ void ASpawnManager::BeginPlay()
 
 void ASpawnManager::SpawnByGroup()
 {
+	if (GetLocalRole() != ROLE_Authority) return;
+	
 	if (SpawnerGroups.IsValidIndex(0))
 	{
 		if (IsValid(SpawnerGroups[0].MonsterSpawner)) SpawnerGroups[0].MonsterSpawner->Spawn();

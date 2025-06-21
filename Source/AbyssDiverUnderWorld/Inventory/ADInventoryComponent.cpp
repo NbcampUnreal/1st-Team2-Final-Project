@@ -113,7 +113,7 @@ void UADInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 
 }
 
-void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType, uint8 SlotIndex)
+void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType, uint8 SlotIndex, bool bIgnoreCoolTime)
 {
 	if (ItemType == EItemType::Equipment)
 	{
@@ -122,12 +122,15 @@ void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType
 
 	if (!bCanUseItem) return;
 
-	bCanUseItem = false;
+	if (!bIgnoreCoolTime)
+	{
+		bCanUseItem = false;
 
-	FTimerHandle UseCoolTimeHandle;
-	float CoolTime = 0.3f; // 아이템 사용 쿨타임 설정
-	GetWorld()->GetTimerManager().SetTimer(UseCoolTimeHandle, this, &UADInventoryComponent::OnUseCoolTimeEnd, CoolTime, false);
-
+		FTimerHandle UseCoolTimeHandle;
+		float CoolTime = 0.3f; // 아이템 사용 쿨타임 설정
+		GetWorld()->GetTimerManager().SetTimer(UseCoolTimeHandle, this, &UADInventoryComponent::OnUseCoolTimeEnd, CoolTime, false);
+	}
+	
 	int8 InventoryIndex = GetInventoryIndexByTypeAndSlotIndex(ItemType, SlotIndex);
 	if (InventoryIndex == -1) return;
 	FItemData& Item = InventoryList.Items[InventoryIndex];
@@ -656,6 +659,7 @@ void UADInventoryComponent::PlayEquipAnimation(AUnderwaterCharacter* Character, 
 	if (!HarpoonDrawMontage || !DPVDrawMontage)
 		return;
 
+	LOGVN(Warning, TEXT("Play EquipAnimation!!"));
 	FAnimSyncState SyncState;
 	SyncState.bEnableRightHandIK = true;
 	SyncState.bEnableLeftHandIK = false;

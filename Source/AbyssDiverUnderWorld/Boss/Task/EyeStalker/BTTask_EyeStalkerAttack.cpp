@@ -1,5 +1,6 @@
 #include "Boss/Task/EyeStalker/BTTask_EyeStalkerAttack.h"
 
+#include "Boss/Effect/PostProcessSettingComponent.h"
 #include "Boss/Effect/VignetteVolume.h"
 #include "Boss/EyeStalker/EyeStalker.h"
 #include "Boss/EyeStalker/EyeStalkerAIController.h"
@@ -89,5 +90,5 @@ void UBTTask_EyeStalkerAttack::OnTaskFinished(UBehaviorTreeComponent& OwnerComp,
 	
 	TaskMemory->AIController->GetBlackboardComponent()->SetValueAsBool("bIsAttacking", false);
 	TaskMemory->AIController->GetBlackboardComponent()->SetValueAsBool("bHasDetected", false);
-	TaskMemory->AIController->GetBlackboardComponent()->SetValueAsObject("TargetPlayer", nullptr);
+	TaskMemory->AIController->InitTargetPlayer();
 }
