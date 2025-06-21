@@ -296,26 +296,82 @@ void AShop::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	if (ReadyQueueForLaunchItemById.IsEmpty())
+	int32 ActualLaunchInterval;
+	switch (CurrentLaunchType)
 	{
-		if (bIsFirstLaunch == false)
+	case ELaunchType::First:
+		ActualLaunchInterval = LaunchItemIntervalAtFirst;
+		break;
+	case ELaunchType::InProgress:
+		ActualLaunchInterval = LaunchItemInterval;
+		break;
+	case ELaunchType::Last:
+		ActualLaunchInterval = LaunchItemIntervalAtLast;
+		break;
+	default:
+		check(false);
+		return;
+	}
+
+	if (CurrentDoorState == EDoorState::Opened)
+	{
+		if (ElapsedTime < ActualLaunchInterval)
 		{
-			bIsFirstLaunch = true;
+			ElapsedTime += DeltaSeconds;
+		}
+		else
+		{
+			if (ReadyQueueForLaunchItemById.IsEmpty())
+			{
+				CurrentDoorState = EDoorState::Closing;
+			}
+			else
+			{
+				LaunchItem();
+			}
+		}
+	}
+	else if (CurrentDoorState == EDoorState::Opening)
+	{
+		CurrentDoorRate = FMath::Clamp(CurrentDoorRate + (DeltaSeconds * DoorOpenSpeed), 0, 1);
+		RotateDoor(DesiredCloseDegree, DesiredOpenDegree, CurrentDoorRate);
+
+		if (CurrentDoorRate == 1)
+		{
+			CurrentDoorState = EDoorState::Opened;
+		}
+	}
+	else if (CurrentDoorState == EDoorState::Closed)
+	{
+		if (CurrentLaunchType != ELaunchType::First)
+		{
+			CurrentLaunchType = ELaunchType::First;
 		}
 
-		return;
+		if (ReadyQueueForLaunchItemById.IsEmpty() == false )
+		{
+			CurrentDoorState = EDoorState::Opening;
+		}
 	}
-
-	int32 ActualLaunchInterval = (bIsFirstLaunch) ? LaunchItemIntervalAtFirst : LaunchItemInterval;
-
-	if (ElapsedTime < ActualLaunchInterval)
+	else /*if (CurrentDoorState == EDoorState::Closing)*/
 	{
-		ElapsedTime += DeltaSeconds;
-		return;
+		CurrentDoorRate = FMath::Clamp(CurrentDoorRate - (DeltaSeconds * DoorCloseSpeed), 0, 1);
+		RotateDoor(DesiredCloseDegree, DesiredOpenDegree, CurrentDoorRate);
+
+		if (ReadyQueueForLaunchItemById.IsEmpty() == false)
+		{
+			CurrentDoorState = EDoorState::Opening;
+		}
+		else if (CurrentDoorRate == 0)
+		{
+			CurrentDoorState = EDoorState::Closed;
+		}
+
+		if (CurrentLaunchType != ELaunchType::First)
+		{
+			CurrentLaunchType = ELaunchType::First;
+		}
 	}
-
-	LaunchItem();
-
 }
 
 void AShop::Interact_Implementation(AActor* InstigatorActor)
@@ -1264,7 +1320,7 @@ int32 AShop::CalcTotalItemPrice(const TArray<uint8>& ItemIdList, const TArray<in
 void AShop::LaunchItem()
 {
 	ElapsedTime = 0.0f;
-	bIsFirstLaunch = false;
+	CurrentLaunchType = ELaunchType::InProgress;
 
 	if (ReadyQueueForLaunchItemById.IsEmpty())
 	{
@@ -1353,6 +1409,26 @@ void AShop::LaunchItem()
 
 	float ActualForce = ForceAmount * ItemMeshMass;
 	ItemRoot->AddImpulse(LaunchDirection * ActualForce);
+	LOGV(Warning, TEXT("Launch"));
+	
+	if (ReadyQueueForLaunchItemById.IsEmpty())
+	{
+		CurrentLaunchType = ELaunchType::Last;
+	}
+}
+
+void AShop::RotateDoor(float DegreeFrom, float DegreeTo, float Rate)
+{
+	if (DoorActor == nullptr)
+	{
+		return;
+	}
+
+	float CurrentDegree = FMath::Lerp(DegreeFrom, DegreeTo, Rate);
+
+	FRotator CurrentDoorRotation = DoorActor->GetActorRotation();
+	CurrentDoorRotation.Yaw = CurrentDegree;
+	DoorActor->SetActorRotation(CurrentDoorRotation);
 }
 
 void AShop::ClearSelectedInfos()
