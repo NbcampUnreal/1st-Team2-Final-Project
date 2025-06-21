@@ -261,6 +261,7 @@ void AShop::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimePro
 
 	DOREPLIFETIME(AShop, ShopConsumableItemIdList);
 	DOREPLIFETIME(AShop, ShopEquipmentItemIdList);
+	DOREPLIFETIME(AShop, CurrentDoorState);
 }
 
 void AShop::BeginPlay()
@@ -296,80 +297,116 @@ void AShop::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	int32 ActualLaunchInterval;
-	switch (CurrentLaunchType)
+	if (HasAuthority())
 	{
-	case ELaunchType::First:
-		ActualLaunchInterval = LaunchItemIntervalAtFirst;
-		break;
-	case ELaunchType::InProgress:
-		ActualLaunchInterval = LaunchItemInterval;
-		break;
-	case ELaunchType::Last:
-		ActualLaunchInterval = LaunchItemIntervalAtLast;
-		break;
-	default:
-		check(false);
-		return;
-	}
-
-	if (CurrentDoorState == EDoorState::Opened)
-	{
-		if (ElapsedTime < ActualLaunchInterval)
+		int32 ActualLaunchInterval;
+		switch (CurrentLaunchType)
 		{
-			ElapsedTime += DeltaSeconds;
+		case ELaunchType::First:
+			ActualLaunchInterval = LaunchItemIntervalAtFirst;
+			break;
+		case ELaunchType::InProgress:
+			ActualLaunchInterval = LaunchItemInterval;
+			break;
+		case ELaunchType::Last:
+			ActualLaunchInterval = LaunchItemIntervalAtLast;
+			break;
+		default:
+			check(false);
+			return;
 		}
-		else
+
+		if (CurrentDoorState == EDoorState::Opened)
 		{
-			if (ReadyQueueForLaunchItemById.IsEmpty())
+			if (ElapsedTime < ActualLaunchInterval)
 			{
-				CurrentDoorState = EDoorState::Closing;
+				ElapsedTime += DeltaSeconds;
 			}
 			else
 			{
-				LaunchItem();
+				if (ReadyQueueForLaunchItemById.IsEmpty())
+				{
+					CurrentDoorState = EDoorState::Closing;
+				}
+				else
+				{
+					LaunchItem();
+				}
+			}
+		}
+		else if (CurrentDoorState == EDoorState::Opening)
+		{
+			CurrentDoorRate = FMath::Clamp(CurrentDoorRate + (DeltaSeconds * DoorOpenSpeed), 0, 1);
+			RotateDoor(DesiredCloseDegree, DesiredOpenDegree, CurrentDoorRate);
+
+			if (CurrentDoorRate == 1)
+			{
+				CurrentDoorState = EDoorState::Opened;
+			}
+		}
+		else if (CurrentDoorState == EDoorState::Closed)
+		{
+			if (CurrentLaunchType != ELaunchType::First)
+			{
+				CurrentLaunchType = ELaunchType::First;
+			}
+
+			if (ReadyQueueForLaunchItemById.IsEmpty() == false)
+			{
+				CurrentDoorState = EDoorState::Opening;
+			}
+		}
+		else /*if (CurrentDoorState == EDoorState::Closing)*/
+		{
+			CurrentDoorRate = FMath::Clamp(CurrentDoorRate - (DeltaSeconds * DoorCloseSpeed), 0, 1);
+			RotateDoor(DesiredCloseDegree, DesiredOpenDegree, CurrentDoorRate);
+
+			if (ReadyQueueForLaunchItemById.IsEmpty() == false)
+			{
+				CurrentDoorState = EDoorState::Opening;
+			}
+			else if (CurrentDoorRate == 0)
+			{
+				CurrentDoorState = EDoorState::Closed;
+			}
+
+			if (CurrentLaunchType != ELaunchType::First)
+			{
+				CurrentLaunchType = ELaunchType::First;
 			}
 		}
 	}
-	else if (CurrentDoorState == EDoorState::Opening)
+	else
 	{
-		CurrentDoorRate = FMath::Clamp(CurrentDoorRate + (DeltaSeconds * DoorOpenSpeed), 0, 1);
-		RotateDoor(DesiredCloseDegree, DesiredOpenDegree, CurrentDoorRate);
+		if (CurrentDoorState == EDoorState::Opened)
+		{
+			CurrentDoorRate = 1;
+			RotateDoor(DesiredCloseDegree, DesiredOpenDegree, CurrentDoorRate);
+		}
+		else if (CurrentDoorState == EDoorState::Opening)
+		{
+			CurrentDoorRate = FMath::Clamp(CurrentDoorRate + (DeltaSeconds * DoorOpenSpeed), 0, 1);
+			RotateDoor(DesiredCloseDegree, DesiredOpenDegree, CurrentDoorRate);
 
-		if (CurrentDoorRate == 1)
-		{
-			CurrentDoorState = EDoorState::Opened;
+			if (CurrentDoorRate == 1)
+			{
+				CurrentDoorState = EDoorState::Opened;
+			}
 		}
-	}
-	else if (CurrentDoorState == EDoorState::Closed)
-	{
-		if (CurrentLaunchType != ELaunchType::First)
+		else if (CurrentDoorState == EDoorState::Closed)
 		{
-			CurrentLaunchType = ELaunchType::First;
+			CurrentDoorRate = 0;
+			RotateDoor(DesiredCloseDegree, DesiredOpenDegree, CurrentDoorRate);
 		}
+		else /*if (CurrentDoorState == EDoorState::Closing)*/
+		{
+			CurrentDoorRate = FMath::Clamp(CurrentDoorRate - (DeltaSeconds * DoorCloseSpeed), 0, 1);
+			RotateDoor(DesiredCloseDegree, DesiredOpenDegree, CurrentDoorRate);
 
-		if (ReadyQueueForLaunchItemById.IsEmpty() == false )
-		{
-			CurrentDoorState = EDoorState::Opening;
-		}
-	}
-	else /*if (CurrentDoorState == EDoorState::Closing)*/
-	{
-		CurrentDoorRate = FMath::Clamp(CurrentDoorRate - (DeltaSeconds * DoorCloseSpeed), 0, 1);
-		RotateDoor(DesiredCloseDegree, DesiredOpenDegree, CurrentDoorRate);
-
-		if (ReadyQueueForLaunchItemById.IsEmpty() == false)
-		{
-			CurrentDoorState = EDoorState::Opening;
-		}
-		else if (CurrentDoorRate == 0)
-		{
-			CurrentDoorState = EDoorState::Closed;
-		}
-
-		if (CurrentLaunchType != ELaunchType::First)
-		{
-			CurrentLaunchType = ELaunchType::First;
+			if (CurrentDoorRate == 0)
+			{
+				CurrentDoorState = EDoorState::Closed;
+			}
 		}
 	}
 }

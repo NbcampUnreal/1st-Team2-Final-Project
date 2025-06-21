@@ -24,6 +24,7 @@ void UShopBuyListSlotWidget::NativeOnListItemObjectSet(UObject* ListItemObject)
     SetItemCountText(ItemCount);
 
     EntryData->OnEntryUpdatedFromDataDelegate.Broadcast(this);
+    LOGV(Error, TEXT("BuyListEntry Updated, Index : %d, Count : %d"), SlotIndex, ItemCount);
 }
 
 FReply UShopBuyListSlotWidget::NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)

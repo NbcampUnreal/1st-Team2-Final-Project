@@ -64,6 +64,7 @@ public:
 
 	void SetSlotImage(UTexture2D* NewTexture);
 	void SetToolTipText(const FString& NewText);
+	void SetSlotIndex(int32 NewSlotIndex);
 
 #pragma endregion
 

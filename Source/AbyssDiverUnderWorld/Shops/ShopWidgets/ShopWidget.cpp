@@ -350,14 +350,34 @@ void UShopWidget::RemoveBuyListAt(int32 ListIndex, int32 Amount)
 
 	if (BuyListEntryData->GetItemCount() <= Amount)
 	{
-		BuyListTileView->RemoveItem(BuyListEntryData);
 		BuyListEntryDataList.RemoveAt(ListIndex);
 		BuyListEntryItemIdList.RemoveAt(ListIndex);
+		BuyListTileView->RemoveItem(BuyListEntryData);
+
+		const int32 EntryCount = BuyListEntryDataList.Num();
+		for (int32 i = ListIndex; i < EntryCount; ++i)
+		{
+			UShopBuyListEntryData* NextSlotData = BuyListEntryDataList[i];
+			if (IsValid(NextSlotData) == false)
+			{
+				LOGV(Error, TEXT("Slot Data Is Invalid, Index : %d"), i);
+				return;
+			}
+
+			NextSlotData->SetSlotIndex(i);
+
+			UShopBuyListSlotWidget* NextSlotWidget = BuyListTileView->GetEntryWidgetFromItem<UShopBuyListSlotWidget>(NextSlotData);
+			if (NextSlotWidget == nullptr)
+			{
+				LOGV(Error, TEXT("Fail to get NextSlotWidget From BuyListEntryData"));
+				return;
+			}
+
+			NextSlotWidget->SetSlotIndex(i);
+		}
 	}
 	else
 	{
-		int32 RemainingCount = BuyListEntryData->GetItemCount() - Amount;
-
 		UShopBuyListSlotWidget* BuyListSlotWidget = BuyListTileView->GetEntryWidgetFromItem<UShopBuyListSlotWidget>(BuyListEntryData);
 		if (BuyListSlotWidget == nullptr)
 		{
@@ -365,6 +385,7 @@ void UShopWidget::RemoveBuyListAt(int32 ListIndex, int32 Amount)
 			return;
 		}
 
+		int32 RemainingCount = BuyListEntryData->GetItemCount() - Amount;
 		BuyListSlotWidget->SetItemCountText(RemainingCount);
 		BuyListEntryData->SetItemCount(RemainingCount);
 	}

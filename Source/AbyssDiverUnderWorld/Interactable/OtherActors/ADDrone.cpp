@@ -17,6 +17,7 @@
 
 #include "Net/UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"
+#include "Engine/TargetPoint.h"
 
 DEFINE_LOG_CATEGORY(DroneLog);
 
@@ -109,10 +110,7 @@ void AADDrone::Interact_Implementation(AActor* InstigatorActor)
 	{
 		if (AADInGameMode* GameMode = GetWorld()->GetAuthGameMode<AADInGameMode>())
 		{
-			GameMode->RevivePlayersAtRandomLocation(CurrentSeller->GetSubmittedPlayerIndexes(),
-				GetActorLocation(),
-				ReviveDistance
-			);
+			GameMode->RevivePlayersAroundDroneAtRespawnLocation(CurrentSeller->GetSubmittedPlayerIndexes(), this);
 			CurrentSeller->GetSubmittedPlayerIndexes().Empty();
 		}
 	}
@@ -239,6 +237,16 @@ bool AADDrone::IsHoldMode() const
 FString AADDrone::GetInteractionDescription() const
 {
 	return TEXT("Send Drone!");
+}
+
+const TArray<ATargetPoint*>& AADDrone::GetPlayerRespawnLocations() const
+{
+	return PlayerRespawnLocations;
+}
+
+float AADDrone::GetReviveDistance() const
+{
+	return ReviveDistance;
 }
 
 USoundSubsystem* AADDrone::GetSoundSubsystem()
