@@ -162,7 +162,6 @@ float AMonster::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, 
 
 void AMonster::OnDeath()
 {
-	StopMovement();
 	AnimInstance->StopAllMontages(1.0f);
 
 	SetMonsterState(EMonsterState::Death);
