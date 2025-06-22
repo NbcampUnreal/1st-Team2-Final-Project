@@ -1,4 +1,4 @@
-# 🎮 게임 제목 (ex. Abyss Diver: Underworld)
+# 🎮 게임 제목 - Abyss Diver: Underworld
 
 ## 📌 개요
 - 장르: 4인 협동 생존 게임
