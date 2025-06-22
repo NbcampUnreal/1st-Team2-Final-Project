@@ -3,6 +3,7 @@
 
 #include "Monster/MonsterSoundComponent.h"
 #include "Components/AudioComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 
 
@@ -12,6 +13,7 @@ UMonsterSoundComponent::UMonsterSoundComponent()
 
 	PatrolLoopComponent = nullptr;
 	ChaseLoopComponent = nullptr;
+	FleeLoopComponent = nullptr;
 }
 
 
@@ -51,6 +53,27 @@ void UMonsterSoundComponent::BeginPlay()
 				ChaseLoopComponent->Stop();
 			}
 		});
+
+		if (FleeLoopSound)
+		{
+			FleeLoopComponent = NewObject<UAudioComponent>(this);
+			FleeLoopComponent->bAutoActivate = false;
+			FleeLoopComponent->bAutoDestroy = false;
+			FleeLoopComponent->SetupAttachment(GetOwner()->GetRootComponent());
+			FleeLoopComponent->bAllowSpatialization = true;
+			FleeLoopComponent->RegisterComponent();
+			FleeLoopComponent->SetSound(nullptr);
+			FleeLoopComponent->Stop();
+
+			GetWorld()->GetTimerManager().SetTimerForNextTick([this]()
+			{
+				if (FleeLoopComponent)
+				{
+					FleeLoopComponent->SetSound(FleeLoopSound);
+					FleeLoopComponent->Stop();
+				}
+			});
+		}
 	}
 }
 
@@ -80,6 +103,19 @@ void UMonsterSoundComponent::M_PlayChaseLoopSound_Implementation()
 	}
 }
 
+void UMonsterSoundComponent::S_PlayFleeLoopSound_Implementation()
+{
+	M_PlayFleeLoopSound();
+}
+
+void UMonsterSoundComponent::M_PlayFleeLoopSound_Implementation()
+{
+	if (FleeLoopComponent && !FleeLoopComponent->IsPlaying())
+	{
+		FleeLoopComponent->Play();
+	}
+}
+
 void UMonsterSoundComponent::S_StopAllLoopSound_Implementation()
 {
 	M_StopAllLoopSound();
@@ -96,6 +132,24 @@ void UMonsterSoundComponent::M_StopAllLoopSound_Implementation()
 	if (ChaseLoopComponent && ChaseLoopComponent->IsPlaying())
 	{
 		ChaseLoopComponent->Stop();
+	}
+
+	if (FleeLoopComponent && FleeLoopComponent->IsPlaying())
+	{
+		FleeLoopComponent->Stop();
+	}
+}
+
+void UMonsterSoundComponent::S_PlayHitReactSound_Implementation()
+{
+	M_PlayHitReactSound();
+}
+
+void UMonsterSoundComponent::M_PlayHitReactSound_Implementation()
+{
+	if (HitReactSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, HitReactSound, GetOwner()->GetActorLocation());
 	}
 }
 

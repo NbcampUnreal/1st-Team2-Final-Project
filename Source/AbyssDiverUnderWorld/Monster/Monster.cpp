@@ -9,6 +9,7 @@
 #include "Net/UnrealNetwork.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "AbyssDiverUnderWorld.h"
+#include "NiagaraFunctionLibrary.h"
 #include "Components/CapsuleComponent.h"
 #include "Interactable/OtherActors/Radars/RadarReturnComponent.h"
 
@@ -112,6 +113,14 @@ void AMonster::M_PlayMontage_Implementation(UAnimMontage* AnimMontage, float InP
 	PlayAnimMontage(AnimMontage, InPlayRate, StartSectionName);
 }
 
+void AMonster::M_SpawnBloodEffect_Implementation(FVector Location, FRotator Rotation)
+{
+	if (BloodEffect)
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), BloodEffect, Location, Rotation);
+	}
+}
+
 float AMonster::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
 	if (!HasAuthority())
@@ -128,6 +137,24 @@ float AMonster::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, 
 			OnDeath();
 			// Delegate Broadcasts for Achievements
 			OnMonsterDead.Broadcast(DamageCauser, this);
+		}
+		else
+		{
+			FVector BloodLoc = GetActorLocation() + FVector(0, 0, 20.f);
+			FRotator BloodRot = GetActorRotation();
+			M_SpawnBloodEffect(BloodLoc, BloodRot);
+
+			if (IsValid(HitReactAnimations))
+			{
+				M_PlayMontage(HitReactAnimations);
+			}
+			else if (MonsterSoundComponent)
+			{
+				MonsterSoundComponent->S_PlayHitReactSound();
+			}
+
+			AddDetection(DamageCauser);
+			SetMonsterState(EMonsterState::Chase);
 		}
 	}
 	return Damage;
@@ -432,6 +459,7 @@ void AMonster::SetMonsterState(EMonsterState NewState)
 
 	case EMonsterState::Flee:
 		SetMaxSwimSpeed(FleeSpeed);
+		MonsterSoundComponent->S_PlayFleeLoopSound();
 		bIsChasing = false;
 
 	default:

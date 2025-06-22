@@ -14,6 +14,7 @@
 
 class ASplinePathActor;
 class USphereComponent;
+class UNiagaraSystem;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnMonsterDeadSignature, AActor*, Killer, AMonster*, DeadMonster);
 
@@ -38,6 +39,10 @@ public:
 	UFUNCTION(NetMulticast, Reliable)
 	void M_PlayMontage(UAnimMontage* AnimMontage, float InPlayRate = 1, FName StartSectionName = NAME_None);
 	void M_PlayMontage_Implementation(UAnimMontage* AnimMontage, float InPlayRate = 1, FName StartSectionName = NAME_None);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void M_SpawnBloodEffect(FVector Location, FRotator Rotation);
+	void M_SpawnBloodEffect_Implementation(FVector Location, FRotator Rotation);
 
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 	virtual void OnDeath();
@@ -82,6 +87,10 @@ protected:
 	TArray<TObjectPtr<UAnimMontage>> AttackAnimations;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AI|DetectedAnimation")
 	TObjectPtr<UAnimMontage> DetectedAnimations;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AI|HitReactAnimation")
+	TObjectPtr<UAnimMontage> HitReactAnimations;
+	UPROPERTY(EditDefaultsOnly, Category = "AI|FX")
+	TObjectPtr<UNiagaraSystem> BloodEffect;
 	UPROPERTY(EditAnywhere, Category = "AI")
 	float ChaseTriggerTime;
 	UPROPERTY(EditAnywhere, Category = "AI")
