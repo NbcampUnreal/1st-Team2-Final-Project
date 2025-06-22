@@ -388,7 +388,7 @@ bool UADInventoryComponent::AddInventoryItem(const FItemData& ItemData)
 						bIsUpdateSuccess = true;
 						uint8 SlotIndex = GetTypeInventoryEmptyIndex(ItemData.ItemType);
 
-						FItemData NewItem = { FoundRow->Name, FoundRow->Id, ItemData.Quantity, SlotIndex, ItemData.Amount, ItemData.CurrentAmmoInMag, ItemData.ReserveAmmo, ItemData.Mass,ItemData.Price, FoundRow->ItemType, FoundRow->Thumbnail };
+						FItemData NewItem = { FoundRow->Name, FoundRow->Id, ItemData.Quantity, SlotIndex, ItemData.Amount, ItemData.CurrentAmmoInMag, ItemData.ReserveAmmo, ItemData.Mass,ItemData.Price, FoundRow->ItemType, FoundRow->BulletType, FoundRow->Thumbnail };
 						InventoryList.AddItem(NewItem);
 						if (ItemData.ItemType == EItemType::Exchangable)
 						{
@@ -721,6 +721,21 @@ FItemData* UADInventoryComponent::GetEditableItemDataByName(FName ItemNameToEdit
 	return nullptr;
 }
 
+bool UADInventoryComponent::TryGiveAmmoToEquipment(EBulletType BulletType, int32 AmountPerPickup)
+{
+	for (FItemData& Item : InventoryList.Items)  
+	{
+		if (Item.ItemType == EItemType::Equipment &&
+			Item.BulletType == BulletType)
+		{
+			Item.ReserveAmmo += AmountPerPickup;
+			InventoryList.MarkItemDirty(Item); 
+			return true;      
+		}
+	}
+	return false;
+}
+
 int8 UADInventoryComponent::GetInventoryIndexByTypeAndSlotIndex(EItemType Type, int8 SlotIndex) //못 찾으면 -1 반환
 {
 	int8 InventoryIndex = INDEX_NONE;
@@ -844,11 +859,17 @@ void UADInventoryComponent::UnEquip()
 		/*LOGINVEN(Warning, TEXT("UnEquipItem %s"), *CurrentEquipmentInstance->ItemData.Name.ToString());
 		if(CurrentEquipmentInstance)
 			CurrentEquipmentInstance->Destroy();*/
-		CachedDiver->GetEquipRenderComponent()->DetachItem(CurrentEquipmentInstance);
-		CurrentEquipmentInstance->Destroy();
-		CurrentEquipItem->Destroy();
-		CurrentEquipmentInstance = nullptr;
-		CurrentEquipItem = nullptr;
+		if (CachedDiver)
+		{
+			if (UEquipRenderComponent* EquipRender = CachedDiver->GetEquipRenderComponent())
+			{
+				EquipRender->DetachItem(CurrentEquipmentInstance);
+			}
+			CurrentEquipmentInstance->Destroy();
+			CurrentEquipItem->Destroy();
+			CurrentEquipmentInstance = nullptr;
+			CurrentEquipItem = nullptr;
+		}
 	}
 	SetEquipInfo(INDEX_NONE, nullptr);
 

@@ -44,16 +44,19 @@ struct FItemData : public FFastArraySerializerItem
 	EItemType ItemType;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	EBulletType BulletType;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TObjectPtr<UTexture2D> Thumbnail;
 
 
 	FItemData()
-		: Name(NAME_None), Id(0), Quantity(0), SlotIndex(99), Amount(0), CurrentAmmoInMag(0), ReserveAmmo(0), Mass(0), Price(0), ItemType(EItemType::Max), Thumbnail(nullptr)
+		: Name(NAME_None), Id(0), Quantity(0), SlotIndex(99), Amount(0), CurrentAmmoInMag(0), ReserveAmmo(0), Mass(0), Price(0), ItemType(EItemType::Max), BulletType(EBulletType::Max), Thumbnail(nullptr)
 	{
 
 	}
-	FItemData(FName InName, uint8 InId, uint8 InQuantity, uint8 InSlotIndex, int32 InAmount, int32 CurrentAmmoInMag, int32 ReserveAmmo, int32 InMass, int32 InPrice, EItemType InType, UTexture2D* InThumbnail)
-		: Name(InName), Id(InId), Quantity(InQuantity), SlotIndex(InSlotIndex), Amount(InAmount), CurrentAmmoInMag(CurrentAmmoInMag), ReserveAmmo(ReserveAmmo), Mass(InMass), Price(InPrice), ItemType(InType), Thumbnail(InThumbnail)
+	FItemData(FName InName, uint8 InId, uint8 InQuantity, uint8 InSlotIndex, int32 InAmount, int32 CurrentAmmoInMag, int32 ReserveAmmo, int32 InMass, int32 InPrice, EItemType InType, EBulletType InBulletType, UTexture2D* InThumbnail)
+		: Name(InName), Id(InId), Quantity(InQuantity), SlotIndex(InSlotIndex), Amount(InAmount), CurrentAmmoInMag(CurrentAmmoInMag), ReserveAmmo(ReserveAmmo), Mass(InMass), Price(InPrice), ItemType(InType), BulletType(InBulletType), Thumbnail(InThumbnail)
 	{
 
 	}
@@ -61,7 +64,7 @@ struct FItemData : public FFastArraySerializerItem
 	// 이 값이 바뀌면 Replication에 포함됨
 	bool operator==(const FItemData& Other) const
 	{
-		return Name == Other.Name && Quantity == Other.Quantity && SlotIndex == Other.SlotIndex && ItemType == Other.ItemType && Thumbnail == Other.Thumbnail && Amount == Other.Amount && CurrentAmmoInMag == Other.CurrentAmmoInMag && ReserveAmmo == Other.ReserveAmmo;
+		return Name == Other.Name && Quantity == Other.Quantity && SlotIndex == Other.SlotIndex && ItemType == Other.ItemType && Thumbnail == Other.Thumbnail && Amount == Other.Amount && CurrentAmmoInMag == Other.CurrentAmmoInMag && ReserveAmmo == Other.ReserveAmmo && BulletType == Other.BulletType;
 	}
 };
 
@@ -92,6 +95,7 @@ struct FInventoryList : public FFastArraySerializer
 		NewItem.Mass = Item.Mass;
 		NewItem.Price = Item.Price;
 		NewItem.ItemType = Item.ItemType;
+		NewItem.BulletType = Item.BulletType;
 		NewItem.Thumbnail = Item.Thumbnail;
 		Items.Add(NewItem);
 		MarkItemDirty(Items.Last());

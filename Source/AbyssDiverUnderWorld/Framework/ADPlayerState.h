@@ -15,10 +15,12 @@ class ABYSSDIVERUNDERWORLD_API AADPlayerState : public APlayerState
     GENERATED_BODY()
 
 public:
+
     // 생성자
     AADPlayerState();
 
 protected:
+
     // 생명주기 함수
     virtual void BeginPlay() override;
     virtual void PostNetInit() override;
@@ -35,17 +37,10 @@ public:
 
 	void ResetLevelResults();
 
-	UFUNCTION()
-	void OnRep_Nickname();
-
 #pragma endregion
 
 #pragma region Variable
 protected:
-
-	// persistent Data
-	UPROPERTY(Replicated)
-	FString PlayerNickname;
 
 	UPROPERTY(Replicated)
 	int32 TotalPersonalCredit;
@@ -85,11 +80,12 @@ protected:
 
 #pragma region Getter/Setter
 public:
-	// PlayerNickname
+
 	UFUNCTION(BlueprintCallable)
-	void SetPlayerNickname(const FString& Name) { PlayerNickname = Name; }
+	void SetPlayerNickname(const FString& NewName);
+
 	UFUNCTION(BlueprintPure)
-	const FString& GetPlayerNickname() const { return PlayerNickname; }
+	const FString GetPlayerNickname() const;
 
 	// TotalPersonalCredit
 	UFUNCTION(BlueprintCallable)
@@ -144,7 +140,6 @@ public:
 
 	int8 GetPlayerIndex() const { return PlayerIndex; }
 	void SetPlayerIndex(int8 NewPlayerIndex) { PlayerIndex = NewPlayerIndex; }
-
 
 #pragma endregion
 };

@@ -20,16 +20,9 @@ void UAnimNotify_BossAttack::Notify(USkeletalMeshComponent* MeshComp, UAnimSeque
 	// 메시 콜리전 가져오기
 	if (bIsMeshCollision)
 	{
-		Boss->GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-
 		// AttackInterval 후 콜리전 비활성화
 		Boss->GetWorldTimerManager().SetTimer(AttackTimer, FTimerDelegate::CreateLambda([=]
 		{
-			if (IsValid(Boss->GetMesh()))
-			{
-				Boss->GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-			}
-
 			if (IsValid(Boss))
 			{
 				Boss->OnAttackEnded();

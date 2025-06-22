@@ -29,4 +29,7 @@ private:
 private:
 	UPROPERTY(EditAnywhere)
 	float PauseDetectedTime = 3.0f;
+
+	UPROPERTY(meta = (ClampMin = "0"))
+	uint8 EyeStalkerReferenceCount = 0;
 };
