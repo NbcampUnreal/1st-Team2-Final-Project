@@ -859,11 +859,17 @@ void UADInventoryComponent::UnEquip()
 		/*LOGINVEN(Warning, TEXT("UnEquipItem %s"), *CurrentEquipmentInstance->ItemData.Name.ToString());
 		if(CurrentEquipmentInstance)
 			CurrentEquipmentInstance->Destroy();*/
-		CachedDiver->GetEquipRenderComponent()->DetachItem(CurrentEquipmentInstance);
-		CurrentEquipmentInstance->Destroy();
-		CurrentEquipItem->Destroy();
-		CurrentEquipmentInstance = nullptr;
-		CurrentEquipItem = nullptr;
+		if (CachedDiver)
+		{
+			if (UEquipRenderComponent* EquipRender = CachedDiver->GetEquipRenderComponent())
+			{
+				EquipRender->DetachItem(CurrentEquipmentInstance);
+			}
+			CurrentEquipmentInstance->Destroy();
+			CurrentEquipItem->Destroy();
+			CurrentEquipmentInstance = nullptr;
+			CurrentEquipItem = nullptr;
+		}
 	}
 	SetEquipInfo(INDEX_NONE, nullptr);
 
