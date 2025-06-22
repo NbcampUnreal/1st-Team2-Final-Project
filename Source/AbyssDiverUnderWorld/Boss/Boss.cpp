@@ -778,10 +778,10 @@ float ABoss::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
 
 void ABoss::OnDeath()
 {
-	if (IsValid(AIController))
+	if (IsValid(GetController()))
 	{
-		AIController->StopMovement();
-		AIController->UnPossess();	
+		GetController()->StopMovement();
+		GetController()->UnPossess();	
 	}
 	
 	M_OnDeath();

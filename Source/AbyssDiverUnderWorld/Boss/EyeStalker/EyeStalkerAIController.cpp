@@ -1,4 +1,6 @@
 #include "Boss/EyeStalker/EyeStalkerAIController.h"
+
+#include "Boss/Effect/PostProcessSettingComponent.h"
 #include "Character/UnderwaterCharacter.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISense_Sight.h"
@@ -18,6 +20,19 @@ void AEyeStalkerAIController::OnPossess(APawn* InPawn)
 	Super::OnPossess(InPawn);
 }
 
+void AEyeStalkerAIController::InitTargetPlayer()
+{
+	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(GetBlackboardComponent()->GetValueAsObject("TargetPlayer"));
+	if (!IsValid(Player)) return;
+
+	UPostProcessSettingComponent* PostProcessSettingComponent = Player->GetPostProcessSettingComponent();
+	if (!IsValid(PostProcessSettingComponent)) return;
+
+	PostProcessSettingComponent->C_DeactivateVignetteEffect();
+	
+	GetBlackboardComponent()->SetValueAsObject("TargetPlayer", nullptr);
+}
+
 void AEyeStalkerAIController::OnSightPerceptionSuccess(AUnderwaterCharacter* Player)
 {
 	if (TargetPlayers.Num() == 0)
@@ -34,8 +49,7 @@ void AEyeStalkerAIController::OnSightPerceptionFail(AUnderwaterCharacter* Player
 	
 	if (TargetPlayers.Num() == 0)
 	{
-		GetBlackboardComponent()->SetValueAsBool("bHasDetected", false);
-		GetBlackboardComponent()->SetValueAsObject("TargetPlayer", nullptr);	
+		InitTargetPlayer();
 	}
 	else
 	{

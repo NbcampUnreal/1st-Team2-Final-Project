@@ -28,10 +28,6 @@ DECLARE_LOG_CATEGORY_EXTERN(LogAbyssDiverCharacter, Log, LOG_ABYSS_DIVER_COMPILE
 // 실제 게임 플레이 태스트와 프로파일링을 통해서 문제를 해결해야 한다.
 // 3. Stamina, Oxygen 컴포넌트가 분리되어서 더 복잡해지고 있는 상황일 수 있다. 추후 구현이 필요 이상으로 복잡해지면 합치는 것을 고려한다.
 
-// @TODO : 수중 캐릭터와 지상 캐릭터 분리
-// 만약에 레벨 전환이 있다고 가정하면 새로 캐릭터를 분리하는 것이 덜 복잡하게 된다.
-// 이 부분을 문의하고 확정된 스펙에 따라 결정한다.
-
 enum class ELocomotionMode : uint8;
 
 /* 캐릭터의 지상, 수중을 결정, Move 로직, Animation이 변경되고 사용 가능 기능이 제한된다. */
@@ -1156,6 +1152,10 @@ private:
 	float BindMultiplier;
 
 	uint8 bIsAttackedByEyeStalker : 1;
+
+	/** Post Process를 관리하는 컴포넌트 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UPostProcessSettingComponent> PostProcessSettingComponent;
 	
 #pragma endregion
 
@@ -1275,6 +1275,9 @@ public:
 
 	/** 현재 Eye Stalker에게 공격받았는지 여부를 반환 */
 	FORCEINLINE bool IsAttackedByEyeStalker() const { return bIsAttackedByEyeStalker; }
+
+	/** Post Process Setting Component를 반환 */
+	FORCEINLINE UPostProcessSettingComponent* GetPostProcessSettingComponent() const { return PostProcessSettingComponent; }
 	
 #pragma endregion
 };
