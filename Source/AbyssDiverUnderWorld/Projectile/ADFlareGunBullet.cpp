@@ -1,6 +1,7 @@
 ﻿#include "Projectile/ADFlareGunBullet.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Components/PointLightComponent.h"
+#include "Components/SphereComponent.h"
 
 AADFlareGunBullet::AADFlareGunBullet()
 {
@@ -10,6 +11,9 @@ AADFlareGunBullet::AADFlareGunBullet()
 	FlareLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("FlareLight"));
 	FlareLight->SetupAttachment(RootComponent);
 
+	FlareSphereCollision = CreateDefaultSubobject<USphereComponent>(TEXT("FlareSphereCollision"));
+	FlareSphereCollision->SetupAttachment(RootComponent);
+
 	FlareLight->Intensity = FlareIntensity;   // 밝기
 	FlareLight->AttenuationRadius = FlareRadius;    // 35 m 범위정도?
 	FlareLight->bUseInverseSquaredFalloff = bUseInverseFalloff;
@@ -18,6 +22,12 @@ AADFlareGunBullet::AADFlareGunBullet()
 	FlareLight->CastShadows = bCastShadows;     // **그림자 OFF**
 
 	FlareLight->IntensityUnits = ELightUnits::Candelas;
+}
+
+void AADFlareGunBullet::BeginPlay()
+{
+	Super::BeginPlay();
+	GetWorld()->GetTimerManager().SetTimer(HitDestroyHandle, this, &ThisClass::Deactivate, Lifetime, false);
 }
 
 void AADFlareGunBullet::InitializeSpeed(const FVector& Dir, uint32 Speed)
@@ -30,8 +40,8 @@ void AADFlareGunBullet::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AAct
 	if (bWasHit) return;
 	bWasHit = true;
 	
-	ProjectileMovementComp->StopMovementImmediately();
-	AttachToComponent(OtherComp, FAttachmentTransformRules::KeepWorldTransform, SweepResult.BoneName);
+	//ProjectileMovementComp->StopMovementImmediately();
+	//AttachToComponent(OtherComp, FAttachmentTransformRules::KeepWorldTransform, SweepResult.BoneName);
 
-	GetWorld()->GetTimerManager().SetTimer(HitDestroyHandle, this, &ThisClass::Deactivate, HitLifetime, false);
+	
 }

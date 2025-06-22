@@ -10,6 +10,7 @@
 
 #include "Subsystems/SoundSubsystem.h"
 #include "Subsystems/DataTableSubsystem.h"
+#include "Subsystems/MissionSubsystem.h"
 
 #include "Character/PlayerComponent/PlayerHUDComponent.h"
 #include "Character/UnderwaterCharacter.h"
@@ -25,6 +26,9 @@
 
 #include "Kismet/GameplayStatics.h"
 #include "EngineUtils.h"
+#include "Components/CapsuleComponent.h"
+#include "Algo/RandomShuffle.h"
+#include "Engine/TargetPoint.h"
 
 AADInGameMode::AADInGameMode()
 {
@@ -51,8 +55,11 @@ void AADInGameMode::BeginPlay()
 		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
 	}
 
-	GetSoundSubsystem()->PlayBGM(ESFX_BGM::ShallowBackground, 1.0f);
-	GetSoundSubsystem()->PlayBGM(ESFX_BGM::ShallowPhase1, 1.0f);
+	if (IsValid(SoundSubsystem) == false)
+	{
+		GetSoundSubsystem()->PlayBGM(ESFX_BGM::ShallowBackground, 1.0f);
+		GetSoundSubsystem()->PlayBGM(ESFX_BGM::ShallowPhase1, 1.0f);
+	}
 
 	if (AADInGameState* InGameState = GetGameState<AADInGameState>())
 	{
@@ -105,6 +112,15 @@ void AADInGameMode::PostLogin(APlayerController* NewPlayer)
 	UADGameInstance* GI = GetGameInstance<UADGameInstance>();
 	check(GI);
 
+	UMissionSubsystem* MissionSubsystem = GI->GetSubsystem<UMissionSubsystem>();
+	if (MissionSubsystem == nullptr)
+	{
+		LOGV(Error, TEXT("Fail to get MissionSubsystem"));
+		return;
+	}
+
+	MissionSubsystem->RemoveAllMissions();
+
 	if (AADPlayerState* ADPlayerState = NewPlayer->GetPlayerState<AADPlayerState>())
 	{
 		ADPlayerState->ResetLevelResults();
@@ -117,7 +133,6 @@ void AADInGameMode::PostLogin(APlayerController* NewPlayer)
 			return;
 		}
 
-		ADPlayerState->SetPlayerNickname(NewPlayerId);
 		ADPlayerState->SetPlayerIndex(NewPlayerIndex);
 	}
 
@@ -154,8 +169,29 @@ void AADInGameMode::Logout(AController* Exiting)
 	UADGameInstance* GI = GetGameInstance<UADGameInstance>();
 	GI->RemovePlayerNetId(ExitingId);
 
+	UMissionSubsystem* MissionSubsystem = GI->GetSubsystem<UMissionSubsystem>();
+	if (MissionSubsystem == nullptr)
+	{
+		LOGV(Error, TEXT("Fail to get MissionSubsystem"));
+		return;
+	}
+
+	MissionSubsystem->RemoveAllMissions();
+
 	LOGVN(Error, TEXT("Logout, Who : %s, NetId : %s"), *Exiting->GetName(), *ExitingId);
 
+}
+
+void AADInGameMode::FinishRestartPlayer(AController* NewPlayer, const FRotator& StartRotation)
+{
+	Super::FinishRestartPlayer(NewPlayer, StartRotation);
+
+	if (DeathCount > 0)
+	{
+		DeathCount--;
+	}
+
+	LOGVN(Log, TEXT("Player Restarted, PlayerIndex : %d, Deathcount : %d"), NewPlayer->GetPlayerState<AADPlayerState>()->GetPlayerIndex(), DeathCount);
 }
 
 void AADInGameMode::ReadyForTravelToCamp()
@@ -166,7 +202,7 @@ void AADInGameMode::ReadyForTravelToCamp()
 		return;
 	}
 
-	LOGVN(Warning, TEXT("Ready For Traveling to Camp..."));
+	LOGVN(Log, TEXT("Ready For Traveling to Camp..."));
 
 	for (AADPlayerController* PC : TActorRange<AADPlayerController>(GetWorld()))
 	{
@@ -174,8 +210,6 @@ void AADInGameMode::ReadyForTravelToCamp()
 	}
 
 	TimerManager.ClearTimer(ResultTimerHandle);
-
-	
 
 	const float Interval = 5.0f;
 	TimerManager.SetTimer(ResultTimerHandle, this, &AADInGameMode::TravelToCamp, 1, false, Interval);
@@ -188,6 +222,14 @@ void AADInGameMode::TravelToCamp()
 		PC->C_OnPreClientTravel();
 	}
 
+	UMissionSubsystem* MissionSubsystem = GetGameInstance()->GetSubsystem<UMissionSubsystem>();
+	if (MissionSubsystem == nullptr)
+	{
+		LOGV(Error, TEXT("Fail to get MissionSubsystem"));
+		return;
+	}
+
+	MissionSubsystem->RemoveAllMissions();
 	const float WaitForStopVoice = 1.0f;
 
 	FTimerHandle WaitForVoiceTimerHandle;
@@ -198,7 +240,7 @@ void AADInGameMode::TravelToCamp()
 				FString LevelLoad = CampMapName;
 				if (LevelLoad == "invalid")
 				{
-					UE_LOG(LogTemp, Error, TEXT("LevelLoad is empty"));
+					LOGV(Error, TEXT("LevelLoad is empty"));
 					return;
 				}
 
@@ -241,6 +283,79 @@ void AADInGameMode::BindDelegate(AUnderwaterCharacter* PlayerCharacter)
 	PlayerCharacter->OnCharacterStateChangedDelegate.AddDynamic(this, &AADInGameMode::OnCharacterStateChanged);
 }
 
+void AADInGameMode::RevivePlayersAtRandomLocation(TArray<int8> PlayerIndexes, const FVector& SpawnCenter,
+	const float ReviveDistance)
+{
+	for (int8 PlayerIndex : PlayerIndexes)
+	{
+		FVector RandomLocation = GetRandomLocation(SpawnCenter, ReviveDistance);
+		RestartPlayerFromPlayerIndex(PlayerIndex, RandomLocation);
+	}
+}
+
+void AADInGameMode::RevivePlayersAroundDroneAtRespawnLocation(const TArray<int8>& PlayerIndexes, const AADDrone* SomeDrone)
+{
+	if (IsValid(SomeDrone) == false)
+	{
+		LOGV(Error, TEXT("Drone Is Invalid"));
+		return;
+	}
+
+	const TArray<ATargetPoint*>& RespawnLocationCandidates = SomeDrone->GetPlayerRespawnLocations();
+
+	const int32 CandidateCount = RespawnLocationCandidates.Num();
+	if (CandidateCount == 0)
+	{
+		RevivePlayersAtRandomLocation(PlayerIndexes, SomeDrone->GetActorLocation(), SomeDrone->GetReviveDistance());
+		return;
+	}
+
+	TArray<int32> SelectedIndexes;
+	SelectedIndexes.Reserve(CandidateCount);
+	for (int32 i = 0; i < CandidateCount; ++i)
+	{
+		SelectedIndexes.Add(i);
+	}
+
+	const int32 PlayerIndexCount = PlayerIndexes.Num();
+
+	int32 CurrentCandidateIndex = CandidateCount;
+	for (int32 i = 0; i < PlayerIndexCount; ++i)
+	{
+		if (CurrentCandidateIndex >= CandidateCount)
+		{
+			if (CandidateCount > 1)
+			{
+				Algo::RandomShuffle(SelectedIndexes);
+			}
+
+			CurrentCandidateIndex = 0;
+		}
+
+		int32 SelectedIndex = SelectedIndexes[CurrentCandidateIndex];
+		const FVector RespawnLocation = RespawnLocationCandidates[SelectedIndex]->GetActorLocation();
+		
+		int32 PlayerIndex = PlayerIndexes[i];
+
+		RestartPlayerFromPlayerIndex(PlayerIndex, RespawnLocation);
+		CurrentCandidateIndex++;
+	}
+}
+
+AADPlayerController* AADInGameMode::FindPlayerControllerFromIndex(int8 PlayerIndex) const
+{
+	for (AADPlayerController* PlayerController : TActorRange<AADPlayerController>(GetWorld()))
+	{
+		AADPlayerState* PlayerState = Cast<AADPlayerState>(PlayerController->PlayerState);
+		if (PlayerState && PlayerState->GetPlayerIndex() == PlayerIndex)
+		{
+			return PlayerController;
+		}
+	}
+
+	return nullptr;
+}
+
 void AADInGameMode::InitPlayer(APlayerController* PC)
 {
 	if (!PC)
@@ -252,9 +367,70 @@ void AADInGameMode::InitPlayer(APlayerController* PC)
 	}
 }
 
+FVector AADInGameMode::GetRandomLocation(const FVector& Location, float Distance) const
+{
+	float CapsuleRadius = 34.0f;
+	float CapsuleHalfHeight = 88.0f;
+	if (AUnderwaterCharacter* DefaultCharacter = DefaultPawnClass->GetDefaultObject<AUnderwaterCharacter>())
+	{
+		CapsuleRadius = DefaultCharacter->GetCapsuleComponent()->GetScaledCapsuleRadius();
+		CapsuleHalfHeight = DefaultCharacter->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+	}
+	
+	FVector RandomLocation = FVector::ZeroVector;
+	int MaxAttempts = 10;
+	while (MaxAttempts > 0)
+	{
+		RandomLocation = Location + FMath::VRand() * Distance;
+		MaxAttempts--;
+
+		FCollisionQueryParams Params;
+		Params.bTraceComplex = true;
+		FHitResult HitResult;
+		bool bHit = GetWorld()->SweepSingleByChannel(
+			HitResult,
+			RandomLocation,
+			RandomLocation,
+			FQuat::Identity,
+			ECC_Visibility,
+			FCollisionShape::MakeCapsule(CapsuleRadius, CapsuleHalfHeight),
+			Params
+		);
+
+		if (!bHit)
+		{
+			return RandomLocation;
+		}
+	}
+
+	// 랜덤한 위치를 찾지 못했을 경우 어쨌든 위치를 반환
+	UE_LOG(AbyssDiver, Warning, TEXT("Failed to find a random location after multiple attempts. Returning last calculated location."));
+	return RandomLocation;
+}
+
+void AADInGameMode::RestartPlayerFromPlayerIndex(int8 PlayerIndex, const FVector& SpawnLocation)
+{
+	AADPlayerController* PlayerController = FindPlayerControllerFromIndex(PlayerIndex);
+	// 현재 관전이 없으므로 Hide 되어 있다.
+	// if (PlayerController == nullptr || PlayerController->GetPawn() != nullptr)
+	if (PlayerController == nullptr)
+	{
+		return;
+	}
+
+	if (APawn* PlayerPawn = PlayerController->GetPawn())
+	{
+		PlayerController->UnPossess();
+		PlayerPawn->Destroy();
+	}
+
+	FRotator SpawnRotator = FRotator::ZeroRotator;
+	RestartPlayerAtTransform(PlayerController, FTransform(SpawnRotator, SpawnLocation));
+}
+
 void AADInGameMode::GameOver()
 {
-	LOGV(Error, TEXT("Game Over"));
+	LOGV(Log, TEXT("Game Over"));
 
 #if WITH_EDITOR
 	// PIE 버그로 이걸 호출해주지 않으면 Server Travel시 크래시 일어남.
@@ -270,7 +446,6 @@ void AADInGameMode::GameOver()
 
 void AADInGameMode::OnCharacterStateChanged(ECharacterState OldCharacterState, ECharacterState NewCharacterState)
 {
-	LOGV(Error, TEXT("Begin, NewCharacterState : %d, PlayerNum : %d"), NewCharacterState, GetNumPlayers());
 	if (NewCharacterState == ECharacterState::Death)
 	{
 		if (OldCharacterState == ECharacterState::Groggy)
@@ -282,7 +457,6 @@ void AADInGameMode::OnCharacterStateChanged(ECharacterState OldCharacterState, E
 	}
 	else if (NewCharacterState == ECharacterState::Groggy)
 	{
-		LOGV(Error, TEXT("Groggy"));
 		GroggyCount++;
 	}
 	else if (OldCharacterState == ECharacterState::Groggy && NewCharacterState == ECharacterState::Normal)
@@ -290,12 +464,13 @@ void AADInGameMode::OnCharacterStateChanged(ECharacterState OldCharacterState, E
 		GroggyCount--;
 	}
 
+	LOGV(Log, TEXT("Begin,Old State : %d,  NewCharacterState : %d, PlayerNum : %d, DeathCount : %d, GroggyCount : %d"), OldCharacterState, NewCharacterState, GetNumPlayers(), DeathCount, GroggyCount);
+
 	if (DeathCount + GroggyCount == GetNumPlayers())
 	{
 		GameOver();
 	}
 
-	LOGV(Error, TEXT("End"));
 }
 
 void AADInGameMode::GetOre()
@@ -319,6 +494,7 @@ void AADInGameMode::GetOre()
 		0,
 		10000,
 		EItemType::Exchangable,
+		EBulletType::None,
 		nullptr
 	);
 
@@ -339,15 +515,10 @@ void AADInGameMode::GetMoney()
 
 USoundSubsystem* AADInGameMode::GetSoundSubsystem()
 {
-	if (SoundSubsystem)
-	{
-		return SoundSubsystem;
-	}
-
 	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
 	{
 		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
-		return SoundSubsystem;
 	}
-	return nullptr;
+
+	return SoundSubsystem;
 }

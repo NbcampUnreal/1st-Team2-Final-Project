@@ -10,6 +10,7 @@ class UMissionSubsystem;
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnCurrentMoneyChangedDelegate, int32/*Changed Money*/);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnTargetMoneyChangedDelegate, int32/*Changed Money*/);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnMoneyRatioChangedDelegate, float/*Money Ratio*/);
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnSellOreDelegate, uint8 /*OreId*/, int32 /*OreMass*/);
 
 UCLASS()
@@ -27,7 +28,6 @@ protected:
 
 #pragma region Method
 public:
-
 	virtual void Interact_Implementation(AActor* InstigatorActor) override;
 	virtual bool CanHighlight_Implementation() const override { return bIsActive; }
 	UFUNCTION()
@@ -46,12 +46,16 @@ public:
 
 	FOnCurrentMoneyChangedDelegate OnCurrentMoneyChangedDelegate;
 	FOnTargetMoneyChangedDelegate OnTargetMoneyChangedDelegate;
+	FOnMoneyRatioChangedDelegate OnMoneyRatioChangedDelegate;
 	FOnSellOreDelegate OnSellOreDelegate;
 
 	void SetLightColor(FLinearColor NewColor);
 
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_TemporarilyHighlightGreen(bool bReachedGoal);
+
+	/** InstigatorActor가 소유하고 있는 Bound Player를 제출한다. */
+	void SubmitPlayer(AActor* InstigatorActor);
 
 protected:
 	int32 SellAllExchangeableItems(AActor* InstigatorActor);
@@ -72,7 +76,12 @@ protected:
 	int32 CurrentMoney = 0;
 	UPROPERTY(ReplicatedUsing = OnRep_TargetMoney)
 	int32 TargetMoney = 1000;
+	UPROPERTY(Replicated)
+	float MoneyRatio = 0.f;
 
+	/* 현재 드론에 제출된 시체 플레이어의 Index 배열 */
+	TArray<int8> SubmittedPlayerIndexes;
+	
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<class AADDrone> CurrentDrone = nullptr;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction")
@@ -99,6 +108,7 @@ private:
 public:
 	int32 GetCurrentMoney() const { return CurrentMoney; }
 	int32 GetTargetMoney() const { return TargetMoney; }
+	float GetMoneyRatio() const { return MoneyRatio; }
 
 	void SetTargetMoney(int32 NewTargetMoney) 
 	{ 
@@ -110,6 +120,9 @@ public:
 	virtual bool IsHoldMode() const override;
 	virtual FString GetInteractionDescription() const override;
 
+	/** 현재 드론에 제출된 시체 플레이어의 Index 배열을 반환한다. */
+	FORCEINLINE TArray<int8>& GetSubmittedPlayerIndexes() { return SubmittedPlayerIndexes; }
+	
 private:
 
 	void SetCurrentMoeny(const int32& NewCurrentMoney)
@@ -120,6 +133,7 @@ private:
 		}
 
 		CurrentMoney = NewCurrentMoney;
+		MoneyRatio = CurrentMoney / TargetMoney;
 		OnRep_CurrentMoney();
 	}
 	

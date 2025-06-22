@@ -8,6 +8,7 @@
 #include "DataRow/PhaseGoalRow.h"
 #include "AbyssDiverUnderWorld.h"
 #include "Subsystems/DataTableSubsystem.h"
+#include "Subsystems/MissionSubsystem.h"
 
 #include "Kismet/GameplayStatics.h"
 #include "EngineUtils.h"
@@ -33,6 +34,17 @@ void AADCampGameMode::PostLogin(APlayerController* NewPlayer)
 	UADGameInstance* GI = GetGameInstance<UADGameInstance>();
 	check(GI);
 
+	UMissionSubsystem* MissionSubsystem = GI->GetSubsystem<UMissionSubsystem>();
+	if (MissionSubsystem == nullptr)
+	{
+		LOGV(Error, TEXT("Fail to get MissionSubsystem"));
+		return;
+	}
+
+	MissionSubsystem->RemoveAllMissions();
+
+	Super::PostLogin(NewPlayer);
+
 	if (AADPlayerState* ADPlayerState = NewPlayer->GetPlayerState<AADPlayerState>())
 	{
 		ADPlayerState->ResetLevelResults();
@@ -45,11 +57,8 @@ void AADCampGameMode::PostLogin(APlayerController* NewPlayer)
 			return;
 		}
 
-		ADPlayerState->SetPlayerNickname(NewPlayerId);
 		ADPlayerState->SetPlayerIndex(NewPlayerIndex);
 	}
-
-	Super::PostLogin(NewPlayer);
 }
 
 void AADCampGameMode::Logout(AController* Exiting)
@@ -59,6 +68,15 @@ void AADCampGameMode::Logout(AController* Exiting)
 	FString ExitingId = Exiting->GetPlayerState<AADPlayerState>()->GetUniqueId().GetUniqueNetId()->ToString();
 	UADGameInstance* GI = GetGameInstance<UADGameInstance>();
 	GI->RemovePlayerNetId(ExitingId);
+
+	UMissionSubsystem* MissionSubsystem = GI->GetSubsystem<UMissionSubsystem>();
+	if (MissionSubsystem == nullptr)
+	{
+		LOGV(Error, TEXT("Fail to get MissionSubsystem"));
+		return;
+	}
+
+	MissionSubsystem->RemoveAllMissions();
 }
 
 void AADCampGameMode::InitGameState()

@@ -1,7 +1,7 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
+
 #include "CableBindingActor.h"
 #include "CableComponent.h"
-
 #include "UnderwaterCharacter.h"
 #include "PhysicsEngine/PhysicsConstraintComponent.h"
 
@@ -23,8 +23,8 @@ ACableBindingActor::ACableBindingActor()
 	PhysicsConstraint = CreateDefaultSubobject<UPhysicsConstraintComponent>(TEXT("PhysicsConstraint"));
 	PhysicsConstraint->SetupAttachment(CableComponent);
 
-	SourceActor = nullptr;
-	TargetActor = nullptr;
+	SourceCharacter = nullptr;
+	TargetCharacter = nullptr;
 }
 
 void ACableBindingActor::BeginPlay()
@@ -42,7 +42,7 @@ void ACableBindingActor::Tick(float DeltaTime)
 	}
 }
 
-void ACableBindingActor::ConnectActors(AActor* NewSourceActor, AActor* NewTargetActor)
+void ACableBindingActor::ConnectActors(AUnderwaterCharacter* NewSourceActor, AUnderwaterCharacter* NewTargetActor)
 {
 	if (!NewSourceActor || !NewTargetActor)
 	{
@@ -50,15 +50,22 @@ void ACableBindingActor::ConnectActors(AActor* NewSourceActor, AActor* NewTarget
 		return;
 	}
 
-	CableComponent->SetAttachEndToComponent(NewTargetActor->GetRootComponent(), NAME_None);
-	CableComponent->EndLocation = FVector::ZeroVector;
+	// Source : Cable의 시작점이 되는 Actor
+	// Target : Cable의 끝점이 되는 Actor
+	SourceCharacter = NewSourceActor;
+	TargetCharacter = NewTargetActor;
 
-	UPrimitiveComponent* SourceComponent = Cast<UPrimitiveComponent>(NewSourceActor->GetRootComponent());
-	UPrimitiveComponent* TargetComponent = Cast<UPrimitiveComponent>(NewTargetActor->GetRootComponent());
+	// Source Component 를 시작점으로 연결하고 Target Component를 끝점으로 연결한다.
+	
+	UPrimitiveComponent* SourceComponent = Cast<UPrimitiveComponent>(NewSourceActor->GetMesh());
+	UPrimitiveComponent* TargetComponent = Cast<UPrimitiveComponent>(NewTargetActor->GetMesh());
+	
+	CableComponent->SetAttachEndToComponent(SourceComponent, NAME_None);
+	CableComponent->EndLocation = FVector::ZeroVector;
 
 	if (SourceComponent && TargetComponent)
 	{
-		PhysicsConstraint->SetWorldLocation(SourceActor->GetActorLocation());
+		PhysicsConstraint->SetWorldLocation(SourceCharacter->GetActorLocation());
 		PhysicsConstraint->SetConstrainedComponents(SourceComponent, NAME_None, TargetComponent, NAME_None);
 
 		PhysicsConstraint->SetLinearXLimit(LCM_Limited, CableLength);
@@ -75,7 +82,8 @@ void ACableBindingActor::ConnectActors(AActor* NewSourceActor, AActor* NewTarget
 	}
 	else
 	{
-		UE_LOG(LogAbyssDiverCharacter, Warning, TEXT("ACableBindingActor::ConnectActors - Actors do not have valid root components."));
+		UE_LOG(LogAbyssDiverCharacter, Warning,
+		       TEXT("ACableBindingActor::ConnectActors - Actors do not have valid root components."));
 	}
 }
 
@@ -85,25 +93,27 @@ void ACableBindingActor::DisconnectActors()
 
 	CableComponent->SetAttachEndTo(nullptr, NAME_None);
 
-	SourceActor = nullptr;
-	TargetActor = nullptr;
+	SourceCharacter = nullptr;
+	TargetCharacter = nullptr;
 }
 
 void ACableBindingActor::UpdateCable()
 {
-	if (!SourceActor || !TargetActor)
+	if (!SourceCharacter || !TargetCharacter)
 	{
 		return;
 	}
 
-	SetActorLocation(SourceActor->GetActorLocation());
-	CableComponent->EndLocation = TargetActor->GetActorLocation() - SourceActor->GetActorLocation();
+	// Root Component: CableComponent
+	SetActorLocation(SourceCharacter->GetActorLocation());
 
-	PhysicsConstraint->SetWorldLocation(SourceActor->GetActorLocation());
+	UPrimitiveComponent* SourceComponent = SourceCharacter->GetMesh();
+	FVector TargetLocation = TargetCharacter->GetMesh()->GetBoneLocation("pelvis");
+	// End Location은 Attach 된 Component의 상대 위치로 설정. 따라서 회전을 반영해야 한다.
+	CableComponent->EndLocation = SourceComponent->GetComponentTransform().InverseTransformPosition(TargetLocation);
 }
 
 bool ACableBindingActor::IsConnected() const
 {
-	return SourceActor != nullptr && TargetActor != nullptr; 
+	return SourceCharacter != nullptr && TargetCharacter != nullptr;
 }
-

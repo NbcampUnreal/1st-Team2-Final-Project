@@ -83,3 +83,8 @@ void UShopItemSlotWidget::SetToolTipText(const FString& NewText)
 {
     ToolTipTextBlock->SetText(FText::FromString(NewText));
 }
+
+void UShopItemSlotWidget::SetSlotIndex(int32 NewSlotIndex)
+{
+    SlotIndex = NewSlotIndex;
+}

@@ -54,6 +54,8 @@ void AADOreRock::BeginPlay()
 	{
 		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
 	}
+	InteractableComp->SetAlwaysHighlight(true);
+	
 }
 
 void AADOreRock::Destroyed()
@@ -112,7 +114,7 @@ void AADOreRock::OnHoldStart_Implementation(APawn* InstigatorPawn)
 				if (InventoryComp->HasEquippedItem())
 				{
 					PreviousEquipIndex = InventoryComp->GetSlotIndex();
-					InventoryComp->S_UseInventoryItem_Implementation(EItemType::Equipment, PreviousEquipIndex);
+					InventoryComp->S_UseInventoryItem_Implementation(EItemType::Equipment, PreviousEquipIndex, true);
 				}
 				else
 				{
@@ -129,6 +131,7 @@ void AADOreRock::OnHoldStop_Implementation(APawn* InstigatorPawn)
 {
 	AUnderwaterCharacter* Diver = Cast<AUnderwaterCharacter>(InstigatorPawn);
 	if (!Diver) return;
+	ActiveInstigators.Remove(InstigatorPawn);
 
 	if (PreviousEquipIndex != INDEX_NONE)
 	{
@@ -138,7 +141,7 @@ void AADOreRock::OnHoldStop_Implementation(APawn* InstigatorPawn)
 			{
 				const float MontageStopDuration = 0.f;
 				Diver->M_StopAllMontagesOnBothMesh(MontageStopDuration);
-				InventoryComp->S_UseInventoryItem_Implementation(EItemType::Equipment, PreviousEquipIndex);
+				InventoryComp->S_UseInventoryItem_Implementation(EItemType::Equipment, PreviousEquipIndex, true);
 				M_CleanupToolAndEffects(Diver);
 				LOGI(Log, TEXT("Skip Mining Stops"));
 				return;
@@ -147,7 +150,6 @@ void AADOreRock::OnHoldStop_Implementation(APawn* InstigatorPawn)
 	}
 	LOGI(Log, TEXT("Mining Stops"));
 	PlayStowAnim(InstigatorPawn);
-	ActiveInstigators.Remove(InstigatorPawn);
 }
 
 void AADOreRock::HandleMineRequest(APawn* InstigatorPawn)
@@ -189,6 +191,7 @@ void AADOreRock::HandleMineRequest(APawn* InstigatorPawn)
 	if (this->GetClass()->ImplementsInterface(UIADInteractable::StaticClass()))
 	{
 		IIADInteractable::Execute_OnHoldStop(this, InstigatorPawn);
+		LOGV(Warning, TEXT("Mine Completes and Call OnHoldStop"));
 	}
 }
 
@@ -196,15 +199,16 @@ void AADOreRock::SpawnDrops()
 {
 	if (CachedEntries.Num() == 0 || TotalWeight <= 0.f) return;
 
-	float R = FMath::FRandRange(0.f, TotalWeight);
-	int16 Index = Algo::LowerBound(CumulativeWeights, R);
-	if (!CachedEntries.IsValidIndex(Index)) return;
-	FDropEntry* E = CachedEntries[Index];
-
-	int8 Count = FMath::RandRange(E->MinCount, E->MaxCount);
+	/*int8 Count = FMath::RandRange(E->MinCount, E->MaxCount);*/
+	int8 Count = FMath::RandRange(GlobalMinCount, GlobalMaxCount);
 	PendingLoadCount = Count;
 	for (int8 i = 0; i < Count; i++)
 	{
+		float R = FMath::FRandRange(0.f, TotalWeight);
+		int16 Index = Algo::LowerBound(CumulativeWeights, R);
+		if (!CachedEntries.IsValidIndex(Index)) return;
+		FDropEntry* E = CachedEntries[Index];
+
 		int32 Mass = SampleDropMass(E->MinMass, E->MaxMass);
 		FSoftObjectPath Path = E->ItemClass.ToSoftObjectPath();
 		UAssetManager& AssetMgr = UAssetManager::Get();
@@ -219,15 +223,35 @@ void AADOreRock::OnAssetLoaded(FDropEntry* Entry, int32 Mass)
 {
 	if (UClass* Class = Entry->ItemClass.Get())
 	{
-		FVector SpawnLoc = GetActorLocation() + FVector(0, 0, SpawnHeight);
+		FVector DesiredLoc = GetActorLocation() + GetActorUpVector() * SpawnHeight;
+
+		FCollisionObjectQueryParams ObjectParams;
+		ObjectParams.AddObjectTypesToQuery(ECC_WorldStatic);
+		ObjectParams.AddObjectTypesToQuery(ECC_WorldDynamic);
+		ObjectParams.AddObjectTypesToQuery(ECC_PhysicsBody);
+
+		//작은 구체로 스폰 공간 검사
+		const float SphereRadius = 10.f;     // 광석 크기보다 약간 작게
+		FHitResult Hit;
+		FCollisionQueryParams QueryParams(TEXT("OreSpawnSweep"), false, this);
+		bool bBlocked = GetWorld()->SweepSingleByObjectType(
+			Hit,
+			DesiredLoc, DesiredLoc,
+			FQuat::Identity,
+			ObjectParams,
+			FCollisionShape::MakeSphere(SphereRadius),
+			QueryParams
+		);
 
 		FActorSpawnParameters Params;
+		Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
 		AADItemBase* Item = GetWorld()->SpawnActor<AADItemBase>(
-			Class,
-			SpawnLoc,
-			FRotator::ZeroRotator,
-			Params
+			Class, DesiredLoc, FRotator::ZeroRotator, Params
 		);
+		if (!Item)
+			return;
+
 		Item->SetItemMass(Mass);
 
 		// 스폰 이후 발사체 컴포넌트 활성화
@@ -235,15 +259,11 @@ void AADOreRock::OnAssetLoaded(FDropEntry* Entry, int32 Mass)
 		{
 			ExItem->CalculateTotalPrice();
 
-			FVector RandomXY = FVector(FMath::RandRange(-100, 100), FMath::RandRange(-100, 100), 0);
-			FVector DropDir = RandomXY + FVector(0, 0, -200); // 아래쪽으로 힘
+			FVector RandomXY = FVector(FMath::RandRange(-50, 50), FMath::RandRange(-50, 50), 0);
+			FVector DropDir = RandomXY + FVector(0, 0, -50); // 아래쪽으로 힘
 			ExItem->DropMovement->Velocity = DropDir;
 			ExItem->DropMovement->Activate();
 		}
-		
-
-		// TODO
-		// Item->SetMass(Mass);
 	}
 
 	if (--PendingLoadCount <= 0)

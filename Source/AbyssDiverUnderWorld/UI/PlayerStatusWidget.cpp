@@ -7,6 +7,7 @@
 #include "Components/Overlay.h"
 #include "Animation/WidgetAnimation.h"
 #include "Components/Image.h"
+#include "Projectile/ADSpearGunBullet.h"
 
 const FName UPlayerStatusWidget::OnNextPhaseAnimFinishedName = TEXT("OnNextPhaseAnimFinished");
 const int32 UPlayerStatusWidget::MaxPhaseNumber = 3;
@@ -14,6 +15,11 @@ const int32 UPlayerStatusWidget::MaxPhaseNumber = 3;
 UPlayerStatusWidget::UPlayerStatusWidget(const FObjectInitializer& ObjectInitializer)
     : Super(ObjectInitializer)
 {
+    ConstructorHelpers::FObjectFinder<UMaterialInterface> MaterialFinder(TEXT("/Game/_AbyssDiver/Materials/M_Hit"));
+    if (MaterialFinder.Succeeded())
+    {
+        LoadedMaterial = MaterialFinder.Object;
+    }
 }
 
 void UPlayerStatusWidget::NativeConstruct()
@@ -32,6 +38,17 @@ void UPlayerStatusWidget::NativeConstruct()
     OnNextPhaseAnimFinishedDelegate.BindUFunction(this, OnNextPhaseAnimFinishedName);
     UnbindAllFromAnimationFinished(NextPhaseAnim);
     BindToAnimationFinished(NextPhaseAnim, OnNextPhaseAnimFinishedDelegate);
+
+    if (HealthScreenEffect && LoadedMaterial)
+    {
+        // 다이나믹 머티리얼 인스턴스 생성
+        DynamicMaterial = UMaterialInstanceDynamic::Create(LoadedMaterial, this);
+
+        // Brush에 머티리얼 적용
+        FSlateBrush NewBrush;
+        NewBrush.SetResourceObject(DynamicMaterial);
+        HealthScreenEffect->SetBrush(NewBrush);
+    }
 }
 
 void UPlayerStatusWidget::SetSpearCount(int32 Current, int32 Total)
@@ -69,7 +86,38 @@ void UPlayerStatusWidget::SetOxygenPercent(float InPercent)
 {
     if (OxygenBar)
     {
-        OxygenBar->SetPercent(FMath::Clamp(InPercent, 0.0f, 1.0f));
+        // 1. 게이지 스케일
+        float ClampedPercent = FMath::Clamp(InPercent, 0.0f, 1.0f);
+        FWidgetTransform Transform = OxygenBar->RenderTransform;
+        Transform.Scale = FVector2D(1.0f, ClampedPercent);
+        OxygenBar->SetRenderTransform(Transform);
+
+        // 2. 상단만 코너 반경 적용
+        float TopRadius = 0.0f;
+        if (ClampedPercent > 0.9f && ClampedPercent < 1.0f)
+        {
+            // 0.9~1.0 사이일 때 0~15로 보간
+            float Alpha = (ClampedPercent - 0.9f) / 0.1f; // 0~1 구간
+            TopRadius = FMath::Lerp(0.0f, 15.0f, Alpha);
+        }
+        else if (ClampedPercent >= 1.0f)
+        {
+            TopRadius = 15.0f;
+        }
+
+        // 스타일 적용
+        FProgressBarStyle Style = OxygenBar->WidgetStyle;
+
+        // 1. 배경
+        Style.BackgroundImage.OutlineSettings.CornerRadii = FVector4(TopRadius, TopRadius, 0.0f, 0.0f);
+        Style.BackgroundImage.OutlineSettings.RoundingType = ESlateBrushRoundingType::FixedRadius;
+
+        // 2. 채우기 영역
+        Style.FillImage.OutlineSettings.CornerRadii = FVector4(TopRadius, TopRadius, 0.0f, 0.0f);
+        Style.FillImage.OutlineSettings.RoundingType = ESlateBrushRoundingType::FixedRadius;
+
+        OxygenBar->SetWidgetStyle(Style);
+        //SetPercent(FMath::Clamp(InPercent, 0.0f, 1.0f));
     }
     else
     {
@@ -81,7 +129,8 @@ void UPlayerStatusWidget::SetHealthPercent(float InPercent)
 {
     if (HealthBar)
     {
-        HealthBar->SetPercent(FMath::Clamp(InPercent, 0.0f, 1.0f));
+        //HealthBar->SetPercent(FMath::Clamp(InPercent, 0.0f, 1.0f));
+        DynamicMaterial->SetScalarParameterValue("Range", 1-FMath::Clamp(InPercent, 0.0f, 1.0f));
     }
     else
     {
@@ -91,14 +140,22 @@ void UPlayerStatusWidget::SetHealthPercent(float InPercent)
 
 void UPlayerStatusWidget::SetStaminaPercent(float InPercent)
 {
-    if (StaminaBar)
+    //if (StaminaBar)
+    //{
+    //    const float Clamped = FMath::Clamp(InPercent, 0.0f, 1.0f);
+    //    StaminaBar->SetPercent(Clamped);
+    //}
+    //else
+    //{
+    //    LOGV(Error, TEXT("StaminaBar is nullptr!"));
+    //}
+    if (OxygenBar)
     {
-        const float Clamped = FMath::Clamp(InPercent, 0.0f, 1.0f);
-        StaminaBar->SetPercent(Clamped);
+        OxygenBar->SetPercent(FMath::Clamp(InPercent, 0.0f, 1.0f));
     }
     else
     {
-        LOGV(Error, TEXT("StaminaBar is nullptr!"));
+        LOGV(Error, TEXT("OxygenBar is nullptr!"));
     }
 }
 
@@ -117,6 +174,18 @@ void UPlayerStatusWidget::SetDroneTargetText(int32 Target)
     if (TargetMoneyText && TargetMoneyText->IsValidLowLevel())
     {
         TargetMoneyText->SetText(FText::FromString(FString::Printf(TEXT("%d"), Target)));
+    }
+}
+
+void UPlayerStatusWidget::SetMoneyProgressBar(float InPercent)
+{
+    if (MoneyProgressBar)
+    {
+        MoneyProgressBar->SetPercent(FMath::Clamp(InPercent, 0.0f, 1.0f));
+    }
+    else
+    {
+        LOGV(Error, TEXT("MoneyProgressBar is nullptr!"));
     }
 }
 
@@ -162,6 +231,11 @@ void UPlayerStatusWidget::SetCurrentPhaseOverlayVisible(bool bShouldVisible)
     {
         CurrentPhaseOverlay->SetVisibility(ESlateVisibility::Hidden);
     }
+}
+
+void UPlayerStatusWidget::SetSpearGunTypeImage(int8 TypeNum)
+{
+    SpearGunTypeImage->SetBrushFromTexture(SpearGunTypeImages[TypeNum], true);
 }
 
 void UPlayerStatusWidget::OnNextPhaseAnimFinished()

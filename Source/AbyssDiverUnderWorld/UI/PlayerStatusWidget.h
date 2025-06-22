@@ -10,11 +10,7 @@
 class UTextBlock;
 class UProgressBar;
 class UOverlay;
-
-enum class EDestinationName : uint8
-{
-
-};
+enum class ESpearGunType : uint8;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API UPlayerStatusWidget : public UUserWidget
@@ -43,6 +39,7 @@ public:
 	void SetStaminaPercent(float InPercent);
 	void SetDroneCurrentText(int32 Current);
 	void SetDroneTargetText(int32 Target);
+	void SetMoneyProgressBar(float InPercent);
 
 	void PlayNextPhaseAnim(int32 NextPhaseNumber);
 
@@ -50,6 +47,8 @@ public:
 	void SetNextPhaseText(const FString& PhaseText);
 
 	void SetCurrentPhaseOverlayVisible(bool bShouldVisible);
+
+	void SetSpearGunTypeImage(int8 TypeNum);
 
 private:
 
@@ -70,6 +69,9 @@ protected:
 
 	UPROPERTY()
 	int32 TotalSpearCount = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TArray<TObjectPtr<UTexture2D>> SpearGunTypeImages;
 
 	// 바인딩된 텍스트 및 프로그레스바 위젯
 	UPROPERTY(meta = (BindWidget))
@@ -114,6 +116,17 @@ protected:
 	UPROPERTY(meta = (BindWidgetAnim), Transient)
 	TObjectPtr<UWidgetAnimation> NextPhaseAnim;
 
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UImage> HealthScreenEffect;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UProgressBar> MoneyProgressBar;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UImage> SpearGunTypeImage;
+
+	TObjectPtr <UMaterialInstanceDynamic> DynamicMaterial;
+	TObjectPtr <UMaterialInterface> LoadedMaterial;
 private:
 
 	UPROPERTY()

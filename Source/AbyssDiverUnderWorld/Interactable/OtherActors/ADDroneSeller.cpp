@@ -2,6 +2,7 @@
 #include "Inventory/ADInventoryComponent.h"
 #include "Framework/ADInGameState.h"
 #include "ADDrone.h"
+#include "Character/UnderwaterCharacter.h"
 #include "Net/UnrealNetwork.h"
 #include "Interactable/Item/Component/ADInteractableComponent.h"
 #include "Framework/ADPlayerState.h"
@@ -71,6 +72,8 @@ void AADDroneSeller::Interact_Implementation(AActor* InstigatorActor)
 	LOGD(Log, TEXT("Not Active"));
 	if (!HasAuthority() || !bIsActive) return;
 
+	SubmitPlayer(InstigatorActor);
+	
 	int32 Gained = SellAllExchangeableItems(InstigatorActor);
 	if (Gained <= 0)
 	{
@@ -79,6 +82,7 @@ void AADDroneSeller::Interact_Implementation(AActor* InstigatorActor)
 	}
 
 	SetCurrentMoeny(CurrentMoney + Gained);
+
 	LOGD(Log, TEXT("→ 누적 금액: %d / %d"), CurrentMoney, TargetMoney);
 
 	// 🔸 모든 클라이언트에서 색상 전환 연출
@@ -121,6 +125,7 @@ void AADDroneSeller::OnRep_IsActive()
 void AADDroneSeller::OnRep_CurrentMoney()
 {
 	OnCurrentMoneyChangedDelegate.Broadcast(CurrentMoney);
+	OnMoneyRatioChangedDelegate.Broadcast(MoneyRatio);
 
 	bool bReachedGoal = (CurrentMoney >= TargetMoney);
 
@@ -136,6 +141,39 @@ void AADDroneSeller::OnRep_CurrentMoney()
 void AADDroneSeller::OnRep_TargetMoney()
 {
 	OnTargetMoneyChangedDelegate.Broadcast(TargetMoney);
+}
+
+void AADDroneSeller::SubmitPlayer(AActor* InstigatorActor)
+{
+	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(InstigatorActor);
+	if (Player == nullptr)
+	{
+		return;
+	}
+
+	for (AUnderwaterCharacter* BoundCharacter : Player->GetBoundCharacters())
+	{
+		if (!IsValid(BoundCharacter) || BoundCharacter->IsPendingKillPending())
+		{
+			continue;
+		}
+
+		int8 PlayerIndex = BoundCharacter->GetPlayerIndex();
+		if (SubmittedPlayerIndexes.Contains(PlayerIndex))
+		{
+			LOGD(Log, TEXT("이미 제출된 플레이어: %s"), *BoundCharacter->GetName());
+			continue;
+		}
+
+		LOGD(Log, TEXT("제출된 플레이어: %s"), *BoundCharacter->GetName());
+		SubmittedPlayerIndexes.Add(PlayerIndex);
+
+		BoundCharacter->UnBind();
+
+		// @ToDo: 추후에 Destroy 호출
+		// 원래라면 Destroy를 호출해야 하지만, 현재 관전이 없기 때문에 일단은 숨기기만 한다. 
+		BoundCharacter->SetActorHiddenInGame(true);
+	}
 }
 
 int32 AADDroneSeller::SellAllExchangeableItems(AActor* InstigatorActor)
@@ -183,6 +221,7 @@ void AADDroneSeller::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME(AADDroneSeller, bIsActive);
 	DOREPLIFETIME(AADDroneSeller, CurrentMoney);
 	DOREPLIFETIME(AADDroneSeller, TargetMoney);
+	DOREPLIFETIME(AADDroneSeller, MoneyRatio);
 }
 
 UADInteractableComponent* AADDroneSeller::GetInteractableComponent() const

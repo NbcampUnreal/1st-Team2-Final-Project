@@ -113,7 +113,7 @@ void UADInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 
 }
 
-void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType, uint8 SlotIndex)
+void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType, uint8 SlotIndex, bool bIgnoreCoolTime)
 {
 	if (ItemType == EItemType::Equipment)
 	{
@@ -122,12 +122,15 @@ void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType
 
 	if (!bCanUseItem) return;
 
-	bCanUseItem = false;
+	if (!bIgnoreCoolTime)
+	{
+		bCanUseItem = false;
 
-	FTimerHandle UseCoolTimeHandle;
-	float CoolTime = 0.3f; // 아이템 사용 쿨타임 설정
-	GetWorld()->GetTimerManager().SetTimer(UseCoolTimeHandle, this, &UADInventoryComponent::OnUseCoolTimeEnd, CoolTime, false);
-
+		FTimerHandle UseCoolTimeHandle;
+		float CoolTime = 0.3f; // 아이템 사용 쿨타임 설정
+		GetWorld()->GetTimerManager().SetTimer(UseCoolTimeHandle, this, &UADInventoryComponent::OnUseCoolTimeEnd, CoolTime, false);
+	}
+	
 	int8 InventoryIndex = GetInventoryIndexByTypeAndSlotIndex(ItemType, SlotIndex);
 	if (InventoryIndex == -1) return;
 	FItemData& Item = InventoryList.Items[InventoryIndex];
@@ -385,7 +388,7 @@ bool UADInventoryComponent::AddInventoryItem(const FItemData& ItemData)
 						bIsUpdateSuccess = true;
 						uint8 SlotIndex = GetTypeInventoryEmptyIndex(ItemData.ItemType);
 
-						FItemData NewItem = { FoundRow->Name, FoundRow->Id, ItemData.Quantity, SlotIndex, ItemData.Amount, ItemData.CurrentAmmoInMag, ItemData.ReserveAmmo, ItemData.Mass,ItemData.Price, FoundRow->ItemType, FoundRow->Thumbnail };
+						FItemData NewItem = { FoundRow->Name, FoundRow->Id, ItemData.Quantity, SlotIndex, ItemData.Amount, ItemData.CurrentAmmoInMag, ItemData.ReserveAmmo, ItemData.Mass,ItemData.Price, FoundRow->ItemType, FoundRow->BulletType, FoundRow->Thumbnail };
 						InventoryList.AddItem(NewItem);
 						if (ItemData.ItemType == EItemType::Exchangable)
 						{
@@ -656,6 +659,7 @@ void UADInventoryComponent::PlayEquipAnimation(AUnderwaterCharacter* Character, 
 	if (!HarpoonDrawMontage || !DPVDrawMontage)
 		return;
 
+	LOGVN(Warning, TEXT("Play EquipAnimation!!"));
 	FAnimSyncState SyncState;
 	SyncState.bEnableRightHandIK = true;
 	SyncState.bEnableLeftHandIK = false;
@@ -664,6 +668,7 @@ void UADInventoryComponent::PlayEquipAnimation(AUnderwaterCharacter* Character, 
 
 	UAnimMontage* Montage = bIsHarpoon ? HarpoonDrawMontage : DPVDrawMontage;
 
+	Character->M_StopAllMontagesOnBothMesh(0.f);
 	Character->M_PlayMontageOnBothMesh(
 		Montage,
 		1.0f,
@@ -714,6 +719,21 @@ FItemData* UADInventoryComponent::GetEditableItemDataByName(FName ItemNameToEdit
 	if (Index != INDEX_NONE)
 		return &InventoryList.Items[Index];
 	return nullptr;
+}
+
+bool UADInventoryComponent::TryGiveAmmoToEquipment(EBulletType BulletType, int32 AmountPerPickup)
+{
+	for (FItemData& Item : InventoryList.Items)  
+	{
+		if (Item.ItemType == EItemType::Equipment &&
+			Item.BulletType == BulletType)
+		{
+			Item.ReserveAmmo += AmountPerPickup;
+			InventoryList.MarkItemDirty(Item); 
+			return true;      
+		}
+	}
+	return false;
 }
 
 int8 UADInventoryComponent::GetInventoryIndexByTypeAndSlotIndex(EItemType Type, int8 SlotIndex) //못 찾으면 -1 반환
@@ -779,7 +799,7 @@ void UADInventoryComponent::Equip(FItemData& ItemData, int8 SlotIndex)
 			}
 
 			C_InventoryPlaySound(ESFX::Equip);
-			SpawnedItem->SetItemInfo(ItemData, true);
+			SpawnedItem->SetItemInfo(ItemData, true, EEnvironmentState::MAX);
 			CurrentEquipmentInstance = SpawnedItem;
 			LOGINVEN(Warning, TEXT("ItemToEquip Name: %s, Amount %d"), *ItemData.Name.ToString(), ItemData.Amount);
 			SetEquipInfo(SlotIndex, SpawnedItem);
@@ -815,35 +835,41 @@ void UADInventoryComponent::Equip(FItemData& ItemData, int8 SlotIndex)
 void UADInventoryComponent::UnEquip()
 {
 	// EquipComp의 장비 현재값 초기화
-	if (APlayerState* PS = Cast<APlayerState>(GetOwner()))
-	{
-		if (APawn* Pawn = PS->GetPawn())
-		{
-			AUnderwaterCharacter* Diver = Cast<AUnderwaterCharacter>(Pawn);
-			if (!Diver)
-				return;
-
-			const float MontageStopSeconds = 1.0f;
-			Diver->M_StopAllMontagesOnBothMesh(MontageStopSeconds);
-			if (UEquipUseComponent* EquipComp = Diver->GetEquipUseComponent())
-			{
-				EquipComp->DeinitializeEquip();
-				InventoryList.MarkItemDirty(InventoryList.Items[FindItemIndexByName(CurrentEquipmentInstance->ItemData.Name)]);
-			}
-			
-		}
-	}
-	C_InventoryPlaySound(ESFX::UnEquip);
-	/*LOGINVEN(Warning, TEXT("UnEquipItem %s"), *CurrentEquipmentInstance->ItemData.Name.ToString());
-	if(CurrentEquipmentInstance)
-		CurrentEquipmentInstance->Destroy();*/
 	if (CurrentEquipmentInstance)
 	{
-		CachedDiver->GetEquipRenderComponent()->DetachItem(CurrentEquipmentInstance);
-		CurrentEquipmentInstance->Destroy();
-		CurrentEquipItem->Destroy();
-		CurrentEquipmentInstance = nullptr;
-		CurrentEquipItem = nullptr;
+		if (APlayerState* PS = Cast<APlayerState>(GetOwner()))
+		{
+			if (APawn* Pawn = PS->GetPawn())
+			{
+				AUnderwaterCharacter* Diver = Cast<AUnderwaterCharacter>(Pawn);
+				if (!Diver)
+					return;
+
+				const float MontageStopSeconds = 1.0f;
+				Diver->M_StopAllMontagesOnBothMesh(MontageStopSeconds);
+				if (UEquipUseComponent* EquipComp = Diver->GetEquipUseComponent())
+				{
+					EquipComp->DeinitializeEquip();
+					InventoryList.MarkItemDirty(InventoryList.Items[FindItemIndexByName(CurrentEquipmentInstance->ItemData.Name)]);
+				}
+			
+			}
+		}
+		C_InventoryPlaySound(ESFX::UnEquip);
+		/*LOGINVEN(Warning, TEXT("UnEquipItem %s"), *CurrentEquipmentInstance->ItemData.Name.ToString());
+		if(CurrentEquipmentInstance)
+			CurrentEquipmentInstance->Destroy();*/
+		if (CachedDiver)
+		{
+			if (UEquipRenderComponent* EquipRender = CachedDiver->GetEquipRenderComponent())
+			{
+				EquipRender->DetachItem(CurrentEquipmentInstance);
+			}
+			CurrentEquipmentInstance->Destroy();
+			CurrentEquipItem->Destroy();
+			CurrentEquipmentInstance = nullptr;
+			CurrentEquipItem = nullptr;
+		}
 	}
 	SetEquipInfo(INDEX_NONE, nullptr);
 
@@ -879,7 +905,7 @@ void UADInventoryComponent::DropItem(FItemData& ItemData)
 		M_SpawnItemEffect(ESFX::DropItem, DropItemEffect, DropLocation);
 	}
 	SpawnItem->M_SetItemVisible(true);
-	SpawnItem->SetItemInfo(ItemData, false);
+	SpawnItem->SetItemInfo(ItemData, false, UnderwaterCharacter->GetEnvironmentState());
 	LOGINVEN(Warning, TEXT("Spawn Item To Drop : %s"), *ItemData.Name.ToString());
 }
 

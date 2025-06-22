@@ -43,6 +43,22 @@ enum class EShopItemChangeType
 	Max
 };
 
+UENUM()
+enum class EDoorState : uint8
+{
+	Opened,
+	Closed,
+	Opening,
+	Closing
+};
+
+enum class ELaunchType
+{
+	First,
+	InProgress,
+	Last
+};
+
 #pragma endregion
 
 class AShop;
@@ -126,6 +142,7 @@ public:
 	void Modify(uint8 InIndex, uint8 NewId);
 
 	FOnShopItemListChangedDelegate OnShopItemListChangedDelegate;
+
 public:
 
 	UPROPERTY()
@@ -226,6 +243,7 @@ private:
 	int32 CalcTotalItemPrice(const TArray<uint8>& ItemIdList, const TArray<int8>& ItemCountList);
 
 	void LaunchItem();
+	void RotateDoor(float DegreeFrom, float DegreeTo, float Rate);
 
 	void ClearSelectedInfos();
 
@@ -237,6 +255,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, Category = "Shop")
 	TObjectPtr<UStaticMeshComponent> ShopMeshComponent;
+
+	UPROPERTY(VisibleAnywhere, Category = "Shop")
+	TObjectPtr<USkeletalMeshComponent> ShopMerchantMeshComponent;
 
 	UPROPERTY(VisibleAnywhere, Category = "Shop")
 	TObjectPtr<USkeletalMeshComponent> ItemMeshComponent;
@@ -267,6 +288,27 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "ShopSettings")
 	float LaunchItemIntervalAtFirst = 1.0f;
+
+	UPROPERTY(EditAnywhere, Category = "ShopSettings")
+	float LaunchItemIntervalAtLast = 1.0f;
+
+	UPROPERTY(EditAnywhere, Category = "ShopSettings")
+	float ErrorOfLaunchDirection = 1.0f;
+
+	UPROPERTY(EditAnywhere, Category = "ShopSettings | Door")
+	float DoorOpenSpeed = 1.0f;
+
+	UPROPERTY(EditAnywhere, Category = "ShopSettings | Door")
+	float DoorCloseSpeed = 1.0f;
+
+	UPROPERTY(EditAnywhere, Category = "ShopSettings | Door")
+	float DesiredOpenDegree = 1.0f;
+
+	UPROPERTY(EditAnywhere, Category = "ShopSettings | Door")
+	float DesiredCloseDegree = 1.0f;
+
+	UPROPERTY(EditInstanceOnly, Category = "ShopSettings | Door")
+	TObjectPtr<AActor> DoorActor;
 
 	UPROPERTY(Replicated)
 	FShopItemIdList ShopConsumableItemIdList;
@@ -306,7 +348,13 @@ private:
 
 	int32 TotalPriceOfBuyList = 0;
 
-	uint8 bIsFirstLaunch : 1 = true;
+	ELaunchType CurrentLaunchType = ELaunchType::First;
+
+
+	UPROPERTY(Replicated)
+	EDoorState CurrentDoorState = EDoorState::Closed;
+
+	float CurrentDoorRate = 0.0f;
 
 #pragma endregion
 

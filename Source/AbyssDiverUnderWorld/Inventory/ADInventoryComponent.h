@@ -45,8 +45,8 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override; 
 
 	UFUNCTION(Server, Reliable, BlueprintCallable)
-	void S_UseInventoryItem(EItemType ItemType = EItemType::Equipment, uint8 SlotIndex = 0);
-	void S_UseInventoryItem_Implementation(EItemType ItemType = EItemType::Equipment, uint8 SlotIndex = 0);
+	void S_UseInventoryItem(EItemType ItemType = EItemType::Equipment, uint8 SlotIndex = 0, bool bIgnoreCoolTime = false);
+	void S_UseInventoryItem_Implementation(EItemType ItemType = EItemType::Equipment, uint8 SlotIndex = 0, bool bIgnoreCoolTime = false);
 
 	UFUNCTION(Server, Reliable)
 	void S_TransferSlots(EItemType SlotType, uint8 FromIndex, uint8 ToIndex);
@@ -211,6 +211,7 @@ public:
 	FItemData* GetEditableItemDataByName(FName ItemNameToEdit);
 
 	const FInventoryList& GetInventoryList() { return InventoryList; } 
+	bool TryGiveAmmoToEquipment(EBulletType BulletType, int32 AmountPerPickup);
 
 	const TArray<int8>& GetInventoryIndexesByType(EItemType ItemType) const { return InventoryIndexMapByType[ItemType]; } //타입별 인벤토리에 저장된 InventoryList 인벤토리 인덱스 배열 반환
 	const TArray<int8>& GetInventorySizeByType() const { return InventorySizeByType; } //인벤토리 사이즈 배열 반환

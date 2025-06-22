@@ -16,6 +16,17 @@ enum class EItemType : uint8
 	Max = 5 UMETA(Hidden)
 };
 
+UENUM(BlueprintType)
+enum class EBulletType : uint8
+{
+	None = 0,
+	BasicSpear = 1,
+	BombSpear = 2,
+	PoisonSpear = 3,
+	Flare = 4,
+	Max = 5 UMETA(Hidden)
+};
+
 USTRUCT(BlueprintType)
 struct FFADItemDataRow : public FTableRowBase
 {
@@ -45,6 +56,8 @@ public:
 	FGameplayTag LeftTag;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FGameplayTag RKeyTag;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	EBulletType BulletType;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TObjectPtr<UTexture2D> Thumbnail;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)

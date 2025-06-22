@@ -41,10 +41,15 @@ class ABYSSDIVERUNDERWORLD_API UADSettingsSaveGame : public USaveGame
 	GENERATED_BODY()
 
 public:
+
 	UPROPERTY(BlueprintReadWrite)
 	FUserAudioSettings AudioSettings;
 
 	UPROPERTY(BlueprintReadWrite)
 	TArray<FKeyBinding> KeyBindings;
 
+
+private:
+
+	static const FString SavedAudioSettingsSlotName;
 };

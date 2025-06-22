@@ -95,6 +95,17 @@ void ARadar::BeginPlay()
 void ARadar::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	if (RadarSourceLocationComponent == nullptr || RadarSourceRotationComponent == nullptr)
+	{
+		LOGVN(Error, TEXT("Radar Disabled"));
+
+		bIsRadarActive = false;
+		SetActorTickEnabled(false);
+
+		Destroy(); // 캐릭터가 죽음 이후 부활할 때 이전 레이더는 여전히 남은 상태. 그래서 파괴 시킴
+		return;
+	}
 	
 	if (bIsRadarActive)
 	{
@@ -529,6 +540,18 @@ void ARadar::FindIfReturnsInVisibleRange()
 		return;
 	}
 
+	if (IsValid(RadarSourceLocationComponent) == false || RadarSourceLocationComponent->IsValidLowLevel() == false)
+	{
+		LOGVN(Error, TEXT("RadarSourceLocationComponent is not valid"));
+		return;
+	}
+
+	if (IsValid(RadarSourceRotationComponent) == false || RadarSourceRotationComponent->IsValidLowLevel() == false)
+	{
+		LOGVN(Error, TEXT("RadarSourceRotationComponent is not valid"));
+		return;
+	}
+
 	switch (CurrentFOFStatus)
 	{
 	case EFriendOrFoe::Friendly:
@@ -736,6 +759,12 @@ void ARadar::RotateRadarGrid()
 		return;
 	}
 
+	if (IsValid(RadarSourceRotationComponent) == false || RadarSourceRotationComponent->IsValidLowLevel() == false)
+	{
+		LOGVN(Error, TEXT("RadarSourceRotationComponent is not valid"));
+		return;
+	}
+
 	bool bIsRelative = false;
 
 	float NewRotationRoll = 0.0f;
@@ -806,6 +835,12 @@ void ARadar::RotateRadarGrid()
 
 void ARadar::FindRadarReturnTransformFromGrid()
 {
+	if (IsValid(RadarSourceLocationComponent) == false || RadarSourceLocationComponent->IsValidLowLevel() == false)
+	{
+		LOGVN(Error, TEXT("RadarSourceLocationComponent is not valid"));
+		return;
+	}
+
 	if (bShouldUseSphere)
 	{
 		CurrentRadarWidth = RadarOuterDimensionRadiusMetersFromSphere * 2.0f;
@@ -1350,4 +1385,3 @@ void ARadar::SetGridRotationOption(EGridRotationOption Option)
 {
 	GridRotationOption = Option;
 }
-

@@ -15,6 +15,7 @@ class UADInteractableComponent;
 class AADDroneSeller;
 class ASpawnManager;
 class USoundSubsystem;
+class ATargetPoint;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADDrone : public AActor,  public IIADInteractable
@@ -34,7 +35,6 @@ protected:
 
 #pragma region Method
 public:
-
 	virtual void Interact_Implementation(AActor* InstigatorActor) override;
 
 	virtual bool CanHighlight_Implementation() const override { return bIsActive; }
@@ -69,19 +69,19 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Money")
 	int32 AccumulatedMoney = 0;
-	UPROPERTY(ReplicatedUsing = OnRep_IsActive, EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(ReplicatedUsing = OnRep_IsActive, EditAnywhere, BlueprintReadWrite, Category = "DroneSettings")
 	uint8 bIsActive : 1;
 	UPROPERTY(Replicated)
 	uint8 bIsFlying : 1;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "DroneSettings")
 	TObjectPtr<AADDroneSeller> CurrentSeller = nullptr;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "DroneSettings")
 	TObjectPtr<AADDroneSeller> NextSeller = nullptr;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "DroneSettings")
 	TObjectPtr<ASpawnManager> SpawnManager = nullptr;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "DroneSettings")
 	float RaiseSpeed = 200.f;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "DroneSettings")
 	float DestroyDelay = 5.f;
 	UPROPERTY()
 	TObjectPtr<USoundSubsystem> SoundSubsystem;
@@ -89,8 +89,15 @@ public:
 protected:
 
 	// 드론에 해당하는 Phase를 나타내는 숫자
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "DroneSettings")
 	int32 DronePhaseNumber = 0;
+
+	/** 사망 부활 반경 */
+	UPROPERTY(EditAnywhere, Category = "DroneSettings")
+	float ReviveDistance;
+
+	UPROPERTY(EditInstanceOnly, Category = "DroneSettings")
+	TArray<TObjectPtr<ATargetPoint>> PlayerRespawnLocations;
 
 private:
 
@@ -106,6 +113,9 @@ public:
 
 	int32 GetDronePhaseNumber() const { return DronePhaseNumber; }
 	virtual FString GetInteractionDescription() const override;
+
+	const TArray<ATargetPoint*>& GetPlayerRespawnLocations() const;
+	float GetReviveDistance() const;
 
 private:
 	USoundSubsystem* GetSoundSubsystem();

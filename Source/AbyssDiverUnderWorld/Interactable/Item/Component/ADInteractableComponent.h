@@ -31,7 +31,7 @@ protected:
 
 
 private:
-
+	uint8 bIsAlwaysHighlight : 1 = false;
 
 #pragma endregion
 
@@ -55,7 +55,9 @@ private:
 public:
 	bool IsHighlighted() const { return bHighlighted; }
 	bool CanInteractable() const { return bCanInteractable; }
+	bool IsAlwaysHighlight() const { return bIsAlwaysHighlight; }
 
+	void SetAlwaysHighlight(bool InbIsAlwaysHighlight) { bIsAlwaysHighlight = InbIsAlwaysHighlight; }
 	void SetInteractable(bool InCanInteractable) { bCanInteractable = InCanInteractable; }
 
 #pragma endregion

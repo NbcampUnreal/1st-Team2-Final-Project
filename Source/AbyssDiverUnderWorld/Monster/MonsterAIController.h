@@ -9,6 +9,7 @@
 #include "Perception/AISenseConfig_Sight.h"
 #include "Perception/AIPerceptionTypes.h"
 #include "FMonsterSightData.h"
+#include "Navigation/PathFollowingComponent.h"
 #include "MonsterAIController.generated.h"
 
 
@@ -29,9 +30,17 @@ protected:
 protected:
 	void LoadSightDataFromTable();
 	void InitializePatrolPoint();
+	
+	// Move Failure Handling
+	UFUNCTION()
+	void HandleMoveFailure();
+
+	FVector ComputeAvoidanceDirection();
 
 	UFUNCTION()
 	virtual void OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus); // Perception Callback Method
+	
+	virtual void OnMoveCompleted(FAIRequestID RequestID, const FPathFollowingResult& Result) override;
 
 #pragma endregion
 
@@ -58,8 +67,19 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
 	TObjectPtr<class AMonster> Monster;
 
+	UPROPERTY()
+	TMap<TWeakObjectPtr<AActor>, float> LostActorsMap;
+
 	UPROPERTY(EditDefaultsOnly, Category = "AI|SightData")
 	FName MonsterID;
+
+	UPROPERTY(EditAnywhere, Category = "AI|MovementFallback")
+	float FallbackMoveDistance;
+
+	UPROPERTY(EditAnywhere, Category = "AI|MovementFallback")
+	int32 MaxMoveFailRetries = 3;
+
+	int32 MoveFailCount = 0;
 
 private:
 	uint8 bIsLosingTarget : 1;

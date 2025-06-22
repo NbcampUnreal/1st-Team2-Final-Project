@@ -151,6 +151,7 @@ void UEquipUseComponent::EndPlay(const EEndPlayReason::Type Reason)
 void UEquipUseComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+	LOGIC(Warning, TEXT("CurrentMultiplier : %f, TargetMultiplier : %f"), CurrentMultiplier, TargetMultiplier);
 	// DPV 소모
 	if (bBoostActive && Amount > 0)
 	{
@@ -189,6 +190,7 @@ void UEquipUseComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAc
 	// 부스트 속도 보간
 	if (IsInterpolating())
 	{
+		
 		CurrentMultiplier = FMath::FInterpTo(CurrentMultiplier,
 			TargetMultiplier,
 			DeltaTime,
@@ -196,6 +198,7 @@ void UEquipUseComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAc
 		if (UCharacterMovementComponent* Move = OwningCharacter->GetCharacterMovement())
 		{
 			Move->MaxSwimSpeed = DefaultSpeed * CurrentMultiplier;
+			LOGIC(Warning, TEXT("MaxSwimSpeed : %f"), Move->MaxSwimSpeed);
 		}	
 	}
 
@@ -203,8 +206,12 @@ void UEquipUseComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAc
 
 	// Tick 끄기
 	const bool bStillNeed = bBoostActive || bNightVisionOn || IsInterpolating() || bRecoilActive;
+	LOGIC(Warning, TEXT("bStillNeed: %s"), bStillNeed ? TEXT("True") : TEXT("False"));
 	if (!bStillNeed)
-		SetComponentTickEnabled(false);
+	{
+		SetComponentTickEnabled(bStillNeed);
+	}
+		
 		
 }
 
@@ -225,6 +232,7 @@ void UEquipUseComponent::S_LeftRelease_Implementation()
 	if (bBoostActive)
 	{
 		BoostOff();
+		LOGIC(Error, TEXT("BoostOff!!"));
 	}
 }
 
@@ -460,15 +468,24 @@ void UEquipUseComponent::Initialize(FItemData& ItemData)
 		OnRep_CurrentAmmoInMag();
 		OnRep_ReserveAmmo();
 		//TODO: UI 띄우는 곳
-		if (CurrentEquipmentName == BASIC_SPEAR_GUN_NAME)
+		if (APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController()))
 		{
-			if (APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController()))
+			if (UPlayerHUDComponent* HUD = PC->FindComponentByClass<UPlayerHUDComponent>())
 			{
-				if (UPlayerHUDComponent* HUD = PC->FindComponentByClass<UPlayerHUDComponent>())
+				if (CurrentItemData->Name == SpearGunTypeNames[0])
 				{
-					HUD->SetSpearUIVisibility(true);
-					HUD->UpdateSpearCount(CurrentAmmoInMag, ReserveAmmo);
+					HUD->M_SetSpearGunTypeImage(0);
 				}
+				else if (CurrentItemData->Name == SpearGunTypeNames[1])
+				{
+					HUD->M_SetSpearGunTypeImage(1);
+				}
+				else if (CurrentItemData->Name == SpearGunTypeNames[2])
+				{
+					HUD->M_SetSpearGunTypeImage(2);
+				}
+				HUD->M_SetSpearUIVisibility(true);
+				HUD->M_UpdateSpearCount(CurrentAmmoInMag, ReserveAmmo);
 			}
 		}
 	}
@@ -534,6 +551,7 @@ void UEquipUseComponent::DeinitializeEquip()
 	bHasNoAnimation = true;
 	LeftAction = EAction::None;
 	RKeyAction = EAction::None;
+	bIsReloading = false;
 
 	// 탄약/배터리 현재값 초기화
 	CurrentAmmoInMag = 0;
@@ -541,14 +559,12 @@ void UEquipUseComponent::DeinitializeEquip()
 	Amount = 0;
 
 	//TODO: UI 제거하는 함수
-	if (BackupName == BASIC_SPEAR_GUN_NAME)
+
+	if (APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController()))
 	{
-		if (APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController()))
+		if (UPlayerHUDComponent* HUD = PC->FindComponentByClass<UPlayerHUDComponent>())
 		{
-			if (UPlayerHUDComponent* HUD = PC->FindComponentByClass<UPlayerHUDComponent>())
-			{
-				HUD->SetSpearUIVisibility(false);
-			}
+			HUD->M_SetSpearUIVisibility(false);
 		}
 	}
 
@@ -695,6 +711,7 @@ void UEquipUseComponent::BoostOn()
 	bBoostActive = true;
 	TargetMultiplier = BoostMultiplier;  
 	SetComponentTickEnabled(true);
+	LOGIC(Warning, TEXT("Boost On"));
 }
 
 void UEquipUseComponent::BoostOff()
@@ -997,7 +1014,7 @@ bool UEquipUseComponent::RecoverRecoil(float DeltaTime)
 		FMath::IsNearlyZero(PendingYaw, 0.01f))
 	{
 		PendingPitch = PendingYaw = 0.f;
-		SetComponentTickEnabled(false);                     // 충분히 복구되면 중단
+		/*SetComponentTickEnabled(false);  */                   // 충분히 복구되면 중단
 		return false;
 	}
 
@@ -1085,6 +1102,9 @@ FVector UEquipUseComponent::CalculateTargetPoint(const FVector& CamLoc, const FV
 FVector UEquipUseComponent::GetMuzzleLocation(const FVector& CamLoc, const FVector& AimDir) const
 {
 	FName SocketName;
+	AUnderwaterCharacter* Diver = Cast<AUnderwaterCharacter>(OwningCharacter);
+	if (!Diver)
+		return CamLoc + AimDir * 30.f;
 	if (EquipType == EEquipmentType::HarpoonGun)
 	{
 		SocketName = TEXT("Muzzle");
@@ -1093,12 +1113,15 @@ FVector UEquipUseComponent::GetMuzzleLocation(const FVector& CamLoc, const FVect
 	{
 		SocketName = TEXT("FlareMuzzle");
 	}
-	
-	if (auto* Mesh = OwningCharacter->GetMesh();
-		Mesh && Mesh->DoesSocketExist(SocketName))
+	USkeletalMeshComponent* Mesh = Diver->GetMesh1P();
+
+	if (Mesh && Mesh->DoesSocketExist(SocketName))
 	{
+		LOGIC(Log, TEXT("Has MuzzleSocket : Name : %s"), *SocketName.ToString());
+		LOGIC(Log, TEXT("Has MuzzleSocket : Location : %s"), *Mesh->GetSocketLocation(SocketName).ToString());
 		return Mesh->GetSocketLocation(SocketName);
 	}
+	LOGIC(Log, TEXT("Not Have MuzzleSocket : Location : %s"), *(CamLoc + AimDir * 30.f).ToString());
 	return CamLoc + AimDir * 30.f; // 없을 경우 기본 값
 }
 

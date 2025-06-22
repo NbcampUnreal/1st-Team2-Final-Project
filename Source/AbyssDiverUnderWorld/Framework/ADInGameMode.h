@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "ADPlayerController.h"
 #include "GameFramework/GameMode.h"
 #include "ADInGameMode.generated.h"
 
@@ -10,6 +11,7 @@ enum class ECharacterState : uint8;
 class AGenericPool;
 class USoundSubsystem;
 class AUnderwaterCharacter;
+class AADDrone;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADInGameMode : public AGameMode
@@ -23,6 +25,7 @@ public:
 	virtual void BeginPlay() override;
 	virtual void PostLogin(APlayerController* NewPlayer) override;
 	virtual void Logout(AController* Exiting) override;
+	virtual void FinishRestartPlayer(AController* NewPlayer, const FRotator& StartRotation) override;
 
 #pragma region Methods
 
@@ -35,9 +38,21 @@ public:
 
 	void BindDelegate(AUnderwaterCharacter* PlayerCharacter);
 
+	/** Spawn Center 중심으로 지정된 거리 내에서 랜덤한 위치를 선택하여 플레이어들을 부활시킨다. */
+	void RevivePlayersAtRandomLocation(TArray<int8> PlayerIndexes, const FVector& SpawnCenter, float ReviveDistance);
+	void RevivePlayersAroundDroneAtRespawnLocation(const TArray<int8>& PlayerIndexes, const AADDrone* SomeDrone);
+
+	/** 지정된 인덱스의 플레이어 컨트롤러를 찾는다. */
+	AADPlayerController* FindPlayerControllerFromIndex(int8 PlayerIndex) const;
+	
 protected:
 
 	void InitPlayer(APlayerController* PC);
+
+	/** 지정된 위치에서 지정된 거리 내에서 랜덤한 위치를 반환한다. */
+	FVector GetRandomLocation(const FVector& Location, float Distance) const;
+	
+	void RestartPlayerFromPlayerIndex(int8 PlayerIndex, const FVector& SpawnLocation);
 
 private:
 

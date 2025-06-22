@@ -9,12 +9,15 @@
 
 #include "Inventory/ADInventoryComponent.h"
 #include "ADDroneSeller.h"
+#include "Character/UnderwaterCharacter.h"
 #include "Gimmic/Spawn/SpawnManager.h"
 #include "Subsystems/SoundSubsystem.h"
 #include "Character/PlayerComponent/PlayerHUDComponent.h"
+#include "Framework/ADInGameMode.h"
 
 #include "Net/UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"
+#include "Engine/TargetPoint.h"
 
 DEFINE_LOG_CATEGORY(DroneLog);
 
@@ -28,6 +31,7 @@ AADDrone::AADDrone()
 	bIsActive = false;
 	bIsFlying = false;
 	bIsHold = false;
+	ReviveDistance = 1000.f;
 }
 
 void AADDrone::BeginPlay()
@@ -102,6 +106,15 @@ void AADDrone::Interact_Implementation(AActor* InstigatorActor)
 {
 	if (!HasAuthority() || !bIsActive || !IsValid(CurrentSeller) || bIsFlying) return;
 
+	if (!CurrentSeller->GetSubmittedPlayerIndexes().IsEmpty())
+	{
+		if (AADInGameMode* GameMode = GetWorld()->GetAuthGameMode<AADInGameMode>())
+		{
+			GameMode->RevivePlayersAroundDroneAtRespawnLocation(CurrentSeller->GetSubmittedPlayerIndexes(), this);
+			CurrentSeller->GetSubmittedPlayerIndexes().Empty();
+		}
+	}
+	
 	// 차액 계산
 	int32 Diff = CurrentSeller->GetCurrentMoney() - CurrentSeller->GetTargetMoney();
 
@@ -226,6 +239,16 @@ FString AADDrone::GetInteractionDescription() const
 	return TEXT("Send Drone!");
 }
 
+const TArray<ATargetPoint*>& AADDrone::GetPlayerRespawnLocations() const
+{
+	return PlayerRespawnLocations;
+}
+
+float AADDrone::GetReviveDistance() const
+{
+	return ReviveDistance;
+}
+
 USoundSubsystem* AADDrone::GetSoundSubsystem()
 {
 	if (SoundSubsystem)
@@ -240,3 +263,4 @@ USoundSubsystem* AADDrone::GetSoundSubsystem()
 	}
 	return nullptr;
 }
+

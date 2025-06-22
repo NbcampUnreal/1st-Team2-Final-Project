@@ -12,7 +12,8 @@ enum class EMissionType : uint8
 	Interaction,
 	ItemCollection,
 	ItemUse,
-	KillMonster
+	KillMonster,
+	MAX UMETA(Hidden)
 };
 
 UENUM(BlueprintType)

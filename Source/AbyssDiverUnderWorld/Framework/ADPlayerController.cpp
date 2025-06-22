@@ -1,21 +1,23 @@
 #include "Framework/ADPlayerController.h"
+
 #include "ADCampGameMode.h"
 #include "ADInGameState.h"
 #include "ADPlayerState.h"
 #include "AbyssDiverUnderWorld.h"
+#include "SettingsManager.h"
+#include "ADGameInstance.h"
+
+#include "Inventory/ADInventoryComponent.h"
+#include "DataRow/PhaseGoalRow.h"
+#include "UI/InteractionDescriptionWidget.h"
+#include "Interactable/Item/Component/ADInteractionComponent.h"
+#include "Character/UnderwaterCharacter.h"
+#include "Character/PlayerComponent/PlayerHUDComponent.h"
+
 #include "EnhancedInputSubsystems.h"
 #include "InputMappingContext.h"
 #include "EnhancedInputComponent.h"
-#include "SettingsManager.h"
-#include "ADGameInstance.h"
-#include "Character/PlayerComponent/PlayerHUDComponent.h"
-#include "Inventory/ADInventoryComponent.h"
-#include "DataRow/PhaseGoalRow.h"
 #include "Kismet/GameplayStatics.h"
-#include "UI/InteractionDescriptionWidget.h"
-#include "Character/UnderwaterCharacter.h"
-#include "Interactable/Item/Component/ADInteractionComponent.h"
-
 
 AADPlayerController::AADPlayerController()
 {
@@ -38,25 +40,11 @@ void AADPlayerController::BeginPlay()
 
 	if (IsLocalController())
 	{
-
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = GetLocalPlayer()->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
 		{
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
-
-		FString Nickname = TEXT("Guest");
-		FUniqueNetIdRepl Id;
-
-		if (GetLocalPlayer())
-		{
-			Id = GetLocalPlayer()->GetPreferredUniqueNetId();
-			Nickname = GetLocalPlayer()->GetNickname(); 
-		}
-
-		S_SetPlayerInfo(Id, Nickname);
 	}
-
-	
 }
 
 void AADPlayerController::SetPawn(APawn* InPawn)
@@ -77,7 +65,6 @@ void AADPlayerController::SetPawn(APawn* InPawn)
 
 	if (InPawn)
 	{
-		// ��ȣ�ۿ� UI ������ �Լ� ���ε�
 		if (InteractionWidgetClass && IsLocalController())
 		{
 			InteractionWidget = CreateWidget<UInteractionDescriptionWidget>(this, InteractionWidgetClass);
@@ -100,7 +87,16 @@ void AADPlayerController::SetPawn(APawn* InPawn)
 void AADPlayerController::PostNetInit()
 {
 	Super::PostNetInit();
+
 	OnPostNetInit();
+
+	if (IsLocalController())
+	{
+		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = GetLocalPlayer()->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
+		{
+			Subsystem->AddMappingContext(DefaultMappingContext, 0);
+		}
+	}
 }
 
 void AADPlayerController::PostSeamlessTravel()
@@ -112,14 +108,6 @@ void AADPlayerController::PostSeamlessTravel()
 void AADPlayerController::C_OnPreClientTravel_Implementation()
 {
 	OnPreClientTravel();
-}
-
-void AADPlayerController::S_SetPlayerInfo_Implementation(const FUniqueNetIdRepl& Id, const FString& Nickname)
-{
-	if (AADPlayerState* PS = GetPlayerState<AADPlayerState>())
-	{
-		PS->SetPlayerInfo(Nickname);
-	}
 }
 
 void AADPlayerController::S_RequestSelectLevel_Implementation(const EMapName InLevelName)
@@ -170,17 +158,31 @@ void AADPlayerController::SetupInputComponent()
 
 void AADPlayerController::ShowInventory(const FInputActionValue& InputActionValue)
 {
-	if (AADPlayerState* PS = GetPlayerState<AADPlayerState>())
+	AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(GetPawn());
+	if (UnderwaterCharacter)
 	{
-		PS->GetInventory()->ShowInventory();
+		if (UnderwaterCharacter->IsNormal())
+		{
+			if (AADPlayerState* PS = GetPlayerState<AADPlayerState>())
+			{
+				PS->GetInventory()->ShowInventory();
+			}
+		}
 	}
 }
 
 void AADPlayerController::HideInventory(const FInputActionValue& InputActionValue)
 {
-	if (AADPlayerState* PS = GetPlayerState<AADPlayerState>())
+	AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(GetPawn());
+	if (UnderwaterCharacter)
 	{
-		PS->GetInventory()->HideInventory();
+		if (UnderwaterCharacter->IsNormal())
+		{
+			if (AADPlayerState* PS = GetPlayerState<AADPlayerState>())
+			{
+				PS->GetInventory()->HideInventory();
+			}
+		}
 	}
 }
 

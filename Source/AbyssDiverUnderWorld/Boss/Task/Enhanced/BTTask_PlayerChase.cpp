@@ -53,18 +53,19 @@ void UBTTask_PlayerChase::TickTask(UBehaviorTreeComponent& Comp, uint8* NodeMemo
 	if (!TaskMemory) return;
 	
 
-	// 추적중인 액터에게 MoveTo를 호출하는 코드이다.
-	Result = TaskMemory->AIController->MoveToActorWithRadius(TaskMemory->Boss->GetTarget());
-
 	// 추적 중인 플레이어가 사망 상태인 경우 추적을 중단한다.
-	if (IsValid(TaskMemory->Boss->GetTarget()))
+	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(TaskMemory->Boss->GetTarget());
+	if (IsValid(Player))
 	{
-		if (TaskMemory->Boss->GetTarget()->GetCharacterState() == ECharacterState::Death)
+		if (Player->IsDeath() || Player->IsGroggy())
 		{
 			TaskMemory->AIController->InitVariables();
 			return;
 		}
 	}
+
+	// 추적중인 액터에게 MoveTo를 호출하는 코드이다.
+	Result = TaskMemory->AIController->MoveToActorWithRadius(Player);
 	
 	// 추적하는 타겟 방향으로 이동한다.
 	// 만약 추적하는 과정에서 타겟이 NavMesh를 벗어난다면 랜덤한 NavMesh 지점으로 이동한다.
@@ -78,10 +79,10 @@ void UBTTask_PlayerChase::TickTask(UBehaviorTreeComponent& Comp, uint8* NodeMemo
 	// 플레이어가 시야에서 사라진 경우
 	if (TaskMemory->AIController->GetIsDisappearPlayer())
 	{
-		if (IsValid(TaskMemory->Boss->GetTarget()))
+		if (IsValid(Player))
 		{
 			// 플레이어가 해초 더미 속에 숨은 경우
-			if (TaskMemory->Boss->GetTarget()->IsHideInSeaweed())
+			if (Player->IsHideInSeaweed())
 			{
 				TaskMemory->AIController->GetBlackboardComponent()->SetValueAsBool(bIsPlayerHiddenKey, true);
 			}	
