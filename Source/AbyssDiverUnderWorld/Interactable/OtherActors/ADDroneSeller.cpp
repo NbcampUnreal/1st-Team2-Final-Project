@@ -82,6 +82,7 @@ void AADDroneSeller::Interact_Implementation(AActor* InstigatorActor)
 	}
 
 	SetCurrentMoeny(CurrentMoney + Gained);
+
 	LOGD(Log, TEXT("→ 누적 금액: %d / %d"), CurrentMoney, TargetMoney);
 
 	// 🔸 모든 클라이언트에서 색상 전환 연출
@@ -124,6 +125,7 @@ void AADDroneSeller::OnRep_IsActive()
 void AADDroneSeller::OnRep_CurrentMoney()
 {
 	OnCurrentMoneyChangedDelegate.Broadcast(CurrentMoney);
+	OnMoneyRatioChangedDelegate.Broadcast(MoneyRatio);
 
 	bool bReachedGoal = (CurrentMoney >= TargetMoney);
 
@@ -219,6 +221,7 @@ void AADDroneSeller::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME(AADDroneSeller, bIsActive);
 	DOREPLIFETIME(AADDroneSeller, CurrentMoney);
 	DOREPLIFETIME(AADDroneSeller, TargetMoney);
+	DOREPLIFETIME(AADDroneSeller, MoneyRatio);
 }
 
 UADInteractableComponent* AADDroneSeller::GetInteractableComponent() const

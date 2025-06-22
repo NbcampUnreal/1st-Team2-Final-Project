@@ -26,6 +26,18 @@ public:
     void C_ShowResultScreen();
     void C_ShowResultScreen_Implementation();
 
+    UFUNCTION(NetMulticast, Reliable)
+    void M_SetSpearUIVisibility(bool bVisible);
+    void M_SetSpearUIVisibility_Implementation(bool bVisible);
+
+    UFUNCTION(NetMulticast, Reliable)
+    void M_UpdateSpearCount(const int32& CurrentSpear, const int32& TotalSpear);
+    void M_UpdateSpearCount_Implementation(const int32& CurrentSpear, const int32& TotalSpear);
+
+    UFUNCTION(NetMulticast, Reliable)
+    void M_SetSpearGunTypeImage(int8 TypeNum);
+    void M_SetSpearGunTypeImage_Implementation(int8 TypeNum);
+
     /** Test HUD 보이기 설정 */
     void SetTestHUDVisibility(bool NewVisible) const;
     
@@ -48,11 +60,6 @@ public:
 
     UFUNCTION()
     void UpdateHealthHUD(int32 CurrentHealth, int32 MaxHealth);
-
-    UFUNCTION()
-    void UpdateSpearCount(const int32& CurrentSpear, const int32& TotalSpear);
-
-    void SetSpearUIVisibility(bool bVisible);
 
     void UpdateMissionsOnHUD(EMissionType MissionType, uint8 MissionIndex, int32 CurrentProgress);
 

@@ -297,21 +297,27 @@ void AADInGameState::OnRep_CurrentDroneSeller()
 
 	int32 TargetMoney = 0;
 	int32 CurrentMoney = 0;
+	float MoneyRatio = 0.f;
 
 	if (CurrentDroneSeller)
 	{
 		TargetMoney = CurrentDroneSeller->GetTargetMoney();
 		CurrentMoney = CurrentDroneSeller->GetCurrentMoney();
+		MoneyRatio = CurrentDroneSeller->GetMoneyRatio();
 
 		CurrentDroneSeller->OnCurrentMoneyChangedDelegate.RemoveAll(PlayerStatusWidget);
 		CurrentDroneSeller->OnCurrentMoneyChangedDelegate.AddUObject(PlayerStatusWidget, &UPlayerStatusWidget::SetDroneCurrentText);
 
 		CurrentDroneSeller->OnTargetMoneyChangedDelegate.RemoveAll(PlayerStatusWidget);
 		CurrentDroneSeller->OnTargetMoneyChangedDelegate.AddUObject(PlayerStatusWidget, &UPlayerStatusWidget::SetDroneTargetText);
+
+		CurrentDroneSeller->OnMoneyRatioChangedDelegate.RemoveAll(PlayerStatusWidget);
+		CurrentDroneSeller->OnMoneyRatioChangedDelegate.AddUObject(PlayerStatusWidget, &UPlayerStatusWidget::SetMoneyProgressBar);
 	}
 
 	PlayerStatusWidget->SetDroneTargetText(TargetMoney);
 	PlayerStatusWidget->SetDroneCurrentText(CurrentMoney);
+	PlayerStatusWidget->SetMoneyProgressBar(MoneyRatio);
 }
 
 void AADInGameState::OnRep_DestinationTarget()
