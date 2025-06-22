@@ -393,7 +393,7 @@ int32 UShopWidget::Contains(uint8 ItemId)
 
 void UShopWidget::ChangeTotalPriceText(int32 NewTotalPrice)
 {
-	FString NewText = TEXT("전체 가격 : ") + FString::FromInt(NewTotalPrice) + TEXT(" Cr");
+	FString NewText = TEXT("Total : ") + FString::FromInt(NewTotalPrice) + TEXT(" Cr");
 	TotalPriceText->SetText(FText::FromString(NewText));
 }
 
