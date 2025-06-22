@@ -27,16 +27,16 @@ struct FActivatedMissionInfo : public FFastArraySerializerItem
 	GENERATED_BODY()
 
 	UPROPERTY()
-	EMissionType MissionType;
+	EMissionType MissionType = EMissionType(0);
 
 	UPROPERTY()
-	uint8 MissionIndex;
+	uint8 MissionIndex = 0;
 
 	UPROPERTY()
-	uint8 bIsCompleted : 1;
+	uint8 bIsCompleted : 1 = false;
 
 	UPROPERTY()
-	uint8 CurrentProgress;
+	uint8 CurrentProgress = 0;
 
 	void PostReplicatedAdd(const FActivatedMissionInfoList& InArraySerializer);
 
