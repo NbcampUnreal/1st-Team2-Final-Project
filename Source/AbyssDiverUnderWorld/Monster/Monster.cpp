@@ -34,6 +34,8 @@ AMonster::AMonster()
 	bReplicates = true;
 	SetReplicatingMovement(true);
 	
+	MonsterSoundComponent = CreateDefaultSubobject<UMonsterSoundComponent>(TEXT("MonsterSoundComponent"));
+
 	// Set Default PossessSetting
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 	// Set Collision Channel == Monster
@@ -379,6 +381,12 @@ void AMonster::SetMonsterState(EMonsterState NewState)
 
 	if (GetController() == nullptr) return;
 
+	if (MonsterSoundComponent)
+	{
+		// Stop Existing LoopSound
+		MonsterSoundComponent->S_StopAllLoopSound();
+	}
+
 	MonsterState = NewState;
 	UE_LOG(LogTemp, Warning, TEXT("MonsterState changed: %d -> %d"), (int32)MonsterState, (int32)NewState);
 
@@ -390,7 +398,6 @@ void AMonster::SetMonsterState(EMonsterState NewState)
 	switch (NewState)
 	{
 	case EMonsterState::Detected:
-		LOG(TEXT("AI is Detected"));
 		StopMovement();
 		if (IsValid(DetectedAnimations))
 		{
@@ -399,14 +406,17 @@ void AMonster::SetMonsterState(EMonsterState NewState)
 		break;
 
 	case EMonsterState::Chase:
-		LOG(TEXT("AI starts Chase"));
 		SetMaxSwimSpeed(ChaseSpeed);
+		MonsterSoundComponent->S_PlayChaseLoopSound();
+
 		bIsChasing = true;
 		// @TODO : Add animations, sounds, and more
 		break;
 
 	case EMonsterState::Patrol:
 		SetMaxSwimSpeed(PatrolSpeed);
+		MonsterSoundComponent->S_PlayPatrolLoopSound();
+
 		if (UBlackboardComponent* BB = Cast<AAIController>(GetController())->GetBlackboardComponent())
 		{
 			BB->ClearValue(InvestigateLocationKey);

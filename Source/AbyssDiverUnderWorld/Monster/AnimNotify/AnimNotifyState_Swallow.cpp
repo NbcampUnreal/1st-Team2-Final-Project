@@ -38,5 +38,5 @@ void UAnimNotifyState_Swallow::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnim
 	HitComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	HitComp->SetGenerateOverlapEvents(false);
 
-	LOG(TEXT("[Swallow] Attack Collision Disabled"))
+	LOG(TEXT("[Swallow] Attack Collision Disabled"));
 }

@@ -8,6 +8,7 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Components/SphereComponent.h"
 #include "Delegates/DelegateCombinations.h"
+#include "Monster/MonsterSoundComponent.h"
 #include "Monster/EMonsterState.h"
 #include "Monster.generated.h"
 
@@ -71,6 +72,8 @@ protected:
 	TObjectPtr<UBlackboardComponent> BlackboardComponent;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI|AIController")
 	TObjectPtr<AMonsterAIController> AIController;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI|SoundComponent")
+	TObjectPtr<UMonsterSoundComponent> MonsterSoundComponent;
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UAnimInstance> AnimInstance;
 	UPROPERTY(Replicated, BlueprintReadWrite)

@@ -61,11 +61,9 @@ void AHorrorCreature::Tick(float DeltaTime)
 			SwallowedPlayer->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepWorldTransform, TEXT("MouthSocket"));
 			SwallowedPlayer->SetActorRelativeLocation(FVector::ZeroVector);
 
-			// 상태 전이
 			SetMonsterState(EMonsterState::Flee);
 			BlackboardComponent->ClearValue(TargetActorKey);
 
-			// 연출 종료
 			bSwallowingInProgress = false;
 		}
 	}
