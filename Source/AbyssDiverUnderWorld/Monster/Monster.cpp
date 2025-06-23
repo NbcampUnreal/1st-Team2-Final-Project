@@ -153,8 +153,13 @@ float AMonster::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, 
 				MonsterSoundComponent->S_PlayHitReactSound();
 			}
 
-			AddDetection(DamageCauser);
-			SetMonsterState(EMonsterState::Chase);
+			AActor* InstigatorPlayer = IsValid(EventInstigator) ? EventInstigator->GetPawn() : nullptr;
+			
+			if (MonsterState != EMonsterState::Chase)
+			{
+				AddDetection(InstigatorPlayer);
+				SetMonsterState(EMonsterState::Chase);
+			}
 		}
 	}
 	return Damage;
