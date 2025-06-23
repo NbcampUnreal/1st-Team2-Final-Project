@@ -180,17 +180,22 @@ void AMonster::OnDeath()
 
 void AMonster::PlayAttackMontage()
 {
+	if (!HasAuthority()) return;
+
+	UAnimInstance* AnimInst = GetMesh()->GetAnimInstance();
+	if (!AnimInst) return;
+
+	// If any montage is playing, prevent duplicate playback
+	if (AnimInst->IsAnyMontagePlaying()) return;
+	
 	const uint8 AttackType = FMath::RandRange(0, AttackAnimations.Num() - 1);
 
 	UAnimMontage* SelectedMontage = AttackAnimations[AttackType];
 
 	if (IsValid(SelectedMontage))
 	{
-		UAnimInstance* AnimInst = GetMesh()->GetAnimInstance();
-		if (AnimInst && !AnimInst->Montage_IsPlaying(SelectedMontage))
-		{
-			M_PlayMontage(SelectedMontage);
-		}
+		UE_LOG(LogTemp, Warning, TEXT("Playing Attack Montage: %s"), *SelectedMontage->GetName());
+		M_PlayMontage(SelectedMontage);
 	}
 }
 
