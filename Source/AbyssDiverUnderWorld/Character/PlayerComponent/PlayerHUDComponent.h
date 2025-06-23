@@ -34,9 +34,12 @@ public:
     void M_UpdateSpearCount(const int32& CurrentSpear, const int32& TotalSpear);
     void M_UpdateSpearCount_Implementation(const int32& CurrentSpear, const int32& TotalSpear);
 
-    UFUNCTION(NetMulticast, Reliable)
+    /*UFUNCTION(NetMulticast, Reliable)
     void M_SetSpearGunTypeImage(int8 TypeNum);
-    void M_SetSpearGunTypeImage_Implementation(int8 TypeNum);
+    void M_SetSpearGunTypeImage_Implementation(int8 TypeNum);*/
+    UFUNCTION(Client, Reliable)
+    void C_SetSpearGunTypeImage(int8 TypeNum);
+    void C_SetSpearGunTypeImage_Implementation(int8 TypeNum);
 
     /** Test HUD 보이기 설정 */
     void SetTestHUDVisibility(bool NewVisible) const;

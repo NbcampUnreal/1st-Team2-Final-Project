@@ -139,6 +139,4 @@ void UPostProcessSettingComponent::UpdateVignetteIntensity()
     // 현재 Vignette 강도 설정
     float CurrentIntensity = FMath::Lerp(StartVignetteIntensity, TargetVignetteIntensity, Alpha);
     CameraComponent->PostProcessSettings.VignetteIntensity = CurrentIntensity;
-
-    LOG(TEXT("Vignette Intensity: %f"), CurrentIntensity);
 }
