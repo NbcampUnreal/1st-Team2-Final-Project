@@ -10,6 +10,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "AbyssDiverUnderWorld.h"
 #include "NiagaraFunctionLibrary.h"
+#include "Character/UnderwaterCharacter.h"
 #include "Components/CapsuleComponent.h"
 #include "Interactable/OtherActors/Radars/RadarReturnComponent.h"
 
@@ -286,6 +287,12 @@ void AMonster::AddDetection(AActor* Actor)
 	{
 		TargetActor = Actor;
 
+		AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor);
+		if (Player)
+		{
+			Player->OnTargeted();
+		}
+
 		if (BlackboardComponent)
 		{
 			BlackboardComponent->SetValueAsObject(TargetActorKey, TargetActor);
@@ -323,6 +330,12 @@ void AMonster::RemoveDetection(AActor* Actor)
 		{
 			TargetActor = nullptr;
 
+			AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor);
+			if (Player)
+			{
+				Player->OnUntargeted();
+			}
+
 			if (BlackboardComponent)
 			{
 				BlackboardComponent->ClearValue(TargetActorKey);
@@ -334,6 +347,13 @@ void AMonster::RemoveDetection(AActor* Actor)
 				if (IsValid(Pair.Key))
 				{
 					TargetActor = Pair.Key;
+
+					AUnderwaterCharacter* NextAgrroPlayer = Cast<AUnderwaterCharacter>(Pair.Key);
+					if (NextAgrroPlayer)
+					{
+						NextAgrroPlayer->OnTargeted();
+					}
+
 					if (BlackboardComponent)
 					{
 						BlackboardComponent->SetValueAsObject(TargetActorKey, TargetActor);
@@ -381,6 +401,12 @@ void AMonster::ForceRemoveDetection(AActor* Actor)
 	if (TargetActor == Actor)
 	{
 		TargetActor = nullptr;
+		
+		AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor);
+		if (Player)
+		{
+			Player->OnUntargeted();
+		}
 
 		if (BlackboardComponent)
 		{
@@ -393,6 +419,13 @@ void AMonster::ForceRemoveDetection(AActor* Actor)
 			if (IsValid(Pair.Key))
 			{
 				TargetActor = Pair.Key;
+				
+				AUnderwaterCharacter* NextAgrroPlayer = Cast<AUnderwaterCharacter>(Pair.Key);
+				if (NextAgrroPlayer)
+				{
+					NextAgrroPlayer->OnTargeted();
+				}
+
 				if (BlackboardComponent)
 				{
 					BlackboardComponent->SetValueAsObject(TargetActorKey, TargetActor);
