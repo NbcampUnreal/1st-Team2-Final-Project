@@ -156,7 +156,7 @@ void AADSpearGunBullet::AttachToHitActor(USceneComponent* HitComp, const FHitRes
             if (HitBone != NAME_None && SkeletalMesh)
             {
 
-                FAttachmentTransformRules AttachRules(EAttachmentRule::KeepWorld, true);  // 상대 위치로 유지
+                FAttachmentTransformRules AttachRules(EAttachmentRule::KeepWorld, EAttachmentRule::KeepWorld, EAttachmentRule::KeepRelative, true);  // 상대 위치로 유지
                 AttachToComponent(SkeletalMesh, AttachRules, HitBone);
 
                 LOGP(Warning, TEXT("Attached to SkeletalMeshComponent at bone: %s HitComp : %s"), *HitBone.ToString(), *HitComp->GetName());
