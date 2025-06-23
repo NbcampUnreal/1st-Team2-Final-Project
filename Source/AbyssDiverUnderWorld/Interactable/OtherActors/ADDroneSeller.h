@@ -10,6 +10,7 @@ class UMissionSubsystem;
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnCurrentMoneyChangedDelegate, int32/*Changed Money*/);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnTargetMoneyChangedDelegate, int32/*Changed Money*/);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnMoneyRatioChangedDelegate, float/*Money Ratio*/);
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnSellOreDelegate, uint8 /*OreId*/, int32 /*OreMass*/);
 
 UCLASS()
@@ -45,6 +46,7 @@ public:
 
 	FOnCurrentMoneyChangedDelegate OnCurrentMoneyChangedDelegate;
 	FOnTargetMoneyChangedDelegate OnTargetMoneyChangedDelegate;
+	FOnMoneyRatioChangedDelegate OnMoneyRatioChangedDelegate;
 	FOnSellOreDelegate OnSellOreDelegate;
 
 	void SetLightColor(FLinearColor NewColor);
@@ -74,6 +76,8 @@ protected:
 	int32 CurrentMoney = 0;
 	UPROPERTY(ReplicatedUsing = OnRep_TargetMoney)
 	int32 TargetMoney = 1000;
+	UPROPERTY(Replicated)
+	float MoneyRatio = 0.f;
 
 	/* 현재 드론에 제출된 시체 플레이어의 Index 배열 */
 	TArray<int8> SubmittedPlayerIndexes;
@@ -104,6 +108,7 @@ private:
 public:
 	int32 GetCurrentMoney() const { return CurrentMoney; }
 	int32 GetTargetMoney() const { return TargetMoney; }
+	float GetMoneyRatio() const { return MoneyRatio; }
 
 	void SetTargetMoney(int32 NewTargetMoney) 
 	{ 
@@ -128,6 +133,7 @@ private:
 		}
 
 		CurrentMoney = NewCurrentMoney;
+		MoneyRatio = CurrentMoney / TargetMoney;
 		OnRep_CurrentMoney();
 	}
 	

@@ -27,6 +27,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "EngineUtils.h"
 #include "Components/CapsuleComponent.h"
+#include "Algo/RandomShuffle.h"
+#include "Engine/TargetPoint.h"
 
 AADInGameMode::AADInGameMode()
 {
@@ -180,6 +182,18 @@ void AADInGameMode::Logout(AController* Exiting)
 
 }
 
+void AADInGameMode::FinishRestartPlayer(AController* NewPlayer, const FRotator& StartRotation)
+{
+	Super::FinishRestartPlayer(NewPlayer, StartRotation);
+
+	if (DeathCount > 0)
+	{
+		DeathCount--;
+	}
+
+	LOGVN(Log, TEXT("Player Restarted, PlayerIndex : %d, Deathcount : %d"), NewPlayer->GetPlayerState<AADPlayerState>()->GetPlayerIndex(), DeathCount);
+}
+
 void AADInGameMode::ReadyForTravelToCamp()
 {
 	FTimerManager& TimerManager = GetWorldTimerManager();
@@ -188,7 +202,7 @@ void AADInGameMode::ReadyForTravelToCamp()
 		return;
 	}
 
-	LOGVN(Warning, TEXT("Ready For Traveling to Camp..."));
+	LOGVN(Log, TEXT("Ready For Traveling to Camp..."));
 
 	for (AADPlayerController* PC : TActorRange<AADPlayerController>(GetWorld()))
 	{
@@ -226,7 +240,7 @@ void AADInGameMode::TravelToCamp()
 				FString LevelLoad = CampMapName;
 				if (LevelLoad == "invalid")
 				{
-					UE_LOG(LogTemp, Error, TEXT("LevelLoad is empty"));
+					LOGV(Error, TEXT("LevelLoad is empty"));
 					return;
 				}
 
@@ -274,23 +288,57 @@ void AADInGameMode::RevivePlayersAtRandomLocation(TArray<int8> PlayerIndexes, co
 {
 	for (int8 PlayerIndex : PlayerIndexes)
 	{
-		AADPlayerController* PlayerController = FindPlayerControllerFromIndex(PlayerIndex);
-		// 현재 관전이 없으므로 Hide 되어 있다.
-		// if (PlayerController == nullptr || PlayerController->GetPawn() != nullptr)
-		if (PlayerController == nullptr)
+		FVector RandomLocation = GetRandomLocation(SpawnCenter, ReviveDistance);
+		RestartPlayerFromPlayerIndex(PlayerIndex, RandomLocation);
+	}
+}
+
+void AADInGameMode::RevivePlayersAroundDroneAtRespawnLocation(const TArray<int8>& PlayerIndexes, const AADDrone* SomeDrone)
+{
+	if (IsValid(SomeDrone) == false)
+	{
+		LOGV(Error, TEXT("Drone Is Invalid"));
+		return;
+	}
+
+	const TArray<ATargetPoint*>& RespawnLocationCandidates = SomeDrone->GetPlayerRespawnLocations();
+
+	const int32 CandidateCount = RespawnLocationCandidates.Num();
+	if (CandidateCount == 0)
+	{
+		RevivePlayersAtRandomLocation(PlayerIndexes, SomeDrone->GetActorLocation(), SomeDrone->GetReviveDistance());
+		return;
+	}
+
+	TArray<int32> SelectedIndexes;
+	SelectedIndexes.Reserve(CandidateCount);
+	for (int32 i = 0; i < CandidateCount; ++i)
+	{
+		SelectedIndexes.Add(i);
+	}
+
+	const int32 PlayerIndexCount = PlayerIndexes.Num();
+
+	int32 CurrentCandidateIndex = CandidateCount;
+	for (int32 i = 0; i < PlayerIndexCount; ++i)
+	{
+		if (CurrentCandidateIndex >= CandidateCount)
 		{
-			continue;
+			if (CandidateCount > 1)
+			{
+				Algo::RandomShuffle(SelectedIndexes);
+			}
+
+			CurrentCandidateIndex = 0;
 		}
 
-		if (APawn* PlayerPawn = PlayerController->GetPawn())
-		{
-			PlayerController->UnPossess();
-			PlayerPawn->Destroy();
-		}
+		int32 SelectedIndex = SelectedIndexes[CurrentCandidateIndex];
+		const FVector RespawnLocation = RespawnLocationCandidates[SelectedIndex]->GetActorLocation();
 		
-		FVector RandomLocation = GetRandomLocation(SpawnCenter, ReviveDistance);
-		FRotator SpawnRotator = FRotator::ZeroRotator;
-		RestartPlayerAtTransform(PlayerController, FTransform(SpawnRotator, RandomLocation));
+		int32 PlayerIndex = PlayerIndexes[i];
+
+		RestartPlayerFromPlayerIndex(PlayerIndex, RespawnLocation);
+		CurrentCandidateIndex++;
 	}
 }
 
@@ -360,9 +408,29 @@ FVector AADInGameMode::GetRandomLocation(const FVector& Location, float Distance
 	return RandomLocation;
 }
 
+void AADInGameMode::RestartPlayerFromPlayerIndex(int8 PlayerIndex, const FVector& SpawnLocation)
+{
+	AADPlayerController* PlayerController = FindPlayerControllerFromIndex(PlayerIndex);
+	// 현재 관전이 없으므로 Hide 되어 있다.
+	// if (PlayerController == nullptr || PlayerController->GetPawn() != nullptr)
+	if (PlayerController == nullptr)
+	{
+		return;
+	}
+
+	if (APawn* PlayerPawn = PlayerController->GetPawn())
+	{
+		PlayerController->UnPossess();
+		PlayerPawn->Destroy();
+	}
+
+	FRotator SpawnRotator = FRotator::ZeroRotator;
+	RestartPlayerAtTransform(PlayerController, FTransform(SpawnRotator, SpawnLocation));
+}
+
 void AADInGameMode::GameOver()
 {
-	LOGV(Error, TEXT("Game Over"));
+	LOGV(Log, TEXT("Game Over"));
 
 #if WITH_EDITOR
 	// PIE 버그로 이걸 호출해주지 않으면 Server Travel시 크래시 일어남.
@@ -378,7 +446,6 @@ void AADInGameMode::GameOver()
 
 void AADInGameMode::OnCharacterStateChanged(ECharacterState OldCharacterState, ECharacterState NewCharacterState)
 {
-	LOGV(Error, TEXT("Begin, NewCharacterState : %d, PlayerNum : %d"), NewCharacterState, GetNumPlayers());
 	if (NewCharacterState == ECharacterState::Death)
 	{
 		if (OldCharacterState == ECharacterState::Groggy)
@@ -390,7 +457,6 @@ void AADInGameMode::OnCharacterStateChanged(ECharacterState OldCharacterState, E
 	}
 	else if (NewCharacterState == ECharacterState::Groggy)
 	{
-		LOGV(Error, TEXT("Groggy"));
 		GroggyCount++;
 	}
 	else if (OldCharacterState == ECharacterState::Groggy && NewCharacterState == ECharacterState::Normal)
@@ -398,12 +464,13 @@ void AADInGameMode::OnCharacterStateChanged(ECharacterState OldCharacterState, E
 		GroggyCount--;
 	}
 
+	LOGV(Log, TEXT("Begin,Old State : %d,  NewCharacterState : %d, PlayerNum : %d, DeathCount : %d, GroggyCount : %d"), OldCharacterState, NewCharacterState, GetNumPlayers(), DeathCount, GroggyCount);
+
 	if (DeathCount + GroggyCount == GetNumPlayers())
 	{
 		GameOver();
 	}
 
-	LOGV(Error, TEXT("End"));
 }
 
 void AADInGameMode::GetOre()
