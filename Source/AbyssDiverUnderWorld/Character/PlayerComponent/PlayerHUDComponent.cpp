@@ -14,9 +14,10 @@
 #include "GameFramework/PlayerController.h"
 #include "EngineUtils.h"
 #include "Components/CanvasPanel.h"
-#include "GameFramework/SpringArmComponent.h"
+#include "Framework/ADPlayerController.h"
 #include "UI/CrosshairWidget.h"
 #include "Interactable/OtherActors/ADDroneSeller.h"
+#include "UI/SpectatorHUDWidget.h"
 
 UPlayerHUDComponent::UPlayerHUDComponent()
 {
@@ -27,13 +28,16 @@ void UPlayerHUDComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	APlayerController* PlayerController = Cast<APlayerController>(GetOwner());
-	if (!PlayerController || !PlayerController->IsLocalController())
+	AADPlayerController* PlayerController = Cast<AADPlayerController>(GetOwner());
+	if (!PlayerController->IsLocalController())
 	{
 		return;
 	}
 
+	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("UPlayerHUDComponent::BeginPlay()"));
+	
 	PlayerController->OnPossessedPawnChanged.AddDynamic(this, &UPlayerHUDComponent::OnPossessedPawnChanged);
+	PlayerController->OnSpectateChanged.AddDynamic(this, &UPlayerHUDComponent::OnSpectatingStateChanged);
 	
 	// 메인 HUD 생성
 	if (HudWidgetClass)
@@ -107,6 +111,15 @@ void UPlayerHUDComponent::BeginPlay()
 		}
 	}
 
+	if (SpectatorHUDWidgetClass)
+	{
+		SpectatorHUDWidget = CreateWidget<USpectatorHUDWidget>(PlayerController, SpectatorHUDWidgetClass);
+		if (SpectatorHUDWidget)
+		{
+			SpectatorHUDWidget->BindWidget(PlayerController);
+		}
+	}
+	
 	AADInGameState* GS = Cast<AADInGameState>(GetWorld()->GetGameState());
 	if (GS == nullptr)
 	{
@@ -205,6 +218,21 @@ void UPlayerHUDComponent::SetCurrentPhaseOverlayVisible(bool bShouldVisible)
 	PlayerStatusWidget->SetCurrentPhaseOverlayVisible(bShouldVisible);
 }
 
+void UPlayerHUDComponent::OnSpectatingStateChanged(bool bIsSpectating)
+{
+	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("OnSpectatingStateChanged: %s / Authority : %s"), bIsSpectating ? TEXT("True") : TEXT("False"), 
+		GetOwnerRole() == NM_Client ? TEXT("Host") : TEXT("Client"));
+
+	if (bIsSpectating)
+	{
+		ShowSpectatorHUDWidget();
+	}
+	else
+	{
+		HideSpectatorHUDWidget();
+	}
+}
+
 void UPlayerHUDComponent::SetTestHUDVisibility(const bool NewVisible) const
 {
 	if (HudWidget)
@@ -248,35 +276,35 @@ void UPlayerHUDComponent::UpdateResultScreen(int32 PlayerIndexBased_1, const FRe
 	}
 }
 
-void UPlayerHUDComponent::OnPossessedPawnChanged(APawn* OldPawn, APawn* NewPawn)
+void UPlayerHUDComponent::SetupHudWidgetToNewPawn(APawn* NewPawn, APlayerController* PlayerController)
 {
-	// UnPossess 상황에서 변화가 필요하면 OldPawn, NewPawn의 변화를 체크해서 구현할 것
-	
-	if (!NewPawn) return;
-
-	APlayerController* PlayerController = Cast<APlayerController>(GetOwner());
-
-	if (!IsValid(HudWidget))
+	if (!IsValid(HudWidget) && HudWidgetClass)
 	{
 		HudWidget = CreateWidget<UPlayerHUDWidget>(PlayerController, HudWidgetClass);
 	}
 	if (HudWidget)
 	{
-		HudWidget->AddToViewport();
+		if (!HudWidget->IsInViewport())
+		{
+			HudWidget->AddToViewport();
+		}
 		HudWidget->BindWidget(NewPawn);
 	}
 
-	if (!IsValid(CrosshairWidget))
+	if (!IsValid(CrosshairWidget) && CrosshairWidgetClass)
 	{
 		CrosshairWidget = CreateWidget<UCrosshairWidget>(PlayerController, CrosshairWidgetClass);
 	}
 	if (CrosshairWidget)
 	{
-		CrosshairWidget->AddToViewport();
+		if (!CrosshairWidget->IsInViewport())
+		{
+			CrosshairWidget->AddToViewport();
+		}
 		CrosshairWidget->BindWidget(NewPawn);
 	}
 
-	if (!IsValid(PlayerStatusWidget))
+	if (!IsValid(PlayerStatusWidget) && PlayerStatusWidgetClass)
 	{
 		PlayerStatusWidget = CreateWidget<UPlayerStatusWidget>(PlayerController, PlayerStatusWidgetClass);
 	}
@@ -321,6 +349,69 @@ void UPlayerHUDComponent::OnPossessedPawnChanged(APawn* OldPawn, APawn* NewPawn)
 			StaminaComp->OnStaminaChanged.AddDynamic(this, &UPlayerHUDComponent::UpdateStaminaHUD);
 			UpdateStaminaHUD(StaminaComp->GetStamina(), StaminaComp->GetMaxStamina());
 		}
+	}
+}
+
+void UPlayerHUDComponent::HideHudWidget()
+{
+	if (HudWidget && HudWidget->IsInViewport())
+	{
+		HudWidget->RemoveFromParent();
+	}
+
+	if (CrosshairWidget && CrosshairWidget->IsInViewport())
+	{
+		CrosshairWidget->RemoveFromParent();
+	}
+
+	if (PlayerStatusWidget && PlayerStatusWidget->IsInViewport())
+	{
+		PlayerStatusWidget->RemoveFromParent();
+	}
+}
+
+void UPlayerHUDComponent::ShowSpectatorHUDWidget()
+{
+	if (!SpectatorHUDWidget && SpectatorHUDWidgetClass)
+	{
+		AADPlayerController* PlayerController = Cast<AADPlayerController>(GetOwner());
+		SpectatorHUDWidget = CreateWidget<USpectatorHUDWidget>(PlayerController, SpectatorHUDWidgetClass);
+	}
+	if (SpectatorHUDWidget && !SpectatorHUDWidget->IsInViewport())
+	{
+		SpectatorHUDWidget->AddToViewport();
+	}
+}
+
+void UPlayerHUDComponent::HideSpectatorHUDWidget()
+{
+	if (SpectatorHUDWidget && SpectatorHUDWidget->IsInViewport())
+	{
+		SpectatorHUDWidget->RemoveFromParent();
+	}
+}
+
+void UPlayerHUDComponent::OnPossessedPawnChanged(APawn* OldPawn, APawn* NewPawn)
+{
+	// UnPossess 상황에서 변화가 필요하면 OldPawn, NewPawn의 변화를 체크해서 구현할 것
+	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("OnPossessedPawnChanged: OldPawn: %s, NewPawn: %s"),
+		OldPawn ? *OldPawn->GetName() : TEXT("None"), 
+		NewPawn ? *NewPawn->GetName() : TEXT("None"));
+
+	// 1. 초기 생성 : 현재는 BeginPlay에서 생성
+	// 2. New Pawn이 AUnderwaterCharacter일 경우 Seamless Travel 혹은 부활 상황
+	// 3. New Pawn이 nullptr일 경우 UnPossess 상황, 사망 상황
+	// Spectator Pawn은 Possess가 실행되지 않으므로 OnSpectatingStateChanged에서 독립적으로 관리한다.
+	
+	APlayerController* PlayerController = Cast<APlayerController>(GetOwner());
+
+	if (NewPawn)
+	{
+		SetupHudWidgetToNewPawn(NewPawn, PlayerController);		
+	}
+	else
+	{
+		HideHudWidget();
 	}
 }
 

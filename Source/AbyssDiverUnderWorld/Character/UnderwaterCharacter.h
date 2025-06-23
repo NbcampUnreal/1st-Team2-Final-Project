@@ -154,6 +154,10 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void RequestRevive();
 
+	/** 캐릭터를 사망시킨다. Authority Node에서만 실행되어야 한다. */
+	UFUNCTION(BlueprintCallable)
+	void Die();
+	
 	/** 현재 캐릭터의 상태를 전환. 수중, 지상 */
 	UFUNCTION(BlueprintCallable)
 	void SetEnvironmentState(EEnvironmentState State);
@@ -373,6 +377,10 @@ protected:
 
 	/** 전투 종료 시에 호출되는 함수 */
 	void EndCombat();
+
+	/** 캐릭터가 사망을 완료했을 때 호출되는 함수. 관전으로 변경된다. */
+	void EndDeath();
+	
 	float GetSwimEffectiveSpeed() const;
 
 	/** 현재 상태 속도 갱신.(무게, Sprint) */
@@ -1156,6 +1164,12 @@ private:
 	/** Post Process를 관리하는 컴포넌트 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UPostProcessSettingComponent> PostProcessSettingComponent;
+
+	/** 캐릭터가 사망했을 때 관전으로 전이할 Timer */
+	FTimerHandle DeathTimer;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	float DeathTransitionTime = 3.0f;
 	
 #pragma endregion
 
@@ -1193,7 +1207,7 @@ public:
 	/** 장착 아이템 렌더링 컴포넌트 반환 */
 	FORCEINLINE UEquipRenderComponent* GetEquipRenderComponent() const { return EquipRenderComp; }
 
-	/** 캐릭터의 현재 상태를 반환 */
+	/** 캐릭터의 현재 상태를 반환. Normal, Groggy, Death... */
 	FORCEINLINE ECharacterState GetCharacterState() const { return CharacterState; }
 
 	/** 캐릭터 무적 상태를 반환. 현재는 Server에서만 유효하다. */

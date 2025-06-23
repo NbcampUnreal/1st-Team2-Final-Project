@@ -110,6 +110,69 @@ void AADPlayerController::C_OnPreClientTravel_Implementation()
 	OnPreClientTravel();
 }
 
+void AADPlayerController::OnRep_Pawn()
+{
+	Super::OnRep_Pawn();
+
+	if (IsInState(NAME_Spectating))
+	{
+		ServerViewNextPlayer();
+	}
+}
+
+void AADPlayerController::StartSpectate()
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	// Change State를 하면 BeginSpectate에 의해서 SpectatorPawn이 생성된다.
+	PlayerState->SetIsSpectator(true);
+	ChangeState(NAME_Spectating);
+	bPlayerIsWaiting = true;
+
+	ClientGotoState(NAME_Spectating);
+
+	ViewAPlayer(1);
+}
+
+void AADPlayerController::SetViewTarget(class AActor* NewViewTarget, FViewTargetTransitionParams TransitionParams)
+{
+	// 블렌딩 효과 없이 즉시 뷰 타겟 변경을 위해 BlendTime을 0으로 설정
+	TransitionParams.BlendTime = 0.0f;
+	TransitionParams.BlendExp = 0.0f;
+	
+	Super::SetViewTarget(NewViewTarget, TransitionParams);
+
+	// UE_LOG(LogTemp,Display, TEXT("SetViewTarget called for %s, NewViewTarget: %s"), *GetName(), NewViewTarget ? *NewViewTarget->GetName() : TEXT("None"));
+	// UE_LOG(LogTemp,Display, TEXT("Transition Params : BlendTime: %f, BlendFunction: %d, BlendExp: %f, bLockOutgoing: %s"),
+	// 	TransitionParams.BlendTime, (int32)TransitionParams.BlendFunction, TransitionParams.BlendExp, TransitionParams.bLockOutgoing ? TEXT("True") : TEXT("False"));
+	//
+	// UE_LOG(LogTemp,Display,	TEXT("Player CameraManager Client Simulating View Target : %s"), 
+	// 	PlayerCameraManager->bUseClientSideCameraUpdates ? TEXT("True") : TEXT("False"));
+	OnTargetViewChanged.Broadcast(GetViewTarget());
+}
+
+void AADPlayerController::BeginSpectatingState()
+{
+	UE_LOG(AbyssDiver, Display, TEXT("Begin Spectating State for %s, GetPawn : %s"), *GetName(), GetPawn() ? *GetPawn()->GetName() : TEXT("None"));
+	
+	Super::BeginSpectatingState();
+
+	OnSpectateChanged.Broadcast(true);
+}
+
+void AADPlayerController::EndSpectatingState()
+{
+	UE_LOG(AbyssDiver, Display, TEXT("End Spectating State for %s"), *GetName());
+	
+	
+	Super::EndSpectatingState();
+
+	OnSpectateChanged.Broadcast(false);
+}
+
 void AADPlayerController::S_RequestSelectLevel_Implementation(const EMapName InLevelName)
 {
 	if (HasAuthority())

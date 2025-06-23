@@ -384,19 +384,23 @@ void AUnderwaterCharacter::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
 
-	if (AADPlayerState* ADPlayerState = GetPlayerState<AADPlayerState>())
+	// UnPossess 상황에서 Error 로그가 발생하지 않도록 수정
+	if (APlayerState* CurrentPlayerState = GetPlayerState<APlayerState>())
 	{
-		InitFromPlayerState(ADPlayerState);
-		if (!IsLocallyControlled())
+		if (AADPlayerState* ADPlayerState = Cast<AADPlayerState>(CurrentPlayerState))
 		{
-			NameWidgetComponent->SetNameText(ADPlayerState->GetPlayerNickname());
-			NameWidgetComponent->SetEnable(true);
-			UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Set Player Nick Name On Rep : %s"), *ADPlayerState->GetPlayerNickname());
+			InitFromPlayerState(ADPlayerState);
+			if (!IsLocallyControlled())
+			{
+				NameWidgetComponent->SetNameText(ADPlayerState->GetPlayerNickname());
+				NameWidgetComponent->SetEnable(true);
+				UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Set Player Nick Name On Rep : %s"), *ADPlayerState->GetPlayerNickname());
+			}
 		}
-	}
-	else
-	{
-		LOGVN(Error, TEXT("Player State Init failed : %d"), GetUniqueID());
+		else
+		{
+			LOGVN(Error, TEXT("Player State Init failed : %d"), GetUniqueID());
+		}
 	}
 }
 
@@ -1093,8 +1097,24 @@ void AUnderwaterCharacter::HandleExitNormal()
 
 void AUnderwaterCharacter::HandleEnterDeath()
 {
+	// @ToDo: 사망 처리 시점을 사망 모션이 출력 혹은 Camera 전환이 완료된 후로 변경할 것
+	// 임시로 Timer로 시간을 맞춘다.
+	if (HasAuthority())
+	{
+		GetWorldTimerManager().SetTimer(
+			DeathTimer,
+			this,
+			&AUnderwaterCharacter::EndDeath,
+			DeathTransitionTime,
+			false
+		);
+	}
+	
 	if (IsLocallyControlled())
 	{
+		// @ToDo: Death UI 출력
+		// @ToDo: Death Camera Transition
+		
 		if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
 		{
 			PlayerController->SetIgnoreLookInput(false);
@@ -1248,6 +1268,23 @@ void AUnderwaterCharacter::EndCombat()
 		                            false);
 	}
 	OnCombatEndDelegate.Broadcast();
+}
+
+void AUnderwaterCharacter::EndDeath()
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	if (AADPlayerController* PlayerController = Cast<AADPlayerController>(GetController()))
+	{
+		PlayerController->StartSpectate();
+	}
+	else
+	{
+		UE_LOG(LogAbyssDiverCharacter,Error, TEXT("PlayerController is not valid for %s"), *GetName());
+	}
 }
 
 float AUnderwaterCharacter::GetSwimEffectiveSpeed() const
@@ -1775,6 +1812,16 @@ void AUnderwaterCharacter::RequestRevive()
 	{
 		S_Revive();
 	}
+}
+
+void AUnderwaterCharacter::Die()
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	SetCharacterState(ECharacterState::Death);
 }
 
 void AUnderwaterCharacter::Move(const FInputActionValue& InputActionValue)
