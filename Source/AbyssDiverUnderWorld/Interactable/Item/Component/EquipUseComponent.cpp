@@ -474,15 +474,15 @@ void UEquipUseComponent::Initialize(FItemData& ItemData)
 			{
 				if (CurrentItemData->Name == SpearGunTypeNames[0])
 				{
-					HUD->M_SetSpearGunTypeImage(0);
+					HUD->C_SetSpearGunTypeImage(0);
 				}
 				else if (CurrentItemData->Name == SpearGunTypeNames[1])
 				{
-					HUD->M_SetSpearGunTypeImage(1);
+					HUD->C_SetSpearGunTypeImage(1);
 				}
 				else if (CurrentItemData->Name == SpearGunTypeNames[2])
 				{
-					HUD->M_SetSpearGunTypeImage(2);
+					HUD->C_SetSpearGunTypeImage(2);
 				}
 				HUD->M_SetSpearUIVisibility(true);
 				HUD->M_UpdateSpearCount(CurrentAmmoInMag, ReserveAmmo);
