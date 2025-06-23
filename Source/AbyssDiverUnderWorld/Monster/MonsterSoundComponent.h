@@ -60,6 +60,14 @@ public:
 	UFUNCTION(NetMulticast, Reliable)
 	void M_StopAllLoopSound();
 	void M_StopAllLoopSound_Implementation();
+
+	// About Ducking Sound
+	UFUNCTION(Server, Reliable)
+	void S_RequestMainSoundDuck(float DuckVolume, float DuckDuration, float RecoverDuration);
+	void S_RequestMainSoundDuck_Implementation(float DuckVolume, float DuckDuration, float RecoverDuration);
+	UFUNCTION(NetMulticast, Reliable)
+	void M_AdjustMainSoundVolume(float Volume, float FadeTime);
+	void M_AdjustMainSoundVolume_Implementation(float Volume, float FadeTime);
 #pragma endregion
 
 #pragma region Variable

@@ -86,7 +86,11 @@ void UMonsterSoundComponent::M_PlayPatrolLoopSound_Implementation()
 {
 	if (PatrolLoopComponent && !PatrolLoopComponent->IsPlaying())
 	{
-		PatrolLoopComponent->Play();
+		const float FadeInDuration = 1.0f;
+		const float TargetVolume = 1.0f;
+
+		PatrolLoopComponent->FadeIn(FadeInDuration, TargetVolume);
+		// PatrolLoopComponent->Play();
 	}
 }
 
@@ -99,7 +103,11 @@ void UMonsterSoundComponent::M_PlayChaseLoopSound_Implementation()
 {
 	if (ChaseLoopComponent && !ChaseLoopComponent->IsPlaying())
 	{
-		ChaseLoopComponent->Play();
+		const float FadeInDuration = 1.0f;
+		const float TargetVolume = 1.0f;
+
+		ChaseLoopComponent->FadeIn(FadeInDuration, TargetVolume);
+		// ChaseLoopComponent->Play();
 	}
 }
 
@@ -112,31 +120,11 @@ void UMonsterSoundComponent::M_PlayFleeLoopSound_Implementation()
 {
 	if (FleeLoopComponent && !FleeLoopComponent->IsPlaying())
 	{
-		FleeLoopComponent->Play();
-	}
-}
+		const float FadeInDuration = 1.0f;
+		const float TargetVolume = 1.0f;
 
-void UMonsterSoundComponent::S_StopAllLoopSound_Implementation()
-{
-	M_StopAllLoopSound();
-}
-
-void UMonsterSoundComponent::M_StopAllLoopSound_Implementation()
-{
-	UE_LOG(LogTemp, Warning, TEXT("MulticastPlayChaseLoop CALLED"));
-	if (PatrolLoopComponent && PatrolLoopComponent->IsPlaying())
-	{
-		PatrolLoopComponent->Stop();
-	}
-
-	if (ChaseLoopComponent && ChaseLoopComponent->IsPlaying())
-	{
-		ChaseLoopComponent->Stop();
-	}
-
-	if (FleeLoopComponent && FleeLoopComponent->IsPlaying())
-	{
-		FleeLoopComponent->Stop();
+		FleeLoopComponent->FadeIn(FadeInDuration, TargetVolume);
+		// FleeLoopComponent->Play();
 	}
 }
 
@@ -151,5 +139,63 @@ void UMonsterSoundComponent::M_PlayHitReactSound_Implementation()
 	{
 		UGameplayStatics::PlaySoundAtLocation(this, HitReactSound, GetOwner()->GetActorLocation());
 	}
+}
+
+void UMonsterSoundComponent::S_StopAllLoopSound_Implementation()
+{
+	M_StopAllLoopSound();
+}
+
+void UMonsterSoundComponent::M_StopAllLoopSound_Implementation()
+{
+	const float FadeOutDuration = 1.0f; // Time for sound to fade
+	const float FadeOutVolume = 0.0f;   // Final Volume
+
+	UE_LOG(LogTemp, Warning, TEXT("MulticastPlayChaseLoop CALLED"));
+	if (PatrolLoopComponent && PatrolLoopComponent->IsPlaying())
+	{
+		// PatrolLoopComponent->Stop();
+		PatrolLoopComponent->FadeOut(FadeOutDuration, FadeOutVolume);
+	}
+
+	if (ChaseLoopComponent && ChaseLoopComponent->IsPlaying())
+	{
+		// ChaseLoopComponent->Stop();
+		ChaseLoopComponent->FadeOut(FadeOutDuration, FadeOutVolume);
+	}
+
+	if (FleeLoopComponent && FleeLoopComponent->IsPlaying())
+	{
+		// FleeLoopComponent->Stop();
+		FleeLoopComponent->FadeOut(FadeOutDuration, FadeOutVolume);
+	}
+}
+
+void UMonsterSoundComponent::S_RequestMainSoundDuck_Implementation(float DuckVolume, float DuckDuration, float RecoverDuration)
+{
+	// Decrease volume (default DuckVolume : 0.2f)
+	M_AdjustMainSoundVolume(DuckVolume, DuckDuration);
+
+	FTimerHandle DuckTimerHandle;
+	GetWorld()->GetTimerManager().SetTimer(DuckTimerHandle, [this, RecoverDuration]()
+	{
+		// Recover volume (1.0f)
+		M_AdjustMainSoundVolume(1.0f, RecoverDuration);
+	}, DuckDuration + 0.1f, false);
+}
+
+void UMonsterSoundComponent::M_AdjustMainSoundVolume_Implementation(float Volume, float FadeTime)
+{
+	auto FadeComponent = [](UAudioComponent* Comp, float Volume, float Time)
+	{
+		if (Comp && Comp->IsPlaying())
+		{
+			Comp->AdjustVolume(Time, Volume);
+		}
+	};
+
+	FadeComponent(PatrolLoopComponent, Volume, FadeTime);
+	FadeComponent(ChaseLoopComponent, Volume, FadeTime);
+	FadeComponent(FleeLoopComponent, Volume, FadeTime);
 }
 
