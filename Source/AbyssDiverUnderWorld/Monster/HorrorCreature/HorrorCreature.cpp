@@ -84,6 +84,8 @@ void AHorrorCreature::OnSwallowTriggerOverlap(
 	const FHitResult& SweepResult)
 {
 	if (!bCanSwallow || !HasAuthority() || SwallowedPlayer) return;
+	AUnderwaterCharacter* PlayerCharacter = Cast<AUnderwaterCharacter>(OtherActor);
+	if (!PlayerCharacter && PlayerCharacter->GetCharacterState() != ECharacterState::Normal) return;
 	if (OtherActor == this) return;
 
 	AUnderwaterCharacter* Victim = Cast<AUnderwaterCharacter>(OtherActor);
@@ -97,6 +99,8 @@ void AHorrorCreature::OnSwallowTriggerOverlap(
 void AHorrorCreature::SwallowPlayer(AUnderwaterCharacter* Victim)
 {
 	if (!HasAuthority() || !Victim || SwallowedPlayer) return;
+	AUnderwaterCharacter* PlayerCharacter = Cast<AUnderwaterCharacter>(Victim);
+	if (!PlayerCharacter && PlayerCharacter->GetCharacterState() != ECharacterState::Normal) return;
 
 	SwallowedPlayer = Victim;
 	bCanSwallow = false;
