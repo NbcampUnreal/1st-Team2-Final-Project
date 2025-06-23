@@ -9,10 +9,13 @@
 #include "Components/VerticalBoxSlot.h"
 #include "Components/TextBlock.h"
 #include "Kismet/GameplayStatics.h"
+#include "SelectedMissionSlot.h"
+
 
 void USelectedMissionListWidget::NativeConstruct()
 {
     Super::NativeConstruct();
+
 
     if (!VerticalBox_MissionList)
     {
@@ -26,13 +29,18 @@ void USelectedMissionListWidget::NativeConstruct()
 void USelectedMissionListWidget::AddElement(const FString& ElementText)
 {
     //미션 구조체 추가
+    if (!SelectedMissionSlotClass) return;
+    APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0);
+    if (!PC || !PC->IsLocalController()) return;
 
-    UTextBlock* MissionText = NewObject<UTextBlock>(this);
-    MissionText->SetText(FText::FromString(ElementText));
-    MissionText->SetFont(FSlateFontInfo(FCoreStyle::GetDefaultFontStyle("Bold", 17)));
-    MissionText->SetColorAndOpacity(FSlateColor(FLinearColor::White));
+    USelectedMissionSlot* SlotWidget = CreateWidget<USelectedMissionSlot>(PC, SelectedMissionSlotClass);
+    SlotWidget->SetMissionTitle(ElementText);
+    //UTextBlock* MissionText = NewObject<UTextBlock>(this);
+    //MissionText->SetText(FText::FromString(ElementText));
+    //MissionText->SetFont(FSlateFontInfo(FCoreStyle::GetDefaultFontStyle("Bold", 17)));
+    //MissionText->SetColorAndOpacity(FSlateColor(FLinearColor::White));
 
-    UVerticalBoxSlot* VerticalSlot = VerticalBox_MissionList->AddChildToVerticalBox(MissionText);
+    UVerticalBoxSlot* VerticalSlot = VerticalBox_MissionList->AddChildToVerticalBox(SlotWidget);
     if (VerticalSlot)
     {
         VerticalSlot->SetSize(ESlateSizeRule::Fill);
@@ -55,6 +63,12 @@ void USelectedMissionListWidget::ModifyElementAt(const FString& NewText, const i
 
     Element->SetText(FText::FromString(NewText));
     LOGV(Warning, TEXT("%s"), *NewText);
+}
+
+void USelectedMissionListWidget::FinishElementAt(const int8& Index)
+{
+    USelectedMissionSlot* Element = CastChecked<USelectedMissionSlot>(VerticalBox_MissionList->GetChildAt(Index));
+    Element->OnMissionFinished();
 }
 
 void USelectedMissionListWidget::AddOrModifyElement(int32 ChangedIndex, const FActivatedMissionInfoList& ChangedValue)

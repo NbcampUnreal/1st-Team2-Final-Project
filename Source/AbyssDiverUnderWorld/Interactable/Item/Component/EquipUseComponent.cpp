@@ -468,15 +468,24 @@ void UEquipUseComponent::Initialize(FItemData& ItemData)
 		OnRep_CurrentAmmoInMag();
 		OnRep_ReserveAmmo();
 		//TODO: UI 띄우는 곳
-		if (CurrentEquipmentName == BASIC_SPEAR_GUN_NAME)
+		if (APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController()))
 		{
-			if (APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController()))
+			if (UPlayerHUDComponent* HUD = PC->FindComponentByClass<UPlayerHUDComponent>())
 			{
-				if (UPlayerHUDComponent* HUD = PC->FindComponentByClass<UPlayerHUDComponent>())
+				if (CurrentItemData->Name == SpearGunTypeNames[0])
 				{
-					HUD->SetSpearUIVisibility(true);
-					HUD->UpdateSpearCount(CurrentAmmoInMag, ReserveAmmo);
+					HUD->C_SetSpearGunTypeImage(0);
 				}
+				else if (CurrentItemData->Name == SpearGunTypeNames[1])
+				{
+					HUD->C_SetSpearGunTypeImage(1);
+				}
+				else if (CurrentItemData->Name == SpearGunTypeNames[2])
+				{
+					HUD->C_SetSpearGunTypeImage(2);
+				}
+				HUD->M_SetSpearUIVisibility(true);
+				HUD->M_UpdateSpearCount(CurrentAmmoInMag, ReserveAmmo);
 			}
 		}
 	}
@@ -550,14 +559,12 @@ void UEquipUseComponent::DeinitializeEquip()
 	Amount = 0;
 
 	//TODO: UI 제거하는 함수
-	if (BackupName == BASIC_SPEAR_GUN_NAME)
+
+	if (APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController()))
 	{
-		if (APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController()))
+		if (UPlayerHUDComponent* HUD = PC->FindComponentByClass<UPlayerHUDComponent>())
 		{
-			if (UPlayerHUDComponent* HUD = PC->FindComponentByClass<UPlayerHUDComponent>())
-			{
-				HUD->SetSpearUIVisibility(false);
-			}
+			HUD->M_SetSpearUIVisibility(false);
 		}
 	}
 

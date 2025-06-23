@@ -136,12 +136,16 @@ void UPlayerHUDComponent::BeginPlay()
 
 	PlayerStatusWidget->SetDroneTargetText(CurrentDroneSeller->GetTargetMoney());
 	PlayerStatusWidget->SetDroneCurrentText(CurrentDroneSeller->GetCurrentMoney());
+	PlayerStatusWidget->SetMoneyProgressBar(CurrentDroneSeller->GetMoneyRatio());
 
 	CurrentDroneSeller->OnCurrentMoneyChangedDelegate.RemoveAll(PlayerStatusWidget);
 	CurrentDroneSeller->OnCurrentMoneyChangedDelegate.AddUObject(PlayerStatusWidget, &UPlayerStatusWidget::SetDroneCurrentText);
 
 	CurrentDroneSeller->OnTargetMoneyChangedDelegate.RemoveAll(PlayerStatusWidget);
 	CurrentDroneSeller->OnTargetMoneyChangedDelegate.AddUObject(PlayerStatusWidget, &UPlayerStatusWidget::SetDroneTargetText);
+
+	CurrentDroneSeller->OnMoneyRatioChangedDelegate.RemoveAll(PlayerStatusWidget);
+	CurrentDroneSeller->OnMoneyRatioChangedDelegate.AddUObject(PlayerStatusWidget, &UPlayerStatusWidget::SetMoneyProgressBar);
 }
 
 void UPlayerHUDComponent::C_ShowResultScreen_Implementation()
@@ -198,6 +202,22 @@ void UPlayerHUDComponent::C_ShowResultScreen_Implementation()
 	SetResultScreenVisible(true);
 }
 
+void UPlayerHUDComponent::M_SetSpearUIVisibility_Implementation(bool bVisible)
+{
+	if (PlayerStatusWidget)
+	{
+		PlayerStatusWidget->SetSpearVisibility(bVisible);
+	}
+}
+
+void UPlayerHUDComponent::M_UpdateSpearCount_Implementation(const int32& CurrentSpear, const int32& TotalSpear)
+{
+	if (PlayerStatusWidget)
+	{
+		PlayerStatusWidget->SetSpearCount(CurrentSpear, TotalSpear);
+	}
+}
+
 void UPlayerHUDComponent::UpdateMissionsOnHUD(EMissionType MissionType, uint8 MissionIndex, int32 CurrentProgress)
 {
 	MissionsOnHUDWidget->UpdateMission(MissionType, MissionIndex, CurrentProgress);
@@ -216,6 +236,11 @@ void UPlayerHUDComponent::SetCurrentPhaseOverlayVisible(bool bShouldVisible)
 	}
 
 	PlayerStatusWidget->SetCurrentPhaseOverlayVisible(bShouldVisible);
+}
+
+void UPlayerHUDComponent::C_SetSpearGunTypeImage_Implementation(int8 TypeNum)
+{
+	PlayerStatusWidget->SetSpearGunTypeImage(TypeNum);
 }
 
 void UPlayerHUDComponent::OnSpectatingStateChanged(bool bIsSpectating)
@@ -439,22 +464,6 @@ void UPlayerHUDComponent::UpdateStaminaHUD(float Stamina, float MaxStamina)
 	{
 		const float Ratio = MaxStamina > 0 ? Stamina / MaxStamina : 0.f;
 		PlayerStatusWidget->SetStaminaPercent(Ratio);
-	}
-}
-
-void UPlayerHUDComponent::UpdateSpearCount(const int32& CurrentSpear, const int32& TotalSpear)
-{
-	if (PlayerStatusWidget)
-	{
-		PlayerStatusWidget->SetSpearCount(CurrentSpear, TotalSpear);
-	}
-}
-
-void UPlayerHUDComponent::SetSpearUIVisibility(bool bVisible)
-{
-	if (PlayerStatusWidget)
-	{
-		PlayerStatusWidget->SetSpearVisibility(bVisible);
 	}
 }
 
