@@ -39,16 +39,12 @@ void UCombatEffectComponent::BeginPlay()
 	
 	if (AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(GetOwner()))
 	{
-		// Global Effect
-
-		if (UnderwaterCharacter->IsLocallyControlled())
-		{
-			BindLocalEffects(UnderwaterCharacter);
-		}
+		OwnerCharacter = UnderwaterCharacter;
+		BindDelegate(UnderwaterCharacter);
 	}
 }
 
-void UCombatEffectComponent::BindLocalEffects(AUnderwaterCharacter* UnderwaterCharacter)
+void UCombatEffectComponent::BindDelegate(AUnderwaterCharacter* UnderwaterCharacter)
 {
 	if (UShieldComponent* ShieldComponent = UnderwaterCharacter->GetShieldComponent())
 	{
@@ -87,6 +83,11 @@ void UCombatEffectComponent::BindLocalEffects(AUnderwaterCharacter* UnderwaterCh
 
 void UCombatEffectComponent::OnShieldBroken()
 {
+	if (OwnerCharacter || !OwnerCharacter->IsLocallyControlled())
+	{
+		return;
+	}
+	
 	if (ShieldBrokenEffectComponent && !ShieldBrokenEffectComponent->IsActive())
 	{
 		ShieldBrokenEffectComponent->Activate(true);
@@ -99,6 +100,11 @@ void UCombatEffectComponent::OnShieldBroken()
 
 void UCombatEffectComponent::OnShieldValueChanged(float OldShieldValue, float NewShieldValue)
 {
+	if (OwnerCharacter || !OwnerCharacter->IsLocallyControlled())
+	{
+		return;
+	}
+	
 	UE_LOG(LogTemp,Display, TEXT("Shield Value Changed: Old = %f, New = %f"), OldShieldValue, NewShieldValue);
 	if (NewShieldValue < OldShieldValue && NewShieldValue > 0.0f)
 	{
@@ -112,6 +118,11 @@ void UCombatEffectComponent::OnShieldValueChanged(float OldShieldValue, float Ne
 
 void UCombatEffectComponent::PlayShieldHitEffect()
 {
+	if (OwnerCharacter || !OwnerCharacter->IsLocallyControlled())
+	{
+		return;
+	}
+	
 	UE_LOG(LogTemp,Display, TEXT("Play Shield Hit Effect"));
 	if (ShieldHitWidget && ShieldHitAnimation && !ShieldHitWidget->IsAnyAnimationPlaying())
 	{

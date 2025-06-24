@@ -36,7 +36,7 @@ protected:
 protected:
 	
 	/** 로컬 플레이어 효과를 바인딩. 다른 유저한테는 보이지 않는 효과이다. */
-	void BindLocalEffects(AUnderwaterCharacter* UnderwaterCharacter);
+	void BindDelegate(AUnderwaterCharacter* UnderwaterCharacter);
 
 	/** 실드 파괴 시에 호출되는 함수 */
 	UFUNCTION()
@@ -96,6 +96,9 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Character|CombatEffect")
 	TObjectPtr<USoundBase> ShieldHitSound;
 
+	UPROPERTY()
+	TObjectPtr<AUnderwaterCharacter> OwnerCharacter;
+	
 #pragma endregion
 
 #pragma region Getter Setter
