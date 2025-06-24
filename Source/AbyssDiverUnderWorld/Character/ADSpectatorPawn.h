@@ -3,11 +3,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "InputActionValue.h"
+#include "Framework/ADInGameMode.h"
 #include "GameFramework/SpectatorPawn.h"
 #include "ADSpectatorPawn.generated.h"
 
 class UInputAction;
+
+// Spectator Pawn은 Replicate 되지 않으므로 Authority를 확인할려면 NetMode를 확인해야 한다.
+DECLARE_LOG_CATEGORY_EXTERN(LogAbyssDiverSpectate, Log, All);
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADSpectatorPawn : public ASpectatorPawn
@@ -27,6 +30,8 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	virtual void PossessedBy(AController* NewController) override;
+	
 #pragma region Method
 
 public:
@@ -37,6 +42,16 @@ public:
 	/** 이전 플레이어를 관전한다. */
 	void ViewPrevPlayer();
 
+protected:
+	
+	/** 타겟 뷰가 변경되었을 때 호출되는 함수 */
+	UFUNCTION()
+	void OnTargetViewChanged(AActor* NewViewTarget);
+
+	/** 캐릭터 상태가 변경되었을 때 호출되는 함수 */
+	UFUNCTION()
+	void OnCharacterStateChanged(ECharacterState OldCharacterState, ECharacterState NewCharacterState);
+	
 #pragma endregion
 
 #pragma region Variable

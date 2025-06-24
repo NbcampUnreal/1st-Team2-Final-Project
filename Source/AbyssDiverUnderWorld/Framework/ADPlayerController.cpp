@@ -17,6 +17,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "InputMappingContext.h"
 #include "EnhancedInputComponent.h"
+#include "Character/ADSpectatorPawn.h"
 #include "Kismet/GameplayStatics.h"
 
 AADPlayerController::AADPlayerController()
@@ -156,7 +157,7 @@ void AADPlayerController::SetViewTarget(class AActor* NewViewTarget, FViewTarget
 
 void AADPlayerController::BeginSpectatingState()
 {
-	UE_LOG(AbyssDiver, Display, TEXT("Begin Spectating State for %s, GetPawn : %s"), *GetName(), GetPawn() ? *GetPawn()->GetName() : TEXT("None"));
+	UE_LOG(LogAbyssDiverSpectate, Display, TEXT("Begin Spectating State for %s, GetPawn : %s"), *GetName(), GetPawn() ? *GetPawn()->GetName() : TEXT("None"));
 	
 	Super::BeginSpectatingState();
 
@@ -165,7 +166,7 @@ void AADPlayerController::BeginSpectatingState()
 
 void AADPlayerController::EndSpectatingState()
 {
-	UE_LOG(AbyssDiver, Display, TEXT("End Spectating State for %s"), *GetName());
+	UE_LOG(LogAbyssDiverSpectate, Display, TEXT("End Spectating State for %s"), *GetName());
 	
 	
 	Super::EndSpectatingState();
