@@ -112,6 +112,8 @@ private:
 	// ID 만드는데 실패하면 INDEX_NONE 반환
 	int32 CreateNewId();
 
+	void OnWorldTearDown(UWorld* World);
+
 #pragma endregion
 
 #pragma region Variables
