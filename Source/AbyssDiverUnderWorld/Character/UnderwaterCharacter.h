@@ -1304,6 +1304,8 @@ public:
 
 	/** Post Process Setting Component를 반환 */
 	FORCEINLINE UPostProcessSettingComponent* GetPostProcessSettingComponent() const { return PostProcessSettingComponent; }
+
+	FORCEINLINE int GetTargetingActorCount() const { return TargetingActorCount; }
 	
 #pragma endregion
 };
