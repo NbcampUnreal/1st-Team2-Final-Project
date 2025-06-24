@@ -192,7 +192,7 @@ void AMonster::M_OnDeath_Implementation()
 		AnimInstance->StopAllMontages(1.0f);
 	}
 
-	// 피직스 에셋 물리엔진 적용
+	// Applying the Physics Asset Physics Engine
 	FTimerHandle TimerHandle;
 	GetWorldTimerManager().SetTimer(TimerHandle, this, &AMonster::ApplyPhysicsSimulation, 0.5f, false);
 }
