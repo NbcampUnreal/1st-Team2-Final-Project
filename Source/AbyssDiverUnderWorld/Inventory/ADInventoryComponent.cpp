@@ -424,6 +424,7 @@ void UADInventoryComponent::ShowInventory()
 
 	ToggleWidgetInstance->PlaySlideAnimation(true);
 	PC->bShowMouseCursor = true;
+	ToggleWidgetInstance->SetIsFocusable(true);
 
 	FInputModeGameAndUI InputMode;
 	InputMode.SetWidgetToFocus(ToggleWidgetInstance->TakeWidget());

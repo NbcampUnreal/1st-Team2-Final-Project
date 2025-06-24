@@ -1208,6 +1208,9 @@ public:
 	FORCEINLINE UEquipRenderComponent* GetEquipRenderComponent() const { return EquipRenderComp; }
 
 	/** 캐릭터의 현재 상태를 반환. Normal, Groggy, Death... */
+	FORCEINLINE UCombatEffectComponent* GetCombatEffectComponent() const { return CombatEffectComponent; }
+
+	/** 캐릭터의 현재 상태를 반환 */
 	FORCEINLINE ECharacterState GetCharacterState() const { return CharacterState; }
 
 	/** 캐릭터 무적 상태를 반환. 현재는 Server에서만 유효하다. */
