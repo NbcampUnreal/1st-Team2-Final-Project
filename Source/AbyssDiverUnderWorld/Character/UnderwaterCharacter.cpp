@@ -434,6 +434,13 @@ void AUnderwaterCharacter::OnMovementModeChanged(EMovementMode PrevMovementMode,
 	}
 }
 
+void AUnderwaterCharacter::Destroyed()
+{
+	Super::Destroyed();
+
+	DisconnectRope();
+}
+
 void AUnderwaterCharacter::LaunchCharacter(FVector LaunchVelocity, bool bXYOverride, bool bZOverride)
 {
 	// LaunchCharacter는 Server, Client 양쪽에서 호출되어서 따로 Replicate할 필요는 없다.
@@ -2368,7 +2375,6 @@ void AUnderwaterCharacter::OnRep_BindCharacter()
 		DisconnectRope();
 	}
 
-	AdjustSpeed();
 	UpdateBindInteractable();
 }
 

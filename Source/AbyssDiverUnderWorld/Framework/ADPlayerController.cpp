@@ -141,10 +141,6 @@ void AADPlayerController::StartSpectate()
 
 void AADPlayerController::SetViewTarget(class AActor* NewViewTarget, FViewTargetTransitionParams TransitionParams)
 {
-	// 블렌딩 효과 없이 즉시 뷰 타겟 변경을 위해 BlendTime을 0으로 설정
-	TransitionParams.BlendTime = 0.0f;
-	TransitionParams.BlendExp = 0.0f;
-	
 	Super::SetViewTarget(NewViewTarget, TransitionParams);
 
 	// UE_LOG(LogTemp,Display, TEXT("SetViewTarget called for %s, NewViewTarget: %s"), *GetName(), NewViewTarget ? *NewViewTarget->GetName() : TEXT("None"));
