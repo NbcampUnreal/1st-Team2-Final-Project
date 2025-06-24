@@ -129,6 +129,7 @@ void AADPlayerController::StartSpectate()
 	}
 
 	// Change State를 하면 BeginSpectate에 의해서 SpectatorPawn이 생성된다.
+	// PlayerState Spectator 설정은 EndSpectateState에서 처리된다.
 	PlayerState->SetIsSpectator(true);
 	ChangeState(NAME_Spectating);
 	bPlayerIsWaiting = true;

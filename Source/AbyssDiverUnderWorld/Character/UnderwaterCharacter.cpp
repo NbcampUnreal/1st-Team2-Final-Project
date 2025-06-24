@@ -465,7 +465,6 @@ void AUnderwaterCharacter::SetEnvironmentState(EEnvironmentState State)
 		bCanUseEquipment = true;
 		break;
 	case EEnvironmentState::Ground:
-		// 지상에서는 이동 방향으로 회전을 하게 한다.
 		GetCharacterMovement()->GravityScale = ExpectedGravityZ / GetWorld()->GetGravityZ();
 		SetFlipperMeshVisibility(false);
 		FirstPersonCameraArm->bEnableCameraRotationLag = false;
