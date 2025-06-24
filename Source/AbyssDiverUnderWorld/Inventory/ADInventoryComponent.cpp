@@ -344,7 +344,7 @@ void UADInventoryComponent::InventoryInitialize()
 		return;
 	}
 
-	ToggleWidgetInstance->AddToViewport();
+	ToggleWidgetInstance->AddToViewport(1);
 	ToggleWidgetInstance->InitializeInventoriesInfo(this);
 	ToggleWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
 
