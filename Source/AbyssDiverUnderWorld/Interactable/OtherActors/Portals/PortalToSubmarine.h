@@ -20,6 +20,7 @@ protected:
 public:
 
 	virtual void Interact_Implementation(AActor* InstigatorActor) override;
+	virtual bool IsConditionMet() override;
 
 private:
 
