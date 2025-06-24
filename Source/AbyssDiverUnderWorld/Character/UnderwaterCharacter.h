@@ -647,7 +647,10 @@ public:
 	FOnEnvironmentStateChanged OnEnvironmentStateChangedDelegate;
 
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnDamageTaken, float, DamageAmount, float, CurrentHealth);
-	/** 캐릭터가 피해를 입었을 때 호출되는 델리게이트, DamageAmount = Health Damage Taken + Shield Damage Taken */
+	/** 캐릭터가 피해를 입었을 때 호출되는 델리게이트, DamageAmount = Health Damage Taken + Shield Damage Taken.
+	 * 체력 계산, 상태 전이가 모두 완료된 뒤에 호출된다.
+	 * Normal 상태일 때만 호출된다. 실드에만 데미지가 들어갔을 경우 호출되지 않는다.
+	 */
 	UPROPERTY(BlueprintAssignable)
 	FOnDamageTaken OnDamageTakenDelegate;
 
@@ -1300,7 +1303,11 @@ public:
 	/** Post Process Setting Component를 반환 */
 	FORCEINLINE UPostProcessSettingComponent* GetPostProcessSettingComponent() const { return PostProcessSettingComponent; }
 
+	/** 현재 캐릭터를 어그로로 설정하고 있는 Targeting Actor의 개수를 반환 */
 	FORCEINLINE int GetTargetingActorCount() const { return TargetingActorCount; }
+
+	/** 캐릭터가 현재 Capture State 인지 여부를 반환 */
+	FORCEINLINE bool IsCaptured() const { return bIsCaptured; }
 	
 #pragma endregion
 };
