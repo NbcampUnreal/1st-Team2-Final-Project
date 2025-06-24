@@ -583,9 +583,12 @@ void AUnderwaterCharacter::UnBind()
 	}
 
 	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Character %s unbind from %s"), *GetName(), BindCharacter ? *BindCharacter->GetName() : TEXT("None"));
-	
-	BindCharacter->UnbindToCharacter(this);
-	BindCharacter = nullptr;
+
+	if (IsValid(BindCharacter))
+	{
+		BindCharacter->UnbindToCharacter(this);
+		BindCharacter = nullptr;
+	}
 
 	DisconnectRope();
 	UpdateBindInteractable();
