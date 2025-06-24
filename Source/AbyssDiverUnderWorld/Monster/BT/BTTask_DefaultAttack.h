@@ -34,7 +34,8 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Blackboard")
 	struct FBlackboardKeySelector MonsterStateKey;
 
-	uint8 bIsAttacking : 1;
+	UPROPERTY(EditAnywhere, Category = "Blackboard")
+	struct FBlackboardKeySelector IsAttackingKey;
 
 #pragma endregion
 };
