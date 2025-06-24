@@ -625,6 +625,12 @@ EEquipmentType UEquipUseComponent::TagToEquipmentType(const FGameplayTag& Tag)
 
 void UEquipUseComponent::HandleLeftClick()
 {
+	if (!OwningCharacter.IsValid()) return;
+
+	AADPlayerController* PC = Cast<AADPlayerController>(OwningCharacter->GetController());
+	if (!PC || !PC->IsLocalController()) return;
+	if (PC->bEnableClickEvents) return;
+
 	S_LeftClick();
 }
 
