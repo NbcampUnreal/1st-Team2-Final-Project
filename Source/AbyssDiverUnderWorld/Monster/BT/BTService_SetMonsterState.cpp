@@ -35,10 +35,14 @@ void UBTService_SetMonsterState::TickNode(UBehaviorTreeComponent& OwnerComp, uin
 	{
 	case EMonsterState::Chase:
 	{
-		break;
-	}
-	case EMonsterState::Investigate:
-	{
+		AActor* TargetActor = Cast<AActor>(Blackboard->GetValueAsObject(TargetActorKey.SelectedKeyName));
+
+		if (!IsValid(TargetActor))
+		{
+			Blackboard->ClearValue(TargetActorKey.SelectedKeyName);
+			Monster->SetMonsterState(EMonsterState::Patrol);
+			Monster->ForceRemoveDetection(TargetActor);
+		}
 		break;
 	}
 	default:

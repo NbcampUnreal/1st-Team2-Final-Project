@@ -16,7 +16,7 @@ public:
     UPlayerHUDComponent();
 
 protected:
-    
+    UFUNCTION()
     virtual void BeginPlay() override;
 
 #pragma region Method
@@ -69,6 +69,24 @@ public:
     void PlayNextPhaseAnim(int32 NextPhaseNumber);
     void SetCurrentPhaseOverlayVisible(bool bShouldVisible);
 
+protected:
+    
+    /** 관전 상태가 변경되었을 때 호출되는 함수 */
+    UFUNCTION()
+    void OnSpectatingStateChanged(bool bIsSpectating);
+
+    /** 새로운 Pawn에 HUD 위젯을 설정하고 활성화 한다. */
+    void SetupHudWidgetToNewPawn(APawn* NewPawn, APlayerController* PlayerController);
+
+    /** HUD 위젯을 숨긴다. */
+    void HideHudWidget();
+
+    /** 관전 HUD 위젯을 보이게 한다. */
+    void ShowSpectatorHUDWidget();
+
+    /** 관전 HUD 위젯을 숨긴다. */
+    void HideSpectatorHUDWidget();
+    
 private:
 #pragma endregion
 
@@ -103,6 +121,13 @@ private:
 
     UPROPERTY()
     TObjectPtr<class UMissionsOnHUDWidget> MissionsOnHUDWidget;
+
+    UPROPERTY(EditDefaultsOnly, Category = UI, meta = (AllowPrivateAccess = "true"))
+    TSubclassOf<class USpectatorHUDWidget> SpectatorHUDWidgetClass;
+
+    UPROPERTY()
+    TObjectPtr<class USpectatorHUDWidget> SpectatorHUDWidget;
+    
     
 #pragma endregion
 
