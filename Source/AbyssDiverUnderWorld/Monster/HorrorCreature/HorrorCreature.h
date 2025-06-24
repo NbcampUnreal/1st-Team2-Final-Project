@@ -19,7 +19,6 @@ public:
 	
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
-	virtual void PossessedBy(AController* NewController) override;
 
 #pragma region Method
 public:

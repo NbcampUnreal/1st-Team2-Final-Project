@@ -9,6 +9,8 @@ void USoundSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 
+	FWorldDelegates::OnWorldBeginTearDown.AddUObject(this, &USoundSubsystem::OnWorldTearDown);
+
 	UADGameInstance* GI = CastChecked<UADGameInstance>(GetGameInstance());
 	GI->SFXDataTable->GetAllRows<FSFXDataRow>(TEXT("Getting SFXs.."), SFXData);
 	SFXDataCount = SFXData.Num();
@@ -599,5 +601,11 @@ int32 USoundSubsystem::CreateNewId()
 	}
 
 	return NewId;
+}
+
+void USoundSubsystem::OnWorldTearDown(UWorld* World)
+{
+	LOGV(Log, TEXT("World is Tearing Down"));
+	Init(0);
 }
 

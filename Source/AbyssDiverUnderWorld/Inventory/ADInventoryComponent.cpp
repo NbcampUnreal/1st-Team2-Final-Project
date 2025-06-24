@@ -344,7 +344,7 @@ void UADInventoryComponent::InventoryInitialize()
 		return;
 	}
 
-	ToggleWidgetInstance->AddToViewport();
+	ToggleWidgetInstance->AddToViewport(1);
 	ToggleWidgetInstance->InitializeInventoriesInfo(this);
 	ToggleWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
 
@@ -424,7 +424,6 @@ void UADInventoryComponent::ShowInventory()
 
 	ToggleWidgetInstance->PlaySlideAnimation(true);
 	PC->bShowMouseCursor = true;
-	ToggleWidgetInstance->SetIsFocusable(true);
 
 	FInputModeGameAndUI InputMode;
 	InputMode.SetWidgetToFocus(ToggleWidgetInstance->TakeWidget());

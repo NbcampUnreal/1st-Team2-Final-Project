@@ -39,11 +39,9 @@ void UAnimNotify_MonsterMeleeAttack::Notify(USkeletalMeshComponent* MeshComp, UA
 	{
 		AActor* HitActor = Result.GetActor();
 		AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(HitActor);
+		if (!Player) return;
 		if (Player->GetCharacterState() == ECharacterState::Death) return;
-		if (Player)
-		{
-			UGameplayStatics::ApplyDamage(HitActor, StatComponent->AttackPower, Monster->GetController(), Monster, nullptr);
-		}
+		UGameplayStatics::ApplyDamage(HitActor, StatComponent->AttackPower, Monster->GetController(), Monster, nullptr);
 	}
 	
 }

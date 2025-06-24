@@ -69,12 +69,6 @@ void AHorrorCreature::Tick(float DeltaTime)
 	}
 }
 
-
-void AHorrorCreature::PossessedBy(AController* NewController)
-{
-	Super::PossessedBy(NewController);
-}
-
 void AHorrorCreature::OnSwallowTriggerOverlap(
 	UPrimitiveComponent* OverlappedComp,
 	AActor* OtherActor,

@@ -45,7 +45,12 @@ public:
 	void M_SpawnBloodEffect_Implementation(FVector Location, FRotator Rotation);
 
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
+	
 	virtual void OnDeath();
+	UFUNCTION(NetMulticast, Reliable)
+	void M_OnDeath();
+	void M_OnDeath_Implementation();
+
 	virtual void PlayAttackMontage();
 	void StopMovement();
 	virtual void NotifyLightExposure(float DeltaTime, float TotalExposedTime, const FVector& PlayerLocation, AActor* PlayerActor);
@@ -58,6 +63,9 @@ public:
 	
 	UFUNCTION()
 	void ForceRemoveDetection(AActor* Actor);
+
+protected:
+	void ApplyPhysicsSimulation();
 
 #pragma endregion
 
