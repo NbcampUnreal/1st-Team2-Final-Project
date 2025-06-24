@@ -110,7 +110,7 @@ void UADInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	DOREPLIFETIME(UADInventoryComponent, CurrentEquipItem);
 	DOREPLIFETIME(UADInventoryComponent, bIsWeapon);
 	DOREPLIFETIME(UADInventoryComponent, EquipmentType);
-
+	DOREPLIFETIME(UADInventoryComponent, CachedDiver);
 }
 
 void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType, uint8 SlotIndex, bool bIgnoreCoolTime)
@@ -774,9 +774,9 @@ void UADInventoryComponent::Equip(FItemData& ItemData, int8 SlotIndex)
 
 	ACharacter* Character = Cast<ACharacter>(Pawn);
 	USkeletalMeshComponent* MeshComp = Character->GetMesh();
-	AUnderwaterCharacter* Diver = Cast<AUnderwaterCharacter>(Pawn);
-	UEquipRenderComponent* EquipRenderComp = Diver->GetEquipRenderComponent();
-	if (!Character || !Diver || !EquipRenderComp)
+	CachedDiver = Cast<AUnderwaterCharacter>(Pawn);
+	UEquipRenderComponent* EquipRenderComp = CachedDiver->GetEquipRenderComponent();
+	if (!Character || !CachedDiver || !EquipRenderComp)
 		return;
 
 	if (MeshComp)
@@ -804,7 +804,7 @@ void UADInventoryComponent::Equip(FItemData& ItemData, int8 SlotIndex)
 			LOGINVEN(Warning, TEXT("ItemToEquip Name: %s, Amount %d"), *ItemData.Name.ToString(), ItemData.Amount);
 			SetEquipInfo(SlotIndex, SpawnedItem);
 			
-			if (UEquipUseComponent* EquipComp = Diver->GetEquipUseComponent()) 
+			if (UEquipUseComponent* EquipComp = CachedDiver->GetEquipUseComponent())
 			{
 				if (GetCurrentEquipmentItemData())
 				{
