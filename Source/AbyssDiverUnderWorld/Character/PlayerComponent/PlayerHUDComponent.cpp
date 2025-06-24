@@ -225,7 +225,7 @@ void UPlayerHUDComponent::SetCurrentPhaseOverlayVisible(bool bShouldVisible)
 	PlayerStatusWidget->SetCurrentPhaseOverlayVisible(bShouldVisible);
 }
 
-void UPlayerHUDComponent::M_SetSpearGunTypeImage_Implementation(int8 TypeNum)
+void UPlayerHUDComponent::C_SetSpearGunTypeImage_Implementation(int8 TypeNum)
 {
 	PlayerStatusWidget->SetSpearGunTypeImage(TypeNum);
 }
