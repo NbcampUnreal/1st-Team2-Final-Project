@@ -162,6 +162,47 @@ void AADPlayerController::SetViewTarget(class AActor* NewViewTarget, FViewTarget
 	OnTargetViewChanged.Broadcast(GetViewTarget());
 }
 
+void AADPlayerController::C_StartCameraBlank_Implementation(FColor FadeColor, FVector2D FadeAlpha, float FadeStartTime, float FadeEndDelay, float FadeEndTime)
+{
+	if (PlayerCameraManager != nullptr)
+	{
+		const float BlankFadeStartAlpha = FadeAlpha.X >= 0.0f ? FadeAlpha.X : PlayerCameraManager->FadeAmount;
+		const float BlankFadeEndAlpha = FadeAlpha.Y;
+		if (FadeStartTime > 0.0f)
+		{
+			PlayerCameraManager->StartCameraFade(BlankFadeStartAlpha, BlankFadeEndAlpha, FadeStartTime, FadeColor.ReinterpretAsLinear(), false, true);
+		}
+		else
+		{
+			PlayerCameraManager->SetManualCameraFade(BlankFadeEndAlpha, FadeColor.ReinterpretAsLinear(), false);
+		}
+
+		TWeakObjectPtr WeakActor = this;
+		FTimerDelegate TimerDelegate;
+		TimerDelegate.BindWeakLambda(this, [=]()
+		{
+			if (WeakActor.IsValid())
+			{
+				if (WeakActor->PlayerCameraManager != nullptr)
+				{
+					WeakActor->PlayerCameraManager->StartCameraFade(BlankFadeEndAlpha, BlankFadeStartAlpha, FadeEndTime, FadeColor.ReinterpretAsLinear(), false, true);
+				}
+			}
+		});
+		GetWorldTimerManager().SetTimer(
+			CameraBlankTimerHandle,
+			TimerDelegate,
+			FadeStartTime + FadeEndDelay,
+			false
+		);
+	}
+}
+
+bool AADPlayerController::IsCameraBlanking() const
+{
+	return GetWorldTimerManager().IsTimerActive(CameraBlankTimerHandle) || (PlayerCameraManager && PlayerCameraManager->bEnableFading);
+}
+
 void AADPlayerController::BeginSpectatingState()
 {
 	UE_LOG(LogAbyssDiverSpectate, Display, TEXT("Begin Spectating State for %s, GetPawn : %s"), *GetName(), GetPawn() ? *GetPawn()->GetName() : TEXT("None"));
@@ -263,4 +304,9 @@ void AADPlayerController::ToggleTestHUD()
 	{
 		PlayerHUDComponent->ToggleTestHUD();
 	}
+}
+
+void AADPlayerController::OnCameraBlankEnd()
+{
+	
 }
