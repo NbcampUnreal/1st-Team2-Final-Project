@@ -1217,15 +1217,19 @@ public:
 	FORCEINLINE void SetInvincible(const bool bNewInvincible) { bIsInvincible = bNewInvincible; }
 
 	/** 캐릭터가 일반 상태인지 여부를 반환 */
+	UFUNCTION(BlueprintCallable)
 	FORCEINLINE bool IsNormal() const { return CharacterState == ECharacterState::Normal; }
 
 	/** 캐릭터가 Groggy 상태인지 여부를 반환 */
+	UFUNCTION(BlueprintCallable)
 	FORCEINLINE bool IsGroggy() const { return CharacterState == ECharacterState::Groggy; }
 
 	/** 캐릭터가 Death 상태인지 여부를 반환 */
+	UFUNCTION(BlueprintCallable)
 	FORCEINLINE bool IsDeath() const { return CharacterState == ECharacterState::Death; }
 
-	/** 캐릭터가 현재 살아있는지 여부를 반환. 살아 있으면 타겟팅될 수 있다. */
+	/** 캐릭터가 현재 살아있는지 여부를 반환. 살아 있으면 타겟팅될 수 있다. 사망이 아닌 상태를 의미한다. */
+	UFUNCTION(BlueprintCallable)
 	bool IsAlive() const;
 
 	/** 캐릭터의 남은 그로기 시간을 반환 */
