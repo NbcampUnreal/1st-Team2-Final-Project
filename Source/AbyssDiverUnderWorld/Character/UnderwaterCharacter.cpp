@@ -234,13 +234,10 @@ void AUnderwaterCharacter::BeginPlay()
 
 	if (HasAuthority())
 	{
-		AADInGameMode* GM = Cast<AADInGameMode>(UGameplayStatics::GetGameMode(GetWorld()));
-		if (GM == nullptr)
+		if (AADInGameMode* GameManager = Cast<AADInGameMode>(UGameplayStatics::GetGameMode(GetWorld())))
 		{
-			return;
+			GameManager->BindDelegate(this);
 		}
-
-		GM->BindDelegate(this);
 	}
 
 	// @ToDo : Enter Normal로 처리가 가능한 부분은 Enter Normal로 처리
