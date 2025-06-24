@@ -179,8 +179,13 @@ void UMonsterSoundComponent::S_RequestMainSoundDuck_Implementation(float DuckVol
 	FTimerHandle DuckTimerHandle;
 	GetWorld()->GetTimerManager().SetTimer(DuckTimerHandle, [this, RecoverDuration]()
 	{
-		// Recover volume (1.0f)
-		M_AdjustMainSoundVolume(1.0f, RecoverDuration);
+		if ((PatrolLoopComponent && PatrolLoopComponent->IsPlaying()) ||
+			(ChaseLoopComponent && ChaseLoopComponent->IsPlaying()) ||
+			(FleeLoopComponent && FleeLoopComponent->IsPlaying()))
+		{
+			// Recover volume (1.0f)
+			M_AdjustMainSoundVolume(1.0f, RecoverDuration);
+		}
 	}, DuckDuration + 0.1f, false);
 }
 

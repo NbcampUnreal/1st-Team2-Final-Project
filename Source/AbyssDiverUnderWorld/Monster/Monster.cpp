@@ -171,14 +171,39 @@ float AMonster::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, 
 
 void AMonster::OnDeath()
 {
-	AnimInstance->StopAllMontages(1.0f);
+	if (MonsterSoundComponent)
+	{
+		// Stop Existing LoopSound
+		MonsterSoundComponent->M_StopAllLoopSound();
+	}
+
+	StopMovement();
+	M_OnDeath();
 
 	SetMonsterState(EMonsterState::Death);
+}
 
-	AIController->UnPossess();
+void AMonster::M_OnDeath_Implementation()
+{
+	GetCharacterMovement()->StopMovementImmediately();
+	
+	if (IsValid(AnimInstance))
+	{
+		AnimInstance->StopAllMontages(1.0f);
+	}
 
-	// Auto Destroy after 2seconds.
-	SetLifeSpan(2.0f);
+	// 피직스 에셋 물리엔진 적용
+	FTimerHandle TimerHandle;
+	GetWorldTimerManager().SetTimer(TimerHandle, this, &AMonster::ApplyPhysicsSimulation, 0.5f, false);
+}
+
+void AMonster::ApplyPhysicsSimulation()
+{
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	GetAttackHitComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	GetMesh()->SetEnableGravity(true);
+	GetMesh()->SetSimulatePhysics(true);
 }
 
 void AMonster::PlayAttackMontage()
@@ -204,9 +229,10 @@ void AMonster::PlayAttackMontage()
 
 void AMonster::StopMovement()
 {
-	if (AIController)
+	if (IsValid(AIController))
 	{
 		AIController->StopMovement();
+		AIController->UnPossess();
 	}
 }
 
@@ -457,7 +483,6 @@ void AMonster::ForceRemoveDetection(AActor* Actor)
 		}
 	}
 }
-
 
 void AMonster::SetMonsterState(EMonsterState NewState)
 {
