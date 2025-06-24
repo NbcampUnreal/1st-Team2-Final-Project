@@ -1193,6 +1193,8 @@ public:
 	/** 장착 아이템 렌더링 컴포넌트 반환 */
 	FORCEINLINE UEquipRenderComponent* GetEquipRenderComponent() const { return EquipRenderComp; }
 
+	FORCEINLINE UCombatEffectComponent* GetCombatEffectComponent() const { return CombatEffectComponent; }
+
 	/** 캐릭터의 현재 상태를 반환 */
 	FORCEINLINE ECharacterState GetCharacterState() const { return CharacterState; }
 

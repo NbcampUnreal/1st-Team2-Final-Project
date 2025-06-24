@@ -15,6 +15,22 @@
 UCombatEffectComponent::UCombatEffectComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
+	SetIsReplicatedByDefault(true);
+}
+
+void UCombatEffectComponent::C_PlayShieldUseEffect_Implementation()
+{
+	UE_LOG(LogTemp, Display, TEXT("Play Shield Hit Effect"));
+	if (ShieldHitWidget && ShieldUseAnimation && !ShieldHitWidget->IsAnyAnimationPlaying())
+	{
+		ShieldHitWidget->PlayAnimation(ShieldUseAnimation);
+	}
+	//if (ShieldUseSound)
+	//{
+		// @ToDo: SoundSubsystem을 사용하여 사운드 재생
+		// @ToDo: SoundSubsystem의 Play ID 기능을 이용해서 현재 재생 중이면 소리를 재생하지 않도록 수정
+		//UGameplayStatics::PlaySoundAtLocation(GetWorld(), ShieldUseSound, GetOwner()->GetActorLocation());
+	//}
 }
 
 void UCombatEffectComponent::BeginPlay()
@@ -59,6 +75,7 @@ void UCombatEffectComponent::BindLocalEffects(AUnderwaterCharacter* UnderwaterCh
 			{
 				ShieldHitWidget->AddToViewport();
 				ShieldHitAnimation = FindAnimationByName(ShieldHitWidget, ShieldHitAnimationName);
+				ShieldUseAnimation = FindAnimationByName(ShieldHitWidget, ShieldUseAnimationName);
 			}
 			else
 			{
