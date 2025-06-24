@@ -851,6 +851,8 @@ UStaticMeshComponent* AUnderwaterCharacter::CreateAndAttachMesh(const FString& C
 
 	MeshComponent->SetStaticMesh(MeshAsset);
 	MeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	// 3인칭 메시 : Owner No See == true, Only Owner See == false, Owner는 볼 수 없고 다른 사람만 볼 수 있다.
+	// 1인칭 메시 : Owner No See == false, Only Owner See == true, Owner만 볼 수 있고 다른 사람은 볼 수 없다.
 	MeshComponent->SetOwnerNoSee(bIsThirdPerson);
 	MeshComponent->SetOnlyOwnerSee(!bIsThirdPerson);
 	MeshComponent->CastShadow = bIsThirdPerson;
@@ -961,6 +963,11 @@ void AUnderwaterCharacter::SetCharacterState(const ECharacterState NewCharacterS
 
 void AUnderwaterCharacter::M_NotifyStateChange_Implementation(ECharacterState NewCharacterState)
 {
+	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Character State Changed : %s -> %s | Authority : %s"),
+		*UEnum::GetValueAsString(CharacterState),
+		*UEnum::GetValueAsString(NewCharacterState),
+		HasAuthority() ? TEXT("True") : TEXT("False")
+	);
 	HandleExitState(CharacterState);
 
 	ECharacterState OldCharacterState = CharacterState;
