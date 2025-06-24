@@ -12,8 +12,6 @@ UBTTask_DefaultAttack::UBTTask_DefaultAttack()
 	bCreateNodeInstance = true;
 	bNotifyTick = false;
 	CachedOwnerComp = nullptr;
-	bIsAttacking = false;
-	
 }
 
 EBTNodeResult::Type UBTTask_DefaultAttack::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
@@ -27,13 +25,17 @@ EBTNodeResult::Type UBTTask_DefaultAttack::ExecuteTask(UBehaviorTreeComponent& O
 	AMonster* Monster = Cast<AMonster>(AIPawn);
 	if (!Monster) return EBTNodeResult::Failed;
 
+	UBlackboardComponent* Blackboard = OwnerComp.GetBlackboardComponent();
+	if (!Blackboard) return EBTNodeResult::Failed;
+
+	
 	// In Server
+	const bool bIsAttacking = Blackboard->GetValueAsBool(IsAttackingKey.SelectedKeyName);
 	if (Monster->HasAuthority() && !bIsAttacking)
 	{
 		// Sync to Client
 		Monster->PlayAttackMontage();
-		bIsAttacking = true;
-
+		Blackboard->SetValueAsBool(IsAttackingKey.SelectedKeyName, true);
 		// Detect end of montage ¡æ End BTTask
 		if (UAnimInstance* AnimInst = AIPawn->GetMesh()->GetAnimInstance())
 		{
@@ -74,8 +76,8 @@ void UBTTask_DefaultAttack::HandleAttackMontageEnded(UAnimMontage* Montage, bool
 		{
 			// Reverting back to tracking now that the attack is over
 			Blackboard->SetValueAsEnum(MonsterStateKey.SelectedKeyName, static_cast<uint8>(EMonsterState::Chase));
+			Blackboard->SetValueAsBool(IsAttackingKey.SelectedKeyName, false);
 		}
-		FinishLatentTask(*CachedOwnerComp, EBTNodeResult::Succeeded);
-		bIsAttacking = false;
+		bInterrupted ? FinishLatentTask(*CachedOwnerComp, EBTNodeResult::Failed) : FinishLatentTask(*CachedOwnerComp, EBTNodeResult::Succeeded);
 	}
 }

@@ -137,7 +137,7 @@ void AADSpearGunBullet::Deactivate()
     StaticMesh->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
     StaticMesh->SetRelativeLocation(FVector::ZeroVector);
     StaticMesh->SetRelativeRotation(InitialRotator);
-    StaticMesh->SetWorldScale3D(FVector::OneVector);
+    SetActorScale3D(FVector::OneVector);
 }
 
 void AADSpearGunBullet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
