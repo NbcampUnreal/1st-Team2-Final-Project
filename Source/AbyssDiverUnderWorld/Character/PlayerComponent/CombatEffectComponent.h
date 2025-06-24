@@ -23,6 +23,10 @@ class ABYSSDIVERUNDERWORLD_API UCombatEffectComponent : public UActorComponent
 public:
 	UCombatEffectComponent();
 
+	UFUNCTION(Client, Reliable)
+	void C_PlayShieldUseEffect();
+	void C_PlayShieldUseEffect_Implementation();
+
 protected:
 	
 	virtual void BeginPlay() override;
@@ -76,9 +80,17 @@ private:
 	UPROPERTY()
 	TObjectPtr<UWidgetAnimation> ShieldHitAnimation;
 
+	/** 실드 사용 애니메이션 이름 */
+	UPROPERTY()
+	TObjectPtr<UWidgetAnimation> ShieldUseAnimation;
+
 	/** 실드 히트 애니메이션 이름 */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|CombatEffect")
 	FName ShieldHitAnimationName;
+
+	/** 실드 사용 애니메이션 이름 */
+	UPROPERTY(EditDefaultsOnly, Category = "Character|CombatEffect")
+	FName ShieldUseAnimationName;
 
 	/** 실드 히트 사운드 */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|CombatEffect")
