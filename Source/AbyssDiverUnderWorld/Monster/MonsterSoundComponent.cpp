@@ -148,7 +148,7 @@ void UMonsterSoundComponent::S_StopAllLoopSound_Implementation()
 
 void UMonsterSoundComponent::M_StopAllLoopSound_Implementation()
 {
-	const float FadeOutDuration = 1.0f; // Time for sound to fade
+	const float FadeOutDuration = 0.2f; // Time for sound to fade
 	const float FadeOutVolume = 0.0f;   // Final Volume
 
 	UE_LOG(LogTemp, Warning, TEXT("MulticastPlayChaseLoop CALLED"));

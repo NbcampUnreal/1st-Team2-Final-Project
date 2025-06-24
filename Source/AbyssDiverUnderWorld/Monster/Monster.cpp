@@ -133,18 +133,22 @@ float AMonster::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, 
 
 	if (IsValid(StatComponent))
 	{
+		FVector BloodLoc = GetActorLocation() + FVector(0, 0, 20.f);
+		FRotator BloodRot = GetActorRotation();
+		M_SpawnBloodEffect(BloodLoc, BloodRot);
+		
+		AActor* InstigatorPlayer = IsValid(EventInstigator) ? EventInstigator->GetPawn() : nullptr;
 		if (StatComponent->GetCurrentHealth() <= 0)
 		{
 			OnDeath();
 			// Delegate Broadcasts for Achievements
 			OnMonsterDead.Broadcast(DamageCauser, this);
+
+			// Disable aggro when dead
+			ForceRemoveDetection(InstigatorPlayer);
 		}
 		else
 		{
-			FVector BloodLoc = GetActorLocation() + FVector(0, 0, 20.f);
-			FRotator BloodRot = GetActorRotation();
-			M_SpawnBloodEffect(BloodLoc, BloodRot);
-
 			if (IsValid(HitReactAnimations))
 			{
 				M_PlayMontage(HitReactAnimations);
@@ -153,9 +157,8 @@ float AMonster::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, 
 			{
 				MonsterSoundComponent->S_PlayHitReactSound();
 			}
-
-			AActor* InstigatorPlayer = IsValid(EventInstigator) ? EventInstigator->GetPawn() : nullptr;
 			
+			// If aggro is not on TargetPlayer, set aggro
 			if (MonsterState != EMonsterState::Chase)
 			{
 				AddDetection(InstigatorPlayer);
@@ -313,6 +316,13 @@ void AMonster::RemoveDetection(AActor* Actor)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[%s] RemoveDetection : Invalid Player! Force remove."), *GetName());
 		DetectionRefCounts.Remove(Actor);
+
+		AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor);
+		if (Player)
+		{
+			Player->OnUntargeted();
+		}
+
 		return;
 	}
 
@@ -385,6 +395,13 @@ void AMonster::ForceRemoveDetection(AActor* Actor)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[%s] RemoveDetection : Invalid Player! Force remove."), *GetName());
 		DetectionRefCounts.Remove(Actor);
+
+		AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor);
+		if (Player)
+		{
+			Player->OnUntargeted();
+		}
+
 		return;
 	}
 
