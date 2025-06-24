@@ -509,7 +509,6 @@ void AMonster::SetMonsterState(EMonsterState NewState)
 	switch (NewState)
 	{
 	case EMonsterState::Detected:
-		StopMovement();
 		if (IsValid(DetectedAnimations))
 		{
 			M_PlayMontage(DetectedAnimations);
