@@ -108,7 +108,13 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UInteractionDescriptionWidget> InteractionWidget;
-	
+
+	UPROPERTY(EditAnywhere, Category = "UI")
+	TSubclassOf<class UHoldInteractionWidget> InteractionHoldWidgetClass;
+
+	UPROPERTY()
+	TObjectPtr<UHoldInteractionWidget> InteractionHoldWidget;
+
 #pragma endregion 
 
 #pragma region Getters / Setters

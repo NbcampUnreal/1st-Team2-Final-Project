@@ -199,6 +199,12 @@ void AUnderwaterCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
+	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("[%s] Begin Play / Controller : %s / Locally Controlled : %s"),
+		HasAuthority() ? TEXT("Server") : TEXT("Client"),
+		*GetNameSafe(GetController()),
+		IsLocallyControlled() ? TEXT("Yes") : TEXT("No")
+	);
+	
 	if (IsLocallyControlled())
 	{
 		GetMesh()->SetLightingChannels(false, true, false);
@@ -221,17 +227,6 @@ void AUnderwaterCharacter::BeginPlay()
 	
 	NoiseEmitterComponent = NewObject<UPawnNoiseEmitterComponent>(this);
 	NoiseEmitterComponent->RegisterComponent();
-
-	// @ToDO: Controller 부분으로 분리
-	if (IsLocallyControlled() && HoldWidgetClass)
-	{
-		APlayerController* PC = Cast<APlayerController>(GetController());
-		// 인스턴스 생성 → 뷰포트에 붙이지 않음(필요 시 Remove/Attach)
-		HoldWidgetInstance = CreateWidget<UHoldInteractionWidget>(PC, HoldWidgetClass);
-		
-		InteractionComponent->OnHoldStart.AddDynamic(HoldWidgetInstance, &UHoldInteractionWidget::HandleHoldStart);
-		InteractionComponent->OnHoldCancel.AddDynamic(HoldWidgetInstance, &UHoldInteractionWidget::HandleHoldCancel);
-	}
 
 	SpawnRadar();
 	SpawnFlipperMesh();
@@ -348,6 +343,12 @@ void AUnderwaterCharacter::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
 
+	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("[%s] PossessedBy / Controller : %s / Locally Controlled : %s"),
+		HasAuthority() ? TEXT("Server") : TEXT("Client"),
+		*GetNameSafe(GetController()),
+		IsLocallyControlled() ? TEXT("Yes") : TEXT("No")
+	);
+	
 	if (AADPlayerState* ADPlayerState = GetPlayerState<AADPlayerState>())
 	{
 		InitFromPlayerState(ADPlayerState);
@@ -384,6 +385,12 @@ void AUnderwaterCharacter::PostNetInit()
 void AUnderwaterCharacter::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
+
+	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("[%s] OnRep_PlayerState / Controller : %s / Locally Controlled : %s"),
+		HasAuthority() ? TEXT("Server") : TEXT("Client"),
+		*GetNameSafe(GetController()),
+		IsLocallyControlled() ? TEXT("Yes") : TEXT("No")
+	);
 
 	// UnPossess 상황에서 Error 로그가 발생하지 않도록 수정
 	if (APlayerState* CurrentPlayerState = GetPlayerState<APlayerState>())

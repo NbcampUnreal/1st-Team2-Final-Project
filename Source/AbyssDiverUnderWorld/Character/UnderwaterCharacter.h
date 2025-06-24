@@ -1119,12 +1119,6 @@ private:
 	UPROPERTY()
 	TObjectPtr<class UEquipRenderComponent> EquipRenderComp;
 
-	UPROPERTY(EditAnywhere, Category = "UI", meta = (AllowPrivateAccess = "true"))
-	TSubclassOf<class UHoldInteractionWidget> HoldWidgetClass;
-
-	UPROPERTY(EditAnywhere, Category = "UI", meta = (AllowPrivateAccess = "true"))
-	class UHoldInteractionWidget* HoldWidgetInstance;
-
 	/** Tool 소켓 명 (1P/3P 공용) */
 	FName LaserSocketName = TEXT("Laser");
 

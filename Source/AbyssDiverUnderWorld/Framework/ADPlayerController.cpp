@@ -19,6 +19,7 @@
 #include "EnhancedInputComponent.h"
 #include "Character/ADSpectatorPawn.h"
 #include "Kismet/GameplayStatics.h"
+#include "UI/HoldInteractionWidget.h"
 
 AADPlayerController::AADPlayerController()
 {
@@ -58,27 +59,36 @@ void AADPlayerController::SetPawn(APawn* InPawn)
 			{
 				OldInteractionComp->OnFocus.RemoveAll(InteractionWidget);
 				OldInteractionComp->OnFocusEnd.RemoveAll(InteractionWidget);
+
+				OldInteractionComp->OnHoldStart.RemoveAll(InteractionHoldWidget);
+				OldInteractionComp->OnHoldCancel.RemoveAll(InteractionHoldWidget);
 			}
 		}
 	}
 
 	Super::SetPawn(InPawn);
 
-	if (InPawn)
+	if (AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(GetPawn()))
 	{
-		if (InteractionWidgetClass && IsLocalController())
+		if (UADInteractionComponent* InteractionComponent = UnderwaterCharacter->GetInteractionComponent())
 		{
-			InteractionWidget = CreateWidget<UInteractionDescriptionWidget>(this, InteractionWidgetClass);
-
-			if (InteractionWidget)
+			if (InteractionWidgetClass && IsLocalController())
 			{
-				if (AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(GetPawn()))
+				InteractionWidget = CreateWidget<UInteractionDescriptionWidget>(this, InteractionWidgetClass);
+				if (InteractionWidget)
 				{
-					if (UADInteractionComponent* InteractionComponent = UnderwaterCharacter->GetInteractionComponent())
-					{
-						InteractionComponent->OnFocus.AddDynamic(InteractionWidget, &UInteractionDescriptionWidget::HandleFocus);
-						InteractionComponent->OnFocusEnd.AddDynamic(InteractionWidget, &UInteractionDescriptionWidget::HandleFocusLost);
-					}
+					InteractionComponent->OnFocus.AddDynamic(InteractionWidget, &UInteractionDescriptionWidget::HandleFocus);
+					InteractionComponent->OnFocusEnd.AddDynamic(InteractionWidget, &UInteractionDescriptionWidget::HandleFocusLost);
+				}
+			}
+
+			if (InteractionHoldWidgetClass && IsLocalController())
+			{
+				InteractionHoldWidget = CreateWidget<UHoldInteractionWidget>(this, InteractionHoldWidgetClass);
+				if (InteractionHoldWidget)
+				{
+					InteractionComponent->OnHoldStart.AddDynamic(InteractionHoldWidget, &UHoldInteractionWidget::HandleHoldStart);
+					InteractionComponent->OnHoldCancel.AddDynamic(InteractionHoldWidget, &UHoldInteractionWidget::HandleHoldCancel);
 				}
 			}
 		}
