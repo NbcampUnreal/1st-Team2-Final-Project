@@ -108,6 +108,7 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	RescueRequireTime = 6.0f;
 	GroggyHitPenalty = 5.0f;
 	RecoveryHealthPercentage = 0.1f;
+	RecoveryOxygenPenaltyRate = 0.5f;
 
 	bIsInCombat = false;
 	TargetingActorCount = 0;
@@ -1816,6 +1817,8 @@ void AUnderwaterCharacter::RequestRevive()
 		SetCharacterState(ECharacterState::Normal);
 		const float RecoveryHealth = StatComponent->GetMaxHealth() * RecoveryHealthPercentage;
 		StatComponent->RestoreHealth(RecoveryHealth);
+		const float RecoveryOxygen = OxygenComponent->GetOxygenLevel() * RecoveryOxygenPenaltyRate;
+		OxygenComponent->InitOxygenSystem(RecoveryOxygen, OxygenComponent->GetMaxOxygenLevel());
 	}
 	else
 	{

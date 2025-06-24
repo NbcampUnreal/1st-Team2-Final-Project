@@ -835,6 +835,10 @@ private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true", ClampMin = "0.01", ClampMax = "1.0"))
 	float RecoveryHealthPercentage;
 
+	/** 그로기에서 회복 후의 산소량, 회복 후의 산소량은 MaxOxygen * RecoveryOxygenPercentage로 설정된다. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true", ClampMin = "0.0", ClampMax = "1.0"))
+	float RecoveryOxygenPenaltyRate;
+
 	/** 그로기에서 사망 전이 Timer */
 	FTimerHandle GroggyTimer;
 
