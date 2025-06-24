@@ -122,9 +122,11 @@ private:
     UPROPERTY()
     TObjectPtr<class UMissionsOnHUDWidget> MissionsOnHUDWidget;
 
+    /** 관전 HUD 위젯 클래스 */
     UPROPERTY(EditDefaultsOnly, Category = UI, meta = (AllowPrivateAccess = "true"))
     TSubclassOf<class USpectatorHUDWidget> SpectatorHUDWidgetClass;
 
+    /** 관전 HUD 위젯 인스턴스 */
     UPROPERTY()
     TObjectPtr<class USpectatorHUDWidget> SpectatorHUDWidget;
     

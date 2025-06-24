@@ -1168,6 +1168,7 @@ private:
 	/** 캐릭터가 사망했을 때 관전으로 전이할 Timer */
 	FTimerHandle DeathTimer;
 
+	/** 캐릭터가 사망했을 떄 관전으로 전이되기까지 걸리는 시간 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	float DeathTransitionTime = 3.0f;
 	
