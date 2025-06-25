@@ -36,4 +36,6 @@ public:
 
 	void TravelToInGameLevel();
 
+protected:
+	uint8 bHasPressedTravel : 1 = false;
 };
