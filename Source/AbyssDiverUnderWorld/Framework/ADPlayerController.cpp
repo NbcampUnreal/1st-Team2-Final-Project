@@ -19,6 +19,13 @@
 #include "EnhancedInputComponent.h"
 #include "Character/ADSpectatorPawn.h"
 #include "Kismet/GameplayStatics.h"
+
+#include "UI/LoadingScreenWidget.h"
+
+#include "Camera/PlayerCameraManager.h"
+#include "TimerManager.h"
+#include "Engine/World.h"
+
 #include "UI/HoldInteractionWidget.h"
 
 AADPlayerController::AADPlayerController()
@@ -112,13 +119,24 @@ void AADPlayerController::PostNetInit()
 
 void AADPlayerController::PostSeamlessTravel()
 {
+	LOG(TEXT("Post SeamlessTravel"));
 	Super::PostSeamlessTravel();
 	OnPostSeamlessTravel();
+	FTimerHandle FadeInTimerHandle;
+	GetWorld()->GetTimerManager().SetTimer(
+		FadeInTimerHandle,
+		this,
+		&AADPlayerController::ShowFadeIn,
+		2.0f, 
+		false
+	);
+
 }
 
 void AADPlayerController::C_OnPreClientTravel_Implementation()
 {
 	OnPreClientTravel();
+	ShowFadeOut();
 }
 
 void AADPlayerController::OnRep_Pawn()
@@ -306,6 +324,37 @@ void AADPlayerController::ToggleTestHUD()
 	}
 }
 
+
+void AADPlayerController::ShowFadeOut(float Duration)
+{
+	if (PlayerCameraManager)
+	{
+		PlayerCameraManager->StartCameraFade(
+			0.f,                       
+			1.f,                        
+			Duration,
+			FLinearColor::Black,
+			false,                     
+			true                       
+		);
+	}
+}
+
+void AADPlayerController::ShowFadeIn()
+{
+	if (PlayerCameraManager)
+	{
+		PlayerCameraManager->StartCameraFade(
+			1.f,                       
+			0.0f,                        
+			3.0f,
+			FLinearColor::Black,
+			false,
+			false                      
+		);
+	}
+
+}
 void AADPlayerController::OnCameraBlankEnd()
 {
 	

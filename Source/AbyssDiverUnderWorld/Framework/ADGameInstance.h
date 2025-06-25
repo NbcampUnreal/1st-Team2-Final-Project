@@ -5,6 +5,7 @@
 #include "AdvancedFriendsGameInstance.h"
 #include "UI/MissionData.h"
 #include "Framework/SettingsManager.h"
+#include "../UI/LoadingScreenWidget.h" 
 #include "ADGameInstance.generated.h"
 
 enum class EMapName : uint8;

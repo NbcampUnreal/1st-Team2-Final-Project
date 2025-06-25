@@ -86,6 +86,7 @@ void UADGameInstance::ChangeAmbientVolume(const float& NewVolume)
     GetSubsystem<USoundSubsystem>()->ChangeAmbientVolume(NewVolume);
 }
 
+
 const float UADGameInstance::GetCurrentMasterVolume() const
 {
     return GetSubsystem<USoundSubsystem>()->GetMasterVolume();
