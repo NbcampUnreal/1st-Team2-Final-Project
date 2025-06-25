@@ -47,28 +47,6 @@ void APortalToSubmarine::Interact_Implementation(AActor* InstigatorActor)
 	}
 
 	PS->SetIsSafeReturn(true);
-
-	if (bIsNetCullingDeactivated)
-	{
-		return;
-	}
-
-	bIsNetCullingDeactivated = true;
-
-	for (AADPlayerState* ADPlayerState : TActorRange<AADPlayerState>(GetWorld()))
-	{
-		APawn* Player = ADPlayerState->GetPawn();
-		if (Player == nullptr || IsValid(Player) == false || Player->IsValidLowLevel() == false || Player->IsPendingKillPending())
-		{
-			LOGV(Error, TEXT("Not Valid Player, PlayeStateName : %s"), *ADPlayerState->GetName());
-			continue;
-		}
-
-		ADPlayerState->GetPawn()->bAlwaysRelevant = true;
-	}
-
-	ForceNetUpdate();
-	LOGV(Log, TEXT("Releveant On"));
 }
 
 bool APortalToSubmarine::IsConditionMet()

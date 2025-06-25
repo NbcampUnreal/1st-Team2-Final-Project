@@ -8,6 +8,8 @@
 #include "Components/ActorComponent.h"
 #include "FootstepComponent.generated.h"
 
+enum class ESFX : uint8;
+
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class ABYSSDIVERUNDERWORLD_API UFootstepComponent : public UActorComponent
 {
@@ -41,12 +43,14 @@ protected:
 	EPhysicalSurface GetSurfaceType(const FVector& Start) const;
 
 	/** 표면 타입에 맞는 소리를 찾아 반환한다. */
-	USoundBase* FindSound(EPhysicalSurface SurfaceType, EFootstepType FootstepType);
+	ESFX FindSound(EPhysicalSurface SurfaceType, EFootstepType FootstepType) const;
 
 	/** 착지 시에 호출되는 함수. Character의 OnLanded 이벤트를 사용한다. */
 	UFUNCTION()
 	virtual void OnLanded(const FHitResult& Hit);
 
+	class USoundSubsystem* GetSoundSubsystem();
+	
 #pragma endregion
 
 #pragma region Variable
@@ -78,11 +82,11 @@ private:
 
 	/** 걷기 발소리 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Footstep", meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<USoundBase> WalkFootStepSound;
+	ESFX WalkFootstepSound;
 
 	/** 착지 발소리 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Footstep", meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<USoundBase> LandFootstepSound;
+	ESFX LandFootstepSound;
 	
 	/** 왼발 Socket 이름 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Character|Footstep", meta = (AllowPrivateAccess = "true"))
@@ -92,5 +96,7 @@ private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Character|Footstep", meta = (AllowPrivateAccess = "true"))
 	FName RightFootSocketName;
 
+	TWeakObjectPtr<class USoundSubsystem> SoundSubsystem;
+	
 #pragma endregion
 };

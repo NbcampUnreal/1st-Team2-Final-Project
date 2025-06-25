@@ -48,6 +48,9 @@ public:
 	void ChangeAmbientVolume(const float& NewVolume);
 
 public:
+
+	static const int32 MAX_PLAYER_NUMBER;
+
 	UPROPERTY(BlueprintReadWrite)
 	uint8 bIsHost : 1;
 
@@ -131,9 +134,6 @@ private:
 	TMap<FString, int32> PlayerIdMap;
 	TArray<bool> ValidPlayerIndexArray;
 
-	const int32 MAX_PLAYER_NUMBER = 4;
-	
-
 #pragma region Getters / Setters
 public:
 
@@ -154,6 +154,7 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Input")
 	const TMap<FName, UInputAction*>& GetInputActionMap() const { return InputActionMap; }
+
 #pragma endregion
 
 

@@ -9,6 +9,8 @@
 
 
 enum class EAudioFaderCurve : uint8;
+enum class ESFX : uint8;
+class USoundSubsystem;
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class ABYSSDIVERUNDERWORLD_API UUnderwaterEffectComponent : public UActorComponent
@@ -98,11 +100,11 @@ private:
 
 	/** 대기 중에 재생할 숨쉬기 효과 사운드 */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|UnderwaterEffect")
-	TObjectPtr<USoundBase> IdleBreathSound;
+	ESFX IdleBreathSound;
 	
 	/** 움직일 때 재생될 숨쉬기 효과 사운드 */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|UnderwaterEffect")
-	TObjectPtr<USoundBase> MoveBreathSound;
+	ESFX MoveBreathSound;
 
 	/** 숨쉬기 효과를 생성할 Niagara 시스템. 이 시스템은 숨쉬기 효과를 시각적으로 표현한다. */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|UnderwaterEffect")
@@ -119,24 +121,20 @@ private:
 	/** 수중에서 이동 소리를 재생하고 있는지 여부. 이 값이 true일 때만 이동 소리가 재생된다. */
 	UPROPERTY(BlueprintReadOnly, Category = "Character|UnderwaterEffect", meta = (AllowPrivateAccess = "true"))
 	uint8 bShouldPlayMovementSound : 1;
+
+	/** 수중에서 이동할 때 재생하는 사운드 ID */
+	int32 MovementAudioId;
+
+	/** 수중에서 스프린트 할 때 재생하는 사운드 컴포넌트 */
+	int32 SprintMovementAudioId;
 	
-	/** 수중에서 이동 소리 재생을 위한 오디오 컴포넌트. 이 컴포넌트는 MovementSoundThreshold보다 큰 속도로 이동할 때만 소리를 재생한다.
-	 * MovementSoundThreshold보다 작은 속도로 이동할 때는 소리가 재생되지 않는다.
-	 */
-	UPROPERTY()
-	TObjectPtr<UAudioComponent> MovementAudioComponent;
-
-	/** 수중에서 달리기 이동 소리를 재생하기 위한 오디오 컴포넌트. 이 컴포넌트는 SprintMovementSound를 재생한다. */
-	UPROPERTY()
-	TObjectPtr<UAudioComponent> SprintMovementAudioComponent;
-
 	/** 수중에서 이동 소리 재생을 위한 사운드. 이 사운드는 MovementSoundThreshold보다 큰 속도로 이동할 때만 재생된다. */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|UnderwaterEffect")
-	TObjectPtr<USoundBase> MovementSound;
+	ESFX MovementSound;
 
 	/** 수중에서 달리기 이동 소리 재생을 위한 사운드. 이 사운드는 SprintMovementSound를 재생한다. */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|UnderwaterEffect")
-	TObjectPtr<USoundBase> SprintMovementSound;
+	ESFX SprintMovementSound;
 
 	/** 수중에서 이동 소리 재생을 위한 임계값. 이 값보다 큰 속도로 이동할 때만 소리가 재생된다. */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|UnderwaterEffect")
@@ -156,9 +154,17 @@ private:
 	/** FadeOut 함수 */
 	EAudioFaderCurve MovementSoundFadeCurve;
 
+	/** 소리 재생할 사운드 서브 시스템 Weak Pointer */
+	TWeakObjectPtr<USoundSubsystem> SoundSubsystemWeakPtr;
+
 #pragma endregion
 
 #pragma region Getter Setter
 
+protected:
+
+	/** 사운드 서브 시스템 접근 */
+	USoundSubsystem* GetSoundSubsystem();
+	
 #pragma endregion
 };
