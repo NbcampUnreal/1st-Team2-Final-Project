@@ -21,6 +21,17 @@ void AADSpectatorPawn::BeginPlay()
 	// BeginPlay 시점에서는 Controller가 아직 Possess되지 않은 상태일 수 있으므로 관련 처리는 PossessedBy에서 처리
 }
 
+void AADSpectatorPawn::Destroyed()
+{
+	Super::Destroyed();
+
+	// 관전 중에 관전이 종료되었을 경우 현재 타겟 캐릭터의 관전 종료 이벤트를 호출한다.
+	if (PrevTargetCharacter.IsValid())
+	{
+		PrevTargetCharacter->OnEndSpectated();
+	}
+}
+
 void AADSpectatorPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
