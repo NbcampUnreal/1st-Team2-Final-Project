@@ -1388,11 +1388,6 @@ void AUnderwaterCharacter::SpawnRadar()
 		LOGVN(Error, TEXT("RadarClass is not valid"));
 		return;
 	}
-	// Radar는 Local에서만 존재하면 된다.
-	if (!IsLocallyControlled())
-	{
-		return;
-	}
 
 	FVector SpawnLocation = FirstPersonCameraComponent->GetComponentTransform().TransformPosition(RadarOffset);
 	FRotator SpawnRotation = FirstPersonCameraComponent->GetComponentRotation() + RadarRotation;
@@ -1401,7 +1396,7 @@ void AUnderwaterCharacter::SpawnRadar()
 	RadarObject = GetWorld()->SpawnActor<ARadar>(RadarClass, SpawnLocation, SpawnRotation);
 	RadarObject->AttachToComponent(FirstPersonCameraComponent, FAttachmentTransformRules::KeepWorldTransform);
 	RadarObject->UpdateRadarSourceComponent(GetRootComponent(), GetRootComponent());
-	SetRadarVisibility(false);
+	RadarObject->SetActorHiddenInGame(true);
 }
 
 void AUnderwaterCharacter::RequestToggleRadar()
@@ -1439,7 +1434,7 @@ void AUnderwaterCharacter::SetBlurEffect(const bool bEnable)
 
 void AUnderwaterCharacter::SetRadarVisibility(bool bRadarVisible)
 {
-	if (!IsValid(RadarObject))
+	if (!IsValid(RadarObject) || !IsLocallyControlled())
 	{
 		return;
 	}
