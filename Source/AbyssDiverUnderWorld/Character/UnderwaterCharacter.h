@@ -103,6 +103,7 @@ protected:
 	virtual void OnRep_PlayerState() override;
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode = 0) override;
+	virtual void Destroyed() override;
 
 	/** IA를 Enhanced Input Component에 연결 */
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
@@ -646,7 +647,10 @@ public:
 	FOnEnvironmentStateChanged OnEnvironmentStateChangedDelegate;
 
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnDamageTaken, float, DamageAmount, float, CurrentHealth);
-	/** 캐릭터가 피해를 입었을 때 호출되는 델리게이트, DamageAmount = Health Damage Taken + Shield Damage Taken */
+	/** 캐릭터가 피해를 입었을 때 호출되는 델리게이트, DamageAmount = Health Damage Taken + Shield Damage Taken.
+	 * 체력 계산, 상태 전이가 모두 완료된 뒤에 호출된다.
+	 * Normal 상태일 때만 호출된다. 실드에만 데미지가 들어갔을 경우 호출되지 않는다.
+	 */
 	UPROPERTY(BlueprintAssignable)
 	FOnDamageTaken OnDamageTakenDelegate;
 
@@ -834,6 +838,10 @@ private:
 	/** 그로기에서 회복 후의 체력량, 회복 후의 체력량은 MaxHealth * RecoveryHealthPercentage로 설정된다. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true", ClampMin = "0.01", ClampMax = "1.0"))
 	float RecoveryHealthPercentage;
+
+	/** 그로기에서 회복 후의 산소량, 회복 후의 산소량은 MaxOxygen * RecoveryOxygenPercentage로 설정된다. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true", ClampMin = "0.0", ClampMax = "1.0"))
+	float RecoveryOxygenPenaltyRate;
 
 	/** 그로기에서 사망 전이 Timer */
 	FTimerHandle GroggyTimer;
@@ -1114,12 +1122,6 @@ private:
 	UPROPERTY()
 	TObjectPtr<class UEquipRenderComponent> EquipRenderComp;
 
-	UPROPERTY(EditAnywhere, Category = "UI", meta = (AllowPrivateAccess = "true"))
-	TSubclassOf<class UHoldInteractionWidget> HoldWidgetClass;
-
-	UPROPERTY(EditAnywhere, Category = "UI", meta = (AllowPrivateAccess = "true"))
-	class UHoldInteractionWidget* HoldWidgetInstance;
-
 	/** Tool 소켓 명 (1P/3P 공용) */
 	FName LaserSocketName = TEXT("Laser");
 
@@ -1168,6 +1170,7 @@ private:
 	/** 캐릭터가 사망했을 때 관전으로 전이할 Timer */
 	FTimerHandle DeathTimer;
 
+	/** 캐릭터가 사망했을 떄 관전으로 전이되기까지 걸리는 시간 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	float DeathTransitionTime = 3.0f;
 	
@@ -1299,6 +1302,12 @@ public:
 
 	/** Post Process Setting Component를 반환 */
 	FORCEINLINE UPostProcessSettingComponent* GetPostProcessSettingComponent() const { return PostProcessSettingComponent; }
+
+	/** 현재 캐릭터를 어그로로 설정하고 있는 Targeting Actor의 개수를 반환 */
+	FORCEINLINE int GetTargetingActorCount() const { return TargetingActorCount; }
+
+	/** 캐릭터가 현재 Capture State 인지 여부를 반환 */
+	FORCEINLINE bool IsCaptured() const { return bIsCaptured; }
 	
 #pragma endregion
 };
