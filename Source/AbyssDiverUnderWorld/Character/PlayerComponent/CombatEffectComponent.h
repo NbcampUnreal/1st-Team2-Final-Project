@@ -115,7 +115,7 @@ private:
 
 	/** 데미지를 입었을 때 재생되는 사운드 */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|CombatEffect")
-	class USoundBase* DamageTakenSound;
+	TObjectPtr<USoundBase> DamageTakenSound;
 
 #pragma endregion
 
