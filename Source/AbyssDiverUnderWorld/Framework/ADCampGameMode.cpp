@@ -1,4 +1,4 @@
-#include "Framework/ADCampGameMode.h"
+﻿#include "Framework/ADCampGameMode.h"
 
 #include "Framework/ADInGameState.h"
 #include "Framework/ADPlayerState.h"
@@ -27,6 +27,18 @@ void AADCampGameMode::SetSelectedLevel(const EMapName InLevelName)
 	if (AADInGameState* ADGameState = GetGameState<AADInGameState>())
 	{
 		ADGameState->SetSelectedLevel(InLevelName);
+	}
+}
+
+void AADCampGameMode::PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage)
+{
+	Super::PreLogin(Options, Address, UniqueId, ErrorMessage);
+
+	LOGV(Log, TEXT("현재 접속 인원 : %d"), GetNumPlayers());
+	if (GetGameInstance<UADGameInstance>()->MAX_PLAYER_NUMBER <= GetNumPlayers())
+	{
+		ErrorMessage = FString::Printf(TEXT("인원이 꽉찼습니다."));
+		return;
 	}
 }
 
