@@ -266,8 +266,10 @@ public:
 	UFUNCTION()
 	void OnRep_CurrentTool();
 
+	/** 관전을 당할 때 호출되는 함수 */
 	void OnSpectated();
 
+	/** 관전 당하는 것이 끝났을 때 호출되는 함수 */
 	void OnEndSpectated();
 	
 protected:
@@ -826,6 +828,7 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float NormalLookSensitivity;
 
+	/** Fade 된 상태에서 Normal 상태로 전이됬을 때 Fade In 되는 시간 */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Normal", meta = (AllowPrivateAccess = "true"))
 	float NormalStateFadeInDuration;
 	
