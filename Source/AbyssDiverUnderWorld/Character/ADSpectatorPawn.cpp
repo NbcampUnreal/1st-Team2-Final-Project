@@ -56,6 +56,7 @@ void AADSpectatorPawn::PossessedBy(AController* NewController)
 	if (AADPlayerController* PlayerController = Cast<AADPlayerController>(NewController))
 	{
 		PlayerController->OnTargetViewChanged.AddUniqueDynamic(this, &AADSpectatorPawn::OnTargetViewChanged);
+		PlayerController->PlayerCameraManager->SetManualCameraFade(0.0f, FColor::Black, false);
 	}
 	else
 	{

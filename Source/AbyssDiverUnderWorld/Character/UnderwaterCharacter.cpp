@@ -99,6 +99,7 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	
 	LookSensitivity = 1.0f;
 	NormalLookSensitivity = 1.0f;
+	NormalStateFadeInDuration = 1.0f;
 	
 	GroggyDuration = 60.0f;
 	GroggyReductionRate = 0.1f;
@@ -1050,6 +1051,14 @@ void AUnderwaterCharacter::HandleEnterGroggy()
 		{
 			PlayerController->SetIgnoreLookInput(false);
 			PlayerController->SetIgnoreMoveInput(true);
+			PlayerController->ClientSetCameraFade(false);
+			PlayerController->ClientSetCameraFade(true,
+				FColor::Black,
+				FVector2D(0.0f, 1.0f),
+				GroggyDuration,
+				true,
+				true
+			);
 		}
 
 		LookSensitivity = GroggyLookSensitivity;
@@ -1096,6 +1105,13 @@ void AUnderwaterCharacter::HandleEnterNormal()
 		{
 			PlayerController->SetIgnoreLookInput(false);
 			PlayerController->SetIgnoreMoveInput(false);
+			PlayerController->ClientSetCameraFade(true,
+				FColor::Black,
+				FVector2D(-1.0f, 0.0f),
+				NormalStateFadeInDuration,
+				true,
+				true
+			);
 		}
 
 		LookSensitivity = NormalLookSensitivity;
@@ -1118,8 +1134,11 @@ void AUnderwaterCharacter::HandleExitNormal()
 
 void AUnderwaterCharacter::HandleEnterDeath()
 {
-	// @ToDo: 사망 처리 시점을 사망 모션이 출력 혹은 Camera 전환이 완료된 후로 변경할 것
-	// 임시로 Timer로 시간을 맞춘다.
+	// Case1. Health == 0 -> Groggy -> Death : 이미 Black Out이 완료되었으므로 바로 Death를 종료
+	// Case2. Normal -> Death : 산소가 없어서 사망, Black Out을 적용해서 Death 종료
+	// Case3. Groggy -> Death | Oxygen == 0 : Groggy 상태에서 산소가 없어서 사망, Black Out을 적용해서 Death 종료
+
+	
 	if (HasAuthority())
 	{
 		GetWorldTimerManager().SetTimer(
@@ -1140,6 +1159,14 @@ void AUnderwaterCharacter::HandleEnterDeath()
 		{
 			PlayerController->SetIgnoreLookInput(false);
 			PlayerController->SetIgnoreMoveInput(true);
+			PlayerController->ClientSetCameraFade(
+				true, 
+				FColor::Black,
+				FVector2D(-1.0f, 1.0f),
+				DeathTransitionTime,
+				true,
+				true
+			);
 		}
 
 		InteractionComponent->OnInteractReleased();
