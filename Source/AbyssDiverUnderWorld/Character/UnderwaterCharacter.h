@@ -130,7 +130,7 @@ public:
 	virtual bool CanHighlight_Implementation() const override;
 
 	/** Hold 지속 시간 반환 */
-	virtual float GetHoldDuration_Implementation() const override;
+	virtual float GetHoldDuration_Implementation(AActor* InstigatorActor) const override;
 	
 	/** Interactable 컴포넌트를 반환 */
 	virtual UADInteractableComponent* GetInteractableComponent() const override;
