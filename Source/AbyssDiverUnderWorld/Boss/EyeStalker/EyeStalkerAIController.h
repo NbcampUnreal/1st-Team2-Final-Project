@@ -27,6 +27,7 @@ private:
 	void OnSightPerceptionUpdatedHandler(AActor* Actor, FAIStimulus Stimulus);
 
 	void SetRandomTargetPlayer();
+	void RemoveInValidTargetPlayers();
 
 private:
 	UPROPERTY()
