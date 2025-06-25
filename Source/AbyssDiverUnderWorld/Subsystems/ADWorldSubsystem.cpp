@@ -26,4 +26,13 @@ void UADWorldSubsystem::OnWorldBeginPlay(UWorld& InWorld)
 	PC->SetInputMode(FInputModeGameOnly());
 	PC->SetShowMouseCursor(false);
 	PC->SetIgnoreMoveInput(false);
+	// 카메라 페이드 아웃이 적용되어 있으면 원래대로 복구한다.
+	PC->PlayerCameraManager->StartCameraFade(
+		1.0f,
+		0.0f,
+		0.0f,
+		FLinearColor::Black,
+		false,
+		true
+	);
 }

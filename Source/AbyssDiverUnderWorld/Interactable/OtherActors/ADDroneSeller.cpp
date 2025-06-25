@@ -170,9 +170,7 @@ void AADDroneSeller::SubmitPlayer(AActor* InstigatorActor)
 
 		BoundCharacter->UnBind();
 
-		// @ToDo: 추후에 Destroy 호출
-		// 원래라면 Destroy를 호출해야 하지만, 현재 관전이 없기 때문에 일단은 숨기기만 한다. 
-		BoundCharacter->SetActorHiddenInGame(true);
+		BoundCharacter->Destroy();
 	}
 }
 

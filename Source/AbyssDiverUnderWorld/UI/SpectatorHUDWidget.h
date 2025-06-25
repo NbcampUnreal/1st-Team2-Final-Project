@@ -21,11 +21,12 @@ public:
 	/** 관전 대상의 이름을 업데이트한다. */
 	void UpdateSpectatorTargetName(const FString& TargetName);
 
-	
+	/** 현재 Controller에 바인딩한다. */
 	void BindWidget(class AADPlayerController* PlayerController);
 
 protected:
-	
+
+	/** Target View가 변경되었을 때 호출되는 콜백 함수 */
 	UFUNCTION()
 	void OnTargetViewChanged(AActor* NewViewTarget);
 	
@@ -34,7 +35,8 @@ protected:
 #pragma region Variable
 
 private:
-	
+
+	/** 관전 대상의 이름을 표시하는 RichTextBlock 위젯 */
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<class URichTextBlock> SpectateTargetNameText;
 	
