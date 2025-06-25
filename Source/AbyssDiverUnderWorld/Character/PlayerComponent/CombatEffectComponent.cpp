@@ -3,18 +3,37 @@
 
 #include "CombatEffectComponent.h"
 
-#include "MovieScene.h"
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "ShieldComponent.h"
 #include "Animation/WidgetAnimation.h"
 #include "Blueprint/UserWidget.h"
 #include "Character/UnderwaterCharacter.h"
+#include "Framework/ADPlayerController.h"
 #include "Kismet/GameplayStatics.h"
 
 UCombatEffectComponent::UCombatEffectComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
+	SetIsReplicatedByDefault(true);
+
+	HitBlackoutDuration = 0.1f;
+	HitFadeInDuration = 0.2f;
+}
+
+void UCombatEffectComponent::C_PlayShieldUseEffect_Implementation()
+{
+	UE_LOG(LogTemp, Display, TEXT("Play Shield Hit Effect"));
+	if (ShieldHitWidget && ShieldUseAnimation && !ShieldHitWidget->IsAnyAnimationPlaying())
+	{
+		ShieldHitWidget->PlayAnimation(ShieldUseAnimation);
+	}
+	//if (ShieldUseSound)
+	//{
+		// @ToDo: SoundSubsystem을 사용하여 사운드 재생
+		// @ToDo: SoundSubsystem의 Play ID 기능을 이용해서 현재 재생 중이면 소리를 재생하지 않도록 수정
+		//UGameplayStatics::PlaySoundAtLocation(GetWorld(), ShieldUseSound, GetOwner()->GetActorLocation());
+	//}
 }
 
 void UCombatEffectComponent::BeginPlay()
@@ -23,16 +42,12 @@ void UCombatEffectComponent::BeginPlay()
 	
 	if (AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(GetOwner()))
 	{
-		// Global Effect
-
-		if (UnderwaterCharacter->IsLocallyControlled())
-		{
-			BindLocalEffects(UnderwaterCharacter);
-		}
+		OwnerCharacter = UnderwaterCharacter;
+		BindDelegate(UnderwaterCharacter);
 	}
 }
 
-void UCombatEffectComponent::BindLocalEffects(AUnderwaterCharacter* UnderwaterCharacter)
+void UCombatEffectComponent::BindDelegate(AUnderwaterCharacter* UnderwaterCharacter)
 {
 	if (UShieldComponent* ShieldComponent = UnderwaterCharacter->GetShieldComponent())
 	{
@@ -59,6 +74,7 @@ void UCombatEffectComponent::BindLocalEffects(AUnderwaterCharacter* UnderwaterCh
 			{
 				ShieldHitWidget->AddToViewport();
 				ShieldHitAnimation = FindAnimationByName(ShieldHitWidget, ShieldHitAnimationName);
+				ShieldUseAnimation = FindAnimationByName(ShieldHitWidget, ShieldUseAnimationName);
 			}
 			else
 			{
@@ -66,10 +82,19 @@ void UCombatEffectComponent::BindLocalEffects(AUnderwaterCharacter* UnderwaterCh
 			}
 		}
 	}
+
+	// OnTakeAnyDamage를 사용할려면 구조를 바꾸어야 하기 때문에 UnderwaterCharacter에서 구현한 OnDamageTakenDelegate를 이용한다.
+	// 다른 이벤트들과 다르게 OnDamageTakenDelegate는 Serer에서만 작동한다. Client RPC를 이용해야 해서 전달해야 한다.
+	UnderwaterCharacter->OnDamageTakenDelegate.AddUniqueDynamic(this, &UCombatEffectComponent::OnDamageTaken);
 }
 
 void UCombatEffectComponent::OnShieldBroken()
 {
+	if (OwnerCharacter || !OwnerCharacter->IsLocallyControlled())
+	{
+		return;
+	}
+	
 	if (ShieldBrokenEffectComponent && !ShieldBrokenEffectComponent->IsActive())
 	{
 		ShieldBrokenEffectComponent->Activate(true);
@@ -82,6 +107,11 @@ void UCombatEffectComponent::OnShieldBroken()
 
 void UCombatEffectComponent::OnShieldValueChanged(float OldShieldValue, float NewShieldValue)
 {
+	if (OwnerCharacter || !OwnerCharacter->IsLocallyControlled())
+	{
+		return;
+	}
+	
 	UE_LOG(LogTemp,Display, TEXT("Shield Value Changed: Old = %f, New = %f"), OldShieldValue, NewShieldValue);
 	if (NewShieldValue < OldShieldValue && NewShieldValue > 0.0f)
 	{
@@ -93,8 +123,49 @@ void UCombatEffectComponent::OnShieldValueChanged(float OldShieldValue, float Ne
 	}
 }
 
+void UCombatEffectComponent::OnDamageTaken(float DamageAmount, float CurrentHealth)
+{
+	if (DamageAmount <= 0.0f || !OwnerCharacter)
+	{
+		return;
+	}
+
+	AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(GetOwner());
+	if (!UnderwaterCharacter)
+	{
+		return;
+	}
+
+	AADPlayerController* PlayerController = Cast<AADPlayerController>(GetOwner()->GetInstigatorController());
+	if (!PlayerController)
+	{
+		return;
+	}
+
+	if (!UnderwaterCharacter->IsDeath() && !UnderwaterCharacter->IsCaptured())
+	{
+		PlayerController->C_StartCameraBlank(
+			FColor::Black,
+			FVector2D(0.0f, 1.0f),
+			0.0f,
+			HitBlackoutDuration,
+			HitFadeInDuration
+		);
+
+		if (DamageTakenSound)
+		{
+			PlayerController->ClientPlaySound(DamageTakenSound, 1.0f, 1.0f);
+		}
+	}
+}
+
 void UCombatEffectComponent::PlayShieldHitEffect()
 {
+	if (OwnerCharacter || !OwnerCharacter->IsLocallyControlled())
+	{
+		return;
+	}
+	
 	UE_LOG(LogTemp,Display, TEXT("Play Shield Hit Effect"));
 	if (ShieldHitWidget && ShieldHitAnimation && !ShieldHitWidget->IsAnyAnimationPlaying())
 	{

@@ -96,7 +96,7 @@ void ARadar::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (RadarSourceLocationComponent == nullptr || RadarSourceRotationComponent == nullptr)
+	if (IsValid(RadarSourceLocationComponent) == false || IsValid(RadarSourceRotationComponent) == false)
 	{
 		LOGVN(Error, TEXT("Radar Disabled"));
 

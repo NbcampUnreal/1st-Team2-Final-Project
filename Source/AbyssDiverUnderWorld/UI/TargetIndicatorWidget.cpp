@@ -82,7 +82,7 @@ void UTargetIndicatorWidget::CalcAndSetCorrectTargetPosition()
 	APawn* Player = PC->GetPawn();
 	if (Player == nullptr)
 	{
-		LOGV(Error, TEXT("Player == nullptr"));
+		LOGV(Log, TEXT("Player == nullptr"));
 		SetVisible(false);
 		return;
 	}

@@ -158,6 +158,8 @@ private:
 	UPROPERTY(Replicated)
 	TObjectPtr<AADUseItem> CurrentEquipmentInstance;
 	UPROPERTY(Replicated)
+	TObjectPtr<AUnderwaterCharacter> CachedDiver;
+	UPROPERTY(Replicated)
 	uint8 bIsWeapon : 1 = false;
 	UPROPERTY(Replicated)
 	EEquipmentType EquipmentType;
@@ -183,8 +185,8 @@ private:
 	UPROPERTY(EditAnywhere, Category = "DPV")
 	TObjectPtr<UAnimMontage> DPVDrawMontage;
 	
-	UPROPERTY()
-	TObjectPtr<AUnderwaterCharacter> CachedDiver;
+	//UPROPERTY()
+	//TObjectPtr<AUnderwaterCharacter> CachedDiver;
 
 	UPROPERTY(ReplicatedUsing = OnRep_CurrentEquipItem)
 	TObjectPtr<AActor> CurrentEquipItem = nullptr;

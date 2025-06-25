@@ -28,7 +28,7 @@ protected:
 
 	virtual void Interact_Implementation(AActor* InstigatorActor) override;
 
-	bool IsConditionMet();
+	virtual bool IsConditionMet();
 
 #pragma endregion
 

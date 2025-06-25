@@ -88,7 +88,7 @@ void UPlayerStatusWidget::SetOxygenPercent(float InPercent)
     {
         // 1. 게이지 스케일
         float ClampedPercent = FMath::Clamp(InPercent, 0.0f, 1.0f);
-        FWidgetTransform Transform = OxygenBar->RenderTransform;
+        FWidgetTransform Transform = OxygenBar->GetRenderTransform();
         Transform.Scale = FVector2D(1.0f, ClampedPercent);
         OxygenBar->SetRenderTransform(Transform);
 
@@ -106,7 +106,7 @@ void UPlayerStatusWidget::SetOxygenPercent(float InPercent)
         }
 
         // 스타일 적용
-        FProgressBarStyle Style = OxygenBar->WidgetStyle;
+        FProgressBarStyle Style = OxygenBar->GetWidgetStyle();
 
         // 1. 배경
         Style.BackgroundImage.OutlineSettings.CornerRadii = FVector4(TopRadius, TopRadius, 0.0f, 0.0f);

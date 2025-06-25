@@ -8,11 +8,13 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Components/SphereComponent.h"
 #include "Delegates/DelegateCombinations.h"
+#include "Monster/MonsterSoundComponent.h"
 #include "Monster/EMonsterState.h"
 #include "Monster.generated.h"
 
 class ASplinePathActor;
 class USphereComponent;
+class UNiagaraSystem;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnMonsterDeadSignature, AActor*, Killer, AMonster*, DeadMonster);
 
@@ -38,8 +40,17 @@ public:
 	void M_PlayMontage(UAnimMontage* AnimMontage, float InPlayRate = 1, FName StartSectionName = NAME_None);
 	void M_PlayMontage_Implementation(UAnimMontage* AnimMontage, float InPlayRate = 1, FName StartSectionName = NAME_None);
 
+	UFUNCTION(NetMulticast, Reliable)
+	void M_SpawnBloodEffect(FVector Location, FRotator Rotation);
+	void M_SpawnBloodEffect_Implementation(FVector Location, FRotator Rotation);
+
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
+	
 	virtual void OnDeath();
+	UFUNCTION(NetMulticast, Reliable)
+	void M_OnDeath();
+	void M_OnDeath_Implementation();
+
 	virtual void PlayAttackMontage();
 	void StopMovement();
 	virtual void NotifyLightExposure(float DeltaTime, float TotalExposedTime, const FVector& PlayerLocation, AActor* PlayerActor);
@@ -52,6 +63,9 @@ public:
 	
 	UFUNCTION()
 	void ForceRemoveDetection(AActor* Actor);
+
+protected:
+	void ApplyPhysicsSimulation();
 
 #pragma endregion
 
@@ -71,6 +85,8 @@ protected:
 	TObjectPtr<UBlackboardComponent> BlackboardComponent;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI|AIController")
 	TObjectPtr<AMonsterAIController> AIController;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI|SoundComponent")
+	TObjectPtr<UMonsterSoundComponent> MonsterSoundComponent;
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UAnimInstance> AnimInstance;
 	UPROPERTY(Replicated, BlueprintReadWrite)
@@ -79,6 +95,10 @@ protected:
 	TArray<TObjectPtr<UAnimMontage>> AttackAnimations;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AI|DetectedAnimation")
 	TObjectPtr<UAnimMontage> DetectedAnimations;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AI|HitReactAnimation")
+	TObjectPtr<UAnimMontage> HitReactAnimations;
+	UPROPERTY(EditDefaultsOnly, Category = "AI|FX")
+	TObjectPtr<UNiagaraSystem> BloodEffect;
 	UPROPERTY(EditAnywhere, Category = "AI")
 	float ChaseTriggerTime;
 	UPROPERTY(EditAnywhere, Category = "AI")

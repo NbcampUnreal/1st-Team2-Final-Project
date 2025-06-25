@@ -103,6 +103,7 @@ protected:
 	virtual void OnRep_PlayerState() override;
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode = 0) override;
+	virtual void Destroyed() override;
 
 	/** IA를 Enhanced Input Component에 연결 */
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
@@ -154,6 +155,10 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void RequestRevive();
 
+	/** 캐릭터를 사망시킨다. Authority Node에서만 실행되어야 한다. */
+	UFUNCTION(BlueprintCallable)
+	void Die();
+	
 	/** 현재 캐릭터의 상태를 전환. 수중, 지상 */
 	UFUNCTION(BlueprintCallable)
 	void SetEnvironmentState(EEnvironmentState State);
@@ -373,6 +378,10 @@ protected:
 
 	/** 전투 종료 시에 호출되는 함수 */
 	void EndCombat();
+
+	/** 캐릭터가 사망을 완료했을 때 호출되는 함수. 관전으로 변경된다. */
+	void EndDeath();
+	
 	float GetSwimEffectiveSpeed() const;
 
 	/** 현재 상태 속도 갱신.(무게, Sprint) */
@@ -638,7 +647,10 @@ public:
 	FOnEnvironmentStateChanged OnEnvironmentStateChangedDelegate;
 
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnDamageTaken, float, DamageAmount, float, CurrentHealth);
-	/** 캐릭터가 피해를 입었을 때 호출되는 델리게이트, DamageAmount = Health Damage Taken + Shield Damage Taken */
+	/** 캐릭터가 피해를 입었을 때 호출되는 델리게이트, DamageAmount = Health Damage Taken + Shield Damage Taken.
+	 * 체력 계산, 상태 전이가 모두 완료된 뒤에 호출된다.
+	 * Normal 상태일 때만 호출된다. 실드에만 데미지가 들어갔을 경우 호출되지 않는다.
+	 */
 	UPROPERTY(BlueprintAssignable)
 	FOnDamageTaken OnDamageTakenDelegate;
 
@@ -826,6 +838,10 @@ private:
 	/** 그로기에서 회복 후의 체력량, 회복 후의 체력량은 MaxHealth * RecoveryHealthPercentage로 설정된다. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true", ClampMin = "0.01", ClampMax = "1.0"))
 	float RecoveryHealthPercentage;
+
+	/** 그로기에서 회복 후의 산소량, 회복 후의 산소량은 MaxOxygen * RecoveryOxygenPercentage로 설정된다. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true", ClampMin = "0.0", ClampMax = "1.0"))
+	float RecoveryOxygenPenaltyRate;
 
 	/** 그로기에서 사망 전이 Timer */
 	FTimerHandle GroggyTimer;
@@ -1106,12 +1122,6 @@ private:
 	UPROPERTY()
 	TObjectPtr<class UEquipRenderComponent> EquipRenderComp;
 
-	UPROPERTY(EditAnywhere, Category = "UI", meta = (AllowPrivateAccess = "true"))
-	TSubclassOf<class UHoldInteractionWidget> HoldWidgetClass;
-
-	UPROPERTY(EditAnywhere, Category = "UI", meta = (AllowPrivateAccess = "true"))
-	class UHoldInteractionWidget* HoldWidgetInstance;
-
 	/** Tool 소켓 명 (1P/3P 공용) */
 	FName LaserSocketName = TEXT("Laser");
 
@@ -1156,6 +1166,13 @@ private:
 	/** Post Process를 관리하는 컴포넌트 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UPostProcessSettingComponent> PostProcessSettingComponent;
+
+	/** 캐릭터가 사망했을 때 관전으로 전이할 Timer */
+	FTimerHandle DeathTimer;
+
+	/** 캐릭터가 사망했을 떄 관전으로 전이되기까지 걸리는 시간 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	float DeathTransitionTime = 3.0f;
 	
 #pragma endregion
 
@@ -1193,6 +1210,9 @@ public:
 	/** 장착 아이템 렌더링 컴포넌트 반환 */
 	FORCEINLINE UEquipRenderComponent* GetEquipRenderComponent() const { return EquipRenderComp; }
 
+	/** 캐릭터의 현재 상태를 반환. Normal, Groggy, Death... */
+	FORCEINLINE UCombatEffectComponent* GetCombatEffectComponent() const { return CombatEffectComponent; }
+
 	/** 캐릭터의 현재 상태를 반환 */
 	FORCEINLINE ECharacterState GetCharacterState() const { return CharacterState; }
 
@@ -1203,15 +1223,19 @@ public:
 	FORCEINLINE void SetInvincible(const bool bNewInvincible) { bIsInvincible = bNewInvincible; }
 
 	/** 캐릭터가 일반 상태인지 여부를 반환 */
+	UFUNCTION(BlueprintCallable)
 	FORCEINLINE bool IsNormal() const { return CharacterState == ECharacterState::Normal; }
 
 	/** 캐릭터가 Groggy 상태인지 여부를 반환 */
+	UFUNCTION(BlueprintCallable)
 	FORCEINLINE bool IsGroggy() const { return CharacterState == ECharacterState::Groggy; }
 
 	/** 캐릭터가 Death 상태인지 여부를 반환 */
+	UFUNCTION(BlueprintCallable)
 	FORCEINLINE bool IsDeath() const { return CharacterState == ECharacterState::Death; }
 
-	/** 캐릭터가 현재 살아있는지 여부를 반환. 살아 있으면 타겟팅될 수 있다. */
+	/** 캐릭터가 현재 살아있는지 여부를 반환. 살아 있으면 타겟팅될 수 있다. 사망이 아닌 상태를 의미한다. */
+	UFUNCTION(BlueprintCallable)
 	bool IsAlive() const;
 
 	/** 캐릭터의 남은 그로기 시간을 반환 */
@@ -1278,6 +1302,12 @@ public:
 
 	/** Post Process Setting Component를 반환 */
 	FORCEINLINE UPostProcessSettingComponent* GetPostProcessSettingComponent() const { return PostProcessSettingComponent; }
+
+	/** 현재 캐릭터를 어그로로 설정하고 있는 Targeting Actor의 개수를 반환 */
+	FORCEINLINE int GetTargetingActorCount() const { return TargetingActorCount; }
+
+	/** 캐릭터가 현재 Capture State 인지 여부를 반환 */
+	FORCEINLINE bool IsCaptured() const { return bIsCaptured; }
 	
 #pragma endregion
 };

@@ -56,6 +56,8 @@ void ACableBindingActor::ConnectActors(AUnderwaterCharacter* NewSourceActor, AUn
 	TargetCharacter = NewTargetActor;
 
 	// Source Component 를 시작점으로 연결하고 Target Component를 끝점으로 연결한다.
+	// - CableComponent : Source Component에 Attach, End Location을 지정
+	// - PhysicsConstraint : Source Character의 World Location을 추적
 	
 	UPrimitiveComponent* SourceComponent = Cast<UPrimitiveComponent>(NewSourceActor->GetMesh());
 	UPrimitiveComponent* TargetComponent = Cast<UPrimitiveComponent>(NewTargetActor->GetMesh());
@@ -99,8 +101,10 @@ void ACableBindingActor::DisconnectActors()
 
 void ACableBindingActor::UpdateCable()
 {
-	if (!SourceCharacter || !TargetCharacter)
+	if (!IsValid(SourceCharacter) || !IsValid(TargetCharacter))
 	{
+		// 유효하지 않으면 Cable을 제거한다.
+		DisconnectActors();
 		return;
 	}
 
