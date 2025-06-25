@@ -23,13 +23,13 @@ void AADSpectatorPawn::BeginPlay()
 
 void AADSpectatorPawn::Destroyed()
 {
-	Super::Destroyed();
-
 	// 관전 중에 관전이 종료되었을 경우 현재 타겟 캐릭터의 관전 종료 이벤트를 호출한다.
 	if (PrevTargetCharacter.IsValid())
 	{
 		PrevTargetCharacter->OnEndSpectated();
 	}
+
+	Super::Destroyed();
 }
 
 void AADSpectatorPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
