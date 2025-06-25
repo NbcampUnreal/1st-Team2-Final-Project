@@ -5,6 +5,8 @@
 
 #include "Kismet/GameplayStatics.h"
 
+const int32 UADGameInstance::MAX_PLAYER_NUMBER = 4;
+
 UADGameInstance::UADGameInstance(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
