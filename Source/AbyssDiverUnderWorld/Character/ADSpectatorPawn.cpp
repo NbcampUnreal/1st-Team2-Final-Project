@@ -106,7 +106,7 @@ void AADSpectatorPawn::OnTargetViewChanged(AActor* NewViewTarget)
 	}
 	
 	if (NewViewTarget && NewViewTarget->IsA(AUnderwaterCharacter::StaticClass())
-		&& GetController()->GetPawn() != nullptr) // 게임 입장 시의 Spectator 상태이고 Character Pawn과 동시에 존재한다. 이 상황은 관전이 아니므로 무시한다.
+		&& GetController()->GetPawn() == nullptr) // 게임 입장 시의 Spectator 상태이고 Character Pawn과 동시에 존재한다. 이 상황은 관전이 아니므로 무시한다.
 	{
 		if (AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(NewViewTarget))
 		{
