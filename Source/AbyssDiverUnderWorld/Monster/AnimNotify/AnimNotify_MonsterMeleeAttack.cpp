@@ -6,6 +6,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Engine/OverlapResult.h"
 #include "Character/StatComponent.h"
+#include "Character/UnderwaterCharacter.h"
 #include "Components/SphereComponent.h"
 
 void UAnimNotify_MonsterMeleeAttack::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, const FAnimNotifyEventReference& EventReference)
@@ -37,10 +38,10 @@ void UAnimNotify_MonsterMeleeAttack::Notify(USkeletalMeshComponent* MeshComp, UA
 	for (const FOverlapResult& Result : Overlaps)
 	{
 		AActor* HitActor = Result.GetActor();
-		if (HitActor)
-		{
-			UGameplayStatics::ApplyDamage(HitActor, StatComponent->AttackPower, Monster->GetController(), Monster, nullptr);
-		}
+		AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(HitActor);
+		if (!Player) return;
+		if (Player->GetCharacterState() == ECharacterState::Death) return;
+		UGameplayStatics::ApplyDamage(HitActor, StatComponent->AttackPower, Monster->GetController(), Monster, nullptr);
 	}
 	
 }

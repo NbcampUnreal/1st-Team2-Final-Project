@@ -121,6 +121,7 @@ public:
 	void LaunchPlayer(AUnderwaterCharacter* Player, const float& Power) const;
 	
 	/** 데미지를 받을 때 호출하는 함수 */
+	UFUNCTION(BlueprintCallable)
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 	
 	/** 보스의 체력이 0이하로 떨어지는 경우 사망 상태로 전이 */
