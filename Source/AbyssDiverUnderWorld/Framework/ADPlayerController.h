@@ -7,6 +7,7 @@
 #include "ADPlayerController.generated.h"
 
 enum class EMapName : uint8;
+class ULoadingScreenWidget;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADPlayerController : public APlayerController
@@ -38,6 +39,13 @@ public:
 
 	UFUNCTION(BlueprintImplementableEvent)
 	void OnPostSeamlessTravel();
+
+
+	UFUNCTION()
+	void ShowFadeOut(float Duration = 2.0f);
+
+	UFUNCTION()
+	void ShowFadeIn();
 
 	/** Pawn이 변경되었을 때 호출된다. Client에서 관전 시작 시에 시점 조정을 위해 사용 */
 	virtual void OnRep_Pawn() override;
@@ -93,6 +101,7 @@ protected:
 	
 #pragma region Variable
 
+
 public:
 
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSpectateChanged, bool, bIsSpectating);
@@ -120,6 +129,7 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UInteractionDescriptionWidget> InteractionWidget;
+
 
 	UPROPERTY(EditAnywhere, Category = "UI")
 	TSubclassOf<class UHoldInteractionWidget> InteractionHoldWidgetClass;

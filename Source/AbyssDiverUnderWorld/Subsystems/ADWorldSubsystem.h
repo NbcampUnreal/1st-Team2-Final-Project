@@ -20,5 +20,5 @@ protected:
 private:
 
 	static const FString MainMenuLevelName;
-	
+	static const FString CampLevelName;
 };

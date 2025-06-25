@@ -18,7 +18,7 @@ void IIADInteractable::OnHoldStop_Implementation(APawn* InstigatorPawn)
 {
 }
 
-float IIADInteractable::GetHoldDuration_Implementation() const
+float IIADInteractable::GetHoldDuration_Implementation(AActor* InstigatorActor) const
 {
     return 0.0f;
 }
