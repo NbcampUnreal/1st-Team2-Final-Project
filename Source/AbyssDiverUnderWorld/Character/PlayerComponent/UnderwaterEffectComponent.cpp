@@ -44,42 +44,43 @@ void UUnderwaterEffectComponent::BeginPlay()
 		OwnerCharacter->OnKnockbackDelegate.AddDynamic(this, &UUnderwaterEffectComponent::OnKnockback);
 		OwnerCharacter->OnKnockbackEndDelegate.AddDynamic(this, &UUnderwaterEffectComponent::OnKnockbackEnd);
 
-		if (OwnerCharacter->IsLocallyControlled() && MovementSound)
-		{
-			MovementAudioComponent = UGameplayStatics::SpawnSoundAttached(
-				MovementSound,
-				GetOwner()->GetRootComponent(),
-				NAME_None,
-				FVector::ZeroVector,
-				FRotator::ZeroRotator,
-				EAttachLocation::KeepRelativeOffset,
-				false,
-				0.5f,
-				1.0f,
-				0.0f,
-				nullptr,
-				nullptr,
-				false
-			);
-			MovementAudioComponent->Stop();
+		// BugFix: Respawn 시에 Host에서 크래시나는 현상 수정
+		// 항상 Audio Component를 생성하도록 변경
+		// Respawn 상황에서 Begin Play 시점에서 Controller가 설정되기 전에 Begin Play가 호출된다.
+		// 이 시점에서는 Controller가 없기 때문에 Locally Controlled 여부를 확인할 수 없다.
+		MovementAudioComponent = UGameplayStatics::SpawnSoundAttached(
+			MovementSound,
+			GetOwner()->GetRootComponent(),
+			NAME_None,
+			FVector::ZeroVector,
+			FRotator::ZeroRotator,
+			EAttachLocation::KeepRelativeOffset,
+			false,
+			0.5f,
+			1.0f,
+			0.0f,
+			nullptr,
+			nullptr,
+			false
+		);
+		MovementAudioComponent->Stop();
 
-			SprintMovementAudioComponent = UGameplayStatics::SpawnSoundAttached(
-				SprintMovementSound,
-				GetOwner()->GetRootComponent(),
-				NAME_None,
-				FVector::ZeroVector,
-				FRotator::ZeroRotator,
-				EAttachLocation::KeepRelativeOffset,
-				false,
-				0.5f,
-				1.0f,
-				0.0f,
-				nullptr,
-				nullptr,
-				false
-			);
-			SprintMovementAudioComponent->Stop();
-		}
+		SprintMovementAudioComponent = UGameplayStatics::SpawnSoundAttached(
+			SprintMovementSound,
+			GetOwner()->GetRootComponent(),
+			NAME_None,
+			FVector::ZeroVector,
+			FRotator::ZeroRotator,
+			EAttachLocation::KeepRelativeOffset,
+			false,
+			0.5f,
+			1.0f,
+			0.0f,
+			nullptr,
+			nullptr,
+			false
+		);
+		SprintMovementAudioComponent->Stop();
 	}
 	else
 	{
@@ -247,7 +248,8 @@ void UUnderwaterEffectComponent::UpdateMovementEffects(float DeltaTime)
 
 	if (bShouldPlayMovementSound)
 	{
-		if (!MovementAudioComponent->IsPlaying()
+		if (MovementAudioComponent
+			&& !MovementAudioComponent->IsPlaying()
 			&& MovementSound)
 		{
 			if (bWasMoving)
@@ -267,6 +269,7 @@ void UUnderwaterEffectComponent::UpdateMovementEffects(float DeltaTime)
 		if (Speed > OwnerCharacter->GetSprintSpeed() - 50.0f
 			&& OwnerCharacter->GetCharacterMovement()->GetCurrentAcceleration().Size() > 0.0f
 			&& SprintMovementSound
+			&& SprintMovementAudioComponent
 			&& !SprintMovementAudioComponent->IsPlaying())
 		{
 			SprintMovementAudioComponent->Play();

@@ -6,9 +6,11 @@
 #include "Framework/ADPlayerState.h"
 #include "Character/UnderwaterCharacter.h"
 #include "Character/PlayerComponent/ShieldComponent.h"
+#include "Character/PlayerComponent/CombatEffectComponent.h"
 #include "Framework/ADGameInstance.h"
 #include "Subsystems/DataTableSubsystem.h"
 #include "DataRow/FADItemDataRow.h"
+
 
 void UEnableShield::Use(AActor* Target)
 {
@@ -30,6 +32,11 @@ void UEnableShield::Use(AActor* Target)
 				if (ShieldComp)
 				{
 					ShieldComp->GainShield(Row->Amount);
+				}
+				UCombatEffectComponent* CombatEffectComp = UnderwaterCharacter->GetCombatEffectComponent();
+				if (CombatEffectComp)
+				{
+					CombatEffectComp->C_PlayShieldUseEffect();
 				}
 			}
 		}

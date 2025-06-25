@@ -16,6 +16,7 @@ public:
 
 public:
 	void InitTargetPlayer();
+	void RemoveTargetPlayer(AUnderwaterCharacter* Player);
 
 protected:
 	void OnSightPerceptionSuccess(AUnderwaterCharacter* Player);

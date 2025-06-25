@@ -1,34 +1,41 @@
 #include "Interactable/Item/Component/EquipUseComponent.h"
-#include "Net/UnrealNetwork.h"
-#include "GameFrameWork/Character.h"
-#include "GameFramework/CharacterMovementComponent.h"
-#include "Kismet/GameplayStatics.h"
+
+#include "AbyssDiverUnderWorld.h"
+
 #include "Projectile/ADProjectileBase.h"
 #include "Projectile/ADSpearGunBullet.h"
-#include "GameplayTagContainer.h"
-#include "GameplayTags/EquipNativeTags.h"
-#include "AbyssDiverUnderWorld.h"
-#include "GameFramework/ProjectileMovementComponent.h"
-#include "Components/SphereComponent.h"
-#include "Camera/CameraComponent.h"
-#include "Interactable/Item/Component/ADInteractionComponent.h"
-#include "Subsystems/GameInstanceSubsystem.h"
-#include "Subsystems/DataTableSubsystem.h"
-#include "UI/ADNightVisionGoggle.h"
-#include "UI/ChargeBatteryWidget.h"
-#include "Character/PlayerComponent/PlayerHUDComponent.h"
-#include "Character/UnderwaterCharacter.h"
-#include "Framework/ADPlayerState.h"
-#include "Framework/ADGameInstance.h"
-#include "Subsystems/SoundSubsystem.h"
-#include "Framework/ADInGameMode.h"
 #include "Projectile/GenericPool.h"
 #include "Projectile/ADFlareGunBullet.h"
 
+#include "UI/ADNightVisionGoggle.h"
+#include "UI/ChargeBatteryWidget.h"
+
+#include "Character/PlayerComponent/PlayerHUDComponent.h"
+#include "Character/UnderwaterCharacter.h"
+
+#include "Framework/ADPlayerState.h"
+#include "Framework/ADGameInstance.h"
+#include "Framework/ADInGameMode.h"
+#include "Framework/ADPlayerController.h"
+
+#include "Subsystems/SoundSubsystem.h"
+#include "Subsystems/GameInstanceSubsystem.h"
+#include "Subsystems/DataTableSubsystem.h"
+
+#include "Camera/CameraComponent.h"
+#include "Interactable/Item/Component/ADInteractionComponent.h"
+
+#include "Net/UnrealNetwork.h"
+#include "Components/SphereComponent.h"
+#include "GameFramework/ProjectileMovementComponent.h"
+#include "GameplayTagContainer.h"
+#include "GameplayTags/EquipNativeTags.h"
+#include "Kismet/GameplayStatics.h"
+#include "GameFrameWork/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
+
 const FName UEquipUseComponent::BASIC_SPEAR_GUN_NAME = TEXT("BasicSpearGun");
 
-
-// Sets default values for this component's properties
 UEquipUseComponent::UEquipUseComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
@@ -72,8 +79,6 @@ UEquipUseComponent::UEquipUseComponent()
 	}
 }
 
-
-// Called when the game starts
 void UEquipUseComponent::BeginPlay()
 {
 	Super::BeginPlay();
@@ -313,10 +318,10 @@ void UEquipUseComponent::OnRep_CurrentAmmoInMag()
 {
 	if (!OwningCharacter.IsValid()) return;
 
-	APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController());
-	if (!PC) return;
+	AADPlayerController* PC = Cast<AADPlayerController>(OwningCharacter->GetController());
+	if (!PC || !PC->IsLocalController()) return;
 
-	UPlayerHUDComponent* HUDComp = PC->FindComponentByClass<UPlayerHUDComponent>();
+	UPlayerHUDComponent* HUDComp = PC->GetPlayerHUDComponent();
 	if (!HUDComp) return;
 
 	UPlayerStatusWidget* StatusWidget = HUDComp->GetPlayerStatusWidget();
@@ -333,10 +338,10 @@ void UEquipUseComponent::OnRep_ReserveAmmo()
 {
 	if (!OwningCharacter.IsValid()) return;
 
-	APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController());
-	if (!PC) return;
+	AADPlayerController* PC = Cast<AADPlayerController>(OwningCharacter->GetController());
+	if (!PC || !PC->IsLocalController()) return;
 
-	UPlayerHUDComponent* HUDComp = PC->FindComponentByClass<UPlayerHUDComponent>();
+	UPlayerHUDComponent* HUDComp = PC->GetPlayerHUDComponent();
 	if (!HUDComp) return;
 
 	UPlayerStatusWidget* StatusWidget = HUDComp->GetPlayerStatusWidget();
@@ -474,15 +479,15 @@ void UEquipUseComponent::Initialize(FItemData& ItemData)
 			{
 				if (CurrentItemData->Name == SpearGunTypeNames[0])
 				{
-					HUD->M_SetSpearGunTypeImage(0);
+					HUD->C_SetSpearGunTypeImage(0);
 				}
 				else if (CurrentItemData->Name == SpearGunTypeNames[1])
 				{
-					HUD->M_SetSpearGunTypeImage(1);
+					HUD->C_SetSpearGunTypeImage(1);
 				}
 				else if (CurrentItemData->Name == SpearGunTypeNames[2])
 				{
-					HUD->M_SetSpearGunTypeImage(2);
+					HUD->C_SetSpearGunTypeImage(2);
 				}
 				HUD->M_SetSpearUIVisibility(true);
 				HUD->M_UpdateSpearCount(CurrentAmmoInMag, ReserveAmmo);
@@ -620,6 +625,12 @@ EEquipmentType UEquipUseComponent::TagToEquipmentType(const FGameplayTag& Tag)
 
 void UEquipUseComponent::HandleLeftClick()
 {
+	if (!OwningCharacter.IsValid()) return;
+
+	AADPlayerController* PC = Cast<AADPlayerController>(OwningCharacter->GetController());
+	if (!PC || !PC->IsLocalController()) return;
+	if (PC->bEnableClickEvents) return;
+
 	S_LeftClick();
 }
 
@@ -1218,6 +1229,12 @@ void UEquipUseComponent::ConfigureProjectile(AADProjectileBase* Proj, const FVec
 
 void UEquipUseComponent::SelectSpearType(AADSpearGunBullet* Proj)
 {
+	if (CurrentItemData == nullptr)
+	{
+		LOGV(Error, TEXT("CurrentItemData == nullptr"));
+		return;
+	}
+
 	// FText 변수로 수정
 	if (CurrentItemData->Name == SpearGunTypeNames[0])
 	{
@@ -1231,6 +1248,5 @@ void UEquipUseComponent::SelectSpearType(AADSpearGunBullet* Proj)
 	{
 		Proj->SetBulletType(ESpearGunType::Bomb);
 	}
-
 }
 

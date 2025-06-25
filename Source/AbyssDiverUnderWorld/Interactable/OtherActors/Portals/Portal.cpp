@@ -1,11 +1,9 @@
 ﻿#include "Interactable/OtherActors/Portals/Portal.h"
 
 #include "Interactable/Item/Component/ADInteractableComponent.h"
-#include "Framework/ADInGameMode.h"
 #include "Framework/ADGameInstance.h"
 #include "AbyssDiverUnderWorld.h"
 
-#include "Kismet/GameplayStatics.h"
 #include "Engine/TargetPoint.h"
 #include "Subsystems/SoundSubsystem.h"
 
@@ -42,10 +40,10 @@ void APortal::BeginPlay()
 
 void APortal::Interact_Implementation(AActor* InstigatorActor)
 {
-	LOGVN(Warning, TEXT("Portal Interacting.."));
+	LOGVN(Log, TEXT("Portal Interacting.."));
 	if (IsConditionMet() == false)
 	{
-		LOGVN(Warning, TEXT("Condition is not met"));
+		LOGVN(Log, TEXT("Condition is not met"));
 		return;
 	}
 
@@ -65,14 +63,7 @@ bool APortal::IsConditionMet()
 		return false;
 	}
 
-	AADInGameMode* GM = Cast<AADInGameMode>(UGameplayStatics::GetGameMode(GetWorld()));
-	if (GM == nullptr)
-	{
-		LOGVN(Warning, TEXT("GM == nullptr"));
-		return false;
-	}
-	
-	return GM->IsAllPhaseCleared();
+	return true;
 }
 
 UADInteractableComponent* APortal::GetInteractableComponent() const
