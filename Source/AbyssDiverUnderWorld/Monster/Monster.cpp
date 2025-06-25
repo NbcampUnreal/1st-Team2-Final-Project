@@ -159,7 +159,7 @@ float AMonster::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, 
 			}
 			
 			// If aggro is not on TargetPlayer, set aggro
-			if (MonsterState != EMonsterState::Chase)
+			if (MonsterState != EMonsterState::Chase && MonsterState != EMonsterState::Flee)
 			{
 				AddDetection(InstigatorPlayer);
 				SetMonsterState(EMonsterState::Chase);
@@ -509,7 +509,6 @@ void AMonster::SetMonsterState(EMonsterState NewState)
 	switch (NewState)
 	{
 	case EMonsterState::Detected:
-		StopMovement();
 		if (IsValid(DetectedAnimations))
 		{
 			M_PlayMontage(DetectedAnimations);

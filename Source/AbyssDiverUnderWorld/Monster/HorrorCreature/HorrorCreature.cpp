@@ -94,7 +94,7 @@ void AHorrorCreature::SwallowPlayer(AUnderwaterCharacter* Victim)
 {
 	if (!HasAuthority() || !Victim || SwallowedPlayer) return;
 	AUnderwaterCharacter* PlayerCharacter = Cast<AUnderwaterCharacter>(Victim);
-	if (!PlayerCharacter && PlayerCharacter->GetCharacterState() != ECharacterState::Normal) return;
+	if (!PlayerCharacter || PlayerCharacter->GetCharacterState() != ECharacterState::Normal) return;
 
 	SwallowedPlayer = Victim;
 	bCanSwallow = false;

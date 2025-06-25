@@ -29,13 +29,11 @@ void UPlayerHUDComponent::BeginPlay()
 	Super::BeginPlay();
 
 	AADPlayerController* PlayerController = Cast<AADPlayerController>(GetOwner());
-	if (!PlayerController->IsLocalController())
+	if (!PlayerController || !PlayerController->IsLocalController())
 	{
 		return;
 	}
 
-	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("UPlayerHUDComponent::BeginPlay()"));
-	
 	PlayerController->OnPossessedPawnChanged.AddDynamic(this, &UPlayerHUDComponent::OnPossessedPawnChanged);
 	PlayerController->OnSpectateChanged.AddDynamic(this, &UPlayerHUDComponent::OnSpectatingStateChanged);
 	

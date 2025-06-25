@@ -19,6 +19,7 @@
 #include "EnhancedInputComponent.h"
 #include "Character/ADSpectatorPawn.h"
 #include "Kismet/GameplayStatics.h"
+#include "UI/HoldInteractionWidget.h"
 
 AADPlayerController::AADPlayerController()
 {
@@ -58,27 +59,36 @@ void AADPlayerController::SetPawn(APawn* InPawn)
 			{
 				OldInteractionComp->OnFocus.RemoveAll(InteractionWidget);
 				OldInteractionComp->OnFocusEnd.RemoveAll(InteractionWidget);
+
+				OldInteractionComp->OnHoldStart.RemoveAll(InteractionHoldWidget);
+				OldInteractionComp->OnHoldCancel.RemoveAll(InteractionHoldWidget);
 			}
 		}
 	}
 
 	Super::SetPawn(InPawn);
 
-	if (InPawn)
+	if (AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(GetPawn()))
 	{
-		if (InteractionWidgetClass && IsLocalController())
+		if (UADInteractionComponent* InteractionComponent = UnderwaterCharacter->GetInteractionComponent())
 		{
-			InteractionWidget = CreateWidget<UInteractionDescriptionWidget>(this, InteractionWidgetClass);
-
-			if (InteractionWidget)
+			if (InteractionWidgetClass && IsLocalController())
 			{
-				if (AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(GetPawn()))
+				InteractionWidget = CreateWidget<UInteractionDescriptionWidget>(this, InteractionWidgetClass);
+				if (InteractionWidget)
 				{
-					if (UADInteractionComponent* InteractionComponent = UnderwaterCharacter->GetInteractionComponent())
-					{
-						InteractionComponent->OnFocus.AddDynamic(InteractionWidget, &UInteractionDescriptionWidget::HandleFocus);
-						InteractionComponent->OnFocusEnd.AddDynamic(InteractionWidget, &UInteractionDescriptionWidget::HandleFocusLost);
-					}
+					InteractionComponent->OnFocus.AddDynamic(InteractionWidget, &UInteractionDescriptionWidget::HandleFocus);
+					InteractionComponent->OnFocusEnd.AddDynamic(InteractionWidget, &UInteractionDescriptionWidget::HandleFocusLost);
+				}
+			}
+
+			if (InteractionHoldWidgetClass && IsLocalController())
+			{
+				InteractionHoldWidget = CreateWidget<UHoldInteractionWidget>(this, InteractionHoldWidgetClass);
+				if (InteractionHoldWidget)
+				{
+					InteractionComponent->OnHoldStart.AddDynamic(InteractionHoldWidget, &UHoldInteractionWidget::HandleHoldStart);
+					InteractionComponent->OnHoldCancel.AddDynamic(InteractionHoldWidget, &UHoldInteractionWidget::HandleHoldCancel);
 				}
 			}
 		}
@@ -129,6 +139,7 @@ void AADPlayerController::StartSpectate()
 	}
 
 	// Change State를 하면 BeginSpectate에 의해서 SpectatorPawn이 생성된다.
+	// PlayerState Spectator 설정은 EndSpectateState에서 처리된다.
 	PlayerState->SetIsSpectator(true);
 	ChangeState(NAME_Spectating);
 	bPlayerIsWaiting = true;
@@ -140,10 +151,6 @@ void AADPlayerController::StartSpectate()
 
 void AADPlayerController::SetViewTarget(class AActor* NewViewTarget, FViewTargetTransitionParams TransitionParams)
 {
-	// 블렌딩 효과 없이 즉시 뷰 타겟 변경을 위해 BlendTime을 0으로 설정
-	TransitionParams.BlendTime = 0.0f;
-	TransitionParams.BlendExp = 0.0f;
-	
 	Super::SetViewTarget(NewViewTarget, TransitionParams);
 
 	// UE_LOG(LogTemp,Display, TEXT("SetViewTarget called for %s, NewViewTarget: %s"), *GetName(), NewViewTarget ? *NewViewTarget->GetName() : TEXT("None"));
@@ -153,6 +160,47 @@ void AADPlayerController::SetViewTarget(class AActor* NewViewTarget, FViewTarget
 	// UE_LOG(LogTemp,Display,	TEXT("Player CameraManager Client Simulating View Target : %s"), 
 	// 	PlayerCameraManager->bUseClientSideCameraUpdates ? TEXT("True") : TEXT("False"));
 	OnTargetViewChanged.Broadcast(GetViewTarget());
+}
+
+void AADPlayerController::C_StartCameraBlank_Implementation(FColor FadeColor, FVector2D FadeAlpha, float FadeStartTime, float FadeEndDelay, float FadeEndTime)
+{
+	if (PlayerCameraManager != nullptr)
+	{
+		const float BlankFadeStartAlpha = FadeAlpha.X >= 0.0f ? FadeAlpha.X : PlayerCameraManager->FadeAmount;
+		const float BlankFadeEndAlpha = FadeAlpha.Y;
+		if (FadeStartTime > 0.0f)
+		{
+			PlayerCameraManager->StartCameraFade(BlankFadeStartAlpha, BlankFadeEndAlpha, FadeStartTime, FadeColor.ReinterpretAsLinear(), false, true);
+		}
+		else
+		{
+			PlayerCameraManager->SetManualCameraFade(BlankFadeEndAlpha, FadeColor.ReinterpretAsLinear(), false);
+		}
+
+		TWeakObjectPtr WeakActor = this;
+		FTimerDelegate TimerDelegate;
+		TimerDelegate.BindWeakLambda(this, [=]()
+		{
+			if (WeakActor.IsValid())
+			{
+				if (WeakActor->PlayerCameraManager != nullptr)
+				{
+					WeakActor->PlayerCameraManager->StartCameraFade(BlankFadeEndAlpha, BlankFadeStartAlpha, FadeEndTime, FadeColor.ReinterpretAsLinear(), false, true);
+				}
+			}
+		});
+		GetWorldTimerManager().SetTimer(
+			CameraBlankTimerHandle,
+			TimerDelegate,
+			FadeStartTime + FadeEndDelay,
+			false
+		);
+	}
+}
+
+bool AADPlayerController::IsCameraBlanking() const
+{
+	return GetWorldTimerManager().IsTimerActive(CameraBlankTimerHandle) || (PlayerCameraManager && PlayerCameraManager->bEnableFading);
 }
 
 void AADPlayerController::BeginSpectatingState()
@@ -256,4 +304,9 @@ void AADPlayerController::ToggleTestHUD()
 	{
 		PlayerHUDComponent->ToggleTestHUD();
 	}
+}
+
+void AADPlayerController::OnCameraBlankEnd()
+{
+	
 }
