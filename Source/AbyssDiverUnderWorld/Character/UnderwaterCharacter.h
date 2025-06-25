@@ -98,6 +98,7 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	virtual void PossessedBy(AController* NewController) override;
+	virtual void UnPossessed() override;
 	virtual void PostInitializeComponents() override;
 	virtual void PostNetInit() override;
 	virtual void OnRep_PlayerState() override;
@@ -264,6 +265,12 @@ public:
 
 	UFUNCTION()
 	void OnRep_CurrentTool();
+
+	/** 관전을 당할 때 호출되는 함수 */
+	void OnSpectated();
+
+	/** 관전 당하는 것이 끝났을 때 호출되는 함수 */
+	void OnEndSpectated();
 	
 protected:
 
@@ -391,6 +398,12 @@ protected:
 	/** 레이더 Actor를 생성한다. */
 	void SpawnRadar();
 
+	/** 1인칭, 3인칭 시점의 메시를 설정 */
+	void SetMeshFirstPersonSetting(bool bIsFirstPerson);
+
+	/** Pawn을 떠날 때 호출되는 함수. Pawn이 떠나면 캐릭터는 관전 상태로 변경된다. */
+	void OnLeavePawn();
+	
 	/** Radar Toggle을 요청한다. */
 	UFUNCTION(BlueprintCallable)
 	void RequestToggleRadar();
@@ -814,6 +827,10 @@ private:
 	/** Normal 상태에서의 회전 감도. Normal 상태에 진입할 때마다 LookSensitivity를 이 값으로 설정한다. */
 	UPROPERTY(EditDefaultsOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float NormalLookSensitivity;
+
+	/** Fade 된 상태에서 Normal 상태로 전이됬을 때 Fade In 되는 시간 */
+	UPROPERTY(EditDefaultsOnly, Category = "Character|Normal", meta = (AllowPrivateAccess = "true"))
+	float NormalStateFadeInDuration;
 	
 	/** 그로기 상태에서 사망까지 걸리는 시간. 그로기 상태에 진입할 떄마다 줄어든다. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true"))
@@ -1172,7 +1189,7 @@ private:
 
 	/** 캐릭터가 사망했을 떄 관전으로 전이되기까지 걸리는 시간 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	float DeathTransitionTime = 3.0f;
+	float DeathTransitionTime = 1.0f;
 	
 #pragma endregion
 

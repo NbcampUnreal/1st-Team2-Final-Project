@@ -1,4 +1,4 @@
-#include "Framework/ADCampGameMode.h"
+﻿#include "Framework/ADCampGameMode.h"
 
 #include "Framework/ADInGameState.h"
 #include "Framework/ADPlayerState.h"
@@ -12,6 +12,10 @@
 
 #include "Kismet/GameplayStatics.h"
 #include "EngineUtils.h"
+#include "AsyncLoadingScreenLibrary.h"
+#include "Engine/World.h"
+#include "GameFramework/WorldSettings.h"
+#include "UI/LoadingScreenWidget.h"
 
 void AADCampGameMode::ADCampGameMode()
 {
@@ -23,6 +27,18 @@ void AADCampGameMode::SetSelectedLevel(const EMapName InLevelName)
 	if (AADInGameState* ADGameState = GetGameState<AADInGameState>())
 	{
 		ADGameState->SetSelectedLevel(InLevelName);
+	}
+}
+
+void AADCampGameMode::PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage)
+{
+	Super::PreLogin(Options, Address, UniqueId, ErrorMessage);
+
+	LOGV(Log, TEXT("현재 접속 인원 : %d"), GetNumPlayers());
+	if (GetGameInstance<UADGameInstance>()->MAX_PLAYER_NUMBER <= GetNumPlayers())
+	{
+		ErrorMessage = FString::Printf(TEXT("인원이 꽉찼습니다."));
+		return;
 	}
 }
 
@@ -110,6 +126,13 @@ void AADCampGameMode::TravelToInGameLevel()
 		return;
 	}
 
+	if (bHasPressedTravel)
+	{
+		LOGV(Warning, TEXT("Already Pressed Travel Button"));
+		return;
+	}
+	bHasPressedTravel = true;
+
 	for (AADPlayerController* PC : TActorRange<AADPlayerController>(GetWorld()))
 	{
 		PC->C_OnPreClientTravel();
@@ -118,7 +141,6 @@ void AADCampGameMode::TravelToInGameLevel()
 	FTimerHandle TravelTimerHandle;
 	GetWorldTimerManager().SetTimer(TravelTimerHandle, [&]()
 		{
-
 			if (AADInGameState* ADInGameState = GetGameState<AADInGameState>())
 			{
 				EMapName MapName = ADInGameState->GetSelectedLevel();
@@ -132,9 +154,10 @@ void AADCampGameMode::TravelToInGameLevel()
 
 				ADInGameState->SendDataToGameInstance();
 				//input spot level name
+
 				FString TravelURL = FString::Printf(TEXT("%s?listen"), *LevelLoad);
 				GetWorld()->ServerTravel(TravelURL);
 			}
 
-		}, 1.0f, false);
+		}, 2.0f, false);
 }

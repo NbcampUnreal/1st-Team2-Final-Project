@@ -22,6 +22,7 @@ public:
 
 	AADInGameMode();
 
+	virtual void PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage) override;
 	virtual void BeginPlay() override;
 	virtual void PostLogin(APlayerController* NewPlayer) override;
 	virtual void Logout(AController* Exiting) override;
@@ -91,6 +92,7 @@ private:
 	int32 GroggyCount = 0;
 
 	FTimerHandle ResultTimerHandle;
+	FTimerHandle SyncTimerHandle;
 
 #pragma endregion
 

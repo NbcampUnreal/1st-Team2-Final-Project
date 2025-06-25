@@ -19,6 +19,13 @@
 #include "EnhancedInputComponent.h"
 #include "Character/ADSpectatorPawn.h"
 #include "Kismet/GameplayStatics.h"
+
+#include "UI/LoadingScreenWidget.h"
+
+#include "Camera/PlayerCameraManager.h"
+#include "TimerManager.h"
+#include "Engine/World.h"
+
 #include "UI/HoldInteractionWidget.h"
 
 AADPlayerController::AADPlayerController()
@@ -98,7 +105,7 @@ void AADPlayerController::SetPawn(APawn* InPawn)
 void AADPlayerController::PostNetInit()
 {
 	Super::PostNetInit();
-
+	LOGVN(Log, TEXT("PostNetInit"));
 	OnPostNetInit();
 
 	if (IsLocalController())
@@ -112,13 +119,17 @@ void AADPlayerController::PostNetInit()
 
 void AADPlayerController::PostSeamlessTravel()
 {
+	LOGVN(Log, TEXT("Post SeamlessTravel"));
+
 	Super::PostSeamlessTravel();
+
 	OnPostSeamlessTravel();
 }
 
 void AADPlayerController::C_OnPreClientTravel_Implementation()
 {
 	OnPreClientTravel();
+	ShowFadeOut();
 }
 
 void AADPlayerController::OnRep_Pawn()
@@ -162,7 +173,7 @@ void AADPlayerController::SetViewTarget(class AActor* NewViewTarget, FViewTarget
 	OnTargetViewChanged.Broadcast(GetViewTarget());
 }
 
-void AADPlayerController::C_StartCameraBlank_Implementation(FColor FadeColor, FVector2D FadeAlpha, float FadeStartTime, float FadeEndDelay, float FadeEndTime)
+void AADPlayerController::C_StartCameraBlink_Implementation(FColor FadeColor, FVector2D FadeAlpha, float FadeStartTime, float FadeEndDelay, float FadeEndTime)
 {
 	if (PlayerCameraManager != nullptr)
 	{
@@ -306,6 +317,54 @@ void AADPlayerController::ToggleTestHUD()
 	}
 }
 
+
+void AADPlayerController::ShowFadeOut(float Duration)
+{
+	if (PlayerCameraManager == nullptr)
+	{
+		LOGVN(Log, TEXT("There is no PlayerChameraManager"));
+		return;
+	}
+
+	if (IsLocalController() == false)
+	{
+		LOGVN(Log, TEXT("Not Local Controller"));
+		return;
+	}
+
+	PlayerCameraManager->StartCameraFade(
+		0.f,
+		1.f,
+		Duration,
+		FLinearColor::Black,
+		false,
+		true
+	);
+}
+
+void AADPlayerController::ShowFadeIn()
+{
+	if (PlayerCameraManager == nullptr)
+	{
+		LOGVN(Log, TEXT("There is no PlayerChameraManager"));
+		return;
+	}
+
+	if (IsLocalController() == false)
+	{
+		LOGVN(Log, TEXT("Not Local Controller"));
+		return;
+	}
+
+	PlayerCameraManager->StartCameraFade(
+		1.f,
+		0.0f,
+		3.0f,
+		FLinearColor::Black,
+		false,
+		false
+	);
+}
 void AADPlayerController::OnCameraBlankEnd()
 {
 	

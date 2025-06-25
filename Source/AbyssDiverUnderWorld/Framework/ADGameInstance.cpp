@@ -5,6 +5,8 @@
 
 #include "Kismet/GameplayStatics.h"
 
+const int32 UADGameInstance::MAX_PLAYER_NUMBER = 4;
+
 UADGameInstance::UADGameInstance(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
@@ -85,6 +87,7 @@ void UADGameInstance::ChangeAmbientVolume(const float& NewVolume)
 {
     GetSubsystem<USoundSubsystem>()->ChangeAmbientVolume(NewVolume);
 }
+
 
 const float UADGameInstance::GetCurrentMasterVolume() const
 {
