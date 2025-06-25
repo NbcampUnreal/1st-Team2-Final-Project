@@ -426,11 +426,22 @@ void UEquipUseComponent::OnRep_BoostActive()
 {
 	if (bBoostActive)
 	{
-		GetSoundSubsystem()->PlayAt(ESFX::DPVOn, OwningCharacter->GetActorLocation());
+		DPVAudioID = GetSoundSubsystem()->PlayAt(ESFX::DPVOn, OwningCharacter->GetActorLocation(), 1.0f, true, 0.2f);
+		LOGIC(Log, TEXT("OnRep : BoostOn!!"));
 	}
 	else
 	{
-		GetSoundSubsystem()->PlayAt(ESFX::DPVOff, OwningCharacter->GetActorLocation());
+		if (DPVAudioID)
+		{
+			GetSoundSubsystem()->StopAudio(DPVAudioID, true, 0.2f);
+			LOGIC(Log, TEXT("OnRep : BoostOff!!"));
+		}
+		else
+		{
+			LOGIC(Log, TEXT("No DPVAudioID"));
+		}
+
+		
 	}
 }
 
@@ -719,6 +730,7 @@ void UEquipUseComponent::BoostOn()
 
 	if (Amount <= 0 || bNightVisionOn) return;
 	DPVAudioID = GetSoundSubsystem()->PlayAt(ESFX::DPVOn, OwningCharacter->GetActorLocation(), 1.0f, true, 0.2f);
+	LOG(TEXT("Boost Sound On"));
 	bBoostActive = true;
 	TargetMultiplier = BoostMultiplier;  
 	SetComponentTickEnabled(true);
@@ -730,6 +742,7 @@ void UEquipUseComponent::BoostOff()
 	if (!OwningCharacter.IsValid()) return;
 
 	GetSoundSubsystem()->StopAudio(DPVAudioID, true, 0.2f);
+	LOG(TEXT("Boost Sound Off"));
 	bBoostActive = false;
 	TargetMultiplier = 1.f;  // 정상 속도로 복귀
 
