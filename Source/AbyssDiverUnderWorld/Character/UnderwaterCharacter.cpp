@@ -108,6 +108,7 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	RescueRequireTime = 6.0f;
 	GroggyHitPenalty = 5.0f;
 	RecoveryHealthPercentage = 0.1f;
+	RecoveryOxygenPenaltyRate = 0.5f;
 
 	bIsInCombat = false;
 	TargetingActorCount = 0;
@@ -198,6 +199,12 @@ void AUnderwaterCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
+	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("[%s] Begin Play / Controller : %s / Locally Controlled : %s"),
+		HasAuthority() ? TEXT("Server") : TEXT("Client"),
+		*GetNameSafe(GetController()),
+		IsLocallyControlled() ? TEXT("Yes") : TEXT("No")
+	);
+	
 	if (IsLocallyControlled())
 	{
 		GetMesh()->SetLightingChannels(false, true, false);
@@ -221,30 +228,16 @@ void AUnderwaterCharacter::BeginPlay()
 	NoiseEmitterComponent = NewObject<UPawnNoiseEmitterComponent>(this);
 	NoiseEmitterComponent->RegisterComponent();
 
-	// @ToDO: Controller 부분으로 분리
-	if (IsLocallyControlled() && HoldWidgetClass)
-	{
-		APlayerController* PC = Cast<APlayerController>(GetController());
-		// 인스턴스 생성 → 뷰포트에 붙이지 않음(필요 시 Remove/Attach)
-		HoldWidgetInstance = CreateWidget<UHoldInteractionWidget>(PC, HoldWidgetClass);
-		
-		InteractionComponent->OnHoldStart.AddDynamic(HoldWidgetInstance, &UHoldInteractionWidget::HandleHoldStart);
-		InteractionComponent->OnHoldCancel.AddDynamic(HoldWidgetInstance, &UHoldInteractionWidget::HandleHoldCancel);
-	}
-
 	SpawnRadar();
 	SpawnFlipperMesh();
 	LanternComponent->SpawnLight(GetMesh1PSpringArm(), LanternLength);
 
 	if (HasAuthority())
 	{
-		AADInGameMode* GM = Cast<AADInGameMode>(UGameplayStatics::GetGameMode(GetWorld()));
-		if (GM == nullptr)
+		if (AADInGameMode* GameManager = Cast<AADInGameMode>(UGameplayStatics::GetGameMode(GetWorld())))
 		{
-			return;
+			GameManager->BindDelegate(this);
 		}
-
-		GM->BindDelegate(this);
 	}
 
 	// @ToDo : Enter Normal로 처리가 가능한 부분은 Enter Normal로 처리
@@ -347,6 +340,12 @@ void AUnderwaterCharacter::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
 
+	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("[%s] PossessedBy / Controller : %s / Locally Controlled : %s"),
+		HasAuthority() ? TEXT("Server") : TEXT("Client"),
+		*GetNameSafe(GetController()),
+		IsLocallyControlled() ? TEXT("Yes") : TEXT("No")
+	);
+	
 	if (AADPlayerState* ADPlayerState = GetPlayerState<AADPlayerState>())
 	{
 		InitFromPlayerState(ADPlayerState);
@@ -383,6 +382,12 @@ void AUnderwaterCharacter::PostNetInit()
 void AUnderwaterCharacter::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
+
+	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("[%s] OnRep_PlayerState / Controller : %s / Locally Controlled : %s"),
+		HasAuthority() ? TEXT("Server") : TEXT("Client"),
+		*GetNameSafe(GetController()),
+		IsLocallyControlled() ? TEXT("Yes") : TEXT("No")
+	);
 
 	// UnPossess 상황에서 Error 로그가 발생하지 않도록 수정
 	if (APlayerState* CurrentPlayerState = GetPlayerState<APlayerState>())
@@ -433,6 +438,13 @@ void AUnderwaterCharacter::OnMovementModeChanged(EMovementMode PrevMovementMode,
 	}
 }
 
+void AUnderwaterCharacter::Destroyed()
+{
+	Super::Destroyed();
+
+	DisconnectRope();
+}
+
 void AUnderwaterCharacter::LaunchCharacter(FVector LaunchVelocity, bool bXYOverride, bool bZOverride)
 {
 	// LaunchCharacter는 Server, Client 양쪽에서 호출되어서 따로 Replicate할 필요는 없다.
@@ -465,7 +477,6 @@ void AUnderwaterCharacter::SetEnvironmentState(EEnvironmentState State)
 		bCanUseEquipment = true;
 		break;
 	case EEnvironmentState::Ground:
-		// 지상에서는 이동 방향으로 회전을 하게 한다.
 		GetCharacterMovement()->GravityScale = ExpectedGravityZ / GetWorld()->GetGravityZ();
 		SetFlipperMeshVisibility(false);
 		FirstPersonCameraArm->bEnableCameraRotationLag = false;
@@ -584,9 +595,12 @@ void AUnderwaterCharacter::UnBind()
 	}
 
 	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Character %s unbind from %s"), *GetName(), BindCharacter ? *BindCharacter->GetName() : TEXT("None"));
-	
-	BindCharacter->UnbindToCharacter(this);
-	BindCharacter = nullptr;
+
+	if (IsValid(BindCharacter))
+	{
+		BindCharacter->UnbindToCharacter(this);
+		BindCharacter = nullptr;
+	}
 
 	DisconnectRope();
 	UpdateBindInteractable();
@@ -1668,6 +1682,10 @@ void AUnderwaterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 float AUnderwaterCharacter::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent,
 	class AController* EventInstigator, AActor* DamageCauser)
 {
+	if (!HasAuthority())
+	{
+		return 0.0f;
+	}
 	if (bIsInvincible)
 	{
 		return 0.0f;
@@ -1702,6 +1720,7 @@ float AUnderwaterCharacter::TakeDamage(float DamageAmount, struct FDamageEvent c
 	const FShieldAbsorbResult ShieldAbsorbResult = ShieldComponent->AbsorbDamage(DamageAmount);
 	// UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Take Damage : %f, Remaining Damage : %f"), DamageAmount, ShieldAbsorbResult.RemainingDamage);
 
+	// Shield Over Damage를 Stat Component에서 계산
 	const float ActualDamage = Super::TakeDamage(ShieldAbsorbResult.RemainingDamage, DamageEvent, EventInstigator, DamageCauser);
 	if (ActualDamage > 0.0f)
 	{
@@ -1814,6 +1833,8 @@ void AUnderwaterCharacter::RequestRevive()
 		SetCharacterState(ECharacterState::Normal);
 		const float RecoveryHealth = StatComponent->GetMaxHealth() * RecoveryHealthPercentage;
 		StatComponent->RestoreHealth(RecoveryHealth);
+		const float RecoveryOxygen = OxygenComponent->GetOxygenLevel() * RecoveryOxygenPenaltyRate;
+		OxygenComponent->InitOxygenSystem(RecoveryOxygen, OxygenComponent->GetMaxOxygenLevel());
 	}
 	else
 	{
@@ -2358,7 +2379,6 @@ void AUnderwaterCharacter::OnRep_BindCharacter()
 		DisconnectRope();
 	}
 
-	AdjustSpeed();
 	UpdateBindInteractable();
 }
 

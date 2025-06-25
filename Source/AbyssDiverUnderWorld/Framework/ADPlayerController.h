@@ -52,7 +52,18 @@ public:
 	 * UI를 갱신하기 위해서는 Local Player Controller에서만 호출되도록 한다.
 	 */
 	virtual void SetViewTarget(class AActor* NewViewTarget, FViewTargetTransitionParams TransitionParams = FViewTargetTransitionParams()) override;
-	
+
+	/** Camera Blank를 시작한다. FadeAlpha의 X값은 시작 알파 값이고 Y값은 종료 알파 값이다.
+	 * FadeTime 동안 종료 알파 값으로 Fade Out을 한다.
+	 * FadeOut 완료되면 FadeTime 동안 FadeColor로 Fade In을 한다.
+	*/
+	UFUNCTION(Reliable, Client)
+	void C_StartCameraBlank(FColor FadeColor, FVector2D FadeAlpha, float FadeStartTime, float FadeEndDelay, float FadeEndTime);
+	void C_StartCameraBlank_Implementation(FColor FadeColor, FVector2D FadeAlpha, float FadeStartTime, float FadeEndDelay, float FadeEndTime);
+
+	UFUNCTION(BlueprintCallable)
+	bool IsCameraBlanking() const;
+
 protected:
 
 	/** 관전 상태가 시작될 때 호출되는 함수 */
@@ -76,6 +87,7 @@ protected:
 	UFUNCTION(Exec)
 	void ToggleTestHUD();
 	
+	void OnCameraBlankEnd();
 
 #pragma endregion
 	
@@ -108,7 +120,16 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UInteractionDescriptionWidget> InteractionWidget;
-	
+
+	UPROPERTY(EditAnywhere, Category = "UI")
+	TSubclassOf<class UHoldInteractionWidget> InteractionHoldWidgetClass;
+
+	UPROPERTY()
+	TObjectPtr<UHoldInteractionWidget> InteractionHoldWidget;
+
+	/** Camera Blank Timer Handle */
+	FTimerHandle CameraBlankTimerHandle;
+
 #pragma endregion 
 
 #pragma region Getters / Setters
