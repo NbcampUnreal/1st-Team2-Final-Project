@@ -146,14 +146,14 @@ private:
 	int32 PreviousEquipIndex = 0;
 	TArray<TWeakObjectPtr<APawn>> ActiveInstigators;
 	int32 PendingLoadCount = 0;
-	
+
 #pragma endregion
 
 #pragma region Getter, Setteer
 public:
 	virtual UADInteractableComponent* GetInteractableComponent() const override;
 	virtual bool IsHoldMode() const;
-	virtual float GetHoldDuration_Implementation() const override;
+	virtual float GetHoldDuration_Implementation(AActor* InstigatorActor) const override;
 	virtual FString GetInteractionDescription() const override;
 
 private:
