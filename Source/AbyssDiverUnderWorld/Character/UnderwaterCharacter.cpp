@@ -848,6 +848,15 @@ void AUnderwaterCharacter::OnRep_CurrentTool()
 	}
 }
 
+void AUnderwaterCharacter::OnSpectated()
+{
+	SetMeshFirstPersonSetting(true);
+}
+
+void AUnderwaterCharacter::OnEndSpectated()
+{
+	SetMeshFirstPersonSetting(false);
+}
 
 void AUnderwaterCharacter::OnMoveSpeedChanged(float NewMoveSpeed)
 {

@@ -66,5 +66,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> ViewPrevPlayerAction;
 
+	TWeakObjectPtr<class AUnderwaterCharacter> PrevTargetCharacter;
+	
 #pragma endregion
 };

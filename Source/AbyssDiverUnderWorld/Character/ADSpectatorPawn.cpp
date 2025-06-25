@@ -88,11 +88,19 @@ void AADSpectatorPawn::OnTargetViewChanged(AActor* NewViewTarget)
 		*GetNameSafe(NewViewTarget),
 		GetNetMode() == ENetMode::NM_Client ? TEXT("Client") : TEXT("Server")
 	);
+
+	if (PrevTargetCharacter.IsValid())
+	{
+		PrevTargetCharacter->OnEndSpectated();
+	}
+	
 	if (NewViewTarget && NewViewTarget->IsA(AUnderwaterCharacter::StaticClass()))
 	{
 		if (AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(NewViewTarget))
 		{
 			UnderwaterCharacter->OnCharacterStateChangedDelegate.AddUniqueDynamic(this, &AADSpectatorPawn::OnCharacterStateChanged);
+			UnderwaterCharacter->OnSpectated();
+			PrevTargetCharacter = UnderwaterCharacter;
 		}
 	}
 }

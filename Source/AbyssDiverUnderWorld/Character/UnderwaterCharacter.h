@@ -265,6 +265,10 @@ public:
 
 	UFUNCTION()
 	void OnRep_CurrentTool();
+
+	void OnSpectated();
+
+	void OnEndSpectated();
 	
 protected:
 
