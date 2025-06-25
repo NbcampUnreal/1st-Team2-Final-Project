@@ -40,10 +40,8 @@ public:
 	UFUNCTION(BlueprintImplementableEvent)
 	void OnPostSeamlessTravel();
 
-	UFUNCTION(Client, Reliable)
-	void C_ShowFadeOut(float Duration = 2.0f);
-	void C_ShowFadeOut_Implementation(float Duration = 2.0f);
-
+	UFUNCTION()
+	void ShowFadeOut(float Duration = 2.0f);
 
 	UFUNCTION()
 	void ShowFadeIn();

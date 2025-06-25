@@ -123,6 +123,7 @@ void AADPlayerController::PostSeamlessTravel()
 void AADPlayerController::C_OnPreClientTravel_Implementation()
 {
 	OnPreClientTravel();
+	ShowFadeOut();
 }
 
 void AADPlayerController::S_RequestSelectLevel_Implementation(const EMapName InLevelName)
@@ -209,7 +210,7 @@ void AADPlayerController::ToggleTestHUD()
 	}
 }
 
-void AADPlayerController::C_ShowFadeOut_Implementation(float Duration)
+void AADPlayerController::ShowFadeOut(float Duration)
 {
 	if (PlayerCameraManager)
 	{

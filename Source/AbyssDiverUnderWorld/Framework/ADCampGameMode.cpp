@@ -124,7 +124,6 @@ void AADCampGameMode::TravelToInGameLevel()
 	for (AADPlayerController* PC : TActorRange<AADPlayerController>(GetWorld()))
 	{
 		PC->C_OnPreClientTravel();
-		PC->C_ShowFadeOut();
 	}
 
 	FTimerHandle TravelTimerHandle;
