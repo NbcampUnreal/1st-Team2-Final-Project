@@ -18,6 +18,11 @@
 #include "InputMappingContext.h"
 #include "EnhancedInputComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "UI/LoadingScreenWidget.h"
+
+#include "Camera/PlayerCameraManager.h"
+#include "TimerManager.h"
+#include "Engine/World.h"
 
 AADPlayerController::AADPlayerController()
 {
@@ -101,8 +106,18 @@ void AADPlayerController::PostNetInit()
 
 void AADPlayerController::PostSeamlessTravel()
 {
+	LOG(TEXT("Post SeamlessTravel"));
 	Super::PostSeamlessTravel();
 	OnPostSeamlessTravel();
+	FTimerHandle FadeInTimerHandle;
+	GetWorld()->GetTimerManager().SetTimer(
+		FadeInTimerHandle,
+		this,
+		&AADPlayerController::ShowFadeIn,
+		2.0f, 
+		false
+	);
+
 }
 
 void AADPlayerController::C_OnPreClientTravel_Implementation()
@@ -192,4 +207,35 @@ void AADPlayerController::ToggleTestHUD()
 	{
 		PlayerHUDComponent->ToggleTestHUD();
 	}
+}
+
+void AADPlayerController::C_ShowFadeOut_Implementation(float Duration)
+{
+	if (PlayerCameraManager)
+	{
+		PlayerCameraManager->StartCameraFade(
+			0.f,                        // From: 투명
+			1.f,                        // To: 검정
+			Duration,
+			FLinearColor::Black,
+			false,                      // 오디오 페이드 X
+			true                        // 유지 (검정 상태로 고정)
+		);
+	}
+}
+
+void AADPlayerController::ShowFadeIn()
+{
+	if (PlayerCameraManager)
+	{
+		PlayerCameraManager->StartCameraFade(
+			1.f,                        // From: 검정
+			0.0f,                        // To: 투명
+			3.0f,
+			FLinearColor::Black,
+			false,
+			false                      // 유지 X → 다시 원래대로
+		);
+	}
+
 }

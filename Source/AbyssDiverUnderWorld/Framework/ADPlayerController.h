@@ -7,6 +7,7 @@
 #include "ADPlayerController.generated.h"
 
 enum class EMapName : uint8;
+class ULoadingScreenWidget;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADPlayerController : public APlayerController
@@ -39,6 +40,15 @@ public:
 	UFUNCTION(BlueprintImplementableEvent)
 	void OnPostSeamlessTravel();
 
+	UFUNCTION(Client, Reliable)
+	void C_ShowFadeOut(float Duration = 2.0f);
+	void C_ShowFadeOut_Implementation(float Duration = 2.0f);
+
+
+	UFUNCTION()
+	void ShowFadeIn();
+
+
 protected:
 
 	UFUNCTION(Server, Reliable)
@@ -61,7 +71,8 @@ protected:
 	
 #pragma region Variable
 
-private:
+	
+protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputMappingContext> DefaultMappingContext;
 
@@ -77,6 +88,12 @@ private:
 	UPROPERTY()
 	TObjectPtr<UInteractionDescriptionWidget> InteractionWidget;
 	
+	UPROPERTY(EditAnywhere, Category = "UI")
+	TSubclassOf<ULoadingScreenWidget> LoadingWidgetClass;
+
+	UPROPERTY(BlueprintReadOnly)
+	TObjectPtr<ULoadingScreenWidget> LoadingWidget;
+
 #pragma endregion 
 
 #pragma region Getters / Setters
