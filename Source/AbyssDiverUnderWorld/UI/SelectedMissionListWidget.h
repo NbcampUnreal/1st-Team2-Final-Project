@@ -6,8 +6,8 @@
 #include "SelectedMissionListWidget.generated.h"
 
 class UVerticalBox;
-class UMissionEntryWidget;
 class UTextBlock;
+class USelectedMissionSlot;
 
 struct FActivatedMissionInfoList;
 
@@ -25,6 +25,7 @@ public:
     void AddElement(const FString& ElementText);
     void RemoveElementAt(const int32& Index);
     void ModifyElementAt(const FString& NewText, const int32& Index);
+    void FinishElementAt(const int8& Index);
 
     void AddOrModifyElement(int32 ChangedIndex, const FActivatedMissionInfoList& ChangedValue);
 
@@ -38,8 +39,8 @@ protected:
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UVerticalBox> VerticalBox_MissionList;
 
-    // 미션 엔트리 위젯 클래스
+    // 미션 슬롯 위젯 클래스
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mission")
-    TSubclassOf<UMissionEntryWidget> MissionEntryWidgetClass;
+    TSubclassOf<UUserWidget> SelectedMissionSlotClass;
 #pragma endregion
 };

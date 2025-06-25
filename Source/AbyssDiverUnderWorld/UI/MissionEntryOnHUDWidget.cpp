@@ -2,7 +2,7 @@
 
 #include "Components/Image.h"
 
-const FLinearColor UMissionEntryOnHUDWidget::CompleteColor = FLinearColor::Yellow;
+const FLinearColor UMissionEntryOnHUDWidget::CompleteColor = FLinearColor(0.0f, 1.0f, 0.64f, 1.0f);
 const FLinearColor UMissionEntryOnHUDWidget::IncompleteColor = FLinearColor::White;
 
 void UMissionEntryOnHUDWidget::ChangeImage(UTexture2D* Image)

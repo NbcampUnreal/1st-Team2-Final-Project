@@ -40,14 +40,45 @@ public:
 	UFUNCTION(BlueprintImplementableEvent)
 	void OnPostSeamlessTravel();
 
+
 	UFUNCTION()
 	void ShowFadeOut(float Duration = 2.0f);
 
 	UFUNCTION()
 	void ShowFadeIn();
 
+	/** Pawn이 변경되었을 때 호출된다. Client에서 관전 시작 시에 시점 조정을 위해 사용 */
+	virtual void OnRep_Pawn() override;
+	
+	/** Player가 관전을 하도록 한다. Server에서만 작동하며 Client도 관전을 진행하게 한다. */
+	void StartSpectate();
+
+	/** View Target 변경 Delegate를 호출하기 위해 오버라이딩을 한다.
+	 * Server에서 호출될 경우 현재 자신이 로컬이 아닐 경우 Client에게 RPC를 호출해서 일치시킨다.
+	 * 즉, Server에서 모든 Player Controller에서 Delegate를 호출하게 된다.
+	 * Client에서는 Local Player Controller의 Delegate를 호출하게 된다.
+	 * UI를 갱신하기 위해서는 Local Player Controller에서만 호출되도록 한다.
+	 */
+	virtual void SetViewTarget(class AActor* NewViewTarget, FViewTargetTransitionParams TransitionParams = FViewTargetTransitionParams()) override;
+
+	/** Camera Blank를 시작한다. FadeAlpha의 X값은 시작 알파 값이고 Y값은 종료 알파 값이다.
+	 * FadeTime 동안 종료 알파 값으로 Fade Out을 한다.
+	 * FadeOut 완료되면 FadeTime 동안 FadeColor로 Fade In을 한다.
+	*/
+	UFUNCTION(Reliable, Client)
+	void C_StartCameraBlank(FColor FadeColor, FVector2D FadeAlpha, float FadeStartTime, float FadeEndDelay, float FadeEndTime);
+	void C_StartCameraBlank_Implementation(FColor FadeColor, FVector2D FadeAlpha, float FadeStartTime, float FadeEndDelay, float FadeEndTime);
+
+	UFUNCTION(BlueprintCallable)
+	bool IsCameraBlanking() const;
 
 protected:
+
+	/** 관전 상태가 시작될 때 호출되는 함수 */
+	virtual void BeginSpectatingState() override;
+
+	/** 관전 종료 시에 호출되는 함수 */
+	virtual void EndSpectatingState() override;
 
 	UFUNCTION(Server, Reliable)
 	void S_RequestSelectLevel(const EMapName InLevelName);
@@ -64,13 +95,26 @@ protected:
 	UFUNCTION(Exec)
 	void ToggleTestHUD();
 	
+	void OnCameraBlankEnd();
 
 #pragma endregion
 	
 #pragma region Variable
 
+
+public:
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSpectateChanged, bool, bIsSpectating);
+	/** 관전 상태가 변경될 때 호출되는 Delegate */
+	UPROPERTY(BlueprintAssignable, Category = "Spectate")
+	FOnSpectateChanged OnSpectateChanged;
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnTargetViewChanged, AActor*, NewViewTarget);
+	/** View Target가 변경될 때 호출되는 Delegate. SetViewTarget를 주석을 확인할 것 */
+	UPROPERTY(BlueprintAssignable, Category = "ViewTarget")
+	FOnTargetViewChanged OnTargetViewChanged;
 	
-protected:
+private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputMappingContext> DefaultMappingContext;
 
@@ -85,12 +129,16 @@ protected:
 
 	UPROPERTY()
 	TObjectPtr<UInteractionDescriptionWidget> InteractionWidget;
-	
-	UPROPERTY(EditAnywhere, Category = "UI")
-	TSubclassOf<ULoadingScreenWidget> LoadingWidgetClass;
 
-	UPROPERTY(BlueprintReadOnly)
-	TObjectPtr<ULoadingScreenWidget> LoadingWidget;
+
+	UPROPERTY(EditAnywhere, Category = "UI")
+	TSubclassOf<class UHoldInteractionWidget> InteractionHoldWidgetClass;
+
+	UPROPERTY()
+	TObjectPtr<UHoldInteractionWidget> InteractionHoldWidget;
+
+	/** Camera Blank Timer Handle */
+	FTimerHandle CameraBlankTimerHandle;
 
 #pragma endregion 
 

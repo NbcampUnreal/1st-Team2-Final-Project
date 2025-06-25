@@ -9,6 +9,8 @@
 #include "Net/UnrealNetwork.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "AbyssDiverUnderWorld.h"
+#include "NiagaraFunctionLibrary.h"
+#include "Character/UnderwaterCharacter.h"
 #include "Components/CapsuleComponent.h"
 #include "Interactable/OtherActors/Radars/RadarReturnComponent.h"
 
@@ -34,6 +36,8 @@ AMonster::AMonster()
 	bReplicates = true;
 	SetReplicatingMovement(true);
 	
+	MonsterSoundComponent = CreateDefaultSubobject<UMonsterSoundComponent>(TEXT("MonsterSoundComponent"));
+
 	// Set Default PossessSetting
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 	// Set Collision Channel == Monster
@@ -110,6 +114,14 @@ void AMonster::M_PlayMontage_Implementation(UAnimMontage* AnimMontage, float InP
 	PlayAnimMontage(AnimMontage, InPlayRate, StartSectionName);
 }
 
+void AMonster::M_SpawnBloodEffect_Implementation(FVector Location, FRotator Rotation)
+{
+	if (BloodEffect)
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), BloodEffect, Location, Rotation);
+	}
+}
+
 float AMonster::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
 	if (!HasAuthority())
@@ -121,11 +133,37 @@ float AMonster::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, 
 
 	if (IsValid(StatComponent))
 	{
+		FVector BloodLoc = GetActorLocation() + FVector(0, 0, 20.f);
+		FRotator BloodRot = GetActorRotation();
+		M_SpawnBloodEffect(BloodLoc, BloodRot);
+		
+		AActor* InstigatorPlayer = IsValid(EventInstigator) ? EventInstigator->GetPawn() : nullptr;
 		if (StatComponent->GetCurrentHealth() <= 0)
 		{
 			OnDeath();
 			// Delegate Broadcasts for Achievements
 			OnMonsterDead.Broadcast(DamageCauser, this);
+
+			// Disable aggro when dead
+			ForceRemoveDetection(InstigatorPlayer);
+		}
+		else
+		{
+			if (IsValid(HitReactAnimations))
+			{
+				M_PlayMontage(HitReactAnimations);
+			}
+			else if (MonsterSoundComponent)
+			{
+				MonsterSoundComponent->S_PlayHitReactSound();
+			}
+			
+			// If aggro is not on TargetPlayer, set aggro
+			if (MonsterState != EMonsterState::Chase && MonsterState != EMonsterState::Flee)
+			{
+				AddDetection(InstigatorPlayer);
+				SetMonsterState(EMonsterState::Chase);
+			}
 		}
 	}
 	return Damage;
@@ -133,38 +171,68 @@ float AMonster::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, 
 
 void AMonster::OnDeath()
 {
+	if (MonsterSoundComponent)
+	{
+		// Stop Existing LoopSound
+		MonsterSoundComponent->M_StopAllLoopSound();
+	}
+
 	StopMovement();
-	AnimInstance->StopAllMontages(1.0f);
+	M_OnDeath();
 
 	SetMonsterState(EMonsterState::Death);
+}
 
-	AIController->UnPossess();
+void AMonster::M_OnDeath_Implementation()
+{
+	GetCharacterMovement()->StopMovementImmediately();
+	
+	if (IsValid(AnimInstance))
+	{
+		AnimInstance->StopAllMontages(1.0f);
+	}
 
-	// Auto Destroy after 2seconds.
-	SetLifeSpan(2.0f);
+	// Applying the Physics Asset Physics Engine
+	FTimerHandle TimerHandle;
+	GetWorldTimerManager().SetTimer(TimerHandle, this, &AMonster::ApplyPhysicsSimulation, 0.5f, false);
+}
+
+void AMonster::ApplyPhysicsSimulation()
+{
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	GetAttackHitComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	GetMesh()->SetEnableGravity(true);
+	GetMesh()->SetSimulatePhysics(true);
 }
 
 void AMonster::PlayAttackMontage()
 {
+	if (!HasAuthority()) return;
+
+	UAnimInstance* AnimInst = GetMesh()->GetAnimInstance();
+	if (!AnimInst) return;
+
+	// If any montage is playing, prevent duplicate playback
+	if (AnimInst->IsAnyMontagePlaying()) return;
+	
 	const uint8 AttackType = FMath::RandRange(0, AttackAnimations.Num() - 1);
 
 	UAnimMontage* SelectedMontage = AttackAnimations[AttackType];
 
 	if (IsValid(SelectedMontage))
 	{
-		UAnimInstance* AnimInst = GetMesh()->GetAnimInstance();
-		if (AnimInst && !AnimInst->Montage_IsPlaying(SelectedMontage))
-		{
-			M_PlayMontage(SelectedMontage);
-		}
+		UE_LOG(LogTemp, Warning, TEXT("Playing Attack Montage: %s"), *SelectedMontage->GetName());
+		M_PlayMontage(SelectedMontage);
 	}
 }
 
 void AMonster::StopMovement()
 {
-	if (AIController)
+	if (IsValid(AIController))
 	{
 		AIController->StopMovement();
+		AIController->UnPossess();
 	}
 }
 
@@ -253,6 +321,12 @@ void AMonster::AddDetection(AActor* Actor)
 	{
 		TargetActor = Actor;
 
+		AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor);
+		if (Player)
+		{
+			Player->OnTargeted();
+		}
+
 		if (BlackboardComponent)
 		{
 			BlackboardComponent->SetValueAsObject(TargetActorKey, TargetActor);
@@ -268,6 +342,13 @@ void AMonster::RemoveDetection(AActor* Actor)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[%s] RemoveDetection : Invalid Player! Force remove."), *GetName());
 		DetectionRefCounts.Remove(Actor);
+
+		AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor);
+		if (Player)
+		{
+			Player->OnUntargeted();
+		}
+
 		return;
 	}
 
@@ -290,6 +371,12 @@ void AMonster::RemoveDetection(AActor* Actor)
 		{
 			TargetActor = nullptr;
 
+			AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor);
+			if (Player)
+			{
+				Player->OnUntargeted();
+			}
+
 			if (BlackboardComponent)
 			{
 				BlackboardComponent->ClearValue(TargetActorKey);
@@ -301,6 +388,13 @@ void AMonster::RemoveDetection(AActor* Actor)
 				if (IsValid(Pair.Key))
 				{
 					TargetActor = Pair.Key;
+
+					AUnderwaterCharacter* NextAgrroPlayer = Cast<AUnderwaterCharacter>(Pair.Key);
+					if (NextAgrroPlayer)
+					{
+						NextAgrroPlayer->OnTargeted();
+					}
+
 					if (BlackboardComponent)
 					{
 						BlackboardComponent->SetValueAsObject(TargetActorKey, TargetActor);
@@ -327,6 +421,13 @@ void AMonster::ForceRemoveDetection(AActor* Actor)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[%s] RemoveDetection : Invalid Player! Force remove."), *GetName());
 		DetectionRefCounts.Remove(Actor);
+
+		AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor);
+		if (Player)
+		{
+			Player->OnUntargeted();
+		}
+
 		return;
 	}
 
@@ -348,6 +449,12 @@ void AMonster::ForceRemoveDetection(AActor* Actor)
 	if (TargetActor == Actor)
 	{
 		TargetActor = nullptr;
+		
+		AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor);
+		if (Player)
+		{
+			Player->OnUntargeted();
+		}
 
 		if (BlackboardComponent)
 		{
@@ -360,6 +467,13 @@ void AMonster::ForceRemoveDetection(AActor* Actor)
 			if (IsValid(Pair.Key))
 			{
 				TargetActor = Pair.Key;
+				
+				AUnderwaterCharacter* NextAgrroPlayer = Cast<AUnderwaterCharacter>(Pair.Key);
+				if (NextAgrroPlayer)
+				{
+					NextAgrroPlayer->OnTargeted();
+				}
+
 				if (BlackboardComponent)
 				{
 					BlackboardComponent->SetValueAsObject(TargetActorKey, TargetActor);
@@ -370,7 +484,6 @@ void AMonster::ForceRemoveDetection(AActor* Actor)
 	}
 }
 
-
 void AMonster::SetMonsterState(EMonsterState NewState)
 {
 	if (!HasAuthority()) return;
@@ -378,6 +491,12 @@ void AMonster::SetMonsterState(EMonsterState NewState)
 	if (MonsterState == NewState) return;
 
 	if (GetController() == nullptr) return;
+
+	if (MonsterSoundComponent)
+	{
+		// Stop Existing LoopSound
+		MonsterSoundComponent->S_StopAllLoopSound();
+	}
 
 	MonsterState = NewState;
 	UE_LOG(LogTemp, Warning, TEXT("MonsterState changed: %d -> %d"), (int32)MonsterState, (int32)NewState);
@@ -390,8 +509,6 @@ void AMonster::SetMonsterState(EMonsterState NewState)
 	switch (NewState)
 	{
 	case EMonsterState::Detected:
-		LOG(TEXT("AI is Detected"));
-		StopMovement();
 		if (IsValid(DetectedAnimations))
 		{
 			M_PlayMontage(DetectedAnimations);
@@ -399,14 +516,17 @@ void AMonster::SetMonsterState(EMonsterState NewState)
 		break;
 
 	case EMonsterState::Chase:
-		LOG(TEXT("AI starts Chase"));
 		SetMaxSwimSpeed(ChaseSpeed);
+		MonsterSoundComponent->S_PlayChaseLoopSound();
+
 		bIsChasing = true;
 		// @TODO : Add animations, sounds, and more
 		break;
 
 	case EMonsterState::Patrol:
 		SetMaxSwimSpeed(PatrolSpeed);
+		MonsterSoundComponent->S_PlayPatrolLoopSound();
+
 		if (UBlackboardComponent* BB = Cast<AAIController>(GetController())->GetBlackboardComponent())
 		{
 			BB->ClearValue(InvestigateLocationKey);
@@ -422,6 +542,7 @@ void AMonster::SetMonsterState(EMonsterState NewState)
 
 	case EMonsterState::Flee:
 		SetMaxSwimSpeed(FleeSpeed);
+		MonsterSoundComponent->S_PlayFleeLoopSound();
 		bIsChasing = false;
 
 	default:

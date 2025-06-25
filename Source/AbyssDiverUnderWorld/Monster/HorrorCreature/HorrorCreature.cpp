@@ -61,20 +61,12 @@ void AHorrorCreature::Tick(float DeltaTime)
 			SwallowedPlayer->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepWorldTransform, TEXT("MouthSocket"));
 			SwallowedPlayer->SetActorRelativeLocation(FVector::ZeroVector);
 
-			// 상태 전이
 			SetMonsterState(EMonsterState::Flee);
 			BlackboardComponent->ClearValue(TargetActorKey);
 
-			// 연출 종료
 			bSwallowingInProgress = false;
 		}
 	}
-}
-
-
-void AHorrorCreature::PossessedBy(AController* NewController)
-{
-	Super::PossessedBy(NewController);
 }
 
 void AHorrorCreature::OnSwallowTriggerOverlap(
@@ -87,6 +79,8 @@ void AHorrorCreature::OnSwallowTriggerOverlap(
 {
 	if (!bCanSwallow || !HasAuthority() || SwallowedPlayer) return;
 	if (OtherActor == this) return;
+	AUnderwaterCharacter* PlayerCharacter = Cast<AUnderwaterCharacter>(OtherActor);
+	if (!PlayerCharacter || PlayerCharacter->GetCharacterState() != ECharacterState::Normal) return;
 
 	AUnderwaterCharacter* Victim = Cast<AUnderwaterCharacter>(OtherActor);
 	if (Victim)
@@ -99,6 +93,8 @@ void AHorrorCreature::OnSwallowTriggerOverlap(
 void AHorrorCreature::SwallowPlayer(AUnderwaterCharacter* Victim)
 {
 	if (!HasAuthority() || !Victim || SwallowedPlayer) return;
+	AUnderwaterCharacter* PlayerCharacter = Cast<AUnderwaterCharacter>(Victim);
+	if (!PlayerCharacter || PlayerCharacter->GetCharacterState() != ECharacterState::Normal) return;
 
 	SwallowedPlayer = Victim;
 	bCanSwallow = false;
@@ -154,6 +150,7 @@ void AHorrorCreature::EjectPlayer(AUnderwaterCharacter* Victim)
 
 	SwallowedPlayer = nullptr;
 	bCanSwallow = true;
+	ForceRemoveDetection(Victim);
 	InitializeAggroVariable();
 
 	FTimerHandle SetPatrolTimeHandle;
