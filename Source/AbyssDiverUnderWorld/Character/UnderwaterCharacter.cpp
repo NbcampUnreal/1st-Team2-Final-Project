@@ -342,7 +342,6 @@ void AUnderwaterCharacter::PossessedBy(AController* NewController)
 
 	if (IsLocallyControlled())
 	{
-		UE_LOG(LogAbyssDiverCharacter, Display, TEXT("PossessedBy : %s"), *GetName());
 		SetMeshFirstPersonSetting(true);
 	}
 	
@@ -366,7 +365,7 @@ void AUnderwaterCharacter::UnPossessed()
 {
 	Super::UnPossessed();
 
-	SetMeshFirstPersonSetting(false);
+	OnLeavePawn();
 }
 
 void AUnderwaterCharacter::PostInitializeComponents()
@@ -395,14 +394,9 @@ void AUnderwaterCharacter::OnRep_PlayerState()
 		*GetNameSafe(GetController()),
 		IsLocallyControlled() ? TEXT("Yes") : TEXT("No")
 	);
-
-	if (IsLocallyControlled())
-	{
-		SetMeshFirstPersonSetting(true);
-	}
 	
 	// UnPossess 상황에서 Error 로그가 발생하지 않도록 수정
-	if (APlayerState* CurrentPlayerState = GetPlayerState<APlayerState>())
+	if (APlayerState* CurrentPlayerState = GetPlayerState<AADPlayerState>())
 	{
 		if (AADPlayerState* ADPlayerState = Cast<AADPlayerState>(CurrentPlayerState))
 		{
@@ -418,6 +412,14 @@ void AUnderwaterCharacter::OnRep_PlayerState()
 		{
 			LOGVN(Error, TEXT("Player State Init failed : %d"), GetUniqueID());
 		}
+		if (IsLocallyControlled())
+		{
+			SetMeshFirstPersonSetting(true);
+		}
+	}
+	else
+	{
+		OnLeavePawn();
 	}
 }
 
@@ -1420,6 +1422,23 @@ void AUnderwaterCharacter::SetMeshFirstPersonSetting(bool bIsFirstPerson)
 	{
 		GetMesh()->SetLightingChannels(false, true, true);
 	}
+}
+
+void AUnderwaterCharacter::OnLeavePawn()
+{
+	// 어차피 안 돌아올 것이므로 아무튼 숨김 처리한다.
+	GetMesh1P()->SetHiddenInGame(true);
+
+	if (LeftFlipperMesh1PComponent)
+	{
+		LeftFlipperMesh1PComponent->SetHiddenInGame(true);
+	}
+	if (RightFlipperMesh1PComponent)
+	{
+		RightFlipperMesh1PComponent->SetHiddenInGame(true);
+	}
+
+	SetMeshFirstPersonSetting(false);
 }
 
 void AUnderwaterCharacter::RequestToggleRadar()

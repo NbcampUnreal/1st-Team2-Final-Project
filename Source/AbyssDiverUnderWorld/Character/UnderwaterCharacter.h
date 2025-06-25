@@ -394,6 +394,9 @@ protected:
 
 	/** 1인칭, 3인칭 시점의 메시를 설정 */
 	void SetMeshFirstPersonSetting(bool bIsFirstPerson);
+
+	/** Pawn을 떠날 때 호출되는 함수. Pawn이 떠나면 캐릭터는 관전 상태로 변경된다. */
+	void OnLeavePawn();
 	
 	/** Radar Toggle을 요청한다. */
 	UFUNCTION(BlueprintCallable)
