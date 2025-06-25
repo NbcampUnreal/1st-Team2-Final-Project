@@ -66,8 +66,8 @@ public:
 	 * FadeOut 완료되면 FadeTime 동안 FadeColor로 Fade In을 한다.
 	*/
 	UFUNCTION(Reliable, Client)
-	void C_StartCameraBlank(FColor FadeColor, FVector2D FadeAlpha, float FadeStartTime, float FadeEndDelay, float FadeEndTime);
-	void C_StartCameraBlank_Implementation(FColor FadeColor, FVector2D FadeAlpha, float FadeStartTime, float FadeEndDelay, float FadeEndTime);
+	void C_StartCameraBlink(FColor FadeColor, FVector2D FadeAlpha, float FadeStartTime, float FadeEndDelay, float FadeEndTime);
+	void C_StartCameraBlink_Implementation(FColor FadeColor, FVector2D FadeAlpha, float FadeStartTime, float FadeEndDelay, float FadeEndTime);
 
 	UFUNCTION(BlueprintCallable)
 	bool IsCameraBlanking() const;

@@ -173,7 +173,7 @@ void AADPlayerController::SetViewTarget(class AActor* NewViewTarget, FViewTarget
 	OnTargetViewChanged.Broadcast(GetViewTarget());
 }
 
-void AADPlayerController::C_StartCameraBlank_Implementation(FColor FadeColor, FVector2D FadeAlpha, float FadeStartTime, float FadeEndDelay, float FadeEndTime)
+void AADPlayerController::C_StartCameraBlink_Implementation(FColor FadeColor, FVector2D FadeAlpha, float FadeStartTime, float FadeEndDelay, float FadeEndTime)
 {
 	if (PlayerCameraManager != nullptr)
 	{

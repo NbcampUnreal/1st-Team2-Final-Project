@@ -51,8 +51,6 @@ void UUnderwaterEffectComponent::BeginPlay()
 		OwnerCharacter->OnDamageTakenDelegate.AddDynamic(this, &UUnderwaterEffectComponent::OnDamageTaken);
 		OwnerCharacter->OnKnockbackDelegate.AddDynamic(this, &UUnderwaterEffectComponent::OnKnockback);
 		OwnerCharacter->OnKnockbackEndDelegate.AddDynamic(this, &UUnderwaterEffectComponent::OnKnockbackEnd);
-		// Movement Sound : 0.5f
-		// Sprint Sound : 0.5f
 	}
 	else
 	{

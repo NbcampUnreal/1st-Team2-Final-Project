@@ -150,9 +150,9 @@ void UCombatEffectComponent::OnDamageTaken(float DamageAmount, float CurrentHeal
 		return;
 	}
 
-	if (!UnderwaterCharacter->IsDeath() && !UnderwaterCharacter->IsCaptured())
+	if (UnderwaterCharacter->IsNormal() && !UnderwaterCharacter->IsCaptured())
 	{
-		PlayerController->C_StartCameraBlank(
+		PlayerController->C_StartCameraBlink(
 			FColor::Black,
 			FVector2D(0.0f, 1.0f),
 			0.0f,

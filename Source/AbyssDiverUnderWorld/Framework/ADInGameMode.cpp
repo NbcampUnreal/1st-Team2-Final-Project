@@ -46,6 +46,13 @@ AADInGameMode::AADInGameMode()
 	}
 }
 
+void AADInGameMode::PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage)
+{
+	Super::PreLogin(Options, Address, UniqueId, ErrorMessage);
+
+	ErrorMessage = TEXT("게임 도중 입장 불가");
+}
+
 void AADInGameMode::BeginPlay()
 {
 	Super::BeginPlay();
@@ -202,16 +209,38 @@ void AADInGameMode::ReadyForTravelToCamp()
 		return;
 	}
 
-	LOGVN(Log, TEXT("Ready For Traveling to Camp..."));
-
-	for (AADPlayerController* PC : TActorRange<AADPlayerController>(GetWorld()))
+	for (AADPlayerState* ADPlayerState : TActorRange<AADPlayerState>(GetWorld()))
 	{
-		PC->GetPlayerHUDComponent()->C_ShowResultScreen();
+		APawn* Player = ADPlayerState->GetPawn();
+		if (Player == nullptr || IsValid(Player) == false || Player->IsValidLowLevel() == false || Player->IsPendingKillPending())
+		{
+			LOGV(Error, TEXT("Not Valid Player, PlayeStateName : %s"), *ADPlayerState->GetName());
+			continue;
+		}
+
+		ADPlayerState->GetPawn()->bAlwaysRelevant = true;
 	}
 
-	TimerManager.ClearTimer(ResultTimerHandle);
+	ForceNetUpdate();
 
-	const float Interval = 5.0f;
+	LOGV(Log, TEXT("Releveant On"));
+
+	TimerManager.ClearTimer(SyncTimerHandle);
+	const float WaitForSync = 1.0f;
+	TimerManager.SetTimer(SyncTimerHandle, [&]()
+		{
+			
+			LOGVN(Log, TEXT("Ready For Traveling to Camp..."));
+
+			for (AADPlayerController* PC : TActorRange<AADPlayerController>(GetWorld()))
+			{
+				PC->GetPlayerHUDComponent()->C_ShowResultScreen();
+			}
+
+		}, WaitForSync, false);
+
+	TimerManager.ClearTimer(ResultTimerHandle);
+	const float Interval = 6.0f;
 	TimerManager.SetTimer(ResultTimerHandle, this, &AADInGameMode::TravelToCamp, 1, false, Interval);
 }
 
