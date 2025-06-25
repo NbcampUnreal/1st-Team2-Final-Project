@@ -105,7 +105,7 @@ void AADPlayerController::SetPawn(APawn* InPawn)
 void AADPlayerController::PostNetInit()
 {
 	Super::PostNetInit();
-
+	LOGVN(Log, TEXT("PostNetInit"));
 	OnPostNetInit();
 
 	if (IsLocalController())
@@ -119,18 +119,11 @@ void AADPlayerController::PostNetInit()
 
 void AADPlayerController::PostSeamlessTravel()
 {
-	LOG(TEXT("Post SeamlessTravel"));
-	Super::PostSeamlessTravel();
-	OnPostSeamlessTravel();
-	FTimerHandle FadeInTimerHandle;
-	GetWorld()->GetTimerManager().SetTimer(
-		FadeInTimerHandle,
-		this,
-		&AADPlayerController::ShowFadeIn,
-		2.0f, 
-		false
-	);
+	LOGVN(Log, TEXT("Post SeamlessTravel"));
 
+	Super::PostSeamlessTravel();
+
+	OnPostSeamlessTravel();
 }
 
 void AADPlayerController::C_OnPreClientTravel_Implementation()
@@ -327,33 +320,50 @@ void AADPlayerController::ToggleTestHUD()
 
 void AADPlayerController::ShowFadeOut(float Duration)
 {
-	if (PlayerCameraManager)
+	if (PlayerCameraManager == nullptr)
 	{
-		PlayerCameraManager->StartCameraFade(
-			0.f,                       
-			1.f,                        
-			Duration,
-			FLinearColor::Black,
-			false,                     
-			true                       
-		);
+		LOGVN(Log, TEXT("There is no PlayerChameraManager"));
+		return;
 	}
+
+	if (IsLocalController() == false)
+	{
+		LOGVN(Log, TEXT("Not Local Controller"));
+		return;
+	}
+
+	PlayerCameraManager->StartCameraFade(
+		0.f,
+		1.f,
+		Duration,
+		FLinearColor::Black,
+		false,
+		true
+	);
 }
 
 void AADPlayerController::ShowFadeIn()
 {
-	if (PlayerCameraManager)
+	if (PlayerCameraManager == nullptr)
 	{
-		PlayerCameraManager->StartCameraFade(
-			1.f,                       
-			0.0f,                        
-			3.0f,
-			FLinearColor::Black,
-			false,
-			false                      
-		);
+		LOGVN(Log, TEXT("There is no PlayerChameraManager"));
+		return;
 	}
 
+	if (IsLocalController() == false)
+	{
+		LOGVN(Log, TEXT("Not Local Controller"));
+		return;
+	}
+
+	PlayerCameraManager->StartCameraFade(
+		1.f,
+		0.0f,
+		3.0f,
+		FLinearColor::Black,
+		false,
+		false
+	);
 }
 void AADPlayerController::OnCameraBlankEnd()
 {
