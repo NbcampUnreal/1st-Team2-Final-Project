@@ -51,8 +51,8 @@ public:
 	bool CanHighlight() const;
 	virtual bool CanHighlight_Implementation() const { return true; }
 	UFUNCTION(BlueprintNativeEvent, Category = "Interaction")
-	float GetHoldDuration() const;
-	virtual float GetHoldDuration_Implementation() const;
+	float GetHoldDuration(AActor* InstigatorActor) const;
+	virtual float GetHoldDuration_Implementation(AActor* InstigatorActor) const;
 
 	virtual UADInteractableComponent* GetInteractableComponent() const = 0;
 	virtual bool IsHoldMode() const = 0;

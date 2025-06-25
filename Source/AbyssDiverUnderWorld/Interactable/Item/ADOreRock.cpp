@@ -374,9 +374,16 @@ bool AADOreRock::IsHoldMode() const
 	return bIsHold;
 }
 
-float AADOreRock::GetHoldDuration_Implementation() const
+float AADOreRock::GetHoldDuration_Implementation(AActor* InstigatorActor) const
 {
-	return HoldDuration;
+	AUnderwaterCharacter* Diver = Cast<AUnderwaterCharacter>(InstigatorActor);
+	float MineMultiplier = Diver->GetGatherMultiplier();
+	LOG(TEXT("Before MineDuration : %f"), HoldDuration);
+	LOG(TEXT("Mine Multiplier: %f"), MineMultiplier);
+	float MineDuration = HoldDuration / MineMultiplier;
+	LOG(TEXT("After MineDuration : %f"), MineDuration);
+
+	return MineDuration;
 }
 
 FString AADOreRock::GetInteractionDescription() const

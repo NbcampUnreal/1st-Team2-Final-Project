@@ -1800,7 +1800,7 @@ bool AUnderwaterCharacter::CanHighlight_Implementation() const
 	return InteractableComponent->CanInteractable();
 }
 
-float AUnderwaterCharacter::GetHoldDuration_Implementation() const
+float AUnderwaterCharacter::GetHoldDuration_Implementation(AActor* InstigatorActor) const
 {
 	return RescueRequireTime;
 }
