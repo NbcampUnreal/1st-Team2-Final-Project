@@ -19,6 +19,8 @@ UNameWidgetComponent::UNameWidgetComponent()
 	bIsEnabled = false;
 	bIsVisible = false;
 	BillboardRotationMode = EBillboardRotationMode::ReverseCameraForward;
+
+	SetCastShadow(false);
 }
 
 void UNameWidgetComponent::BeginPlay()
