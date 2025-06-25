@@ -1,8 +1,10 @@
 #include "Subsystems/ADWorldSubsystem.h"
 
 #include "AbyssDiverUnderWorld.h"
+#include "Framework/ADPlayerController.h"
 
 const FString UADWorldSubsystem::MainMenuLevelName = TEXT("MainLevel");
+const FString UADWorldSubsystem::CampLevelName = TEXT("Submarine_Lobby");
 
 void UADWorldSubsystem::OnWorldBeginPlay(UWorld& InWorld)
 {
@@ -17,7 +19,7 @@ void UADWorldSubsystem::OnWorldBeginPlay(UWorld& InWorld)
 		return;
 	}
 
-	APlayerController* PC = InWorld.GetFirstPlayerController <APlayerController>();
+	AADPlayerController* PC = InWorld.GetFirstPlayerController <AADPlayerController>();
 	if (PC == nullptr)
 	{
 		return;
@@ -27,12 +29,5 @@ void UADWorldSubsystem::OnWorldBeginPlay(UWorld& InWorld)
 	PC->SetShowMouseCursor(false);
 	PC->SetIgnoreMoveInput(false);
 	// 카메라 페이드 아웃이 적용되어 있으면 원래대로 복구한다.
-	PC->PlayerCameraManager->StartCameraFade(
-		1.0f,
-		0.0f,
-		0.0f,
-		FLinearColor::Black,
-		false,
-		true
-	);
+	PC->ShowFadeIn();
 }

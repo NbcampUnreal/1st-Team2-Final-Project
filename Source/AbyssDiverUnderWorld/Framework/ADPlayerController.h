@@ -140,6 +140,8 @@ private:
 	/** Camera Blank Timer Handle */
 	FTimerHandle CameraBlankTimerHandle;
 
+	FTimerHandle FadeInTimerHandle;
+
 #pragma endregion 
 
 #pragma region Getters / Setters
