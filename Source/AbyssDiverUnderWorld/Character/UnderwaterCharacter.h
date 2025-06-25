@@ -98,6 +98,7 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	virtual void PossessedBy(AController* NewController) override;
+	virtual void UnPossessed() override;
 	virtual void PostInitializeComponents() override;
 	virtual void PostNetInit() override;
 	virtual void OnRep_PlayerState() override;
@@ -391,6 +392,9 @@ protected:
 	/** 레이더 Actor를 생성한다. */
 	void SpawnRadar();
 
+	/** 1인칭, 3인칭 시점의 메시를 설정 */
+	void SetMeshFirstPersonSetting(bool bIsFirstPerson);
+	
 	/** Radar Toggle을 요청한다. */
 	UFUNCTION(BlueprintCallable)
 	void RequestToggleRadar();

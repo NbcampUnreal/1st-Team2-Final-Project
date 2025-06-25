@@ -194,6 +194,8 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	bIsAttackedByEyeStalker = false;
 
 	PostProcessSettingComponent = CreateDefaultSubobject<UPostProcessSettingComponent>(TEXT("PostProcessSettingComponent"));
+
+	GetMesh()->SetLightingChannels(false, true, true);
 }
 
 void AUnderwaterCharacter::BeginPlay()
@@ -205,15 +207,6 @@ void AUnderwaterCharacter::BeginPlay()
 		*GetNameSafe(GetController()),
 		IsLocallyControlled() ? TEXT("Yes") : TEXT("No")
 	);
-	
-	if (IsLocallyControlled())
-	{
-		GetMesh()->SetLightingChannels(false, true, false);
-	}
-	else
-	{
-		GetMesh()->SetLightingChannels(false, true, true);
-	}
 	
 	SetDebugCameraMode(bUseDebugCamera);
 	
@@ -346,6 +339,12 @@ void AUnderwaterCharacter::PossessedBy(AController* NewController)
 		*GetNameSafe(GetController()),
 		IsLocallyControlled() ? TEXT("Yes") : TEXT("No")
 	);
+
+	if (IsLocallyControlled())
+	{
+		UE_LOG(LogAbyssDiverCharacter, Display, TEXT("PossessedBy : %s"), *GetName());
+		SetMeshFirstPersonSetting(true);
+	}
 	
 	if (AADPlayerState* ADPlayerState = GetPlayerState<AADPlayerState>())
 	{
@@ -361,6 +360,13 @@ void AUnderwaterCharacter::PossessedBy(AController* NewController)
 	{
 		LOGVN(Error, TEXT("Player State Init failed : %d"), GetUniqueID());
 	}
+}
+
+void AUnderwaterCharacter::UnPossessed()
+{
+	Super::UnPossessed();
+
+	SetMeshFirstPersonSetting(false);
 }
 
 void AUnderwaterCharacter::PostInitializeComponents()
@@ -390,6 +396,11 @@ void AUnderwaterCharacter::OnRep_PlayerState()
 		IsLocallyControlled() ? TEXT("Yes") : TEXT("No")
 	);
 
+	if (IsLocallyControlled())
+	{
+		SetMeshFirstPersonSetting(true);
+	}
+	
 	// UnPossess 상황에서 Error 로그가 발생하지 않도록 수정
 	if (APlayerState* CurrentPlayerState = GetPlayerState<APlayerState>())
 	{
@@ -1397,6 +1408,18 @@ void AUnderwaterCharacter::SpawnRadar()
 	RadarObject->AttachToComponent(FirstPersonCameraComponent, FAttachmentTransformRules::KeepWorldTransform);
 	RadarObject->UpdateRadarSourceComponent(GetRootComponent(), GetRootComponent());
 	RadarObject->SetActorHiddenInGame(true);
+}
+
+void AUnderwaterCharacter::SetMeshFirstPersonSetting(bool bIsFirstPerson)
+{
+	if (bIsFirstPerson)
+	{
+		GetMesh()->SetLightingChannels(false, true, false);
+	}
+	else
+	{
+		GetMesh()->SetLightingChannels(false, true, true);
+	}
 }
 
 void AUnderwaterCharacter::RequestToggleRadar()
