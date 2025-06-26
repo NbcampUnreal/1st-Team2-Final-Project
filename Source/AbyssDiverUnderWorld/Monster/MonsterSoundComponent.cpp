@@ -79,6 +79,7 @@ void UMonsterSoundComponent::BeginPlay()
 
 void UMonsterSoundComponent::S_PlayPatrolLoopSound_Implementation()
 {
+	if (!IsValid(this)) return;
 	M_PlayPatrolLoopSound();
 }
 
@@ -96,6 +97,7 @@ void UMonsterSoundComponent::M_PlayPatrolLoopSound_Implementation()
 
 void UMonsterSoundComponent::S_PlayChaseLoopSound_Implementation()
 {
+	if (!IsValid(this)) return;
 	M_PlayChaseLoopSound();
 }
 
@@ -113,6 +115,7 @@ void UMonsterSoundComponent::M_PlayChaseLoopSound_Implementation()
 
 void UMonsterSoundComponent::S_PlayFleeLoopSound_Implementation()
 {
+	if (!IsValid(this)) return;
 	M_PlayFleeLoopSound();
 }
 
@@ -130,6 +133,7 @@ void UMonsterSoundComponent::M_PlayFleeLoopSound_Implementation()
 
 void UMonsterSoundComponent::S_PlayHitReactSound_Implementation()
 {
+	if (!IsValid(this)) return;
 	M_PlayHitReactSound();
 }
 
@@ -143,6 +147,7 @@ void UMonsterSoundComponent::M_PlayHitReactSound_Implementation()
 
 void UMonsterSoundComponent::S_StopAllLoopSound_Implementation()
 {
+	if (!IsValid(this)) return;
 	M_StopAllLoopSound();
 }
 
@@ -173,20 +178,31 @@ void UMonsterSoundComponent::M_StopAllLoopSound_Implementation()
 
 void UMonsterSoundComponent::S_RequestMainSoundDuck_Implementation(float DuckVolume, float DuckDuration, float RecoverDuration)
 {
+	if (!IsValid(this)) return;
+
 	// Decrease volume (default DuckVolume : 0.2f)
 	M_AdjustMainSoundVolume(DuckVolume, DuckDuration);
 
+	// Always capture securely with WeakThis (against this destruction/GC)
+	TWeakObjectPtr<UMonsterSoundComponent> WeakThis(this);
+
 	FTimerHandle DuckTimerHandle;
-	GetWorld()->GetTimerManager().SetTimer(DuckTimerHandle, [this, RecoverDuration]()
-	{
-		if ((PatrolLoopComponent && PatrolLoopComponent->IsPlaying()) ||
-			(ChaseLoopComponent && ChaseLoopComponent->IsPlaying()) ||
-			(FleeLoopComponent && FleeLoopComponent->IsPlaying()))
+	GetWorld()->GetTimerManager().SetTimer(
+		DuckTimerHandle,
+		[WeakThis, RecoverDuration]()
 		{
-			// Recover volume (1.0f)
-			M_AdjustMainSoundVolume(1.0f, RecoverDuration);
-		}
-	}, DuckDuration + 0.1f, false);
+			if (!WeakThis.IsValid()) return;
+			auto* SoundComp = WeakThis.Get();
+
+			if ((IsValid(SoundComp->PatrolLoopComponent) && SoundComp->PatrolLoopComponent->IsPlaying()) ||
+				(IsValid(SoundComp->ChaseLoopComponent) && SoundComp->ChaseLoopComponent->IsPlaying()) ||
+				(IsValid(SoundComp->FleeLoopComponent) && SoundComp->FleeLoopComponent->IsPlaying()))
+			{
+				SoundComp->M_AdjustMainSoundVolume(1.0f, RecoverDuration);
+			}
+		},
+		DuckDuration + 0.1f, false
+	);
 }
 
 void UMonsterSoundComponent::M_AdjustMainSoundVolume_Implementation(float Volume, float FadeTime)

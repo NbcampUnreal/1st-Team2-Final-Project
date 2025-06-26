@@ -52,7 +52,7 @@ public:
 	void M_OnDeath_Implementation();
 
 	virtual void PlayAttackMontage();
-	void StopMovement();
+	void UnPossessAI();
 	virtual void NotifyLightExposure(float DeltaTime, float TotalExposedTime, const FVector& PlayerLocation, AActor* PlayerActor);
 	
 	UFUNCTION()

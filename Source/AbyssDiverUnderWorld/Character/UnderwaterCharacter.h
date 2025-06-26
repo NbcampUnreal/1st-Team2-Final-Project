@@ -266,6 +266,9 @@ public:
 	UFUNCTION()
 	void OnRep_CurrentTool();
 
+	UFUNCTION()
+	void OnRep_InCombat();
+
 	/** 관전을 당할 때 호출되는 함수 */
 	void OnSpectated();
 
@@ -872,7 +875,7 @@ private:
 	float RescueRequireTime;
 
 	/** 현재 전투 중인지 여부 */
-	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_InCombat, Category = Character, meta = (AllowPrivateAccess = "true"))
 	uint8 bIsInCombat : 1;
 	
 	/** 현재 캐릭터를 타겟팅하고 있는 Actor의 개수. */
