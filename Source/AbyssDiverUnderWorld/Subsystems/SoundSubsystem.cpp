@@ -562,13 +562,13 @@ bool USoundSubsystem::RemoveInvalidAudioComponent(UAudioComponent* SomeAudio)
 void USoundSubsystem::CreateAudioComponent()
 {
 	UWorld* World = GetWorld();
-	if (World == nullptr || World->bIsTearingDown)
+	if (IsValid(World) == false || World->bIsTearingDown || World->IsValidLowLevel() == false)
 	{
 		return;
 	}
 
 	TObjectPtr<UAudioComponent> NewAudio = NewObject<UAudioComponent>((UObject*)World->GetGameState());
-	if (IsValid(NewAudio))
+	if (IsValid(NewAudio) && NewAudio->IsValidLowLevel())
 	{
 		DeactivatedComponents.Enqueue(NewAudio);
 		NewAudio->RegisterComponent();
