@@ -95,7 +95,7 @@ void UCombatEffectComponent::BindDelegate(AUnderwaterCharacter* UnderwaterCharac
 
 void UCombatEffectComponent::OnShieldBroken()
 {
-	if (OwnerCharacter || !OwnerCharacter->IsLocallyControlled())
+	if (!OwnerCharacter || !OwnerCharacter->IsLocallyControlled())
 	{
 		return;
 	}
@@ -114,7 +114,7 @@ void UCombatEffectComponent::OnShieldBroken()
 
 void UCombatEffectComponent::OnShieldValueChanged(float OldShieldValue, float NewShieldValue)
 {
-	if (OwnerCharacter || !OwnerCharacter->IsLocallyControlled())
+	if (!OwnerCharacter || !OwnerCharacter->IsLocallyControlled())
 	{
 		return;
 	}
@@ -168,7 +168,7 @@ void UCombatEffectComponent::OnDamageTaken(float DamageAmount, float CurrentHeal
 
 void UCombatEffectComponent::PlayShieldHitEffect()
 {
-	if (OwnerCharacter || !OwnerCharacter->IsLocallyControlled())
+	if (!OwnerCharacter || !OwnerCharacter->IsLocallyControlled())
 	{
 		return;
 	}
