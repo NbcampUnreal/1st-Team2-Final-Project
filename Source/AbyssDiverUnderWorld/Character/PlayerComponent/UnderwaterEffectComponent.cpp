@@ -165,6 +165,37 @@ void UUnderwaterEffectComponent::StopBreathEffect()
 	GetWorld()->GetTimerManager().ClearTimer(BreathBubbleEffectTimerHandle);
 }
 
+void UUnderwaterEffectComponent::StartCombatEffect()
+{
+	APawn* OwnerPawn = Cast<APawn>(GetOwner());
+	APlayerController* PC = OwnerPawn ? Cast<APlayerController>(OwnerPawn->GetController()) : nullptr;
+	if (!PC || !PC->IsLocalController()) return;
+
+	// Don't play CombatSound if already playing
+	if (CombatAudioComponent && CombatAudioComponent->IsPlaying()) return;
+	
+	if (CombatSound && !CombatAudioComponent)
+	{
+		CombatAudioComponent = UGameplayStatics::SpawnSound2D(GetWorld(), CombatSound);
+		if (CombatAudioComponent)
+		{
+			CombatAudioComponent->FadeIn(1.0f, 1.0f, 0.0f); // 1 second of FadeIn
+			CombatAudioComponent->bAutoDestroy = true; // Auto-destroy after FadeOut (by default)
+			CombatAudioComponent->SetVolumeMultiplier(1.0f); // Startup volume
+		}
+	}
+
+}
+
+void UUnderwaterEffectComponent::StopCombatEffect()
+{
+	if (CombatAudioComponent)
+	{
+		CombatAudioComponent->FadeOut(1.5f, 0.0f); //  Decrease naturally Sound for 1.5 seconds
+		CombatAudioComponent = nullptr;
+	}
+}
+
 void UUnderwaterEffectComponent::OnDamageTaken(float DamageAmount, float CurrentHealth)
 {
 	// 피해를 입으면 피해 사운드가 재생되어야 한다.

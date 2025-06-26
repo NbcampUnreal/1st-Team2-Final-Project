@@ -30,6 +30,12 @@ public:
 	/** 수중 효과를 활성화하거나 비활성화한다. */
 	void SetEnableEffect(bool bNewEnabled);
 
+	/** Start Combat sound */
+	void StartCombatEffect();
+
+	/** Stop Combat sound */
+	void StopCombatEffect();
+
 protected:
 
 	/** 환경 상태가 변경되었을 때 호출되는 함수. 수중 상태일 때만 효과를 활성화한다. */
@@ -104,6 +110,10 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Character|UnderwaterEffect")
 	TObjectPtr<USoundBase> MoveBreathSound;
 
+	/** Sound to play when entering combat */
+	UPROPERTY(EditDefaultsOnly, Category = "Character|UnderwaterEffect")
+	TObjectPtr<USoundBase> CombatSound;
+
 	/** 숨쉬기 효과를 생성할 Niagara 시스템. 이 시스템은 숨쉬기 효과를 시각적으로 표현한다. */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|UnderwaterEffect")
 	TObjectPtr<class UNiagaraSystem> BreathBubbleEffect;
@@ -129,6 +139,10 @@ private:
 	/** 수중에서 달리기 이동 소리를 재생하기 위한 오디오 컴포넌트. 이 컴포넌트는 SprintMovementSound를 재생한다. */
 	UPROPERTY()
 	TObjectPtr<UAudioComponent> SprintMovementAudioComponent;
+
+	/** Audio component for playing background sound when entering Combat. This component plays the CombatSound. */
+	UPROPERTY()
+	TObjectPtr<UAudioComponent> CombatAudioComponent = nullptr;
 
 	/** 수중에서 이동 소리 재생을 위한 사운드. 이 사운드는 MovementSoundThreshold보다 큰 속도로 이동할 때만 재생된다. */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|UnderwaterEffect")
