@@ -35,6 +35,9 @@ public:
 	UFUNCTION(Exec, Category = "Cheat")
 	void GetMoney();
 
+	UFUNCTION(Exec, Category = "Cheat")
+	void GetSomeMoney(int32 SomeValue);
+
 	void TravelToInGameLevel();
 
 protected:

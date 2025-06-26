@@ -69,6 +69,9 @@ private:
 	UFUNCTION(Exec, Category = "Cheat")
 	void GetMoney();
 
+	UFUNCTION(Exec, Category = "Cheat")
+	void GetSomeMoney(int32 SomeValue);
+
 #pragma endregion
 
 #pragma region Variables

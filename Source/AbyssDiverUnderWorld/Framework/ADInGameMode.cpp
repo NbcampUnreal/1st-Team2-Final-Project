@@ -546,6 +546,11 @@ void AADInGameMode::GetOre()
 
 void AADInGameMode::GetMoney()
 {
+	GetSomeMoney(10000);
+}
+
+void AADInGameMode::GetSomeMoney(int32 SomeValue)
+{
 	AADInGameState* GS = GetGameState<AADInGameState>();
 	if (GS == nullptr)
 	{
@@ -553,7 +558,7 @@ void AADInGameMode::GetMoney()
 		return;
 	}
 
-	GS->SetTotalTeamCredit(GS->GetTotalTeamCredit() + 10000);
+	GS->SetTotalTeamCredit(GS->GetTotalTeamCredit() + SomeValue);
 }
 
 USoundSubsystem* AADInGameMode::GetSoundSubsystem()
