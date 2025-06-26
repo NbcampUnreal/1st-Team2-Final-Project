@@ -6,6 +6,7 @@
 
 #include "ADPlayerController.generated.h"
 
+enum class ESFX : uint8;
 enum class EMapName : uint8;
 class ULoadingScreenWidget;
 
@@ -40,7 +41,6 @@ public:
 	UFUNCTION(BlueprintImplementableEvent)
 	void OnPostSeamlessTravel();
 
-
 	UFUNCTION()
 	void ShowFadeOut(float Duration = 2.0f);
 
@@ -72,6 +72,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	bool IsCameraBlanking() const;
 
+	UFUNCTION(Client, Unreliable)
+	void C_PlaySound(ESFX SoundType, float VolumeMultiplier = 1.0f, float PitchMultiplier = 1.0f);
+
 protected:
 
 	/** 관전 상태가 시작될 때 호출되는 함수 */
@@ -94,6 +97,12 @@ protected:
 
 	UFUNCTION(Exec)
 	void ToggleTestHUD();
+
+	UFUNCTION(Exec)
+	void GainShield(int Amount);
+
+	UFUNCTION(Server, Reliable)
+	void S_GainShield(int Amount);
 	
 	void OnCameraBlankEnd();
 

@@ -24,7 +24,9 @@
 
 #include "Camera/PlayerCameraManager.h"
 #include "TimerManager.h"
+#include "Character/PlayerComponent/ShieldComponent.h"
 #include "Engine/World.h"
+#include "Subsystems/SoundSubsystem.h"
 
 #include "UI/HoldInteractionWidget.h"
 
@@ -214,6 +216,17 @@ bool AADPlayerController::IsCameraBlanking() const
 	return GetWorldTimerManager().IsTimerActive(CameraBlankTimerHandle) || (PlayerCameraManager && PlayerCameraManager->bEnableFading);
 }
 
+void AADPlayerController::C_PlaySound_Implementation(ESFX SoundType, float VolumeMultiplier, float PitchMultiplier)
+{
+	if (UGameInstance* GameInstance = GetGameInstance())
+	{
+		if (USoundSubsystem* SoundSubsystem = GameInstance->GetSubsystem<USoundSubsystem>())
+		{
+			SoundSubsystem->Play2D(SoundType, VolumeMultiplier);
+		}
+	}
+}
+
 void AADPlayerController::BeginSpectatingState()
 {
 	UE_LOG(LogAbyssDiverSpectate, Display, TEXT("Begin Spectating State for %s, GetPawn : %s"), *GetName(), GetPawn() ? *GetPawn()->GetName() : TEXT("None"));
@@ -317,6 +330,25 @@ void AADPlayerController::ToggleTestHUD()
 	}
 }
 
+void AADPlayerController::GainShield(int Amount)
+{
+	if (HasAuthority())
+	{
+		if (UShieldComponent* ShieldComponent = GetPawn() ? GetPawn()->FindComponentByClass<UShieldComponent>() : nullptr)
+		{
+			ShieldComponent->GainShield(Amount);
+		}
+	}
+	else
+	{
+		S_GainShield(Amount);
+	}
+}
+
+void AADPlayerController::S_GainShield_Implementation(int Amount)
+{
+	GainShield(Amount);
+}
 
 void AADPlayerController::ShowFadeOut(float Duration)
 {
