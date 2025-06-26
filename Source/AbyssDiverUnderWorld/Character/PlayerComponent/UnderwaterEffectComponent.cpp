@@ -7,8 +7,8 @@
 #include "Character/UnderwaterCharacter.h"
 #include "Components/AudioComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "Kismet/GameplayStatics.h"
 #include "Logging/LogMacros.h"
+#include "Subsystems/SoundSubsystem.h"
 
 UUnderwaterEffectComponent::UUnderwaterEffectComponent()
 {
@@ -25,6 +25,14 @@ UUnderwaterEffectComponent::UUnderwaterEffectComponent()
 	
 	MovementSoundFadeTime = 0.5f;
 	MovementSoundFadeCurve = EAudioFaderCurve::Linear;
+
+	IdleBreathSound = ESFX::IdleBreath;
+	MoveBreathSound = ESFX::MoveBreath;
+	MovementSound = ESFX::UnderwaterMovement;
+	SprintMovementSound = ESFX::UnderwaterSprint;
+
+	MovementAudioId = INDEX_NONE;
+	SprintMovementAudioId = INDEX_NONE;
 }
 
 void UUnderwaterEffectComponent::BeginPlay()
@@ -43,44 +51,6 @@ void UUnderwaterEffectComponent::BeginPlay()
 		OwnerCharacter->OnDamageTakenDelegate.AddDynamic(this, &UUnderwaterEffectComponent::OnDamageTaken);
 		OwnerCharacter->OnKnockbackDelegate.AddDynamic(this, &UUnderwaterEffectComponent::OnKnockback);
 		OwnerCharacter->OnKnockbackEndDelegate.AddDynamic(this, &UUnderwaterEffectComponent::OnKnockbackEnd);
-
-		// BugFix: Respawn 시에 Host에서 크래시나는 현상 수정
-		// 항상 Audio Component를 생성하도록 변경
-		// Respawn 상황에서 Begin Play 시점에서 Controller가 설정되기 전에 Begin Play가 호출된다.
-		// 이 시점에서는 Controller가 없기 때문에 Locally Controlled 여부를 확인할 수 없다.
-		MovementAudioComponent = UGameplayStatics::SpawnSoundAttached(
-			MovementSound,
-			GetOwner()->GetRootComponent(),
-			NAME_None,
-			FVector::ZeroVector,
-			FRotator::ZeroRotator,
-			EAttachLocation::KeepRelativeOffset,
-			false,
-			0.5f,
-			1.0f,
-			0.0f,
-			nullptr,
-			nullptr,
-			false
-		);
-		MovementAudioComponent->Stop();
-
-		SprintMovementAudioComponent = UGameplayStatics::SpawnSoundAttached(
-			SprintMovementSound,
-			GetOwner()->GetRootComponent(),
-			NAME_None,
-			FVector::ZeroVector,
-			FRotator::ZeroRotator,
-			EAttachLocation::KeepRelativeOffset,
-			false,
-			0.5f,
-			1.0f,
-			0.0f,
-			nullptr,
-			nullptr,
-			false
-		);
-		SprintMovementAudioComponent->Stop();
 	}
 	else
 	{
@@ -121,14 +91,15 @@ void UUnderwaterEffectComponent::SetEnableEffect(bool bNewEnabled)
 	else
 	{
 		StopBreathEffect();
-		
-		if (MovementAudioComponent && MovementAudioComponent->IsPlaying())
+
+		USoundSubsystem* SoundSubsystem = GetSoundSubsystem();
+		if (SoundSubsystem && SoundSubsystem->IsPlaying(MovementAudioId))
 		{
-			MovementAudioComponent->FadeOut(MovementSoundFadeTime, 0.0f, MovementSoundFadeCurve);
+			SoundSubsystem->StopAudio(MovementSoundFadeTime, true, MovementSoundFadeTime, 0.0f, MovementSoundFadeCurve);
 		}
-		if (SprintMovementAudioComponent && SprintMovementAudioComponent->IsPlaying())
+		if (SoundSubsystem && SoundSubsystem->IsPlaying(SprintMovementAudioId))
 		{
-			SprintMovementAudioComponent->Stop();
+			SoundSubsystem->StopAudio(SprintMovementAudioId);
 		}
 		MoveTimeAccumulator = 0.0f;
 		bShouldPlayMovementSound = false;
@@ -222,23 +193,20 @@ void UUnderwaterEffectComponent::PlayBreathEffects()
 	}
 
 	// @ToDo : Groggy 상태에서 다른 효과를 재생해야 할 수 있다.
-	USoundBase* BreathSoundToPlay = bShouldPlayMovementSound ? MoveBreathSound : IdleBreathSound;
-	
-	if (OwnerCharacter->IsLocallyControlled() && BreathSoundToPlay)
+	ESFX BreathSoundToPlay = bShouldPlayMovementSound ? MoveBreathSound : IdleBreathSound;
+
+	float AudioDuration = 3.0f;
+	if (OwnerCharacter->IsLocallyControlled())
 	{
-		UGameplayStatics::PlaySoundAtLocation(
-			GetWorld(),
-			BreathSoundToPlay,
-			GetOwner()->GetActorLocation(),
-			1.0f,
-			1.0f,
-			0.0f
-		);
+		if (USoundSubsystem* SoundSubsystem = GetSoundSubsystem())
+		{
+			const int32 AudioId = SoundSubsystem->Play2D(BreathSoundToPlay);
+			float PlayedBreathDuration = SoundSubsystem->GetAudioTotalDuration(AudioId);
+			AudioDuration = PlayedBreathDuration > 0.0f ? PlayedBreathDuration : AudioDuration;
+		}
 	}
 
-	// Breath Sound가 없으면 3초로 간주하고 버블 효과를 생성한다.
-	const float Duration =  BreathSoundToPlay ? BreathSoundToPlay->GetDuration() : 3.0f;
-	const float DelayToNextBubble = FMath::FRandRange(Duration * 0.5f, Duration * 0.6f);
+	const float DelayToNextBubble = FMath::FRandRange(AudioDuration * 0.5f, AudioDuration * 0.6f);
 	GetWorld()->GetTimerManager().SetTimer(
 		BreathBubbleEffectTimerHandle,
 		this,
@@ -274,43 +242,35 @@ void UUnderwaterEffectComponent::UpdateMovementEffects(float DeltaTime)
 	const bool bCurrentMoving = Speed > MovementSoundThreshold;
 	MoveTimeAccumulator = bCurrentMoving ? MoveTimeAccumulator + DeltaTime : 0.0f;
 	
-	const bool bWasMoving = bShouldPlayMovementSound;
 	bShouldPlayMovementSound = bCurrentMoving && MoveTimeAccumulator > MoveRequireTime;
 
+	USoundSubsystem* SoundSubsystem = GetSoundSubsystem();
+	if (!IsValid(SoundSubsystem))
+	{
+		return;
+	}
+	
 	if (bShouldPlayMovementSound)
 	{
-		if (MovementAudioComponent
-			&& !MovementAudioComponent->IsPlaying()
-			&& MovementSound)
+		if (!SoundSubsystem->IsPlaying(MovementAudioId))
 		{
-			if (bWasMoving)
-			{
-				const float Duration = MovementSound->GetDuration();
-				const float RandomStartTime = FMath::FRandRange(0.0f, Duration);
-				MovementAudioComponent->Play(RandomStartTime);	
-			}
-			else
-			{
-				MovementAudioComponent->Play();
-			}
+			MovementAudioId = SoundSubsystem->Play2D(MovementSound, 0.5f);
 		}
 		
 		// 플레이어가 직접 움직일 때 소리가 나야 한다.
 		// 캐릭터가 Launch 되거나 밀릴 경우 소리가 나면 안 된다.
 		if (Speed > OwnerCharacter->GetSprintSpeed() - 50.0f
 			&& OwnerCharacter->GetCharacterMovement()->GetCurrentAcceleration().Size() > 0.0f
-			&& SprintMovementSound
-			&& SprintMovementAudioComponent
-			&& !SprintMovementAudioComponent->IsPlaying())
+			&& !SoundSubsystem->IsPlaying(SprintMovementAudioId))
 		{
-			SprintMovementAudioComponent->Play();
+			SprintMovementAudioId = SoundSubsystem->Play2D(SprintMovementSound, 0.5f);
 		}
 	}
 	else
 	{
-		if (MovementAudioComponent->IsPlaying())
+		if (SoundSubsystem->IsPlaying(MovementAudioId))
 		{
-			MovementAudioComponent->FadeOut(MovementSoundFadeTime, 0.0f, MovementSoundFadeCurve);
+			SoundSubsystem->StopAudio(MovementAudioId, true, MovementSoundFadeTime, 0.0f, MovementSoundFadeCurve);
 		}
 	}
 }
@@ -318,4 +278,17 @@ void UUnderwaterEffectComponent::UpdateMovementEffects(float DeltaTime)
 void UUnderwaterEffectComponent::CheckVelocityChange(const float DeltaTime)
 {
 	// @ToDo: 캐릭터가 급격한 속도 변화를 감지했을 때 소리 재생, 속도를 감지하거나 아니면 ABP에서 Notify를 받는다.
+}
+
+USoundSubsystem* UUnderwaterEffectComponent::GetSoundSubsystem()
+{
+	if (!SoundSubsystemWeakPtr.IsValid())
+	{
+		if (UWorld* World = GetWorld())
+		{
+			SoundSubsystemWeakPtr = World->GetGameInstance()->GetSubsystem<USoundSubsystem>();
+		}
+	}
+
+	return SoundSubsystemWeakPtr.Get();
 }

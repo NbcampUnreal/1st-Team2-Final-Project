@@ -4,8 +4,10 @@
 #include "FootstepComponent.h"
 
 #include "Character/UnderwaterCharacter.h"
+#include "DataRow/SoundDataRow/SFXDataRow.h"
 #include "GameFramework/Character.h"
 #include "Kismet/GameplayStatics.h"
+#include "Subsystems/SoundSubsystem.h"
 
 UFootstepComponent::UFootstepComponent()
 {
@@ -14,6 +16,9 @@ UFootstepComponent::UFootstepComponent()
 	bUseCharacterOnLanded = true;
 	TraceHeight = 10.0f;
 	TraceDistance = 100.0f;
+
+	WalkFootstepSound = ESFX::WalkFootstep;
+	LandFootstepSound = ESFX::LandFootstep;
 
 	MinimumFootstepInterval = 0.1f;
 	LastFootstepTime = -1.0f;
@@ -64,11 +69,11 @@ void UFootstepComponent::PlayLandSound()
 	LastFootstepTime = GetWorld()->GetTimeSeconds();
 	
 	const EPhysicalSurface PhysicalSurface = GetSurfaceType(OwnerCharacter->GetActorLocation());
-
-	if (USoundBase* LandSound = FindSound(PhysicalSurface, EFootstepType::Land))
+	
+	if (ESFX LandSound = FindSound(PhysicalSurface, EFootstepType::Land);
+		LandSound != ESFX::Max && GetSoundSubsystem())
 	{
-		// @ToDO: SoundSubsystem에 등록
-		UGameplayStatics::PlaySoundAtLocation(this, LandSound, OwnerCharacter->GetActorLocation());
+		GetSoundSubsystem()->PlayAt(LandSound, OwnerCharacter->GetActorLocation());
 	}
 	else
 	{
@@ -87,10 +92,10 @@ void UFootstepComponent::PlayFootstepSoundInternal(const FVector& StartLocation)
 	LastFootstepTime = GetWorld()->GetTimeSeconds();
 	
 	const EPhysicalSurface PhysicalSurface = GetSurfaceType(StartLocation);
-	if (USoundBase* FootstepSound = FindSound(PhysicalSurface, EFootstepType::Walk))
+	if (ESFX FootstepSound = FindSound(PhysicalSurface, EFootstepType::Walk);
+		FootstepSound != ESFX::Max && GetSoundSubsystem())
 	{
-		// @ToDO: SoundSubsystem에 등록
-		UGameplayStatics::PlaySoundAtLocation(this, FootstepSound, StartLocation);
+		GetSoundSubsystem()->PlayAt(FootstepSound, OwnerCharacter->GetActorLocation());
 	}
 	else
 	{
@@ -120,12 +125,29 @@ EPhysicalSurface UFootstepComponent::GetSurfaceType(const FVector& Start) const
 	return EPhysicalSurface::SurfaceType_Default;
 }
 
-USoundBase* UFootstepComponent::FindSound(EPhysicalSurface SurfaceType, EFootstepType FootstepType)
+ESFX UFootstepComponent::FindSound(EPhysicalSurface SurfaceType, EFootstepType FootstepType) const
 {
-	return FootstepType == EFootstepType::Walk ? WalkFootStepSound : LandFootstepSound;
+	return FootstepType == EFootstepType::Walk ? WalkFootstepSound : LandFootstepSound;
 }
 
 void UFootstepComponent::OnLanded(const FHitResult& Hit)
 {
 	PlayLandSound();
+}
+
+USoundSubsystem* UFootstepComponent::GetSoundSubsystem()
+{
+	if (!SoundSubsystem.IsValid())
+	{
+		if (UGameInstance* GameInstance = GetWorld()->GetGameInstance())
+		{
+			SoundSubsystem = GameInstance->GetSubsystem<USoundSubsystem>();
+		}
+		else
+		{
+			UE_LOG(LogAbyssDiverCharacter, Warning, TEXT("SoundSubsystem is not valid and GameInstance is not found."));
+		}
+	}
+
+	return SoundSubsystem.Get();
 }

@@ -426,11 +426,14 @@ void UEquipUseComponent::OnRep_BoostActive()
 {
 	if (bBoostActive)
 	{
-		GetSoundSubsystem()->PlayAt(ESFX::DPVOn, OwningCharacter->GetActorLocation());
+		DPVAudioID = GetSoundSubsystem()->PlayAt(ESFX::DPVOn, OwningCharacter->GetActorLocation(), 1.0f, true, 0.2f);
 	}
 	else
 	{
-		GetSoundSubsystem()->PlayAt(ESFX::DPVOff, OwningCharacter->GetActorLocation());
+		if (DPVAudioID)
+		{
+			GetSoundSubsystem()->StopAudio(DPVAudioID, true, 0.2f);
+		}
 	}
 }
 
@@ -722,7 +725,6 @@ void UEquipUseComponent::BoostOn()
 	bBoostActive = true;
 	TargetMultiplier = BoostMultiplier;  
 	SetComponentTickEnabled(true);
-	LOGIC(Warning, TEXT("Boost On"));
 }
 
 void UEquipUseComponent::BoostOff()

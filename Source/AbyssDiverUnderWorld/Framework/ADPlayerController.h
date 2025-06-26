@@ -7,6 +7,7 @@
 #include "ADPlayerController.generated.h"
 
 enum class EMapName : uint8;
+class ULoadingScreenWidget;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADPlayerController : public APlayerController
@@ -39,6 +40,13 @@ public:
 	UFUNCTION(BlueprintImplementableEvent)
 	void OnPostSeamlessTravel();
 
+
+	UFUNCTION()
+	void ShowFadeOut(float Duration = 2.0f);
+
+	UFUNCTION()
+	void ShowFadeIn();
+
 	/** Pawn이 변경되었을 때 호출된다. Client에서 관전 시작 시에 시점 조정을 위해 사용 */
 	virtual void OnRep_Pawn() override;
 	
@@ -58,8 +66,8 @@ public:
 	 * FadeOut 완료되면 FadeTime 동안 FadeColor로 Fade In을 한다.
 	*/
 	UFUNCTION(Reliable, Client)
-	void C_StartCameraBlank(FColor FadeColor, FVector2D FadeAlpha, float FadeStartTime, float FadeEndDelay, float FadeEndTime);
-	void C_StartCameraBlank_Implementation(FColor FadeColor, FVector2D FadeAlpha, float FadeStartTime, float FadeEndDelay, float FadeEndTime);
+	void C_StartCameraBlink(FColor FadeColor, FVector2D FadeAlpha, float FadeStartTime, float FadeEndDelay, float FadeEndTime);
+	void C_StartCameraBlink_Implementation(FColor FadeColor, FVector2D FadeAlpha, float FadeStartTime, float FadeEndDelay, float FadeEndTime);
 
 	UFUNCTION(BlueprintCallable)
 	bool IsCameraBlanking() const;
@@ -93,6 +101,7 @@ protected:
 	
 #pragma region Variable
 
+
 public:
 
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSpectateChanged, bool, bIsSpectating);
@@ -120,6 +129,7 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UInteractionDescriptionWidget> InteractionWidget;
+
 
 	UPROPERTY(EditAnywhere, Category = "UI")
 	TSubclassOf<class UHoldInteractionWidget> InteractionHoldWidgetClass;
