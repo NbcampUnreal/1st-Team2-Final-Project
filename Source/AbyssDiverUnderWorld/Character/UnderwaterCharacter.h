@@ -877,6 +877,12 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Groggy")
 	float GroggyLookSensitivity;
 
+	/** 그로기 효과음 */
+	ESFX GroggySfx;
+
+	/** 그로기 효과음 사운드 ID */
+	int32 GroggySfxId;
+
 	/** 그로기 상태에서 부활할 때 Hold해야 하는 시간. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true"))
 	float RescueRequireTime;
@@ -1203,6 +1209,8 @@ private:
 	/** 캐릭터가 사망했을 떄 관전으로 전이되기까지 걸리는 시간 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	float DeathTransitionTime = 1.0f;
+
+	TWeakObjectPtr<class USoundSubsystem> SoundSubsystem;
 	
 #pragma endregion
 
@@ -1340,6 +1348,10 @@ public:
 	FORCEINLINE bool IsCaptured() const { return bIsCaptured; }
 
 	FORCEINLINE AADPlayerController* GetOwnerController() const { return OwnerController; }
+
+protected:
+
+	class USoundSubsystem* GetSoundSubsystem();
 	
 #pragma endregion
 };

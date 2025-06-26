@@ -40,6 +40,7 @@
 #include "PlayerComponent/CombatEffectComponent.h"
 #include "PlayerComponent/NameWidgetComponent.h"
 #include "PlayerComponent/RagdollReplicationComponent.h"
+#include "Subsystems/SoundSubsystem.h"
 
 DEFINE_LOG_CATEGORY(LogAbyssDiverCharacter);
 
@@ -107,6 +108,8 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	MinGroggyDuration = 10.0f;
 	GroggyCount = 0;
 	GroggyLookSensitivity = 0.25f;
+	GroggySfx = ESFX::GroggyStart;
+	GroggySfxId = INDEX_NONE;
 	RescueRequireTime = 6.0f;
 	GroggyHitPenalty = 5.0f;
 	RecoveryHealthPercentage = 0.1f;
@@ -1116,6 +1119,11 @@ void AUnderwaterCharacter::HandleEnterGroggy()
 		LookSensitivity = GroggyLookSensitivity;
 
 		InteractionComponent->OnInteractReleased();
+
+		if (USoundSubsystem* SoundSystem = GetSoundSubsystem())
+		{
+			GroggySfxId = SoundSystem->Play2D(GroggySfx);
+		}
 	}
 
 	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
@@ -1139,6 +1147,14 @@ void AUnderwaterCharacter::HandleExitGroggy()
 	// 1. Groggy UI 제거
 	// 2. Interaction 기능을 비활성화한다.
 	GroggyDuration = CalculateGroggyTime(GroggyDuration, ++GroggyCount);
+
+	if (IsLocallyControlled())
+	{
+		if (USoundSubsystem* SoundSystem = GetSoundSubsystem())
+		{
+			SoundSystem->StopAudio(GroggySfxId, true, 1.0f);
+		}
+	}
 }
 
 void AUnderwaterCharacter::HandleEnterNormal()
@@ -2668,4 +2684,21 @@ bool AUnderwaterCharacter::IsWeaponEquipped() const
 UUserWidget* AUnderwaterCharacter::GetShieldHitWidget() const
 {
 	return CombatEffectComponent ? CombatEffectComponent->GetShieldHitWidget() : nullptr;
+}
+
+class USoundSubsystem* AUnderwaterCharacter::GetSoundSubsystem()
+{
+	if (!SoundSubsystem.IsValid())
+	{
+		if (UGameInstance* GameInstance = GetWorld()->GetGameInstance())
+		{
+			SoundSubsystem = GameInstance->GetSubsystem<USoundSubsystem>();
+		}
+		else
+		{
+			UE_LOG(LogAbyssDiverCharacter, Warning, TEXT("SoundSubsystem is not valid and GameInstance is not found."));
+		}
+	}
+
+	return SoundSubsystem.Get();
 }
