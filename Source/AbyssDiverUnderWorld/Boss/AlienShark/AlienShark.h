@@ -18,11 +18,5 @@ public:
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Collision")
 	TObjectPtr<UCapsuleComponent> BiteCollision;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Navigation")
-	float NavMeshCheckInterval = 0.5f;
-
-private:
-	float NavMeshCheckTimer = 0.0f;
 
 };
