@@ -50,7 +50,7 @@ void AADInGameMode::PreLogin(const FString& Options, const FString& Address, con
 {
 	Super::PreLogin(Options, Address, UniqueId, ErrorMessage);
 
-	ErrorMessage = TEXT("게임 도중 입장 불가");
+	//ErrorMessage = TEXT("게임 도중 입장 불가");
 }
 
 void AADInGameMode::BeginPlay()
@@ -253,7 +253,7 @@ void AADInGameMode::ReadyForTravelToCamp()
 		}, WaitForSync, false);
 
 	TimerManager.ClearTimer(ResultTimerHandle);
-	const float Interval = 6.0f;
+	const float Interval = 9.0f;
 	TimerManager.SetTimer(ResultTimerHandle, this, &AADInGameMode::TravelToCamp, 1, false, Interval);
 }
 
@@ -484,6 +484,7 @@ void AADInGameMode::GameOver()
 #endif
 
 	ReadyForTravelToCamp();
+	GetSoundSubsystem()->PlayAmbient(ESFX_Ambient::AllPlayersDie);
 }
 
 void AADInGameMode::OnCharacterStateChanged(ECharacterState OldCharacterState, ECharacterState NewCharacterState)
