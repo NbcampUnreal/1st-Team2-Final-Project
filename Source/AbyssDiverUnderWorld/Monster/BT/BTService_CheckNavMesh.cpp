@@ -15,6 +15,8 @@ UBTService_CheckNavMesh::UBTService_CheckNavMesh()
 
 void UBTService_CheckNavMesh::TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
 {
+    Super::TickNode(OwnerComp, NodeMemory, DeltaSeconds);
+
     APawn* Pawn = OwnerComp.GetAIOwner()->GetPawn();
     if (!Pawn) return;
 

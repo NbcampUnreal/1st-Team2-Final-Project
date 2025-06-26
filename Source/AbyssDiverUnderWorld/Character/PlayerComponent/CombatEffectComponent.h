@@ -74,7 +74,10 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Character|CombatEffect")
 	ESFX ShieldBrokenSound;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Character|CombatEffect")
+	ESFX ShieldUseSound;
 	/** 실드 히트 위젯 클래스 */
+	
 	UPROPERTY(EditDefaultsOnly, Category = "Character|CombatEffect")
 	TSubclassOf<UUserWidget> ShieldHitWidgetClass;
 

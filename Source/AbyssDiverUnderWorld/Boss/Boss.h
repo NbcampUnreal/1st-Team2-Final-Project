@@ -221,20 +221,8 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Target")
 	TObjectPtr<AUnderwaterCharacter> CachedTargetPlayer;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Target")
-	FVector LastDetectedLocation;
-
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Animation")
-	TObjectPtr<UAnimMontage> DetectedAnimation;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Animation")
-	TObjectPtr<UAnimMontage> DeathAnimation;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Animation")
-	TArray<TObjectPtr<UAnimMontage>> NormalAttackAnimations;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Animation")
-	TArray<TObjectPtr<UAnimMontage>> SpecialAttackAnimations;
+	TArray<TObjectPtr<UAnimMontage>> AttackAnimations;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Collision")
 	TObjectPtr<UCapsuleComponent> AttackCollision;
@@ -263,18 +251,6 @@ protected:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Camera")
 	TObjectPtr<UCameraControllerComponent> CameraControllerComponent;
-	
-	UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Boss|PatrolPoints")
-	TArray<TObjectPtr<ATargetPoint>> PatrolPoints;
-	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|Blackboard")
-	TObjectPtr<UBlackboardComponent> BlackboardComponent;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|AI")
-	TObjectPtr<ABossAIController> AIController;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Stat")
-	float AttackRadius;
 
 	/** 공격 받은 플레이어 리스트
 	 * 
@@ -312,7 +288,6 @@ protected:
 
 private:
 	static const FName BossStateKey;
-	uint8 CurrentPatrolPointIndex = 0;
 	uint8 bIsBiteAttackSuccess : 1;
 	uint8 bIsAttackCollisionOverlappedPlayer : 1;
 	float TurnTimer = 0.0f;
@@ -330,10 +305,7 @@ public:
 	FORCEINLINE AUnderwaterCharacter* GetTarget() const { return TargetPlayer; };
 	FORCEINLINE void SetTarget(AUnderwaterCharacter* Target) { TargetPlayer = Target; };
 	FORCEINLINE void InitTarget() { TargetPlayer = nullptr; };
-
-	/** LastDetectedLocation Getter */
-	FORCEINLINE void SetLastDetectedLocation(const FVector& InLastDetectedLocation) { LastDetectedLocation = InLastDetectedLocation; };
-
+	
 	FORCEINLINE bool GetIsAttackCollisionOverlappedPlayer() const { return bIsAttackCollisionOverlappedPlayer; };
 
 	FORCEINLINE UCameraControllerComponent* GetCameraControllerComponent() const { return CameraControllerComponent; };

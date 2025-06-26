@@ -24,6 +24,7 @@ UCombatEffectComponent::UCombatEffectComponent()
 
 	ShieldBrokenSound = ESFX::ShieldBroken;
 	ShieldHitSound = ESFX::ShieldHit;
+	ShieldUseSound = ESFX::UseShield;	
 	DamageTakenSound = ESFX::DamageTaken;
 }
 
@@ -34,12 +35,10 @@ void UCombatEffectComponent::C_PlayShieldUseEffect_Implementation()
 	{
 		ShieldHitWidget->PlayAnimation(ShieldUseAnimation);
 	}
-	//if (ShieldUseSound)
-	//{
-		// @ToDo: SoundSubsystem을 사용하여 사운드 재생
-		// @ToDo: SoundSubsystem의 Play ID 기능을 이용해서 현재 재생 중이면 소리를 재생하지 않도록 수정
-		//UGameplayStatics::PlaySoundAtLocation(GetWorld(), ShieldUseSound, GetOwner()->GetActorLocation());
-	//}
+	if (USoundSubsystem* SoundSubsystem = GetSoundSubsystem())
+	{
+		SoundSubsystem->Play2D(ShieldUseSound);
+	}
 }
 
 void UCombatEffectComponent::BeginPlay()

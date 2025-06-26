@@ -6,6 +6,7 @@
 #include "PlayerHUDComponent.generated.h"
 
 enum class EMissionType : uint8;
+class USoundSubsystem;
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class ABYSSDIVERUNDERWORLD_API UPlayerHUDComponent : public UActorComponent
@@ -140,6 +141,7 @@ public:
     bool IsTestHUDVisible() const;
 
     UMissionsOnHUDWidget* GetMissionsOnHudWidget() const;
-    
+    USoundSubsystem* GetSoundSubsystem();
+
 #pragma endregion
 };

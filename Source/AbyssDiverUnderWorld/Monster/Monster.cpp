@@ -177,7 +177,7 @@ void AMonster::OnDeath()
 		MonsterSoundComponent->M_StopAllLoopSound();
 	}
 
-	StopMovement();
+	UnPossessAI();
 	M_OnDeath();
 
 	SetMonsterState(EMonsterState::Death);
@@ -227,7 +227,7 @@ void AMonster::PlayAttackMontage()
 	}
 }
 
-void AMonster::StopMovement()
+void AMonster::UnPossessAI()
 {
 	if (IsValid(AIController))
 	{
@@ -397,6 +397,7 @@ void AMonster::RemoveDetection(AActor* Actor)
 
 					if (BlackboardComponent)
 					{
+						SetMonsterState(EMonsterState::Chase);
 						BlackboardComponent->SetValueAsObject(TargetActorKey, TargetActor);
 					}
 					UE_LOG(LogTemp, Log, TEXT("[%s] New TargetActor: %s"), *GetName(), *TargetActor->GetName());
@@ -476,6 +477,7 @@ void AMonster::ForceRemoveDetection(AActor* Actor)
 
 				if (BlackboardComponent)
 				{
+					SetMonsterState(EMonsterState::Chase);
 					BlackboardComponent->SetValueAsObject(TargetActorKey, TargetActor);
 				}
 				break;
@@ -526,6 +528,10 @@ void AMonster::SetMonsterState(EMonsterState NewState)
 	case EMonsterState::Patrol:
 		SetMaxSwimSpeed(PatrolSpeed);
 		MonsterSoundComponent->S_PlayPatrolLoopSound();
+		if (TargetActor != nullptr)
+		{
+			ForceRemoveDetection(TargetActor);
+		}
 
 		if (UBlackboardComponent* BB = Cast<AAIController>(GetController())->GetBlackboardComponent())
 		{
