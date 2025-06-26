@@ -38,6 +38,8 @@ enum class ESFX : uint8
 	UnderwaterSprint,
 	IdleBreath,
 	MoveBreath,
+	Resurrection,
+	UseShield,
 	Max UMETA(Hidden)
 };
 
