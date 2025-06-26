@@ -5,6 +5,8 @@
 
 const FString UADWorldSubsystem::MainMenuLevelName = TEXT("MainLevel");
 const FString UADWorldSubsystem::CampLevelName = TEXT("Submarine_Lobby");
+const FString UADWorldSubsystem::ShallowLevelName = TEXT("Shallow_Test");
+const FString UADWorldSubsystem::DeepLevelName = TEXT("DeepAbyss");
 
 void UADWorldSubsystem::OnWorldBeginPlay(UWorld& InWorld)
 {
@@ -12,6 +14,7 @@ void UADWorldSubsystem::OnWorldBeginPlay(UWorld& InWorld)
 	
 	FString WorldName;
 	InWorld.GetName(WorldName);
+	CurrentLevelName = WorldName;
 	LOGV(Log, TEXT("%s Map Has BegunPlay"), *WorldName);
 
 	if (MainMenuLevelName == WorldName)
