@@ -7,6 +7,7 @@
 #include "Components/ActorComponent.h"
 #include "CombatEffectComponent.generated.h"
 
+enum class ESFX : uint8;
 /**
  * 캐릭터 전투 상황 효과 컴포넌트
  * 실드 이펙트 효과 발생 시점
@@ -70,10 +71,13 @@ private:
 	TObjectPtr<class UNiagaraComponent> ShieldBrokenEffectComponent;
 
 	/** 실드 파괴 사운드 */
-	UPROPERTY()
-	TObjectPtr<class USoundBase> ShieldBrokenSound;
+	UPROPERTY(EditDefaultsOnly, Category = "Character|CombatEffect")
+	ESFX ShieldBrokenSound;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Character|CombatEffect")
+	ESFX ShieldUseSound;
 	/** 실드 히트 위젯 클래스 */
+	
 	UPROPERTY(EditDefaultsOnly, Category = "Character|CombatEffect")
 	TSubclassOf<UUserWidget> ShieldHitWidgetClass;
 
@@ -99,7 +103,7 @@ private:
 
 	/** 실드 히트 사운드 */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|CombatEffect")
-	TObjectPtr<USoundBase> ShieldHitSound;
+	ESFX ShieldHitSound;
 
 	/** Owner Character Cache */
 	UPROPERTY()
@@ -115,8 +119,10 @@ private:
 
 	/** 데미지를 입었을 때 재생되는 사운드 */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|CombatEffect")
-	TObjectPtr<USoundBase> DamageTakenSound;
+	ESFX DamageTakenSound;
 
+	TWeakObjectPtr<class USoundSubsystem> SoundSubsystemWeakPtr;
+	
 #pragma endregion
 
 #pragma region Getter Setter
@@ -125,6 +131,11 @@ public:
 	
 	/** 실드 히트 위젯을 반환한다. */
 	UUserWidget* GetShieldHitWidget();
+
+protected:
+
+	/** 사운드 서브시스템을 반환한다. */
+	class USoundSubsystem* GetSoundSubsystem();
 	
 #pragma endregion
 };

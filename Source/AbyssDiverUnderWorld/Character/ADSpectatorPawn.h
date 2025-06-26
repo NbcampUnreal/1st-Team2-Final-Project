@@ -24,7 +24,8 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-
+	virtual void Destroyed() override;
+	
 public:
 	
 	// Called to bind functionality to input
@@ -66,5 +67,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> ViewPrevPlayerAction;
 
+	TWeakObjectPtr<class AUnderwaterCharacter> PrevTargetCharacter;
+	
 #pragma endregion
 };

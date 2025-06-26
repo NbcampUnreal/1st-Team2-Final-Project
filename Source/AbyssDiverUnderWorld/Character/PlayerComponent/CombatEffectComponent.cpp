@@ -9,8 +9,10 @@
 #include "Animation/WidgetAnimation.h"
 #include "Blueprint/UserWidget.h"
 #include "Character/UnderwaterCharacter.h"
+#include "DataRow/SoundDataRow/SFXDataRow.h"
 #include "Framework/ADPlayerController.h"
 #include "Kismet/GameplayStatics.h"
+#include "Subsystems/SoundSubsystem.h"
 
 UCombatEffectComponent::UCombatEffectComponent()
 {
@@ -19,6 +21,11 @@ UCombatEffectComponent::UCombatEffectComponent()
 
 	HitBlackoutDuration = 0.1f;
 	HitFadeInDuration = 0.2f;
+
+	ShieldBrokenSound = ESFX::ShieldBroken;
+	ShieldHitSound = ESFX::ShieldHit;
+	ShieldUseSound = ESFX::UseShield;	
+	DamageTakenSound = ESFX::DamageTaken;
 }
 
 void UCombatEffectComponent::C_PlayShieldUseEffect_Implementation()
@@ -28,12 +35,10 @@ void UCombatEffectComponent::C_PlayShieldUseEffect_Implementation()
 	{
 		ShieldHitWidget->PlayAnimation(ShieldUseAnimation);
 	}
-	//if (ShieldUseSound)
-	//{
-		// @ToDo: SoundSubsystem을 사용하여 사운드 재생
-		// @ToDo: SoundSubsystem의 Play ID 기능을 이용해서 현재 재생 중이면 소리를 재생하지 않도록 수정
-		//UGameplayStatics::PlaySoundAtLocation(GetWorld(), ShieldUseSound, GetOwner()->GetActorLocation());
-	//}
+	if (USoundSubsystem* SoundSubsystem = GetSoundSubsystem())
+	{
+		SoundSubsystem->Play2D(ShieldUseSound);
+	}
 }
 
 void UCombatEffectComponent::BeginPlay()
@@ -98,9 +103,11 @@ void UCombatEffectComponent::OnShieldBroken()
 	if (ShieldBrokenEffectComponent && !ShieldBrokenEffectComponent->IsActive())
 	{
 		ShieldBrokenEffectComponent->Activate(true);
-		if (ShieldBrokenSound)
+
+		
+		if (USoundSubsystem* SoundSubsystem = GetSoundSubsystem())
 		{
-			UGameplayStatics::PlaySoundAtLocation(GetWorld(), ShieldBrokenSound, GetOwner()->GetActorLocation());
+			SoundSubsystem->Play2D(ShieldBrokenSound);
 		}
 	}
 }
@@ -142,9 +149,9 @@ void UCombatEffectComponent::OnDamageTaken(float DamageAmount, float CurrentHeal
 		return;
 	}
 
-	if (!UnderwaterCharacter->IsDeath() && !UnderwaterCharacter->IsCaptured())
+	if (UnderwaterCharacter->IsNormal() && !UnderwaterCharacter->IsCaptured())
 	{
-		PlayerController->C_StartCameraBlank(
+		PlayerController->C_StartCameraBlink(
 			FColor::Black,
 			FVector2D(0.0f, 1.0f),
 			0.0f,
@@ -152,9 +159,9 @@ void UCombatEffectComponent::OnDamageTaken(float DamageAmount, float CurrentHeal
 			HitFadeInDuration
 		);
 
-		if (DamageTakenSound)
+		if (USoundSubsystem* SoundSubsystem = GetSoundSubsystem())
 		{
-			PlayerController->ClientPlaySound(DamageTakenSound, 1.0f, 1.0f);
+			SoundSubsystem->Play2D(DamageTakenSound);
 		}
 	}
 }
@@ -171,11 +178,10 @@ void UCombatEffectComponent::PlayShieldHitEffect()
 	{
 		ShieldHitWidget->PlayAnimation(ShieldHitAnimation);
 	}
-	if (ShieldHitSound)
+
+	if (USoundSubsystem* SoundSubsystem = GetSoundSubsystem())
 	{
-		// @ToDo: SoundSubsystem을 사용하여 사운드 재생
-		// @ToDo: SoundSubsystem의 Play ID 기능을 이용해서 현재 재생 중이면 소리를 재생하지 않도록 수정
-		UGameplayStatics::PlaySoundAtLocation(GetWorld(), ShieldHitSound, GetOwner()->GetActorLocation());
+		SoundSubsystem->Play2D(ShieldHitSound);
 	}
 }
 
@@ -208,4 +214,21 @@ UWidgetAnimation* UCombatEffectComponent::FindAnimationByName(UUserWidget* Widge
 UUserWidget* UCombatEffectComponent::GetShieldHitWidget()
 {
 	return ShieldHitWidget;
+}
+
+class USoundSubsystem* UCombatEffectComponent::GetSoundSubsystem()
+{
+	if (!SoundSubsystemWeakPtr.IsValid())
+	{
+		if (UGameInstance* GameInstance = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
+		{
+			SoundSubsystemWeakPtr = GameInstance->GetSubsystem<USoundSubsystem>();
+		}
+		else
+		{
+			UE_LOG(LogAbyssDiverCharacter, Warning, TEXT("Failed to get SoundSubsystem from GameInstance"));
+		}
+	}
+
+	return SoundSubsystemWeakPtr.Get();
 }

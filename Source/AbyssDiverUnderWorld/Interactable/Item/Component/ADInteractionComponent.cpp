@@ -101,7 +101,7 @@ void UADInteractionComponent::S_RequestInteractHold_Implementation(AActor* Targe
 	if (IIADInteractable* IADInteractable = Cast<IIADInteractable>(TargetActor))
 	{
 		FocusedInteractable = IADInteractable->GetInteractableComponent();
-		HoldThreshold = IIADInteractable::Execute_GetHoldDuration(TargetActor);
+		HoldThreshold = IIADInteractable::Execute_GetHoldDuration(TargetActor, GetOwner());
 		if (!FocusedInteractable)
 		{
 			return;
@@ -359,7 +359,7 @@ void UADInteractionComponent::OnInteractPressed()
 				TryInteract();   // 즉시 수행
 				return;
 			}
-			HoldThreshold = IIADInteractable::Execute_GetHoldDuration(Owner);
+			HoldThreshold = IIADInteractable::Execute_GetHoldDuration(Owner, GetOwner());
 			OnHoldStart.Broadcast(Owner, HoldThreshold);
 			// Hold Mode일 경우
 			if (GetOwner()->HasAuthority())
