@@ -40,6 +40,9 @@ enum class ESFX : uint8
 	MoveBreath,
 	Resurrection,
 	UseShield,
+	GroggyStart,
+	GroggyMiddle,
+	GroggyEnd,
 	Max UMETA(Hidden)
 };
 
