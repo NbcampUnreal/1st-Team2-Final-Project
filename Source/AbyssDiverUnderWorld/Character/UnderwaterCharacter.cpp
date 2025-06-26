@@ -99,6 +99,7 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	
 	LookSensitivity = 1.0f;
 	NormalLookSensitivity = 1.0f;
+	NormalStateFadeInDuration = 1.0f;
 	
 	GroggyDuration = 60.0f;
 	GroggyReductionRate = 0.1f;
@@ -193,6 +194,8 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	bIsAttackedByEyeStalker = false;
 
 	PostProcessSettingComponent = CreateDefaultSubobject<UPostProcessSettingComponent>(TEXT("PostProcessSettingComponent"));
+
+	GetMesh()->SetLightingChannels(false, true, true);
 }
 
 void AUnderwaterCharacter::BeginPlay()
@@ -204,15 +207,6 @@ void AUnderwaterCharacter::BeginPlay()
 		*GetNameSafe(GetController()),
 		IsLocallyControlled() ? TEXT("Yes") : TEXT("No")
 	);
-	
-	if (IsLocallyControlled())
-	{
-		GetMesh()->SetLightingChannels(false, true, false);
-	}
-	else
-	{
-		GetMesh()->SetLightingChannels(false, true, true);
-	}
 	
 	SetDebugCameraMode(bUseDebugCamera);
 	
@@ -345,6 +339,11 @@ void AUnderwaterCharacter::PossessedBy(AController* NewController)
 		*GetNameSafe(GetController()),
 		IsLocallyControlled() ? TEXT("Yes") : TEXT("No")
 	);
+
+	if (IsLocallyControlled())
+	{
+		SetMeshFirstPersonSetting(true);
+	}
 	
 	if (AADPlayerState* ADPlayerState = GetPlayerState<AADPlayerState>())
 	{
@@ -360,6 +359,13 @@ void AUnderwaterCharacter::PossessedBy(AController* NewController)
 	{
 		LOGVN(Error, TEXT("Player State Init failed : %d"), GetUniqueID());
 	}
+}
+
+void AUnderwaterCharacter::UnPossessed()
+{
+	Super::UnPossessed();
+
+	OnLeavePawn();
 }
 
 void AUnderwaterCharacter::PostInitializeComponents()
@@ -388,9 +394,9 @@ void AUnderwaterCharacter::OnRep_PlayerState()
 		*GetNameSafe(GetController()),
 		IsLocallyControlled() ? TEXT("Yes") : TEXT("No")
 	);
-
+	
 	// UnPossess 상황에서 Error 로그가 발생하지 않도록 수정
-	if (APlayerState* CurrentPlayerState = GetPlayerState<APlayerState>())
+	if (APlayerState* CurrentPlayerState = GetPlayerState<AADPlayerState>())
 	{
 		if (AADPlayerState* ADPlayerState = Cast<AADPlayerState>(CurrentPlayerState))
 		{
@@ -406,6 +412,14 @@ void AUnderwaterCharacter::OnRep_PlayerState()
 		{
 			LOGVN(Error, TEXT("Player State Init failed : %d"), GetUniqueID());
 		}
+		if (IsLocallyControlled())
+		{
+			SetMeshFirstPersonSetting(true);
+		}
+	}
+	else
+	{
+		OnLeavePawn();
 	}
 }
 
@@ -834,6 +848,15 @@ void AUnderwaterCharacter::OnRep_CurrentTool()
 	}
 }
 
+void AUnderwaterCharacter::OnSpectated()
+{
+	SetMeshFirstPersonSetting(true);
+}
+
+void AUnderwaterCharacter::OnEndSpectated()
+{
+	SetMeshFirstPersonSetting(false);
+}
 
 void AUnderwaterCharacter::OnMoveSpeedChanged(float NewMoveSpeed)
 {
@@ -1050,6 +1073,14 @@ void AUnderwaterCharacter::HandleEnterGroggy()
 		{
 			PlayerController->SetIgnoreLookInput(false);
 			PlayerController->SetIgnoreMoveInput(true);
+			PlayerController->ClientSetCameraFade(false);
+			PlayerController->ClientSetCameraFade(true,
+				FColor::Black,
+				FVector2D(0.0f, 1.0f),
+				GroggyDuration,
+				true,
+				true
+			);
 		}
 
 		LookSensitivity = GroggyLookSensitivity;
@@ -1096,6 +1127,13 @@ void AUnderwaterCharacter::HandleEnterNormal()
 		{
 			PlayerController->SetIgnoreLookInput(false);
 			PlayerController->SetIgnoreMoveInput(false);
+			PlayerController->ClientSetCameraFade(true,
+				FColor::Black,
+				FVector2D(-1.0f, 0.0f),
+				NormalStateFadeInDuration,
+				true,
+				true
+			);
 		}
 
 		LookSensitivity = NormalLookSensitivity;
@@ -1118,8 +1156,11 @@ void AUnderwaterCharacter::HandleExitNormal()
 
 void AUnderwaterCharacter::HandleEnterDeath()
 {
-	// @ToDo: 사망 처리 시점을 사망 모션이 출력 혹은 Camera 전환이 완료된 후로 변경할 것
-	// 임시로 Timer로 시간을 맞춘다.
+	// Case1. Health == 0 -> Groggy -> Death : 이미 Black Out이 완료되었으므로 바로 Death를 종료
+	// Case2. Normal -> Death : 산소가 없어서 사망, Black Out을 적용해서 Death 종료
+	// Case3. Groggy -> Death | Oxygen == 0 : Groggy 상태에서 산소가 없어서 사망, Black Out을 적용해서 Death 종료
+
+	
 	if (HasAuthority())
 	{
 		GetWorldTimerManager().SetTimer(
@@ -1140,6 +1181,14 @@ void AUnderwaterCharacter::HandleEnterDeath()
 		{
 			PlayerController->SetIgnoreLookInput(false);
 			PlayerController->SetIgnoreMoveInput(true);
+			PlayerController->ClientSetCameraFade(
+				true, 
+				FColor::Black,
+				FVector2D(-1.0f, 1.0f),
+				DeathTransitionTime,
+				true,
+				true
+			);
 		}
 
 		InteractionComponent->OnInteractReleased();
@@ -1361,11 +1410,6 @@ void AUnderwaterCharacter::SpawnRadar()
 		LOGVN(Error, TEXT("RadarClass is not valid"));
 		return;
 	}
-	// Radar는 Local에서만 존재하면 된다.
-	if (!IsLocallyControlled())
-	{
-		return;
-	}
 
 	FVector SpawnLocation = FirstPersonCameraComponent->GetComponentTransform().TransformPosition(RadarOffset);
 	FRotator SpawnRotation = FirstPersonCameraComponent->GetComponentRotation() + RadarRotation;
@@ -1374,7 +1418,36 @@ void AUnderwaterCharacter::SpawnRadar()
 	RadarObject = GetWorld()->SpawnActor<ARadar>(RadarClass, SpawnLocation, SpawnRotation);
 	RadarObject->AttachToComponent(FirstPersonCameraComponent, FAttachmentTransformRules::KeepWorldTransform);
 	RadarObject->UpdateRadarSourceComponent(GetRootComponent(), GetRootComponent());
-	SetRadarVisibility(false);
+	RadarObject->SetActorHiddenInGame(true);
+}
+
+void AUnderwaterCharacter::SetMeshFirstPersonSetting(bool bIsFirstPerson)
+{
+	if (bIsFirstPerson)
+	{
+		GetMesh()->SetLightingChannels(false, true, false);
+	}
+	else
+	{
+		GetMesh()->SetLightingChannels(false, true, true);
+	}
+}
+
+void AUnderwaterCharacter::OnLeavePawn()
+{
+	// 어차피 안 돌아올 것이므로 아무튼 숨김 처리한다.
+	GetMesh1P()->SetHiddenInGame(true);
+
+	if (LeftFlipperMesh1PComponent)
+	{
+		LeftFlipperMesh1PComponent->SetHiddenInGame(true);
+	}
+	if (RightFlipperMesh1PComponent)
+	{
+		RightFlipperMesh1PComponent->SetHiddenInGame(true);
+	}
+
+	SetMeshFirstPersonSetting(false);
 }
 
 void AUnderwaterCharacter::RequestToggleRadar()
@@ -1412,7 +1485,7 @@ void AUnderwaterCharacter::SetBlurEffect(const bool bEnable)
 
 void AUnderwaterCharacter::SetRadarVisibility(bool bRadarVisible)
 {
-	if (!IsValid(RadarObject))
+	if (!IsValid(RadarObject) || !IsLocallyControlled())
 	{
 		return;
 	}
