@@ -31,11 +31,7 @@ ABoss::ABoss()
 	PrimaryActorTick.bCanEverTick = false;
 	
 	bIsAttackCollisionOverlappedPlayer = false;
-	BlackboardComponent = nullptr;
-	AIController = nullptr;
 	TargetPlayer = nullptr;
-	LastDetectedLocation = FVector::ZeroVector;
-	AttackRadius = 500.0f;
 	LaunchPower = 1000.0f;
 	MinPatrolDistance = 500.0f;
 	MaxPatrolDistance = 1000.0f;
@@ -74,15 +70,8 @@ void ABoss::BeginPlay()
 	
 	AnimInstance = GetMesh()->GetAnimInstance();
 
-	// @TODO: 캐스팅하는 AIController 최소화 필요
-	AIController = Cast<ABossAIController>(GetController());
 	EnhancedAIController = Cast<AEnhancedBossAIController>(GetController());
-
-	if (IsValid(AIController))
-	{
-		BlackboardComponent = AIController->GetBlackboardComponent();
-	}
-
+	
 	CachedSpawnLocation = GetActorLocation();
 
 	AttackCollision->OnComponentBeginOverlap.AddDynamic(this, &ABoss::OnAttackCollisionOverlapBegin);
@@ -714,9 +703,12 @@ void ABoss::InitCharacterMovementSetting()
 void ABoss::SetBossState(EBossState State)
 {
 	if (!HasAuthority()) return;
-
-	BossState = State;
-	BlackboardComponent->SetValueAsEnum(BossStateKey, static_cast<uint8>(BossState));
+	
+	if (AAIController* AIController = Cast<AAIController>(GetController()))
+	{
+		BossState = State;
+		AIController->GetBlackboardComponent()->SetValueAsEnum(BossStateKey, static_cast<uint8>(BossState));	
+	}
 }
 #pragma endregion
 
@@ -832,14 +824,14 @@ void ABoss::RotationToTarget(const FVector& InTargetLocation)
 
 void ABoss::Attack()
 {
-	const uint8 AttackType = FMath::RandRange(0, NormalAttackAnimations.Num() - 1);
+	const uint8 AttackType = FMath::RandRange(0, AttackAnimations.Num() - 1);
 	
-	if (IsValid(NormalAttackAnimations[AttackType]))
+	if (IsValid(AttackAnimations[AttackType]))
 	{
 		ChaseAccumulatedTime = 0.f;
 		AnimInstance->OnMontageEnded.RemoveDynamic(this, &ABoss::OnAttackMontageEnded);
 		AnimInstance->OnMontageEnded.AddDynamic(this, &ABoss::OnAttackMontageEnded);
-		M_PlayAnimation(NormalAttackAnimations[AttackType]);
+		M_PlayAnimation(AttackAnimations[AttackType]);
 	}
 
 	bIsAttacking = true;
