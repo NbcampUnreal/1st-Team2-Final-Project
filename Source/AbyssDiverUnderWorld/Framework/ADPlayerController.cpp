@@ -25,6 +25,7 @@
 #include "Camera/PlayerCameraManager.h"
 #include "TimerManager.h"
 #include "Engine/World.h"
+#include "Subsystems/SoundSubsystem.h"
 
 #include "UI/HoldInteractionWidget.h"
 
@@ -212,6 +213,17 @@ void AADPlayerController::C_StartCameraBlink_Implementation(FColor FadeColor, FV
 bool AADPlayerController::IsCameraBlanking() const
 {
 	return GetWorldTimerManager().IsTimerActive(CameraBlankTimerHandle) || (PlayerCameraManager && PlayerCameraManager->bEnableFading);
+}
+
+void AADPlayerController::C_PlaySound_Implementation(ESFX SoundType, float VolumeMultiplier, float PitchMultiplier)
+{
+	if (UGameInstance* GameInstance = GetGameInstance())
+	{
+		if (USoundSubsystem* SoundSubsystem = GameInstance->GetSubsystem<USoundSubsystem>())
+		{
+			SoundSubsystem->Play2D(SoundType, VolumeMultiplier);
+		}
+	}
 }
 
 void AADPlayerController::BeginSpectatingState()
