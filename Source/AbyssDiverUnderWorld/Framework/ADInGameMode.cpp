@@ -105,8 +105,21 @@ void AADInGameMode::BeginPlay()
 			{
 				InGameState->SetCurrentDroneSeller(Drone->CurrentSeller);
 				InGameState->SetDestinationTarget(Drone->CurrentSeller);
-				Drone->M_PlayPhaseBGM(1);
+	/*			Drone->M_PlayPhaseBGM(1);*/
 			}
+		}
+	}
+}
+
+void AADInGameMode::StartPlay()
+{
+	Super::StartPlay();           // 모든 Actor BeginPlay 이후 호출
+
+	for (AADDrone* Drone : TActorRange<AADDrone>(GetWorld()))
+	{
+		if (Drone->GetDronePhaseNumber() == 1)
+		{
+			Drone->M_PlayPhaseBGM(1);
 		}
 	}
 }

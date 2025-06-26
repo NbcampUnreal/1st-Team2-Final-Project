@@ -16,6 +16,7 @@ class AADDroneSeller;
 class ASpawnManager;
 class USoundSubsystem;
 class ATargetPoint;
+class UADWorldSubsystem;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADDrone : public AActor,  public IIADInteractable
@@ -85,6 +86,10 @@ public:
 	float DestroyDelay = 5.f;
 	UPROPERTY()
 	TObjectPtr<USoundSubsystem> SoundSubsystem;
+	UPROPERTY()
+	TObjectPtr<UADWorldSubsystem> WorldSubsystem;
+	UPROPERTY(EditAnywhere)
+	UDataTable* PhaseBgmTable;
 
 protected:
 
