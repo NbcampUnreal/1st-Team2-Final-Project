@@ -431,6 +431,7 @@ void AUnderwaterCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProp
 	DOREPLIFETIME(AUnderwaterCharacter, CurrentTool);
 	DOREPLIFETIME(AUnderwaterCharacter, BindCharacter);
 	DOREPLIFETIME(AUnderwaterCharacter, BoundCharacters);
+	DOREPLIFETIME(AUnderwaterCharacter, bIsInCombat);
 }
 
 void AUnderwaterCharacter::OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode)
@@ -845,6 +846,23 @@ void AUnderwaterCharacter::OnRep_CurrentTool()
 		EquipRenderComp->AttachItem(CurrentTool, LaserSocketName);
 		PrevTool = CurrentTool;                   // 다음 Detach 대비
 		LOG(TEXT("CurrentTool's Owner : %s"), *CurrentTool->GetOwner()->GetName());
+	}
+}
+
+
+void AUnderwaterCharacter::OnRep_InCombat()
+{
+	LOG(TEXT("OnRep_InCombat! %d"), bIsInCombat);
+	if (UnderwaterEffectComponent)
+	{
+		if (bIsInCombat)
+		{
+			UnderwaterEffectComponent->StartCombatEffect();
+		}
+		else
+		{
+			UnderwaterEffectComponent->StopCombatEffect();
+		}	
 	}
 }
 
@@ -1317,6 +1335,12 @@ void AUnderwaterCharacter::StartCombat()
 	}
 
 	bIsInCombat = true;
+
+	if (IsLocallyControlled() && UnderwaterEffectComponent)
+	{
+		UnderwaterEffectComponent->StartCombatEffect();
+	}
+
 	StopHealthRegen();
 	OnCombatStartDelegate.Broadcast();
 }
@@ -1329,6 +1353,12 @@ void AUnderwaterCharacter::EndCombat()
 	}
 
 	bIsInCombat = false;
+
+	if (IsLocallyControlled() && UnderwaterEffectComponent)
+	{
+		UnderwaterEffectComponent->StopCombatEffect();
+	}
+
 	if (GetCharacterState() == ECharacterState::Normal)
 	{
 		GetWorldTimerManager().SetTimer(HealthRegenStartTimer,

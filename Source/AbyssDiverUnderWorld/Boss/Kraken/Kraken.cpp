@@ -67,32 +67,30 @@ void AKraken::OnDeath()
 
 void AKraken::OnBattleFieldBeginOverlap()
 {
-	bCanBattle = true;
-	EnhancedAIController->SetSightRadius(4000.f);
+	if (AEnhancedBossAIController* AIController = Cast<AEnhancedBossAIController>(GetController()))
+	{
+		if (!AIController->IsPendingKillPending() && AIController->IsValidLowLevel())
+		{
+			bCanBattle = true;
+			AIController->SetSightRadius(4000.f);
+		}
+	}
 }
 
 void AKraken::OnBattleFieldEndOverlap(const uint8& PlayerCount)
 {
-	if (PlayerCount != 0)
+	if (PlayerCount != 0) return;
+	
+	if (AEnhancedBossAIController* AIController = Cast<AEnhancedBossAIController>(GetController()))
 	{
-		return;
+		if (!AIController->IsPendingKillPending() && AIController->IsValidLowLevel())
+		{
+			bCanBattle = false;
+			AIController->GetBlackboardComponent()->SetValueAsBool("bIsChasing", false);
+			AIController->GetBlackboardComponent()->SetValueAsBool("bCanAttack", false);
+			AIController->SetSightRadius(0.f);
+		}
 	}
-
-	if (IsValid(AIController) == false || AIController->IsPendingKillPending() || AIController->IsValidLowLevel() == false)
-	{
-		return;
-	}
-
-	if (IsValid(EnhancedAIController) == false || EnhancedAIController->IsPendingKillPending() || EnhancedAIController->IsValidLowLevel() == false)
-	{
-		return;
-	}
-
-	bCanBattle = false;
-
-	AIController->GetBlackboardComponent()->SetValueAsBool("bIsChasing", false);
-	AIController->GetBlackboardComponent()->SetValueAsBool("bCanAttack", false);
-	EnhancedAIController->SetSightRadius(0.f);
 }
 
 void AKraken::GetBattleFieldVolumeInWorld()
