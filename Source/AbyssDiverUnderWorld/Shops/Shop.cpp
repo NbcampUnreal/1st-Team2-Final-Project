@@ -17,6 +17,7 @@
 #include "AbyssDiverUnderWorld.h"	
 #include "Inventory/ADInventoryComponent.h"
 #include "Subsystems/DataTableSubsystem.h"
+#include "Subsystems/SoundSubsystem.h"
 
 #include "Framework/ADPlayerState.h"
 #include "Framework/ADInGameState.h"
@@ -457,6 +458,14 @@ void AShop::OpenShop(AUnderwaterCharacter* Requester)
 	bIsOpened = true;
 	PC->SetIgnoreMoveInput(true);
 	ItemMeshCaptureComp->bCaptureEveryFrame = true;
+
+	USoundSubsystem* SoundSubsystem = GetSoundSubsystem();
+	if (SoundSubsystem == nullptr)
+	{
+		return;
+	}
+
+	SoundSubsystem->Play2D(ESFX_UI::ShopOpenClose);
 }
 
 void AShop::CloseShop(AUnderwaterCharacter* Requester)
@@ -492,6 +501,13 @@ void AShop::CloseShop(AUnderwaterCharacter* Requester)
 				
 			}), RemoveDelay, false);
 
+	USoundSubsystem* SoundSubsystem = GetSoundSubsystem();
+	if (SoundSubsystem == nullptr)
+	{
+		return;
+	}
+
+	SoundSubsystem->Play2D(ESFX_UI::ShopOpenClose);
 }
 
 EBuyResult AShop::BuyItem(uint8 ItemId, uint8 Quantity, AUnderwaterCharacter* Buyer)
@@ -1493,6 +1509,30 @@ bool AShop::IsOpened() const
 FString AShop::GetInteractionDescription() const
 {
 	return TEXT("Open Shop!");
+}
+
+USoundSubsystem* AShop::GetSoundSubsystem()
+{
+	UWorld* World = GetWorld();
+
+	if (IsValid(World) == false || World->bIsTearingDown)
+	{
+		return nullptr;
+	}
+
+	UGameInstance* GI = UGameplayStatics::GetGameInstance(World);
+	if (GI == nullptr)
+	{
+		return nullptr;
+	}
+
+	USoundSubsystem* SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
+	if (SoundSubsystem == nullptr)
+	{
+		return nullptr;
+	}
+
+	return SoundSubsystem;
 }
 
 UADInteractableComponent* AShop::GetInteractableComponent() const
