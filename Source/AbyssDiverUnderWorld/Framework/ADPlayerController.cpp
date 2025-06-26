@@ -24,6 +24,7 @@
 
 #include "Camera/PlayerCameraManager.h"
 #include "TimerManager.h"
+#include "Character/PlayerComponent/ShieldComponent.h"
 #include "Engine/World.h"
 #include "Subsystems/SoundSubsystem.h"
 
@@ -329,6 +330,25 @@ void AADPlayerController::ToggleTestHUD()
 	}
 }
 
+void AADPlayerController::GainShield(int Amount)
+{
+	if (HasAuthority())
+	{
+		if (UShieldComponent* ShieldComponent = GetPawn() ? GetPawn()->FindComponentByClass<UShieldComponent>() : nullptr)
+		{
+			ShieldComponent->GainShield(Amount);
+		}
+	}
+	else
+	{
+		S_GainShield(Amount);
+	}
+}
+
+void AADPlayerController::S_GainShield_Implementation(int Amount)
+{
+	GainShield(Amount);
+}
 
 void AADPlayerController::ShowFadeOut(float Duration)
 {

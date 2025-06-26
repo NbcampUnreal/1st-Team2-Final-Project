@@ -97,6 +97,12 @@ protected:
 
 	UFUNCTION(Exec)
 	void ToggleTestHUD();
+
+	UFUNCTION(Exec)
+	void GainShield(int Amount);
+
+	UFUNCTION(Server, Reliable)
+	void S_GainShield(int Amount);
 	
 	void OnCameraBlankEnd();
 
