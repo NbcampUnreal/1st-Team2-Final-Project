@@ -143,6 +143,16 @@ EOXygenChangeResult UOxygenComponent::RefillOxygen(const float RefillAmount)
 	return EOXygenChangeResult::Success;
 }
 
+void UOxygenComponent::SetConsumeRate(float NewConsumeRate)
+{
+	if (GetOwnerRole() != ROLE_Authority || NewConsumeRate < 0.0f)
+	{
+		return;
+	}
+
+	OxygenConsumeRate = NewConsumeRate;
+}
+
 void UOxygenComponent::SetOxygenLevel(const float NextOxygenLevel, const bool bAlwaysUpdate)
 {
 	if (OxygenState.OxygenLevel == NextOxygenLevel && !bAlwaysUpdate)

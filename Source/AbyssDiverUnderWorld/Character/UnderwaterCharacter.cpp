@@ -16,6 +16,7 @@
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/PawnNoiseEmitterComponent.h"
+#include "DataRow/SoundDataRow/SFXDataRow.h"
 #include "Footstep/FootstepComponent.h"
 #include "Framework/ADPlayerState.h"
 #include "Framework/ADPlayerController.h"
@@ -196,6 +197,8 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	PostProcessSettingComponent = CreateDefaultSubobject<UPostProcessSettingComponent>(TEXT("PostProcessSettingComponent"));
 
 	GetMesh()->SetLightingChannels(false, true, true);
+
+	ResurrectSFX = ESFX::Resurrection;
 }
 
 void AUnderwaterCharacter::BeginPlay()
@@ -340,6 +343,8 @@ void AUnderwaterCharacter::PossessedBy(AController* NewController)
 		IsLocallyControlled() ? TEXT("Yes") : TEXT("No")
 	);
 
+	OwnerController = Cast<AADPlayerController>(NewController);
+	
 	if (IsLocallyControlled())
 	{
 		SetMeshFirstPersonSetting(true);
@@ -353,6 +358,13 @@ void AUnderwaterCharacter::PossessedBy(AController* NewController)
 			NameWidgetComponent->SetNameText(ADPlayerState->GetPlayerNickname());
 			NameWidgetComponent->SetEnable(true);
 			UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Set Player Nick Name On Possess : %s"), *ADPlayerState->GetPlayerNickname());
+		}
+
+		// Possess는 Authority 상황에서 호출되므로 Server 로직만 작성하면 된다.
+		if (ADPlayerState->HasBeenDead())
+		{
+			UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Player has been dead, Respawning..."));
+			Respawn();	
 		}
 	}
 	else
@@ -1178,7 +1190,6 @@ void AUnderwaterCharacter::HandleEnterDeath()
 	// Case2. Normal -> Death : 산소가 없어서 사망, Black Out을 적용해서 Death 종료
 	// Case3. Groggy -> Death | Oxygen == 0 : Groggy 상태에서 산소가 없어서 사망, Black Out을 적용해서 Death 종료
 
-	
 	if (HasAuthority())
 	{
 		GetWorldTimerManager().SetTimer(
@@ -1377,6 +1388,13 @@ void AUnderwaterCharacter::EndDeath()
 		return;
 	}
 
+	if (AADPlayerState* PS = GetPlayerState<AADPlayerState>())
+	{
+		PS->SetHasBeenDead(true);
+	}
+	const float NewOxygenConsumeRate = OxygenComponent->GetConsumeRate() * 0.5f;
+	OxygenComponent->SetConsumeRate(NewOxygenConsumeRate);
+	
 	if (AADPlayerController* PlayerController = Cast<AADPlayerController>(GetController()))
 	{
 		PlayerController->StartSpectate();
@@ -1953,6 +1971,30 @@ void AUnderwaterCharacter::Die()
 	}
 
 	SetCharacterState(ECharacterState::Death);
+}
+
+void AUnderwaterCharacter::Respawn()
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Respawn Character : %s"),
+		GetPlayerState<AADPlayerState>() ? *GetPlayerState<AADPlayerState>()->GetPlayerNickname() : TEXT("Unknown"));
+
+	if (AADPlayerController* PlayerController = Cast<AADPlayerController>(GetController()))
+	{
+		UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Respawn PlayerController : %s"), *PlayerController->GetName());
+		PlayerController->C_PlaySound(ResurrectSFX);
+	}
+	if (AADPlayerState* PS = GetPlayerState<AADPlayerState>())
+	{
+		const float MaxOxygenLevel = OxygenComponent->GetMaxOxygenLevel();
+		float RespawnOxygenLevel = PS->GetLastOxygenRemain() * 0.3f;
+		RespawnOxygenLevel = FMath::Max(MaxOxygenLevel * 0.2f, RespawnOxygenLevel);
+		OxygenComponent->InitOxygenSystem(RespawnOxygenLevel, MaxOxygenLevel);
+	}
 }
 
 void AUnderwaterCharacter::Move(const FInputActionValue& InputActionValue)
