@@ -4,6 +4,7 @@
 #include "Framework/ADGameInstance.h"
 
 #include "Kismet/GameplayStatics.h"
+#include "Framework/ADInGameState.h"
 
 void USoundSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -562,12 +563,18 @@ bool USoundSubsystem::RemoveInvalidAudioComponent(UAudioComponent* SomeAudio)
 void USoundSubsystem::CreateAudioComponent()
 {
 	UWorld* World = GetWorld();
-	if (IsValid(World) == false || World->bIsTearingDown || World->IsValidLowLevel() == false)
+	if (IsValid(World) == false || World->IsInSeamlessTravel() || World->bIsTearingDown || World->IsValidLowLevel() == false)
 	{
 		return;
 	}
 
-	TObjectPtr<UAudioComponent> NewAudio = NewObject<UAudioComponent>((UObject*)World->GetGameState());
+	AGameStateBase* GS = World->GetGameState();
+	if (IsValid(GS) == false || GS->IsActorBeingDestroyed() || GS->IsValidLowLevel() == false)
+	{
+		return;
+	}
+
+	TObjectPtr<UAudioComponent> NewAudio = NewObject<UAudioComponent>((UObject*));
 	if (IsValid(NewAudio) && NewAudio->IsValidLowLevel())
 	{
 		DeactivatedComponents.Enqueue(NewAudio);
