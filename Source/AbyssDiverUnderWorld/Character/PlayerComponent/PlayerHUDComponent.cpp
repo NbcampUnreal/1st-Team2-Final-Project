@@ -18,6 +18,8 @@
 #include "UI/CrosshairWidget.h"
 #include "Interactable/OtherActors/ADDroneSeller.h"
 #include "UI/SpectatorHUDWidget.h"
+#include "Subsystems/SoundSubsystem.h"
+#include "Kismet/GameplayStatics.h"
 
 UPlayerHUDComponent::UPlayerHUDComponent()
 {
@@ -224,6 +226,14 @@ void UPlayerHUDComponent::UpdateMissionsOnHUD(EMissionType MissionType, uint8 Mi
 void UPlayerHUDComponent::PlayNextPhaseAnim(int32 NextPhaseNumber)
 {
 	PlayerStatusWidget->PlayNextPhaseAnim(NextPhaseNumber);
+
+	USoundSubsystem* SoundSubsystem = GetSoundSubsystem();
+	if (SoundSubsystem == nullptr)
+	{
+		return;
+	}
+
+	SoundSubsystem->Play2D(ESFX_UI::PhaseTransition);
 }
 
 void UPlayerHUDComponent::SetCurrentPhaseOverlayVisible(bool bShouldVisible)
@@ -473,4 +483,28 @@ bool UPlayerHUDComponent::IsTestHUDVisible() const
 UMissionsOnHUDWidget* UPlayerHUDComponent::GetMissionsOnHudWidget() const
 {
 	return MissionsOnHUDWidget;
+}
+
+USoundSubsystem* UPlayerHUDComponent::GetSoundSubsystem()
+{
+	UWorld* World = GetWorld();
+
+	if (IsValid(World) == false || World->bIsTearingDown)
+	{
+		return nullptr;
+	}
+
+	UGameInstance* GI = UGameplayStatics::GetGameInstance(World);
+	if (GI == nullptr)
+	{
+		return nullptr;
+	}
+
+	USoundSubsystem* SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
+	if (SoundSubsystem == nullptr)
+	{
+		return nullptr;
+	}
+
+	return SoundSubsystem;
 }

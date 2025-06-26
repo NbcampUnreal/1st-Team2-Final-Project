@@ -150,7 +150,7 @@ int32 USoundSubsystem::PlayBGM(const ESFX_BGM& SFXType, const float& Volume, con
 
 int32 USoundSubsystem::PlayAmbient(const ESFX_Ambient& SFXType, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve)
 {
-	return Play2DInternal(SFXBGMData[int32(SFXType)]->Sound, false, true, Volume, bShouldUseFadeIn, FadeInDuration, FadeInCurve);
+	return Play2DInternal(AmbientData[int32(SFXType)]->Sound, false, true, Volume, bShouldUseFadeIn, FadeInDuration, FadeInCurve);
 }
 
 int32 USoundSubsystem::PlayAt(const ESFX& SFXType, const FVector& Position, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve)
