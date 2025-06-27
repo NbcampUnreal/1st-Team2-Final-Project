@@ -189,7 +189,7 @@ void UPlayerHUDWidget::UpdateCombatText(bool bIsInCombat)
 	}
 }
 
-void UPlayerHUDWidget::OnCharacterStateChanged(ECharacterState OldCharacterState, ECharacterState NewCharacterState)
+void UPlayerHUDWidget::OnCharacterStateChanged(AUnderwaterCharacter* Character, ECharacterState OldCharacterState, ECharacterState NewCharacterState)
 {
 	UpdateCharacterStateText(NewCharacterState);
 

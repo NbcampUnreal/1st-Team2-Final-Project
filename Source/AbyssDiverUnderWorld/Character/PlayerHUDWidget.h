@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "UnderwaterCharacter.h"
 #include "Blueprint/UserWidget.h"
 #include "PlayerHUDWidget.generated.h"
 
@@ -57,7 +58,7 @@ protected:
 
 	/** Character State 변화 처리 */
 	UFUNCTION()
-	void OnCharacterStateChanged(ECharacterState OldCharacterState, ECharacterState NewCharacterState);
+	void OnCharacterStateChanged(AUnderwaterCharacter* Character, ECharacterState OldCharacterState, ECharacterState NewCharacterState);
 
 	/** Combat 시작 시 처리 */
 	UFUNCTION()

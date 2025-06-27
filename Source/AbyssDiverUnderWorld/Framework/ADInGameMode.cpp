@@ -492,7 +492,7 @@ void AADInGameMode::GameOver()
 	GetSoundSubsystem()->PlayAmbient(ESFX_Ambient::AllPlayersDie);
 }
 
-void AADInGameMode::OnCharacterStateChanged(ECharacterState OldCharacterState, ECharacterState NewCharacterState)
+void AADInGameMode::OnCharacterStateChanged(AUnderwaterCharacter* Character, ECharacterState OldCharacterState, ECharacterState NewCharacterState)
 {
 	if (NewCharacterState == ECharacterState::Death)
 	{

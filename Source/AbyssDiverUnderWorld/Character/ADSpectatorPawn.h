@@ -51,7 +51,7 @@ protected:
 
 	/** 캐릭터 상태가 변경되었을 때 호출되는 함수 */
 	UFUNCTION()
-	void OnCharacterStateChanged(ECharacterState OldCharacterState, ECharacterState NewCharacterState);
+	void OnCharacterStateChanged(AUnderwaterCharacter* Character, ECharacterState OldCharacterState, ECharacterState NewCharacterState);
 	
 #pragma endregion
 
