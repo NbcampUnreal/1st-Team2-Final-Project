@@ -156,7 +156,7 @@ void UMonsterSoundComponent::M_StopAllLoopSound_Implementation()
 	const float FadeOutDuration = 0.2f; // Time for sound to fade
 	const float FadeOutVolume = 0.0f;   // Final Volume
 
-	UE_LOG(LogTemp, Warning, TEXT("MulticastPlayChaseLoop CALLED"));
+	UE_LOG(LogTemp, Warning, TEXT("M_StopAllLoopSound_Implementation CALLED"));
 	if (PatrolLoopComponent && PatrolLoopComponent->IsPlaying())
 	{
 		// PatrolLoopComponent->Stop();
