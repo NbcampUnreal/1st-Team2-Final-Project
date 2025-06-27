@@ -211,6 +211,11 @@ void AADInGameMode::FinishRestartPlayer(AController* NewPlayer, const FRotator& 
 		DeathCount--;
 	}
 
+	if (AADPlayerState* PlayerState = NewPlayer->GetPlayerState<AADPlayerState>())
+	{
+		PlayerState->SetHasBeenDead(false);
+	}
+
 	LOGVN(Log, TEXT("Player Restarted, PlayerIndex : %d, Deathcount : %d"), NewPlayer->GetPlayerState<AADPlayerState>()->GetPlayerIndex(), DeathCount);
 }
 

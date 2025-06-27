@@ -1215,6 +1215,11 @@ void AUnderwaterCharacter::HandleEnterDeath()
 			DeathTransitionTime,
 			false
 		);
+
+		if (AADPlayerState* PS = GetPlayerState<AADPlayerState>())
+		{
+			PS->SetIsDead(true);
+		}
 	}
 	
 	if (IsLocallyControlled())
