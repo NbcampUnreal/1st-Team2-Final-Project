@@ -63,6 +63,12 @@ void AADCampGameMode::PostLogin(APlayerController* NewPlayer)
 
 	if (AADPlayerState* ADPlayerState = NewPlayer->GetPlayerState<AADPlayerState>())
 	{
+		if (GI->HasBeenVisited(NewPlayerId) == false)
+		{
+			// 초기지원금
+			GetSomeMoney(InitialSupportMoney);
+		}
+
 		ADPlayerState->ResetLevelResults();
 		GI->AddPlayerNetId(NewPlayerId);
 
