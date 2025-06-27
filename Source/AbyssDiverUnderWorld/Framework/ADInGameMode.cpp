@@ -111,6 +111,8 @@ void AADInGameMode::BeginPlay()
 			}
 		}
 	}
+
+	PlayerAliveInfos.Init(true, GetNumPlayers());
 }
 
 void AADInGameMode::StartPlay()
@@ -208,17 +210,20 @@ void AADInGameMode::FinishRestartPlayer(AController* NewPlayer, const FRotator& 
 {
 	Super::FinishRestartPlayer(NewPlayer, StartRotation);
 
-	if (DeathCount > 0)
-	{
-		DeathCount--;
-	}
-
 	if (AADPlayerState* PlayerState = NewPlayer->GetPlayerState<AADPlayerState>())
 	{
 		PlayerState->SetHasBeenDead(false);
-	}
+		
+		int32 PlayerIndex = PlayerState->GetPlayerIndex();
 
-	LOGVN(Log, TEXT("Player Restarted, PlayerIndex : %d, Deathcount : %d"), NewPlayer->GetPlayerState<AADPlayerState>()->GetPlayerIndex(), DeathCount);
+		if (PlayerAliveInfos.IsValidIndex(PlayerIndex) == false)
+		{
+			LOGVN(Error, TEXT("Not Valid Index : %d, ArrayNum : %d"), PlayerIndex, PlayerAliveInfos.Num());
+			return;
+		}
+
+		LOGVN(Log, TEXT("Player Restarted, PlayerIndex : %d"), PlayerIndex);
+	}
 }
 
 void AADInGameMode::ReadyForTravelToCamp()
@@ -507,31 +512,39 @@ void AADInGameMode::GameOver()
 
 void AADInGameMode::OnCharacterStateChanged(AUnderwaterCharacter* Character, ECharacterState OldCharacterState, ECharacterState NewCharacterState)
 {
-	if (NewCharacterState == ECharacterState::Death)
+	AADPlayerState* PS = Character->GetPlayerState<AADPlayerState>();
+	if (PS == nullptr)
 	{
-		if (OldCharacterState == ECharacterState::Groggy)
+		LOGV(Error, TEXT("Not Valid Player State"));
+		return;
+	}
+
+	int32 PlayerIndex = PS->GetPlayerIndex();
+
+	if (PlayerAliveInfos.IsValidIndex(PlayerIndex) == false)
+	{
+		LOGV(Error, TEXT(" Not Valid Index From PlayerAliveInfos, Total : %d, Index : %d"), PlayerAliveInfos.Num(), PlayerIndex);
+		return;
+	}
+
+	PlayerAliveInfos[PlayerIndex] = (NewCharacterState == ECharacterState::Normal);
+
+	LOGV(Log, TEXT("Begin, Old State : %d,  NewCharacterState : %d, PlayerNum : %d, PlayerIndex : %d"), OldCharacterState, NewCharacterState, GetNumPlayers(), PlayerIndex);
+
+	bool bIsGameOver = true;
+	for (const bool& AliveInfo : PlayerAliveInfos)
+	{
+		if (AliveInfo)
 		{
-			GroggyCount--;
+			bIsGameOver = false;
+			break;
 		}
-
-		DeathCount++;
-	}
-	else if (NewCharacterState == ECharacterState::Groggy)
-	{
-		GroggyCount++;
-	}
-	else if (OldCharacterState == ECharacterState::Groggy && NewCharacterState == ECharacterState::Normal)
-	{
-		GroggyCount--;
 	}
 
-	LOGV(Log, TEXT("Begin,Old State : %d,  NewCharacterState : %d, PlayerNum : %d, DeathCount : %d, GroggyCount : %d"), OldCharacterState, NewCharacterState, GetNumPlayers(), DeathCount, GroggyCount);
-
-	if (DeathCount + GroggyCount == GetNumPlayers())
+	if (bIsGameOver)
 	{
 		GameOver();
 	}
-
 }
 
 void AADInGameMode::GetOre()
