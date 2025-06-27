@@ -499,7 +499,7 @@ UAudioComponent* USoundSubsystem::GetNewAudio()
 	TObjectPtr<UAudioComponent> NewAudio = nullptr;
 
 	UWorld* World = GetWorld();
-	if (World == nullptr || World->bIsTearingDown)
+	if (IsValid(World) == false || World->IsInSeamlessTravel() || World->bIsTearingDown || World->IsValidLowLevel() == false)
 	{
 		return nullptr;
 	}
@@ -574,7 +574,7 @@ void USoundSubsystem::CreateAudioComponent()
 		return;
 	}
 
-	TObjectPtr<UAudioComponent> NewAudio = NewObject<UAudioComponent>((UObject*));
+	TObjectPtr<UAudioComponent> NewAudio = NewObject<UAudioComponent>((UObject*)GS);
 	if (IsValid(NewAudio) && NewAudio->IsValidLowLevel())
 	{
 		DeactivatedComponents.Enqueue(NewAudio);
