@@ -499,7 +499,7 @@ UAudioComponent* USoundSubsystem::GetNewAudio()
 	TObjectPtr<UAudioComponent> NewAudio = nullptr;
 
 	UWorld* World = GetWorld();
-	if (World == nullptr || World->bIsTearingDown)
+	if (IsValid(World) == false || World->IsInSeamlessTravel() || World->bIsTearingDown || World->IsValidLowLevel() == false)
 	{
 		return nullptr;
 	}
