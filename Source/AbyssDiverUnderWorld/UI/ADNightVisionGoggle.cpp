@@ -23,12 +23,12 @@ void UADNightVisionGoggle::NativeConstruct()
 
 void UADNightVisionGoggle::NightVigionUnUse_Implementation()
 {
-	GetSoundSubsystem()->Play2D(ESFX::NVOn);
+	GetSoundSubsystem()->Play2D(ESFX::NVOff);
 }
 
 void UADNightVisionGoggle::NightVigionUse_Implementation()
 {
-	GetSoundSubsystem()->Play2D(ESFX::NVOff);
+	GetSoundSubsystem()->Play2D(ESFX::NVOn);
 }
 
 void UADNightVisionGoggle::SetBatteryAmount(int32 Amount)
