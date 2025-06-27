@@ -967,7 +967,7 @@ private:
 	// @ToDo: DPV 상황 추가
 	
 	/** Sprint 시에 적용되는 속도 배율. Sprint가 적용되면 EffectiveSpeed에 곱해진다. */
-	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float SprintMultiplier;
 
 	/** 특정 Zone에서 적용되는 속도 배율. Zone에 따라 다르게 적용된다. */

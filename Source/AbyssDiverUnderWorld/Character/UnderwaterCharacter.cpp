@@ -72,8 +72,8 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	Mesh1P->bCastDynamicShadow = false;
 	
 	GetMesh()->SetOwnerNoSee(true);
-	GetMesh()->CastShadow = true;
-	GetMesh()->bCastHiddenShadow = true;
+	GetMesh()->CastShadow = false;
+	GetMesh()->bCastHiddenShadow = false;
 
 	StatComponent->Initialize(1000, 1000, 400.0f, 10);
 	
@@ -925,7 +925,7 @@ UStaticMeshComponent* AUnderwaterCharacter::CreateAndAttachMesh(const FString& C
 	// 1인칭 메시 : Owner No See == false, Only Owner See == true, Owner만 볼 수 있고 다른 사람은 볼 수 없다.
 	MeshComponent->SetOwnerNoSee(bIsThirdPerson);
 	MeshComponent->SetOnlyOwnerSee(!bIsThirdPerson);
-	MeshComponent->CastShadow = bIsThirdPerson;
+	MeshComponent->CastShadow = false;
 	MeshComponent->bCastHiddenShadow = bIsThirdPerson;
 	MeshComponent->RegisterComponent();
 
@@ -996,13 +996,13 @@ void AUnderwaterCharacter::SetFlipperMeshVisibility(const bool bVisible)
 	// 3인칭 메시의 경우 bCastHiddenShadow 가 true로 설정되어 있기 떄문에 그림자 설정 자체를 꺼야 한다.
 	if (LeftFlipperMesh3PComponent)
 	{
-		LeftFlipperMesh3PComponent->SetCastShadow(bVisible);
+		LeftFlipperMesh3PComponent->SetCastShadow(false);
 		LeftFlipperMesh3PComponent->SetHiddenInGame(!bVisible);
 	}
 	if (RightFlipperMesh3PComponent)
 	{
 		// RightFlipperMesh3PComponent->(bVisible);
-		RightFlipperMesh3PComponent->SetCastShadow(bVisible);
+		RightFlipperMesh3PComponent->SetCastShadow(false);
 		RightFlipperMesh3PComponent->SetHiddenInGame(!bVisible);
 	}
 }
