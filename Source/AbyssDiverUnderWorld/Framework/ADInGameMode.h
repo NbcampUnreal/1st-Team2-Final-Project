@@ -92,11 +92,10 @@ private:
 	UPROPERTY()
 	TObjectPtr<USoundSubsystem> SoundSubsystem;
 
-	int32 DeathCount = 0;
-	int32 GroggyCount = 0;
-
 	FTimerHandle ResultTimerHandle;
 	FTimerHandle SyncTimerHandle;
+
+	TArray<bool> PlayerAliveInfos;
 
 #pragma endregion
 
