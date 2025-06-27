@@ -31,4 +31,5 @@ public:
 	struct FBlackboardKeySelector InRangedRangeKey;
 	UPROPERTY(EditAnywhere, Category = "Blackboard")
 	struct FBlackboardKeySelector TargetActorKey;
+#pragma endregion
 };

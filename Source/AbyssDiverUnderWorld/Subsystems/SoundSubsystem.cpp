@@ -4,6 +4,7 @@
 #include "Framework/ADGameInstance.h"
 
 #include "Kismet/GameplayStatics.h"
+#include "Framework/ADInGameState.h"
 
 void USoundSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -150,7 +151,7 @@ int32 USoundSubsystem::PlayBGM(const ESFX_BGM& SFXType, const float& Volume, con
 
 int32 USoundSubsystem::PlayAmbient(const ESFX_Ambient& SFXType, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve)
 {
-	return Play2DInternal(SFXBGMData[int32(SFXType)]->Sound, false, true, Volume, bShouldUseFadeIn, FadeInDuration, FadeInCurve);
+	return Play2DInternal(AmbientData[int32(SFXType)]->Sound, false, true, Volume, bShouldUseFadeIn, FadeInDuration, FadeInCurve);
 }
 
 int32 USoundSubsystem::PlayAt(const ESFX& SFXType, const FVector& Position, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve)
@@ -498,7 +499,7 @@ UAudioComponent* USoundSubsystem::GetNewAudio()
 	TObjectPtr<UAudioComponent> NewAudio = nullptr;
 
 	UWorld* World = GetWorld();
-	if (World == nullptr || World->bIsTearingDown)
+	if (IsValid(World) == false || World->IsInSeamlessTravel() || World->bIsTearingDown || World->IsValidLowLevel() == false)
 	{
 		return nullptr;
 	}
@@ -562,13 +563,19 @@ bool USoundSubsystem::RemoveInvalidAudioComponent(UAudioComponent* SomeAudio)
 void USoundSubsystem::CreateAudioComponent()
 {
 	UWorld* World = GetWorld();
-	if (World == nullptr || World->bIsTearingDown)
+	if (IsValid(World) == false || World->IsInSeamlessTravel() || World->bIsTearingDown || World->IsValidLowLevel() == false)
 	{
 		return;
 	}
 
-	TObjectPtr<UAudioComponent> NewAudio = NewObject<UAudioComponent>((UObject*)World->GetGameState());
-	if (IsValid(NewAudio))
+	AGameStateBase* GS = World->GetGameState();
+	if (IsValid(GS) == false || GS->IsActorBeingDestroyed() || GS->IsValidLowLevel() == false)
+	{
+		return;
+	}
+
+	TObjectPtr<UAudioComponent> NewAudio = NewObject<UAudioComponent>((UObject*)GS);
+	if (IsValid(NewAudio) && NewAudio->IsValidLowLevel())
 	{
 		DeactivatedComponents.Enqueue(NewAudio);
 		NewAudio->RegisterComponent();

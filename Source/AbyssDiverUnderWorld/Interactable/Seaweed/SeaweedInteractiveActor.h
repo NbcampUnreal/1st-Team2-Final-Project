@@ -19,6 +19,7 @@ protected:
     virtual void BeginPlay() override;
     virtual void Tick(float DeltaTime) override;
 
+    // 오버랩 감지
     UFUNCTION()
     void OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
         UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
@@ -27,16 +28,15 @@ protected:
     void OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
         UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
-    /** 플레이어와의 거리 기반으로 Torque 적용 */
-    void ApplyPlayerProximityTorque();
-
-    /** 플레이어 거리 기반으로 AnimBP의 PhysicsBlendAlpha 업데이트 */
-    void UpdatePhysicsBlendWeight();
-
+    // 충돌 감지
     UFUNCTION()
+    void OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
+        UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
+
+    // 해초 휘어짐 및 회복 처리
+    void ApplyPlayerProximityTorque();
+    void UpdatePhysicsBlendWeight();
     void ConfigureAngularDrives();
-
-
 protected:
     UPROPERTY(VisibleAnywhere)
     TObjectPtr<USceneComponent> SceneRoot;
@@ -53,11 +53,5 @@ protected:
     UPROPERTY()
     TObjectPtr<AActor> PlayerActor;
 
-    UFUNCTION()
-    void OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
-        UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
-
     FVector LastHitLocation;
-
-
 };

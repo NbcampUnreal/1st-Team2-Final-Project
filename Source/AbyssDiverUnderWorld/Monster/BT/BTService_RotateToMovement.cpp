@@ -11,12 +11,14 @@ UBTService_RotateToMovement::UBTService_RotateToMovement()
 {
 	NodeName = "Rotate To Movement Direction";
 	bNotifyTick = true;
-
+	bNotifyBecomeRelevant = false;
 	InterpSpeed = 5.0f;
 }
 
 void UBTService_RotateToMovement::TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
 {
+	Super::TickNode(OwnerComp, NodeMemory, DeltaSeconds);
+	
 	AAIController* AIController = OwnerComp.GetAIOwner();
 	if (!AIController) return;
 

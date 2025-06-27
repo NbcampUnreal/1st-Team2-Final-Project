@@ -16,10 +16,13 @@
 
 const FName AMonster::MonsterStateKey = "MonsterState";
 const FName AMonster::InvestigateLocationKey = "InvestigateLocation";
+const FName AMonster::PatrolLocationKey = "PatrolLocation";
 const FName AMonster::TargetActorKey = "TargetActor";
 
 AMonster::AMonster()
 {
+	PrimaryActorTick.bCanEverTick = true;
+
 	// Initialize
 	AssignedSplineActor = nullptr;
 	BlackboardComponent = nullptr;
@@ -63,6 +66,24 @@ void AMonster::BeginPlay()
 	{
 		MovementComp->bOrientRotationToMovement = true;
 		MovementComp->RotationRate = FRotator(0.0f, 90.0f, 0.0f);
+	}
+}
+
+void AMonster::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	FVector Velocity = GetVelocity();
+	if (Velocity.SizeSquared() > KINDA_SMALL_NUMBER)
+	{
+		FRotator CurrentRotation = GetActorRotation();
+		FRotator TargetRotation = Velocity.GetSafeNormal().Rotation();
+		TargetRotation.Roll = 0.f;
+
+		float InterpSpeed = 6.0f;
+		FRotator NewRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, DeltaTime, InterpSpeed);
+
+		SetActorRotation(NewRotation);
 	}
 }
 
@@ -177,7 +198,7 @@ void AMonster::OnDeath()
 		MonsterSoundComponent->M_StopAllLoopSound();
 	}
 
-	StopMovement();
+	UnPossessAI();
 	M_OnDeath();
 
 	SetMonsterState(EMonsterState::Death);
@@ -227,7 +248,7 @@ void AMonster::PlayAttackMontage()
 	}
 }
 
-void AMonster::StopMovement()
+void AMonster::UnPossessAI()
 {
 	if (IsValid(AIController))
 	{
@@ -397,6 +418,7 @@ void AMonster::RemoveDetection(AActor* Actor)
 
 					if (BlackboardComponent)
 					{
+						SetMonsterState(EMonsterState::Chase);
 						BlackboardComponent->SetValueAsObject(TargetActorKey, TargetActor);
 					}
 					UE_LOG(LogTemp, Log, TEXT("[%s] New TargetActor: %s"), *GetName(), *TargetActor->GetName());
@@ -476,6 +498,7 @@ void AMonster::ForceRemoveDetection(AActor* Actor)
 
 				if (BlackboardComponent)
 				{
+					SetMonsterState(EMonsterState::Chase);
 					BlackboardComponent->SetValueAsObject(TargetActorKey, TargetActor);
 				}
 				break;
@@ -518,26 +541,40 @@ void AMonster::SetMonsterState(EMonsterState NewState)
 	case EMonsterState::Chase:
 		SetMaxSwimSpeed(ChaseSpeed);
 		MonsterSoundComponent->S_PlayChaseLoopSound();
-
 		bIsChasing = true;
-		// @TODO : Add animations, sounds, and more
+
+		if (BlackboardComponent)
+		{
+			BlackboardComponent->ClearValue(InvestigateLocationKey);
+			BlackboardComponent->ClearValue(PatrolLocationKey);
+		}
 		break;
 
 	case EMonsterState::Patrol:
 		SetMaxSwimSpeed(PatrolSpeed);
 		MonsterSoundComponent->S_PlayPatrolLoopSound();
-
-		if (UBlackboardComponent* BB = Cast<AAIController>(GetController())->GetBlackboardComponent())
+		if (TargetActor != nullptr)
 		{
-			BB->ClearValue(InvestigateLocationKey);
+			ForceRemoveDetection(TargetActor);
 		}
+
+		if (BlackboardComponent)
+		{
+			BlackboardComponent->ClearValue(InvestigateLocationKey);
+		}
+		
 		bIsChasing = false;
 		break;
 
 	case EMonsterState::Investigate:
 		SetMaxSwimSpeed(InvestigateSpeed);
 		bIsChasing = false;
-		// @TODO : Add animations, sounds, and more
+
+		if (BlackboardComponent)
+		{
+			BlackboardComponent->ClearValue(PatrolLocationKey);
+		}
+
 		break;
 
 	case EMonsterState::Flee:

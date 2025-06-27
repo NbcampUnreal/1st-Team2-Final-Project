@@ -171,6 +171,12 @@ public:
 	UFUNCTION(BlueprintCallable)
 	EOXygenChangeResult RefillOxygen(float RefillAmount);
 
+	/** 초당 산소 소모량을 설정한다. 양수 값을 입력으로 한다. */
+	void SetConsumeRate(float NewConsumeRate);
+
+	/** 초당 산소 소모량을 반환한다. */
+	float GetConsumeRate() const { return OxygenConsumeRate; }
+
 private:
 	/** 산소량을 설정한다. 산소량은 0보다 작거나 MaxOxygenLevel보다 클 수 없다.
 	 * 산소량이 변경되면 OnOxygenLevelChanged를 호출한다.

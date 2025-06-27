@@ -18,6 +18,8 @@ AADPlayerState::AADPlayerState()
 	, OreMinedCount(0)
 	, bIsSafeReturn(false)
 	, PlayerIndex(INDEX_NONE)
+	, bHasBeenDead(false)
+	, LastOxygenRemain(0.0f)
 {
 	bReplicates = true;
 

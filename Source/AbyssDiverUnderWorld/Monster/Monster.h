@@ -29,6 +29,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaTime) override;
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 #pragma region Method
 public:
@@ -52,7 +53,7 @@ public:
 	void M_OnDeath_Implementation();
 
 	virtual void PlayAttackMontage();
-	void StopMovement();
+	void UnPossessAI();
 	virtual void NotifyLightExposure(float DeltaTime, float TotalExposedTime, const FVector& PlayerLocation, AActor* PlayerActor);
 	
 	UFUNCTION()
@@ -114,6 +115,7 @@ protected:
 
 	static const FName MonsterStateKey;
 	static const FName InvestigateLocationKey;
+	static const FName PatrolLocationKey;
 	static const FName TargetActorKey;
 	
 #pragma endregion

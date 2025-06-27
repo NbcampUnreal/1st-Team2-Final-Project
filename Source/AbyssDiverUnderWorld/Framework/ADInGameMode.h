@@ -24,6 +24,7 @@ public:
 
 	virtual void PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage) override;
 	virtual void BeginPlay() override;
+	virtual void StartPlay() override;
 	virtual void PostLogin(APlayerController* NewPlayer) override;
 	virtual void Logout(AController* Exiting) override;
 	virtual void FinishRestartPlayer(AController* NewPlayer, const FRotator& StartRotation) override;
@@ -67,6 +68,9 @@ private:
 	
 	UFUNCTION(Exec, Category = "Cheat")
 	void GetMoney();
+
+	UFUNCTION(Exec, Category = "Cheat")
+	void GetSomeMoney(int32 SomeValue);
 
 #pragma endregion
 

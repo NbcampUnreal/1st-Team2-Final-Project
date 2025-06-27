@@ -109,6 +109,11 @@ void AADCampGameMode::TryStartGame()
 
 void AADCampGameMode::GetMoney()
 {
+	GetSomeMoney(10000);
+}
+
+void AADCampGameMode::GetSomeMoney(int32 SomeValue)
+{
 	AADInGameState* GS = GetGameState<AADInGameState>();
 	if (GS == nullptr)
 	{
@@ -116,7 +121,7 @@ void AADCampGameMode::GetMoney()
 		return;
 	}
 
-	GS->SetTotalTeamCredit(GS->GetTotalTeamCredit() + 10000);
+	GS->SetTotalTeamCredit(GS->GetTotalTeamCredit() + SomeValue);
 }
 
 void AADCampGameMode::TravelToInGameLevel()

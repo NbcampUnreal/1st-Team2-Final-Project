@@ -28,6 +28,7 @@ DECLARE_LOG_CATEGORY_EXTERN(LogAbyssDiverCharacter, Log, LOG_ABYSS_DIVER_COMPILE
 // 실제 게임 플레이 태스트와 프로파일링을 통해서 문제를 해결해야 한다.
 // 3. Stamina, Oxygen 컴포넌트가 분리되어서 더 복잡해지고 있는 상황일 수 있다. 추후 구현이 필요 이상으로 복잡해지면 합치는 것을 고려한다.
 
+enum class ESFX : uint8;
 enum class ELocomotionMode : uint8;
 
 /* 캐릭터의 지상, 수중을 결정, Move 로직, Animation이 변경되고 사용 가능 기능이 제한된다. */
@@ -159,6 +160,9 @@ public:
 	/** 캐릭터를 사망시킨다. Authority Node에서만 실행되어야 한다. */
 	UFUNCTION(BlueprintCallable)
 	void Die();
+
+	/** 부활 상태 초기화 설정을 한다. Possess 이후에 호출할 것 */
+	void Respawn();
 	
 	/** 현재 캐릭터의 상태를 전환. 수중, 지상 */
 	UFUNCTION(BlueprintCallable)
@@ -265,6 +269,9 @@ public:
 
 	UFUNCTION()
 	void OnRep_CurrentTool();
+
+	UFUNCTION()
+	void OnRep_InCombat();
 
 	/** 관전을 당할 때 호출되는 함수 */
 	void OnSpectated();
@@ -715,6 +722,9 @@ public:
 
 private:
 
+	UPROPERTY()
+	class AADPlayerController* OwnerController;
+	
 	/** 현재 캐릭터를 Possess한 PlayerController의 Player Index */
 	int8 PlayerIndex;
 	
@@ -867,12 +877,21 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Groggy")
 	float GroggyLookSensitivity;
 
+	/** 그로기 효과음 */
+	ESFX GroggySfx;
+
+	/** 그로기 효과음 사운드 ID */
+	int32 GroggySfxId;
+
 	/** 그로기 상태에서 부활할 때 Hold해야 하는 시간. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true"))
 	float RescueRequireTime;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Death", meta = (AllowPrivateAccess = "true"))
+	ESFX ResurrectSFX;
+	
 	/** 현재 전투 중인지 여부 */
-	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_InCombat, Category = Character, meta = (AllowPrivateAccess = "true"))
 	uint8 bIsInCombat : 1;
 	
 	/** 현재 캐릭터를 타겟팅하고 있는 Actor의 개수. */
@@ -948,7 +967,7 @@ private:
 	// @ToDo: DPV 상황 추가
 	
 	/** Sprint 시에 적용되는 속도 배율. Sprint가 적용되면 EffectiveSpeed에 곱해진다. */
-	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float SprintMultiplier;
 
 	/** 특정 Zone에서 적용되는 속도 배율. Zone에 따라 다르게 적용된다. */
@@ -1190,6 +1209,8 @@ private:
 	/** 캐릭터가 사망했을 떄 관전으로 전이되기까지 걸리는 시간 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	float DeathTransitionTime = 1.0f;
+
+	TWeakObjectPtr<class USoundSubsystem> SoundSubsystem;
 	
 #pragma endregion
 
@@ -1325,6 +1346,12 @@ public:
 
 	/** 캐릭터가 현재 Capture State 인지 여부를 반환 */
 	FORCEINLINE bool IsCaptured() const { return bIsCaptured; }
+
+	FORCEINLINE AADPlayerController* GetOwnerController() const { return OwnerController; }
+
+protected:
+
+	class USoundSubsystem* GetSoundSubsystem();
 	
 #pragma endregion
 };

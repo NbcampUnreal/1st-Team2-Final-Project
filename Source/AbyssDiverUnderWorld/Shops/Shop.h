@@ -368,6 +368,10 @@ public:
 	bool IsOpened() const;
 	virtual FString GetInteractionDescription() const override;
 
+private:
+
+	class USoundSubsystem* GetSoundSubsystem();
+
 #pragma endregion
 
 };

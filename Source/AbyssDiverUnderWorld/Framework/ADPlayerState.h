@@ -70,6 +70,12 @@ protected:
 	UPROPERTY(Replicated)
 	int8 PlayerIndex;
 
+	UPROPERTY(BlueprintReadOnly)
+	uint8 bHasBeenDead : 1;
+
+	UPROPERTY(BlueprintReadOnly)
+	float LastOxygenRemain;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TObjectPtr<UADInventoryComponent> InventoryComp;
 
@@ -140,6 +146,14 @@ public:
 
 	int8 GetPlayerIndex() const { return PlayerIndex; }
 	void SetPlayerIndex(int8 NewPlayerIndex) { PlayerIndex = NewPlayerIndex; }
+
+	FORCEINLINE void SetHasBeenDead(bool bNewDead) { bHasBeenDead = bNewDead; }
+	
+	FORCEINLINE bool HasBeenDead() const { return bHasBeenDead; }
+
+	FORCEINLINE void SetLastOxygenRemain(float NewLastOxygenRemain) { LastOxygenRemain = NewLastOxygenRemain; }
+	
+	FORCEINLINE float GetLastOxygenRemain() const { return LastOxygenRemain; }
 
 #pragma endregion
 };
