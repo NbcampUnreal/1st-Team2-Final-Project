@@ -135,9 +135,6 @@ void AADDroneSeller::OnRep_CurrentMoney()
 		bReachedGoal ? ESFX::ActivateDrone : ESFX::SubmitOre,
 		GetActorLocation()
 	);
-
-	// ✅ 여기서도 색상 설정
-	SetLightColor(bReachedGoal ? FLinearColor::Green : FLinearColor::Red);
 }
 
 void AADDroneSeller::OnRep_TargetMoney()
@@ -286,14 +283,14 @@ void AADDroneSeller::SetLightColor(FLinearColor NewColor)
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("⚠️ Unsupported color"));
+		UE_LOG(LogTemp, Warning, TEXT("Unsupported color"));
 		return;
 	}
 
 	if (DesiredMaterial)
 	{
 		CachedMesh->SetMaterial(0, DesiredMaterial);
-		UE_LOG(LogTemp, Warning, TEXT("✅ Set material to %s"), *DesiredMaterial->GetName());
+		UE_LOG(LogTemp, Warning, TEXT("Set material to %s"), *DesiredMaterial->GetName());
 	}
 }
 
