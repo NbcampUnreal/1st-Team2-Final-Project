@@ -61,7 +61,7 @@ private:
 	void GameOver();
 
 	UFUNCTION()
-	void OnCharacterStateChanged(ECharacterState OldCharacterState, ECharacterState NewCharacterState);
+	void OnCharacterStateChanged(AUnderwaterCharacter* Character, ECharacterState OldCharacterState, ECharacterState NewCharacterState);
 
 	UFUNCTION(Exec, Category = "Cheat")
 	void GetOre();

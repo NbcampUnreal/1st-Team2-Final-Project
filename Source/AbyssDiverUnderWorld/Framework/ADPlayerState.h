@@ -82,6 +82,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TObjectPtr<UUpgradeComponent> UpgradeComp;
 
+	/** 현재 사망 상태인지 여부 */
+	uint8 bIsDead : 1;
+	
 #pragma endregion
 
 #pragma region Getter/Setter
@@ -154,6 +157,10 @@ public:
 	FORCEINLINE void SetLastOxygenRemain(float NewLastOxygenRemain) { LastOxygenRemain = NewLastOxygenRemain; }
 	
 	FORCEINLINE float GetLastOxygenRemain() const { return LastOxygenRemain; }
+
+	FORCEINLINE bool IsDead() const { return bIsDead; }
+
+	void SetIsDead(bool bNewIsDead);
 
 #pragma endregion
 };

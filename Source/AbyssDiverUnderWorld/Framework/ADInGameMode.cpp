@@ -211,6 +211,11 @@ void AADInGameMode::FinishRestartPlayer(AController* NewPlayer, const FRotator& 
 		DeathCount--;
 	}
 
+	if (AADPlayerState* PlayerState = NewPlayer->GetPlayerState<AADPlayerState>())
+	{
+		PlayerState->SetHasBeenDead(false);
+	}
+
 	LOGVN(Log, TEXT("Player Restarted, PlayerIndex : %d, Deathcount : %d"), NewPlayer->GetPlayerState<AADPlayerState>()->GetPlayerIndex(), DeathCount);
 }
 
@@ -487,7 +492,7 @@ void AADInGameMode::GameOver()
 	GetSoundSubsystem()->PlayAmbient(ESFX_Ambient::AllPlayersDie);
 }
 
-void AADInGameMode::OnCharacterStateChanged(ECharacterState OldCharacterState, ECharacterState NewCharacterState)
+void AADInGameMode::OnCharacterStateChanged(AUnderwaterCharacter* Character, ECharacterState OldCharacterState, ECharacterState NewCharacterState)
 {
 	if (NewCharacterState == ECharacterState::Death)
 	{
