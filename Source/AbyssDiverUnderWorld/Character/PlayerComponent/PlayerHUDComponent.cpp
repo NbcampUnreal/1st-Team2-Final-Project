@@ -403,6 +403,17 @@ void UPlayerHUDComponent::HideHudWidget()
 	}
 }
 
+void UPlayerHUDComponent::ShowHudWidget()
+{
+	APlayerController* PlayerController = Cast<APlayerController>(GetOwner());
+	APawn* Pawn = PlayerController ? PlayerController->GetPawn() : nullptr;
+
+	if (PlayerController && Pawn)
+	{
+		SetupHudWidgetToNewPawn(Pawn, PlayerController);
+	}
+}
+
 void UPlayerHUDComponent::ShowSpectatorHUDWidget()
 {
 	if (!SpectatorHUDWidget && SpectatorHUDWidgetClass)
