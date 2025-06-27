@@ -50,7 +50,9 @@ void AADInGameMode::PreLogin(const FString& Options, const FString& Address, con
 {
 	Super::PreLogin(Options, Address, UniqueId, ErrorMessage);
 
-	//ErrorMessage = TEXT("게임 도중 입장 불가");
+#if !WITH_EDITOR
+	ErrorMessage = TEXT("게임 도중 입장 불가");
+#endif
 }
 
 void AADInGameMode::BeginPlay()
@@ -250,7 +252,14 @@ void AADInGameMode::ReadyForTravelToCamp()
 			
 			LOGVN(Log, TEXT("Ready For Traveling to Camp..."));
 
-			for (AADPlayerController* PC : TActorRange<AADPlayerController>(GetWorld()))
+			UWorld* World = GetWorld();
+			if (IsValid(World) == false || World->IsInSeamlessTravel() || World->IsValidLowLevel() == false || World->bIsTearingDown)
+			{
+				LOGV(Error, TEXT("World Is Not Valid"));
+				return;
+			}
+
+			for (AADPlayerController* PC : TActorRange<AADPlayerController>(World))
 			{
 				PC->GetPlayerHUDComponent()->C_ShowResultScreen();
 			}
@@ -489,7 +498,11 @@ void AADInGameMode::GameOver()
 #endif
 
 	ReadyForTravelToCamp();
-	GetSoundSubsystem()->PlayAmbient(ESFX_Ambient::AllPlayersDie);
+	
+	for (AADPlayerController* PC : TActorRange<AADPlayerController>(GetWorld()))
+	{
+		PC->C_PlayGameOverSound();
+	}
 }
 
 void AADInGameMode::OnCharacterStateChanged(AUnderwaterCharacter* Character, ECharacterState OldCharacterState, ECharacterState NewCharacterState)
