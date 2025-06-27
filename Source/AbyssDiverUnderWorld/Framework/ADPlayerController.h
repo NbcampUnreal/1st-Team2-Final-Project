@@ -79,6 +79,18 @@ public:
 	UFUNCTION(Client, Unreliable)
 	void C_PlaySound(ESFX SoundType, float VolumeMultiplier = 1.0f, float PitchMultiplier = 1.0f);
 
+	UFUNCTION(Exec)
+	void ShowPlayerHUD();
+
+	UFUNCTION(Exec)
+	void HidePlayerHUD();
+
+	UFUNCTION(Exec)
+	void SetInvincible(bool bIsInvincible);
+
+	UFUNCTION(Server, Reliable)
+	void S_SetInvincible(bool bIsInvincible);
+	
 protected:
 
 	/** 관전 상태가 시작될 때 호출되는 함수 */

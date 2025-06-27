@@ -216,6 +216,42 @@ bool AADPlayerController::IsCameraBlanking() const
 	return GetWorldTimerManager().IsTimerActive(CameraBlankTimerHandle) || (PlayerCameraManager && PlayerCameraManager->bEnableFading);
 }
 
+void AADPlayerController::ShowPlayerHUD()
+{
+	if (PlayerHUDComponent)
+	{
+		PlayerHUDComponent->ShowHudWidget();
+	}
+}
+
+void AADPlayerController::HidePlayerHUD()
+{
+	if (PlayerHUDComponent)
+	{
+		PlayerHUDComponent->HideHudWidget();
+	}
+}
+
+void AADPlayerController::SetInvincible(bool bIsInvincible)
+{
+	if (HasAuthority())
+	{
+		if (AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(GetPawn()))
+		{
+			UnderwaterCharacter->SetInvincible(bIsInvincible);
+		}
+	}
+	else
+	{
+		S_SetInvincible(bIsInvincible);
+	}
+}
+
+void AADPlayerController::S_SetInvincible_Implementation(bool bIsInvincible)
+{
+	SetInvincible(bIsInvincible);
+}
+
 void AADPlayerController::C_PlaySound_Implementation(ESFX SoundType, float VolumeMultiplier, float PitchMultiplier)
 {
 	if (UGameInstance* GameInstance = GetGameInstance())
