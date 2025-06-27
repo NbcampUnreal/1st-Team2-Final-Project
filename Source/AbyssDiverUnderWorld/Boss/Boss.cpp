@@ -720,7 +720,7 @@ float ABoss::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
 	if (BossState == EBossState::Death) return 0.0f;
 	
 	const float Damage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
-
+	
 	// 부위 타격 정보
 	if (DamageEvent.IsOfType(FPointDamageEvent::ClassID))
 	{
@@ -741,11 +741,7 @@ float ABoss::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
 		if (HitResult.ImpactPoint != FVector::ZeroVector)
 		{
 			LOG(TEXT("Damage Location: %s"), *HitResult.ImpactPoint.ToString());
-			if (IsValid(BloodEffect))
-			{
-				UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-				GetWorld(), BloodEffect,HitResult.ImpactPoint, FRotator::ZeroRotator, FVector(1), true, true );
-			}
+			M_PlayBloodEffect(HitResult.ImpactPoint, HitResult.ImpactNormal.Rotation());
 		}
 
 		UAISense_Damage::ReportDamageEvent(
@@ -768,15 +764,24 @@ float ABoss::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
 	return Damage;
 }
 
+void ABoss::M_PlayBloodEffect_Implementation(const FVector& Location, const FRotator& Rotation)
+{
+	if (IsValid(BloodEffect))
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			GetWorld(), BloodEffect, Location, Rotation, FVector(1), true, true);
+	}
+}
+
 void ABoss::OnDeath()
 {
+	M_OnDeath();
+	
 	if (IsValid(GetController()))
 	{
 		GetController()->StopMovement();
 		GetController()->UnPossess();	
 	}
-	
-	M_OnDeath();
 }
 #pragma endregion
 

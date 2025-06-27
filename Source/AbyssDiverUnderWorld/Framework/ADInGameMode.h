@@ -61,13 +61,16 @@ private:
 	void GameOver();
 
 	UFUNCTION()
-	void OnCharacterStateChanged(ECharacterState OldCharacterState, ECharacterState NewCharacterState);
+	void OnCharacterStateChanged(AUnderwaterCharacter* Character, ECharacterState OldCharacterState, ECharacterState NewCharacterState);
 
 	UFUNCTION(Exec, Category = "Cheat")
 	void GetOre();
 	
 	UFUNCTION(Exec, Category = "Cheat")
 	void GetMoney();
+
+	UFUNCTION(Exec, Category = "Cheat")
+	void GetSomeMoney(int32 SomeValue);
 
 #pragma endregion
 
@@ -89,11 +92,10 @@ private:
 	UPROPERTY()
 	TObjectPtr<USoundSubsystem> SoundSubsystem;
 
-	int32 DeathCount = 0;
-	int32 GroggyCount = 0;
-
 	FTimerHandle ResultTimerHandle;
 	FTimerHandle SyncTimerHandle;
+
+	TArray<bool> PlayerAliveInfos;
 
 #pragma endregion
 

@@ -32,11 +32,19 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void TryStartGame();
 
-	UFUNCTION(Exec, Category = "Cheat")
+	UFUNCTION(Exec, BlueprintCallable, Category = "Cheat")
 	void GetMoney();
+
+	UFUNCTION(Exec, BlueprintCallable, Category = "Cheat")
+	void GetSomeMoney(int32 SomeValue);
 
 	void TravelToInGameLevel();
 
 protected:
+
+	// 인당 초기 지원금
+	UPROPERTY(EditDefaultsOnly, Category = "ADCampGameModeSettings")
+	int32 InitialSupportMoney = 300;
+
 	uint8 bHasPressedTravel : 1 = false;
 };

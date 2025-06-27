@@ -40,6 +40,11 @@ void AEventTrigger::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AAc
 {
 	for (const auto& TriggerableActor : TriggerableActors)
 	{
+		if (IsValid(TriggerableActor) == false)
+		{
+			continue;
+		}
+
 		ITriggerable::Execute_TriggerEventBeginOverlap(TriggerableActor, OtherActor, this);
 	}
 }
@@ -48,6 +53,11 @@ void AEventTrigger::OnEndOverlap(UPrimitiveComponent* OverlappedComponent, AActo
 {
 	for (const auto& TriggerableActor : TriggerableActors)
 	{
+		if (IsValid(TriggerableActor) == false)
+		{
+			continue;
+		}
+
 		ITriggerable::Execute_TriggerEventEndOverlap(TriggerableActor, OtherActor, this);
 	}
 }
