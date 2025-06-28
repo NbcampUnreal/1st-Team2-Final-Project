@@ -339,10 +339,25 @@ void AShop::Tick(float DeltaSeconds)
 		{
 			CurrentDoorRate = FMath::Clamp(CurrentDoorRate + (DeltaSeconds * DoorOpenSpeed), 0, 1);
 			RotateDoor(DesiredCloseDegree, DesiredOpenDegree, CurrentDoorRate);
-
+			
 			if (CurrentDoorRate == 1)
 			{
 				CurrentDoorState = EDoorState::Opened;
+			}
+
+			if (bIsDoorOpenSoundPlayed == false)
+			{
+				bIsDoorOpenSoundPlayed = true;
+				bIsDoorCloseSoundPlayed = false;
+
+				USoundSubsystem* SoundSubsystem = GetSoundSubsystem();
+				if (SoundSubsystem == nullptr)
+				{
+					return;
+				}
+
+				DoorOpenAudioId = SoundSubsystem->Play2D(ESFX::ShopDoorOpen);
+				SoundSubsystem->StopAudio(DoorCloseAudioId);
 			}
 		}
 		else if (CurrentDoorState == EDoorState::Closed)
@@ -355,6 +370,21 @@ void AShop::Tick(float DeltaSeconds)
 			if (ReadyQueueForLaunchItemById.IsEmpty() == false)
 			{
 				CurrentDoorState = EDoorState::Opening;
+			}
+
+			if (bIsDoorCloseSoundPlayed == false)
+			{
+				bIsDoorOpenSoundPlayed = false;
+				bIsDoorCloseSoundPlayed = true;
+
+				USoundSubsystem* SoundSubsystem = GetSoundSubsystem();
+				if (SoundSubsystem == nullptr)
+				{
+					return;
+				}
+
+				DoorCloseAudioId = SoundSubsystem->Play2D(ESFX::ShopDoorClose);
+				SoundSubsystem->StopAudio(DoorOpenAudioId);
 			}
 		}
 		else /*if (CurrentDoorState == EDoorState::Closing)*/
@@ -393,11 +423,41 @@ void AShop::Tick(float DeltaSeconds)
 			{
 				CurrentDoorState = EDoorState::Opened;
 			}
+
+			if (bIsDoorOpenSoundPlayed == false)
+			{
+				bIsDoorOpenSoundPlayed = true;
+				bIsDoorCloseSoundPlayed = false;
+
+				USoundSubsystem* SoundSubsystem = GetSoundSubsystem();
+				if (SoundSubsystem == nullptr)
+				{
+					return;
+				}
+
+				DoorOpenAudioId = SoundSubsystem->Play2D(ESFX::ShopDoorOpen);
+				SoundSubsystem->StopAudio(DoorCloseAudioId);
+			}
 		}
 		else if (CurrentDoorState == EDoorState::Closed)
 		{
 			CurrentDoorRate = 0;
 			RotateDoor(DesiredCloseDegree, DesiredOpenDegree, CurrentDoorRate);
+
+			if (bIsDoorCloseSoundPlayed == false)
+			{
+				bIsDoorOpenSoundPlayed = false;
+				bIsDoorCloseSoundPlayed = true;
+
+				USoundSubsystem* SoundSubsystem = GetSoundSubsystem();
+				if (SoundSubsystem == nullptr)
+				{
+					return;
+				}
+
+				DoorCloseAudioId = SoundSubsystem->Play2D(ESFX::ShopDoorClose);
+				SoundSubsystem->StopAudio(DoorOpenAudioId);
+			}
 		}
 		else /*if (CurrentDoorState == EDoorState::Closing)*/
 		{
