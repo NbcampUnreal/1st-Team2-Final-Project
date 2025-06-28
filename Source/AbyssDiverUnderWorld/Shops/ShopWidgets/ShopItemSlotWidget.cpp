@@ -7,6 +7,8 @@
 #include "Components/Image.h"
 #include "Components/RichTextBlock.h"
 
+const float UShopItemSlotWidget::DoubleClickInterval = 0.5f;
+
 void UShopItemSlotWidget::NativeOnListItemObjectSet(UObject* ListItemObject)
 {
     IUserObjectListEntry::NativeOnListItemObjectSet(ListItemObject);
@@ -30,8 +32,33 @@ FReply UShopItemSlotWidget::NativeOnMouseButtonUp(const FGeometry& InGeometry, c
     FReply Replay =  Super::NativeOnMouseButtonUp(InGeometry, InMouseEvent);
 
     LOGV(Log, TEXT("ShopItemSlotWidgetClicked, Index : %d"), SlotIndex);
-    OnShopItemSlotWidgetClickedDelegate.ExecuteIfBound(SlotIndex);
+    
     GetGameInstance()->GetSubsystem<USoundSubsystem>()->Play2D(ESFX_UI::UIClicked);
+
+    if (bCanDoubleClick)
+    {
+        bCanDoubleClick = false;
+        OnShopItemSlotWidgetDoubleClickedDelegate.ExecuteIfBound(SlotIndex);
+    }
+    else
+    {
+        UWorld* World = GetWorld();
+        if (IsValid(World) == false || World->IsInSeamlessTravel() || World->bIsTearingDown || World->IsValidLowLevel() == false)
+        {
+            LOGV(Log, TEXT("World Is Not Valid"));
+        }
+
+        bCanDoubleClick = true;
+
+        World->GetTimerManager().SetTimer(DoubleClickTimerHandle, [this]()
+            {
+                bCanDoubleClick = false;
+
+            }, DoubleClickInterval, false);
+
+        OnShopItemSlotWidgetClickedDelegate.ExecuteIfBound(SlotIndex);
+    }
+
     return Replay;
 }
 
