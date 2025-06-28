@@ -43,6 +43,9 @@ enum class ESFX : uint8
 	GroggyStart,
 	GroggyMiddle,
 	GroggyEnd,
+	ShopDoorOpen,
+	ShopDoorClose,
+	WhaleSound,
 	Max UMETA(Hidden)
 };
 

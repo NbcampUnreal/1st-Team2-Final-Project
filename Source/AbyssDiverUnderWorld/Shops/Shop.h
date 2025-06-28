@@ -356,6 +356,11 @@ private:
 
 	float CurrentDoorRate = 0.0f;
 
+	uint8 bIsDoorOpenSoundPlayed : 1 = false;
+	uint8 bIsDoorCloseSoundPlayed : 1 = false;
+	int32 DoorOpenAudioId = INDEX_NONE;
+	int32 DoorCloseAudioId = INDEX_NONE;
+
 #pragma endregion
 
 #pragma region Getters, Setters
