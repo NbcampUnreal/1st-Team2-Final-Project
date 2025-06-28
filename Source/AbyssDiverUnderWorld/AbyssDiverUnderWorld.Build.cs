@@ -32,6 +32,7 @@ public class AbyssDiverUnderWorld : ModuleRules
             , "Voice"
             , "NavigationSystem"
             , "CableComponent"
+            , "AsyncLoadingScreen"
         });
 		
         PublicIncludePaths.AddRange(new string[] { "AbyssDiverUnderWorld" });

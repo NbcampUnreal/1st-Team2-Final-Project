@@ -5,6 +5,7 @@
 #include "Monster/Monster.h"
 #include "Monster/EMonsterState.h"
 #include "AIController.h"
+#include "Character/UnderwaterCharacter.h"
 
 UBTTask_DefaultAttack::UBTTask_DefaultAttack()
 {
@@ -25,10 +26,11 @@ EBTNodeResult::Type UBTTask_DefaultAttack::ExecuteTask(UBehaviorTreeComponent& O
 	AMonster* Monster = Cast<AMonster>(AIPawn);
 	if (!Monster) return EBTNodeResult::Failed;
 
+	CachedMonster = Monster;
+
 	UBlackboardComponent* Blackboard = OwnerComp.GetBlackboardComponent();
 	if (!Blackboard) return EBTNodeResult::Failed;
 
-	
 	// In Server
 	const bool bIsAttacking = Blackboard->GetValueAsBool(IsAttackingKey.SelectedKeyName);
 	if (Monster->HasAuthority() && !bIsAttacking)
@@ -70,13 +72,13 @@ void UBTTask_DefaultAttack::OnTaskFinished(UBehaviorTreeComponent& OwnerComp, ui
 
 void UBTTask_DefaultAttack::HandleAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
-	if (CachedOwnerComp)
+	if (CachedOwnerComp && CachedMonster)
 	{
 		if (UBlackboardComponent* Blackboard = CachedOwnerComp->GetBlackboardComponent())
 		{
 			// Reverting back to tracking now that the attack is over
-			Blackboard->SetValueAsEnum(MonsterStateKey.SelectedKeyName, static_cast<uint8>(EMonsterState::Chase));
 			Blackboard->SetValueAsBool(IsAttackingKey.SelectedKeyName, false);
+			// CachedMonster->SetMonsterState(EMonsterState::Chase);
 		}
 		bInterrupted ? FinishLatentTask(*CachedOwnerComp, EBTNodeResult::Failed) : FinishLatentTask(*CachedOwnerComp, EBTNodeResult::Succeeded);
 	}

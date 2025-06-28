@@ -18,6 +18,8 @@
 #include "UI/CrosshairWidget.h"
 #include "Interactable/OtherActors/ADDroneSeller.h"
 #include "UI/SpectatorHUDWidget.h"
+#include "Subsystems/SoundSubsystem.h"
+#include "Kismet/GameplayStatics.h"
 
 UPlayerHUDComponent::UPlayerHUDComponent()
 {
@@ -29,13 +31,11 @@ void UPlayerHUDComponent::BeginPlay()
 	Super::BeginPlay();
 
 	AADPlayerController* PlayerController = Cast<AADPlayerController>(GetOwner());
-	if (!PlayerController->IsLocalController())
+	if (!PlayerController || !PlayerController->IsLocalController())
 	{
 		return;
 	}
 
-	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("UPlayerHUDComponent::BeginPlay()"));
-	
 	PlayerController->OnPossessedPawnChanged.AddDynamic(this, &UPlayerHUDComponent::OnPossessedPawnChanged);
 	PlayerController->OnSpectateChanged.AddDynamic(this, &UPlayerHUDComponent::OnSpectatingStateChanged);
 	
@@ -152,32 +152,11 @@ void UPlayerHUDComponent::C_ShowResultScreen_Implementation()
 {
 	for (AADPlayerState* PS : TActorRange<AADPlayerState>(GetWorld()))
 	{
-		AUnderwaterCharacter* PlayerCharacter = Cast<AUnderwaterCharacter>(PS->GetPawn());
-		if (ensure(PlayerCharacter) == false)
-		{
-			continue;
-		}
-
 		EAliveInfo AliveInfo = EAliveInfo::Alive;
 
 		if (PS->IsSafeReturn() == false)
 		{
-			const ECharacterState CharacterState = PlayerCharacter->GetCharacterState();
-			switch (CharacterState)
-			{
-			case ECharacterState::Normal:
-				AliveInfo = EAliveInfo::Abandoned;
-				break;
-			case ECharacterState::Groggy:
-				AliveInfo = EAliveInfo::Dead;
-				break;
-			case ECharacterState::Death:
-				AliveInfo = EAliveInfo::Dead;
-				break;
-			default:
-				check(false);
-				break;
-			}
+			AliveInfo = (PS->IsDead()) ? EAliveInfo::Dead : EAliveInfo::Abandoned;
 		}
 
 		FResultScreenParams Params
@@ -226,6 +205,14 @@ void UPlayerHUDComponent::UpdateMissionsOnHUD(EMissionType MissionType, uint8 Mi
 void UPlayerHUDComponent::PlayNextPhaseAnim(int32 NextPhaseNumber)
 {
 	PlayerStatusWidget->PlayNextPhaseAnim(NextPhaseNumber);
+
+	USoundSubsystem* SoundSubsystem = GetSoundSubsystem();
+	if (SoundSubsystem == nullptr)
+	{
+		return;
+	}
+
+	SoundSubsystem->Play2D(ESFX_UI::PhaseTransition);
 }
 
 void UPlayerHUDComponent::SetCurrentPhaseOverlayVisible(bool bShouldVisible)
@@ -395,6 +382,17 @@ void UPlayerHUDComponent::HideHudWidget()
 	}
 }
 
+void UPlayerHUDComponent::ShowHudWidget()
+{
+	APlayerController* PlayerController = Cast<APlayerController>(GetOwner());
+	APawn* Pawn = PlayerController ? PlayerController->GetPawn() : nullptr;
+
+	if (PlayerController && Pawn)
+	{
+		SetupHudWidgetToNewPawn(Pawn, PlayerController);
+	}
+}
+
 void UPlayerHUDComponent::ShowSpectatorHUDWidget()
 {
 	if (!SpectatorHUDWidget && SpectatorHUDWidgetClass)
@@ -475,4 +473,28 @@ bool UPlayerHUDComponent::IsTestHUDVisible() const
 UMissionsOnHUDWidget* UPlayerHUDComponent::GetMissionsOnHudWidget() const
 {
 	return MissionsOnHUDWidget;
+}
+
+USoundSubsystem* UPlayerHUDComponent::GetSoundSubsystem()
+{
+	UWorld* World = GetWorld();
+
+	if (IsValid(World) == false || World->bIsTearingDown)
+	{
+		return nullptr;
+	}
+
+	UGameInstance* GI = UGameplayStatics::GetGameInstance(World);
+	if (GI == nullptr)
+	{
+		return nullptr;
+	}
+
+	USoundSubsystem* SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
+	if (SoundSubsystem == nullptr)
+	{
+		return nullptr;
+	}
+
+	return SoundSubsystem;
 }

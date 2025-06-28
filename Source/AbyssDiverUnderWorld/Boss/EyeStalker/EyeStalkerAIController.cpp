@@ -33,6 +33,14 @@ void AEyeStalkerAIController::InitTargetPlayer()
 	GetBlackboardComponent()->SetValueAsObject("TargetPlayer", nullptr);
 }
 
+void AEyeStalkerAIController::RemoveTargetPlayer(AUnderwaterCharacter* Player)
+{
+	if (TargetPlayers.Contains(Player))
+	{
+		TargetPlayers.Remove(Player);
+	}
+}
+
 void AEyeStalkerAIController::OnSightPerceptionSuccess(AUnderwaterCharacter* Player)
 {
 	if (TargetPlayers.Num() == 0)
@@ -40,12 +48,23 @@ void AEyeStalkerAIController::OnSightPerceptionSuccess(AUnderwaterCharacter* Pla
 		GetBlackboardComponent()->SetValueAsObject("TargetPlayer", Player);
 	}
 
-	TargetPlayers.Emplace(Player);
+	if (!TargetPlayers.Contains(Player))
+	{
+		TargetPlayers.Emplace(Player);
+	}
 }
 
 void AEyeStalkerAIController::OnSightPerceptionFail(AUnderwaterCharacter* Player)
 {
-	TargetPlayers.Remove(Player);
+	AUnderwaterCharacter* TargetPlayer = Cast<AUnderwaterCharacter>(GetBlackboardComponent()->GetValueAsObject("TargetPlayer"));
+
+	if (IsValid(TargetPlayer) && TargetPlayer == Player)
+	{
+		Player->SetIsAttackedByEyeStalker(false);
+		GetBlackboardComponent()->SetValueAsObject("TargetPlayer", nullptr);
+	}
+	
+	RemoveTargetPlayer(Player);
 	
 	if (TargetPlayers.Num() == 0)
 	{
@@ -61,9 +80,7 @@ void AEyeStalkerAIController::OnSightPerceptionUpdatedHandler(AActor* Actor, FAI
 {
 	// 감지한 대상이 플레이어가 아니거나 사망 상태인 경우 리턴
 	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor);
-	if (!IsValid(Player) || Player->GetCharacterState() == ECharacterState::Death) return;
-
-	LOG(TEXT("OnTargetPerceptionUpdatedHandler : %s"), *Player->GetName());
+	if (!IsValid(Player)) return;
 	
 	if (Stimulus.Type == UAISense::GetSenseID<UAISense_Sight>())
 	{
@@ -80,10 +97,37 @@ void AEyeStalkerAIController::OnSightPerceptionUpdatedHandler(AActor* Actor, FAI
 
 void AEyeStalkerAIController::SetRandomTargetPlayer()
 {
+	RemoveInValidTargetPlayers();
+	
 	// 랜덤 인덱스 생성
-	uint8 RandomIndex = FMath::RandRange(0, TargetPlayers.Num() - 1);
-   
-	// 선택된 플레이어를 블랙보드에 설정
-	AUnderwaterCharacter* SelectedPlayer = TargetPlayers[RandomIndex];
-	GetBlackboardComponent()->SetValueAsObject("TargetPlayer", SelectedPlayer);
+	const uint8 Tries = TargetPlayers.Num() * 3;
+	for (uint8 i=0; i<Tries; i++)
+	{
+		const uint8 RandomIndex = FMath::RandRange(0, TargetPlayers.Num() - 1);
+		AUnderwaterCharacter* SelectedPlayer = TargetPlayers[RandomIndex];
+
+		if (SelectedPlayer->IsGroggy() || SelectedPlayer->IsDeath())
+		{
+			// 선택된 플레이어가 기절 상태이거나 사망 상태인 경우, 다음 플레이어를 선택
+			continue;
+		}
+		else
+		{
+			// 선택된 플레이어를 블랙보드에 설정
+			GetBlackboardComponent()->SetValueAsObject("TargetPlayer", SelectedPlayer);
+			break;	
+		}
+	}
+}
+
+void AEyeStalkerAIController::RemoveInValidTargetPlayers()
+{
+	for (int32 i = TargetPlayers.Num() - 1; i >= 0; --i)
+	{
+		AUnderwaterCharacter* Player = TargetPlayers[i];
+		if (!IsValid(Player))
+		{
+			TargetPlayers.RemoveAt(i);
+		}
+	}
 }

@@ -21,6 +21,17 @@ void AADSpectatorPawn::BeginPlay()
 	// BeginPlay 시점에서는 Controller가 아직 Possess되지 않은 상태일 수 있으므로 관련 처리는 PossessedBy에서 처리
 }
 
+void AADSpectatorPawn::Destroyed()
+{
+	// 관전 중에 관전이 종료되었을 경우 현재 타겟 캐릭터의 관전 종료 이벤트를 호출한다.
+	if (PrevTargetCharacter.IsValid())
+	{
+		PrevTargetCharacter->OnEndSpectated();
+	}
+
+	Super::Destroyed();
+}
+
 void AADSpectatorPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
@@ -56,6 +67,7 @@ void AADSpectatorPawn::PossessedBy(AController* NewController)
 	if (AADPlayerController* PlayerController = Cast<AADPlayerController>(NewController))
 	{
 		PlayerController->OnTargetViewChanged.AddUniqueDynamic(this, &AADSpectatorPawn::OnTargetViewChanged);
+		PlayerController->PlayerCameraManager->SetManualCameraFade(0.0f, FColor::Black, false);
 	}
 	else
 	{
@@ -87,16 +99,25 @@ void AADSpectatorPawn::OnTargetViewChanged(AActor* NewViewTarget)
 		*GetNameSafe(NewViewTarget),
 		GetNetMode() == ENetMode::NM_Client ? TEXT("Client") : TEXT("Server")
 	);
-	if (NewViewTarget && NewViewTarget->IsA(AUnderwaterCharacter::StaticClass()))
+
+	if (PrevTargetCharacter.IsValid())
+	{
+		PrevTargetCharacter->OnEndSpectated();
+	}
+	
+	if (NewViewTarget && NewViewTarget->IsA(AUnderwaterCharacter::StaticClass())
+		&& GetController()->GetPawn() == nullptr) // 게임 입장 시의 Spectator 상태이고 Character Pawn과 동시에 존재한다. 이 상황은 관전이 아니므로 무시한다.
 	{
 		if (AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(NewViewTarget))
 		{
 			UnderwaterCharacter->OnCharacterStateChangedDelegate.AddUniqueDynamic(this, &AADSpectatorPawn::OnCharacterStateChanged);
+			UnderwaterCharacter->OnSpectated();
+			PrevTargetCharacter = UnderwaterCharacter;
 		}
 	}
 }
 
-void AADSpectatorPawn::OnCharacterStateChanged(ECharacterState OldCharacterState, ECharacterState NewCharacterState)
+void AADSpectatorPawn::OnCharacterStateChanged(AUnderwaterCharacter* Character, ECharacterState OldCharacterState, ECharacterState NewCharacterState)
 {
 	if (NewCharacterState == ECharacterState::Death)
 	{

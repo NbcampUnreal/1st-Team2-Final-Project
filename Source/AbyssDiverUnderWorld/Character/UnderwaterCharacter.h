@@ -28,6 +28,7 @@ DECLARE_LOG_CATEGORY_EXTERN(LogAbyssDiverCharacter, Log, LOG_ABYSS_DIVER_COMPILE
 // 실제 게임 플레이 태스트와 프로파일링을 통해서 문제를 해결해야 한다.
 // 3. Stamina, Oxygen 컴포넌트가 분리되어서 더 복잡해지고 있는 상황일 수 있다. 추후 구현이 필요 이상으로 복잡해지면 합치는 것을 고려한다.
 
+enum class ESFX : uint8;
 enum class ELocomotionMode : uint8;
 
 /* 캐릭터의 지상, 수중을 결정, Move 로직, Animation이 변경되고 사용 가능 기능이 제한된다. */
@@ -98,11 +99,13 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	virtual void PossessedBy(AController* NewController) override;
+	virtual void UnPossessed() override;
 	virtual void PostInitializeComponents() override;
 	virtual void PostNetInit() override;
 	virtual void OnRep_PlayerState() override;
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode = 0) override;
+	virtual void Destroyed() override;
 
 	/** IA를 Enhanced Input Component에 연결 */
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
@@ -129,7 +132,7 @@ public:
 	virtual bool CanHighlight_Implementation() const override;
 
 	/** Hold 지속 시간 반환 */
-	virtual float GetHoldDuration_Implementation() const override;
+	virtual float GetHoldDuration_Implementation(AActor* InstigatorActor) const override;
 	
 	/** Interactable 컴포넌트를 반환 */
 	virtual UADInteractableComponent* GetInteractableComponent() const override;
@@ -157,6 +160,9 @@ public:
 	/** 캐릭터를 사망시킨다. Authority Node에서만 실행되어야 한다. */
 	UFUNCTION(BlueprintCallable)
 	void Die();
+
+	/** 부활 상태 초기화 설정을 한다. Possess 이후에 호출할 것 */
+	void Respawn();
 	
 	/** 현재 캐릭터의 상태를 전환. 수중, 지상 */
 	UFUNCTION(BlueprintCallable)
@@ -263,6 +269,15 @@ public:
 
 	UFUNCTION()
 	void OnRep_CurrentTool();
+
+	UFUNCTION()
+	void OnRep_InCombat();
+
+	/** 관전을 당할 때 호출되는 함수 */
+	void OnSpectated();
+
+	/** 관전 당하는 것이 끝났을 때 호출되는 함수 */
+	void OnEndSpectated();
 	
 protected:
 
@@ -390,6 +405,12 @@ protected:
 	/** 레이더 Actor를 생성한다. */
 	void SpawnRadar();
 
+	/** 1인칭, 3인칭 시점의 메시를 설정 */
+	void SetMeshFirstPersonSetting(bool bIsFirstPerson);
+
+	/** Pawn을 떠날 때 호출되는 함수. Pawn이 떠나면 캐릭터는 관전 상태로 변경된다. */
+	void OnLeavePawn();
+	
 	/** Radar Toggle을 요청한다. */
 	UFUNCTION(BlueprintCallable)
 	void RequestToggleRadar();
@@ -635,7 +656,7 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FOnGroggy OnGroggyDelegate;
 
-	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnCharacterStateChanged, ECharacterState, OldCharacterState, ECharacterState, NewCharacterState);
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnCharacterStateChanged, AUnderwaterCharacter*, Character, ECharacterState, OldCharacterState, ECharacterState, NewCharacterState);
 	/** 캐릭터 상태가 변경되었을 때 호출되는 델리게이트 */
 	UPROPERTY(BlueprintAssignable)
 	FOnCharacterStateChanged OnCharacterStateChangedDelegate;
@@ -646,7 +667,10 @@ public:
 	FOnEnvironmentStateChanged OnEnvironmentStateChangedDelegate;
 
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnDamageTaken, float, DamageAmount, float, CurrentHealth);
-	/** 캐릭터가 피해를 입었을 때 호출되는 델리게이트, DamageAmount = Health Damage Taken + Shield Damage Taken */
+	/** 캐릭터가 피해를 입었을 때 호출되는 델리게이트, DamageAmount = Health Damage Taken + Shield Damage Taken.
+	 * 체력 계산, 상태 전이가 모두 완료된 뒤에 호출된다.
+	 * Normal 상태일 때만 호출된다. 실드에만 데미지가 들어갔을 경우 호출되지 않는다.
+	 */
 	UPROPERTY(BlueprintAssignable)
 	FOnDamageTaken OnDamageTakenDelegate;
 
@@ -698,6 +722,9 @@ public:
 
 private:
 
+	UPROPERTY()
+	class AADPlayerController* OwnerController;
+	
 	/** 현재 캐릭터를 Possess한 PlayerController의 Player Index */
 	int8 PlayerIndex;
 	
@@ -810,6 +837,10 @@ private:
 	/** Normal 상태에서의 회전 감도. Normal 상태에 진입할 때마다 LookSensitivity를 이 값으로 설정한다. */
 	UPROPERTY(EditDefaultsOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float NormalLookSensitivity;
+
+	/** Fade 된 상태에서 Normal 상태로 전이됬을 때 Fade In 되는 시간 */
+	UPROPERTY(EditDefaultsOnly, Category = "Character|Normal", meta = (AllowPrivateAccess = "true"))
+	float NormalStateFadeInDuration;
 	
 	/** 그로기 상태에서 사망까지 걸리는 시간. 그로기 상태에 진입할 떄마다 줄어든다. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true"))
@@ -835,6 +866,10 @@ private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true", ClampMin = "0.01", ClampMax = "1.0"))
 	float RecoveryHealthPercentage;
 
+	/** 그로기에서 회복 후의 산소량, 회복 후의 산소량은 MaxOxygen * RecoveryOxygenPercentage로 설정된다. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true", ClampMin = "0.0", ClampMax = "1.0"))
+	float RecoveryOxygenPenaltyRate;
+
 	/** 그로기에서 사망 전이 Timer */
 	FTimerHandle GroggyTimer;
 
@@ -842,12 +877,21 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Groggy")
 	float GroggyLookSensitivity;
 
+	/** 그로기 효과음 */
+	ESFX GroggySfx;
+
+	/** 그로기 효과음 사운드 ID */
+	int32 GroggySfxId;
+
 	/** 그로기 상태에서 부활할 때 Hold해야 하는 시간. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true"))
 	float RescueRequireTime;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Death", meta = (AllowPrivateAccess = "true"))
+	ESFX ResurrectSFX;
+	
 	/** 현재 전투 중인지 여부 */
-	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_InCombat, Category = Character, meta = (AllowPrivateAccess = "true"))
 	uint8 bIsInCombat : 1;
 	
 	/** 현재 캐릭터를 타겟팅하고 있는 Actor의 개수. */
@@ -923,7 +967,7 @@ private:
 	// @ToDo: DPV 상황 추가
 	
 	/** Sprint 시에 적용되는 속도 배율. Sprint가 적용되면 EffectiveSpeed에 곱해진다. */
-	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float SprintMultiplier;
 
 	/** 특정 Zone에서 적용되는 속도 배율. Zone에 따라 다르게 적용된다. */
@@ -1114,12 +1158,6 @@ private:
 	UPROPERTY()
 	TObjectPtr<class UEquipRenderComponent> EquipRenderComp;
 
-	UPROPERTY(EditAnywhere, Category = "UI", meta = (AllowPrivateAccess = "true"))
-	TSubclassOf<class UHoldInteractionWidget> HoldWidgetClass;
-
-	UPROPERTY(EditAnywhere, Category = "UI", meta = (AllowPrivateAccess = "true"))
-	class UHoldInteractionWidget* HoldWidgetInstance;
-
 	/** Tool 소켓 명 (1P/3P 공용) */
 	FName LaserSocketName = TEXT("Laser");
 
@@ -1168,8 +1206,11 @@ private:
 	/** 캐릭터가 사망했을 때 관전으로 전이할 Timer */
 	FTimerHandle DeathTimer;
 
+	/** 캐릭터가 사망했을 떄 관전으로 전이되기까지 걸리는 시간 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	float DeathTransitionTime = 3.0f;
+	float DeathTransitionTime = 1.0f;
+
+	TWeakObjectPtr<class USoundSubsystem> SoundSubsystem;
 	
 #pragma endregion
 
@@ -1299,6 +1340,18 @@ public:
 
 	/** Post Process Setting Component를 반환 */
 	FORCEINLINE UPostProcessSettingComponent* GetPostProcessSettingComponent() const { return PostProcessSettingComponent; }
+
+	/** 현재 캐릭터를 어그로로 설정하고 있는 Targeting Actor의 개수를 반환 */
+	FORCEINLINE int GetTargetingActorCount() const { return TargetingActorCount; }
+
+	/** 캐릭터가 현재 Capture State 인지 여부를 반환 */
+	FORCEINLINE bool IsCaptured() const { return bIsCaptured; }
+
+	FORCEINLINE AADPlayerController* GetOwnerController() const { return OwnerController; }
+
+protected:
+
+	class USoundSubsystem* GetSoundSubsystem();
 	
 #pragma endregion
 };

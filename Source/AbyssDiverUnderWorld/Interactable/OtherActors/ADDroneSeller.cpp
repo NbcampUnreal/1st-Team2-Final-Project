@@ -3,10 +3,12 @@
 #include "Framework/ADInGameState.h"
 #include "ADDrone.h"
 #include "Character/UnderwaterCharacter.h"
+#include "Character/PlayerComponent/OxygenComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Interactable/Item/Component/ADInteractableComponent.h"
 #include "Framework/ADPlayerState.h"
 #include "Framework/ADGameInstance.h"
+#include "Framework/ADPlayerController.h"
 #include "Subsystems/SoundSubsystem.h"
 #include "Subsystems/MissionSubsystem.h"
 
@@ -133,9 +135,6 @@ void AADDroneSeller::OnRep_CurrentMoney()
 		bReachedGoal ? ESFX::ActivateDrone : ESFX::SubmitOre,
 		GetActorLocation()
 	);
-
-	// ✅ 여기서도 색상 설정
-	SetLightColor(bReachedGoal ? FLinearColor::Green : FLinearColor::Red);
 }
 
 void AADDroneSeller::OnRep_TargetMoney()
@@ -158,6 +157,17 @@ void AADDroneSeller::SubmitPlayer(AActor* InstigatorActor)
 			continue;
 		}
 
+		if (AADPlayerController* OwnerController = Cast<AADPlayerController>(BoundCharacter->GetOwnerController()))
+		{
+			if (AADPlayerState* PlayerState = OwnerController->GetPlayerState<AADPlayerState>())
+			{
+				const float LastOxygenRemain = BoundCharacter->GetOxygenComponent()->GetOxygenLevel();
+				UE_LOG(LogAbyssDiverCharacter, Log, TEXT("Record Last Oxygen Level for Player: %s / Oxygen Remain : %f"),
+					*BoundCharacter->GetName(), LastOxygenRemain);
+				PlayerState->SetLastOxygenRemain(LastOxygenRemain);
+			}
+		}
+		
 		int8 PlayerIndex = BoundCharacter->GetPlayerIndex();
 		if (SubmittedPlayerIndexes.Contains(PlayerIndex))
 		{
@@ -170,9 +180,7 @@ void AADDroneSeller::SubmitPlayer(AActor* InstigatorActor)
 
 		BoundCharacter->UnBind();
 
-		// @ToDo: 추후에 Destroy 호출
-		// 원래라면 Destroy를 호출해야 하지만, 현재 관전이 없기 때문에 일단은 숨기기만 한다. 
-		BoundCharacter->SetActorHiddenInGame(true);
+		BoundCharacter->Destroy();
 	}
 }
 
@@ -275,14 +283,14 @@ void AADDroneSeller::SetLightColor(FLinearColor NewColor)
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("⚠️ Unsupported color"));
+		UE_LOG(LogTemp, Warning, TEXT("Unsupported color"));
 		return;
 	}
 
 	if (DesiredMaterial)
 	{
 		CachedMesh->SetMaterial(0, DesiredMaterial);
-		UE_LOG(LogTemp, Warning, TEXT("✅ Set material to %s"), *DesiredMaterial->GetName());
+		UE_LOG(LogTemp, Warning, TEXT("Set material to %s"), *DesiredMaterial->GetName());
 	}
 }
 

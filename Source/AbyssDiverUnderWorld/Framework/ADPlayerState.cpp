@@ -18,6 +18,8 @@ AADPlayerState::AADPlayerState()
 	, OreMinedCount(0)
 	, bIsSafeReturn(false)
 	, PlayerIndex(INDEX_NONE)
+	, bHasBeenDead(false)
+	, LastOxygenRemain(0.0f)
 {
 	bReplicates = true;
 
@@ -159,4 +161,9 @@ void AADPlayerState::SetPlayerNickname(const FString& NewName)
 const FString AADPlayerState::GetPlayerNickname() const
 {
 	return GetPlayerName();
+}
+
+void AADPlayerState::SetIsDead(bool bNewIsDead)
+{
+	bIsDead = bNewIsDead;
 }

@@ -29,6 +29,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaTime) override;
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 #pragma region Method
 public:
@@ -45,9 +46,14 @@ public:
 	void M_SpawnBloodEffect_Implementation(FVector Location, FRotator Rotation);
 
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
+	
 	virtual void OnDeath();
+	UFUNCTION(NetMulticast, Reliable)
+	void M_OnDeath();
+	void M_OnDeath_Implementation();
+
 	virtual void PlayAttackMontage();
-	void StopMovement();
+	void UnPossessAI();
 	virtual void NotifyLightExposure(float DeltaTime, float TotalExposedTime, const FVector& PlayerLocation, AActor* PlayerActor);
 	
 	UFUNCTION()
@@ -58,6 +64,15 @@ public:
 	
 	UFUNCTION()
 	void ForceRemoveDetection(AActor* Actor);
+
+	UFUNCTION(BlueprintCallable)
+	bool IsAnimMontagePlaying() const;
+
+
+protected:
+	void ApplyPhysicsSimulation();
+	void RotateToTarget(float DeltaTime);
+	void RotateToMovementForward(float DeltaTime);
 
 #pragma endregion
 
@@ -81,6 +96,8 @@ protected:
 	TObjectPtr<UMonsterSoundComponent> MonsterSoundComponent;
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UAnimInstance> AnimInstance;
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<UAnimMontage> CurrentAttackAnim;
 	UPROPERTY(Replicated, BlueprintReadWrite)
 	EMonsterState MonsterState;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AI|AttackAnimation")
@@ -106,6 +123,7 @@ protected:
 
 	static const FName MonsterStateKey;
 	static const FName InvestigateLocationKey;
+	static const FName PatrolLocationKey;
 	static const FName TargetActorKey;
 	
 #pragma endregion
@@ -113,10 +131,13 @@ protected:
 #pragma region Getter. Setter
 public:
 	TArray<UAnimMontage*> GetAttackAnimations() { return AttackAnimations; }
+	
+	UFUNCTION(BlueprintCallable)
 	EMonsterState GetMonsterState() { return MonsterState; }
 	virtual void SetMonsterState(EMonsterState NewState);
 	void SetMaxSwimSpeed(float Speed);
 	int32 GetDetectionCount() const;
+
 
 	// Virtual function to get collision components for attack range determination externally
 	virtual USphereComponent* GetAttackHitComponent() const { return nullptr; }

@@ -6,7 +6,9 @@
 
 #include "ADPlayerController.generated.h"
 
+enum class ESFX : uint8;
 enum class EMapName : uint8;
+class ULoadingScreenWidget;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADPlayerController : public APlayerController
@@ -39,6 +41,16 @@ public:
 	UFUNCTION(BlueprintImplementableEvent)
 	void OnPostSeamlessTravel();
 
+	UFUNCTION(Client, Reliable)
+	void C_PlayGameOverSound();
+	void C_PlayGameOverSound_Implementation();
+
+	UFUNCTION()
+	void ShowFadeOut(float Duration = 2.0f);
+
+	UFUNCTION()
+	void ShowFadeIn();
+
 	/** Pawn이 변경되었을 때 호출된다. Client에서 관전 시작 시에 시점 조정을 위해 사용 */
 	virtual void OnRep_Pawn() override;
 	
@@ -52,6 +64,32 @@ public:
 	 * UI를 갱신하기 위해서는 Local Player Controller에서만 호출되도록 한다.
 	 */
 	virtual void SetViewTarget(class AActor* NewViewTarget, FViewTargetTransitionParams TransitionParams = FViewTargetTransitionParams()) override;
+
+	/** Camera Blank를 시작한다. FadeAlpha의 X값은 시작 알파 값이고 Y값은 종료 알파 값이다.
+	 * FadeTime 동안 종료 알파 값으로 Fade Out을 한다.
+	 * FadeOut 완료되면 FadeTime 동안 FadeColor로 Fade In을 한다.
+	*/
+	UFUNCTION(Reliable, Client)
+	void C_StartCameraBlink(FColor FadeColor, FVector2D FadeAlpha, float FadeStartTime, float FadeEndDelay, float FadeEndTime);
+	void C_StartCameraBlink_Implementation(FColor FadeColor, FVector2D FadeAlpha, float FadeStartTime, float FadeEndDelay, float FadeEndTime);
+
+	UFUNCTION(BlueprintCallable)
+	bool IsCameraBlanking() const;
+
+	UFUNCTION(Client, Unreliable)
+	void C_PlaySound(ESFX SoundType, float VolumeMultiplier = 1.0f, float PitchMultiplier = 1.0f);
+
+	UFUNCTION(Exec)
+	void ShowPlayerHUD();
+
+	UFUNCTION(Exec)
+	void HidePlayerHUD();
+
+	UFUNCTION(Exec)
+	void SetInvincible(bool bIsInvincible);
+
+	UFUNCTION(Server, Reliable)
+	void S_SetInvincible(bool bIsInvincible);
 	
 protected:
 
@@ -75,11 +113,19 @@ protected:
 
 	UFUNCTION(Exec)
 	void ToggleTestHUD();
+
+	UFUNCTION(Exec)
+	void GainShield(int Amount);
+
+	UFUNCTION(Server, Reliable)
+	void S_GainShield(int Amount);
 	
+	void OnCameraBlankEnd();
 
 #pragma endregion
 	
 #pragma region Variable
+
 
 public:
 
@@ -108,7 +154,17 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UInteractionDescriptionWidget> InteractionWidget;
-	
+
+
+	UPROPERTY(EditAnywhere, Category = "UI")
+	TSubclassOf<class UHoldInteractionWidget> InteractionHoldWidgetClass;
+
+	UPROPERTY()
+	TObjectPtr<UHoldInteractionWidget> InteractionHoldWidget;
+
+	/** Camera Blank Timer Handle */
+	FTimerHandle CameraBlankTimerHandle;
+
 #pragma endregion 
 
 #pragma region Getters / Setters

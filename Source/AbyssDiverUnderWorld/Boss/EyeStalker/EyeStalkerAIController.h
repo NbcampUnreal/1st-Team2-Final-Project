@@ -16,6 +16,7 @@ public:
 
 public:
 	void InitTargetPlayer();
+	void RemoveTargetPlayer(AUnderwaterCharacter* Player);
 
 protected:
 	void OnSightPerceptionSuccess(AUnderwaterCharacter* Player);
@@ -26,6 +27,7 @@ private:
 	void OnSightPerceptionUpdatedHandler(AActor* Actor, FAIStimulus Stimulus);
 
 	void SetRandomTargetPlayer();
+	void RemoveInValidTargetPlayers();
 
 private:
 	UPROPERTY()

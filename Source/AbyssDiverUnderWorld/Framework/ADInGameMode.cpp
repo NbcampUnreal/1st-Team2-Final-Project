@@ -46,6 +46,15 @@ AADInGameMode::AADInGameMode()
 	}
 }
 
+void AADInGameMode::PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage)
+{
+	Super::PreLogin(Options, Address, UniqueId, ErrorMessage);
+
+#if !WITH_EDITOR
+	ErrorMessage = TEXT("게임 도중 입장 불가");
+#endif
+}
+
 void AADInGameMode::BeginPlay()
 {
 	Super::BeginPlay();
@@ -98,8 +107,23 @@ void AADInGameMode::BeginPlay()
 			{
 				InGameState->SetCurrentDroneSeller(Drone->CurrentSeller);
 				InGameState->SetDestinationTarget(Drone->CurrentSeller);
-				Drone->M_PlayPhaseBGM(1);
+	/*			Drone->M_PlayPhaseBGM(1);*/
 			}
+		}
+	}
+
+	PlayerAliveInfos.Init(true, GetNumPlayers());
+}
+
+void AADInGameMode::StartPlay()
+{
+	Super::StartPlay();           // 모든 Actor BeginPlay 이후 호출
+
+	for (AADDrone* Drone : TActorRange<AADDrone>(GetWorld()))
+	{
+		if (Drone->GetDronePhaseNumber() == 1)
+		{
+			Drone->M_PlayPhaseBGM(1);
 		}
 	}
 }
@@ -186,12 +210,20 @@ void AADInGameMode::FinishRestartPlayer(AController* NewPlayer, const FRotator& 
 {
 	Super::FinishRestartPlayer(NewPlayer, StartRotation);
 
-	if (DeathCount > 0)
+	if (AADPlayerState* PlayerState = NewPlayer->GetPlayerState<AADPlayerState>())
 	{
-		DeathCount--;
-	}
+		PlayerState->SetHasBeenDead(false);
+		
+		int32 PlayerIndex = PlayerState->GetPlayerIndex();
 
-	LOGVN(Log, TEXT("Player Restarted, PlayerIndex : %d, Deathcount : %d"), NewPlayer->GetPlayerState<AADPlayerState>()->GetPlayerIndex(), DeathCount);
+		if (PlayerAliveInfos.IsValidIndex(PlayerIndex) == false)
+		{
+			LOGVN(Error, TEXT("Not Valid Index : %d, ArrayNum : %d"), PlayerIndex, PlayerAliveInfos.Num());
+			return;
+		}
+
+		LOGVN(Log, TEXT("Player Restarted, PlayerIndex : %d"), PlayerIndex);
+	}
 }
 
 void AADInGameMode::ReadyForTravelToCamp()
@@ -202,16 +234,45 @@ void AADInGameMode::ReadyForTravelToCamp()
 		return;
 	}
 
-	LOGVN(Log, TEXT("Ready For Traveling to Camp..."));
-
-	for (AADPlayerController* PC : TActorRange<AADPlayerController>(GetWorld()))
+	for (AADPlayerState* ADPlayerState : TActorRange<AADPlayerState>(GetWorld()))
 	{
-		PC->GetPlayerHUDComponent()->C_ShowResultScreen();
+		APawn* Player = ADPlayerState->GetPawn();
+		if (Player == nullptr || IsValid(Player) == false || Player->IsValidLowLevel() == false || Player->IsPendingKillPending())
+		{
+			LOGV(Error, TEXT("Not Valid Player, PlayeStateName : %s"), *ADPlayerState->GetName());
+			continue;
+		}
+
+		ADPlayerState->GetPawn()->bAlwaysRelevant = true;
 	}
 
-	TimerManager.ClearTimer(ResultTimerHandle);
+	ForceNetUpdate();
 
-	const float Interval = 5.0f;
+	LOGV(Log, TEXT("Releveant On"));
+
+	TimerManager.ClearTimer(SyncTimerHandle);
+	const float WaitForSync = 1.0f;
+	TimerManager.SetTimer(SyncTimerHandle, [&]()
+		{
+			
+			LOGVN(Log, TEXT("Ready For Traveling to Camp..."));
+
+			UWorld* World = GetWorld();
+			if (IsValid(World) == false || World->IsInSeamlessTravel() || World->IsValidLowLevel() == false || World->bIsTearingDown)
+			{
+				LOGV(Error, TEXT("World Is Not Valid"));
+				return;
+			}
+
+			for (AADPlayerController* PC : TActorRange<AADPlayerController>(World))
+			{
+				PC->GetPlayerHUDComponent()->C_ShowResultScreen();
+			}
+
+		}, WaitForSync, false);
+
+	TimerManager.ClearTimer(ResultTimerHandle);
+	const float Interval = 9.0f;
 	TimerManager.SetTimer(ResultTimerHandle, this, &AADInGameMode::TravelToCamp, 1, false, Interval);
 }
 
@@ -442,35 +503,48 @@ void AADInGameMode::GameOver()
 #endif
 
 	ReadyForTravelToCamp();
+	
+	for (AADPlayerController* PC : TActorRange<AADPlayerController>(GetWorld()))
+	{
+		PC->C_PlayGameOverSound();
+	}
 }
 
-void AADInGameMode::OnCharacterStateChanged(ECharacterState OldCharacterState, ECharacterState NewCharacterState)
+void AADInGameMode::OnCharacterStateChanged(AUnderwaterCharacter* Character, ECharacterState OldCharacterState, ECharacterState NewCharacterState)
 {
-	if (NewCharacterState == ECharacterState::Death)
+	AADPlayerState* PS = Character->GetPlayerState<AADPlayerState>();
+	if (PS == nullptr)
 	{
-		if (OldCharacterState == ECharacterState::Groggy)
+		LOGV(Error, TEXT("Not Valid Player State"));
+		return;
+	}
+
+	int32 PlayerIndex = PS->GetPlayerIndex();
+
+	if (PlayerAliveInfos.IsValidIndex(PlayerIndex) == false)
+	{
+		LOGV(Error, TEXT(" Not Valid Index From PlayerAliveInfos, Total : %d, Index : %d"), PlayerAliveInfos.Num(), PlayerIndex);
+		return;
+	}
+
+	PlayerAliveInfos[PlayerIndex] = (NewCharacterState == ECharacterState::Normal);
+
+	LOGV(Log, TEXT("Begin, Old State : %d,  NewCharacterState : %d, PlayerNum : %d, PlayerIndex : %d"), OldCharacterState, NewCharacterState, GetNumPlayers(), PlayerIndex);
+
+	bool bIsGameOver = true;
+	for (const bool& AliveInfo : PlayerAliveInfos)
+	{
+		if (AliveInfo)
 		{
-			GroggyCount--;
+			bIsGameOver = false;
+			break;
 		}
-
-		DeathCount++;
-	}
-	else if (NewCharacterState == ECharacterState::Groggy)
-	{
-		GroggyCount++;
-	}
-	else if (OldCharacterState == ECharacterState::Groggy && NewCharacterState == ECharacterState::Normal)
-	{
-		GroggyCount--;
 	}
 
-	LOGV(Log, TEXT("Begin,Old State : %d,  NewCharacterState : %d, PlayerNum : %d, DeathCount : %d, GroggyCount : %d"), OldCharacterState, NewCharacterState, GetNumPlayers(), DeathCount, GroggyCount);
-
-	if (DeathCount + GroggyCount == GetNumPlayers())
+	if (bIsGameOver)
 	{
 		GameOver();
 	}
-
 }
 
 void AADInGameMode::GetOre()
@@ -503,6 +577,11 @@ void AADInGameMode::GetOre()
 
 void AADInGameMode::GetMoney()
 {
+	GetSomeMoney(10000);
+}
+
+void AADInGameMode::GetSomeMoney(int32 SomeValue)
+{
 	AADInGameState* GS = GetGameState<AADInGameState>();
 	if (GS == nullptr)
 	{
@@ -510,7 +589,7 @@ void AADInGameMode::GetMoney()
 		return;
 	}
 
-	GS->SetTotalTeamCredit(GS->GetTotalTeamCredit() + 10000);
+	GS->SetTotalTeamCredit(GS->GetTotalTeamCredit() + SomeValue);
 }
 
 USoundSubsystem* AADInGameMode::GetSoundSubsystem()

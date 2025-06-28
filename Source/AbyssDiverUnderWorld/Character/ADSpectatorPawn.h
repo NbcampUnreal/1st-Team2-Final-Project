@@ -24,7 +24,8 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-
+	virtual void Destroyed() override;
+	
 public:
 	
 	// Called to bind functionality to input
@@ -50,7 +51,7 @@ protected:
 
 	/** 캐릭터 상태가 변경되었을 때 호출되는 함수 */
 	UFUNCTION()
-	void OnCharacterStateChanged(ECharacterState OldCharacterState, ECharacterState NewCharacterState);
+	void OnCharacterStateChanged(AUnderwaterCharacter* Character, ECharacterState OldCharacterState, ECharacterState NewCharacterState);
 	
 #pragma endregion
 
@@ -66,5 +67,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> ViewPrevPlayerAction;
 
+	TWeakObjectPtr<class AUnderwaterCharacter> PrevTargetCharacter;
+	
 #pragma endregion
 };

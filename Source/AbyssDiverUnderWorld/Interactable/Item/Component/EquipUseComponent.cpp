@@ -43,8 +43,8 @@ UEquipUseComponent::UEquipUseComponent()
 	SetIsReplicatedByDefault(true);
 
 	Amount = 0;
-	DrainPerSecond = 0.1f;
-	NightVisionDrainPerSecond = 0.1f;
+	DrainPerSecond = 0.5f;
+	NightVisionDrainPerSecond = 0.5f;
 	DrainAcc = 0.f;
 	bBoostActive = false;
 	bOriginalExposureCached = false;
@@ -426,11 +426,14 @@ void UEquipUseComponent::OnRep_BoostActive()
 {
 	if (bBoostActive)
 	{
-		GetSoundSubsystem()->PlayAt(ESFX::DPVOn, OwningCharacter->GetActorLocation());
+		DPVAudioID = GetSoundSubsystem()->PlayAt(ESFX::DPVOn, OwningCharacter->GetActorLocation(), 1.0f, true, 0.2f);
 	}
 	else
 	{
-		GetSoundSubsystem()->PlayAt(ESFX::DPVOff, OwningCharacter->GetActorLocation());
+		if (DPVAudioID)
+		{
+			GetSoundSubsystem()->StopAudio(DPVAudioID, true, 0.2f);
+		}
 	}
 }
 
@@ -625,6 +628,12 @@ EEquipmentType UEquipUseComponent::TagToEquipmentType(const FGameplayTag& Tag)
 
 void UEquipUseComponent::HandleLeftClick()
 {
+	if (!OwningCharacter.IsValid()) return;
+
+	AADPlayerController* PC = Cast<AADPlayerController>(OwningCharacter->GetController());
+	if (!PC || !PC->IsLocalController()) return;
+	if (PC->bEnableClickEvents) return;
+
 	S_LeftClick();
 }
 
@@ -716,7 +725,6 @@ void UEquipUseComponent::BoostOn()
 	bBoostActive = true;
 	TargetMultiplier = BoostMultiplier;  
 	SetComponentTickEnabled(true);
-	LOGIC(Warning, TEXT("Boost On"));
 }
 
 void UEquipUseComponent::BoostOff()

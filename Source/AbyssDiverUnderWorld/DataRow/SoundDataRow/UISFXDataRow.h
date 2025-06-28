@@ -9,8 +9,9 @@ UENUM(BlueprintType)
 enum class ESFX_UI : uint8
 {
 	UIClicked,
-	Sound1,
-	Sound2,
+	PhaseTransition,
+	SubmissionSelect,
+	ShopOpenClose
 };
 
 USTRUCT(BlueprintType)

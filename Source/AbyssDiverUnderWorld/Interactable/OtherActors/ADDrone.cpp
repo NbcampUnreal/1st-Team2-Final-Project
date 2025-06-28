@@ -12,6 +12,8 @@
 #include "Character/UnderwaterCharacter.h"
 #include "Gimmic/Spawn/SpawnManager.h"
 #include "Subsystems/SoundSubsystem.h"
+#include "Subsystems/ADWorldSubsystem.h"
+#include "DataRow/PhaseBGMRow.h"
 #include "Character/PlayerComponent/PlayerHUDComponent.h"
 #include "Framework/ADInGameMode.h"
 
@@ -53,6 +55,7 @@ void AADDrone::BeginPlay()
 	{
 		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
 	}
+	WorldSubsystem = GetWorld()->GetSubsystem<UADWorldSubsystem>();
 }
 
 void AADDrone::Tick(float DeltaSeconds)
@@ -163,24 +166,46 @@ void AADDrone::M_PlayDroneRisingSound_Implementation()
 // 나중에 수정..
 void AADDrone::M_PlayPhaseBGM_Implementation(int32 PhaseNumber)
 {
-	if (PhaseNumber == 1)
+	const FString CurrentMapName = WorldSubsystem ? WorldSubsystem->GetCurrentLevelName() : TEXT("");
+	static const FString Context(TEXT("PhaseBGM"));
+	if (!PhaseBgmTable)          
 	{
-		CachedSoundNumber = GetSoundSubsystem()->PlayBGM(ESFX_BGM::ShallowPhase1, true);
-		LOGN(TEXT("PhaseSound1"));
+		LOGN(TEXT("PhaseBgmTable is nullptr"))
+		return;
 	}
-	else if (PhaseNumber == 2)
+	const FName RowKey = *FString::Printf(TEXT("%s_%d"), *CurrentMapName, PhaseNumber);
+
+	if (const FPhaseBGMRow* Row = PhaseBgmTable->FindRow<FPhaseBGMRow>(RowKey, Context))
 	{
-		GetSoundSubsystem()->StopAudio(CachedSoundNumber, true);
-		CachedSoundNumber = GetSoundSubsystem()->PlayBGM(ESFX_BGM::ShallowPhase2, true);
-		LOGN(TEXT("PhaseSound2"));
+		if (CachedSoundNumber != INDEX_NONE)
+			GetSoundSubsystem()->StopAudio(CachedSoundNumber, true);
+
+		CachedSoundNumber = GetSoundSubsystem()->PlayBGM(Row->BGM, true);
+		LOGN(TEXT("CurrentMapPhaseBGM : %s"), *RowKey.ToString());
+		return;
 	}
-	else if (PhaseNumber == 3)
-	{
-		GetSoundSubsystem()->StopAudio(CachedSoundNumber, true);
-		CachedSoundNumber = GetSoundSubsystem()->PlayBGM(ESFX_BGM::ShallowPhase3, true);
-		LOGN(TEXT("PhaseSound3"));
-	}
-	LOGN(TEXT("No PhaseSound, DronePhaseNumber : %d"), DronePhaseNumber);
+	LOGN(TEXT("CurrentMapPhaseBGM : %s"), *RowKey.ToString());
+	LOGN(TEXT("No BGM row for Map:%s Phase:%d"), *CurrentMapName, PhaseNumber);
+
+	//if (PhaseNumber == 1)
+	//{
+	//	CachedSoundNumber = GetSoundSubsystem()->PlayBGM(ESFX_BGM::ShallowPhase1, true);
+	//	LOGN(TEXT("PhaseSound1"));
+	//}
+	//else if (PhaseNumber == 2)
+	//{
+	//	GetSoundSubsystem()->StopAudio(CachedSoundNumber, true);
+	//	CachedSoundNumber = GetSoundSubsystem()->PlayBGM(ESFX_BGM::ShallowPhase2, true);
+	//	LOGN(TEXT("PhaseSound2"));
+	//}
+	//else if (PhaseNumber == 3)
+	//{
+	//	GetSoundSubsystem()->StopAudio(CachedSoundNumber, true);
+	//	CachedSoundNumber = GetSoundSubsystem()->PlayBGM(ESFX_BGM::ShallowPhase3, true);
+	//	LOGN(TEXT("PhaseSound3"));
+	//}
+	//LOGN(TEXT("No PhaseSound, DronePhaseNumber : %d"), DronePhaseNumber);
+
 }
 
 void AADDrone::Activate()

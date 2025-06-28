@@ -29,6 +29,20 @@ enum class ESFX : uint8
 	ActivateDrone,
 	Submarine,
 	LaserSound,
+	WalkFootstep,
+	LandFootstep,
+	ShieldBroken,
+	ShieldHit,
+	DamageTaken,
+	UnderwaterMovement,
+	UnderwaterSprint,
+	IdleBreath,
+	MoveBreath,
+	Resurrection,
+	UseShield,
+	GroggyStart,
+	GroggyMiddle,
+	GroggyEnd,
 	Max UMETA(Hidden)
 };
 
