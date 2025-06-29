@@ -162,3 +162,8 @@ const FString AADPlayerState::GetPlayerNickname() const
 {
 	return GetPlayerName();
 }
+
+void AADPlayerState::SetIsDead(bool bNewIsDead)
+{
+	bIsDead = bNewIsDead;
+}

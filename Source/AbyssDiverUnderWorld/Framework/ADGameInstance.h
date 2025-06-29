@@ -27,9 +27,14 @@ protected:
 
 public:
 
+	UFUNCTION(BlueprintCallable, Category = "ADGameInstance")
+	void InitPlayerInfos();
+
 	bool TryGetPlayerIndex(const FString& NetId, int32& OutPlayerIndex);
 	void AddPlayerNetId(const FString& NetId);
 	void RemovePlayerNetId(const FString& NetId);
+	// 한 번이라도 들어온 적 있으면 true
+	bool HasBeenVisited(const FString& NetId);
 	
 	// 0~1의 값
 	UFUNCTION(BlueprintCallable, Category = "ADGameInstance")
@@ -131,8 +136,11 @@ public:
 
 private:
 
-	TMap<FString, int32> PlayerIdMap;
+	TMap<FString, int32> CurrentPlayerIdMap;
 	TArray<bool> ValidPlayerIndexArray;
+
+	// 접속했던 모든 Player ID를 기록
+	TSet<FString> TotalPlayerIdSet;
 
 #pragma region Getters / Setters
 public:

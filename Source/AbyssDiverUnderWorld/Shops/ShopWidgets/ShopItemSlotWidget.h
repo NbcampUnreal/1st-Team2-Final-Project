@@ -31,6 +31,7 @@ protected:
 public:
 
 	FOnShopItemSlotWidgetClickedDelegate OnShopItemSlotWidgetClickedDelegate;
+	FOnShopItemSlotWidgetClickedDelegate OnShopItemSlotWidgetDoubleClickedDelegate;
 
 private:
 
@@ -53,8 +54,13 @@ protected:
 
 	// 시간 측정 필요할까
 	FTimerHandle ToolTipTimerHandle;
+	FTimerHandle DoubleClickTimerHandle;
 
 	int32 SlotIndex;
+
+	uint8 bCanDoubleClick : 1 = false;
+
+	static const float DoubleClickInterval;
 
 #pragma endregion
 

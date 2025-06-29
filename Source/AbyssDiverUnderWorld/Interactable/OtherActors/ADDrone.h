@@ -108,6 +108,7 @@ private:
 
 	FTimerHandle DestroyHandle;
 	int32 CachedSoundNumber;
+	int32 DrondeThemeSoundNumber;
 
 #pragma endregion
 

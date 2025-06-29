@@ -89,7 +89,7 @@ void AMonsterAIController::Tick(float DeltaSeconds)
 	{
 		Monster->SetMonsterState(EMonsterState::Patrol);
 		Monster->bIsChasing = false;
-		LOG(TEXT("Monster State ¡æ Patrol"));
+		LOG(TEXT("Monster State -> Patrol"));
 	}
 }
 
@@ -154,6 +154,14 @@ void AMonsterAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus 
 
 	if (Actor->IsA(AUnderwaterCharacter::StaticClass()))
 	{
+		if (AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor))
+		{
+			if (Player->GetCharacterState() == ECharacterState::Death)
+			{
+				return;
+			}
+		}
+
  		if (Stimulus.WasSuccessfullySensed() && Monster->GetMonsterState() != EMonsterState::Flee)
 		{
 			LostActorsMap.Remove(Actor); // Remove when detected again

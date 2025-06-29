@@ -1045,7 +1045,7 @@ void AUnderwaterCharacter::M_NotifyStateChange_Implementation(ECharacterState Ne
 	
 	HandleEnterState(CharacterState);
 
-	OnCharacterStateChangedDelegate.Broadcast(OldCharacterState, NewCharacterState);
+	OnCharacterStateChangedDelegate.Broadcast(this, OldCharacterState, NewCharacterState);
 }
 
 void AUnderwaterCharacter::HandleEnterState(ECharacterState HandleCharacterState)
@@ -1215,6 +1215,11 @@ void AUnderwaterCharacter::HandleEnterDeath()
 			DeathTransitionTime,
 			false
 		);
+
+		if (AADPlayerState* PS = GetPlayerState<AADPlayerState>())
+		{
+			PS->SetIsDead(true);
+		}
 	}
 	
 	if (IsLocallyControlled())

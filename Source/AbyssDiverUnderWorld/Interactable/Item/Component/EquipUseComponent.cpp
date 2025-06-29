@@ -43,8 +43,8 @@ UEquipUseComponent::UEquipUseComponent()
 	SetIsReplicatedByDefault(true);
 
 	Amount = 0;
-	DrainPerSecond = 0.1f;
-	NightVisionDrainPerSecond = 0.1f;
+	DrainPerSecond = 0.5f;
+	NightVisionDrainPerSecond = 0.5f;
 	DrainAcc = 0.f;
 	bBoostActive = false;
 	bOriginalExposureCached = false;

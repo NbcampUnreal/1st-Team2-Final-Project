@@ -224,6 +224,9 @@ private:
 	void OnSlotEntryClicked(int32 ClickedSlotIndex);
 
 	UFUNCTION()
+	void OnSlotEntryDoubleClicked(int32 ClickedSlotIndex);
+
+	UFUNCTION()
 	void OnBuyListEntryClicked(int32 ClickedSlotIndex);
 
 	void OnAddButtonClicked(int32 Quantity);
@@ -246,6 +249,8 @@ private:
 	void RotateDoor(float DegreeFrom, float DegreeTo, float Rate);
 
 	void ClearSelectedInfos();
+
+	EShopCategoryTab GetCurrentTab();
 
 #pragma endregion
 
@@ -355,6 +360,11 @@ private:
 	EDoorState CurrentDoorState = EDoorState::Closed;
 
 	float CurrentDoorRate = 0.0f;
+
+	uint8 bIsDoorOpenSoundPlayed : 1 = false;
+	uint8 bIsDoorCloseSoundPlayed : 1 = false;
+	int32 DoorOpenAudioId = INDEX_NONE;
+	int32 DoorCloseAudioId = INDEX_NONE;
 
 #pragma endregion
 

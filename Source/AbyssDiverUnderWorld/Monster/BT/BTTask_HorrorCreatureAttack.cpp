@@ -86,11 +86,11 @@ void UBTTask_HorrorCreatureAttack::HandleAttackMontageEnded(UAnimMontage* Montag
 
 	if (!CachedHorrorCreature->GetSwallowedPlayer())  // If swallowed, the state does not change
 	{
-		Blackboard->SetValueAsEnum(MonsterStateKey.SelectedKeyName, (uint8)EMonsterState::Chase);
+		CachedHorrorCreature->SetMonsterState(EMonsterState::Chase);
 	}
 	else
 	{
-		Blackboard->SetValueAsEnum(MonsterStateKey.SelectedKeyName, (uint8)EMonsterState::Flee);
+		CachedHorrorCreature->SetMonsterState(EMonsterState::Flee);
 	}
 	FinishLatentTask(*CachedOwnerComp, EBTNodeResult::Succeeded);
 }
