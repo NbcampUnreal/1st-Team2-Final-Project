@@ -224,6 +224,9 @@ private:
 	void OnSlotEntryClicked(int32 ClickedSlotIndex);
 
 	UFUNCTION()
+	void OnSlotEntryDoubleClicked(int32 ClickedSlotIndex);
+
+	UFUNCTION()
 	void OnBuyListEntryClicked(int32 ClickedSlotIndex);
 
 	void OnAddButtonClicked(int32 Quantity);
@@ -246,6 +249,8 @@ private:
 	void RotateDoor(float DegreeFrom, float DegreeTo, float Rate);
 
 	void ClearSelectedInfos();
+
+	EShopCategoryTab GetCurrentTab();
 
 #pragma endregion
 
