@@ -210,6 +210,15 @@ void AMonster::OnDeath()
 
 	UnPossessAI();
 	M_OnDeath();
+	MonsterRaderOff();
+
+	FTimerHandle DestroyTimerHandle;
+	if (HasAuthority())
+	{
+		GetWorldTimerManager().SetTimer(
+			DestroyTimerHandle, this, &AMonster::DelayDestroyed, 30.0f, false
+		);
+	}
 
 	SetMonsterState(EMonsterState::Death);
 }
@@ -549,6 +558,14 @@ void AMonster::ForceRemoveDetection(AActor* Actor)
 			}
 		}
 	}
+	else if (TargetActor == nullptr)
+	{
+		AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor);
+		if (Player)
+		{
+			Player->OnUntargeted();
+		}
+	}
 }
 
 bool AMonster::IsAnimMontagePlaying() const
@@ -558,6 +575,23 @@ bool AMonster::IsAnimMontagePlaying() const
 		return AnimInstance->Montage_IsPlaying(CurrentAttackAnim);
 	}
 	return false;
+}
+
+void AMonster::DelayDestroyed()
+{
+	if (HasAuthority())
+	{
+		Destroy();
+	}
+}
+
+void AMonster::MonsterRaderOff()
+{
+	URadarReturnComponent* RaderComponent = Cast<URadarReturnComponent>(GetComponentByClass(URadarReturnComponent::StaticClass()));
+	if (RaderComponent)
+	{
+		RaderComponent->SetIgnore(true);
+	}
 }
 
 void AMonster::SetMonsterState(EMonsterState NewState)

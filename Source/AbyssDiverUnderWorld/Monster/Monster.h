@@ -68,6 +68,11 @@ public:
 	UFUNCTION(BlueprintCallable)
 	bool IsAnimMontagePlaying() const;
 
+	UFUNCTION()
+	void DelayDestroyed();
+
+	UFUNCTION()
+	void MonsterRaderOff();
 
 protected:
 	void ApplyPhysicsSimulation();
