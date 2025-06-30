@@ -176,6 +176,9 @@ public:
 	void OnAttackCollisionOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
 							UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
+	// 몬스터 죽었을 때 레이더에서 Off 되도록
+	UFUNCTION()
+	void DeathToRaderOff();
 protected:
 	void ApplyPhysicsSimulation();
 	
