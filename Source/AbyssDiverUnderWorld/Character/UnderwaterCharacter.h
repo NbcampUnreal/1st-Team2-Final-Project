@@ -896,7 +896,7 @@ private:
 	
 	/** 현재 캐릭터를 타겟팅하고 있는 Actor의 개수. */
 	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	int TargetingActorCount;
+	int32 TargetingActorCount;
 
 	// Tick을 썼다면 쉽게 관리했겠지만 현재로는 Timer를 사용해서 관리한다.
 	/** 체력 회복 중지 상태에서 체력 회복을 시작하기 위해 필요한 시간 */

@@ -20,6 +20,7 @@ AADPlayerState::AADPlayerState()
 	, PlayerIndex(INDEX_NONE)
 	, bHasBeenDead(false)
 	, LastOxygenRemain(0.0f)
+	, bIsDead(false)
 {
 	bReplicates = true;
 
