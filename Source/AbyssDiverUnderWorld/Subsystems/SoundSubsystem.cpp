@@ -184,6 +184,71 @@ int32 USoundSubsystem::PlayAttach(const ESFX_UI& SFXType, USceneComponent* Attac
 	return Play3DInternal(SFXUIData[int32(SFXType)]->Sound, FVector::ZeroVector, AttachComp, Volume, bShouldUseFadeIn, FadeInDuration, FadeInCurve);
 }
 
+int32 USoundSubsystem::PlayAttach(const ESFX_BGM& SFXType, USceneComponent* AttachComp, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve)
+{
+	return Play3DInternal(SFXBGMData[int32(SFXType)]->Sound, FVector::ZeroVector, AttachComp, Volume, bShouldUseFadeIn, FadeInDuration, FadeInCurve);
+}
+
+int32 USoundSubsystem::K2_Play2DSFX(const ESFX& SFXType, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve)
+{
+	return Play2D(SFXType, Volume, bShouldUseFadeIn, FadeInDuration, FadeInCurve);
+}
+
+int32 USoundSubsystem::K2_Play2DMonster(const ESFX_Monster& SFXType, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve)
+{
+	return Play2D(SFXType, Volume, bShouldUseFadeIn, FadeInDuration, FadeInCurve);
+}
+
+int32 USoundSubsystem::K2_Play2DUI(const ESFX_UI& SFXType, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve)
+{
+	return Play2D(SFXType, Volume, bShouldUseFadeIn, FadeInDuration, FadeInCurve);
+}
+
+int32 USoundSubsystem::K2_PlayBGM(const ESFX_BGM& SFXType, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve)
+{
+	return PlayBGM(SFXType, Volume, bShouldUseFadeIn, FadeInDuration, FadeInCurve);
+}
+
+int32 USoundSubsystem::K2_PlayAmbient(const ESFX_Ambient& SFXType, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve)
+{
+	return PlayAmbient(SFXType, Volume, bShouldUseFadeIn, FadeInDuration, FadeInCurve);
+}
+
+int32 USoundSubsystem::K2_PlayAtSFX(const ESFX& SFXType, const FVector& Position, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve)
+{
+	return PlayAt(SFXType, Position, Volume, bShouldUseFadeIn, FadeInDuration, FadeInCurve);
+}
+
+int32 USoundSubsystem::K2_PlayAtMonster(const ESFX_Monster& SFXType, const FVector& Position, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve)
+{
+	return PlayAt(SFXType, Position, Volume, bShouldUseFadeIn, FadeInDuration, FadeInCurve);
+}
+
+int32 USoundSubsystem::K2_PlayAtUI(const ESFX_UI& SFXType, const FVector& Position, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve)
+{
+	return PlayAt(SFXType, Position, Volume, bShouldUseFadeIn, FadeInDuration, FadeInCurve);
+}
+
+int32 USoundSubsystem::K2_PlayAttachSFX(const ESFX& SFXType, USceneComponent* AttachComp, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve)
+{
+	return PlayAttach(SFXType, AttachComp, Volume, bShouldUseFadeIn, FadeInDuration, FadeInCurve);
+}
+
+int32 USoundSubsystem::K2_PlayAttachMonster(const ESFX_Monster& SFXType, USceneComponent* AttachComp, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve)
+{
+	return PlayAttach(SFXType, AttachComp, Volume, bShouldUseFadeIn, FadeInDuration, FadeInCurve);
+}
+
+int32 USoundSubsystem::K2_PlayAttachUI(const ESFX_UI& SFXType, USceneComponent* AttachComp, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve)
+{
+	return PlayAttach(SFXType, AttachComp, Volume, bShouldUseFadeIn, FadeInDuration, FadeInCurve);
+}
+
+int32 USoundSubsystem::K2_PlayAttachBGM(const ESFX_BGM& SFXType, USceneComponent* AttachComp, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve)
+{
+	return PlayAttach(SFXType, AttachComp, Volume, bShouldUseFadeIn, FadeInDuration, FadeInCurve);
+}
+
 void USoundSubsystem::StopAllBGM()
 {
 	for (const auto& ActivatedBGM : ActivatedBGMComponents)

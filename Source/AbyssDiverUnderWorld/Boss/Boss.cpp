@@ -777,6 +777,8 @@ void ABoss::OnDeath()
 {
 	M_OnDeath();
 	
+	DeathToRaderOff();
+
 	if (IsValid(GetController()))
 	{
 		GetController()->StopMovement();
@@ -957,6 +959,15 @@ void ABoss::OnAttackCollisionOverlapEnd(UPrimitiveComponent* OverlappedComp, AAc
 	if (!IsValid(Player)) return;
 	
 	bIsAttackCollisionOverlappedPlayer = false;
+}
+
+void ABoss::DeathToRaderOff()
+{
+	URadarReturnComponent* RaderComponent = Cast<URadarReturnComponent>(GetComponentByClass(URadarReturnComponent::StaticClass()));
+	if (RaderComponent)
+	{
+		RaderComponent->SetIgnore(true);
+	}
 }
 
 void ABoss::ApplyPhysicsSimulation()

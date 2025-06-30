@@ -73,17 +73,27 @@ void AMonster::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	FVector Velocity = GetVelocity();
-	if (Velocity.SizeSquared() > KINDA_SMALL_NUMBER)
+	if (TargetActor)
 	{
-		FRotator CurrentRotation = GetActorRotation();
-		FRotator TargetRotation = Velocity.GetSafeNormal().Rotation();
-		TargetRotation.Roll = 0.f;
-
-		float InterpSpeed = 6.0f;
-		FRotator NewRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, DeltaTime, InterpSpeed);
-
-		SetActorRotation(NewRotation);
+		if (!IsAnimMontagePlaying())
+		{
+			if (GetMonsterState() == EMonsterState::Flee)
+			{
+				RotateToMovementForward(DeltaTime);
+			}
+			else
+			{
+				RotateToTarget(DeltaTime);
+			}
+		}
+		else
+		{
+			return;
+		}
+	}
+	else
+	{
+		RotateToMovementForward(DeltaTime);
 	}
 }
 
@@ -200,6 +210,15 @@ void AMonster::OnDeath()
 
 	UnPossessAI();
 	M_OnDeath();
+	MonsterRaderOff();
+
+	FTimerHandle DestroyTimerHandle;
+	if (HasAuthority())
+	{
+		GetWorldTimerManager().SetTimer(
+			DestroyTimerHandle, this, &AMonster::DelayDestroyed, 30.0f, false
+		);
+	}
 
 	SetMonsterState(EMonsterState::Death);
 }
@@ -227,15 +246,48 @@ void AMonster::ApplyPhysicsSimulation()
 	GetMesh()->SetSimulatePhysics(true);
 }
 
+void AMonster::RotateToTarget(float DeltaTime)
+{
+	FVector MonsterLocation = GetActorLocation();
+	FVector TargetLocation = TargetActor->GetActorLocation();
+	FVector DirectionToTarget = (TargetLocation - MonsterLocation).GetSafeNormal();
+
+	FRotator MonsterCurrentRotation = GetActorRotation();
+
+	FRotator TargetToRotation = DirectionToTarget.Rotation();
+	TargetToRotation.Roll = 0.0f;
+
+	float InterpSpeed = 6.0f;
+	FRotator NewRotation = FMath::RInterpTo(MonsterCurrentRotation, TargetToRotation, DeltaTime, InterpSpeed);
+
+	SetActorRotation(NewRotation);
+}
+
+void AMonster::RotateToMovementForward(float DeltaTime)
+{
+	FVector Velocity = GetVelocity();
+	if (Velocity.SizeSquared() > KINDA_SMALL_NUMBER)
+	{
+		FRotator CurrentRotation = GetActorRotation();
+		FRotator TargetRotation = Velocity.GetSafeNormal().Rotation();
+		TargetRotation.Roll = 0.f;
+
+		float InterpSpeed = 6.0f;
+		GetMonsterState() == EMonsterState::Investigate ? InterpSpeed = 15.0f : InterpSpeed = 6.0f;
+		FRotator NewRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, DeltaTime, InterpSpeed);
+
+		SetActorRotation(NewRotation);
+	}
+}
+
 void AMonster::PlayAttackMontage()
 {
 	if (!HasAuthority()) return;
 
-	UAnimInstance* AnimInst = GetMesh()->GetAnimInstance();
-	if (!AnimInst) return;
+	if (!AnimInstance) return;
 
 	// If any montage is playing, prevent duplicate playback
-	if (AnimInst->IsAnyMontagePlaying()) return;
+	if (AnimInstance->IsAnyMontagePlaying()) return;
 	
 	const uint8 AttackType = FMath::RandRange(0, AttackAnimations.Num() - 1);
 
@@ -245,6 +297,7 @@ void AMonster::PlayAttackMontage()
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Playing Attack Montage: %s"), *SelectedMontage->GetName());
 		M_PlayMontage(SelectedMontage);
+		CurrentAttackAnim = SelectedMontage;
 	}
 }
 
@@ -460,7 +513,7 @@ void AMonster::ForceRemoveDetection(AActor* Actor)
 			*Actor->GetName(), *CountPtr);
 
 		*CountPtr = 0;
-		RemoveDetection(Actor);
+		DetectionRefCounts.Remove(Actor);
 	}
 	else
 	{
@@ -505,6 +558,40 @@ void AMonster::ForceRemoveDetection(AActor* Actor)
 			}
 		}
 	}
+	else if (TargetActor == nullptr)
+	{
+		AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor);
+		if (Player)
+		{
+			Player->OnUntargeted();
+		}
+	}
+}
+
+bool AMonster::IsAnimMontagePlaying() const
+{
+	if (AnimInstance)
+	{
+		return AnimInstance->Montage_IsPlaying(CurrentAttackAnim);
+	}
+	return false;
+}
+
+void AMonster::DelayDestroyed()
+{
+	if (HasAuthority())
+	{
+		Destroy();
+	}
+}
+
+void AMonster::MonsterRaderOff()
+{
+	URadarReturnComponent* RaderComponent = Cast<URadarReturnComponent>(GetComponentByClass(URadarReturnComponent::StaticClass()));
+	if (RaderComponent)
+	{
+		RaderComponent->SetIgnore(true);
+	}
 }
 
 void AMonster::SetMonsterState(EMonsterState NewState)
@@ -521,8 +608,11 @@ void AMonster::SetMonsterState(EMonsterState NewState)
 		MonsterSoundComponent->S_StopAllLoopSound();
 	}
 
+	FString StateToString = StaticEnum<EMonsterState>()->GetNameStringByValue((int64)MonsterState);
+	FString NewStateToString = StaticEnum<EMonsterState>()->GetNameStringByValue((int64)NewState);
+	UE_LOG(LogTemp, Warning, TEXT("MonsterState changed: %s -> %s"), *StateToString, *NewStateToString);
+
 	MonsterState = NewState;
-	UE_LOG(LogTemp, Warning, TEXT("MonsterState changed: %d -> %d"), (int32)MonsterState, (int32)NewState);
 
 	if (UBlackboardComponent* BB = Cast<AAIController>(GetController())->GetBlackboardComponent())
 	{

@@ -70,6 +70,12 @@ public:
     void PlayNextPhaseAnim(int32 NextPhaseNumber);
     void SetCurrentPhaseOverlayVisible(bool bShouldVisible);
 
+    /** HUD 위젯을 숨긴다. */
+    void HideHudWidget();
+
+    /** 위젯을 보이게 한다. */
+    void ShowHudWidget();
+    
 protected:
     
     /** 관전 상태가 변경되었을 때 호출되는 함수 */
@@ -78,9 +84,6 @@ protected:
 
     /** 새로운 Pawn에 HUD 위젯을 설정하고 활성화 한다. */
     void SetupHudWidgetToNewPawn(APawn* NewPawn, APlayerController* PlayerController);
-
-    /** HUD 위젯을 숨긴다. */
-    void HideHudWidget();
 
     /** 관전 HUD 위젯을 보이게 한다. */
     void ShowSpectatorHUDWidget();

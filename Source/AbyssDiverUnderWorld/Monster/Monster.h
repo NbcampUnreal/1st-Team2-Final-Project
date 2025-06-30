@@ -65,8 +65,19 @@ public:
 	UFUNCTION()
 	void ForceRemoveDetection(AActor* Actor);
 
+	UFUNCTION(BlueprintCallable)
+	bool IsAnimMontagePlaying() const;
+
+	UFUNCTION()
+	void DelayDestroyed();
+
+	UFUNCTION()
+	void MonsterRaderOff();
+
 protected:
 	void ApplyPhysicsSimulation();
+	void RotateToTarget(float DeltaTime);
+	void RotateToMovementForward(float DeltaTime);
 
 #pragma endregion
 
@@ -90,6 +101,8 @@ protected:
 	TObjectPtr<UMonsterSoundComponent> MonsterSoundComponent;
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UAnimInstance> AnimInstance;
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<UAnimMontage> CurrentAttackAnim;
 	UPROPERTY(Replicated, BlueprintReadWrite)
 	EMonsterState MonsterState;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AI|AttackAnimation")
@@ -123,10 +136,13 @@ protected:
 #pragma region Getter. Setter
 public:
 	TArray<UAnimMontage*> GetAttackAnimations() { return AttackAnimations; }
+	
+	UFUNCTION(BlueprintCallable)
 	EMonsterState GetMonsterState() { return MonsterState; }
 	virtual void SetMonsterState(EMonsterState NewState);
 	void SetMaxSwimSpeed(float Speed);
 	int32 GetDetectionCount() const;
+
 
 	// Virtual function to get collision components for attack range determination externally
 	virtual USphereComponent* GetAttackHitComponent() const { return nullptr; }

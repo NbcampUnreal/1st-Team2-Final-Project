@@ -117,7 +117,7 @@ void AADSpectatorPawn::OnTargetViewChanged(AActor* NewViewTarget)
 	}
 }
 
-void AADSpectatorPawn::OnCharacterStateChanged(ECharacterState OldCharacterState, ECharacterState NewCharacterState)
+void AADSpectatorPawn::OnCharacterStateChanged(AUnderwaterCharacter* Character, ECharacterState OldCharacterState, ECharacterState NewCharacterState)
 {
 	if (NewCharacterState == ECharacterState::Death)
 	{
