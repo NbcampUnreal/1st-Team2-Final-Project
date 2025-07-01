@@ -176,7 +176,15 @@ float AMonster::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, 
 			OnMonsterDead.Broadcast(DamageCauser, this);
 
 			// Disable aggro when dead
-			ForceRemoveDetection(InstigatorPlayer);
+			if (TargetActor)
+			{
+				ForceRemoveDetection(TargetActor);
+			}
+			
+			if (InstigatorPlayer)
+			{
+				ForceRemoveDetection(InstigatorPlayer);
+			}
 		}
 		else
 		{
@@ -556,14 +564,6 @@ void AMonster::ForceRemoveDetection(AActor* Actor)
 				}
 				break;
 			}
-		}
-	}
-	else if (TargetActor == nullptr)
-	{
-		AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor);
-		if (Player)
-		{
-			Player->OnUntargeted();
 		}
 	}
 }

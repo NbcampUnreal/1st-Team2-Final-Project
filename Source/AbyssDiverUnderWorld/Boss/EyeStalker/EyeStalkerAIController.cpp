@@ -28,9 +28,12 @@ void AEyeStalkerAIController::InitTargetPlayer()
 	UPostProcessSettingComponent* PostProcessSettingComponent = Player->GetPostProcessSettingComponent();
 	if (!IsValid(PostProcessSettingComponent)) return;
 
+	Player->SetIsAttackedByEyeStalker(false);
 	PostProcessSettingComponent->C_DeactivateVignetteEffect();
 	
 	GetBlackboardComponent()->SetValueAsObject("TargetPlayer", nullptr);
+	GetBlackboardComponent()->SetValueAsBool("bIsAttacking", false);
+	GetBlackboardComponent()->SetValueAsBool("bHasDetected", false);
 }
 
 void AEyeStalkerAIController::RemoveTargetPlayer(AUnderwaterCharacter* Player)
@@ -60,8 +63,7 @@ void AEyeStalkerAIController::OnSightPerceptionFail(AUnderwaterCharacter* Player
 
 	if (IsValid(TargetPlayer) && TargetPlayer == Player)
 	{
-		Player->SetIsAttackedByEyeStalker(false);
-		GetBlackboardComponent()->SetValueAsObject("TargetPlayer", nullptr);
+		InitTargetPlayer();
 	}
 	
 	RemoveTargetPlayer(Player);

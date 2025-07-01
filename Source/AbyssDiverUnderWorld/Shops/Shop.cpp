@@ -540,6 +540,11 @@ void AShop::CloseShop(AUnderwaterCharacter* Requester)
 		return;
 	}
 
+	if (IsValid(ShopWidget) == false || ShopWidget->IsValidLowLevel() == false)
+	{
+		return;
+	}
+
 	ShopWidget->PlayCloseAnimation();
 
 	FTimerHandle RemoveWidgetTimerHandle;
@@ -547,6 +552,17 @@ void AShop::CloseShop(AUnderwaterCharacter* Requester)
 	GetWorld()->GetTimerManager().SetTimer(RemoveWidgetTimerHandle,
 		FTimerDelegate::CreateLambda([this]() 
 			{ 
+				UWorld* World = GetWorld();
+				if (IsValid(World) == false || World->IsValidLowLevel() == false || World->bIsTearingDown || World->IsInSeamlessTravel())
+				{
+					return;
+				}
+
+				if (IsValid(ShopWidget) == false || ShopWidget->IsValidLowLevel() == false)
+				{
+					return;
+				}
+
 				ShopWidget->RemoveFromParent();
 
 				APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0);

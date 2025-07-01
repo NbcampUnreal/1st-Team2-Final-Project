@@ -514,7 +514,7 @@ void AUnderwaterCharacter::SetEnvironmentState(EEnvironmentState State)
 		OxygenComponent->SetShouldConsumeOxygen(false);
 		bCanUseEquipment = false;
 		UpdateBlurEffect();
-		if (AADPlayerState* ADPlayerState = GetPlayerState<AADPlayerState>())
+		/*if (AADPlayerState* ADPlayerState = GetPlayerState<AADPlayerState>())
 		{
 			UADInventoryComponent* Inventory = ADPlayerState->GetInventory();
 			if (Inventory)
@@ -529,7 +529,7 @@ void AUnderwaterCharacter::SetEnvironmentState(EEnvironmentState State)
 					}
 				}
 			}
-		}
+		}*/
 		break;
 	default:
 		UE_LOG(AbyssDiver, Error, TEXT("Invalid Character State"));
@@ -844,14 +844,14 @@ void AUnderwaterCharacter::OnRep_CurrentTool()
 		*GetNameSafe(EquipRenderComp),
 		EquipRenderComp ? EquipRenderComp->IsRegistered() : 0);
 
-	if (PrevTool)
+	if (IsValid(PrevTool) && PrevTool->IsValidLowLevel())
 	{
 		EquipRenderComp->DetachItem(PrevTool);
 		PrevTool = nullptr;
 		LOG(TEXT("PrevTool"));
 	}
 
-	if (CurrentTool)
+	if (IsValid(CurrentTool) && CurrentTool->IsValidLowLevel())
 	{
 		if (USkeletalMeshComponent* Src = CurrentTool->FindComponentByClass<USkeletalMeshComponent>())
 		{
@@ -860,7 +860,7 @@ void AUnderwaterCharacter::OnRep_CurrentTool()
 		}
 		EquipRenderComp->AttachItem(CurrentTool, LaserSocketName);
 		PrevTool = CurrentTool;                   // 다음 Detach 대비
-		LOG(TEXT("CurrentTool's Owner : %s"), *CurrentTool->GetOwner()->GetName());
+		//LOG(TEXT("CurrentTool's Owner : %s"), *CurrentTool->GetOwner()->GetName());
 	}
 }
 

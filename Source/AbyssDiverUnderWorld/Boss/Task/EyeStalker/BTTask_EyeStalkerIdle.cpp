@@ -36,8 +36,6 @@ void UBTTask_EyeStalkerIdle::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* 
 
 	FEyeStalkerIdleMemory* TaskMemory = (FEyeStalkerIdleMemory*)NodeMemory;
 	if (!TaskMemory) return;
-
-	// @TODO: 플레어건 반경에 존재할 경우 얼리 리턴
 	
 	// TargetPlayers 전체를 대상으로 이동속도 확인
 	for (AUnderwaterCharacter* TargetPlayer : TaskMemory->AIController->GetTargetPlayers())
