@@ -126,6 +126,7 @@ public:
 
 	UFUNCTION(NetMulticast, Unreliable)
 	void M_PlayBloodEffect(const FVector& Location, const FRotator& Rotation);
+	void M_PlayBloodEffect_Implementation(const FVector& Location, const FRotator& Rotation);
 	
 	/** 보스의 체력이 0이하로 떨어지는 경우 사망 상태로 전이 */
 	virtual void OnDeath();
