@@ -30,14 +30,14 @@
 -  몰입감 있는 연출 : 언리얼 엔진을 활용한 리얼타임 심해 연출, 음향과 시각 효과 <br>
 
 📌 개발 목표 :<br>
-    → 현실감 있는 심해 생존/공포 경험 제공<br>
-    → 동적인 AI와 플레이어의 상호작용, 다양한 플레이 방식 지원<br>
-    → 팀원 간의 협력 및 전략적 플레이 유도<br><br>
+- 현실감 있는 심해 생존/공포 경험 제공
+- 동적인 AI와 플레이어의 상호작용, 다양한 플레이 방식 지원
+- 팀원 간의 협력 및 전략적 플레이 유도<br>
 
 📌 주요 차별점 :<br>
-    → 3D 네비게이션(3D NavMesh) 및 커스텀 AI 설계를 통한 자유로운 이동과 추격<br>
-    → 플레이어 조명의 노출, 소리 등 다양한 변수에 반응하는 적 인공지능 구현<br>
-    → 심해 특유의 압박감과 긴장감을 살리는 환경(레벨)/사운드 디자인<br><br>
+- 3D 네비게이션(3D NavMesh) 및 커스텀 AI 설계를 통한 자유로운 이동과 추격
+- 플레이어 조명의 노출, 소리 등 다양한 변수에 반응하는 적 인공지능 구현
+- 심해 특유의 압박감과 긴장감을 살리는 환경(레벨)/사운드 디자인<br>
 
 ---
 ## 🎥 Video (트레일러)
@@ -55,13 +55,18 @@
 
 ---
 ### Desctiption Part / Email or Blog Link <br>
-- MultiPlayGame like HyperActionFight 
-- Direction, Network, UI, Gameflow, Optimization : 지성현 /  <br>
-- Character, Animation, SkillSystem : 정우영  /  [개발블로그](https://velog.io/@buu1147/2025-04-18-KPT%ED%9A%8C%EA%B3%A0)<br>
-- Character, Animation, SkillSystem : 정혜창 / [개발블로그](https://velog.io/@hch9097/posts)<br>
-- GameMode, Network, GameSession, Gameflow  : 최원석 /  [개발블로그](https://onestone13.tistory.com/)<br>
-- UI, Weapon, Character, Movie, SkillSystem  : 한가윤 / [개발블로그](https://yoosorang.tistory.com) [Git](https://github.com/swehio))<br>
-- UI, ShopSystem, EconomySystem  : 최세훈 /  <br>
+- MultiPlay HorrorAdventure Game
+- PM + 기획 총괄  : 양우창   <br>
+- 네트워크 / 동기화 총괄 : 김강연    <br>
+- Lead Programmer, Boss/Monster AI, 몬스터 스폰 시스템 담당 : 김대영  <br>
+- 캐릭터 시스템 총괄  : 김경수 /  [[개발블로그](https://muji-in.tistory.com/)]<br>
+- 기믹 + 특수 이펙트 구현  : 양성은 / [[개발블로그](https://yoosorang.tistory.com), [Git](https://github.com/swehio))]<br>
+- 레벨 디자인 + QA  : 정완훈 /  <br>
+- 몬스터 AI, 몬스터 사운드 담당  : 정혜창 /  [[개발블로그](https://velog.io/@hch9097/posts)]<br>
+- 자원 채집 / 아이템 시스템 개발  : 최원석 /  [[개발블로그](https://onestone13.tistory.com)]<br>
+- UI / 인벤토리 / 영상 제작  : 한가윤 / [[개발블로그](https://yoosorang.tistory.com)] <br>
+- 게임 시스템 총괄 / 상점 시스템  : 홍성래 / [[Notion](https://www.notion.so/15b13fae4707807c8b62faf247836811)] <br>
+
 
 ---
 ## Project Part Directory And Main Features <br>
