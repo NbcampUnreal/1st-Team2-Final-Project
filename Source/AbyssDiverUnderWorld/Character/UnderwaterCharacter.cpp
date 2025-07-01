@@ -2245,7 +2245,7 @@ void AUnderwaterCharacter::Radar(const FInputActionValue& InputActionValue)
 
 void AUnderwaterCharacter::EquipSlot1(const FInputActionValue& InputActionValue)
 {
-	if (CharacterState != ECharacterState::Normal || !bCanUseEquipment)
+	if (CharacterState != ECharacterState::Normal || !bCanUseEquipment || !CachedInventoryComponent)
 	{
 		return;
 	}
@@ -2254,7 +2254,7 @@ void AUnderwaterCharacter::EquipSlot1(const FInputActionValue& InputActionValue)
 
 void AUnderwaterCharacter::EquipSlot2(const FInputActionValue& InputActionValue)
 {
-	if (CharacterState != ECharacterState::Normal || !bCanUseEquipment)
+	if (CharacterState != ECharacterState::Normal || !bCanUseEquipment || !CachedInventoryComponent)
 	{
 		return;
 	}
@@ -2263,7 +2263,7 @@ void AUnderwaterCharacter::EquipSlot2(const FInputActionValue& InputActionValue)
 
 void AUnderwaterCharacter::EquipSlot3(const FInputActionValue& InputActionValue)
 {
-	if (CharacterState != ECharacterState::Normal || !bCanUseEquipment)
+	if (CharacterState != ECharacterState::Normal || !bCanUseEquipment || !CachedInventoryComponent)
 	{
 		return;
 	}
