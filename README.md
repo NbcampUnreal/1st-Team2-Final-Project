@@ -50,13 +50,13 @@
 
 ---
 
-## Game Flow
+## ▶️ Game Flow
 
 
 <img width="7280" alt="2조 Abyss Diver Gameflow(최종)" src="https://github.com/user-attachments/assets/c22a6251-7cee-4d8c-a61e-1962af64ec4e" />
 
 ---
-### Desctiption Part / Email or Blog Link <br>
+## 👪 Desctiption Part / ✉️ Email or Blog Link <br>
 - PM + 기획 총괄  : 양우창   <br>
 - 네트워크 / 동기화 총괄 : 김강연    <br>
 - Lead Programmer, Boss/Monster AI, 몬스터 스폰 시스템 담당 : 김대영  <br>
@@ -70,3 +70,19 @@
 
 
 ---
+
+## 🧪 테스트 방법
+- 스팀 로그인 → 게임 실행 후 Create team → 세션 접속
+- 캐릭터 생성 후 맵(난이도), 미션 선택
+- GameStart 버튼 누르기
+
+---
+
+
+## 🔖 주의사항
+본 게임은 PC 환경에 최적화되어 있으며, 조이스틱/패드 미지원 입니다. (현재는 키보드, 마우스 전용)
+
+---
+
+📄 라이센스
+본 프로젝트는 비상업적 목적으로 개발되었습니다. 일부 에셋은 Epic Games Marketplace 및 cgtrader에서 구매 혹은 CC 라이선스로 사용되었습니다.
