@@ -1,5 +1,7 @@
 <div align = left>
 
+# ABYSS DIVER : Underworld
+
 ## 🎮 게임 소개
 
 > 깊은 심해, 자원이 고갈된 지구의 마지막 미개척지. <br><br>
@@ -40,8 +42,8 @@
 
 ---
 ## 🎥 Video (트레일러)
-![스크린샷 2025-07-01 155352](https://github.com/user-attachments/assets/493eb057-b5f5-4069-8862-eb47b7c2ee97)
-[https://youtu.be/JVUk93A31gM](https://youtu.be/nGzMUnRa-vc)
+[![Abyss Diver Trailer](https://github.com/user-attachments/assets/493eb057-b5f5-4069-8862-eb47b7c2ee97)](https://youtu.be/nGzMUnRa-vc)
+[트레일러 영상 유튜브 링크](https://youtu.be/nGzMUnRa-vc)
 
 ---
 ## 🛠️ 기술 스택
@@ -55,7 +57,7 @@
 <img width="7280" alt="2조 Abyss Diver Gameflow(최종)" src="https://github.com/user-attachments/assets/c22a6251-7cee-4d8c-a61e-1962af64ec4e" />
 
 ---
-## 👪 Desctiption Part / ✉️ Email or Blog Link <br>
+## 👪 Desctiption Part / ✉ Email or Blog Link <br>
 - PM + 기획 총괄  : 양우창   <br>
 - 네트워크 / 동기화 총괄 : 김강연    <br>
 - Lead Programmer, Boss/Monster AI, 몬스터 스폰 시스템 담당 : 김대영  <br>
