@@ -112,7 +112,7 @@ void AADInGameMode::BeginPlay()
 		}
 	}
 
-	PlayerAliveInfos.Init(true, GetNumPlayers());
+	PlayerAliveInfos.Init(EPlayerAliveInfo::Alive, GetNumPlayers());
 }
 
 void AADInGameMode::StartPlay()
@@ -202,6 +202,16 @@ void AADInGameMode::Logout(AController* Exiting)
 
 	MissionSubsystem->RemoveAllMissions();
 
+
+	int32 LogoutPlayerIndex = PS->GetPlayerIndex();
+	if (PlayerAliveInfos.IsValidIndex(LogoutPlayerIndex) == false)
+	{
+		LOGV(Error, TEXT("Not Valid Player Index"));
+		return;
+	}
+
+	PlayerAliveInfos[LogoutPlayerIndex] = EPlayerAliveInfo::Absent;
+	
 	LOGVN(Error, TEXT("Logout, Who : %s, NetId : %s"), *Exiting->GetName(), *ExitingId);
 
 }
@@ -234,21 +244,21 @@ void AADInGameMode::ReadyForTravelToCamp()
 		return;
 	}
 
-	for (AADPlayerState* ADPlayerState : TActorRange<AADPlayerState>(GetWorld()))
-	{
-		APawn* Player = ADPlayerState->GetPawn();
-		if (Player == nullptr || IsValid(Player) == false || Player->IsValidLowLevel() == false || Player->IsPendingKillPending())
-		{
-			LOGV(Error, TEXT("Not Valid Player, PlayeStateName : %s"), *ADPlayerState->GetName());
-			continue;
-		}
+	//for (AADPlayerState* ADPlayerState : TActorRange<AADPlayerState>(GetWorld()))
+	//{
+	//	APawn* Player = ADPlayerState->GetPawn();
+	//	if (Player == nullptr || IsValid(Player) == false || Player->IsValidLowLevel() == false || Player->IsPendingKillPending())
+	//	{
+	//		LOGV(Error, TEXT("Not Valid Player, PlayeStateName : %s"), *ADPlayerState->GetName());
+	//		continue;
+	//	}
 
-		ADPlayerState->GetPawn()->bAlwaysRelevant = true;
-	}
+	//	ADPlayerState->GetPawn()->bAlwaysRelevant = true;
+	//}
 
-	ForceNetUpdate();
+	//ForceNetUpdate();
 
-	LOGV(Log, TEXT("Releveant On"));
+	//LOGV(Log, TEXT("Releveant On"));
 
 	TimerManager.ClearTimer(SyncTimerHandle);
 	const float WaitForSync = 1.0f;
@@ -527,14 +537,19 @@ void AADInGameMode::OnCharacterStateChanged(AUnderwaterCharacter* Character, ECh
 		return;
 	}
 
-	PlayerAliveInfos[PlayerIndex] = (NewCharacterState == ECharacterState::Normal);
+	if (PlayerAliveInfos[PlayerIndex] == EPlayerAliveInfo::Absent)
+	{
+		return;
+	}
+
+	PlayerAliveInfos[PlayerIndex] = (NewCharacterState == ECharacterState::Normal) ? EPlayerAliveInfo::Alive : EPlayerAliveInfo::Dead;
 
 	LOGV(Log, TEXT("Begin, Old State : %d,  NewCharacterState : %d, PlayerNum : %d, PlayerIndex : %d"), OldCharacterState, NewCharacterState, GetNumPlayers(), PlayerIndex);
 
 	bool bIsGameOver = true;
-	for (const bool& AliveInfo : PlayerAliveInfos)
+	for (const EPlayerAliveInfo& AliveInfo : PlayerAliveInfos)
 	{
-		if (AliveInfo)
+		if (AliveInfo == EPlayerAliveInfo::Alive)
 		{
 			bIsGameOver = false;
 			break;
