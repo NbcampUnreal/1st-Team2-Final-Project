@@ -1,7 +1,6 @@
 
 <div align = left>
   
----
 ## 🎮 게임 소개
 
 > 깊은 심해, 자원이 고갈된 지구의 마지막 미개척지. <br><br>
@@ -12,35 +11,44 @@
 
 <img width="717" alt="2조 Abyss Diver 프로젝트 이미지(3)" src="https://github.com/user-attachments/assets/30ea249a-2e6a-4c33-afb7-4dadc3d98678" />
 
+---
 
-### Project : AbyssDiver : Underworld <br>
-### Duration : 2025.03.31 ~ 2025.04.18 <br>
-### Genre : Multiplayer Arena Fighting Game <br>
-### Project Convention <br>
-- Code   : PascalCase
-- Git    : Rebase And Merge
-- Directory && Commit && Unreal
-- https://github.com/NbcampUnreal/1st-Team2-Final-Project
+## 🎮 게임 개요
+
+📌 장르 : 멀티플레이 협동 호러 서바이벌
+
+📌 플랫폼 : PC (Unreal Engine 5 기반)
+
+📌 개발 기간 : 2025.05.07 ~ 2025.07.02
+
+📌 주요 특징 :
+    → 심해 탐험 : 제한된 시야, 빛과 산소 등 리소스 관리 요소를 통한 몰입감 높은 탐험
+    → AI 몬스터 : 빛, 소리, 움직임에 반응하는 AI 적, 다양한 상태 전이 및 추적/회피 행동
+    → 멀티플레이 : 네트워크 기반 협동/경쟁 모드 지원 (최대 4인)
+    → 환경 상호작용 : 해류, 구조물 탐사, 광석 등 환경과의 상호작용
+    → 몰입감 있는 연출 : 언리얼 엔진을 활용한 리얼타임 심해 연출, 음향과 시각 효과
+
+📌 개발 목표 :
+    → 현실감 있는 심해 생존/공포 경험 제공
+    → 동적인 AI와 플레이어의 상호작용, 다양한 플레이 방식 지원
+    → 팀원 간의 협력 및 전략적 플레이 유도
+
+📌 주요 차별점 :
+    → 3D 네비게이션(3D NavMesh) 및 커스텀 AI 설계를 통한 자유로운 이동과 추격
+    → 플레이어 조명의 노출, 소리 등 다양한 변수에 반응하는 적 인공지능 구현
+    → 심해 특유의 압박감과 긴장감을 살리는 환경(레벨)/사운드 디자인
 
 ---
-## Video
+## 🎥 Video (트레일러)
 ![스크린샷 2025-07-01 155352](https://github.com/user-attachments/assets/493eb057-b5f5-4069-8862-eb47b7c2ee97)
 [https://youtu.be/JVUk93A31gM](https://youtu.be/nGzMUnRa-vc)
 
 ---
-## 기술 스택
+## 🛠️ 기술 스택
 [![My Skills](https://skillicons.dev/icons?i=cpp,visualstudio,git,github,rider,unreal,notion&theme=light)](https://skillicons.dev)
 
 ---
-## 목적
-- 객체지향과 디자인패턴을 의미있게 적용
-- 원활환 협업을 위한 Wiki 작성된 깃 컨벤션 및 코드컨벤션 적용
-- GameSession, RPC, Replecates를 이용하여 Network 환경조성 
-- 멀티플레이 환경에서 작동하기 위해 게임 최적화 적용
-- 수중 환경을 조성하기 위한 여러 기술 접목
-- 유효성검사 및 로깅을 통한 유지보수성 및 안정성을 향상시킨 코드 및 블루프린트 작성
 
----
 ## Work Flow
 
 
