@@ -5,6 +5,7 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Monster/EMonsterState.h"
 #include "Monster/Monster.h"
+#include "Character/UnderwaterCharacter.h"
 #include "AIController.h"
 
 UBTService_SetMonsterState::UBTService_SetMonsterState()
@@ -35,13 +36,20 @@ void UBTService_SetMonsterState::TickNode(UBehaviorTreeComponent& OwnerComp, uin
 	{
 	case EMonsterState::Chase:
 	{
-		AActor* TargetActor = Cast<AActor>(Blackboard->GetValueAsObject(TargetActorKey.SelectedKeyName));
-
-		if (!IsValid(TargetActor))
+		if (Monster->TargetActor == nullptr)
 		{
-			Blackboard->ClearValue(TargetActorKey.SelectedKeyName);
 			Monster->SetMonsterState(EMonsterState::Patrol);
-			Monster->ForceRemoveDetection(TargetActor);
+		}
+		else
+		{
+			AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Monster->TargetActor);
+			if (Player)
+			{
+				if (Player->GetCharacterState() == ECharacterState::Death)
+				{
+					Monster->SetMonsterState(EMonsterState::Patrol);
+				}
+			}
 		}
 		break;
 	}

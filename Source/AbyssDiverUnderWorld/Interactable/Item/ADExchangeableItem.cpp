@@ -19,7 +19,7 @@ void AADExchangeableItem::BeginPlay()
 	CalculateTotalPrice();
 
 	DynamicMaterial = MeshComponent->CreateAndSetMaterialInstanceDynamic(0);
-	if (DynamicMaterial)
+	if (IsValid(DynamicMaterial) && DynamicMaterial->IsValidLowLevel())
 	{
 		DynamicMaterial->SetScalarParameterValue(TEXT("GlowPower"), MinGlow);
 	}
@@ -70,7 +70,8 @@ void AADExchangeableItem::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 
 void AADExchangeableItem::UpdateGlow()
 {
-	if (!DynamicMaterial) return;
+	if (!IsValid(DynamicMaterial) || !DynamicMaterial->IsValidLowLevel()) 
+		return;
 
 	const float TimeSec = GetWorld()->GetTimeSeconds();
 	const float Raw = FMath::Sin(TimeSec * PulseFrequency * 2 * PI);

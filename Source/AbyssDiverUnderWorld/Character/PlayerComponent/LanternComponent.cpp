@@ -287,7 +287,6 @@ void ULanternComponent::HandleUnexposedMonsters(float DeltaTime)
 
 		if (UnexposeTime >= RemoveDelayTime)
 		{
-			Monster->RemoveDetection(GetOwner());
 			It.RemoveCurrent();
 			MonsterExposeTimeMap.Remove(Monster);
 		}

@@ -44,7 +44,12 @@ void ASeaweedInteractiveActor::BeginPlay()
 
     PlayerActor = UGameplayStatics::GetPlayerCharacter(GetWorld(), 0);
 
-    ConfigureAngularDrives(); // 🔥 물리 세팅 한번에 초기화
+    ConfigureAngularDrives();
+    SeaweedMesh->SetAllBodiesBelowSimulatePhysics("Bone_000", true, false);
+    SeaweedMesh->SetEnableGravity(false);
+    SeaweedMesh->SetConstraintMode(EDOFMode::SixDOF);
+    SeaweedMesh->WakeAllRigidBodies();
+    SeaweedMesh->SetPhysicsBlendWeight(1.0f);
 }
 
 void ASeaweedInteractiveActor::Tick(float DeltaTime)
@@ -57,14 +62,12 @@ void ASeaweedInteractiveActor::Tick(float DeltaTime)
 void ASeaweedInteractiveActor::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
     UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-    // Optional
     LastHitLocation = SweepResult.ImpactPoint;
 }
 
 void ASeaweedInteractiveActor::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
     UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-    // Optional
 }
 
 void ASeaweedInteractiveActor::ApplyPlayerProximityTorque()
@@ -85,17 +88,14 @@ void ASeaweedInteractiveActor::ApplyPlayerProximityTorque()
         if (Strength > 0.f)
         {
             FVector Direction = (BoneLocation - LastHitLocation).GetSafeNormal();
-            Direction.Z = 0.25f; // 살짝 위로 밀려나듯이
+            Direction.Z = 0.25f;
             Direction.Normalize();
 
             FVector Force = Direction * Strength * 18000.f;
-
-            UE_LOG(LogTemp, Warning, TEXT("ApplyForce to %s | Strength: %.2f"), *BoneName.ToString(), Strength);
             SeaweedMesh->AddForce(Force, BoneName, true);
         }
     }
 }
-
 
 void ASeaweedInteractiveActor::UpdatePhysicsBlendWeight()
 {
@@ -107,7 +107,7 @@ void ASeaweedInteractiveActor::UpdatePhysicsBlendWeight()
     USeaweedAnimInstance* AnimInstance = Cast<USeaweedAnimInstance>(SeaweedMesh->GetAnimInstance());
     if (AnimInstance)
     {
-        AnimInstance->PhysicsBlendAlpha = Alpha;
+        AnimInstance->SetPhysicsBlendAlpha(1.0f);
     }
 }
 
@@ -120,33 +120,42 @@ void ASeaweedInteractiveActor::ConfigureAngularDrives()
     for (int32 i = 0; i < AllStemBoneNames.Num(); ++i)
     {
         const FName& BoneName = AllStemBoneNames[i];
+        float Blend = static_cast<float>(i) / (AllStemBoneNames.Num() - 1);
 
-        float Blend = static_cast<float>(i) / AllStemBoneNames.Num();
+        float Stiffness = FMath::Lerp(5000000.f, 2000000.f, Blend);
+        float Damping = FMath::Lerp(60000.f, 30000.f, Blend);
+        float MaxForce = 1e9f;
 
-        // 아래는 단단하게, 위는 유연하게
-        float Stiffness = FMath::Lerp(3000.f, 500.f, Blend);   // 아래 = 3000, 위 = 500
-        float Damping = FMath::Lerp(250.f, 80.f, Blend);     // 위로 갈수록 여유롭게 흔들림
+        FConstraintInstance* ConstraintInst = SeaweedMesh->FindConstraintInstance(BoneName);
+        if (!ConstraintInst) continue;
 
-        for (UPhysicsConstraintTemplate* Template : Asset->ConstraintSetup)
+        ConstraintInst->SetAngularDriveMode(EAngularDriveMode::TwistAndSwing);
+        ConstraintInst->SetAngularDriveParams(Stiffness, Damping, MaxForce);
+        ConstraintInst->SetAngularVelocityDriveTwistAndSwing(false, false);
+        ConstraintInst->SetOrientationDriveTwistAndSwing(true, true);
+
+        if (Blend > 0.7f)
         {
-            if (!Template || Template->DefaultInstance.JointName != BoneName) continue;
-
-            FConstraintInstance& Constraint = Template->DefaultInstance;
-
-            Constraint.SetAngularDriveMode(EAngularDriveMode::SLERP);
-            Constraint.ProfileInstance.ConeLimit.bSoftConstraint = true;
-            Constraint.ProfileInstance.TwistLimit.bSoftConstraint = true;
-
-            Constraint.SetOrientationDriveSLERP(true);
-            Constraint.SetAngularVelocityDriveSLERP(false);
-
-            Constraint.SetAngularDriveParams(Stiffness, Damping, 100000.f); // MaxForce 꼭 높게
+            ConstraintInst->SetAngularSwing1Limit(ACM_Limited, 45.f);
+            ConstraintInst->SetAngularSwing2Limit(ACM_Limited, 45.f);
+            ConstraintInst->SetAngularTwistLimit(ACM_Limited, 20.f);
         }
+        else
+        {
+            ConstraintInst->SetAngularSwing1Limit(ACM_Limited, 25.f);
+            ConstraintInst->SetAngularSwing2Limit(ACM_Limited, 25.f);
+            ConstraintInst->SetAngularTwistLimit(ACM_Limited, 10.f);
+        }
+
+        ConstraintInst->ProfileInstance.ConeLimit.bSoftConstraint = true;
+        ConstraintInst->ProfileInstance.TwistLimit.bSoftConstraint = true;
     }
 
-    SeaweedMesh->RecreatePhysicsState(); // 물리 적용
+    SeaweedMesh->RecreatePhysicsState();
+    SeaweedMesh->WakeAllRigidBodies();
+    SeaweedMesh->SetSimulatePhysics(false);
+    SeaweedMesh->SetSimulatePhysics(true);
 }
-
 
 void ASeaweedInteractiveActor::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
     UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
@@ -154,4 +163,10 @@ void ASeaweedInteractiveActor::OnHit(UPrimitiveComponent* HitComponent, AActor* 
     LastHitLocation = Hit.ImpactPoint;
 
     UE_LOG(LogTemp, Warning, TEXT("[Seaweed] Hit at: %s"), *LastHitLocation.ToString());
+
+    if (USeaweedAnimInstance* AnimInstance = Cast<USeaweedAnimInstance>(SeaweedMesh->GetAnimInstance()))
+    {
+        AnimInstance->SetPhysicsBlendAlpha(1.0f);
+        AnimInstance->CurrentBlendTime = 0.0f;
+    }
 }

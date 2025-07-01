@@ -64,6 +64,45 @@ public:
 	// 플레이하는 오디오 아이디 반환, 실패하면 INDEX_NONE 반환
 	int32 PlayAttach(const ESFX_UI& SFXType, USceneComponent* AttachComp, const float& Volume = 1.0f, const bool& bShouldUseFadeIn = false, const float& FadeInDuration = 1.0f, const EAudioFaderCurve& FadeInCurve = (EAudioFaderCurve)0U);
 
+	// 플레이하는 오디오 아이디 반환, 실패하면 INDEX_NONE 반환
+	int32 PlayAttach(const ESFX_BGM& SFXType, USceneComponent* AttachComp, const float& Volume = 1.0f, const bool& bShouldUseFadeIn = false, const float& FadeInDuration = 1.0f, const EAudioFaderCurve& FadeInCurve = (EAudioFaderCurve)0U);
+
+	UFUNCTION(BlueprintCallable, Category = "SoundSubsystem")
+	int32 K2_Play2DSFX(const ESFX& SFXType, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve);
+	
+	UFUNCTION(BlueprintCallable, Category = "SoundSubsystem")
+	int32 K2_Play2DMonster(const ESFX_Monster& SFXType, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve);
+	
+	UFUNCTION(BlueprintCallable, Category = "SoundSubsystem")
+	int32 K2_Play2DUI(const ESFX_UI& SFXType, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve);
+	
+	UFUNCTION(BlueprintCallable, Category = "SoundSubsystem")
+	int32 K2_PlayBGM(const ESFX_BGM& SFXType, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve);
+	
+	UFUNCTION(BlueprintCallable, Category = "SoundSubsystem")
+	int32 K2_PlayAmbient(const ESFX_Ambient& SFXType, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve);
+
+	UFUNCTION(BlueprintCallable, Category = "SoundSubsystem")
+	int32 K2_PlayAtSFX(const ESFX& SFXType, const FVector& Position, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve);
+	
+	UFUNCTION(BlueprintCallable, Category = "SoundSubsystem")
+	int32 K2_PlayAtMonster(const ESFX_Monster& SFXType, const FVector& Position, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve);
+	
+	UFUNCTION(BlueprintCallable, Category = "SoundSubsystem")
+	int32 K2_PlayAtUI(const ESFX_UI& SFXType, const FVector& Position, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve);
+	
+	UFUNCTION(BlueprintCallable, Category = "SoundSubsystem")
+	int32 K2_PlayAttachSFX(const ESFX& SFXType, USceneComponent* AttachComp, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve);
+	
+	UFUNCTION(BlueprintCallable, Category = "SoundSubsystem")
+	int32 K2_PlayAttachMonster(const ESFX_Monster& SFXType, USceneComponent* AttachComp, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve);
+	
+	UFUNCTION(BlueprintCallable, Category = "SoundSubsystem")
+	int32 K2_PlayAttachUI(const ESFX_UI& SFXType, USceneComponent* AttachComp, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve);
+
+	UFUNCTION(BlueprintCallable, Category = "SoundSubsystem")
+	int32 K2_PlayAttachBGM(const ESFX_BGM& SFXType, USceneComponent* AttachComp, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve);
+
 	void StopAllBGM();
 	void StopAllSFX();
 	void StopAllAmbient();

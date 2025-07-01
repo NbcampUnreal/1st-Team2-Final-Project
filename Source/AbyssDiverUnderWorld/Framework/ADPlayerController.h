@@ -41,6 +41,10 @@ public:
 	UFUNCTION(BlueprintImplementableEvent)
 	void OnPostSeamlessTravel();
 
+	UFUNCTION(Client, Reliable)
+	void C_PlayGameOverSound();
+	void C_PlayGameOverSound_Implementation();
+
 	UFUNCTION()
 	void ShowFadeOut(float Duration = 2.0f);
 

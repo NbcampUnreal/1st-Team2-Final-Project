@@ -386,6 +386,17 @@ void AADPlayerController::S_GainShield_Implementation(int Amount)
 	GainShield(Amount);
 }
 
+void AADPlayerController::C_PlayGameOverSound_Implementation()
+{
+	if (UGameInstance* GameInstance = GetGameInstance())
+	{
+		if (USoundSubsystem* SoundSubsystem = GameInstance->GetSubsystem<USoundSubsystem>())
+		{
+			SoundSubsystem->PlayAmbient(ESFX_Ambient::AllPlayersDie);
+		}
+	}
+}
+
 void AADPlayerController::ShowFadeOut(float Duration)
 {
 	if (PlayerCameraManager == nullptr)
