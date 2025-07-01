@@ -54,7 +54,9 @@ void AADDrone::BeginPlay()
 	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
 	{
 		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
+		DrondeThemeSoundNumber = SoundSubsystem->PlayAttach(ESFX_BGM::DroneTheme, RootComponent);
 	}
+
 	WorldSubsystem = GetWorld()->GetSubsystem<UADWorldSubsystem>();
 }
 
@@ -81,6 +83,8 @@ void AADDrone::Tick(float DeltaSeconds)
 
 void AADDrone::Destroyed()
 {
+	SoundSubsystem->StopAudio(DrondeThemeSoundNumber);
+
 	AADPlayerController* PC = GetWorld()->GetFirstPlayerController<AADPlayerController>();
 	if (IsValid(PC) == false)
 	{
