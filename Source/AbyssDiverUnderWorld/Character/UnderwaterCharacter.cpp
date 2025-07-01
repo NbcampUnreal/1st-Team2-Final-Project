@@ -115,7 +115,7 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	RecoveryOxygenPenaltyRate = 0.5f;
 
 	bIsInCombat = false;
-	TargetingActorCount = 0;
+	bAutoStartCleanupTargetingActors = true;
 	HealthRegenDelay = 5.0f;
 	HealthRegenRate = 0.1f;
 	
@@ -236,6 +236,17 @@ void AUnderwaterCharacter::BeginPlay()
 		if (AADInGameMode* GameManager = Cast<AADInGameMode>(UGameplayStatics::GetGameMode(GetWorld())))
 		{
 			GameManager->BindDelegate(this);
+		}
+
+		if (bAutoStartCleanupTargetingActors)
+		{
+			GetWorldTimerManager().SetTimer(
+				TargetingActorsCleanupTimer,
+				this,
+				&AUnderwaterCharacter::CleanupTargetingActors,
+				TargetingActorsCleanupInterval,
+				true
+			);
 		}
 	}
 
@@ -513,22 +524,6 @@ void AUnderwaterCharacter::SetEnvironmentState(EEnvironmentState State)
 		OxygenComponent->SetShouldConsumeOxygen(false);
 		bCanUseEquipment = false;
 		UpdateBlurEffect();
-		/*if (AADPlayerState* ADPlayerState = GetPlayerState<AADPlayerState>())
-		{
-			UADInventoryComponent* Inventory = ADPlayerState->GetInventory();
-			if (Inventory)
-			{
-				Inventory->UnEquip();
-				TArray<FItemData> Items = Inventory->GetInventoryList().Items;
-				for (const FItemData& ItemData : Items)
-				{
-					if (ItemData.ItemType == EItemType::Exchangable)
-					{
-						Inventory->RemoveBySlotIndex(ItemData.SlotIndex, EItemType::Exchangable, false);
-					}
-				}
-			}
-		}*/
 		break;
 	default:
 		UE_LOG(AbyssDiver, Error, TEXT("Invalid Character State"));
@@ -542,25 +537,29 @@ void AUnderwaterCharacter::SetEnvironmentState(EEnvironmentState State)
 	K2_OnEnvironmentStateChanged(OldState, EnvironmentState);
 }
 
-void AUnderwaterCharacter::OnTargeted()
+void AUnderwaterCharacter::OnTargeted(AActor* TargetingActor)
 {
-	if (HasAuthority())
+	if (!HasAuthority())
 	{
-		TargetingActorCount++;
-		StartCombat();
+		return;
 	}
+	
+	TargetingActors.Add(TargetingActor);
+	StartCombat();
 }
 
-void AUnderwaterCharacter::OnUntargeted()
+void AUnderwaterCharacter::OnUntargeted(AActor* TargetingActor)
 {
-	if (HasAuthority())
+	if (!HasAuthority())
 	{
-		TargetingActorCount--;
-		if (TargetingActorCount <= 0)
-		{
-			TargetingActorCount = 0;
-			EndCombat();
-		}
+		return;
+	}
+
+	TargetingActors.Remove(TargetingActor);
+	ValidateTargetingActors();
+	if (TargetingActors.Num() <= 0)
+	{
+		EndCombat();
 	}
 }
 
@@ -2550,6 +2549,31 @@ void AUnderwaterCharacter::OnRep_BindCharacter()
 void AUnderwaterCharacter::OnRep_BoundCharacters()
 {
 	AdjustSpeed();
+}
+
+int32 AUnderwaterCharacter::ValidateTargetingActors()
+{
+	int32 InvalidCount = 0;
+	for (auto Iterator = TargetingActors.CreateIterator(); Iterator; ++Iterator)
+	{
+		if (!Iterator->IsValid())
+		{
+			UE_LOG(LogAbyssDiverCharacter, Warning, TEXT("Invalid Targeting Actor found and removed"));
+			Iterator.RemoveCurrent();
+			++InvalidCount;
+		}
+	}
+	
+	return InvalidCount;
+}
+
+void AUnderwaterCharacter::CleanupTargetingActors()
+{
+	const int32 InvalidCount = ValidateTargetingActors();
+	if (InvalidCount > 0)
+	{
+		UE_LOG(LogAbyssDiverCharacter, Warning, TEXT("CleanupTargetingActors: Removed %d invalid targeting actors"), InvalidCount);
+	}
 }
 
 void AUnderwaterCharacter::BindToCharacter(AUnderwaterCharacter* BoundCharacter)
