@@ -10,8 +10,8 @@
 > 게임은 밝고 유쾌한 탐험 분위기로 시작하지만, 점차 **공포와 생존의 무게감**이 플레이어를 조여오는데…. <br><br>
 > 숨막히는 **공포**를 이겨내고 **탐사**를 완료하라!
 
-  
-<img width="1004" alt="2조 Abyss Diver 프로젝트 이미지" src="https://github.com/user-attachments/assets/6774ed0d-0cbc-444d-9ca9-a01cde665cc1" />
+<img width="717" alt="2조 Abyss Diver 프로젝트 이미지(3)" src="https://github.com/user-attachments/assets/30ea249a-2e6a-4c33-afb7-4dadc3d98678" />
+
 
 ### Project : AbyssDiver : Underworld <br>
 ### Duration : 2025.03.31 ~ 2025.04.18 <br>
