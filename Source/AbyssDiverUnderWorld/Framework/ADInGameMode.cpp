@@ -244,21 +244,21 @@ void AADInGameMode::ReadyForTravelToCamp()
 		return;
 	}
 
-	for (AADPlayerState* ADPlayerState : TActorRange<AADPlayerState>(GetWorld()))
-	{
-		APawn* Player = ADPlayerState->GetPawn();
-		if (Player == nullptr || IsValid(Player) == false || Player->IsValidLowLevel() == false || Player->IsPendingKillPending())
-		{
-			LOGV(Error, TEXT("Not Valid Player, PlayeStateName : %s"), *ADPlayerState->GetName());
-			continue;
-		}
+	//for (AADPlayerState* ADPlayerState : TActorRange<AADPlayerState>(GetWorld()))
+	//{
+	//	APawn* Player = ADPlayerState->GetPawn();
+	//	if (Player == nullptr || IsValid(Player) == false || Player->IsValidLowLevel() == false || Player->IsPendingKillPending())
+	//	{
+	//		LOGV(Error, TEXT("Not Valid Player, PlayeStateName : %s"), *ADPlayerState->GetName());
+	//		continue;
+	//	}
 
-		ADPlayerState->GetPawn()->bAlwaysRelevant = true;
-	}
+	//	ADPlayerState->GetPawn()->bAlwaysRelevant = true;
+	//}
 
-	ForceNetUpdate();
+	//ForceNetUpdate();
 
-	LOGV(Log, TEXT("Releveant On"));
+	//LOGV(Log, TEXT("Releveant On"));
 
 	TimerManager.ClearTimer(SyncTimerHandle);
 	const float WaitForSync = 1.0f;
