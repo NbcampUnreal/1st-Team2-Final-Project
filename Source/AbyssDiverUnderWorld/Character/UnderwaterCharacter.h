@@ -8,6 +8,7 @@
 #include "Interface/IADInteractable.h"
 #include "AbyssDiverUnderWorld.h"
 #include "StatComponent.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "UnderwaterCharacter.generated.h"
 
 #if UE_BUILD_SHIPPING
@@ -27,10 +28,7 @@ DECLARE_LOG_CATEGORY_EXTERN(LogAbyssDiverCharacter, Log, LOG_ABYSS_DIVER_COMPILE
 // 실제 게임 플레이 태스트와 프로파일링을 통해서 문제를 해결해야 한다.
 // 3. Stamina, Oxygen 컴포넌트가 분리되어서 더 복잡해지고 있는 상황일 수 있다. 추후 구현이 필요 이상으로 복잡해지면 합치는 것을 고려한다.
 
-// @TODO : 수중 캐릭터와 지상 캐릭터 분리
-// 만약에 레벨 전환이 있다고 가정하면 새로 캐릭터를 분리하는 것이 덜 복잡하게 된다.
-// 이 부분을 문의하고 확정된 스펙에 따라 결정한다.
-
+enum class ESFX : uint8;
 enum class ELocomotionMode : uint8;
 
 /* 캐릭터의 지상, 수중을 결정, Move 로직, Animation이 변경되고 사용 가능 기능이 제한된다. */
@@ -39,6 +37,7 @@ enum class EEnvironmentState : uint8
 {
 	Underwater,
 	Ground,
+	MAX UMETA(Hidden)
 };
 
 UENUM(BlueprintType)
@@ -79,6 +78,14 @@ struct FAnimSyncState
 	uint8 bIsStrafing : 1 = false;
 };
 
+UENUM(BlueprintType)
+enum class EPlayAnimationTarget : uint8
+{
+	FirstPersonMesh UMETA(DisplayName = "First Person"),
+	ThirdPersonMesh UMETA(DisplayName = "Third Person"),
+	BothPersonMesh UMETA(DisplayName = "Both Person"),
+};
+
 class UInputAction;
 
 UCLASS()
@@ -92,9 +99,13 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	virtual void PossessedBy(AController* NewController) override;
+	virtual void UnPossessed() override;
+	virtual void PostInitializeComponents() override;
 	virtual void PostNetInit() override;
 	virtual void OnRep_PlayerState() override;
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode = 0) override;
+	virtual void Destroyed() override;
 
 	/** IA를 Enhanced Input Component에 연결 */
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
@@ -105,6 +116,9 @@ protected:
 public:
 	// Interactable Interface Begin
 
+	/** Interact 함수가 호출되면 실행되는 함수 */
+	virtual void Interact_Implementation(AActor* InstigatorActor) override;
+	
 	/** Interact Hold됬을 때 호출될 함수 */
 	virtual void InteractHold_Implementation(AActor* InstigatorActor) override;
 
@@ -118,7 +132,7 @@ public:
 	virtual bool CanHighlight_Implementation() const override;
 
 	/** Hold 지속 시간 반환 */
-	virtual float GetHoldDuration_Implementation() const override;
+	virtual float GetHoldDuration_Implementation(AActor* InstigatorActor) const override;
 	
 	/** Interactable 컴포넌트를 반환 */
 	virtual UADInteractableComponent* GetInteractableComponent() const override;
@@ -126,15 +140,48 @@ public:
 	/** Interactable Hold 모드 설정 */
 	virtual bool IsHoldMode() const override;
 
+	/** 상호작용 타입 반환 */
+	virtual FString GetInteractionDescription() const override;
+	
 	// Interactable Interface End
+
+	// Launch Character
+	// - Boss: 공격 시에 넉백을 적용하기 Launch를 실행한다.
+	// - CurrentZone : 급류 효과를 위해 Launch를 실행한다.
+	// - SpikeHazard : 공격 효과를 위해 Launch를 실행한다.
+	
+	/** Launch Character를 오버라이드 해서 캐릭터의 넉백 상태를 확인한다. */
+	virtual void LaunchCharacter(FVector LaunchVelocity, bool bXYOverride, bool bZOverride) override;
 	
 	/** 그로기 상태 캐릭터를 부활시킨다. */
 	UFUNCTION(BlueprintCallable)
 	void RequestRevive();
 
+	/** 캐릭터를 사망시킨다. Authority Node에서만 실행되어야 한다. */
+	UFUNCTION(BlueprintCallable)
+	void Die();
+
+	/** 부활 상태 초기화 설정을 한다. Possess 이후에 호출할 것 */
+	void Respawn();
+	
 	/** 현재 캐릭터의 상태를 전환. 수중, 지상 */
 	UFUNCTION(BlueprintCallable)
 	void SetEnvironmentState(EEnvironmentState State);
+
+	// Monster 인식 시에 Target
+	// Monster가 놓칠 시에 UnTarget
+	// Monster가 사망했을 때 UnTarget
+	// Monster가 Target을 변경했을 때 UnTarget
+
+	// 추후, Combat State 진입 시에 로컬 효과가 존재한다면 Replicate를 통해서 전파한다.
+	
+	/** Monster에 의해 Target 되었을 때 호출된다. Authority Node에서만 유효하다. */
+	UFUNCTION(BlueprintCallable)
+	void OnTargeted();
+
+	/** Monster에 의해 UnTarget 되었을 때 호출된다. Authority Node에서만 유효하다. */
+	UFUNCTION(BlueprintCallable)
+	void OnUntargeted();
 
 	/** 빠른 구현을 위해 Captrue를 현재 Multicast로 구현한다.
 	 * 이후 변경 모델
@@ -151,10 +198,55 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void StopCaptureState();
 
+	/*
+	 * Bind Character : 로프를 묶은 캐릭터
+	 * Bound Character : 로프에 묶인 캐릭터
+	 * Bound Character 중심으로 로직을 작성
+	 * Bind Character, Bound Character를 Replicate해서 구현
+	 */
+
+	/** 캐릭터가 로프에 묶이는 요청을 한다. Authority Node에서만 실행되어야 한다. */
+	void RequestBind(AUnderwaterCharacter* RequestBinderCharacter);
+
+	/** Bound Character 함수. 현재 캐릭터를 UnBind 한다. Binder가 시체를 들고 있을 수 없는 상황에서도 호출된다.
+	 * UnBind 함수는 Binder에서 BoundCharacter Array를 수정하므로 Binder Character에서 루프를 순회하면서 UnBind를 호출하면 문제가 생긴다.
+	 * GetBoundCharacters는 복사본을 반환하므로 안전하게 순회가 가능하다.
+	 */
+	void UnBind();
+
+	/** Bind Character 함수. 현재 캐릭터를 UnBind 한다. Binder가 시체를 들고 있는 상황에서 호출된다. */
+	void UnbindAllBoundCharacters();
+	
 	/** 출혈을 모델링하는 소리를 발생한다. */
 	UFUNCTION(BlueprintCallable)
 	void EmitBloodNoise();
 
+	/** 캐릭터의 몽타주 재생 요청 */
+	void RequestPlayMontage(UAnimMontage* Mesh1PMontage, UAnimMontage* Mesh3PMontage, float InPlayRate = 1.0f, FName StartSectionName = NAME_None);
+
+	/** 서버에 몽타주 재생 요청 */
+	UFUNCTION(Reliable, Server)
+	void S_PlayMontage(UAnimMontage* Mesh1PMontage, UAnimMontage* Mesh3PMontage, float InPlayRate = 1.0f, FName StartSectionName = NAME_None);
+	void S_PlayMontage_Implementation(UAnimMontage* Mesh1PMontage, UAnimMontage* Mesh3PMontage, float InPlayRate = 1.0f, FName StartSectionName = NAME_None);
+
+	/** 몽타주 재생 전파 */
+	UFUNCTION(NetMulticast, Reliable)
+	void M_BroadcastPlayMontage(UAnimMontage* Mesh1PMontage, UAnimMontage* Mesh3PMontage, float InPlayRate = 1.0f, FName StartSectionName = NAME_None);
+	void M_BroadcastPlayMontage_Implementation(UAnimMontage* Mesh1PMontage, UAnimMontage* Mesh3PMontage, float InPlayRate = 1.0f, FName StartSectionName = NAME_None);
+
+	/** 현재 재생 중인 몽타주 정지 요청 */
+	void RequestStopAllMontage(EPlayAnimationTarget Target, float BlendOut = 0.0f);
+
+	/** 몽타주 정지 Server RPC */
+	UFUNCTION(Reliable, Server)
+	void S_StopAllMontage(EPlayAnimationTarget Target, float BlendOut = 0.0f);
+	void S_StopAllMontage_Implementation(EPlayAnimationTarget Target, float BlendOut = 0.0f);
+
+	/** 몽타주 정지 전파 */
+	UFUNCTION(NetMulticast, Reliable)
+	void M_StopAllMontage(EPlayAnimationTarget Target, float BlendOut = 0.0f);
+	void M_StopAllMontage_Implementation(EPlayAnimationTarget Target, float BlendOut = 0.0f);
+	
 	/** 1인칭 메시, 3인칭 메시 모두에 애니메이션 몽타주를 재생한다. */
 	UFUNCTION(NetMulticast, Reliable)
 	void M_PlayMontageOnBothMesh(UAnimMontage* Montage, float InPlayRate = 1.0f, FName StartSectionName = NAME_None, FAnimSyncState NewAnimSyncState = FAnimSyncState());
@@ -174,6 +266,18 @@ public:
 
 	/** 암반이 요청하면 Mining Tool을 스폰해 착용하는 함수 */
 	void SpawnAndAttachTool(TSubclassOf<AActor> ToolClass);
+
+	UFUNCTION()
+	void OnRep_CurrentTool();
+
+	UFUNCTION()
+	void OnRep_InCombat();
+
+	/** 관전을 당할 때 호출되는 함수 */
+	void OnSpectated();
+
+	/** 관전 당하는 것이 끝났을 때 호출되는 함수 */
+	void OnEndSpectated();
 	
 protected:
 
@@ -241,12 +345,12 @@ protected:
 	virtual float CalculateGroggyTime(float CurrentGroggyDuration, uint8 CalculateGroggyCount) const;
 	
 	/** 캐릭터 사망 시에 Blueprint에서 호출될 함수 */
-	UFUNCTION(BlueprintImplementableEvent)
+	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "OnDeath"))
 	void K2_OnDeath();
 
 	/** 캐릭터의 환경이 변경됬을 시에 Blueprint에서 호출될 함수 */
-	UFUNCTION(BlueprintImplementableEvent)
-	void K2_OnEnvronmentStateChanged(EEnvironmentState OldEnvironmentState, EEnvironmentState NewEnvironmentState);
+	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "OnEnvironmentStateChanged"))
+	void K2_OnEnvironmentStateChanged(EEnvironmentState OldEnvironmentState, EEnvironmentState NewEnvironmentState);
 
 	/** Player State 정보를 초기화 */
 	void InitFromPlayerState(class AADPlayerState* ADPlayerState);
@@ -270,6 +374,30 @@ protected:
 	void M_StopCaptureState();
 	void M_StopCaptureState_Implementation();
 
+	// Stat Component의 회복 기능을 통해서 구현한다.
+	
+	// - Combat End
+	// - (UnCombat) Damage를 받고 일정 시간 이후에 체력 회복 시작
+	
+	/** Health Regen을 시작한다. */
+	void StartHealthRegen();
+
+	// - Combat Start
+	// - (UnCombat) Damage를 받고 일정 시간 이후에 체력 회복 중지
+	/** Health Regen을 종료 */
+	void StopHealthRegen();
+	
+	/** 전투 진입 시에 호출되는 함수 */
+	void StartCombat();
+
+	/** 전투 종료 시에 호출되는 함수 */
+	void EndCombat();
+
+	/** 캐릭터가 사망을 완료했을 때 호출되는 함수. 관전으로 변경된다. */
+	void EndDeath();
+	
+	float GetSwimEffectiveSpeed() const;
+
 	/** 현재 상태 속도 갱신.(무게, Sprint) */
 	UFUNCTION()
 	void AdjustSpeed();
@@ -277,6 +405,12 @@ protected:
 	/** 레이더 Actor를 생성한다. */
 	void SpawnRadar();
 
+	/** 1인칭, 3인칭 시점의 메시를 설정 */
+	void SetMeshFirstPersonSetting(bool bIsFirstPerson);
+
+	/** Pawn을 떠날 때 호출되는 함수. Pawn이 떠나면 캐릭터는 관전 상태로 변경된다. */
+	void OnLeavePawn();
+	
 	/** Radar Toggle을 요청한다. */
 	UFUNCTION(BlueprintCallable)
 	void RequestToggleRadar();
@@ -311,6 +445,7 @@ protected:
 	UFUNCTION()
 	void OnHealthChanged(int32 CurrentHealth, int32 MaxHealth);
 
+	/** 물리 볼륨이 변경되었을 때 호출되는 함수 */
 	UFUNCTION()
 	void OnPhysicsVolumeChanged(class APhysicsVolume* NewVolume);
 	
@@ -382,6 +517,15 @@ protected:
 	/** 3번 슬롯 장착 함수 */
 	void EquipSlot3(const FInputActionValue& InputActionValue);
 
+	/** 1번 감정 표현 실행 */
+	void PerformEmote1(const FInputActionValue& InputActionValue);
+
+	/** 2번 감정 표현 실행 */
+	void PerformEmote2(const FInputActionValue& InputActionValue);
+
+	/** 3번 감정 표현 실행 */
+	void PerformEmote3(const FInputActionValue& InputActionValue);
+
 	/** 3인칭 디버그 카메라 활성화 설정 */
 	void SetDebugCameraMode(bool bDebugCameraEnable);
 
@@ -404,7 +548,80 @@ protected:
 	/** 3인칭 메시 몽타주 종료 시 호출되는 함수 */
 	UFUNCTION()
 	virtual void OnMesh3PMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+
+	/** 감정 표현 재생 요청 */
+	void RequestPlayEmote(int8 EmoteIndex);
+
+	/** Server에 감정 표현 재생 요청 */
+	UFUNCTION(Server, Reliable)
+	void S_PlayEmote(uint8 EmoteIndex);
+	void S_PlayEmote_Implementation(uint8 EmoteIndex);
+
+	/** 감정 표현 재생 Multicast 전파 */
+	UFUNCTION(NetMulticast, Reliable)
+	void M_BroadcastPlayEmote(int8 EmoteIndex);
+	void M_BroadcastPlayEmote_Implementation(int8 EmoteIndex);
+
+	/** 감정 표현 재생 가능 여부를 반환 */
+	bool CanPlayEmote() const;
+
+	/** 감정 표현 몽타주를 반환. Index: 0~n-1 */
+	UAnimMontage* GetEmoteMontage(int8 EmoteIndex) const;
 	
+	/** 감정 표현을 중지 */
+	void RequestStopPlayingEmote(int8 EmoteIndex);
+
+	/** 감정 표현 중지 Multicast 전파 */
+	UFUNCTION(NetMulticast, Reliable)
+	void M_BroadcastStopPlyingEmote(int8 EmoteIndex);
+	void M_BroadcastStopPlyingEmote_Implementation(int8 EmoteIndex);
+
+	/** 감정 표현 중지 Server RPC */
+	UFUNCTION(Server, Reliable)
+	void S_StopPlayingEmote(int8 EmoteIndex);
+	void S_StopPlayingEmote_Implementation(int8 EmoteIndex);
+	
+	/** 감정 표현 몽타주가 끝났을 때 호출되는 함수 */
+	UFUNCTION()
+	void OnEmoteEnd(UAnimMontage* AnimMontage, bool bInterupted);
+
+	/** 카메라 모드를 전환한다. 1인칭, 감정 표현을 위한 3인칭 모드로 전환한다.
+	 * PreCondition : 1인칭 카메라 Transition이 완료되어야 한다. Transition 도중에 시작하는 경우는 없다.
+	 */
+	void StartEmoteCameraTransition();
+
+	/** Mesh Visibility를 카메라 모드에 맞춰서 설정한다. */
+	void SetCameraFirstPerson(bool bFirstPersonCamera);
+	
+	/** 카메라 Transition Update */
+	void UpdateCameraTransition();
+
+	/** Binder Character 함수. Bound Characters를 저장한다. */
+	void BindToCharacter(AUnderwaterCharacter* BoundCharacter);
+
+	/** Binder Character 함수 */
+	void UnbindToCharacter(AUnderwaterCharacter* BoundCharacter);
+	
+	/** Bound Character 함수. Binder Character와 로프를 연결한다. */
+	void ConnectRope(AUnderwaterCharacter* BinderCharacter);
+
+	/** Bound Character 함수. 로프를 해제한다. */
+	void DisconnectRope();
+
+	/** Bound Character 함수. Machine 기준으로 현재의 Interactable을 설정한다.
+	 * Binder Character가 Machine의 Local이면 Interactable을 활성화하고 해제 기능을 활성화
+	 * Binder Character가 Machine의 Local이 아니면 Interactable을 비활성화하고 해제 기능을 비활성화
+	 */
+	void UpdateBindInteractable();
+
+	/** Bound Character 함수. BindCharacter의 Replicate 함수. Bound Characters는 Bind Character에서 갱신되므로 Bind Character의 기능만 구현하면 된다. */
+	UFUNCTION()
+	void OnRep_BindCharacter();
+
+	/** Binder Character 함수. BoundCharacters의 Replicate 함수. 들고 있는 캐릭터에 따라서 감속 처리 */
+	UFUNCTION()
+	void OnRep_BoundCharacters();
+
 private:
 
 	/** Montage 콜백을 등록 */
@@ -420,12 +637,26 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FOnDeath OnDeathDelegate;
 
+	// Knockback이 되는 상황은 LaunchCharacter 때이므로 LaunchCharacter를 오버라이드해서 처리한다.
+	// 복귀가 될 때는 MoveMode 변화를 통해서 처리한다.
+	// Launch Character는 Client에서도 호출되므로 Local 효과를 재생할 수 있다.
+	
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnKnockbacked, FVector, KnockbackVelocity);
+	/** 캐릭터가 넉백되었을 때 호출되는 델리게이트 */
+	UPROPERTY(BlueprintAssignable)
+	FOnKnockbacked OnKnockbackDelegate;
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnKnockbackEnd);
+	/** 캐릭터의 넉백이 끝났을 때 호출되는 델리게이트 */
+	UPROPERTY(BlueprintAssignable)
+	FOnKnockbackEnd OnKnockbackEndDelegate;
+	
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnGroggy);
 	/** 캐릭터가 그로기 상태에 진입했을 때 호출되는 델리게이트 */
 	UPROPERTY(BlueprintAssignable)
 	FOnGroggy OnGroggyDelegate;
 
-	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnCharacterStateChanged, ECharacterState, OldCharacterState, ECharacterState, NewCharacterState);
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnCharacterStateChanged, AUnderwaterCharacter*, Character, ECharacterState, OldCharacterState, ECharacterState, NewCharacterState);
 	/** 캐릭터 상태가 변경되었을 때 호출되는 델리게이트 */
 	UPROPERTY(BlueprintAssignable)
 	FOnCharacterStateChanged OnCharacterStateChangedDelegate;
@@ -436,9 +667,22 @@ public:
 	FOnEnvironmentStateChanged OnEnvironmentStateChangedDelegate;
 
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnDamageTaken, float, DamageAmount, float, CurrentHealth);
-	/** 캐릭터가 피해를 입었을 때 호출되는 델리게이트, DamageAmount는 실드에 흡수된 데미지를 포함한다. */
+	/** 캐릭터가 피해를 입었을 때 호출되는 델리게이트, DamageAmount = Health Damage Taken + Shield Damage Taken.
+	 * 체력 계산, 상태 전이가 모두 완료된 뒤에 호출된다.
+	 * Normal 상태일 때만 호출된다. 실드에만 데미지가 들어갔을 경우 호출되지 않는다.
+	 */
 	UPROPERTY(BlueprintAssignable)
 	FOnDamageTaken OnDamageTakenDelegate;
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnComatStart);
+	/** 캐릭터가 전투 상태에 진입했을 때 호출되는 델리게이트, Server에서만 호출 */
+	UPROPERTY(BlueprintAssignable)
+	FOnComatStart OnCombatStartDelegate;
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCombatEnd);
+	/** 캐릭터가 전투 상태에서 벗어났을 때 호출되는 델리게이트, Server에서만 호출 */
+	UPROPERTY(BlueprintAssignable)
+	FOnCombatEnd OnCombatEndDelegate;
 	
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnMontageEnd, UAnimMontage*, Montage, bool, bInterrupted);
 	/** 1인칭 메시 몽타주 종료 시 호출되는 델리게이트 */
@@ -460,6 +704,16 @@ public:
 
 	UPROPERTY(VisibleAnywhere, Category = "Mining")
 	/** 현재 1p에 장착된 Tool 인스턴스 */
+	TObjectPtr<AActor> SpawnedTool;
+
+	UPROPERTY(ReplicatedUsing = OnRep_CurrentTool)
+	TObjectPtr<AActor> CurrentTool = nullptr;
+
+	UPROPERTY()
+	TObjectPtr<AActor> PrevTool = nullptr;
+	
+	UPROPERTY(VisibleAnywhere, Category = "Mining")
+	/** 현재 1p에 장착된 Tool 인스턴스 */
 	TObjectPtr<AActor> SpawnedTool1P;
 	
 	UPROPERTY(VisibleAnywhere, Category = "Mining")
@@ -468,6 +722,12 @@ public:
 
 private:
 
+	UPROPERTY()
+	class AADPlayerController* OwnerController;
+	
+	/** 현재 캐릭터를 Possess한 PlayerController의 Player Index */
+	int8 PlayerIndex;
+	
 	// Character State는 현재 State 종료 시에 따로 처리할 것이 없기 때문에 현재 상태 값만 Replicate하도록 한다.
 	
 	/* 현재 캐릭터 상태. Normal, Groggy, Death... */
@@ -497,6 +757,43 @@ private:
 	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	uint8 bCanUseEquipment : 1;
 
+	/** 감정 표현 여부. 감정 표현을 실행하면 True가 되고 False가 되는 시점은 First Person Camera로의 Transition이 종료됬을 때이다. */
+	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	uint8 bPlayingEmote : 1;
+
+	/** 현재 재생 중인 감정 표현 인덱스 */
+	int8 PlayEmoteIndex;
+
+	/** Camera Transition 시에 Timer Update 함수 Interval */
+	UPROPERTY(EditDefaultsOnly, Category = "Character|Emote", meta = (AllowPrivateAccess = "true", ClampMin = "0.0"))
+	float CameraTransitionUpdateInterval;
+
+	/** 카메라 Transition Alpha 방향. 1.0f이면 Emote Camera로 이동, -1.0f이면 First Person Camera로 이동한다.
+	 * 카메라 Transition이 시작되면 1.0f가 되고 애니메이션이 종료되거나 취소되면 -1.0f가 된다. */
+	float CameraTransitionDirection;
+	
+	/** 카메라 Transition 시에 경과 시간. Alpha = CameraTransitionTimeElapsed / CameraTransitionDuration */
+	float CameraTransitionTimeElapsed;
+
+	/** 카메라 Transition에 걸리는 시간 */
+	UPROPERTY(EditDefaultsOnly, Category = "Character|Emote", meta = (AllowPrivateAccess = "true", ClampMin = "0.0"))
+	float CameraTransitionDuration;
+
+	/** Emote Camera 시에 Spring Arm 길이 */
+	UPROPERTY(EditDefaultsOnly, Category = "Character|Emote", meta = (AllowPrivateAccess = "true", ClampMin = "0.0"))
+	float EmoteCameraTransitionLength;
+
+	/** Emote Camera Transition 시에 Spring Arm Easing Type */
+	UPROPERTY(EditDefaultsOnly, Category = "Character|Emote", meta = (AllowPrivateAccess = "true"))
+	TEnumAsByte<EEasingFunc::Type> EmoteCameraTransitionEasingType;
+	
+	/** 감정 표현 몽타주 배열. 순서대로 Emote1, Emote2, Emote3에 해당한다. */
+	UPROPERTY(EditDefaultsOnly, Category = "Character|Emote", meta = (AllowPrivateAccess = "true"))
+	TArray<TObjectPtr<UAnimMontage>> EmoteAnimationMontages;
+
+	/** 감정 표현 중에 3인칭 카메라 전환을 위한 Timer */
+	FTimerHandle EmoteCameraTransitionTimer;
+	
 	/** 캐릭터 랜턴의 거리 */
 	UPROPERTY(EditDefaultsOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float LanternLength;
@@ -540,6 +837,10 @@ private:
 	/** Normal 상태에서의 회전 감도. Normal 상태에 진입할 때마다 LookSensitivity를 이 값으로 설정한다. */
 	UPROPERTY(EditDefaultsOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float NormalLookSensitivity;
+
+	/** Fade 된 상태에서 Normal 상태로 전이됬을 때 Fade In 되는 시간 */
+	UPROPERTY(EditDefaultsOnly, Category = "Character|Normal", meta = (AllowPrivateAccess = "true"))
+	float NormalStateFadeInDuration;
 	
 	/** 그로기 상태에서 사망까지 걸리는 시간. 그로기 상태에 진입할 떄마다 줄어든다. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true"))
@@ -565,6 +866,10 @@ private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true", ClampMin = "0.01", ClampMax = "1.0"))
 	float RecoveryHealthPercentage;
 
+	/** 그로기에서 회복 후의 산소량, 회복 후의 산소량은 MaxOxygen * RecoveryOxygenPercentage로 설정된다. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true", ClampMin = "0.0", ClampMax = "1.0"))
+	float RecoveryOxygenPenaltyRate;
+
 	/** 그로기에서 사망 전이 Timer */
 	FTimerHandle GroggyTimer;
 
@@ -572,9 +877,38 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Groggy")
 	float GroggyLookSensitivity;
 
+	/** 그로기 효과음 */
+	ESFX GroggySfx;
+
+	/** 그로기 효과음 사운드 ID */
+	int32 GroggySfxId;
+
 	/** 그로기 상태에서 부활할 때 Hold해야 하는 시간. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true"))
 	float RescueRequireTime;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Death", meta = (AllowPrivateAccess = "true"))
+	ESFX ResurrectSFX;
+	
+	/** 현재 전투 중인지 여부 */
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_InCombat, Category = Character, meta = (AllowPrivateAccess = "true"))
+	uint8 bIsInCombat : 1;
+	
+	/** 현재 캐릭터를 타겟팅하고 있는 Actor의 개수. */
+	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	int TargetingActorCount;
+
+	// Tick을 썼다면 쉽게 관리했겠지만 현재로는 Timer를 사용해서 관리한다.
+	/** 체력 회복 중지 상태에서 체력 회복을 시작하기 위해 필요한 시간 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Combat", meta = (AllowPrivateAccess = "true"))
+	float HealthRegenDelay;
+
+	/** 1초당 체력 회복 비율이다. MaxHealth * HealthRegenRate 만큼 회복한다. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Combat", meta = (AllowPrivateAccess = "true", ClampMin = "0.0", ClampMax = "1.0"))
+	float HealthRegenRate;
+	
+	/** 전투 종료 시에 체력 회복을 위한 타이머 핸들 */
+	FTimerHandle HealthRegenStartTimer;
 	
 	// Gather와 같은 정보는 추후 다른 곳으로 이동될 수 있지만 일단은 캐릭터에 구현한다.
 
@@ -618,9 +952,27 @@ private:
 	UPROPERTY(Transient, BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float EffectiveSpeed;
 
+	/** 캐릭터가 감속할 수 있는 최소 속도 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	float MinSpeed;
+
+	/** 지상에서 기본 속도. 지상은 업그레이드 영향을 받지 않는다. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	float BaseGroundSpeed;
+
+	/** Upgrade가 적용된 최종 속도. Ground, Water을 전환할 때 속도를 갱신하기 위해 속도를 저장한다. 초기값은 StatComponent의 값을 참조한다. */
+	float BaseSwimSpeed;
+
+	// @ToDo: Multiplier를 통합 적용
+	// @ToDo: DPV 상황 추가
+	
 	/** Sprint 시에 적용되는 속도 배율. Sprint가 적용되면 EffectiveSpeed에 곱해진다. */
-	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float SprintMultiplier;
+
+	/** 특정 Zone에서 적용되는 속도 배율. Zone에 따라 다르게 적용된다. */
+	UPROPERTY(BlueprintReadWrite, Category = Character, meta = (AllowPrivateAccess = "true"))
+	float ZoneSpeedMultiplier;
 
 	/** 생성할 레이더 BP */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Radar", meta = (AllowPrivateAccess = "true"))
@@ -629,6 +981,10 @@ private:
 	/** 생성한 레이더 인스턴스 */
 	UPROPERTY()
 	TObjectPtr<class ARadar> RadarObject;
+
+	/** 이름 표기 위젯 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character|UI", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UNameWidgetComponent> NameWidgetComponent;
 
 	/** 레이더가 생성된 위치 오프셋. 카메라 기준으로 부착이 된다. */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Radar", meta = (AllowPrivateAccess = "true"))
@@ -707,6 +1063,18 @@ private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> EquipSlot3Action;
 
+	/** 감정 표현 1번 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> EmoteAction1;
+
+	/** 감정 표현 2번 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> EmoteAction2;
+
+	/** 감정 표현 3번 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> EmoteAction3;
+
 	/** 게임에 사용될 1인칭 Camera Component의 Spring Arm. 회전 Smoothing을 위해 사용한다. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class USpringArmComponent> FirstPersonCameraArm;
@@ -762,6 +1130,10 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class ULanternComponent> LanternComponent;
 
+	/** 전투 효과 컴포넌트 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UCombatEffectComponent> CombatEffectComponent;
+	
 	/** 수중 효과 컴포넌트 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UUnderwaterEffectComponent> UnderwaterEffectComponent;
@@ -774,19 +1146,72 @@ private:
 	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UADInteractableComponent> InteractableComponent;
 
+	/** 래그돌 컴포넌트 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class URagdollReplicationComponent> RagdollComponent;
+
 	/** 인벤토리 컴포넌트 캐시 */
 	UPROPERTY()
 	TObjectPtr<class UADInventoryComponent> CachedInventoryComponent;
 
-	UPROPERTY(EditAnywhere, Category = "UI", meta = (AllowPrivateAccess = "true"))
-	TSubclassOf<class UHoldInteractionWidget> HoldWidgetClass;
-
-	UPROPERTY(EditAnywhere, Category = "UI", meta = (AllowPrivateAccess = "true"))
-	class UHoldInteractionWidget* HoldWidgetInstance;
+	/** 장착 아이템 렌더링을 위한 컴포넌트 */
+	UPROPERTY()
+	TObjectPtr<class UEquipRenderComponent> EquipRenderComp;
 
 	/** Tool 소켓 명 (1P/3P 공용) */
 	FName LaserSocketName = TEXT("Laser");
 
+	/** 현재 상호 작용 택스트 */
+	FString InteractionDescription;
+
+	/** 현재 상호 작용이 Hold 모드인지 여부 */
+	uint8 bIsInteractionHoldMode : 1;
+
+	/** 그로기 상태 상호 작용 택스트. 구조 상황에 출력 */
+	UPROPERTY(EditDefaultsOnly, Category= "Character|Interaction", meta = (AllowPrivateAccess = "true"))
+	FString GroggyInteractionDescription;
+
+	/** 사망 상태 상호 작용 택스트. 시체 들기 상황에 출력 */
+	UPROPERTY(EditDefaultsOnly, Category= "Character|Interaction", meta = (AllowPrivateAccess = "true"))
+	FString DeathGrabDescription;
+
+	/** 사망 상태에서 시체 놓기 상황에서 출력 */
+	UPROPERTY(EditDefaultsOnly, Category= "Character|Interaction", meta = (AllowPrivateAccess = "true"))
+	FString DeathGrabReleaseDescription;
+
+	/** 사망 상태에서 시체를 들은 캐릭터. Bind Character가 존재하면 BoundCharacter이다. */
+	UPROPERTY(ReplicatedUsing = OnRep_BindCharacter, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<AUnderwaterCharacter> BindCharacter;
+
+	/** 현재 들고 있는 시체 캐릭터. 한 번에 여러개의 시체를 들 수 있다. */
+	UPROPERTY(ReplicatedUsing = OnRep_BoundCharacters, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TArray<TObjectPtr<AUnderwaterCharacter>> BoundCharacters;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<class ACableBindingActor> CableBindingActorClass;
+	
+	UPROPERTY()
+	TObjectPtr<class ACableBindingActor> CableBindingActor;
+
+	/** 로프에 바인드할 때마다 속도 감소 수치. 0.15일 경우 Bound Characters의 개수마다 15%씩 속도가 감소한다. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true", ClampMax = "1.0", ClampMin = "0.0"))
+	float BindMultiplier;
+
+	uint8 bIsAttackedByEyeStalker : 1;
+
+	/** Post Process를 관리하는 컴포넌트 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UPostProcessSettingComponent> PostProcessSettingComponent;
+
+	/** 캐릭터가 사망했을 때 관전으로 전이할 Timer */
+	FTimerHandle DeathTimer;
+
+	/** 캐릭터가 사망했을 떄 관전으로 전이되기까지 걸리는 시간 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	float DeathTransitionTime = 1.0f;
+
+	TWeakObjectPtr<class USoundSubsystem> SoundSubsystem;
+	
 #pragma endregion
 
 #pragma region Getter Setter
@@ -820,6 +1245,12 @@ public:
 	/** 장착 아이템 컴포넌트 반환 */
 	FORCEINLINE UEquipUseComponent* GetEquipUseComponent() const { return EquipUseComponent; }
 
+	/** 장착 아이템 렌더링 컴포넌트 반환 */
+	FORCEINLINE UEquipRenderComponent* GetEquipRenderComponent() const { return EquipRenderComp; }
+
+	/** 캐릭터의 현재 상태를 반환. Normal, Groggy, Death... */
+	FORCEINLINE UCombatEffectComponent* GetCombatEffectComponent() const { return CombatEffectComponent; }
+
 	/** 캐릭터의 현재 상태를 반환 */
 	FORCEINLINE ECharacterState GetCharacterState() const { return CharacterState; }
 
@@ -830,16 +1261,20 @@ public:
 	FORCEINLINE void SetInvincible(const bool bNewInvincible) { bIsInvincible = bNewInvincible; }
 
 	/** 캐릭터가 일반 상태인지 여부를 반환 */
+	UFUNCTION(BlueprintCallable)
 	FORCEINLINE bool IsNormal() const { return CharacterState == ECharacterState::Normal; }
 
 	/** 캐릭터가 Groggy 상태인지 여부를 반환 */
+	UFUNCTION(BlueprintCallable)
 	FORCEINLINE bool IsGroggy() const { return CharacterState == ECharacterState::Groggy; }
 
 	/** 캐릭터가 Death 상태인지 여부를 반환 */
+	UFUNCTION(BlueprintCallable)
 	FORCEINLINE bool IsDeath() const { return CharacterState == ECharacterState::Death; }
 
-	/** 캐릭터가 현재 살아있는지 여부를 반환. 살아 있으면 타겟팅될 수 있다. */
-	FORCEINLINE bool IsAlive() const;
+	/** 캐릭터가 현재 살아있는지 여부를 반환. 살아 있으면 타겟팅될 수 있다. 사망이 아닌 상태를 의미한다. */
+	UFUNCTION(BlueprintCallable)
+	bool IsAlive() const;
 
 	/** 캐릭터의 남은 그로기 시간을 반환 */
 	UFUNCTION(BlueprintCallable)
@@ -873,10 +1308,50 @@ public:
 	/** 3인칭 메시 Strafe 여부 반환 */
 	FORCEINLINE bool Is3PStrafe() const {return bIsAnim3PSyncStateOverride ? AnimSyncState.bIsStrafing : OverrideAnimSyncState.bIsStrafing;}
 	
-	/** 상호작용 타입 반환 */
-	virtual FString GetInteractionDescription() const override { return TEXT("Revive Character!"); }
-
+	/** 스프린트 적용 속도 반환 */
 	FORCEINLINE float GetSprintSpeed() const { return StatComponent->MoveSpeed * SprintMultiplier; }
+
+	/** Zone Speed Multiplier를 반환 */
+	FORCEINLINE float GetZoneSpeedMultiplier() const { return ZoneSpeedMultiplier; }
+
+	/** Zone Speed Multiplier를 설정 */
+	void SetZoneSpeedMultiplier(float NewMultiplier);
+	
+	/** 현재 캐릭터가 무기를 장착하고 있는지 여부를 반환 */
+	bool IsWeaponEquipped() const;
+
+	/** 현재 캐릭터 전투 중인지 여부를 반환. 현재는 Server에서만 작동 */
+	FORCEINLINE bool IsInCombat() const { return bIsInCombat; }
+
+	/** 현재 생성된 실드 히트 위젯을 반환 */
+	UUserWidget* GetShieldHitWidget() const;
+
+	/** 현재 Bound된 Character를 반환. 복사본을 반환한다. */
+	TArray<AUnderwaterCharacter*> GetBoundCharacters() const { return BoundCharacters; }
+
+	/** Player Index를 반환 */
+	FORCEINLINE int GetPlayerIndex() const { return PlayerIndex; }
+
+	/** 현재 Eye Stalker에게 공격받았는지 여부를 설정 */
+	FORCEINLINE void SetIsAttackedByEyeStalker(const bool bNewAttacked) { bIsAttackedByEyeStalker = bNewAttacked; }
+
+	/** 현재 Eye Stalker에게 공격받았는지 여부를 반환 */
+	FORCEINLINE bool IsAttackedByEyeStalker() const { return bIsAttackedByEyeStalker; }
+
+	/** Post Process Setting Component를 반환 */
+	FORCEINLINE UPostProcessSettingComponent* GetPostProcessSettingComponent() const { return PostProcessSettingComponent; }
+
+	/** 현재 캐릭터를 어그로로 설정하고 있는 Targeting Actor의 개수를 반환 */
+	FORCEINLINE int GetTargetingActorCount() const { return TargetingActorCount; }
+
+	/** 캐릭터가 현재 Capture State 인지 여부를 반환 */
+	FORCEINLINE bool IsCaptured() const { return bIsCaptured; }
+
+	FORCEINLINE AADPlayerController* GetOwnerController() const { return OwnerController; }
+
+protected:
+
+	class USoundSubsystem* GetSoundSubsystem();
 	
 #pragma endregion
 };

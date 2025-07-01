@@ -166,6 +166,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RadarReturn")
 	FString ScaleFromRootComponentName;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RadarReturn")
+	uint8 bShouldIgnore : 1;
+
 #pragma endregion
 
 #pragma region Getters, Setters
@@ -224,6 +227,9 @@ public:
 	bool ShouldLimitOpacityToRadarDisplayForStand() const;
 	bool HasReturnPing() const;
 	bool ShouldLimitOpacityToRadarDisplayForPing() const;
+
+	bool GetIgnore() const;
+	void SetIgnore(bool bIgnore);
 
 #pragma endregion
 };

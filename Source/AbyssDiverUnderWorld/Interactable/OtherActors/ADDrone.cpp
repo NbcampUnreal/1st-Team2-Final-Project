@@ -1,31 +1,41 @@
 ﻿#include "Interactable/OtherActors/ADDrone.h"
+
 #include "Interactable/Item/Component/ADInteractableComponent.h"
-#include "Inventory/ADInventoryComponent.h"
+#include "Interactable/OtherActors/Portals/PortalToSubmarine.h"
+
 #include "FrameWork/ADInGameState.h"
-#include "ADDroneSeller.h"
-#include "Net/UnrealNetwork.h"
-#include "Gimmic/Spawn/SpawnManager.h"
-#include "Kismet/GameplayStatics.h"
 #include "Framework/ADGameInstance.h"
+#include "Framework/ADPlayerController.h"
+
+#include "Inventory/ADInventoryComponent.h"
+#include "ADDroneSeller.h"
+#include "Character/UnderwaterCharacter.h"
+#include "Gimmic/Spawn/SpawnManager.h"
 #include "Subsystems/SoundSubsystem.h"
+#include "Subsystems/ADWorldSubsystem.h"
+#include "DataRow/PhaseBGMRow.h"
+#include "Character/PlayerComponent/PlayerHUDComponent.h"
+#include "Framework/ADInGameMode.h"
+
+#include "Net/UnrealNetwork.h"
+#include "Kismet/GameplayStatics.h"
+#include "Engine/TargetPoint.h"
 
 DEFINE_LOG_CATEGORY(DroneLog);
 
-// Sets default values
 AADDrone::AADDrone()
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = false;
 	InteractableComp = CreateDefaultSubobject<UADInteractableComponent>(TEXT("InteractableComp"));
 	bReplicates = true;
 	SetReplicateMovement(true); // 위치 상승하는 것 보이도록
 	bIsActive = false;
-
+	bIsFlying = false;
 	bIsHold = false;
+	ReviveDistance = 1000.f;
 }
 
-// Called when the game starts or when spawned
 void AADDrone::BeginPlay()
 {
 	Super::BeginPlay();
@@ -44,7 +54,10 @@ void AADDrone::BeginPlay()
 	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
 	{
 		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
+		DrondeThemeSoundNumber = SoundSubsystem->PlayAttach(ESFX_BGM::DroneTheme, RootComponent);
 	}
+
+	WorldSubsystem = GetWorld()->GetSubsystem<UADWorldSubsystem>();
 }
 
 void AADDrone::Tick(float DeltaSeconds)
@@ -68,10 +81,47 @@ void AADDrone::Tick(float DeltaSeconds)
 	}
 }
 
+void AADDrone::Destroyed()
+{
+	SoundSubsystem->StopAudio(DrondeThemeSoundNumber);
+
+	AADPlayerController* PC = GetWorld()->GetFirstPlayerController<AADPlayerController>();
+	if (IsValid(PC) == false)
+	{
+		LOGVN(Error, TEXT("Player Controller is not Valid"));
+		Super::Destroyed();
+		return;
+	}
+
+	UPlayerHUDComponent* PlayerHudComponent = PC->GetPlayerHUDComponent();
+	if (PlayerHudComponent == nullptr)
+	{
+		LOGVN(Error, TEXT("PlayerHudComponent == nullptr"));
+		Super::Destroyed();
+		return;
+	}
+
+	LOGVN(Log, TEXT("OnPhaseChangeDelegate Bound"));
+	OnPhaseChangeDelegate.AddUObject(PlayerHudComponent, &UPlayerHUDComponent::PlayNextPhaseAnim);
+
+	LOGV(Log, TEXT("OnPhaseChangeDelegate Broadcast : %d"), DronePhaseNumber + 1);
+	OnPhaseChangeDelegate.Broadcast(DronePhaseNumber + 1);
+	Super::Destroyed();
+}
+
 void AADDrone::Interact_Implementation(AActor* InstigatorActor)
 {
-	if (!HasAuthority() || !bIsActive || !IsValid(CurrentSeller)) return;
+	if (!HasAuthority() || !bIsActive || !IsValid(CurrentSeller) || bIsFlying) return;
 
+	if (!CurrentSeller->GetSubmittedPlayerIndexes().IsEmpty())
+	{
+		if (AADInGameMode* GameMode = GetWorld()->GetAuthGameMode<AADInGameMode>())
+		{
+			GameMode->RevivePlayersAroundDroneAtRespawnLocation(CurrentSeller->GetSubmittedPlayerIndexes(), this);
+			CurrentSeller->GetSubmittedPlayerIndexes().Empty();
+		}
+	}
+	
 	// 차액 계산
 	int32 Diff = CurrentSeller->GetCurrentMoney() - CurrentSeller->GetTargetMoney();
 
@@ -85,15 +135,18 @@ void AADDrone::Interact_Implementation(AActor* InstigatorActor)
 			{
 				NextSeller->Activate();
 				GS->SetCurrentDroneSeller(NextSeller);
+				GS->SetDestinationTarget(NextSeller);
 			}
 			else
 			{
 				GS->SetCurrentDroneSeller(nullptr);
+				GS->SetDestinationTarget(UGameplayStatics::GetActorOfClass(GetWorld(), APortalToSubmarine::StaticClass()));
 			}
 		}
 	}
 	CurrentSeller->DisableSelling();
 	StartRising();
+	bIsFlying = true;
 	if (SpawnManager && NextSeller)
 	{
 		SpawnManager->SpawnByGroup();
@@ -117,24 +170,46 @@ void AADDrone::M_PlayDroneRisingSound_Implementation()
 // 나중에 수정..
 void AADDrone::M_PlayPhaseBGM_Implementation(int32 PhaseNumber)
 {
-	if (PhaseNumber == 1)
+	const FString CurrentMapName = WorldSubsystem ? WorldSubsystem->GetCurrentLevelName() : TEXT("");
+	static const FString Context(TEXT("PhaseBGM"));
+	if (!PhaseBgmTable)          
 	{
-		CachedSoundNumber = GetSoundSubsystem()->PlayBGM(ESFX_BGM::ShallowPhase1, true);
-		LOGN(TEXT("PhaseSound1"));
+		LOGN(TEXT("PhaseBgmTable is nullptr"))
+		return;
 	}
-	else if (PhaseNumber == 2)
+	const FName RowKey = *FString::Printf(TEXT("%s_%d"), *CurrentMapName, PhaseNumber);
+
+	if (const FPhaseBGMRow* Row = PhaseBgmTable->FindRow<FPhaseBGMRow>(RowKey, Context))
 	{
-		GetSoundSubsystem()->StopAudio(CachedSoundNumber, true);
-		CachedSoundNumber = GetSoundSubsystem()->PlayBGM(ESFX_BGM::ShallowPhase2, true);
-		LOGN(TEXT("PhaseSound2"));
+		if (CachedSoundNumber != INDEX_NONE)
+			GetSoundSubsystem()->StopAudio(CachedSoundNumber, true);
+
+		CachedSoundNumber = GetSoundSubsystem()->PlayBGM(Row->BGM, true);
+		LOGN(TEXT("CurrentMapPhaseBGM : %s"), *RowKey.ToString());
+		return;
 	}
-	else if (PhaseNumber == 3)
-	{
-		GetSoundSubsystem()->StopAudio(CachedSoundNumber, true);
-		CachedSoundNumber = GetSoundSubsystem()->PlayBGM(ESFX_BGM::ShallowPhase3, true);
-		LOGN(TEXT("PhaseSound3"));
-	}
-	LOGN(TEXT("No PhaseSound, DronePhaseNumber : %d"), DronePhaseNumber);
+	LOGN(TEXT("CurrentMapPhaseBGM : %s"), *RowKey.ToString());
+	LOGN(TEXT("No BGM row for Map:%s Phase:%d"), *CurrentMapName, PhaseNumber);
+
+	//if (PhaseNumber == 1)
+	//{
+	//	CachedSoundNumber = GetSoundSubsystem()->PlayBGM(ESFX_BGM::ShallowPhase1, true);
+	//	LOGN(TEXT("PhaseSound1"));
+	//}
+	//else if (PhaseNumber == 2)
+	//{
+	//	GetSoundSubsystem()->StopAudio(CachedSoundNumber, true);
+	//	CachedSoundNumber = GetSoundSubsystem()->PlayBGM(ESFX_BGM::ShallowPhase2, true);
+	//	LOGN(TEXT("PhaseSound2"));
+	//}
+	//else if (PhaseNumber == 3)
+	//{
+	//	GetSoundSubsystem()->StopAudio(CachedSoundNumber, true);
+	//	CachedSoundNumber = GetSoundSubsystem()->PlayBGM(ESFX_BGM::ShallowPhase3, true);
+	//	LOGN(TEXT("PhaseSound3"));
+	//}
+	//LOGN(TEXT("No PhaseSound, DronePhaseNumber : %d"), DronePhaseNumber);
+
 }
 
 void AADDrone::Activate()
@@ -175,6 +250,7 @@ void AADDrone::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetime
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AADDrone, bIsActive);
+	DOREPLIFETIME(AADDrone, bIsFlying);
 }
 
 UADInteractableComponent* AADDrone::GetInteractableComponent() const
@@ -192,6 +268,16 @@ FString AADDrone::GetInteractionDescription() const
 	return TEXT("Send Drone!");
 }
 
+const TArray<ATargetPoint*>& AADDrone::GetPlayerRespawnLocations() const
+{
+	return PlayerRespawnLocations;
+}
+
+float AADDrone::GetReviveDistance() const
+{
+	return ReviveDistance;
+}
+
 USoundSubsystem* AADDrone::GetSoundSubsystem()
 {
 	if (SoundSubsystem)
@@ -206,3 +292,4 @@ USoundSubsystem* AADDrone::GetSoundSubsystem()
 	}
 	return nullptr;
 }
+

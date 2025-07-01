@@ -27,6 +27,8 @@ void APoolableItem::Deactivate()
 {
 	bIsActive = false;
 	SetOwner(nullptr);
+	SetActorLocation(FVector::ZeroVector);
+	SetActorRotation(FRotator::ZeroRotator);
 	SetActorHiddenInGame(true);
 	SetActorEnableCollision(false);
 	SetActorTickEnabled(false);

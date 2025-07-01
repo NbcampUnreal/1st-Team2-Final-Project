@@ -4,6 +4,7 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "Container/FStructContainer.h"
+#include "Interactable/Item/Component/EquipUseComponent.h"
 #include "Net/Serialization/FastArraySerializer.h"
 #include "ADInventoryComponent.generated.h"
 
@@ -20,7 +21,7 @@ class AUnderwaterCharacter;
 class UUseStrategy;
 class UNiagaraSystem;
 
-#define LOGINVEN(Verbosity, Format, ...) UE_LOG(InventoryLog, Verbosity, TEXT("%s(%s) %s"), ANSI_TO_TCHAR(__FUNCTION__), *FString::FromInt(__LINE__), *FString::Printf(Format, ##__VA_ARGS__));
+#define LOGINVEN(Verbosity, Format, ...) UE_LOG(InventoryLog, Verbosity, TEXT("[%s] %s(%s) %s"), LOG_NETMODEINFO, ANSI_TO_TCHAR(__FUNCTION__), *FString::FromInt(__LINE__), *FString::Printf(Format, ##__VA_ARGS__));
 
 DECLARE_LOG_CATEGORY_EXTERN(InventoryLog, Log, All);
 
@@ -37,14 +38,15 @@ public:
 	UADInventoryComponent();
 protected:
 	virtual void BeginPlay() override;
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 #pragma region Method
 public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override; 
 
 	UFUNCTION(Server, Reliable, BlueprintCallable)
-	void S_UseInventoryItem(EItemType ItemType = EItemType::Equipment, uint8 SlotIndex = 0);
-	void S_UseInventoryItem_Implementation(EItemType ItemType = EItemType::Equipment, uint8 SlotIndex = 0);
+	void S_UseInventoryItem(EItemType ItemType = EItemType::Equipment, uint8 SlotIndex = 0, bool bIgnoreCoolTime = false);
+	void S_UseInventoryItem_Implementation(EItemType ItemType = EItemType::Equipment, uint8 SlotIndex = 0, bool bIgnoreCoolTime = false);
 
 	UFUNCTION(Server, Reliable)
 	void S_TransferSlots(EItemType SlotType, uint8 FromIndex, uint8 ToIndex);
@@ -99,6 +101,9 @@ public:
 
 	UFUNCTION()
 	void OnRep_InventoryList();
+	
+	UFUNCTION()
+	void OnRep_CurrentEquipItem();
 
 	int8 FindItemIndexByName(FName ItemName); //아이템 이름으로 InventoryList 인덱스 반환 (빈슬롯이 없으면 -1 반환)
 	int8 FindItemIndexByID(int8 ItemID); //빈슬롯이 없으면 - 1 반환
@@ -130,6 +135,7 @@ private:
 	void RebuildIndexMap();
 	void OnUseCoolTimeEnd(); //아이템 사용 지연
 	void PrintLogInventoryData();
+	void TryCachedDiver();
 
 #pragma endregion
 	
@@ -151,12 +157,19 @@ private:
 	int8 CurrentEquipmentSlotIndex;
 	UPROPERTY(Replicated)
 	TObjectPtr<AADUseItem> CurrentEquipmentInstance;
+	UPROPERTY(Replicated)
+	TObjectPtr<AUnderwaterCharacter> CachedDiver;
+	UPROPERTY(Replicated)
+	uint8 bIsWeapon : 1 = false;
+	UPROPERTY(Replicated)
+	EEquipmentType EquipmentType;
+	uint8 bHasNoAnimation : 1 = false;
 	UPROPERTY()
 	TObjectPtr<UToggleWidget> ToggleWidgetInstance;
 
 	int32 WeightMax;
 	uint8 bCanUseItem : 1;
-	uint8 bIsWeapon : 1 = false;
+	
 
 	TMap<EItemType, TArray<int8>> InventoryIndexMapByType;
 	TArray<int8> InventorySizeByType;
@@ -171,6 +184,19 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "DPV")
 	TObjectPtr<UAnimMontage> DPVDrawMontage;
+	
+	//UPROPERTY()
+	//TObjectPtr<AUnderwaterCharacter> CachedDiver;
+
+	UPROPERTY(ReplicatedUsing = OnRep_CurrentEquipItem)
+	TObjectPtr<AActor> CurrentEquipItem = nullptr;
+
+	UPROPERTY()
+	TObjectPtr<AActor> PrevEquipItem = nullptr;
+
+	const FName HarpoonSocketName = TEXT("Harpoon");
+	const FName DPVSocketName = TEXT("DPV");
+	const FName FlareSocketName = TEXT("Flare");
 #pragma endregion
 
 
@@ -187,6 +213,7 @@ public:
 	FItemData* GetEditableItemDataByName(FName ItemNameToEdit);
 
 	const FInventoryList& GetInventoryList() { return InventoryList; } 
+	bool TryGiveAmmoToEquipment(EBulletType BulletType, int32 AmountPerPickup);
 
 	const TArray<int8>& GetInventoryIndexesByType(EItemType ItemType) const { return InventoryIndexMapByType[ItemType]; } //타입별 인벤토리에 저장된 InventoryList 인벤토리 인덱스 배열 반환
 	const TArray<int8>& GetInventorySizeByType() const { return InventorySizeByType; } //인벤토리 사이즈 배열 반환

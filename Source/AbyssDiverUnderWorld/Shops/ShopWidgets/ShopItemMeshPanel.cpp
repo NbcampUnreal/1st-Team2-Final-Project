@@ -4,6 +4,8 @@
 #include "Subsystems/DataTableSubsystem.h"
 #include "DataRow/ShopItemMeshTransformRow.h"
 
+#include "Components/Image.h"
+
 FReply UShopItemMeshPanel::NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
 {
 	bIsMouseDown = true;
@@ -47,10 +49,36 @@ void UShopItemMeshPanel::ChangeItemMesh(USkeletalMesh* NewMesh, int32 ItemId)
 	ItemMeshComponent->SetRelativeScale3D(MeshTransformData->ReletiveSize);
 }
 
+void UShopItemMeshPanel::ChangeUpgradeImage(UTexture2D* UpgradeIcon)
+{
+	UpgradeImage->SetBrushFromTexture(UpgradeIcon);
+}
+
 void UShopItemMeshPanel::SetItemMeshActive(bool bShouldActivate)
 {
 	check(ItemMeshComponent);
 	ItemMeshComponent->SetActive(bShouldActivate);
+	
+	if (bShouldActivate)
+	{
+		ItemMeshImage->SetVisibility(ESlateVisibility::HitTestInvisible);
+	}
+	else
+	{
+		ItemMeshImage->SetVisibility(ESlateVisibility::Hidden);
+	}
+}
+
+void UShopItemMeshPanel::SetUpgradeImageActive(bool bShouldActivate)
+{
+	if (bShouldActivate)
+	{
+		UpgradeImage->SetVisibility(ESlateVisibility::HitTestInvisible);
+	}
+	else
+	{
+		UpgradeImage->SetVisibility(ESlateVisibility::Hidden);
+	}
 }
 
 void UShopItemMeshPanel::AddMeshRotationYaw(float Yaw)

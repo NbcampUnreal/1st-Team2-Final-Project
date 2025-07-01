@@ -5,6 +5,7 @@
 #include "AbyssDiverUnderWorld.h"
 #include "Interface/IADInteractable.h"
 #include "Net/UnrealNetwork.h"
+#include "Character/UnderwaterCharacter.h"
 
 // Sets default values for this component's properties
 UADInteractionComponent::UADInteractionComponent()
@@ -44,7 +45,7 @@ void UADInteractionComponent::BeginPlay()
 		FAttachmentTransformRules::KeepRelativeTransform
 	);
 
-	RangeSphere->InitSphereRadius(400.f);
+	RangeSphere->InitSphereRadius(800.f);
 	RangeSphere->SetCollisionProfileName(TEXT("Interaction"));
 	RangeSphere->SetGenerateOverlapEvents(true);
 
@@ -59,7 +60,7 @@ void UADInteractionComponent::TickComponent(float DeltaTime, ELevelTick TickType
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 	PerformFocusCheck();
-	if (!bIsFocusing && bIsInteractingStart)
+	if (!bIsFocusing && bIsInteractingStart && !FocusedInteractable)
 	{
 		if (IsLocallyControlled())
 		{
@@ -100,7 +101,7 @@ void UADInteractionComponent::S_RequestInteractHold_Implementation(AActor* Targe
 	if (IIADInteractable* IADInteractable = Cast<IIADInteractable>(TargetActor))
 	{
 		FocusedInteractable = IADInteractable->GetInteractableComponent();
-		HoldThreshold = IIADInteractable::Execute_GetHoldDuration(TargetActor);
+		HoldThreshold = IIADInteractable::Execute_GetHoldDuration(TargetActor, GetOwner());
 		if (!FocusedInteractable)
 		{
 			return;
@@ -119,11 +120,18 @@ void UADInteractionComponent::S_RequestInteractRelease_Implementation()
 
 void UADInteractionComponent::HandleBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
+	if (!IsLocallyControlled())
+		return;
+
 	if (IIADInteractable* IADInteractable = Cast<IIADInteractable>(OtherActor))
 	{
 		if (UADInteractableComponent* ADIC = IADInteractable->GetInteractableComponent())
 		{
 			NearbyInteractables.Add(ADIC);
+			if (ADIC->IsAlwaysHighlight())
+			{
+				ADIC->SetHighLight(true);
+			}
 			SetComponentTickEnabled(true);
 			//		LOG(TEXT("Overlapped!"));
 		}
@@ -132,11 +140,19 @@ void UADInteractionComponent::HandleBeginOverlap(UPrimitiveComponent* Overlapped
 
 void UADInteractionComponent::HandleEndOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
+	if (!IsLocallyControlled())
+		return;
+
 	if (IIADInteractable* IADInteractable = Cast<IIADInteractable>(OtherActor))
 	{
+		LOGIC(Warning, TEXT("End Ovelap!! Interactable's Owner : %s"), *OtherActor->GetName());
 		if (UADInteractableComponent* ADIC = IADInteractable->GetInteractableComponent())
 		{
 			NearbyInteractables.Remove(ADIC);
+			if (ADIC->IsAlwaysHighlight())
+			{
+				ADIC->SetHighLight(false);
+			}
 			if (NearbyInteractables.Num() == 0)
 			{
 				SetComponentTickEnabled(false);
@@ -144,7 +160,10 @@ void UADInteractionComponent::HandleEndOverlap(UPrimitiveComponent* OverlappedCo
 				if (FocusedInteractable)
 				{
 					// 외곽선 제거
-					FocusedInteractable->SetHighLight(false);
+					if (!FocusedInteractable->IsAlwaysHighlight())
+					{
+						FocusedInteractable->SetHighLight(false);
+					}
 					OnFocusEnd.Broadcast();
 					FocusedInteractable = nullptr;
 					//				LOG(TEXT("Remove Border"));
@@ -183,13 +202,16 @@ void UADInteractionComponent::TryInteract()
 
 void UADInteractionComponent::PerformFocusCheck()
 {
-	if (!IsLocallyControlled()) return;
-	if (NearbyInteractables.Num() == 0) return;
+	if (!IsLocallyControlled())
+	{
+		return;
+	}
 
 	FVector CamLocation;
 	FVector TraceEnd;
-	if (!ComputeViewTrace(CamLocation, TraceEnd))
+	if (!ComputeViewTrace(CamLocation, TraceEnd) || NearbyInteractables.Num() == 0)
 	{
+		bIsFocusing = false;
 		ClearFocus();
 		return;
 	}
@@ -219,7 +241,7 @@ bool UADInteractionComponent::ComputeViewTrace(FVector& OutStart, FVector& OutEn
 	PC->GetPlayerViewPoint(CamLoc, CamRot);
 
 	OutStart = CamLoc;
-	OutEnd = CamLoc + CamRot.Vector() * RangeSphere->GetScaledSphereRadius();
+	OutEnd = CamLoc + CamRot.Vector() * InteractionRadius;
 	return true;
 }
 
@@ -229,9 +251,10 @@ UADInteractableComponent* UADInteractionComponent::PerformLineTrace(const FVecto
 	FCollisionQueryParams Params;
 	Params.AddIgnoredActor(GetOwner());
 
-	if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params))
+	constexpr ECollisionChannel InteractionChannel = ECC_GameTraceChannel4;
+	if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, InteractionChannel, Params))
 	{
-		if (IIADInteractable * IADInteractable = Cast<IIADInteractable>(Hit.GetActor()))
+		if (IIADInteractable* IADInteractable = Cast<IIADInteractable>(Hit.GetActor()))
 		{
 			return IADInteractable->GetInteractableComponent();
 		}
@@ -241,17 +264,20 @@ UADInteractableComponent* UADInteractionComponent::PerformLineTrace(const FVecto
 
 void UADInteractionComponent::UpdateFocus(UADInteractableComponent* NewFocus)
 {
-
 	if (NewFocus == FocusedInteractable)
 	{
 		const bool bNeedHighlight = ShouldHighlight(NewFocus);
 		if (bNeedHighlight != NewFocus->IsHighlighted())
 		{
-			NewFocus->SetHighLight(bNeedHighlight);
-
+			if (!NewFocus->IsAlwaysHighlight())
+			{
+				NewFocus->SetHighLight(bNeedHighlight);
+			}
+			
 			if (!bNeedHighlight)
 			{
-				OnFocusEnd.Broadcast();          // 설명 숨김
+				OnFocusEnd.Broadcast();   // 설명 숨김
+				CachedDesc.Empty();
 			}
 			else
 			{
@@ -261,13 +287,29 @@ void UADInteractionComponent::UpdateFocus(UADInteractableComponent* NewFocus)
 				}
 			}
 		}
+		if (bNeedHighlight)
+		{
+			if (IIADInteractable* IAD = Cast<IIADInteractable>(NewFocus->GetOwner()))
+			{
+				const FString NewDesc = IAD->GetInteractionDescription();
+				if (!NewDesc.Equals(CachedDesc))
+				{
+					CachedDesc = NewDesc;
+					OnFocus.Broadcast(NewFocus->GetOwner(), CachedDesc);
+				}
+			}
+		}
+
 		return;
 	}
 
 
 	if (FocusedInteractable)
 	{
-		FocusedInteractable->SetHighLight(false);
+		if (!FocusedInteractable->IsAlwaysHighlight())
+		{
+			FocusedInteractable->SetHighLight(false);
+		}
 		OnFocusEnd.Broadcast();
 	}
 
@@ -291,7 +333,10 @@ void UADInteractionComponent::ClearFocus()
 //	if (!IsLocallyControlled()) return;
 	if (FocusedInteractable)
 	{
-		FocusedInteractable->SetHighLight(false);
+		if (!FocusedInteractable->IsAlwaysHighlight())
+		{
+			FocusedInteractable->SetHighLight(false);
+		}
 		OnFocusEnd.Broadcast();
 		FocusedInteractable = nullptr;
 	}
@@ -299,7 +344,8 @@ void UADInteractionComponent::ClearFocus()
 
 void UADInteractionComponent::OnInteractPressed()
 {
-	if (!FocusedInteractable) return;
+	if (!FocusedInteractable || !FocusedInteractable->CanInteractable()) return;
+
 	bIsInteractingStart = true;
 	if (AActor* Owner = FocusedInteractable->GetOwner())
 	{
@@ -313,7 +359,7 @@ void UADInteractionComponent::OnInteractPressed()
 				TryInteract();   // 즉시 수행
 				return;
 			}
-			HoldThreshold = IIADInteractable::Execute_GetHoldDuration(Owner);
+			HoldThreshold = IIADInteractable::Execute_GetHoldDuration(Owner, GetOwner());
 			OnHoldStart.Broadcast(Owner, HoldThreshold);
 			// Hold Mode일 경우
 			if (GetOwner()->HasAuthority())
@@ -426,4 +472,3 @@ void UADInteractionComponent::GetLifetimeReplicatedProps(TArray<FLifetimePropert
 	DOREPLIFETIME(UADInteractionComponent, bHoldTriggered);
 	DOREPLIFETIME(UADInteractionComponent, bIsFocusing);
 }
-

@@ -12,7 +12,13 @@ enum class ESFX_BGM : uint8
 	ShallowPhase1,
 	ShallowPhase2,
 	ShallowPhase3,
+	DeepPhase1,
+	DeepPhase2,
+	DeepPhase3,
+	BossFight,
 	ShallowBackground,
+	DroneTheme,
+	CampRadio,
 	Max UMETA(Hidden)
 };
 

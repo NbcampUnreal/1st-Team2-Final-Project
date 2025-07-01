@@ -8,7 +8,7 @@
 UENUM(BlueprintType)
 enum class ESFX_Ambient : uint8
 {
-	Sound0,
+	AllPlayersDie,
 	Sound1,
 	Sound2,
 };

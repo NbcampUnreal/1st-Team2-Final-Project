@@ -2,13 +2,16 @@
 
 #include "CoreMinimal.h"
 #include "Engine/GameInstance.h"
+#include "AdvancedFriendsGameInstance.h"
 #include "UI/MissionData.h"
+#include "Framework/SettingsManager.h"
+#include "../UI/LoadingScreenWidget.h" 
 #include "ADGameInstance.generated.h"
 
 enum class EMapName : uint8;
 
 UCLASS()
-class ABYSSDIVERUNDERWORLD_API UADGameInstance : public UGameInstance
+class ABYSSDIVERUNDERWORLD_API UADGameInstance : public UAdvancedFriendsGameInstance
 {
     GENERATED_BODY()
 public:
@@ -16,20 +19,23 @@ public:
     const TArray<FMissionData>& GetSelectedMissions() const { return SelectedMissions; }
 
 public:
-	UADGameInstance();
+	UADGameInstance(const FObjectInitializer& ObjectInitializer);
 
 protected:
 
 	virtual void Init() override;
 
 public:
-	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent)
-	void ExitSession(APlayerController* Caller);
+
+	UFUNCTION(BlueprintCallable, Category = "ADGameInstance")
+	void InitPlayerInfos();
 
 	bool TryGetPlayerIndex(const FString& NetId, int32& OutPlayerIndex);
 	void AddPlayerNetId(const FString& NetId);
 	void RemovePlayerNetId(const FString& NetId);
-
+	// 한 번이라도 들어온 적 있으면 true
+	bool HasBeenVisited(const FString& NetId);
+	
 	// 0~1의 값
 	UFUNCTION(BlueprintCallable, Category = "ADGameInstance")
 	void ChangeMasterVolume(const float& NewVolume);
@@ -47,6 +53,9 @@ public:
 	void ChangeAmbientVolume(const float& NewVolume);
 
 public:
+
+	static const int32 MAX_PLAYER_NUMBER;
+
 	UPROPERTY(BlueprintReadWrite)
 	uint8 bIsHost : 1;
 
@@ -55,12 +64,14 @@ public:
 
 	UPROPERTY(BlueprintReadWrite)
 	int32 TeamCredits;
-
+	 
 
 	UPROPERTY(EditDefaultsOnly, Category = "ADGameInstance", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.FADItemDataRow"))
 	TObjectPtr<UDataTable> ItemDataTable;
 	UPROPERTY(EditDefaultsOnly, Category = "ADGameInstance", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.FADProjectileDataRow"))
 	TObjectPtr<UDataTable> ProjectileDataTable;
+	UPROPERTY(EditDefaultsOnly, Category = "ADGameInstance", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.ButtonDataRow"))
+	TObjectPtr<UDataTable> ButtonDataTable;
 
     UPROPERTY(EditDefaultsOnly, Category = "ADGameInstance", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.UpgradeDataRow"))
     TObjectPtr<UDataTable> UpgradeDataTable;
@@ -116,15 +127,23 @@ public:
 
 #pragma endregion
 
+	//Settings
+	UPROPERTY(BlueprintReadOnly)
+	TObjectPtr<USettingsManager> SettingsManager;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
+	TMap<FName, UInputAction*> InputActionMap;
 
 private:
 
-	TMap<FString, int32> PlayerIdMap;
+	TMap<FString, int32> CurrentPlayerIdMap;
 	TArray<bool> ValidPlayerIndexArray;
 
-	const int32 MAX_PLAYER_NUMBER = 4;
+	// 접속했던 모든 Player ID를 기록
+	TSet<FString> TotalPlayerIdSet;
 
 #pragma region Getters / Setters
+public:
 
 	UFUNCTION(BlueprintPure, Category = "ADGameInstance")
 	const float GetCurrentMasterVolume() const;
@@ -137,6 +156,12 @@ private:
 
 	UFUNCTION(BlueprintPure, Category = "ADGameInstance")
 	const float GetCurrentAmbientVolume() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Settings")
+	USettingsManager* GetSettingsManager() const { return SettingsManager; }
+
+	UFUNCTION(BlueprintCallable, Category = "Input")
+	const TMap<FName, UInputAction*>& GetInputActionMap() const { return InputActionMap; }
 
 #pragma endregion
 

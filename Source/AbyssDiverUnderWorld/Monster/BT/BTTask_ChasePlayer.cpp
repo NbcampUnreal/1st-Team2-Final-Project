@@ -28,7 +28,7 @@ EBTNodeResult::Type UBTTask_ChasePlayer::ExecuteTask(UBehaviorTreeComponent& Own
 	UBlackboardComponent* BlackboardComp = AIController->GetBlackboardComponent();
 	if (!BlackboardComp) return EBTNodeResult::Failed;
 
-	AActor* TargetActor = Cast<AActor>(BlackboardComp->GetValueAsObject("TargetActor"));
+	AActor* TargetActor = Cast<AActor>(BlackboardComp->GetValueAsObject(TargetActorKey.SelectedKeyName));
 	if (!TargetActor || !IsValid(TargetActor)) return EBTNodeResult::Failed;
 
 	CachedTargetActor = TargetActor;
@@ -45,7 +45,7 @@ EBTNodeResult::Type UBTTask_ChasePlayer::ExecuteTask(UBehaviorTreeComponent& Own
 	if (Result.Code == EPathFollowingRequestResult::AlreadyAtGoal)
 	{
 		// Already Arrived -> State Change
-		BlackboardComp->SetValueAsEnum("MonsterState", static_cast<uint8>(EMonsterState::Attack));
+		BlackboardComp->SetValueAsEnum(MonsterStateKey.SelectedKeyName, static_cast<uint8>(EMonsterState::Attack));
 		return EBTNodeResult::Succeeded;
 	}
 	else if (Result.Code == EPathFollowingRequestResult::RequestSuccessful)
@@ -76,15 +76,15 @@ void UBTTask_ChasePlayer::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* Nod
 		FinishLatentTask(*CachedOwnerComp, EBTNodeResult::Failed);
 
 		// MonsterAIController handles this processing, but explicitly writes
-		BlackboardComp->SetValueAsEnum("MonsterState", static_cast<uint8>(EMonsterState::Patrol));
-		BlackboardComp->ClearValue("TargetActor");
+		BlackboardComp->SetValueAsEnum(MonsterStateKey.SelectedKeyName, static_cast<uint8>(EMonsterState::Patrol));
+		BlackboardComp->ClearValue(TargetActorKey.SelectedKeyName);
 		return;
 	}
 
 	if (AIController->GetMoveStatus() == EPathFollowingStatus::Idle)
 	{
 		// When it arrives, switch the status to Attack
-		BlackboardComp->SetValueAsEnum("MonsterState", static_cast<uint8>(EMonsterState::Attack));
+		BlackboardComp->SetValueAsEnum(MonsterStateKey.SelectedKeyName, static_cast<uint8>(EMonsterState::Attack));
 		FinishLatentTask(*CachedOwnerComp, EBTNodeResult::Succeeded);
 	}
 }

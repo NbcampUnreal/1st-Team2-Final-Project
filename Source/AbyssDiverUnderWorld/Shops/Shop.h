@@ -1,4 +1,4 @@
-#pragma once
+Ôªø#pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
@@ -43,6 +43,22 @@ enum class EShopItemChangeType
 	Max
 };
 
+UENUM()
+enum class EDoorState : uint8
+{
+	Opened,
+	Closed,
+	Opening,
+	Closing
+};
+
+enum class ELaunchType
+{
+	First,
+	InProgress,
+	Last
+};
+
 #pragma endregion
 
 class AShop;
@@ -51,6 +67,9 @@ class UShopItemEntryData;
 class AUnderwaterCharacter;
 class USceneCaptureComponent2D;
 class UPointLightComponent;
+class ATargetPoint;
+class UDataTableSubsystem;
+class AADUseItem;
 
 struct FFADItemDataRow;
 struct FShopItemIdList;
@@ -112,17 +131,18 @@ public:
 
 	bool NetDeltaSerialize(FNetDeltaSerializeInfo& DeltaParams);
 
-	// ¿Œµ¶Ω∫ π›»Ø, æ¯¿∏∏È INDEX_NONE π›»Ø
+	// Ïù∏Îç±Ïä§ Î∞òÌôò, ÏóÜÏúºÎ©¥ INDEX_NONE Î∞òÌôò
 	int32 Contains(uint8 CompareId);
 
 	bool TryAdd(uint8 NewId);
 
-	// ¡ˆøˆ¡¯ ¿Œµ¶Ω∫ π›»Ø
+	// ÏßÄÏõåÏßÑ Ïù∏Îç±Ïä§ Î∞òÌôò
 	int32 Remove(uint8 Id);
 
 	void Modify(uint8 InIndex, uint8 NewId);
 
 	FOnShopItemListChangedDelegate OnShopItemListChangedDelegate;
+
 public:
 
 	UPROPERTY()
@@ -135,7 +155,7 @@ public:
 
 public:
 
-	// ¿Ø»ø«œ¡ˆ æ ¿∏∏È INDEX_NONE π›»Ø
+	// Ïú†Ìö®ÌïòÏßÄ ÏïäÏúºÎ©¥ INDEX_NONE Î∞òÌôò
 	uint8 GetId(uint8 InIndex) const;
 };
 
@@ -160,13 +180,16 @@ public:
 	AShop();
 
 protected:
+
 	virtual void PostInitializeComponents() override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaSeconds) override;
 
 #pragma region Methods
 
 public:
+
 	virtual void Interact_Implementation(AActor* InstigatorActor) override;
 
 	void OpenShop(AUnderwaterCharacter* Requester);
@@ -175,6 +198,7 @@ public:
 	void CloseShop(AUnderwaterCharacter* Requester);
 
 	EBuyResult BuyItem(uint8 ItemId, uint8 Quantity, AUnderwaterCharacter* Buyer);
+	EBuyResult BuyItems(const TArray<uint8>& ItemIdList, const TArray<int8>& ItemCountList);
 	ESellResult SellItem(uint8 ItemId, AUnderwaterCharacter* Seller);
 
 	void AddItems(const TArray<uint8>& Ids, EShopCategoryTab TabType);
@@ -182,10 +206,6 @@ public:
 	void RemoveItemToList(uint8 ItemId, EShopCategoryTab TabType);
 
 	void InitUpgradeView();
-
-	// ≈◊Ω∫∆ÆøÎ, ƒ≥∏Ø≈Õ¿« Interact∏¶ ¥ÎΩ≈«‘.
-	UFUNCTION(BlueprintCallable, Category = "Shop", CallInEditor)
-	void Interact_Test(AActor* InstigatorActor);
 
 protected:
 
@@ -204,10 +224,33 @@ private:
 	void OnSlotEntryClicked(int32 ClickedSlotIndex);
 
 	UFUNCTION()
-	void OnBuyButtonClicked(int32 Quantity);
+	void OnSlotEntryDoubleClicked(int32 ClickedSlotIndex);
 
+	UFUNCTION()
+	void OnBuyListEntryClicked(int32 ClickedSlotIndex);
+
+	void OnAddButtonClicked(int32 Quantity);
+	void OnBuyButtonClicked();
 	void OnCloseButtonClicked();
 	void OnUpgradeSlotEntryClicked(int32 ClickedSlotIndex);
+
+	// Î∞òÌôòÍ∞í : Ïù∏Îç±Ïä§, ÏóÜÏúºÎ©¥ INDEX_NONE 
+	int8 IsSelectedItem(uint8 ItemId) const;
+	void AddToSelectedItemArray(uint8 ItemId, int8 Amount);
+	void RemoveFromSelecteItemArray(uint8 ItemId, int8 Amount);
+	void RemoveFromSelecteItemArray(int32 BuyListSlotIndex, int8 Amount);
+
+	UDataTableSubsystem* GetDatatableSubsystem();
+
+	// Í≥ÑÏÇ∞ Ïã§Ìå®ÌïòÎ©¥ INDEX_NONE Î∞òÌôò
+	int32 CalcTotalItemPrice(const TArray<uint8>& ItemIdList, const TArray<int8>& ItemCountList);
+
+	void LaunchItem();
+	void RotateDoor(float DegreeFrom, float DegreeTo, float Rate);
+
+	void ClearSelectedInfos();
+
+	EShopCategoryTab GetCurrentTab();
 
 #pragma endregion
 
@@ -219,6 +262,9 @@ protected:
 	TObjectPtr<UStaticMeshComponent> ShopMeshComponent;
 
 	UPROPERTY(VisibleAnywhere, Category = "Shop")
+	TObjectPtr<USkeletalMeshComponent> ShopMerchantMeshComponent;
+
+	UPROPERTY(VisibleAnywhere, Category = "Shop")
 	TObjectPtr<USkeletalMeshComponent> ItemMeshComponent;
 
 	UPROPERTY(VisibleAnywhere, Category = "Shop")
@@ -227,11 +273,47 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Shop")
 	TObjectPtr<UPointLightComponent> LightComp;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Shop");
-	TArray<uint8> DefaultConsumableItemIdList; // ∫Ì∑Á«¡∏∞∆Æ ≥Î√‚øÎ
+	UPROPERTY(EditDefaultsOnly, Category = "ShopSettings")
+	TArray<uint8> DefaultConsumableItemIdList; // Î∏îÎ£®ÌîÑÎ¶∞Ìä∏ ÎÖ∏Ï∂úÏö©
 
-	UPROPERTY(EditDefaultsOnly, Category = "Shop");
-	TArray<uint8> DefaultEquipmentItemIdList; // ∫Ì∑Á«¡∏∞∆Æ ≥Î√‚øÎ
+	UPROPERTY(EditDefaultsOnly, Category = "ShopSettings")
+	TArray<uint8> DefaultEquipmentItemIdList; // Î∏îÎ£®ÌîÑÎ¶∞Ìä∏ ÎÖ∏Ï∂úÏö©
+	
+	UPROPERTY(EditInstanceOnly, Category = "ShopSettings")
+	TObjectPtr<ATargetPoint> OriginPoint;
+
+	UPROPERTY(EditInstanceOnly, Category = "ShopSettings")
+	TObjectPtr<ATargetPoint> DestinationPoint;
+
+	UPROPERTY(EditInstanceOnly, Category = "ShopSettings")
+	float ForceAmount = 1000.0f;
+
+	UPROPERTY(EditAnywhere, Category = "ShopSettings")
+	float LaunchItemInterval = 1.0f;
+
+	UPROPERTY(EditAnywhere, Category = "ShopSettings")
+	float LaunchItemIntervalAtFirst = 1.0f;
+
+	UPROPERTY(EditAnywhere, Category = "ShopSettings")
+	float LaunchItemIntervalAtLast = 1.0f;
+
+	UPROPERTY(EditAnywhere, Category = "ShopSettings")
+	float ErrorOfLaunchDirection = 1.0f;
+
+	UPROPERTY(EditAnywhere, Category = "ShopSettings | Door")
+	float DoorOpenSpeed = 1.0f;
+
+	UPROPERTY(EditAnywhere, Category = "ShopSettings | Door")
+	float DoorCloseSpeed = 1.0f;
+
+	UPROPERTY(EditAnywhere, Category = "ShopSettings | Door")
+	float DesiredOpenDegree = 1.0f;
+
+	UPROPERTY(EditAnywhere, Category = "ShopSettings | Door")
+	float DesiredCloseDegree = 1.0f;
+
+	UPROPERTY(EditInstanceOnly, Category = "ShopSettings | Door")
+	TObjectPtr<AActor> DoorActor;
 
 	UPROPERTY(Replicated)
 	FShopItemIdList ShopConsumableItemIdList;
@@ -253,22 +335,52 @@ protected:
 
 private:
 
-	UPROPERTY()
 	TArray<uint8> CachedUpgradeGradeMap;
 
 	int32 CurrentSelectedItemId = INDEX_NONE;
 	EUpgradeType CurrentSelectedUpgradeType;
 	uint8 bIsOpened : 1;
 
+	// ItemId, ItemCount
+	TArray<uint8> SelectedItemIdArray;
+	TArray<int8> SelectedItemCountArray;
+
+	static const int8 MaxItemCount;
+
+	TQueue<uint8> ReadyQueueForLaunchItemById;
+
+	float ElapsedTime = 0.0f;
+
+	int32 TotalPriceOfBuyList = 0;
+
+	ELaunchType CurrentLaunchType = ELaunchType::First;
+
+
+	UPROPERTY(Replicated)
+	EDoorState CurrentDoorState = EDoorState::Closed;
+
+	float CurrentDoorRate = 0.0f;
+
+	uint8 bIsDoorOpenSoundPlayed : 1 = false;
+	uint8 bIsDoorCloseSoundPlayed : 1 = false;
+	int32 DoorOpenAudioId = INDEX_NONE;
+	int32 DoorCloseAudioId = INDEX_NONE;
+
 #pragma endregion
 
 #pragma region Getters, Setters
+
+public:
 
 	virtual UADInteractableComponent* GetInteractableComponent() const override;
 	virtual bool IsHoldMode() const;
 	bool HasItem(int32 ItemId);
 	bool IsOpened() const;
 	virtual FString GetInteractionDescription() const override;
+
+private:
+
+	class USoundSubsystem* GetSoundSubsystem();
 
 #pragma endregion
 

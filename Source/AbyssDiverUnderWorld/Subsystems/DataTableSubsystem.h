@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
@@ -9,6 +9,7 @@ enum class EUpgradeType : uint8;
 enum class EMapName : uint8;
 struct FFADItemDataRow;
 struct FFADProjectileDataRow;
+struct FButtonDataRow;
 struct FUpgradeDataRow;
 struct FDropEntry;
 struct FPhaseGoalRow;
@@ -31,6 +32,7 @@ public:
 	FFADItemDataRow* GetItemData(int32 ItemId) const;
 	FFADItemDataRow* GetItemDataByName(FName ItemName) const;
 	FFADProjectileDataRow* GetProjectileData(int32 ProjectileId) const;
+	FButtonDataRow* GetButtonData(int32 ProjectileId) const;
 	FUpgradeDataRow* GetUpgradeDataTableArray(int32 Index) const;
 	FDropEntry* GetOreDropEntryTableArray(int32 Id) const;
 
@@ -38,14 +40,17 @@ public:
 
 	FPhaseGoalRow* GetPhaseGoalData(EMapName MapName, int32 Phase) const;
 
-	const FString& GetMapPath(EMapName MapName) const;
+	// 유효하지 않으면 "invalid" 반환
+	FString GetMapPath(EMapName MapName) const;
 
 	FShopItemMeshTransformRow* GetShopItemMeshTransformData(int32 ItemId) const;
 
 private:
+
 	void ParseUpgradeDataTable(class UADGameInstance* GameInstance);
 	void ParsePhaseGoalDataTable(class UADGameInstance* GameInstance);
 	void ParseMapPathDataTable(class UADGameInstance* GameInstance);
+	void ParseShopItemMeshTransformDataTable(class UADGameInstance* GameInstance);
 	
 #pragma endregion
 
@@ -54,7 +59,10 @@ private:
 private:
 
 	TArray<FFADItemDataRow*> ItemDataTableArray;
+	TMap<uint8, FFADItemDataRow*> ItemDataTableMap;
+
 	TArray<FFADProjectileDataRow*> ProjectileDataTableArray;
+	TArray<FButtonDataRow*> ButtonDataTableArray;
 	TArray<FUpgradeDataRow*> UpgradeTableArray;
 	TMap<TPair<EUpgradeType, uint8>, FUpgradeDataRow*> UpgradeTableMap;
 	TArray<FDropEntry*> OreDropEntryTableArray;
@@ -66,6 +74,7 @@ private:
 	TMap<EMapName, FString> MapPathDataTableMap;
 
 	TArray<FShopItemMeshTransformRow*> ShopItemMeshTransformTableArray;
+	TMap<uint8, FShopItemMeshTransformRow*> ShopItemMeshTransformTableMap;
 
 #pragma endregion
 

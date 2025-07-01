@@ -18,7 +18,6 @@
 #include "UI/ChargeBatteryWidget.h"
 #include "Character/UnderwaterCharacter.h"
 #include "Kismet/GameplayStatics.h"
-#include "Interactable/OtherActors/ADDroneSeller.h"
 #include "Framework/ADInGameState.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
@@ -26,6 +25,7 @@
 #include "Framework/ADGameInstance.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Interactable/EquipableComponent/EquipRenderComponent.h"
 
 DEFINE_LOG_CATEGORY(InventoryLog);
 
@@ -33,9 +33,9 @@ UADInventoryComponent::UADInventoryComponent() :
 	ToggleWidgetClass(nullptr),
 	TotalWeight(0),
 	TotalPrice(0),
-	WeightMax(100),
 	CurrentEquipmentSlotIndex(INDEX_NONE),
 	CurrentEquipmentInstance(nullptr),
+	WeightMax(100),
 	ToggleWidgetInstance(nullptr),
 	bCanUseItem(true),
 	DataTableSubsystem(nullptr),
@@ -84,7 +84,19 @@ void UADInventoryComponent::BeginPlay()
 		DataTableSubsystem = GI->GetSubsystem<UDataTableSubsystem>();
 		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
 	}
+	
+	TryCachedDiver();
+	SetComponentTickEnabled(true);
+}
 
+void UADInventoryComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+{
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+	// CachedDiver가 아직 null일 때만 재시도
+	if (!CachedDiver)
+	{
+		TryCachedDiver();
+	}
 }
 
 void UADInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -95,9 +107,13 @@ void UADInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	DOREPLIFETIME(UADInventoryComponent, TotalWeight);
 	DOREPLIFETIME(UADInventoryComponent, CurrentEquipmentSlotIndex);
 	DOREPLIFETIME(UADInventoryComponent, CurrentEquipmentInstance);
+	DOREPLIFETIME(UADInventoryComponent, CurrentEquipItem);
+	DOREPLIFETIME(UADInventoryComponent, bIsWeapon);
+	DOREPLIFETIME(UADInventoryComponent, EquipmentType);
+	DOREPLIFETIME(UADInventoryComponent, CachedDiver);
 }
 
-void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType, uint8 SlotIndex)
+void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType, uint8 SlotIndex, bool bIgnoreCoolTime)
 {
 	if (ItemType == EItemType::Equipment)
 	{
@@ -106,12 +122,15 @@ void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType
 
 	if (!bCanUseItem) return;
 
-	bCanUseItem = false;
+	if (!bIgnoreCoolTime)
+	{
+		bCanUseItem = false;
 
-	FTimerHandle UseCoolTimeHandle;
-	float CoolTime = 0.3f; // 아이템 사용 쿨타임 설정
-	GetWorld()->GetTimerManager().SetTimer(UseCoolTimeHandle, this, &UADInventoryComponent::OnUseCoolTimeEnd, CoolTime, false);
-
+		FTimerHandle UseCoolTimeHandle;
+		float CoolTime = 0.3f; // 아이템 사용 쿨타임 설정
+		GetWorld()->GetTimerManager().SetTimer(UseCoolTimeHandle, this, &UADInventoryComponent::OnUseCoolTimeEnd, CoolTime, false);
+	}
+	
 	int8 InventoryIndex = GetInventoryIndexByTypeAndSlotIndex(ItemType, SlotIndex);
 	if (InventoryIndex == -1) return;
 	FItemData& Item = InventoryList.Items[InventoryIndex];
@@ -298,7 +317,8 @@ void UADInventoryComponent::C_SetButtonActive_Implementation(EChargeBatteryType 
 
 void UADInventoryComponent::C_UpdateBatteryInfo_Implementation()
 {
-	ChargeBatteryWidget->UpdateBatteryInfo();
+	if(ChargeBatteryWidget)
+		ChargeBatteryWidget->UpdateBatteryInfo();
 }
 
 void UADInventoryComponent::C_SetEquipBatteryAmount_Implementation(EChargeBatteryType ItemChargeBatteryType)
@@ -324,90 +344,70 @@ void UADInventoryComponent::InventoryInitialize()
 		return;
 	}
 
-	ToggleWidgetInstance->AddToViewport();
+	ToggleWidgetInstance->AddToViewport(1);
 	ToggleWidgetInstance->InitializeInventoriesInfo(this);
 	ToggleWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
 
-	AADInGameState* GS = Cast<AADInGameState>(UGameplayStatics::GetGameState(GetWorld()));
-	if (GS == nullptr)
-	{
-		LOGINVEN(Warning, TEXT("GS == nullptr"));
-		return;
-	}
-
-	AADDroneSeller* CurrentDroneSeller = GS->GetCurrentDroneSeller();
-	if (CurrentDroneSeller == nullptr)
-	{
-		LOGINVEN(Warning, TEXT("CurrentDroneSeller == nullptr, Server? : %d"), GetOwner()->GetNetMode() != ENetMode::NM_Client);
-		return;
-	}
-
-	ToggleWidgetInstance->SetDroneTargetText(CurrentDroneSeller->GetTargetMoney());
-	ToggleWidgetInstance->SetDroneCurrentText(CurrentDroneSeller->GetCurrentMoney());
-
-	CurrentDroneSeller->OnCurrentMoneyChangedDelegate.RemoveAll(ToggleWidgetInstance);
-	CurrentDroneSeller->OnCurrentMoneyChangedDelegate.AddUObject(ToggleWidgetInstance, &UToggleWidget::SetDroneCurrentText);
-
-	CurrentDroneSeller->OnTargetMoneyChangedDelegate.RemoveAll(ToggleWidgetInstance);
-	CurrentDroneSeller->OnTargetMoneyChangedDelegate.AddUObject(ToggleWidgetInstance, &UToggleWidget::SetDroneTargetText);
-
-
+	InventoryUIUpdate();
 }
 
 bool UADInventoryComponent::AddInventoryItem(const FItemData& ItemData)
 {
 	if (TotalWeight + ItemData.Mass <= WeightMax)
 	{
-		FFADItemDataRow* FoundRow = DataTableSubsystem->GetItemDataByName(ItemData.Name); 
-		if (FoundRow)
+		if (DataTableSubsystem)
 		{
-			int8 ItemIndex = FindItemIndexByName(ItemData.Name);
-			if (ItemData.ItemType == EItemType::Equipment)
+			FFADItemDataRow* FoundRow = DataTableSubsystem->GetItemData(ItemData.Id);
+			if (FoundRow)
 			{
-				if (ItemIndex != -1)
-					return false;
-			}
-			LOGINVEN(Warning, TEXT("AddInventoryItem ItemIndex : %d"), ItemIndex);
-			bool bIsUpdateSuccess = false;
+				int8 ItemIndex = FindItemIndexByName(ItemData.Name);
+				if (ItemData.ItemType == EItemType::Equipment)
+				{
+					if (ItemIndex != -1)
+						return false;
+				}
+				LOGINVEN(Warning, TEXT("AddInventoryItem ItemIndex : %d"), ItemIndex);
+				bool bIsUpdateSuccess = false;
 
-			if (FoundRow->Stackable && ItemIndex != -1)
-			{
-				bIsUpdateSuccess = InventoryList.UpdateQuantity(ItemIndex, ItemData.Quantity);
-				if(InventoryList.Items[ItemIndex].Amount > ItemData.Amount)
-					InventoryList.SetAmount(ItemIndex, ItemData.Amount);
+				if (FoundRow->Stackable && ItemIndex != -1)
+				{
+					bIsUpdateSuccess = InventoryList.UpdateQuantity(ItemIndex, ItemData.Quantity);
+					if (InventoryList.Items[ItemIndex].Amount > ItemData.Amount)
+						InventoryList.SetAmount(ItemIndex, ItemData.Amount);
+					if (bIsUpdateSuccess)
+					{
+						LOGINVEN(Warning, TEXT("Item Update, ItemName : %s, Id : %d"), *InventoryList.Items[ItemIndex].Name.ToString(), InventoryList.Items[ItemIndex].Id);
+					}
+					else
+						LOGINVEN(Warning, TEXT("Update fail"));
+				}
+				else
+				{
+					if (InventoryIndexMapByType.Contains(ItemData.ItemType) && GetTypeInventoryEmptyIndex(ItemData.ItemType) != INDEX_NONE)
+					{
+						bIsUpdateSuccess = true;
+						uint8 SlotIndex = GetTypeInventoryEmptyIndex(ItemData.ItemType);
+
+						FItemData NewItem = { FoundRow->Name, FoundRow->Id, ItemData.Quantity, SlotIndex, ItemData.Amount, ItemData.CurrentAmmoInMag, ItemData.ReserveAmmo, ItemData.Mass,ItemData.Price, FoundRow->ItemType, FoundRow->BulletType, FoundRow->Thumbnail };
+						InventoryList.AddItem(NewItem);
+						if (ItemData.ItemType == EItemType::Exchangable)
+						{
+							OnInventoryInfoUpdate(NewItem.Mass, NewItem.Price);
+						}
+						LOGINVEN(Warning, TEXT("Add New Item %s SlotIndex : %d"), *NewItem.Name.ToString(), SlotIndex);
+					}
+					else
+					{
+						LOGINVEN(Warning, TEXT("%s Inventory is full"), *StaticEnum<EItemType>()->GetNameStringByValue((int64)ItemData.ItemType));
+					}
+				}
+
 				if (bIsUpdateSuccess)
 				{
-					LOGINVEN(Warning, TEXT("Item Update, ItemName : %s, Id : %d"), *InventoryList.Items[ItemIndex].Name.ToString(), InventoryList.Items[ItemIndex].Id);
+					InventoryUIUpdate();
+					CheckItemsForBattery();
+					return true;
 				}
-				else
-					LOGINVEN(Warning, TEXT("Update fail"));
-			}
-			else
-			{
-				if (InventoryIndexMapByType.Contains(ItemData.ItemType) && GetTypeInventoryEmptyIndex(ItemData.ItemType) != INDEX_NONE)
-				{
-					bIsUpdateSuccess = true;
-					uint8 SlotIndex = GetTypeInventoryEmptyIndex(ItemData.ItemType);
-				
-					FItemData NewItem = { FoundRow->Name, FoundRow->Id, ItemData.Quantity, SlotIndex, ItemData.Amount, ItemData.Mass,ItemData.Price, FoundRow->ItemType, FoundRow->Thumbnail };
-					InventoryList.AddItem(NewItem);
-					if (ItemData.ItemType == EItemType::Exchangable)
-					{
-						OnInventoryInfoUpdate(NewItem.Mass, NewItem.Price);
-					}
-					LOGINVEN(Warning, TEXT("Add New Item %s SlotIndex : %d"), *NewItem.Name.ToString(), SlotIndex);
-				}
-				else
-				{
-					LOGINVEN(Warning, TEXT("%s Inventory is full"), *StaticEnum<EItemType>()->GetNameStringByValue((int64)ItemData.ItemType));
-				}
-			}
-
-			if (bIsUpdateSuccess)
-			{
-				InventoryUIUpdate();
-				CheckItemsForBattery();
-				return true;
 			}
 		}
 	}
@@ -450,6 +450,47 @@ void UADInventoryComponent::HideInventory()
 void UADInventoryComponent::OnRep_InventoryList()
 {
 	InventoryUIUpdate();
+}
+
+void UADInventoryComponent::OnRep_CurrentEquipItem()
+{
+	if (!CachedDiver)
+	{
+		LOGINVEN(Warning, TEXT("CachedDiver is null"));
+		return;
+	}
+
+	UEquipRenderComponent* EquipRenderComp = CachedDiver->GetEquipRenderComponent();
+	if (!EquipRenderComp)
+	{
+		LOGINVEN(Warning, TEXT("EquipRenderComp is null"));
+		return;
+	}
+
+	if (PrevEquipItem)
+	{
+		EquipRenderComp->DetachItem(PrevEquipItem);
+		PrevEquipItem->Destroy();
+		PrevEquipItem = nullptr;
+	}
+	if (CurrentEquipItem)
+	{
+		FName Socket = NAME_None;
+		switch (EquipmentType)
+		{
+		case EEquipmentType::HarpoonGun:	Socket = HarpoonSocketName; break;
+		case EEquipmentType::FlareGun:		Socket = FlareSocketName;   break;
+		case EEquipmentType::DPV:			Socket = DPVSocketName;     break;
+		default:														break;
+		}
+
+		if (USkeletalMeshComponent* SkeletalMeshComp = CurrentEquipItem->FindComponentByClass<USkeletalMeshComponent>())
+		{
+			SkeletalMeshComp->SetVisibility(false, true);
+			EquipRenderComp->AttachItem(CurrentEquipItem, Socket);
+		}
+		PrevEquipItem = CurrentEquipItem;
+	}
 }
 
 int8 UADInventoryComponent::FindItemIndexByName(FName ItemName) //빈슬롯이 없으면 -1 반환
@@ -546,6 +587,7 @@ void UADInventoryComponent::ClientRequestInventoryInitialize()
 
 void UADInventoryComponent::InventoryUIUpdate()
 {
+	LOGINVEN(Warning, TEXT("InventoryUIUpdate"));
 	RebuildIndexMap();
 	if (InventoryUpdateDelegate.IsBound())
 	{
@@ -560,7 +602,7 @@ void UADInventoryComponent::InventoryUIUpdate()
 void UADInventoryComponent::CopyInventoryFrom(UADInventoryComponent* Source)
 {
 	if (!Source) return;
-
+	LOGINVEN(Warning, TEXT("CopyInventory"));
 	InventoryList.Items.Empty();
 
 	for (const FItemData& Item : Source->InventoryList.Items)
@@ -617,6 +659,7 @@ void UADInventoryComponent::PlayEquipAnimation(AUnderwaterCharacter* Character, 
 	if (!HarpoonDrawMontage || !DPVDrawMontage)
 		return;
 
+	LOGVN(Warning, TEXT("Play EquipAnimation!!"));
 	FAnimSyncState SyncState;
 	SyncState.bEnableRightHandIK = true;
 	SyncState.bEnableLeftHandIK = false;
@@ -625,6 +668,7 @@ void UADInventoryComponent::PlayEquipAnimation(AUnderwaterCharacter* Character, 
 
 	UAnimMontage* Montage = bIsHarpoon ? HarpoonDrawMontage : DPVDrawMontage;
 
+	Character->M_StopAllMontagesOnBothMesh(0.f);
 	Character->M_PlayMontageOnBothMesh(
 		Montage,
 		1.0f,
@@ -677,6 +721,21 @@ FItemData* UADInventoryComponent::GetEditableItemDataByName(FName ItemNameToEdit
 	return nullptr;
 }
 
+bool UADInventoryComponent::TryGiveAmmoToEquipment(EBulletType BulletType, int32 AmountPerPickup)
+{
+	for (FItemData& Item : InventoryList.Items)  
+	{
+		if (Item.ItemType == EItemType::Equipment &&
+			Item.BulletType == BulletType)
+		{
+			Item.ReserveAmmo += AmountPerPickup;
+			InventoryList.MarkItemDirty(Item); 
+			return true;      
+		}
+	}
+	return false;
+}
+
 int8 UADInventoryComponent::GetInventoryIndexByTypeAndSlotIndex(EItemType Type, int8 SlotIndex) //못 찾으면 -1 반환
 {
 	int8 InventoryIndex = INDEX_NONE;
@@ -715,13 +774,24 @@ void UADInventoryComponent::Equip(FItemData& ItemData, int8 SlotIndex)
 
 	ACharacter* Character = Cast<ACharacter>(Pawn);
 	USkeletalMeshComponent* MeshComp = Character->GetMesh();
+	CachedDiver = Cast<AUnderwaterCharacter>(Pawn);
+	UEquipRenderComponent* EquipRenderComp = CachedDiver->GetEquipRenderComponent();
+	if (!Character || !CachedDiver || !EquipRenderComp)
+		return;
 
 	if (MeshComp)
 	{
-		if (MeshComp->DoesSocketExist("Harpoon") && MeshComp->DoesSocketExist("DPV"))
+		if (MeshComp->DoesSocketExist(HarpoonSocketName) && MeshComp->DoesSocketExist(DPVSocketName))
 		{
+			//const FName SocketName = bIsWeapon ? HarpoonSocketName : DPVSocketName;
+			//FTransform AttachTM = MeshComp->GetSocketTransform(SocketName);
 
-			AADUseItem* SpawnedItem = GetWorld()->SpawnActor<AADUseItem>(AADUseItem::StaticClass(), MeshComp->GetSocketLocation("Harpoon"), MeshComp->GetSocketRotation("Hand_R"), SpawnParams);
+			AADUseItem* SpawnedItem = GetWorld()->SpawnActor<AADUseItem>(
+				AADUseItem::StaticClass(),
+				FVector::ZeroVector,
+				FRotator::ZeroRotator,
+				SpawnParams
+			);
 			if (!SpawnedItem)
 			{
 				LOGINVEN(Warning, TEXT("No SpawnItem"));
@@ -729,59 +799,80 @@ void UADInventoryComponent::Equip(FItemData& ItemData, int8 SlotIndex)
 			}
 
 			C_InventoryPlaySound(ESFX::Equip);
-			SpawnedItem->SetItemInfo(ItemData, true);
+			SpawnedItem->SetItemInfo(ItemData, true, EEnvironmentState::MAX);
 			CurrentEquipmentInstance = SpawnedItem;
 			LOGINVEN(Warning, TEXT("ItemToEquip Name: %s, Amount %d"), *ItemData.Name.ToString(), ItemData.Amount);
 			SetEquipInfo(SlotIndex, SpawnedItem);
 			
-			if (UEquipUseComponent* EquipComp = Pawn->FindComponentByClass<UEquipUseComponent>()) // 나중에 Getter로 바꿔야 함
+			if (UEquipUseComponent* EquipComp = CachedDiver->GetEquipUseComponent())
 			{
 				if (GetCurrentEquipmentItemData())
 				{
 					EquipComp->Initialize(*GetCurrentEquipmentItemData());
 					bIsWeapon = EquipComp->bIsWeapon;
+					EquipmentType = EquipComp->GetEquipType();
+					bHasNoAnimation = EquipComp->bHasNoAnimation;
 				}
 			}
-
-			if (bIsWeapon)
-			{
-				SpawnedItem->AttachToComponent(MeshComp, FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("Harpoon"));
-
-			}
-			else
-			{
-				SpawnedItem->AttachToComponent(MeshComp, FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("DPV"));
-			}
+			CurrentEquipItem = SpawnedItem;
+			OnRep_CurrentEquipItem();
 		}
 	}
 	if (AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(Pawn))
 	{
 		LOGINVEN(Log, TEXT("Play Equip Montage!!"));
-		PlayEquipAnimation(UnderwaterCharacter, bIsWeapon);
+		if (UnderwaterCharacter->SpawnedTool)
+		{
+			UnderwaterCharacter->CleanupToolAndEffects();
+		}
+		if (!bHasNoAnimation)
+		{
+			PlayEquipAnimation(UnderwaterCharacter, bIsWeapon);
+		}
 	}
 }
 
 void UADInventoryComponent::UnEquip()
 {
 	// EquipComp의 장비 현재값 초기화
-	if (APlayerState* PS = Cast<APlayerState>(GetOwner()))
+	if (CurrentEquipmentInstance)
 	{
-		// GetPawn() returns the pawn possessed by this PlayerState
-		if (APawn* Pawn = PS->GetPawn())
+		if (APlayerState* PS = Cast<APlayerState>(GetOwner()))
 		{
-			// Now find your EquipUseComponent on the pawn
-			if (UEquipUseComponent* EquipComp = Pawn->FindComponentByClass<UEquipUseComponent>())
+			if (APawn* Pawn = PS->GetPawn())
 			{
-				EquipComp->DeinitializeEquip();
-				InventoryList.MarkItemDirty(InventoryList.Items[FindItemIndexByName(CurrentEquipmentInstance->ItemData.Name)]);
+				AUnderwaterCharacter* Diver = Cast<AUnderwaterCharacter>(Pawn);
+				if (!Diver)
+					return;
+
+				const float MontageStopSeconds = 1.0f;
+				Diver->M_StopAllMontagesOnBothMesh(MontageStopSeconds);
+				if (UEquipUseComponent* EquipComp = Diver->GetEquipUseComponent())
+				{
+					EquipComp->DeinitializeEquip();
+					InventoryList.MarkItemDirty(InventoryList.Items[FindItemIndexByName(CurrentEquipmentInstance->ItemData.Name)]);
+				}
+			
 			}
 		}
+		C_InventoryPlaySound(ESFX::UnEquip);
+		/*LOGINVEN(Warning, TEXT("UnEquipItem %s"), *CurrentEquipmentInstance->ItemData.Name.ToString());
+		if(CurrentEquipmentInstance)
+			CurrentEquipmentInstance->Destroy();*/
+		if (CachedDiver)
+		{
+			if (UEquipRenderComponent* EquipRender = CachedDiver->GetEquipRenderComponent())
+			{
+				EquipRender->DetachItem(CurrentEquipmentInstance);
+			}
+			CurrentEquipmentInstance->Destroy();
+			CurrentEquipItem->Destroy();
+			CurrentEquipmentInstance = nullptr;
+			CurrentEquipItem = nullptr;
+		}
 	}
-	C_InventoryPlaySound(ESFX::UnEquip);
-	LOGINVEN(Warning, TEXT("UnEquipItem %s"), *CurrentEquipmentInstance->ItemData.Name.ToString());
-	if(CurrentEquipmentInstance)
-		CurrentEquipmentInstance->Destroy();
 	SetEquipInfo(INDEX_NONE, nullptr);
+
 }
 
 void UADInventoryComponent::DropItem(FItemData& ItemData)
@@ -792,9 +883,15 @@ void UADInventoryComponent::DropItem(FItemData& ItemData)
 	APawn* Pawn = PS->GetPawn();
 	if (!Pawn) return;
 
-	if (ItemData.Name == CurrentEquipmentInstance->ItemData.Name)
+	if (CurrentEquipmentInstance && ItemData.Name == CurrentEquipmentInstance->ItemData.Name)
 	{
-		if (UEquipUseComponent* EquipComp = Pawn->FindComponentByClass<UEquipUseComponent>())
+		AUnderwaterCharacter* Diver = Cast<AUnderwaterCharacter>(Pawn);
+		if (!Diver)
+			return;
+
+		const float MontageStopSeconds = 1.0f;
+		Diver->M_StopAllMontagesOnBothMesh(MontageStopSeconds);
+		if (UEquipUseComponent* EquipComp = Diver->GetEquipUseComponent())
 		{
 			EquipComp->DeinitializeEquip();
 		}
@@ -807,7 +904,8 @@ void UADInventoryComponent::DropItem(FItemData& ItemData)
 	{
 		M_SpawnItemEffect(ESFX::DropItem, DropItemEffect, DropLocation);
 	}
-	SpawnItem->SetItemInfo(ItemData, false);
+	SpawnItem->M_SetItemVisible(true);
+	SpawnItem->SetItemInfo(ItemData, false, UnderwaterCharacter->GetEnvironmentState());
 	LOGINVEN(Warning, TEXT("Spawn Item To Drop : %s"), *ItemData.Name.ToString());
 }
 
@@ -859,6 +957,28 @@ void UADInventoryComponent::PrintLogInventoryData()
 			}
 			else
 				LOGVN(Warning, TEXT("NoItems"));
+		}
+	}
+}
+
+void UADInventoryComponent::TryCachedDiver()
+{
+	if (CachedDiver) return;
+
+	if (AADPlayerState* PlayerState = Cast<AADPlayerState>(GetOwner()))
+	{
+		if (APawn* Pawn = PlayerState->GetPawn())
+		{
+			if (AUnderwaterCharacter* Diver = Cast<AUnderwaterCharacter>(Pawn))
+			{
+				CachedDiver = Diver;
+				SetComponentTickEnabled(false);
+
+				if (CurrentEquipItem)
+				{
+					OnRep_CurrentEquipItem();
+				}
+			}
 		}
 	}
 }

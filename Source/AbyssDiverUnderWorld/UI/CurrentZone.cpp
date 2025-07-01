@@ -16,8 +16,25 @@ ACurrentZone::ACurrentZone()
     TriggerZone->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
     TriggerZone->SetGenerateOverlapEvents(true);
 
+    DeepTriggerZone = CreateDefaultSubobject<UBoxComponent>(TEXT("DeepTriggerZone"));
+    DeepTriggerZone->SetupAttachment(RootComponent);
+
+    DeepTriggerZone->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+    DeepTriggerZone->SetCollisionObjectType(ECC_WorldStatic);
+    DeepTriggerZone->SetCollisionResponseToAllChannels(ECR_Ignore);
+    DeepTriggerZone->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+    DeepTriggerZone->SetGenerateOverlapEvents(true);
+
+    if (TriggerZone->OnComponentBeginOverlap.IsBound())
+    {
+        return;
+    }
+
     TriggerZone->OnComponentBeginOverlap.AddDynamic(this, &ACurrentZone::OnOverlapBegin);
     TriggerZone->OnComponentEndOverlap.AddDynamic(this, &ACurrentZone::OnOverlapEnd);
+
+    DeepTriggerZone->OnComponentBeginOverlap.AddDynamic(this, &ACurrentZone::OnDeepTriggerOverlapBegin);
+    DeepTriggerZone->OnComponentEndOverlap.AddDynamic(this, &ACurrentZone::OnDeepTriggerOverlapEnd);
 }
 
 void ACurrentZone::BeginPlay()
@@ -37,8 +54,8 @@ void ACurrentZone::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* O
 {
     if (AUnderwaterCharacter* Character = Cast<AUnderwaterCharacter>(OtherActor))
     {
-        AffectedCharacters.Add(Character);
-
+        AffectedCharacters.Add(Character, false);
+        
         if (UCharacterMovementComponent* Movement = Character->GetCharacterMovement())
         {
             if (!OriginalSpeeds.Contains(Character))
@@ -47,15 +64,8 @@ void ACurrentZone::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* O
                 OriginalAccelerations.Add(Character, Movement->MaxAcceleration);
             }
 
-            FVector LaunchVelocity = PushDirection.GetSafeNormal() * 1000.f;
-            Character->LaunchCharacter(LaunchVelocity, true, false);
-
             // 무조건 타이머 재시작 (중복 등록 방지용 IsTimerActive 제거)
             GetWorldTimerManager().SetTimer(CurrentForceTimer, this, &ACurrentZone::ApplyCurrentForce, 0.05f, true);
-
-            FVector Velocity = Character->GetVelocity();
-            float Speed = Velocity.Size();
-            float DirDot = !Velocity.IsNearlyZero() ? FVector::DotProduct(Velocity.GetSafeNormal(), PushDirection.GetSafeNormal()) : 0.f;
         }
     }
 }
@@ -79,11 +89,6 @@ void ACurrentZone::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* Oth
                 Movement->MaxAcceleration = OriginalAccelerations[Character];
                 OriginalAccelerations.Remove(Character);
             }
-
-            FVector Velocity = Character->GetVelocity();
-            float Speed = Velocity.Size();
-            float DirDot = !Velocity.IsNearlyZero() ? FVector::DotProduct(Velocity.GetSafeNormal(), PushDirection.GetSafeNormal()) : 0.f;
-
         }
 
         if (AffectedCharacters.Num() == 0)
@@ -94,42 +99,81 @@ void ACurrentZone::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* Oth
         FTimerHandle RecoverMovementTimer;
         GetWorld()->GetTimerManager().SetTimer(RecoverMovementTimer, [Character]()
             {
-                if (Character && Character->GetCharacterMovement())
+                if (IsValid(Character) && Character->IsPendingKillPending() == false && Character->IsValidLowLevel() && Character->GetCharacterMovement())
                 {
-                    Character->GetCharacterMovement()->SetMovementMode(MOVE_Swimming);
+                    UCharacterMovementComponent* CharacterMovement = Character->GetCharacterMovement();
+                    if (IsValid(CharacterMovement) == false || CharacterMovement->IsValidLowLevel() == false)
+                    {
+                        return;
+                    }
+
+                    CharacterMovement->SetMovementMode(MOVE_Swimming);
                 }
             }, 2.0f, false);
     }
 }
 
+void ACurrentZone::OnDeepTriggerOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+    if (AUnderwaterCharacter* Character = Cast<AUnderwaterCharacter>(OtherActor))
+    {
+        if (AffectedCharacters.Contains(Character) == false)
+        {
+            return;
+        }
+
+        AffectedCharacters[Character] = true;
+        LOGV(Log, TEXT(" %s is In DeepCurrent"), *Character->GetName());
+    }
+}
+
+void ACurrentZone::OnDeepTriggerOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+    if (AUnderwaterCharacter* Character = Cast<AUnderwaterCharacter>(OtherActor))
+    {
+        if (AffectedCharacters.Contains(Character) == false)
+        {
+            return;
+        }
+
+        AffectedCharacters[Character] = false;
+        LOGV(Log, TEXT(" %s is Out of DeepCurrent"), *Character->GetName());
+    }
+}
+
 void ACurrentZone::ApplyCurrentForce()
 {
-    for (AUnderwaterCharacter* Character : AffectedCharacters)
+    for (TPair<TObjectPtr<AUnderwaterCharacter>, bool>& CharacterPair : AffectedCharacters)
     {
+        AUnderwaterCharacter* Character = CharacterPair.Key;
+
         if (!Character || !Character->GetCharacterMovement())
             continue;
 
-        auto* Movement = Character->GetCharacterMovement();
+        UCharacterMovementComponent* Movement = Character->GetCharacterMovement();
 
         if (Movement->IsFalling() || Movement->MovementMode == MOVE_None)
         {
             Movement->SetMovementMode(MOVE_Swimming);
         }
 
-        FVector PushDir = PushDirection.GetSafeNormal();
-        FVector InputDir = Movement->GetLastInputVector().GetSafeNormal();
-        float Dot = FVector::DotProduct(InputDir, PushDir);
-
-        float FinalFlowStrength = FlowStrength;
-
-        if (!InputDir.IsNearlyZero())
+        // 캐릭터 속도 0.1배 만들기 필요
+        bool bIsInDeepCurrentZone = CharacterPair.Value;
+        if (bIsInDeepCurrentZone)
         {
-            if (Dot < -0.3f)       FinalFlowStrength *= 0.0f;   // 뒤로 갈 때: 흐름 힘 완전 제거
-            else if (Dot < 0.3f)   FinalFlowStrength *= 0.3f;   // 측면 이동 시: 약하게
-            else                   FinalFlowStrength *= 1.0f;   // 흐름 따라갈 때: 그대로
+            Character->SetZoneSpeedMultiplier(0.1f);
+            LOGV(Log, TEXT(" %s : 0.1"), *Character->GetName());
+        }
+        else
+        {
+            Character->SetZoneSpeedMultiplier(1.0f);
+            LOGV(Log, TEXT(" %s : 1.0"), *Character->GetName());
         }
 
-        FVector FlowForce = PushDir * FinalFlowStrength * Movement->GetMaxAcceleration() * GetWorld()->DeltaTimeSeconds;
+        FVector PushDir = PushDirection.GetSafeNormal();
+        float FinalFlowStrength = FlowStrength;
+
+        const FVector FlowForce = PushDir * FinalFlowStrength * Movement->GetMaxAcceleration() * GetWorld()->DeltaTimeSeconds;
 
         Movement->Velocity += FlowForce;
     }

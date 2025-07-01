@@ -5,7 +5,10 @@
 
 #include "Kismet/GameplayStatics.h"
 
-UADGameInstance::UADGameInstance()
+const int32 UADGameInstance::MAX_PLAYER_NUMBER = 4;
+
+UADGameInstance::UADGameInstance(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
 {
 }
 
@@ -14,15 +17,29 @@ void UADGameInstance::Init()
     Super::Init();
 
 	bIsHost = false;
-    PlayerIdMap.Empty(MAX_PLAYER_NUMBER);
+
+    InitPlayerInfos();
+
+    SettingsManager = NewObject<USettingsManager>(this);
+    SettingsManager->LoadAllSettings(GetFirstLocalPlayerController());
+
+    SettingsManager->InitializeActionMap(GetInputActionMap());
+}
+
+
+void UADGameInstance::InitPlayerInfos()
+{
+    CurrentPlayerIdMap.Empty(MAX_PLAYER_NUMBER);
     ValidPlayerIndexArray.Init(false, MAX_PLAYER_NUMBER);
+
+    TotalPlayerIdSet.Empty(MAX_PLAYER_NUMBER);
 }
 
 bool UADGameInstance::TryGetPlayerIndex(const FString& NetId, int32& OutPlayerIndex)
 {
-    if (PlayerIdMap.Contains(NetId))
+    if (CurrentPlayerIdMap.Contains(NetId))
     {
-        OutPlayerIndex = PlayerIdMap[NetId];
+        OutPlayerIndex = CurrentPlayerIdMap[NetId];
         return true;
     }
 
@@ -39,7 +56,9 @@ void UADGameInstance::AddPlayerNetId(const FString& NetId)
         }
 
         ValidPlayerIndexArray[i] = true;
-        PlayerIdMap.Add(NetId, i + 1);
+        CurrentPlayerIdMap.Add(NetId, i);
+        TotalPlayerIdSet.Add(NetId);
+
         return;
     }
 
@@ -49,15 +68,19 @@ void UADGameInstance::AddPlayerNetId(const FString& NetId)
 void UADGameInstance::RemovePlayerNetId(const FString& NetId)
 {
     int32 PlayerIndex = 0;
-
     if(TryGetPlayerIndex(NetId, PlayerIndex) == false)
     {
         LOGV(Warning, TEXT("Remove Failed Because of Not Valid NetId"));
         return;
     }
 
-    ValidPlayerIndexArray[PlayerIndex - 1] = false;
-    PlayerIdMap.Remove(NetId);
+    ValidPlayerIndexArray[PlayerIndex] = false;
+    CurrentPlayerIdMap.Remove(NetId);
+}
+
+bool UADGameInstance::HasBeenVisited(const FString& NetId)
+{
+    return TotalPlayerIdSet.Contains(NetId);
 }
 
 void UADGameInstance::ChangeMasterVolume(const float& NewVolume)
@@ -79,6 +102,7 @@ void UADGameInstance::ChangeAmbientVolume(const float& NewVolume)
 {
     GetSubsystem<USoundSubsystem>()->ChangeAmbientVolume(NewVolume);
 }
+
 
 const float UADGameInstance::GetCurrentMasterVolume() const
 {

@@ -17,4 +17,5 @@ class ABYSSDIVERUNDERWORLD_API AHorrorCreatureAIController : public AMonsterAICo
 public:
 	AHorrorCreatureAIController();
 
+	virtual void OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus) override;
 };

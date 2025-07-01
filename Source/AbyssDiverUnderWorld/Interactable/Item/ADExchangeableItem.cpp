@@ -2,6 +2,7 @@
 #include "Net/UnrealNetwork.h"
 #include "AbyssDiverUnderWorld.h"
 #include "GameFramework/ProjectileMovementComponent.h"
+#include "Components/PointLightComponent.h"
 
 AADExchangeableItem::AADExchangeableItem()
 {
@@ -9,12 +10,27 @@ AADExchangeableItem::AADExchangeableItem()
 	RootComponent = MeshComponent;
 	MeshComponent->SetMobility(EComponentMobility::Movable); 
 	MeshComponent->SetIsReplicated(true);
+	MeshComponent->SetCollisionProfileName(TEXT("BlockAllDynamicAndInteraction"));
 	bReplicates = true;
 }
 void AADExchangeableItem::BeginPlay()
 {
 	Super::BeginPlay();
 	CalculateTotalPrice();
+
+	DynamicMaterial = MeshComponent->CreateAndSetMaterialInstanceDynamic(0);
+	if (IsValid(DynamicMaterial) && DynamicMaterial->IsValidLowLevel())
+	{
+		DynamicMaterial->SetScalarParameterValue(TEXT("GlowPower"), MinGlow);
+	}
+
+	GetWorld()->GetTimerManager().SetTimer(
+		PulseTimerHandle,
+		this,
+		&AADExchangeableItem::UpdateGlow,
+		0.03f,
+		true
+	);
 }
 
 void AADExchangeableItem::OnRep_TotalPrice()
@@ -25,9 +41,6 @@ void AADExchangeableItem::OnRep_TotalPrice()
 void AADExchangeableItem::Interact_Implementation(AActor* InstigatorActor)
 {
 	if (!HasAuthority()) return;
-	LOGI(Log, TEXT("Mineral's Mass : %d"), ItemData.Mass);
-	ItemData.Price = TotalPrice;
-	LOGI(Log, TEXT("Mineral's Price : %d"), ItemData.Price);
 
 	HandlePickup(Cast<APawn>(InstigatorActor));
 }
@@ -35,6 +48,9 @@ void AADExchangeableItem::Interact_Implementation(AActor* InstigatorActor)
 void AADExchangeableItem::CalculateTotalPrice()
 {
 	TotalPrice = ItemData.Mass * ValuePerUnit;
+	LOGI(Log, TEXT("Mineral's Mass : %d"), ItemData.Mass);
+	ItemData.Price = TotalPrice;
+	LOGI(Log, TEXT("Mineral's Price : %d"), ItemData.Price);
 }
 
 void AADExchangeableItem::HandlePickup(APawn* InstigatorPawn)
@@ -50,4 +66,19 @@ void AADExchangeableItem::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AADExchangeableItem, TotalPrice);
+}
+
+void AADExchangeableItem::UpdateGlow()
+{
+	if (!IsValid(DynamicMaterial) || !DynamicMaterial->IsValidLowLevel()) 
+		return;
+
+	const float TimeSec = GetWorld()->GetTimeSeconds();
+	const float Raw = FMath::Sin(TimeSec * PulseFrequency * 2 * PI);
+
+	const float Normalized = (Raw + 1.f) * 0.5f;
+
+	const float GlowValue = FMath::Lerp(MinGlow, MaxGlow, Normalized);
+
+	DynamicMaterial->SetScalarParameterValue(TEXT("GlowPower"), GlowValue);
 }

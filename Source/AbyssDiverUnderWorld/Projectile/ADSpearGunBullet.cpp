@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Projectile/ADSpearGunBullet.h"
@@ -16,6 +16,7 @@
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
 #include "AbyssDiverUnderWorld.h"
+#include "Character/UnderwaterCharacter.h"
 
 AADSpearGunBullet::AADSpearGunBullet() : 
 	StaticMesh(nullptr),
@@ -31,6 +32,7 @@ AADSpearGunBullet::AADSpearGunBullet() :
 
     Damage = 450.0f;
 
+    ProjectileMovementComp->ProjectileGravityScale = 0.0f;
 }
 
 void AADSpearGunBullet::M_SpawnFX_Implementation(UNiagaraSystem* Effect, ESFX SFXType, const FVector& SpawnLocation)
@@ -62,6 +64,7 @@ void AADSpearGunBullet::OnRep_BulletType()
 void AADSpearGunBullet::BeginPlay()
 {
     Super::BeginPlay();
+    InitialRotator = StaticMesh->GetRelativeRotation();
     if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
     {
         DTSubsystem = GI->GetSubsystem<UDataTableSubsystem>();
@@ -78,35 +81,63 @@ void AADSpearGunBullet::BeginPlay()
 
 void AADSpearGunBullet::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
+    if (!HasAuthority()) return;
+    if (OtherActor->IsA<AUnderwaterCharacter>()) return;
     if (!bWasHit)
     {
         bWasHit = true;
-        TrailEffect->Deactivate();
+        if (TrailEffect)
+        {
+            TrailEffect->Deactivate();
+            M_EffectActivate(false);
+        }
+        LOGP(Warning, TEXT("SetProjectileMovementAttribute"));
+        LOGP(Warning, TEXT("Hit Basic Damage To %s"), *OtherActor->GetName());
+        ProjectileMovementComp->Deactivate();
+
         if (OtherActor && OtherActor != this && OtherComp && OtherComp->GetOwner() != this)
         {
             GetSoundSubsystem()->PlayAt(ESFX::Hit, SweepResult.Location);
-            if (HasAuthority())
-            {
-                UGameplayStatics::ApplyPointDamage(
-                    OtherActor,
-                    Damage,
-                    GetActorForwardVector(),
-                    SweepResult,
-                    GetInstigatorController(),
-                    GetOwner(),
-                    UDamageType::StaticClass()
-                );
-                AttachToHitActor(OtherComp, SweepResult, true);
-                M_AdjustTransform(GetActorTransform()); //위치 보정
-            }
-            LOGP(Warning, TEXT("Hit Basic Damage To %s"), *OtherActor->GetName());
+
+            if (!GetInstigatorController() || !GetOwner()) return;
+            else LOGP(Warning, TEXT("InstigatorController or Owner is not"));
+
+
+            UGameplayStatics::ApplyPointDamage(
+                OtherActor,
+                Damage,
+                GetActorForwardVector(),
+                SweepResult,
+                GetInstigatorController(),
+                GetOwner(),
+                UDamageType::StaticClass()
+            );
+            AttachToHitActor(OtherComp, SweepResult, true);
+            M_AdjustTransform(GetActorTransform()); //위치 보정
             ApplyAdditionalDamage();
         }
-        LOGP(Warning, TEXT("SetProjectileMovementAttribute"));
-        ProjectileMovementComp->StopMovementImmediately();
-        ProjectileMovementComp->Deactivate();
     }
 
+}
+
+void AADSpearGunBullet::Deactivate()
+{
+    Super::Deactivate();
+    bWasHit = false;
+
+    LOGP(Warning, TEXT("ADSpearGunBulletDeactivate"));
+
+    // StaticMesh 상태 복원
+    StaticMesh->SetSimulatePhysics(false);
+    StaticMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    StaticMesh->SetCollisionProfileName("NoCollision");
+
+    // 부착 해제
+    DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+    StaticMesh->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
+    StaticMesh->SetRelativeLocation(FVector::ZeroVector);
+    StaticMesh->SetRelativeRotation(InitialRotator);
+    SetActorScale3D(FVector::OneVector);
 }
 
 void AADSpearGunBullet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -267,7 +298,7 @@ void AADSpearGunBullet::Addict()
         if (PoisonEffect)
         {
         
-                M_SpawnFX(PoisonEffect, ESFX::Max, GetActorLocation());
+            M_SpawnFX(PoisonEffect, ESFX::Max, GetActorLocation());
         }
     }
 

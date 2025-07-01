@@ -4,6 +4,9 @@
 #include "Monster/BT/BTService_SetMonsterState.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Monster/EMonsterState.h"
+#include "Monster/Monster.h"
+#include "Character/UnderwaterCharacter.h"
+#include "AIController.h"
 
 UBTService_SetMonsterState::UBTService_SetMonsterState()
 {
@@ -20,6 +23,12 @@ void UBTService_SetMonsterState::TickNode(UBehaviorTreeComponent& OwnerComp, uin
 
 	UBlackboardComponent* Blackboard = OwnerComp.GetBlackboardComponent();
 	if (!Blackboard) return;
+	AAIController* AIController = OwnerComp.GetAIOwner();
+	if (!AIController) return;
+	APawn* AIPawn = AIController->GetPawn();
+	if (!AIPawn) return;
+	AMonster* Monster = Cast<AMonster>(AIPawn);
+	if (!Monster) return;
 
 	const uint8 MonsterState = Blackboard->GetValueAsEnum(MonsterStateKey.SelectedKeyName);
 
@@ -27,20 +36,20 @@ void UBTService_SetMonsterState::TickNode(UBehaviorTreeComponent& OwnerComp, uin
 	{
 	case EMonsterState::Chase:
 	{
-		AActor* Target = Cast<AActor>(Blackboard->GetValueAsObject(TargetActorKey.SelectedKeyName));
-		if (!IsValid(Target))
+		if (Monster->TargetActor == nullptr)
 		{
-			Blackboard->ClearValue(TargetActorKey.SelectedKeyName);
-			Blackboard->SetValueAsEnum(MonsterStateKey.SelectedKeyName, static_cast<uint8>(EMonsterState::Patrol));
+			Monster->SetMonsterState(EMonsterState::Patrol);
 		}
-		break;
-	}
-	case EMonsterState::Investigate:
-	{
-		const FVector InvestigateLocation = Blackboard->GetValueAsVector(InvestigateLocationKey.SelectedKeyName);
-		if (InvestigateLocation.IsZero())
+		else
 		{
-			Blackboard->SetValueAsEnum(MonsterStateKey.SelectedKeyName, static_cast<uint8>(EMonsterState::Patrol));
+			AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Monster->TargetActor);
+			if (Player)
+			{
+				if (Player->GetCharacterState() == ECharacterState::Death)
+				{
+					Monster->SetMonsterState(EMonsterState::Patrol);
+				}
+			}
 		}
 		break;
 	}

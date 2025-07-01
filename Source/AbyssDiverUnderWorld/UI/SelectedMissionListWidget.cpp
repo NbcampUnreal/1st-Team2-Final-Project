@@ -6,12 +6,16 @@
 #include "Subsystems/MissionSubsystem.h"
 
 #include "Components/VerticalBox.h"
+#include "Components/VerticalBoxSlot.h"
 #include "Components/TextBlock.h"
 #include "Kismet/GameplayStatics.h"
+#include "SelectedMissionSlot.h"
+
 
 void USelectedMissionListWidget::NativeConstruct()
 {
     Super::NativeConstruct();
+
 
     if (!VerticalBox_MissionList)
     {
@@ -24,12 +28,25 @@ void USelectedMissionListWidget::NativeConstruct()
 
 void USelectedMissionListWidget::AddElement(const FString& ElementText)
 {
-    UTextBlock* MissionText = NewObject<UTextBlock>(this);
-    MissionText->SetText(FText::FromString(ElementText));
-    MissionText->SetFont(FSlateFontInfo(FCoreStyle::GetDefaultFontStyle("Bold", 24)));
-    MissionText->SetColorAndOpacity(FSlateColor(FLinearColor::White));
+    //미션 구조체 추가
+    if (!SelectedMissionSlotClass) return;
+    APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0);
+    if (!PC || !PC->IsLocalController()) return;
 
-    VerticalBox_MissionList->AddChildToVerticalBox(MissionText);
+    USelectedMissionSlot* SlotWidget = CreateWidget<USelectedMissionSlot>(PC, SelectedMissionSlotClass);
+    SlotWidget->SetMissionTitle(ElementText);
+    //UTextBlock* MissionText = NewObject<UTextBlock>(this);
+    //MissionText->SetText(FText::FromString(ElementText));
+    //MissionText->SetFont(FSlateFontInfo(FCoreStyle::GetDefaultFontStyle("Bold", 17)));
+    //MissionText->SetColorAndOpacity(FSlateColor(FLinearColor::White));
+
+    UVerticalBoxSlot* VerticalSlot = VerticalBox_MissionList->AddChildToVerticalBox(SlotWidget);
+    if (VerticalSlot)
+    {
+        VerticalSlot->SetSize(ESlateSizeRule::Fill);
+        VerticalSlot->SetHorizontalAlignment(HAlign_Left); // (선택) 가로로도 채우기
+        VerticalSlot->SetVerticalAlignment(VAlign_Center);
+    }
     LOGV(Warning, TEXT("%s"), *ElementText);
 }
 
@@ -40,10 +57,18 @@ void USelectedMissionListWidget::RemoveElementAt(const int32& Index)
 
 void USelectedMissionListWidget::ModifyElementAt(const FString& NewText, const int32& Index)
 {
+    //인덱스 받아서 텍스트의 색깔을 바꾸거나 줄 긋기
+
     UTextBlock* Element = CastChecked<UTextBlock>(VerticalBox_MissionList->GetChildAt(Index));
 
     Element->SetText(FText::FromString(NewText));
     LOGV(Warning, TEXT("%s"), *NewText);
+}
+
+void USelectedMissionListWidget::FinishElementAt(const int8& Index)
+{
+    USelectedMissionSlot* Element = CastChecked<USelectedMissionSlot>(VerticalBox_MissionList->GetChildAt(Index));
+    Element->OnMissionFinished();
 }
 
 void USelectedMissionListWidget::AddOrModifyElement(int32 ChangedIndex, const FActivatedMissionInfoList& ChangedValue)

@@ -2,6 +2,7 @@
 #include "AbyssDiverUnderWorld.h"
 #include "EngineUtils.h"
 #include "EnhancedBossAIController.h"
+#include "NavigationPath.h"
 #include "Enum/EBossPhysicsType.h"
 #include "Enum/EBossState.h"
 #include "BehaviorTree/BlackboardComponent.h"
@@ -18,6 +19,7 @@
 #include "NavigationSystem.h"
 #include "NiagaraFunctionLibrary.h"
 #include "Enum/EPerceptionType.h"
+#include "Framework/ADPlayerController.h"
 #include "Perception/AISense_Damage.h"
 #include "Interactable/OtherActors/Radars/RadarReturnComponent.h"
 
@@ -29,11 +31,7 @@ ABoss::ABoss()
 	PrimaryActorTick.bCanEverTick = false;
 	
 	bIsAttackCollisionOverlappedPlayer = false;
-	BlackboardComponent = nullptr;
-	AIController = nullptr;
 	TargetPlayer = nullptr;
-	LastDetectedLocation = FVector::ZeroVector;
-	AttackRadius = 500.0f;
 	LaunchPower = 1000.0f;
 	MinPatrolDistance = 500.0f;
 	MaxPatrolDistance = 1000.0f;
@@ -72,15 +70,8 @@ void ABoss::BeginPlay()
 	
 	AnimInstance = GetMesh()->GetAnimInstance();
 
-	// @TODO: 캐스팅하는 AIController 최소화 필요
-	AIController = Cast<ABossAIController>(GetController());
 	EnhancedAIController = Cast<AEnhancedBossAIController>(GetController());
-
-	if (IsValid(AIController))
-	{
-		BlackboardComponent = AIController->GetBlackboardComponent();
-	}
-
+	
 	CachedSpawnLocation = GetActorLocation();
 
 	AttackCollision->OnComponentBeginOverlap.AddDynamic(this, &ABoss::OnAttackCollisionOverlapBegin);
@@ -89,6 +80,8 @@ void ABoss::BeginPlay()
 	GetCharacterMovement()->MaxSwimSpeed = StatComponent->GetMoveSpeed();
 	OriginDeceleration = GetCharacterMovement()->BrakingDecelerationSwimming;
 	CurrentMoveSpeed = StatComponent->MoveSpeed;
+
+	SphereOverlapRadius = GetCapsuleComponent()->GetScaledCapsuleRadius() * 0.5f;
 
 	Params.AddIgnoredActor(this);
 }
@@ -179,15 +172,13 @@ void ABoss::SetNewTargetLocation()
         if (!bHit)
         {
             TargetLocation = PotentialTarget;
-            
-            LOG(TEXT("Forward-biased target set (Attempt %d): %s (Distance: %f)"), 
-                   Attempts + 1,
-                   *TargetLocation.ToString(), 
-                   FVector::Dist(CurrentLocation, TargetLocation));
 
 #if WITH_EDITOR
-            DrawDebugSphere(GetWorld(), TargetLocation, 50.0f, 12, FColor::Yellow, false, 3.0f, 0, 5.0f);
-            DrawDebugLine(GetWorld(), CurrentLocation, TargetLocation, FColor::Yellow, false, 3.0f, 0, 3.0f);
+        	if (bDrawDebugLine)
+        	{
+        		DrawDebugSphere(GetWorld(), TargetLocation, 50.0f, 12, FColor::Yellow, false, 3.0f, 0, 5.0f);
+        		DrawDebugLine(GetWorld(), CurrentLocation, TargetLocation, FColor::Yellow, false, 3.0f, 0, 3.0f);
+        	}
 #endif
             
             return;
@@ -208,8 +199,12 @@ void ABoss::SetNewTargetLocation()
         
 #if WITH_EDITOR
         // 디버그용 목표점 표시
-        DrawDebugSphere(GetWorld(), TargetLocation, 50.0f, 12, FColor::Cyan, false, 3.0f, 0, 5.0f);
-        DrawDebugLine(GetWorld(), CurrentLocation, TargetLocation, FColor::Cyan, false, 3.0f, 0, 3.0f);
+    	if (bDrawDebugLine)
+    	{
+    		DrawDebugSphere(GetWorld(), TargetLocation, 50.0f, 12, FColor::Cyan, false, 3.0f, 0, 5.0f);
+    		DrawDebugLine(GetWorld(), CurrentLocation, TargetLocation, FColor::Cyan, false, 3.0f, 0, 3.0f);	
+    	}
+
 #endif
         
         return;
@@ -233,7 +228,10 @@ void ABoss::SetNewTargetLocation()
     LOG(TEXT("Fallback target set: %s"), *TargetLocation.ToString());
 
 #if WITH_EDITOR
-    DrawDebugSphere(GetWorld(), TargetLocation, 50.0f, 12, FColor::Red, false, 3.0f, 0, 5.0f);
+	if (bDrawDebugLine)
+	{
+		DrawDebugSphere(GetWorld(), TargetLocation, 50.0f, 12, FColor::Red, false, 3.0f, 0, 5.0f);
+	}
 #endif
 }
 
@@ -243,13 +241,22 @@ void ABoss::SmoothMoveAlongSurface(const float& InDeltaTime)
     FHitResult NearestHit;
     float NearestDistance = TNumericLimits<float>::Max();
     
-    TArray<FVector> Directions = {
-        -GetActorUpVector(),
-        GetActorUpVector(),
-        GetActorRightVector(),
-        -GetActorRightVector()
-    };
-    
+    // 월드 기준 절대적인 방향으로 변경
+    TArray<FVector> Directions;
+
+	if (bEnableDownTrace)
+	{
+		Directions.Emplace(-FVector::UpVector * 1.75f);
+	}
+
+	if (bEnableHorizontalTrace)
+	{
+		Directions.Emplace(FVector::RightVector);
+		Directions.Emplace(-FVector::RightVector);
+		Directions.Emplace(FVector::ForwardVector);
+		Directions.Emplace(-FVector::ForwardVector);
+	}
+	
     for (const FVector& Dir : Directions)
     {
         FHitResult HitResult;
@@ -275,7 +282,10 @@ void ABoss::SmoothMoveAlongSurface(const float& InDeltaTime)
             }
         }
 #if WITH_EDITOR
-        DrawDebugLine(GetWorld(), Start, End, FColor::Blue, false, 0.1f, 0, 2.0f);
+        if (bDrawDebugLine)
+        {
+           DrawDebugLine(GetWorld(), Start, End, FColor::Blue, false, 0.1f, 0, 2.0f);
+        }
 #endif
     }
 
@@ -313,7 +323,6 @@ void ABoss::PerformNormalMovement(const float& InDeltaTime)
     // 목표점이 없거나 Nav Mesh를 벗어났으면 목표점을 새로 설정한다.
     if (TargetLocation.IsZero() || !IsLocationOnNavMesh(TargetLocation))
     {
-        LOG(TEXT("Target invalid or outside NavMesh, setting new target"));
         SetNewTargetLocation();
         return;
     }
@@ -323,7 +332,6 @@ void ABoss::PerformNormalMovement(const float& InDeltaTime)
     // 목표점에 도달했으면 새 목표점 설정
     if (DistanceToTarget < MinTargetDistance)
     {
-        LOG(TEXT("Reached target (Distance: %f), setting new target"), DistanceToTarget);
         SetNewTargetLocation();
         return;
     }
@@ -342,7 +350,6 @@ void ABoss::PerformNormalMovement(const float& InDeltaTime)
     // 목표점이 너무 뒤쪽에 있거나 접근하기 어려운 경우 새로 목표점을 지정한다.
     if (DistanceToTarget > WanderRadius * 2.0f)
     {
-        LOG(TEXT("Target too far , setting new target"));
         SetNewTargetLocation();
         return;
     }
@@ -388,21 +395,55 @@ void ABoss::PerformNormalMovement(const float& InDeltaTime)
 
 void ABoss::PerformChasing(const float& InDeltaTime)
 {
-	// @TODO: TargetPlayer가 IsValid 하지 않으면 일반 상태로 전환 로직 필요
 	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(EnhancedAIController->GetBlackboardComponent()->GetValueAsObject("TargetPlayer"));
 	if (!IsValid(Player)) return;
 
 	const FVector CurrentLocation = GetActorLocation();
 	const FVector PlayerLocation = Player->GetActorLocation();
-	const FVector ToPlayer = (PlayerLocation - CurrentLocation).GetSafeNormal();
+
+	// NavMesh를 사용한 경로 탐색
+	UNavigationSystemV1* NavSystem = UNavigationSystemV1::GetCurrent(GetWorld());
+	if (!IsValid(NavSystem)) return;
+
+	// 경로 찾기
+	UNavigationPath* NavPath = NavSystem->FindPathToLocationSynchronously(
+		GetWorld(),
+		CurrentLocation,
+		PlayerLocation,
+		this,
+		TSubclassOf<UNavigationQueryFilter>()
+	);
+
+	FVector TargetDirection;
+
+	if (IsValid(NavPath) && NavPath->PathPoints.Num() > 1)
+	{
+		// 경로가 존재하는 경우, 다음 경로점으로 방향 설정
+		// PathPoints[0]은 현재 위치, PathPoints[1]이 다음 목표점
+		const FVector NextPathPoint = NavPath->PathPoints[1];
+		TargetDirection = (NextPathPoint - CurrentLocation).GetSafeNormal();
     
-	// 플레이어 방향으로 회전
+		// 경로점에 충분히 가까워졌다면 그 다음 점을 타겟으로 설정
+		const float DistanceToNextPoint = FVector::Dist(CurrentLocation, NextPathPoint);
+		if (DistanceToNextPoint < 100.0f && NavPath->PathPoints.Num() > 2)
+	    {
+	        const FVector SecondNextPoint = NavPath->PathPoints[2];
+	        TargetDirection = (SecondNextPoint - CurrentLocation).GetSafeNormal();
+	    }
+	}
+	else
+	{
+	    // 경로가 없는 경우 직접 플레이어 방향으로 (기존 로직)
+	    TargetDirection = (PlayerLocation - CurrentLocation).GetSafeNormal();
+	}
+
+	// 타겟 방향으로 회전
 	const FRotator CurrentRotation = GetActorRotation();
-	const FRotator TargetRotation = ToPlayer.Rotation();
+	const FRotator TargetRotation = TargetDirection.Rotation();
 	const FRotator NewRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, InDeltaTime, RotationInterpSpeed * ChasingRotationSpeedMultiplier);
 	SetActorRotation(NewRotation);
-    
-	// 플레이어 방향으로 이동
+
+	// 전방벡터로 이동 (기존 로직 유지)
 	const float AdjustedMoveSpeed = StatComponent->MoveSpeed * ChasingMovementSpeedMultiplier;
 	CurrentMoveSpeed = FMath::FInterpTo(CurrentMoveSpeed, AdjustedMoveSpeed, InDeltaTime, MovementInterpSpeed);
 	const FVector NewLocation = CurrentLocation + GetActorForwardVector() * CurrentMoveSpeed * InDeltaTime;
@@ -420,6 +461,7 @@ void ABoss::StartTurn()
     const FVector Forward = GetActorForwardVector();
     
     TArray<FVector> PossibleDirections = {
+    	
         // 수평 방향들
         Forward.RotateAngleAxis(30.0f, Up),
         Forward.RotateAngleAxis(-30.0f, Up),
@@ -431,12 +473,27 @@ void ABoss::StartTurn()
         // 수직 방향들
         Forward.RotateAngleAxis(45.0f, Right),
         Forward.RotateAngleAxis(-45.0f, Right),
-        
-        // 대각선 방향들
-        Forward.RotateAngleAxis(45.0f, Up).RotateAngleAxis(30.0f, Right),
-        Forward.RotateAngleAxis(-45.0f, Up).RotateAngleAxis(30.0f, Right),
-        Forward.RotateAngleAxis(45.0f, Up).RotateAngleAxis(-30.0f, Right),
-        Forward.RotateAngleAxis(-45.0f, Up).RotateAngleAxis(-30.0f, Right)
+
+    	// 후방 수평 방향들
+    	Forward.RotateAngleAxis(120.0f, Up),
+	    Forward.RotateAngleAxis(-120.0f, Up),
+	    Forward.RotateAngleAxis(150.0f, Up),
+	    Forward.RotateAngleAxis(-150.0f, Up),
+
+    	// 대각선 방향들
+		Forward.RotateAngleAxis(45.0f, Up).RotateAngleAxis(30.0f, Right),
+		Forward.RotateAngleAxis(-45.0f, Up).RotateAngleAxis(30.0f, Right),
+		Forward.RotateAngleAxis(45.0f, Up).RotateAngleAxis(-30.0f, Right),
+		Forward.RotateAngleAxis(-45.0f, Up).RotateAngleAxis(-30.0f, Right),
+
+		// 후방 대각선 방향들
+    	Forward.RotateAngleAxis(135.0f, Up).RotateAngleAxis(30.0f, Right),
+		Forward.RotateAngleAxis(-135.0f, Up).RotateAngleAxis(30.0f, Right),
+		Forward.RotateAngleAxis(135.0f, Up).RotateAngleAxis(-30.0f, Right),
+		Forward.RotateAngleAxis(-135.0f, Up).RotateAngleAxis(-30.0f, Right),
+
+    	// 후방 방향
+	    Forward.RotateAngleAxis(180.0f, Up),
     };
     
     // 수평, 수직, 대각선 방향에 대해 라인 트레이싱을 한다.
@@ -444,39 +501,46 @@ void ABoss::StartTurn()
     for (const FVector& Direction : PossibleDirections)
     {
     	const FVector Start = GetActorLocation();
-    	const FVector End = Start + Direction * TraceDistance;
+    	const FVector End = Start + Direction * TurnTraceDistance;
         
-    	FHitResult HitResult;
-    	bool bHit = GetWorld()->LineTraceSingleByChannel(
-			HitResult,
-			Start,
-			End,
-			ECC_Visibility,
-			Params
+    	// 목표 지점에서 Sphere Overlap 검사
+    	const bool bOverlap = GetWorld()->OverlapAnyTestByChannel(
+			End,                                                    // 검사할 위치
+			FQuat::Identity,                                                   // 회전 없음
+			ECC_Visibility,                                                    // 충돌 채널
+			FCollisionShape::MakeSphere(SphereOverlapRadius), // Sphere 크기
+			Params                                                             // 충돌 파라미터
 		);
 
+    	// NavMesh 검사
     	if (!IsLocationOnNavMesh(End))
     	{
     		continue;
     	}
+
 #if WITH_EDITOR
-    	// 디버그 라인 표시 (더 오래 표시)
-    	DrawDebugLine(GetWorld(), Start, End, bHit ? FColor::Red : FColor::Green, false, 5.0f, 0, 5.0f);
+    	// 디버그 표시
+    	if (bDrawDebugLine)
+    	{
+    		// 방향 라인
+    		DrawDebugLine(GetWorld(), Start, End, bOverlap ? FColor::Red : FColor::Green, false, 5.0f, 0, 3.0f);
+        
+    		// 목표 지점에 Sphere 표시
+    		DrawDebugSphere(GetWorld(), End, SphereOverlapRadius, 
+						   16, bOverlap ? FColor::Red : FColor::Green, false, 5.0f, 0, 2.0f);
+    	}
 #endif
-    	if (!bHit)
+
+    	// Overlap이 없으면 (빈 공간이면) 해당 방향 선택
+    	if (!bOverlap)
     	{
     		TurnDirection = Direction;
-    		
-    		// 즉시 한 번 회전 시도 (디버깅용)
-    		//LOG(TEXT("Attempting immediate turn..."));
-    		
     		return;
     	}
     }
 	
 	// 모든 방향이 막혔으면 뒤로 돌기
 	TurnDirection = -GetActorForwardVector();
-    LOG(TEXT("All directions blocked, turning toward random NavMesh point"));
 }
 
 void ABoss::ReturnToNavMeshArea()
@@ -497,8 +561,6 @@ void ABoss::ReturnToNavMeshArea()
         
 		TargetLocation = FVector::ZeroVector;
 		SetNewTargetLocation();
-        
-		LOG(TEXT("Returned to NavMesh at: %s"), *ClosestNavLocation.Location.ToString());
 	}
 }
 
@@ -533,31 +595,23 @@ void ABoss::PerformTurn(const float& InDeltaTime)
         
 		if (!bHit)
 		{
-			const bool bLocationSet = SetActorLocation(NextLocation, true);
-			if (!bLocationSet)
-			{
-				LOG(TEXT("Failed to move during turn"));
-			}
+			SetActorLocation(NextLocation, true);
 		}
 	}
-
-	const bool bHasObstacleAhead = EnhancedAIController->GetBlackboardComponent()->GetValueAsBool("bHasObstacleAhead");
-	if (bHasObstacleAhead)
-	{
-		StartTurn();
-		return;
-	}
+	
 	// 목표 회전 값과 현재 회전 값의 차이가 15도 미만이거나
 	// 회전을 시작한 지 2.0초를 초과했다면 회전을 종료하고 목표 지점을 재설정한다.
 	const float AngleDifference = FMath::Abs(FMath::FindDeltaAngleDegrees(CurrentRotation.Yaw, TargetRotation.Yaw));
-	if (AngleDifference < 15.0f || TurnTimer > 2.0f)
+	if (AngleDifference < 1.0f || TurnTimer > 2.0f)
 	{
 		EnhancedAIController->GetBlackboardComponent()->SetValueAsBool("bIsTurning", false);
 		TurnTimer = 0.0f;
-        
-		SetNewTargetLocation();
-        
-		LOG(TEXT("Turn completed, setting new target"));
+
+		const bool bIsChasingBlood = EnhancedAIController->GetBlackboardComponent()->GetValueAsBool("bIsChasingBlood");
+		if (!bIsChasingBlood)
+		{
+			SetNewTargetLocation();	
+		}
 	}
 }
 
@@ -597,8 +651,11 @@ bool ABoss::HasObstacleAhead()
 	{
 		DebugColor = FColor::Purple;
 	}
-    
-	DrawDebugLine(GetWorld(), Start, End, DebugColor, false, 0.1f, 0, 3.0f);
+
+	if (bDrawDebugLine)
+	{
+		DrawDebugLine(GetWorld(), Start, End, DebugColor, false, 0.1f, 0, 3.0f);
+	}
 #endif
     
 	return bPhysicalHit || bNavMeshBlocked;;
@@ -646,9 +703,12 @@ void ABoss::InitCharacterMovementSetting()
 void ABoss::SetBossState(EBossState State)
 {
 	if (!HasAuthority()) return;
-
-	BossState = State;
-	BlackboardComponent->SetValueAsEnum(BossStateKey, static_cast<uint8>(BossState));
+	
+	if (AAIController* AIController = Cast<AAIController>(GetController()))
+	{
+		BossState = State;
+		AIController->GetBlackboardComponent()->SetValueAsEnum(BossStateKey, static_cast<uint8>(BossState));	
+	}
 }
 #pragma endregion
 
@@ -660,7 +720,7 @@ float ABoss::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
 	if (BossState == EBossState::Death) return 0.0f;
 	
 	const float Damage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
-
+	
 	// 부위 타격 정보
 	if (DamageEvent.IsOfType(FPointDamageEvent::ClassID))
 	{
@@ -681,23 +741,17 @@ float ABoss::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
 		if (HitResult.ImpactPoint != FVector::ZeroVector)
 		{
 			LOG(TEXT("Damage Location: %s"), *HitResult.ImpactPoint.ToString());
-			if (IsValid(BloodEffect))
-			{
-				UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-				GetWorld(), BloodEffect,HitResult.ImpactPoint, FRotator::ZeroRotator, FVector(1), true, true );
-			}
+			M_PlayBloodEffect(HitResult.ImpactPoint, HitResult.ImpactNormal.Rotation());
 		}
 
 		UAISense_Damage::ReportDamageEvent(
 		GetWorld(),
 		this,        // 데미지를 입은 보스
-		DamageCauser,      // 공격한 플레이어
+		Cast<AADPlayerController>(DamageCauser)->GetCharacter(),      // 공격한 플레이어
 		Damage,
 		DamageCauser->GetActorLocation(),
 		HitResult.ImpactPoint
 		);
-
-		DamagedLocation = DamageCauser->GetActorLocation();
 	}
 	
 	if (IsValid(StatComponent))
@@ -710,23 +764,26 @@ float ABoss::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
 	return Damage;
 }
 
+void ABoss::M_PlayBloodEffect_Implementation(const FVector& Location, const FRotator& Rotation)
+{
+	if (IsValid(BloodEffect))
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			GetWorld(), BloodEffect, Location, Rotation, FVector(1), true, true);
+	}
+}
+
 void ABoss::OnDeath()
 {
-	GetCharacterMovement()->StopMovementImmediately();
-
-	// 피직스 에셋 물리엔진 적용
-	FTimerHandle TimerHandle;
-	GetWorldTimerManager().SetTimer(TimerHandle, this, &ABoss::ApplyPhysicsSimulation, 0.5f, false);	
-
-	// 이동을 멈추고 모든 애니메이션 출력 정지
-	AIController->StopMovement();
-	AnimInstance->StopAllMontages(0.5f);
+	M_OnDeath();
 	
-	// 사망 상태로 전이
-	SetBossState(EBossState::Death);
+	DeathToRaderOff();
 
-	// AIController 작동 중지
-	AIController->UnPossess();
+	if (IsValid(GetController()))
+	{
+		GetController()->StopMovement();
+		GetController()->UnPossess();	
+	}
 }
 #pragma endregion
 
@@ -774,30 +831,52 @@ void ABoss::RotationToTarget(const FVector& InTargetLocation)
 
 void ABoss::Attack()
 {
-	const uint8 AttackType = FMath::RandRange(0, NormalAttackAnimations.Num() - 1);
+	const uint8 AttackType = FMath::RandRange(0, AttackAnimations.Num() - 1);
 	
-	if (IsValid(NormalAttackAnimations[AttackType]))
+	if (IsValid(AttackAnimations[AttackType]))
 	{
 		ChaseAccumulatedTime = 0.f;
 		AnimInstance->OnMontageEnded.RemoveDynamic(this, &ABoss::OnAttackMontageEnded);
 		AnimInstance->OnMontageEnded.AddDynamic(this, &ABoss::OnAttackMontageEnded);
-		M_PlayAnimation(NormalAttackAnimations[AttackType]);
+		M_PlayAnimation(AttackAnimations[AttackType]);
 	}
+
+	bIsAttacking = true;
 }
 
 void ABoss::OnAttackEnded()
 {
+	bIsAttacking = false; 
 	AttackedPlayers.Empty();
 }
 
 void ABoss::SetMoveSpeed(const float& SpeedMultiplier)
 {
-	GetCharacterMovement()->MaxFlySpeed = StatComponent->MoveSpeed * SpeedMultiplier;
+	GetCharacterMovement()->MaxSwimSpeed = StatComponent->MoveSpeed * SpeedMultiplier;
 }
 
 void ABoss::M_PlayAnimation_Implementation(class UAnimMontage* AnimMontage, float InPlayRate, FName StartSectionName)
 {
 	PlayAnimMontage(AnimMontage, InPlayRate, StartSectionName);
+}
+
+void ABoss::M_OnDeath_Implementation()
+{
+	GetCharacterMovement()->StopMovementImmediately();
+
+	if (IsValid(AnimInstance))
+	{
+		// 모든 애니메이션 출력 정지
+		AnimInstance->StopAllMontages(0.5f);
+	}
+	
+	
+	// 사망 상태로 전이
+	SetBossState(EBossState::Death);
+	
+	// 피직스 에셋 물리엔진 적용
+	FTimerHandle TimerHandle;
+	GetWorldTimerManager().SetTimer(TimerHandle, this, &ABoss::ApplyPhysicsSimulation, 0.5f, false);
 }
 
 void ABoss::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted)
@@ -820,6 +899,9 @@ void ABoss::OnMeshOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* Othe
 {
 	// 사망 상태면 얼리 리턴
 	if (BossState == EBossState::Death) return;
+
+	// 공격 가능한 상태가 아니라면 리턴
+	if (!bIsAttacking) return;
 	
 	// 공격 대상이 플레이어가 아닌 경우 얼리 리턴
 	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(OtherActor);
@@ -877,6 +959,15 @@ void ABoss::OnAttackCollisionOverlapEnd(UPrimitiveComponent* OverlappedComp, AAc
 	if (!IsValid(Player)) return;
 	
 	bIsAttackCollisionOverlappedPlayer = false;
+}
+
+void ABoss::DeathToRaderOff()
+{
+	URadarReturnComponent* RaderComponent = Cast<URadarReturnComponent>(GetComponentByClass(URadarReturnComponent::StaticClass()));
+	if (RaderComponent)
+	{
+		RaderComponent->SetIgnore(true);
+	}
 }
 
 void ABoss::ApplyPhysicsSimulation()

@@ -1,4 +1,4 @@
-#include "ShopItemSlotWidget.h"
+ï»¿#include "ShopItemSlotWidget.h"
 
 #include "AbyssDiverUnderWorld.h"
 #include "Shops/ShopItemEntryData.h"
@@ -6,6 +6,8 @@
 
 #include "Components/Image.h"
 #include "Components/RichTextBlock.h"
+
+const float UShopItemSlotWidget::DoubleClickInterval = 0.5f;
 
 void UShopItemSlotWidget::NativeOnListItemObjectSet(UObject* ListItemObject)
 {
@@ -29,9 +31,34 @@ FReply UShopItemSlotWidget::NativeOnMouseButtonUp(const FGeometry& InGeometry, c
 {
     FReply Replay =  Super::NativeOnMouseButtonUp(InGeometry, InMouseEvent);
 
-    LOGV(Warning, TEXT("ShopItemSlotWidgetClicked, Index : %d"), SlotIndex);
-    OnShopItemSlotWidgetClickedDelegate.ExecuteIfBound(SlotIndex);
+    LOGV(Log, TEXT("ShopItemSlotWidgetClicked, Index : %d"), SlotIndex);
+    
     GetGameInstance()->GetSubsystem<USoundSubsystem>()->Play2D(ESFX_UI::UIClicked);
+
+    if (bCanDoubleClick)
+    {
+        bCanDoubleClick = false;
+        OnShopItemSlotWidgetDoubleClickedDelegate.ExecuteIfBound(SlotIndex);
+    }
+    else
+    {
+        UWorld* World = GetWorld();
+        if (IsValid(World) == false || World->IsInSeamlessTravel() || World->bIsTearingDown || World->IsValidLowLevel() == false)
+        {
+            LOGV(Log, TEXT("World Is Not Valid"));
+        }
+
+        bCanDoubleClick = true;
+
+        World->GetTimerManager().SetTimer(DoubleClickTimerHandle, [this]()
+            {
+                bCanDoubleClick = false;
+
+            }, DoubleClickInterval, false);
+
+        OnShopItemSlotWidgetClickedDelegate.ExecuteIfBound(SlotIndex);
+    }
+
     return Replay;
 }
 
@@ -51,7 +78,7 @@ void UShopItemSlotWidget::NativeOnMouseLeave(const FPointerEvent& InMouseEvent)
 
 void UShopItemSlotWidget::UpdateToolTipVisibility(bool bShouldShow)
 {
-    // ³ªÁß¿¡ ¼­¼­È÷ µîÀåÇÏ´Â È¿°ú¸¦ ³ÖÀ» ¼öµµ ÀÖ´Ù°í »ý°¢ÇØ¼­ Color·Î
+    // ë‚˜ì¤‘ì— ì„œì„œížˆ ë“±ìž¥í•˜ëŠ” íš¨ê³¼ë¥¼ ë„£ì„ ìˆ˜ë„ ìžˆë‹¤ê³  ìƒê°í•´ì„œ Colorë¡œ
     FLinearColor Color(1, 1, 1, 1);
 
     if (bShouldShow)
@@ -82,4 +109,9 @@ void UShopItemSlotWidget::SetSlotImage(UTexture2D* NewTexture)
 void UShopItemSlotWidget::SetToolTipText(const FString& NewText)
 {
     ToolTipTextBlock->SetText(FText::FromString(NewText));
+}
+
+void UShopItemSlotWidget::SetSlotIndex(int32 NewSlotIndex)
+{
+    SlotIndex = NewSlotIndex;
 }

@@ -2,17 +2,24 @@
 
 #include "AbyssDiverUnderWorld.h"
 #include "Character/PlayerHUDWidget.h"
-#include "Framework/ADInGameState.h"
-#include "Framework/ADPlayerState.h"
-#include "UI/ResultScreen.h"
-#include "UI/PlayerStatusWidget.h"
 #include "Character/UnderwaterCharacter.h"
 #include "Character/PlayerComponent/OxygenComponent.h"
 #include "Character/PlayerComponent/StaminaComponent.h"
 #include "Character/StatComponent.h"
+#include "Framework/ADInGameState.h"
+#include "Framework/ADPlayerState.h"
+#include "UI/ResultScreen.h"
+#include "UI/PlayerStatusWidget.h"
+#include "UI/MissionsOnHUDWidget.h"
 #include "GameFramework/PlayerController.h"
 #include "EngineUtils.h"
-#include "Logging/StructuredLogFormat.h"
+#include "Components/CanvasPanel.h"
+#include "Framework/ADPlayerController.h"
+#include "UI/CrosshairWidget.h"
+#include "Interactable/OtherActors/ADDroneSeller.h"
+#include "UI/SpectatorHUDWidget.h"
+#include "Subsystems/SoundSubsystem.h"
+#include "Kismet/GameplayStatics.h"
 
 UPlayerHUDComponent::UPlayerHUDComponent()
 {
@@ -23,14 +30,15 @@ void UPlayerHUDComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	APlayerController* PlayerController = Cast<APlayerController>(GetOwner());
+	AADPlayerController* PlayerController = Cast<AADPlayerController>(GetOwner());
 	if (!PlayerController || !PlayerController->IsLocalController())
 	{
 		return;
 	}
 
 	PlayerController->OnPossessedPawnChanged.AddDynamic(this, &UPlayerHUDComponent::OnPossessedPawnChanged);
-
+	PlayerController->OnSpectateChanged.AddDynamic(this, &UPlayerHUDComponent::OnSpectatingStateChanged);
+	
 	// 메인 HUD 생성
 	if (HudWidgetClass)
 	{
@@ -43,6 +51,16 @@ void UPlayerHUDComponent::BeginPlay()
 	}
 	SetTestHUDVisibility(false);
 
+	if (CrosshairWidgetClass)
+	{
+		CrosshairWidget = CreateWidget<UCrosshairWidget>(PlayerController, CrosshairWidgetClass);
+		if (CrosshairWidget)
+		{
+			CrosshairWidget->AddToViewport();
+			CrosshairWidget->BindWidget(PlayerController->GetPawn());
+		}
+	}
+
 	// 상태 UI 생성
 	if (PlayerStatusWidgetClass)
 	{
@@ -50,12 +68,19 @@ void UPlayerHUDComponent::BeginPlay()
 		if (PlayerStatusWidget)
 		{
 			PlayerStatusWidget->AddToViewport();
+			PlayerStatusWidget->SetCompassObjectWidgetVisible(true);
 		}
 	}
 
 	if (ResultScreenWidgetClass)
 	{
 		ResultScreenWidget = CreateWidget<UResultScreen>(PlayerController, ResultScreenWidgetClass);
+	}
+
+	if (MissionsOnHUDWidgetClass)
+	{
+		MissionsOnHUDWidget = CreateWidget<UMissionsOnHUDWidget>(PlayerController, MissionsOnHUDWidgetClass);
+		MissionsOnHUDWidget->AddToViewport();
 	}
 
 	// 올바른 수정
@@ -85,38 +110,53 @@ void UPlayerHUDComponent::BeginPlay()
 			}
 		}
 	}
+
+	if (SpectatorHUDWidgetClass)
+	{
+		SpectatorHUDWidget = CreateWidget<USpectatorHUDWidget>(PlayerController, SpectatorHUDWidgetClass);
+		if (SpectatorHUDWidget)
+		{
+			SpectatorHUDWidget->BindWidget(PlayerController);
+		}
+	}
+	
+	AADInGameState* GS = Cast<AADInGameState>(GetWorld()->GetGameState());
+	if (GS == nullptr)
+	{
+		LOGV(Warning, TEXT("GS == nullptr"));
+		return;
+	}
+	
+	AADDroneSeller* CurrentDroneSeller = GS->GetCurrentDroneSeller();
+	if (CurrentDroneSeller == nullptr)
+	{
+		LOGV(Warning, TEXT("CurrentDroneSeller == nullptr, Server? : %d"), GetOwner()->GetNetMode() != ENetMode::NM_Client);
+		return;
+	}
+
+	PlayerStatusWidget->SetDroneTargetText(CurrentDroneSeller->GetTargetMoney());
+	PlayerStatusWidget->SetDroneCurrentText(CurrentDroneSeller->GetCurrentMoney());
+	PlayerStatusWidget->SetMoneyProgressBar(CurrentDroneSeller->GetMoneyRatio());
+
+	CurrentDroneSeller->OnCurrentMoneyChangedDelegate.RemoveAll(PlayerStatusWidget);
+	CurrentDroneSeller->OnCurrentMoneyChangedDelegate.AddUObject(PlayerStatusWidget, &UPlayerStatusWidget::SetDroneCurrentText);
+
+	CurrentDroneSeller->OnTargetMoneyChangedDelegate.RemoveAll(PlayerStatusWidget);
+	CurrentDroneSeller->OnTargetMoneyChangedDelegate.AddUObject(PlayerStatusWidget, &UPlayerStatusWidget::SetDroneTargetText);
+
+	CurrentDroneSeller->OnMoneyRatioChangedDelegate.RemoveAll(PlayerStatusWidget);
+	CurrentDroneSeller->OnMoneyRatioChangedDelegate.AddUObject(PlayerStatusWidget, &UPlayerStatusWidget::SetMoneyProgressBar);
 }
 
 void UPlayerHUDComponent::C_ShowResultScreen_Implementation()
 {
 	for (AADPlayerState* PS : TActorRange<AADPlayerState>(GetWorld()))
 	{
-		AUnderwaterCharacter* PlayerCharacter = Cast<AUnderwaterCharacter>(PS->GetPawn());
-		if (ensure(PlayerCharacter) == false)
-		{
-			continue;
-		}
-
 		EAliveInfo AliveInfo = EAliveInfo::Alive;
 
 		if (PS->IsSafeReturn() == false)
 		{
-			const ECharacterState CharacterState = PlayerCharacter->GetCharacterState();
-			switch (CharacterState)
-			{
-			case ECharacterState::Normal:
-				AliveInfo = EAliveInfo::Abandoned;
-				break;
-			case ECharacterState::Groggy:
-				AliveInfo = EAliveInfo::Dead;
-				break;
-			case ECharacterState::Death:
-				AliveInfo = EAliveInfo::Dead;
-				break;
-			default:
-				check(false);
-				break;
-			}
+			AliveInfo = (PS->IsDead()) ? EAliveInfo::Dead : EAliveInfo::Abandoned;
 		}
 
 		FResultScreenParams Params
@@ -139,6 +179,70 @@ void UPlayerHUDComponent::C_ShowResultScreen_Implementation()
 
 	ResultScreenWidget->ChangeTeamMoneyText(GS->GetTotalTeamCredit());
 	SetResultScreenVisible(true);
+}
+
+void UPlayerHUDComponent::M_SetSpearUIVisibility_Implementation(bool bVisible)
+{
+	if (PlayerStatusWidget)
+	{
+		PlayerStatusWidget->SetSpearVisibility(bVisible);
+	}
+}
+
+void UPlayerHUDComponent::M_UpdateSpearCount_Implementation(const int32& CurrentSpear, const int32& TotalSpear)
+{
+	if (PlayerStatusWidget)
+	{
+		PlayerStatusWidget->SetSpearCount(CurrentSpear, TotalSpear);
+	}
+}
+
+void UPlayerHUDComponent::UpdateMissionsOnHUD(EMissionType MissionType, uint8 MissionIndex, int32 CurrentProgress)
+{
+	MissionsOnHUDWidget->UpdateMission(MissionType, MissionIndex, CurrentProgress);
+}
+
+void UPlayerHUDComponent::PlayNextPhaseAnim(int32 NextPhaseNumber)
+{
+	PlayerStatusWidget->PlayNextPhaseAnim(NextPhaseNumber);
+
+	USoundSubsystem* SoundSubsystem = GetSoundSubsystem();
+	if (SoundSubsystem == nullptr)
+	{
+		return;
+	}
+
+	SoundSubsystem->Play2D(ESFX_UI::PhaseTransition);
+}
+
+void UPlayerHUDComponent::SetCurrentPhaseOverlayVisible(bool bShouldVisible)
+{
+	if (IsValid(PlayerStatusWidget) == false)
+	{
+		return;
+	}
+
+	PlayerStatusWidget->SetCurrentPhaseOverlayVisible(bShouldVisible);
+}
+
+void UPlayerHUDComponent::C_SetSpearGunTypeImage_Implementation(int8 TypeNum)
+{
+	PlayerStatusWidget->SetSpearGunTypeImage(TypeNum);
+}
+
+void UPlayerHUDComponent::OnSpectatingStateChanged(bool bIsSpectating)
+{
+	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("OnSpectatingStateChanged: %s / Authority : %s"), bIsSpectating ? TEXT("True") : TEXT("False"), 
+		GetOwnerRole() == NM_Client ? TEXT("Host") : TEXT("Client"));
+
+	if (bIsSpectating)
+	{
+		ShowSpectatorHUDWidget();
+	}
+	else
+	{
+		HideSpectatorHUDWidget();
+	}
 }
 
 void UPlayerHUDComponent::SetTestHUDVisibility(const bool NewVisible) const
@@ -184,34 +288,57 @@ void UPlayerHUDComponent::UpdateResultScreen(int32 PlayerIndexBased_1, const FRe
 	}
 }
 
-void UPlayerHUDComponent::OnPossessedPawnChanged(APawn* OldPawn, APawn* NewPawn)
+void UPlayerHUDComponent::SetupHudWidgetToNewPawn(APawn* NewPawn, APlayerController* PlayerController)
 {
-	if (!NewPawn) return;
-
-	APlayerController* PlayerController = Cast<APlayerController>(GetOwner());
-
-	if (!IsValid(HudWidget))
+	if (!IsValid(HudWidget) && HudWidgetClass)
 	{
 		HudWidget = CreateWidget<UPlayerHUDWidget>(PlayerController, HudWidgetClass);
 	}
 	if (HudWidget)
 	{
-		HudWidget->AddToViewport();
+		if (!HudWidget->IsInViewport())
+		{
+			HudWidget->AddToViewport();
+		}
 		HudWidget->BindWidget(NewPawn);
 	}
 
-	if (!IsValid(PlayerStatusWidget))
+	if (!IsValid(CrosshairWidget) && CrosshairWidgetClass)
+	{
+		CrosshairWidget = CreateWidget<UCrosshairWidget>(PlayerController, CrosshairWidgetClass);
+	}
+	if (CrosshairWidget)
+	{
+		if (!CrosshairWidget->IsInViewport())
+		{
+			CrosshairWidget->AddToViewport();
+		}
+		CrosshairWidget->BindWidget(NewPawn);
+	}
+
+	if (!IsValid(PlayerStatusWidget) && PlayerStatusWidgetClass)
 	{
 		PlayerStatusWidget = CreateWidget<UPlayerStatusWidget>(PlayerController, PlayerStatusWidgetClass);
 	}
 	if (PlayerStatusWidget)
 	{
 		PlayerStatusWidget->AddToViewport();
+		PlayerStatusWidget->SetCompassObjectWidgetVisible(true);
 	}
 
 	if (ResultScreenWidgetClass && IsValid(ResultScreenWidget) == false)
 	{
 		ResultScreenWidget = CreateWidget<UResultScreen>(PlayerController, ResultScreenWidgetClass);
+	}
+
+	if (MissionsOnHUDWidgetClass && IsValid(MissionsOnHUDWidget) == false)
+	{
+		MissionsOnHUDWidget = CreateWidget<UMissionsOnHUDWidget>(PlayerController, MissionsOnHUDWidgetClass);
+	}
+
+	if (MissionsOnHUDWidget)
+	{
+		MissionsOnHUDWidget->AddToViewport();
 	}
 
 	if (AUnderwaterCharacter* UWCharacter = Cast<AUnderwaterCharacter>(NewPawn))
@@ -234,6 +361,80 @@ void UPlayerHUDComponent::OnPossessedPawnChanged(APawn* OldPawn, APawn* NewPawn)
 			StaminaComp->OnStaminaChanged.AddDynamic(this, &UPlayerHUDComponent::UpdateStaminaHUD);
 			UpdateStaminaHUD(StaminaComp->GetStamina(), StaminaComp->GetMaxStamina());
 		}
+	}
+}
+
+void UPlayerHUDComponent::HideHudWidget()
+{
+	if (HudWidget && HudWidget->IsInViewport())
+	{
+		HudWidget->RemoveFromParent();
+	}
+
+	if (CrosshairWidget && CrosshairWidget->IsInViewport())
+	{
+		CrosshairWidget->RemoveFromParent();
+	}
+
+	if (PlayerStatusWidget && PlayerStatusWidget->IsInViewport())
+	{
+		PlayerStatusWidget->RemoveFromParent();
+	}
+}
+
+void UPlayerHUDComponent::ShowHudWidget()
+{
+	APlayerController* PlayerController = Cast<APlayerController>(GetOwner());
+	APawn* Pawn = PlayerController ? PlayerController->GetPawn() : nullptr;
+
+	if (PlayerController && Pawn)
+	{
+		SetupHudWidgetToNewPawn(Pawn, PlayerController);
+	}
+}
+
+void UPlayerHUDComponent::ShowSpectatorHUDWidget()
+{
+	if (!SpectatorHUDWidget && SpectatorHUDWidgetClass)
+	{
+		AADPlayerController* PlayerController = Cast<AADPlayerController>(GetOwner());
+		SpectatorHUDWidget = CreateWidget<USpectatorHUDWidget>(PlayerController, SpectatorHUDWidgetClass);
+	}
+	if (SpectatorHUDWidget && !SpectatorHUDWidget->IsInViewport())
+	{
+		SpectatorHUDWidget->AddToViewport();
+	}
+}
+
+void UPlayerHUDComponent::HideSpectatorHUDWidget()
+{
+	if (SpectatorHUDWidget && SpectatorHUDWidget->IsInViewport())
+	{
+		SpectatorHUDWidget->RemoveFromParent();
+	}
+}
+
+void UPlayerHUDComponent::OnPossessedPawnChanged(APawn* OldPawn, APawn* NewPawn)
+{
+	// UnPossess 상황에서 변화가 필요하면 OldPawn, NewPawn의 변화를 체크해서 구현할 것
+	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("OnPossessedPawnChanged: OldPawn: %s, NewPawn: %s"),
+		OldPawn ? *OldPawn->GetName() : TEXT("None"), 
+		NewPawn ? *NewPawn->GetName() : TEXT("None"));
+
+	// 1. 초기 생성 : 현재는 BeginPlay에서 생성
+	// 2. New Pawn이 AUnderwaterCharacter일 경우 Seamless Travel 혹은 부활 상황
+	// 3. New Pawn이 nullptr일 경우 UnPossess 상황, 사망 상황
+	// Spectator Pawn은 Possess가 실행되지 않으므로 OnSpectatingStateChanged에서 독립적으로 관리한다.
+	
+	APlayerController* PlayerController = Cast<APlayerController>(GetOwner());
+
+	if (NewPawn)
+	{
+		SetupHudWidgetToNewPawn(NewPawn, PlayerController);		
+	}
+	else
+	{
+		HideHudWidget();
 	}
 }
 
@@ -264,23 +465,36 @@ void UPlayerHUDComponent::UpdateStaminaHUD(float Stamina, float MaxStamina)
 	}
 }
 
-void UPlayerHUDComponent::UpdateSpearCount(const int32& CurrentSpear, const int32& TotalSpear)
-{
-	if (PlayerStatusWidget)
-	{
-		PlayerStatusWidget->SetSpearCount(CurrentSpear, TotalSpear);
-	}
-}
-
-void UPlayerHUDComponent::SetSpearUIVisibility(bool bVisible)
-{
-	if (PlayerStatusWidget)
-	{
-		PlayerStatusWidget->SetSpearVisibility(bVisible);
-	}
-}
-
 bool UPlayerHUDComponent::IsTestHUDVisible() const
 {
 	return HudWidget && HudWidget->GetVisibility() == ESlateVisibility::Visible;
+}
+
+UMissionsOnHUDWidget* UPlayerHUDComponent::GetMissionsOnHudWidget() const
+{
+	return MissionsOnHUDWidget;
+}
+
+USoundSubsystem* UPlayerHUDComponent::GetSoundSubsystem()
+{
+	UWorld* World = GetWorld();
+
+	if (IsValid(World) == false || World->bIsTearingDown)
+	{
+		return nullptr;
+	}
+
+	UGameInstance* GI = UGameplayStatics::GetGameInstance(World);
+	if (GI == nullptr)
+	{
+		return nullptr;
+	}
+
+	USoundSubsystem* SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
+	if (SoundSubsystem == nullptr)
+	{
+		return nullptr;
+	}
+
+	return SoundSubsystem;
 }

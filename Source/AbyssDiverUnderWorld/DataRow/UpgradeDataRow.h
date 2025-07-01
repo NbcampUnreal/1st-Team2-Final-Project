@@ -42,4 +42,13 @@ public:
 
 	UPROPERTY(EditDefaultsOnly)
 	int32 StatFactor;
+
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UTexture2D> UpgradeIcon;
+
+	UPROPERTY(EditDefaultsOnly)
+	FString UpgradeName;
+
+	UPROPERTY(EditDefaultsOnly)
+	FString UpgradeDescription;
 };

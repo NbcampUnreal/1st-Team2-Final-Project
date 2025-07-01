@@ -7,6 +7,7 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/SpotLightComponent.h"
 #include "Monster/Monster.h"
+#include "Engine/CollisionProfile.h"
 #include "Net/UnrealNetwork.h"
 
 ULanternComponent::ULanternComponent()
@@ -17,8 +18,9 @@ ULanternComponent::ULanternComponent()
 	bIsLanternOn = false;
 	LanternForwardOffset = 10.0f; // 라이트가 캐릭터 앞에 위치하도록 설정
 
-	LightAngle = 25.0f;
+	LightAngle = 35.0f;
 	Intensity = 150000.0f;
+	RemoveDelayTime = 7.0f;
 }
 
 void ULanternComponent::BeginPlay()
@@ -40,12 +42,16 @@ void ULanternComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	if (GetOwnerRole() == ROLE_Authority && bIsLanternOn && LanternLightComponent)
+	if (GetOwnerRole() != ROLE_Authority || !LanternLightComponent) return;
+	
+	TArray<AActor*> Candidates;
+
+	if (bIsLanternOn)
 	{
-		TArray<AActor*> Candidates;
 		LightDetectionComponent->GetOverlappingActors(Candidates, AMonster::StaticClass());
-		UpdateExposureTimes(Candidates, DeltaTime);
 	}
+
+	UpdateExposureTimes(Candidates, DeltaTime);
 }
 
 void ULanternComponent::RequestToggleLanternLight()
@@ -60,24 +66,6 @@ void ULanternComponent::RequestToggleLanternLight()
 			LightDetectionComponent->SetCollisionEnabled(
 				bIsLanternOn ? ECollisionEnabled::QueryOnly : ECollisionEnabled::NoCollision
 			);
-		}
-		
-		if (!bIsLanternOn)
-		{
-			for (auto It = MonsterExposeTimeMap.CreateIterator(); It; ++It)
-			{
-				AMonster* Monster = Cast<AMonster>(It.Key());
-				if (!IsValid(It.Key()))
-				{
-					// Handling Unexposed Monsters
-					if (IsValid(Monster) && Monster->GetMonsterState() == EMonsterState::Investigate)
-					{
-						Monster->SetMonsterState(EMonsterState::Patrol);
-					}
-					It.RemoveCurrent();
-				}
-			}
-			MonsterExposeTimeMap.Empty();
 		}
 	}
 	else
@@ -148,7 +136,8 @@ void ULanternComponent::SpawnLight(USceneComponent* AttachToComponent, const flo
 		LightDetectionComponent = NewObject<UCapsuleComponent>(this, UCapsuleComponent::StaticClass(), TEXT("LanternDetectionComponent"));
 		LightDetectionComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		LightDetectionComponent->SetCollisionResponseToAllChannels(ECR_Ignore);
-		LightDetectionComponent->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+		// ECC_GameTraceChannel3 == Monster (ProjectSetting)
+		LightDetectionComponent->SetCollisionResponseToChannel(ECC_GameTraceChannel3, ECR_Overlap);
 		LightDetectionComponent->SetGenerateOverlapEvents(true);
 		LightDetectionComponent->AttachToComponent(LanternLightComponent, FAttachmentTransformRules::SnapToTargetIncludingScale);
 		LightDetectionComponent->RegisterComponent();
@@ -187,39 +176,17 @@ void ULanternComponent::UpdateExposureTimes(TArray<AActor*> OverlappedActors, co
 	const FVector LightForward = LanternLightComponent->GetForwardVector();
 	const float LightConeAngleDegree = LanternLightComponent->OuterConeAngle;
 	const float LightRange = LanternLightComponent->AttenuationRadius;
-	
-	for (AActor* Actor: OverlappedActors)
+
+	if (bIsLanternOn)
 	{
-		AMonster* Monster = Cast<AMonster>(Actor);
-		if (!IsValid(Monster)) continue;
-		
-		if (HasActorExposedByLight(Actor, LightLocation, LightForward, LightConeAngleDegree, LightRange))
-		{
-			float& ExposureTime = MonsterExposeTimeMap.FindOrAdd(Monster);
-			ExposureTime += DeltaTime;
-			Monster->NotifyLightExposure(DeltaTime, ExposureTime, GetOwner()->GetActorLocation(), GetOwner());
-		}
-		// Cone 바깥이라면 노출 시간을 초기화
-		else if (MonsterExposeTimeMap.Contains(Monster))
-		{
-			MonsterExposeTimeMap[Monster] = 0.0f; // 노출 시간이 초기화됨
-		}
+		ProcessExposure(OverlappedActors, DeltaTime);
+	}
+	else // Lantern Off
+	{
+		AccumulateUnexposeTime(DeltaTime);
 	}
 
-	// 노출된 Actor가 더 이상 OverlappedActors에 없거나 유효하지 않으면 제거
-	for (auto It = MonsterExposeTimeMap.CreateIterator(); It; ++It)
-	{
-		AMonster* Monster = Cast<AMonster>(It.Key());
-		if (!IsValid(It.Key()) || !OverlappedActors.Contains(It.Key()))
-		{
-			// Handling Unexposed Monsters
-			if (IsValid(Monster) && Monster->GetMonsterState() == EMonsterState::Investigate)
-			{
-				Monster->SetMonsterState(EMonsterState::Patrol);
-			}
-			It.RemoveCurrent();
-		}
-	}
+	HandleUnexposedMonsters(DeltaTime);
 }
 
 bool ULanternComponent::HasActorExposedByLight(const AActor* TargetActor, const FVector& ConeOrigin, const FVector& ConeDirection,
@@ -250,4 +217,78 @@ bool ULanternComponent::HasActorExposedByLight(const AActor* TargetActor, const 
 
 	// 몬스터와 라이트 사이에 장애물이 없고, 몬스터가 라이트의 범위 안에 있다면 노출
 	return bHit && HitResult.GetActor()->IsA(AMonster::StaticClass());
+}
+
+void ULanternComponent::ProcessExposure(const TArray<AActor*>& OverlappedActors, float DeltaTime)
+{
+	const FVector LightLocation = LanternLightComponent->GetComponentLocation();
+	const FVector LightForward = LanternLightComponent->GetForwardVector();
+	const float LightConeAngleDegree = LanternLightComponent->OuterConeAngle;
+	const float LightRange = LanternLightComponent->AttenuationRadius;
+
+	for (AActor* Actor : OverlappedActors)
+	{
+		AMonster* Monster = Cast<AMonster>(Actor);
+		if (!IsValid(Monster)) continue;
+
+		if (HasActorExposedByLight(Actor, LightLocation, LightForward, LightConeAngleDegree, LightRange))
+		{
+			// Accumulating Exposure time
+			float& ExposureTime = MonsterExposeTimeMap.FindOrAdd(Monster);
+			ExposureTime += DeltaTime;
+			Monster->NotifyLightExposure(DeltaTime, ExposureTime, GetOwner()->GetActorLocation(), GetOwner());
+
+			// Reset Unexposure time
+			MonsterUnexposeTimeMap.Remove(Monster);
+		}
+		// Cone 바깥이라면 노출 시간을 초기화
+		else
+		{
+			// Reset exposure time if out of view
+			if (MonsterExposeTimeMap.Contains(Monster))
+			{
+				MonsterExposeTimeMap[Monster] = 0.0f;
+			}
+
+			// Accumulating Unexposure time
+			float& UnexposedTime = MonsterUnexposeTimeMap.FindOrAdd(Monster);
+			UnexposedTime += DeltaTime;
+		}
+	}
+}
+
+void ULanternComponent::AccumulateUnexposeTime(float DeltaTime)
+{
+	for (const auto& Pair : MonsterExposeTimeMap)
+	{
+		AMonster* Monster = Pair.Key;
+		if (!IsValid(Monster)) continue;
+
+		float& UnexposeTime = MonsterUnexposeTimeMap.FindOrAdd(Monster);
+		UnexposeTime += DeltaTime;
+	}
+}
+
+void ULanternComponent::HandleUnexposedMonsters(float DeltaTime)
+{
+	// Checking for undetect conditions
+	for (auto It = MonsterUnexposeTimeMap.CreateIterator(); It; ++It)
+	{
+		AMonster* Monster = It.Key();
+		float UnexposeTime = It.Value();
+
+		// Remove if dead or invalid
+		if (!IsValid(Monster))
+		{
+			It.RemoveCurrent();
+			MonsterExposeTimeMap.Remove(Monster);
+			continue;
+		}
+
+		if (UnexposeTime >= RemoveDelayTime)
+		{
+			It.RemoveCurrent();
+			MonsterExposeTimeMap.Remove(Monster);
+		}
+	}
 }

@@ -63,7 +63,21 @@ void UShieldComponent::GainShield(const float GainAmount)
 
 void UShieldComponent::OnRep_ShieldValueChanged()
 {
-	SetShieldValue(ShieldValue, true);
+	OnShieldValueChangedDelegate.Broadcast(OldShieldValue, ShieldValue);
+	K2_OnShieldValueChanged(ShieldValue);
+
+	if (ShieldValue <= 0.0f && OldShieldValue > 0.0f) 
+	{
+		OnShieldBrokenDelegate.Broadcast();
+		K2_OnShiledBroken();
+	}
+	if (ShieldValue > 0.0f && OldShieldValue <= 0.0f)
+	{
+		OnShieldGainedDelegate.Broadcast();
+		K2_OnShieldGained();
+	}
+
+	OldShieldValue = ShieldValue;
 }
 
 void UShieldComponent::SetShieldValue(const float NewValue, const bool bAlwaysUpdate)
@@ -76,7 +90,7 @@ void UShieldComponent::SetShieldValue(const float NewValue, const bool bAlwaysUp
 	OldShieldValue = ShieldValue;
 
 	ShieldValue = NewValue > 0.0f ? NewValue : 0.0f;
-	OnShieldValueChangedDelegate.Broadcast(ShieldValue);
+	OnShieldValueChangedDelegate.Broadcast(OldShieldValue, ShieldValue);
 	K2_OnShieldValueChanged(ShieldValue);
 
 	// bAlwaysUpdate가 있기 때문에 OldShieldValue를 확인해야 한다.

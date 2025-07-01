@@ -16,11 +16,19 @@ struct FItemCollectMissionInitParams : public FMissionInitParams
 		const EMissionConditionType& InConditionType,
 		const FString& InMissionName,
 		const FString& InMissionDescription,
-		const TArray<int32>& InExtraValues
+		const TArray<int32>& InExtraValues,
+		bool bInShouldCompleteInstanly,
+		uint8 InTargetItemId,
+		bool bInIsOreMission
 	)
-		: FMissionInitParams(InMissionType, InGoalCount, InConditionType, InMissionName, InMissionDescription, InExtraValues)
+		: FMissionInitParams(InMissionType, InGoalCount, InConditionType, InMissionName, InMissionDescription, InExtraValues, bInShouldCompleteInstanly)
 	{
+		TargetItemId = InTargetItemId;
+		bIsOreMission = bInIsOreMission;
 	}
+
+	uint8 TargetItemId;
+	uint8 bIsOreMission : 1;
 
 };
 
@@ -50,6 +58,10 @@ protected:
 
 	virtual bool IsConditionMet() override;
 
+private:
+
+	void OnItemCollect(uint8 ItemId, int32 Amount);
+
 #pragma endregion
 
 #pragma region Variables
@@ -57,6 +69,8 @@ protected:
 protected:
 
 	EItemCollectMission MissionIndex;
+	uint8 TargetItemId;
+	uint8 bIsOreMission : 1;
 
 #pragma endregion
 
@@ -66,6 +80,8 @@ protected:
 public:
 
 	virtual const uint8 GetMissionIndex() const override;
+	const uint8 GetTargetItemId() const;
+	const bool IsOreMission() const;
 
 #pragma endregion
 };

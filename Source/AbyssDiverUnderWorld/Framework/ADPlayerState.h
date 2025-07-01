@@ -15,10 +15,12 @@ class ABYSSDIVERUNDERWORLD_API AADPlayerState : public APlayerState
     GENERATED_BODY()
 
 public:
+
     // 생성자
     AADPlayerState();
 
 protected:
+
     // 생명주기 함수
     virtual void BeginPlay() override;
     virtual void PostNetInit() override;
@@ -35,17 +37,10 @@ public:
 
 	void ResetLevelResults();
 
-	UFUNCTION()
-	void OnRep_Nickname();
-
 #pragma endregion
 
 #pragma region Variable
 protected:
-
-	// persistent Data
-	UPROPERTY(Replicated)
-	FString PlayerNickname;
 
 	UPROPERTY(Replicated)
 	int32 TotalPersonalCredit;
@@ -75,8 +70,11 @@ protected:
 	UPROPERTY(Replicated)
 	int8 PlayerIndex;
 
-	UPROPERTY(Replicated)
-	uint8 bIsHost : 1;
+	UPROPERTY(BlueprintReadOnly)
+	uint8 bHasBeenDead : 1;
+
+	UPROPERTY(BlueprintReadOnly)
+	float LastOxygenRemain;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TObjectPtr<UADInventoryComponent> InventoryComp;
@@ -84,15 +82,19 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TObjectPtr<UUpgradeComponent> UpgradeComp;
 
+	/** 현재 사망 상태인지 여부 */
+	uint8 bIsDead : 1;
+	
 #pragma endregion
 
 #pragma region Getter/Setter
 public:
-	// PlayerNickname
+
 	UFUNCTION(BlueprintCallable)
-	void SetPlayerNickname(const FString& Name) { PlayerNickname = Name; }
+	void SetPlayerNickname(const FString& NewName);
+
 	UFUNCTION(BlueprintPure)
-	const FString& GetPlayerNickname() const { return PlayerNickname; }
+	const FString GetPlayerNickname() const;
 
 	// TotalPersonalCredit
 	UFUNCTION(BlueprintCallable)
@@ -142,18 +144,23 @@ public:
 	UFUNCTION(BlueprintPure)
 	bool IsSafeReturn() const { return bIsSafeReturn; }
 
-	// bIsHost
-	UFUNCTION(BlueprintCallable)
-	void SetIsHost(bool bValue) { bIsHost = bValue; }
-	UFUNCTION(BlueprintPure)
-	bool IsHost() const { return bIsHost; }
-
 	FORCEINLINE UADInventoryComponent* GetInventory() const { return InventoryComp; };
 	FORCEINLINE UUpgradeComponent* GetUpgradeComp() const { return UpgradeComp; };
 
 	int8 GetPlayerIndex() const { return PlayerIndex; }
 	void SetPlayerIndex(int8 NewPlayerIndex) { PlayerIndex = NewPlayerIndex; }
 
+	FORCEINLINE void SetHasBeenDead(bool bNewDead) { bHasBeenDead = bNewDead; }
+	
+	FORCEINLINE bool HasBeenDead() const { return bHasBeenDead; }
+
+	FORCEINLINE void SetLastOxygenRemain(float NewLastOxygenRemain) { LastOxygenRemain = NewLastOxygenRemain; }
+	
+	FORCEINLINE float GetLastOxygenRemain() const { return LastOxygenRemain; }
+
+	FORCEINLINE bool IsDead() const { return bIsDead; }
+
+	void SetIsDead(bool bNewIsDead);
 
 #pragma endregion
 };

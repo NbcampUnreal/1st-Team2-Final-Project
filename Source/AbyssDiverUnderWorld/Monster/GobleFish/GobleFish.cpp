@@ -9,6 +9,8 @@
 
 AGobleFish::AGobleFish()
 {
+	PrimaryActorTick.bCanEverTick = true;
+
 	GobleFishHitSphere = CreateDefaultSubobject<USphereComponent>(TEXT("GobleFishHitSphere"));
 	GobleFishHitSphere->SetupAttachment(GetMesh(), TEXT("AttackSocket"));
 	GobleFishHitSphere->InitSphereRadius(20.0f);
@@ -47,6 +49,12 @@ void AGobleFish::PlayAttackMontage()
 	// Initialize at Monster class BeginPlay
 	if (!AIController) return;
 	if (!BlackboardComponent) return;
+	UAnimInstance* AnimInst = GetMesh()->GetAnimInstance();
+	if (!AnimInst) return;
+
+	// If any montage is playing, prevent duplicate playback
+	if (AnimInst->IsAnyMontagePlaying()) return;
+
 
 	if (BlackboardComponent->GetValueAsBool("bInMeleeRange"))
 	{

@@ -95,6 +95,17 @@ void ARadar::BeginPlay()
 void ARadar::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	if (IsValid(RadarSourceLocationComponent) == false || IsValid(RadarSourceRotationComponent) == false)
+	{
+		LOGVN(Error, TEXT("Radar Disabled"));
+
+		bIsRadarActive = false;
+		SetActorTickEnabled(false);
+
+		Destroy(); // 캐릭터가 죽음 이후 부활할 때 이전 레이더는 여전히 남은 상태. 그래서 파괴 시킴
+		return;
+	}
 	
 	if (bIsRadarActive)
 	{
@@ -118,7 +129,23 @@ void ARadar::Tick(float DeltaTime)
 			}
 			else
 			{
-				FindIfReturnIsValidResponseForRader(FoundActor);
+				TArray<URadarReturnComponent*> RadarReturns;
+				FoundActor->GetComponents<URadarReturnComponent>(RadarReturns);
+
+				bool bIsRemoved = false;
+				for (auto& RadarReturn : RadarReturns)
+				{
+					if (RadarReturn->GetIgnore())
+					{
+						RemoveReturn(RadarReturn, 0);
+						bIsRemoved = true;
+					}
+				}
+
+				if (bIsRemoved == false)
+				{
+					FindIfReturnIsValidResponseForRader(FoundActor);
+				}
 			}
 		}
 	}
@@ -513,6 +540,18 @@ void ARadar::FindIfReturnsInVisibleRange()
 		return;
 	}
 
+	if (IsValid(RadarSourceLocationComponent) == false || RadarSourceLocationComponent->IsValidLowLevel() == false)
+	{
+		LOGVN(Error, TEXT("RadarSourceLocationComponent is not valid"));
+		return;
+	}
+
+	if (IsValid(RadarSourceRotationComponent) == false || RadarSourceRotationComponent->IsValidLowLevel() == false)
+	{
+		LOGVN(Error, TEXT("RadarSourceRotationComponent is not valid"));
+		return;
+	}
+
 	switch (CurrentFOFStatus)
 	{
 	case EFriendOrFoe::Friendly:
@@ -720,6 +759,12 @@ void ARadar::RotateRadarGrid()
 		return;
 	}
 
+	if (IsValid(RadarSourceRotationComponent) == false || RadarSourceRotationComponent->IsValidLowLevel() == false)
+	{
+		LOGVN(Error, TEXT("RadarSourceRotationComponent is not valid"));
+		return;
+	}
+
 	bool bIsRelative = false;
 
 	float NewRotationRoll = 0.0f;
@@ -790,6 +835,12 @@ void ARadar::RotateRadarGrid()
 
 void ARadar::FindRadarReturnTransformFromGrid()
 {
+	if (IsValid(RadarSourceLocationComponent) == false || RadarSourceLocationComponent->IsValidLowLevel() == false)
+	{
+		LOGVN(Error, TEXT("RadarSourceLocationComponent is not valid"));
+		return;
+	}
+
 	if (bShouldUseSphere)
 	{
 		CurrentRadarWidth = RadarOuterDimensionRadiusMetersFromSphere * 2.0f;
@@ -1009,29 +1060,46 @@ void ARadar::UpdateExistingReturnMesh()
 
 	check(FriendOrFoeStatusArray.IsValidIndex(CurrentIndexCached));
 
-	EFriendOrFoe FoF = FriendOrFoeStatusArray[CurrentIndexCached];
+	UStaticMesh* ApplyingMesh = nullptr;
+	UMaterialInterface* ApplyingMaterial = nullptr;
 
+	EFriendOrFoe FoF = FriendOrFoeStatusArray[CurrentIndexCached];
 	switch (FoF)
 	{
 	case EFriendOrFoe::Friendly:
 
-		ReturnMesh->SetStaticMesh(CurrentRadarReturn->GetFriendlyMesh());
-		ReturnMesh->SetMaterial(0, CurrentRadarReturn->GetFriendlyMaterial());
+		ApplyingMesh = CurrentRadarReturn->GetFriendlyMesh();
+		ApplyingMaterial = CurrentRadarReturn->GetFriendlyMaterial();
 		break;
 	case EFriendOrFoe::Hostile:
 
-		ReturnMesh->SetStaticMesh(CurrentRadarReturn->GetHostileMesh());
-		ReturnMesh->SetMaterial(0, CurrentRadarReturn->GetHostileMaterial());
+		ApplyingMesh = CurrentRadarReturn->GetHostileMesh();
+		ApplyingMaterial = CurrentRadarReturn->GetHostileMaterial();
 		break;
 	case EFriendOrFoe::Neutral:
 
-		ReturnMesh->SetStaticMesh(CurrentRadarReturn->GetNeutralMesh());
-		ReturnMesh->SetMaterial(0, CurrentRadarReturn->GetNeutralMaterial());
+		ApplyingMesh = CurrentRadarReturn->GetNeutralMesh();
+		ApplyingMaterial = CurrentRadarReturn->GetNeutralMaterial();
 		break;
 	default:
 		check(false);
 		break;
 	}
+
+	if (IsValid(ApplyingMesh) == false || ApplyingMesh->IsValidLowLevel() == false)
+	{
+		LOGV(Error, TEXT("ApplyingMesh is not valid"));
+		return;
+	}
+
+	if (IsValid(ApplyingMaterial) == false || ApplyingMaterial->IsValidLowLevel() == false)
+	{
+		LOGV(Error, TEXT("ApplyingMaterial is not valid"));
+		return;
+	}
+
+	ReturnMesh->SetStaticMesh(ApplyingMesh);
+	ReturnMesh->SetMaterial(0, ApplyingMaterial);
 
 	ReturnMesh->SetScalarParameterValueOnMaterials(ReturnEmissiveParamName, CurrentReturnEmissiveIntensity);
 
@@ -1062,27 +1130,45 @@ void ARadar::UpdateExistingReturnMesh()
 
 		ReturnStandMesh->SetRelativeTransform(CurrentStandTransform, false, nullptr, ETeleportType::TeleportPhysics);
 
+		UStaticMesh* ApplyingStandMesh = nullptr;
+		UMaterialInterface* ApplyingStandMaterial = nullptr;
+
 		switch (FoF)
 		{
 		case EFriendOrFoe::Friendly:
 
-			ReturnStandMesh->SetStaticMesh(CurrentRadarReturn->GetFriendlyStandMesh());
-			ReturnStandMesh->SetMaterial(0, CurrentRadarReturn->GetFriendlyStandMaterial());
+			ApplyingStandMesh = CurrentRadarReturn->GetFriendlyStandMesh();
+			ApplyingStandMaterial = CurrentRadarReturn->GetFriendlyStandMaterial();
 			break;
 		case EFriendOrFoe::Hostile:
 
-			ReturnStandMesh->SetStaticMesh(CurrentRadarReturn->GetHostileStandMesh());
-			ReturnStandMesh->SetMaterial(0, CurrentRadarReturn->GetHostileStandMaterial());
+			ApplyingStandMesh = CurrentRadarReturn->GetHostileStandMesh();
+			ApplyingStandMaterial = CurrentRadarReturn->GetHostileStandMaterial();
 			break;
 		case EFriendOrFoe::Neutral:
 
-			ReturnStandMesh->SetStaticMesh(CurrentRadarReturn->GetNeutralStandMesh());
-			ReturnStandMesh->SetMaterial(0, CurrentRadarReturn->GetNeutralStandMaterial());
+			ApplyingStandMesh = CurrentRadarReturn->GetNeutralStandMesh();
+			ApplyingStandMaterial = CurrentRadarReturn->GetNeutralStandMaterial();
 			break;
 		default:
 			check(false);
 			break;
 		}
+
+		if (IsValid(ApplyingStandMesh) == false || ApplyingStandMesh->IsValidLowLevel() == false)
+		{
+			LOGV(Error, TEXT("ApplyingMesh is not valid"));
+			return;
+		}
+
+		if (IsValid(ApplyingStandMaterial) == false || ApplyingStandMaterial->IsValidLowLevel() == false)
+		{
+			LOGV(Error, TEXT("ApplyingMaterial is not valid"));
+			return;
+		}
+
+		ReturnStandMesh->SetStaticMesh(ApplyingStandMesh);
+		ReturnStandMesh->SetMaterial(0, ApplyingStandMaterial);
 	}
 	else
 	{
@@ -1121,27 +1207,46 @@ void ARadar::UpdateExistingReturnMesh()
 	FTransform NewTransform(CurrentStandTransform.Rotator(), CurrentStandTransform.GetLocation(), NewScale);
 	ReturnPingMesh->SetRelativeTransform(NewTransform);
 
+	UStaticMesh* ApplyingPingMesh = nullptr;
+	UMaterialInterface* ApplyingPingMaterial = nullptr;
+
 	switch (FoF)
 	{
 	case EFriendOrFoe::Friendly:
 
-		ReturnPingMesh->SetStaticMesh(CurrentRadarReturn->GetFriendlyPingMesh());
-		ReturnPingMesh->SetMaterial(0, CurrentRadarReturn->GetFriendlyPingMaterial());
+		ApplyingPingMesh = CurrentRadarReturn->GetFriendlyPingMesh();
+		ApplyingPingMaterial = CurrentRadarReturn->GetFriendlyPingMaterial();
 		break;
 	case EFriendOrFoe::Hostile:
 
-		ReturnPingMesh->SetStaticMesh(CurrentRadarReturn->GetHostilePingMesh());
-		ReturnPingMesh->SetMaterial(0, CurrentRadarReturn->GetHostilePingMaterial());
+		ApplyingPingMesh = CurrentRadarReturn->GetHostilePingMesh();
+		ApplyingPingMaterial = CurrentRadarReturn->GetHostilePingMaterial();
 		break;
 	case EFriendOrFoe::Neutral:
 
-		ReturnPingMesh->SetStaticMesh(CurrentRadarReturn->GetNeutralPingMesh());
-		ReturnPingMesh->SetMaterial(0, CurrentRadarReturn->GetNeutralPingMaterial());
+
+		ApplyingPingMesh = CurrentRadarReturn->GetNeutralPingMesh();
+		ApplyingPingMaterial = CurrentRadarReturn->GetNeutralPingMaterial();
 		break;
 	default:
 		check(false);
 		break;
 	}
+
+	if (IsValid(ApplyingPingMesh) == false || ApplyingPingMesh->IsValidLowLevel() == false)
+	{
+		LOGV(Error, TEXT("ApplyingMesh is not valid"));
+		return;
+	}
+
+	if (IsValid(ApplyingPingMaterial) == false || ApplyingPingMaterial->IsValidLowLevel() == false)
+	{
+		LOGV(Error, TEXT("ApplyingMaterial is not valid"));
+		return;
+	}
+
+	ReturnPingMesh->SetStaticMesh(ApplyingPingMesh);
+	ReturnPingMesh->SetMaterial(0, ApplyingPingMaterial);
 
 	if (CurrentRadarReturn->ShouldLimitOpacityToRadarDisplayForPing())
 	{
@@ -1169,29 +1274,52 @@ void ARadar::AddNewReturnMesh()
 
 	check(FriendOrFoeStatusArray.IsValidIndex(CurrentIndexCached));
 
-	EFriendOrFoe FoF = FriendOrFoeStatusArray[CurrentIndexCached];
+	if (IsValid(CurrentRadarReturn) == false || CurrentRadarReturn->IsValidLowLevel() == false)
+	{
+		LOGV(Error, TEXT("CurrentRadarReturn Is Not Valid"));
+		return;
+	}
 
+	UStaticMesh* ApplyingMesh = nullptr;
+	UMaterialInterface* ApplyingMaterial = nullptr;
+
+	EFriendOrFoe FoF = FriendOrFoeStatusArray[CurrentIndexCached];
 	switch (FoF)
 	{
 	case EFriendOrFoe::Friendly:
 
-		TempMeshComponent->SetStaticMesh(CurrentRadarReturn->GetFriendlyMesh());
-		TempMeshComponent->SetMaterial(0, CurrentRadarReturn->GetFriendlyMaterial());
+		ApplyingMesh = CurrentRadarReturn->GetFriendlyMesh();
+		ApplyingMaterial = CurrentRadarReturn->GetFriendlyMaterial();
 		break;
 	case EFriendOrFoe::Hostile:
 
-		TempMeshComponent->SetStaticMesh(CurrentRadarReturn->GetHostileMesh());
-		TempMeshComponent->SetMaterial(0, CurrentRadarReturn->GetHostileMaterial());
+		ApplyingMesh = CurrentRadarReturn->GetHostileMesh();
+		ApplyingMaterial = CurrentRadarReturn->GetHostileMaterial();
 		break;
 	case EFriendOrFoe::Neutral:
 
-		TempMeshComponent->SetStaticMesh(CurrentRadarReturn->GetNeutralMesh());
-		TempMeshComponent->SetMaterial(0, CurrentRadarReturn->GetNeutralMaterial());
+		ApplyingMesh = CurrentRadarReturn->GetNeutralMesh();
+		ApplyingMaterial = CurrentRadarReturn->GetNeutralMaterial();
 		break;
 	default:
 		check(false);
 		break;
 	}
+
+	if (IsValid(ApplyingMesh) == false || ApplyingMesh->IsValidLowLevel() == false)
+	{
+		LOGV(Error, TEXT("ApplyingMesh is not valid"));
+		return;
+	}
+
+	if (IsValid(ApplyingMaterial) == false || ApplyingMaterial->IsValidLowLevel() == false)
+	{
+		LOGV(Error, TEXT("ApplyingMaterial is not valid"));
+		return;
+	}
+
+	TempMeshComponent->SetStaticMesh(ApplyingMesh);
+	TempMeshComponent->SetMaterial(0, ApplyingMaterial);
 	
 	TempMeshComponent->SetScalarParameterValueOnMaterials(ReturnEmissiveParamName, CurrentReturnEmissiveIntensity);
 	check(ReturnsMeshes.IsValidIndex(CurrentIndexCached));
@@ -1215,27 +1343,45 @@ void ARadar::AddNewReturnMesh()
 			TempMeshComponent->SetVisibility(false);
 		}
 
+		UStaticMesh* ApplyingStandMesh = nullptr;
+		UMaterialInterface* ApplyingStandMaterial = nullptr;
+
 		switch (FoF)
 		{
 		case EFriendOrFoe::Friendly:
 
-			TempMeshComponent->SetStaticMesh(CurrentRadarReturn->GetFriendlyStandMesh());
-			TempMeshComponent->SetMaterial(0, CurrentRadarReturn->GetFriendlyStandMaterial());
+			ApplyingStandMesh = CurrentRadarReturn->GetFriendlyStandMesh();
+			ApplyingStandMaterial = CurrentRadarReturn->GetFriendlyStandMaterial();
 			break;
 		case EFriendOrFoe::Hostile:
 
-			TempMeshComponent->SetStaticMesh(CurrentRadarReturn->GetHostileStandMesh());
-			TempMeshComponent->SetMaterial(0, CurrentRadarReturn->GetHostileStandMaterial());
+			ApplyingStandMesh = CurrentRadarReturn->GetHostileStandMesh();
+			ApplyingStandMaterial = CurrentRadarReturn->GetHostileStandMaterial();
 			break;
 		case EFriendOrFoe::Neutral:
 
-			TempMeshComponent->SetStaticMesh(CurrentRadarReturn->GetNeutralStandMesh());
-			TempMeshComponent->SetMaterial(0, CurrentRadarReturn->GetNeutralStandMaterial());
+			ApplyingStandMesh = CurrentRadarReturn->GetNeutralStandMesh();
+			ApplyingStandMaterial = CurrentRadarReturn->GetNeutralStandMaterial();
 			break;
 		default:
 			check(false);
 			break;
 		}
+
+		if (IsValid(ApplyingStandMesh) == false || ApplyingStandMesh->IsValidLowLevel() == false)
+		{
+			LOGV(Error, TEXT("ApplyingMesh is not valid"));
+			return;
+		}
+
+		if (IsValid(ApplyingStandMaterial) == false || ApplyingStandMaterial->IsValidLowLevel() == false)
+		{
+			LOGV(Error, TEXT("ApplyingMaterial is not valid"));
+			return;
+		}
+
+		TempMeshComponent->SetStaticMesh(ApplyingStandMesh);
+		TempMeshComponent->SetMaterial(0, ApplyingStandMaterial);
 
 		TempMeshComponent->SetScalarParameterValueOnMaterials(ReturnEmissiveParamName, CurrentReturnEmissiveIntensity);
 		check(ReturnStandMeshes.IsValidIndex(CurrentIndexCached));
@@ -1263,27 +1409,46 @@ void ARadar::AddNewReturnMesh()
 	FTransform NewTransform(CurrentStandTransform.Rotator(), CurrentStandTransform.GetLocation(), NewScale);
 	TempMeshComponent->SetRelativeTransform(NewTransform);
 
+	UStaticMesh* ApplyingPingMesh = nullptr;
+	UMaterialInterface* ApplyingPingMaterial = nullptr;
+
 	switch (FoF)
 	{
 	case EFriendOrFoe::Friendly:
 
-		TempMeshComponent->SetStaticMesh(CurrentRadarReturn->GetFriendlyPingMesh());
-		TempMeshComponent->SetMaterial(0, CurrentRadarReturn->GetFriendlyPingMaterial());
+		ApplyingPingMesh = CurrentRadarReturn->GetFriendlyPingMesh();
+		ApplyingPingMaterial = CurrentRadarReturn->GetFriendlyPingMaterial();
 		break;
 	case EFriendOrFoe::Hostile:
-		
-		TempMeshComponent->SetStaticMesh(CurrentRadarReturn->GetHostilePingMesh());
-		TempMeshComponent->SetMaterial(0, CurrentRadarReturn->GetHostilePingMaterial());
+
+		ApplyingPingMesh = CurrentRadarReturn->GetHostilePingMesh();
+		ApplyingPingMaterial = CurrentRadarReturn->GetHostilePingMaterial();
 		break;
 	case EFriendOrFoe::Neutral:
 
-		TempMeshComponent->SetStaticMesh(CurrentRadarReturn->GetNeutralPingMesh());
-		TempMeshComponent->SetMaterial(0, CurrentRadarReturn->GetNeutralPingMaterial());
+
+		ApplyingPingMesh = CurrentRadarReturn->GetNeutralPingMesh();
+		ApplyingPingMaterial = CurrentRadarReturn->GetNeutralPingMaterial();
 		break;
 	default:
 		check(false);
 		break;
 	}
+
+	if (IsValid(ApplyingPingMesh) == false || ApplyingPingMesh->IsValidLowLevel() == false)
+	{
+		LOGV(Error, TEXT("ApplyingMesh is not valid"));
+		return;
+	}
+
+	if (IsValid(ApplyingPingMaterial) == false || ApplyingPingMaterial->IsValidLowLevel() == false)
+	{
+		LOGV(Error, TEXT("ApplyingMaterial is not valid"));
+		return;
+	}
+
+	TempMeshComponent->SetStaticMesh(ApplyingPingMesh);
+	TempMeshComponent->SetMaterial(0, ApplyingPingMaterial);
 
 	TempMeshComponent->SetScalarParameterValueOnMaterials(ReturnEmissiveParamName, CurrentReturnEmissiveIntensity);
 	check(ReturnPingMeshes.IsValidIndex(CurrentIndexCached));
@@ -1334,4 +1499,3 @@ void ARadar::SetGridRotationOption(EGridRotationOption Option)
 {
 	GridRotationOption = Option;
 }
-

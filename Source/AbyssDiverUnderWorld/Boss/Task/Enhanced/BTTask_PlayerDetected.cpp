@@ -30,7 +30,7 @@ EBTNodeResult::Type UBTTask_PlayerDetected::ExecuteTask(UBehaviorTreeComponent& 
 	if (!TaskMemory) return EBTNodeResult::Failed;
 
 	TaskMemory->AIController = Cast<AEnhancedBossAIController>(Comp.GetAIOwner());
-	TaskMemory->Boss = Cast<ABoss>(TaskMemory->AIController->GetCharacter());
+	TaskMemory->Boss = Cast<ABoss>(Comp.GetAIOwner()->GetCharacter());
 	
 	if (!TaskMemory->Boss.IsValid() || !TaskMemory->AIController.IsValid()) return EBTNodeResult::Failed;
 	
@@ -47,11 +47,6 @@ void UBTTask_PlayerDetected::TickTask(UBehaviorTreeComponent& Comp, uint8* NodeM
 	
 	FBTPlayerDetectedTaskMemory* TaskMemory = (FBTPlayerDetectedTaskMemory*)NodeMemory;
 	if (!TaskMemory) return;
-
-	TaskMemory->AIController = Cast<AEnhancedBossAIController>(Comp.GetAIOwner());
-	TaskMemory->Boss = Cast<ABoss>(TaskMemory->AIController->GetCharacter());
-	
-	if (!TaskMemory->Boss.IsValid() || !TaskMemory->AIController.IsValid()) return;
 	
 	TaskMemory->Boss->RotationToTarget(TaskMemory->Boss->GetTarget());
 

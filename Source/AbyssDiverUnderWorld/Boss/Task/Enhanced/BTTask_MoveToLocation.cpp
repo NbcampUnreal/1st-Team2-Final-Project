@@ -34,7 +34,7 @@ EBTNodeResult::Type UBTTask_MoveToLocation::ExecuteTask(UBehaviorTreeComponent& 
 	if (!TaskMemory) return EBTNodeResult::Failed;
 
 	TaskMemory->AIController = Cast<AEnhancedBossAIController>(Comp.GetAIOwner());
-	TaskMemory->Boss = Cast<ABoss>(TaskMemory->AIController->GetCharacter());
+	TaskMemory->Boss = Cast<ABoss>(Comp.GetAIOwner()->GetCharacter());
 	
 	if (!TaskMemory->Boss.IsValid() || !TaskMemory->AIController.IsValid()) return EBTNodeResult::Failed;
 
@@ -44,9 +44,6 @@ EBTNodeResult::Type UBTTask_MoveToLocation::ExecuteTask(UBehaviorTreeComponent& 
 	// Task에 할당된 블랙보드 키 값을 추출
 	const FName KeyName = GetSelectedBlackboardKey();
 	TaskMemory->TargetLocation = TaskMemory->AIController->GetBlackboardComponent()->GetValueAsVector(KeyName);
-
-	// 디버그용 구체 출력 (5초 동안, 반지름 50, 빨간색)
-	DrawDebugSphere(GetWorld(), TaskMemory->TargetLocation, 250.0f, 12, FColor::Green, false, 3.f);
 	
 	// MoveTask를 종료할 랜덤 시간 추출
 	TaskMemory->AccumulatedTime = 0.f;
@@ -62,12 +59,6 @@ void UBTTask_MoveToLocation::TickTask(UBehaviorTreeComponent& Comp, uint8* NodeM
 
 	FBTMoveToLocationTaskMemory* TaskMemory = (FBTMoveToLocationTaskMemory*)NodeMemory;
 	if (!TaskMemory) return;
-
-	TaskMemory->AIController = Cast<AEnhancedBossAIController>(Comp.GetAIOwner());
-	TaskMemory->Boss = Cast<ABoss>(TaskMemory->AIController->GetCharacter());
-	
-	if (!TaskMemory->Boss.IsValid() || !TaskMemory->AIController.IsValid()) return;
-
 
 	
 	// 만약 MoveToLocation Task 노드의 점유 시간이 MinFinishTaskInterval 이상이 된다면

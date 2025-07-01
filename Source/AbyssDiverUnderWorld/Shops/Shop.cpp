@@ -4,16 +4,20 @@
 #include "Character/UnderwaterCharacter.h"
 #include "Character/UpgradeComponent.h"
 
+#include "Shops/ShopItemEntryData.h"
+#include "Shops/ShopBuyListEntryData.h"
+
 #include "Shops/ShopWidgets/ShopCategoryTabWidget.h"
 #include "Shops/ShopWidgets/ShopWidget.h"
-#include "Shops/ShopItemEntryData.h"
 #include "Shops/ShopWidgets/ShopElementInfoWidget.h"
 #include "Shops/ShopWidgets/ShopItemSlotWidget.h"
+#include "Shops/ShopWidgets/ShopBuyListSlotWidget.h"
 #include "ShopInteractionComponent.h"
 
 #include "AbyssDiverUnderWorld.h"	
 #include "Inventory/ADInventoryComponent.h"
 #include "Subsystems/DataTableSubsystem.h"
+#include "Subsystems/SoundSubsystem.h"
 
 #include "Framework/ADPlayerState.h"
 #include "Framework/ADInGameState.h"
@@ -25,8 +29,11 @@
 #include "Kismet/GameplayStatics.h"
 #include "Components/SceneCaptureComponent2D.h"
 #include "Components/PointLightComponent.h"
+#include "Engine/TargetPoint.h"
 
 DEFINE_LOG_CATEGORY(ShopLog);
+
+const int8 AShop::MaxItemCount = 99;
 
 #pragma region FShopItemId
 
@@ -140,12 +147,15 @@ uint8 FShopItemIdList::GetId(uint8 InIndex) const
 
 AShop::AShop()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 	bReplicates = true;
-
+	
 	ShopMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ShopMesh"));
 	SetRootComponent(ShopMeshComponent);
 	ShopMeshComponent->SetMobility(EComponentMobility::Static);
+
+	ShopMerchantMeshComponent = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Merchant Mesh"));
+	ShopMerchantMeshComponent->SetupAttachment(RootComponent);
 
 	ItemMeshComponent = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("ItemMesh"));
 	ItemMeshComponent->SetupAttachment(RootComponent);
@@ -252,6 +262,7 @@ void AShop::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimePro
 
 	DOREPLIFETIME(AShop, ShopConsumableItemIdList);
 	DOREPLIFETIME(AShop, ShopEquipmentItemIdList);
+	DOREPLIFETIME(AShop, CurrentDoorState);
 }
 
 void AShop::BeginPlay()
@@ -265,6 +276,200 @@ void AShop::BeginPlay()
 	}
 
 	GS->TeamCreditsChangedDelegate.AddUObject(ShopWidget, &UShopWidget::SetTeamMoneyText);
+
+	if (ensureMsgf(OriginPoint, TEXT("Shop의 OriginPoint가 등록되어있지 않습니다. 등록해주세요.")) == false)
+	{
+		return;
+	}
+
+	if (ensureMsgf(DestinationPoint, TEXT("Shop의 DestinationPoint가 등록되어있지 않습니다. 등록해주세요.")) == false)
+	{
+		return;
+	}
+
+	if (HasAuthority() == false)
+	{
+		PrimaryActorTick.bCanEverTick = false;
+		SetActorTickEnabled(false);
+	}
+}
+
+void AShop::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	if (HasAuthority())
+	{
+		int32 ActualLaunchInterval;
+		switch (CurrentLaunchType)
+		{
+		case ELaunchType::First:
+			ActualLaunchInterval = LaunchItemIntervalAtFirst;
+			break;
+		case ELaunchType::InProgress:
+			ActualLaunchInterval = LaunchItemInterval;
+			break;
+		case ELaunchType::Last:
+			ActualLaunchInterval = LaunchItemIntervalAtLast;
+			break;
+		default:
+			check(false);
+			return;
+		}
+
+		if (CurrentDoorState == EDoorState::Opened)
+		{
+			if (ElapsedTime < ActualLaunchInterval)
+			{
+				ElapsedTime += DeltaSeconds;
+			}
+			else
+			{
+				if (ReadyQueueForLaunchItemById.IsEmpty())
+				{
+					CurrentDoorState = EDoorState::Closing;
+				}
+				else
+				{
+					LaunchItem();
+				}
+			}
+		}
+		else if (CurrentDoorState == EDoorState::Opening)
+		{
+			CurrentDoorRate = FMath::Clamp(CurrentDoorRate + (DeltaSeconds * DoorOpenSpeed), 0, 1);
+			RotateDoor(DesiredCloseDegree, DesiredOpenDegree, CurrentDoorRate);
+			
+			if (CurrentDoorRate == 1)
+			{
+				CurrentDoorState = EDoorState::Opened;
+			}
+
+			if (bIsDoorOpenSoundPlayed == false)
+			{
+				bIsDoorOpenSoundPlayed = true;
+				bIsDoorCloseSoundPlayed = false;
+
+				USoundSubsystem* SoundSubsystem = GetSoundSubsystem();
+				if (SoundSubsystem == nullptr)
+				{
+					return;
+				}
+
+				DoorOpenAudioId = SoundSubsystem->Play2D(ESFX::ShopDoorOpen);
+				SoundSubsystem->StopAudio(DoorCloseAudioId);
+			}
+		}
+		else if (CurrentDoorState == EDoorState::Closed)
+		{
+			if (CurrentLaunchType != ELaunchType::First)
+			{
+				CurrentLaunchType = ELaunchType::First;
+			}
+
+			if (ReadyQueueForLaunchItemById.IsEmpty() == false)
+			{
+				CurrentDoorState = EDoorState::Opening;
+			}
+
+			if (bIsDoorCloseSoundPlayed == false)
+			{
+				bIsDoorOpenSoundPlayed = false;
+				bIsDoorCloseSoundPlayed = true;
+
+				USoundSubsystem* SoundSubsystem = GetSoundSubsystem();
+				if (SoundSubsystem == nullptr)
+				{
+					return;
+				}
+
+				DoorCloseAudioId = SoundSubsystem->Play2D(ESFX::ShopDoorClose);
+				SoundSubsystem->StopAudio(DoorOpenAudioId);
+			}
+		}
+		else /*if (CurrentDoorState == EDoorState::Closing)*/
+		{
+			CurrentDoorRate = FMath::Clamp(CurrentDoorRate - (DeltaSeconds * DoorCloseSpeed), 0, 1);
+			RotateDoor(DesiredCloseDegree, DesiredOpenDegree, CurrentDoorRate);
+
+			if (ReadyQueueForLaunchItemById.IsEmpty() == false)
+			{
+				CurrentDoorState = EDoorState::Opening;
+			}
+			else if (CurrentDoorRate == 0)
+			{
+				CurrentDoorState = EDoorState::Closed;
+			}
+
+			if (CurrentLaunchType != ELaunchType::First)
+			{
+				CurrentLaunchType = ELaunchType::First;
+			}
+		}
+	}
+	else
+	{
+		if (CurrentDoorState == EDoorState::Opened)
+		{
+			CurrentDoorRate = 1;
+			RotateDoor(DesiredCloseDegree, DesiredOpenDegree, CurrentDoorRate);
+		}
+		else if (CurrentDoorState == EDoorState::Opening)
+		{
+			CurrentDoorRate = FMath::Clamp(CurrentDoorRate + (DeltaSeconds * DoorOpenSpeed), 0, 1);
+			RotateDoor(DesiredCloseDegree, DesiredOpenDegree, CurrentDoorRate);
+
+			if (CurrentDoorRate == 1)
+			{
+				CurrentDoorState = EDoorState::Opened;
+			}
+
+			if (bIsDoorOpenSoundPlayed == false)
+			{
+				bIsDoorOpenSoundPlayed = true;
+				bIsDoorCloseSoundPlayed = false;
+
+				USoundSubsystem* SoundSubsystem = GetSoundSubsystem();
+				if (SoundSubsystem == nullptr)
+				{
+					return;
+				}
+
+				DoorOpenAudioId = SoundSubsystem->Play2D(ESFX::ShopDoorOpen);
+				SoundSubsystem->StopAudio(DoorCloseAudioId);
+			}
+		}
+		else if (CurrentDoorState == EDoorState::Closed)
+		{
+			CurrentDoorRate = 0;
+			RotateDoor(DesiredCloseDegree, DesiredOpenDegree, CurrentDoorRate);
+
+			if (bIsDoorCloseSoundPlayed == false)
+			{
+				bIsDoorOpenSoundPlayed = false;
+				bIsDoorCloseSoundPlayed = true;
+
+				USoundSubsystem* SoundSubsystem = GetSoundSubsystem();
+				if (SoundSubsystem == nullptr)
+				{
+					return;
+				}
+
+				DoorCloseAudioId = SoundSubsystem->Play2D(ESFX::ShopDoorClose);
+				SoundSubsystem->StopAudio(DoorOpenAudioId);
+			}
+		}
+		else /*if (CurrentDoorState == EDoorState::Closing)*/
+		{
+			CurrentDoorRate = FMath::Clamp(CurrentDoorRate - (DeltaSeconds * DoorCloseSpeed), 0, 1);
+			RotateDoor(DesiredCloseDegree, DesiredOpenDegree, CurrentDoorRate);
+
+			if (CurrentDoorRate == 0)
+			{
+				CurrentDoorState = EDoorState::Closed;
+			}
+		}
+	}
 }
 
 void AShop::Interact_Implementation(AActor* InstigatorActor)
@@ -313,6 +518,14 @@ void AShop::OpenShop(AUnderwaterCharacter* Requester)
 	bIsOpened = true;
 	PC->SetIgnoreMoveInput(true);
 	ItemMeshCaptureComp->bCaptureEveryFrame = true;
+
+	USoundSubsystem* SoundSubsystem = GetSoundSubsystem();
+	if (SoundSubsystem == nullptr)
+	{
+		return;
+	}
+
+	SoundSubsystem->Play2D(ESFX_UI::ShopOpenClose);
 }
 
 void AShop::CloseShop(AUnderwaterCharacter* Requester)
@@ -326,6 +539,12 @@ void AShop::CloseShop(AUnderwaterCharacter* Requester)
 	{
 		return;
 	}
+
+	if (IsValid(ShopWidget) == false || ShopWidget->IsValidLowLevel() == false)
+	{
+		return;
+	}
+
 	ShopWidget->PlayCloseAnimation();
 
 	FTimerHandle RemoveWidgetTimerHandle;
@@ -333,6 +552,17 @@ void AShop::CloseShop(AUnderwaterCharacter* Requester)
 	GetWorld()->GetTimerManager().SetTimer(RemoveWidgetTimerHandle,
 		FTimerDelegate::CreateLambda([this]() 
 			{ 
+				UWorld* World = GetWorld();
+				if (IsValid(World) == false || World->IsValidLowLevel() == false || World->bIsTearingDown || World->IsInSeamlessTravel())
+				{
+					return;
+				}
+
+				if (IsValid(ShopWidget) == false || ShopWidget->IsValidLowLevel() == false)
+				{
+					return;
+				}
+
 				ShopWidget->RemoveFromParent();
 
 				APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
@@ -343,8 +573,17 @@ void AShop::CloseShop(AUnderwaterCharacter* Requester)
 
 				ItemMeshCaptureComp->bCaptureEveryFrame = false;
 
+				ClearSelectedInfos();
+				
 			}), RemoveDelay, false);
 
+	USoundSubsystem* SoundSubsystem = GetSoundSubsystem();
+	if (SoundSubsystem == nullptr)
+	{
+		return;
+	}
+
+	SoundSubsystem->Play2D(ESFX_UI::ShopOpenClose);
 }
 
 EBuyResult AShop::BuyItem(uint8 ItemId, uint8 Quantity, AUnderwaterCharacter* Buyer)
@@ -373,7 +612,14 @@ EBuyResult AShop::BuyItem(uint8 ItemId, uint8 Quantity, AUnderwaterCharacter* Bu
 		return EBuyResult::FailedFromOtherReason;
 	}
 
-	FFADItemDataRow* ItemDataRow = GetGameInstance()->GetSubsystem<UDataTableSubsystem>()->GetItemData(ItemId);
+	UDataTableSubsystem* DataTableSubsystem = GetDatatableSubsystem();
+	if (DataTableSubsystem == nullptr)
+	{
+		LOGV(Error, TEXT("DataTableSubsystem == nullptr"));
+		return EBuyResult::FailedFromOtherReason;
+	}
+
+	FFADItemDataRow* ItemDataRow = DataTableSubsystem->GetItemData(ItemId);
 	if (ItemDataRow == nullptr)
 	{
 		LOGS(Error, TEXT("ItemData == nullptr"));
@@ -392,8 +638,11 @@ EBuyResult AShop::BuyItem(uint8 ItemId, uint8 Quantity, AUnderwaterCharacter* Bu
 
 	FItemData ItemData;
 	ItemData.Amount = ItemDataRow->Amount;
+	ItemData.CurrentAmmoInMag = ItemDataRow->CurrentAmmoInMag;
+	ItemData.ReserveAmmo = ItemDataRow->ReserveAmmo;
 	ItemData.Id = ItemDataRow->Id;
 	ItemData.ItemType = ItemDataRow->ItemType;
+	ItemData.BulletType = ItemDataRow->BulletType;
 	ItemData.Mass = ItemDataRow->Weight;
 	ItemData.Name = ItemDataRow->Name;
 	ItemData.Price = ItemDataRow->Price;
@@ -409,6 +658,54 @@ EBuyResult AShop::BuyItem(uint8 ItemId, uint8 Quantity, AUnderwaterCharacter* Bu
 	GS->SetTotalTeamCredit(TeamCredits - ItemDataRow->Price * Quantity);
 
 	LOGS(Log, TEXT("Buying Item Succeeded : %s"), *ItemDataRow->Name.ToString());
+	return EBuyResult::Succeeded;
+}
+
+EBuyResult AShop::BuyItems(const TArray<uint8>& ItemIdList, const TArray<int8>& ItemCountList)
+{
+	if (HasAuthority() == false)
+	{
+		return EBuyResult::HasNoAuthority;
+	}
+
+	int32 TotalItemPrice = CalcTotalItemPrice(ItemIdList, ItemCountList);
+	if (TotalItemPrice == INDEX_NONE)
+	{
+		LOGV(Error, TEXT("Fail to Calculate Total Item Price"));
+		return EBuyResult::FailedFromOtherReason;
+	}
+
+	AADInGameState* GS = Cast<AADInGameState>(UGameplayStatics::GetGameState(GetWorld()));
+	check(GS);
+
+	int32 TeamCredits = GS->GetTotalTeamCredit();
+	if (TeamCredits < TotalItemPrice)
+	{
+		return  EBuyResult::NotEnoughMoney;
+	}
+
+	GS->SetTotalTeamCredit(TeamCredits - TotalItemPrice);
+
+	UDataTableSubsystem* DataTableSubsystem = GetDatatableSubsystem();
+	if (DataTableSubsystem == nullptr)
+	{
+		LOGV(Error, TEXT("DataTableSubsystem == nullptr"));
+		return EBuyResult::FailedFromOtherReason;
+	}
+
+	UWorld* World = GetWorld();
+	check(World);
+
+	const int32 ItemIdCount = ItemIdList.Num();
+	for (int32 i = 0; i < ItemIdCount; ++i)
+	{
+		const int32 ItemCountById = ItemCountList[i];
+		for (int32 j = 0; j < ItemCountById; ++j)
+		{
+			ReadyQueueForLaunchItemById.Enqueue(ItemIdList[i]);
+		}
+	}
+
 	return EBuyResult::Succeeded;
 }
 
@@ -491,10 +788,17 @@ void AShop::AddItemToList(uint8 ItemId, EShopCategoryTab TabType)
 		return;
 	}
 
-	FFADItemDataRow* ItemDataRow = GetGameInstance()->GetSubsystem<UDataTableSubsystem>()->GetItemData(ItemId);
+	UDataTableSubsystem* DataTableSubsystem = GetDatatableSubsystem();
+	if (DataTableSubsystem == nullptr)
+	{
+		LOGV(Error, TEXT("DataTableSubsystem == nullptr"));
+		return;
+	}
+
+	FFADItemDataRow* ItemDataRow = DataTableSubsystem->GetItemData(ItemId);
 	if (ItemDataRow == nullptr)
 	{
-		LOGS(Error, TEXT("ItemData == nullptr"));
+		LOGV(Error, TEXT("ItemData == nullptr"));
 		return;
 	}
 
@@ -620,7 +924,7 @@ void AShop::InitUpgradeView()
 		UpgradeTabEntryDataList.SetNum(EnumCount);
 	}
 
-	LOGS(Error, TEXT("Enumcount : %d"), EnumCount);
+	LOGS(Log, TEXT("Enumcount : %d"), EnumCount);
 	for (int32 i = 0; i < EnumCount; ++i)
 	{
 		EUpgradeType UpgradeType = EUpgradeType(i);
@@ -634,16 +938,16 @@ void AShop::InitUpgradeView()
 
 		if (CachedUpgradeGradeMap[i] == Grade)
 		{
-			LOGS(Warning, TEXT("UpgradeState : UpgradeType(%d) - Grade(%d)"), UpgradeType, Grade);
+			LOGS(Log, TEXT("UpgradeState : UpgradeType(%d) - Grade(%d)"), UpgradeType, Grade);
 			continue;
 		}
-		LOGS(Warning, TEXT("UpgradeState(Renewed) : UpgradeType(%d) - Grade(%d)"), UpgradeType, Grade);
+		LOGS(Log, TEXT("UpgradeState(Renewed) : UpgradeType(%d) - Grade(%d)"), UpgradeType, Grade);
 		CachedUpgradeGradeMap[i] = Grade;
 
 		FUpgradeDataRow* UpgradeDataRow = DataTableSubsystem->GetUpgradeData(UpgradeType, Grade);
 
 		UShopItemEntryData* UpgradeEntryData = NewObject<UShopItemEntryData>();
-		UpgradeEntryData->Init(i, nullptr, FString(TEXT("Temp Tooltip")));
+		UpgradeEntryData->Init(i, UpgradeDataRow->UpgradeIcon, FString(TEXT("Temp Tooltip")));
 		UpgradeEntryData->OnEntryUpdatedFromDataDelegate.AddUObject(this, &AShop::OnSlotEntryWidgetUpdated);
 		UpgradeTabEntryDataList[i] = UpgradeEntryData;
 
@@ -664,14 +968,9 @@ void AShop::InitUpgradeView()
 	OnUpgradeSlotEntryClicked(int32(CurrentSelectedUpgradeType));
 }
 
-void AShop::Interact_Test(AActor* InstigatorActor)
-{
-	InteractableComp->Interact(InstigatorActor);
-}
-
 void AShop::InitShopWidget()
 {
-	LOGS(Warning, TEXT("Init Shop Widget Start"));
+	LOGS(Log, TEXT("Init Shop Widget Start"));
 	ShopConsumableItemIdList.IdList.Empty();
 	ShopConsumableItemIdList.OnShopItemListChangedDelegate.AddUObject(this, &AShop::OnShopItemListChanged);
 	ShopConsumableItemIdList.ShopOwner = this;
@@ -687,12 +986,16 @@ void AShop::InitShopWidget()
 
 	ShopWidget->SetCurrentActivatedTab(EShopCategoryTab::Equipment);
 	ShopWidget->OnShopCloseButtonClickedDelegate.AddUObject(this, &AShop::OnCloseButtonClicked);
+	ShopWidget->OnShopBuyButtonClickedDelegate.AddUObject(this, &AShop::OnBuyButtonClicked);
 
+	TotalPriceOfBuyList = 0;
+	ShopWidget->ChangeTotalPriceText(0);
+	
 	UShopElementInfoWidget* InfoWidget = ShopWidget->GetInfoWidget();
 	check(InfoWidget);
 
 	InfoWidget->Init(ItemMeshComponent);
-	InfoWidget->OnBuyButtonClickedDelegate.AddUObject(this, &AShop::OnBuyButtonClicked);
+	InfoWidget->OnAddButtonClickedDelegate.AddUObject(this, &AShop::OnAddButtonClicked);
 
 	ItemMeshCaptureComp->ShowOnlyActorComponents(this);
 	ensureMsgf(ItemMeshCaptureComp->TextureTarget, TEXT("상점에 있는 ItemMeshCaptureComp의 TextureTarget이 지정이 되어있지 않습니다"));
@@ -710,7 +1013,7 @@ void AShop::InitData()
 	for (const auto& Id : DefaultConsumableItemIdList)
 	{
 		AddItemToList(Id, EShopCategoryTab::Consumable);
-		LOGS(Warning, TEXT("Adding ConsumableItem, Id : %d "), Id);
+		LOGV(Log, TEXT("Adding ConsumableItem, Id : %d "), Id);
 	}
 
 	ShopEquipmentItemIdList.MarkArrayDirty();
@@ -718,7 +1021,7 @@ void AShop::InitData()
 	for (const auto& Id : DefaultEquipmentItemIdList)
 	{
 		AddItemToList(Id, EShopCategoryTab::Equipment);
-		LOGS(Warning, TEXT("Adding Equipment, Id : %d "), Id);
+		LOGV(Log, TEXT("Adding Equipment, Id : %d "), Id);
 	}
 
 	ShopWidget->ShowItemViewForTab(EShopCategoryTab::Equipment);
@@ -726,17 +1029,17 @@ void AShop::InitData()
 
 void AShop::OnShopItemListChanged(const FShopItemListChangeInfo& Info)
 {
-	LOGS(Warning, TEXT("Begin Change"));
+	LOGV(Log, TEXT("Begin Change"));
 
 	if (Info.ChangeType >= EShopItemChangeType::Max)
 	{
-		LOGS(Error, TEXT("Weird Change Type : %d"), Info.ChangeType);
+		LOGV(Error, TEXT("Weird Change Type : %d"), Info.ChangeType);
 		return;
 	}
 
 	if (Info.ShopTab >= EShopCategoryTab::Upgrade)
 	{
-		LOGS(Error, TEXT("Tab.. Weird.. : %d"), Info.ChangeType);
+		LOGV(Error, TEXT("Tab.. Weird.. : %d"), Info.ChangeType);
 		return;
 	}
 
@@ -744,7 +1047,7 @@ void AShop::OnShopItemListChanged(const FShopItemListChangeInfo& Info)
 	FFADItemDataRow* ItemDataRow = GetGameInstance()->GetSubsystem<UDataTableSubsystem>()->GetItemData(Info.ItemIdAfter);
 	if (ItemDataRow == nullptr)
 	{
-		LOGS(Error, TEXT("ItemData == nullptr"));
+		LOGV(Error, TEXT("ItemData == nullptr"));
 		return;
 	}
 
@@ -757,7 +1060,7 @@ void AShop::OnShopItemListChanged(const FShopItemListChangeInfo& Info)
 		EntryData->OnEntryUpdatedFromDataDelegate.AddUObject(this, &AShop::OnSlotEntryWidgetUpdated);
 		
 		ShopWidget->AddItem(EntryData, Info.ShopTab);
-		LOGS(Warning, TEXT("Add Data End, Category : %d"), ItemDataRow->ItemType);
+		LOGV(Log, TEXT("Add Data End, Category : %d"), ItemDataRow->ItemType);
 		break;
 	case EShopItemChangeType::Removed:
 		ShopWidget->RemoveItem(Info.ShopIndex, Info.ShopTab);
@@ -778,13 +1081,21 @@ void AShop::OnShopItemListChanged(const FShopItemListChangeInfo& Info)
 
 void AShop::OnSlotEntryWidgetUpdated(UShopItemSlotWidget* SlotEntryWidget)
 {
-	SlotEntryWidget->OnShopItemSlotWidgetClickedDelegate.BindUObject(this, &AShop::OnSlotEntryClicked);
+	if (SlotEntryWidget->IsA<UShopBuyListSlotWidget>())
+	{
+		SlotEntryWidget->OnShopItemSlotWidgetClickedDelegate.BindUObject(this, &AShop::OnBuyListEntryClicked);
+	}
+	else
+	{
+		SlotEntryWidget->OnShopItemSlotWidgetClickedDelegate.BindUObject(this, &AShop::OnSlotEntryClicked);
+		SlotEntryWidget->OnShopItemSlotWidgetDoubleClickedDelegate.BindUObject(this, &AShop::OnSlotEntryDoubleClicked);
+	}
 }
 
 void AShop::OnSlotEntryClicked(int32 ClickedSlotIndex)
 {
-	EShopCategoryTab CurrentTab = ShopWidget->GetCurrentActivatedTab();
-
+	EShopCategoryTab CurrentTab = GetCurrentTab();
+	LOGV(Error, TEXT("Clicked Slot Index : %d"), ClickedSlotIndex);
 	if (CurrentTab >= EShopCategoryTab::Max)
 	{
 		LOGS(Error, TEXT("Weird Tab Type : %d"), CurrentTab);
@@ -802,7 +1113,7 @@ void AShop::OnSlotEntryClicked(int32 ClickedSlotIndex)
 		ItemId = ShopEquipmentItemIdList.IdList[ClickedSlotIndex].Id;
 		break;
 	case EShopCategoryTab::Upgrade:
-		LOGS(Error, TEXT("UpgradeSlot Click!, Index : %d"), ClickedSlotIndex);
+		LOGS(Log, TEXT("UpgradeSlot Click!, Index : %d"), ClickedSlotIndex);
 		OnUpgradeSlotEntryClicked(ClickedSlotIndex);
 		return;
 	case EShopCategoryTab::Max:
@@ -827,7 +1138,84 @@ void AShop::OnSlotEntryClicked(int32 ClickedSlotIndex)
 	CurrentSelectedItemId = ItemId;
 }
 
-void AShop::OnBuyButtonClicked(int32 Quantity)
+void AShop::OnSlotEntryDoubleClicked(int32 ClickedSlotIndex)
+{
+	EShopCategoryTab CurrentTab = GetCurrentTab();
+	LOGV(Error, TEXT("Clicked Slot Index : %d"), ClickedSlotIndex);
+	if (CurrentTab >= EShopCategoryTab::Max)
+	{
+		LOGS(Error, TEXT("Weird Tab Type : %d"), CurrentTab);
+		return;
+	}
+
+	if (CurrentTab == EShopCategoryTab::Upgrade)
+	{
+		OnBuyButtonClicked();
+	}
+	else
+	{
+		OnAddButtonClicked(1);
+	}
+}
+
+void AShop::OnBuyListEntryClicked(int32 ClickedSlotIndex)
+{
+	UDataTableSubsystem* DataTableSubsystem = GetDatatableSubsystem();
+	if (DataTableSubsystem == nullptr)
+	{
+		LOGV(Error, TEXT("Fail to get DataTableSubsystem"));
+		return;
+	}
+
+	uint8 ItemId = SelectedItemIdArray[ClickedSlotIndex];
+	FFADItemDataRow* ItemDataRow = DataTableSubsystem->GetItemData(ItemId);
+	if (ItemDataRow == nullptr)
+	{
+		LOGV(Error, TEXT("ItemData == nullptr"));
+		return;
+	}
+
+	TotalPriceOfBuyList -= ItemDataRow->Price;
+
+	LOGV(Error, TEXT("BuyListEntry Clicked, Index : %d"), ClickedSlotIndex);
+	RemoveFromSelecteItemArray(ClickedSlotIndex, 1);
+	ShopWidget->RemoveBuyListAt(ClickedSlotIndex, 1);
+	ShopWidget->ChangeTotalPriceText(TotalPriceOfBuyList);
+}
+
+void AShop::OnAddButtonClicked(int32 Quantity)
+{
+	EShopCategoryTab CurrentTab = ShopWidget->GetCurrentActivatedTab();
+	if (CurrentTab == EShopCategoryTab::Upgrade || CurrentTab == EShopCategoryTab::Max)
+	{
+		return;
+	}
+
+	AADInGameState* GS = CastChecked<AADInGameState>(UGameplayStatics::GetGameState(GetWorld()));
+	UDataTableSubsystem* DataTableSubsystem = GetGameInstance()->GetSubsystem<UDataTableSubsystem>();
+	FFADItemDataRow* ItemData = DataTableSubsystem->GetItemData(CurrentSelectedItemId);
+
+	UShopBuyListEntryData* BuyListEntryData = ShopWidget->AddToBuyList(CurrentSelectedItemId, Quantity);
+	if (BuyListEntryData == nullptr)
+	{
+		return;
+	}
+
+	int32 CurrentQuantity = BuyListEntryData->GetItemCount();
+
+	TotalPriceOfBuyList += ItemData->Price * Quantity;
+	ShopWidget->ChangeTotalPriceText(TotalPriceOfBuyList);
+	AddToSelectedItemArray(CurrentSelectedItemId, Quantity);
+
+	if (BuyListEntryData->OnEntryUpdatedFromDataDelegate.IsBound())
+	{
+		return;
+	}
+
+	BuyListEntryData->OnEntryUpdatedFromDataDelegate.AddUObject(this, &AShop::OnSlotEntryWidgetUpdated);
+}
+
+void AShop::OnBuyButtonClicked()
 {
 	AADInGameState* GS = CastChecked<AADInGameState>(UGameplayStatics::GetGameState(GetWorld()));
 	UDataTableSubsystem* DataTableSubsystem = GetGameInstance()->GetSubsystem<UDataTableSubsystem>();
@@ -836,68 +1224,73 @@ void AShop::OnBuyButtonClicked(int32 Quantity)
 
 	EShopCategoryTab CurrentTab = ShopWidget->GetCurrentActivatedTab();
 
-	if (CurrentTab == EShopCategoryTab::Upgrade)
+	if (CurrentTab == EShopCategoryTab::Upgrade && CurrentSelectedUpgradeType != EUpgradeType::Max)
 	{
 		APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
 		AADPlayerState* PS = PC->GetPlayerState<AADPlayerState>();
 		if (PS == nullptr)
 		{
-			LOGS(Error, TEXT("PS == nullptr"));
+			LOGV(Error, TEXT("PS == nullptr"));
 			return;
 		}
 
 		UUpgradeComponent* UpgradeComp = PS->GetUpgradeComp();
 		if (UpgradeComp == nullptr)
 		{
-			LOGS(Error, TEXT("UpgradeComp == nullptr"));
+			LOGV(Error, TEXT("UpgradeComp == nullptr"));
 			return;
 		}
 
 		bool bIsMaxGrade = UpgradeComp->IsMaxGrade(CurrentSelectedUpgradeType);
 		if (bIsMaxGrade)
 		{
-			LOGS(Log, TEXT("This Upgrade Type Has Reached to Max Level"));
+			LOGV(Log, TEXT("This Upgrade Type Has Reached to Max Level"));
 			return;
 		}
 
 		int32 Grade = UpgradeComp->GetCurrentGrade(CurrentSelectedUpgradeType);
-		
-
 		FUpgradeDataRow* UpgradeData = DataTableSubsystem->GetUpgradeData(CurrentSelectedUpgradeType, Grade + 1);
 
 		if (TotalTeamCredit < UpgradeData->Price)
 		{
-			LOGS(Warning, TEXT("업그레이드 돈부족!! 남은 돈 : %d, 필요한 돈 : %d"), TotalTeamCredit, UpgradeData->Price);
+			LOGV(Log, TEXT("업그레이드 돈부족!! 남은 돈 : %d, 필요한 돈 : %d"), TotalTeamCredit, UpgradeData->Price);
 			return;
 		}
-		
+
 		UpgradeComp->S_RequestUpgrade(CurrentSelectedUpgradeType);
-		return;
 	}
-
-	AUnderwaterCharacter* BuyingCharacter = Cast<AUnderwaterCharacter>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetPawn());
-	if (BuyingCharacter == nullptr)
+	else
 	{
-		LOGS(Warning, TEXT("BuyingCharacter == nullptr"));
-		return;
+		int32 TotalItemPrice = CalcTotalItemPrice(SelectedItemIdArray, SelectedItemCountArray);
+		if (TotalItemPrice == INDEX_NONE)
+		{
+			LOGV(Error, TEXT("Fail to Calculate Total Item Price"));
+			return;
+		}
+
+		if (TotalTeamCredit < TotalItemPrice)
+		{
+			LOGV(Log, TEXT("Not Enough Money, Needed : %d, Held : %d"), TotalItemPrice, TotalTeamCredit);
+			return;
+		}
+
+		AUnderwaterCharacter* BuyingCharacter = Cast<AUnderwaterCharacter>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetPawn());
+		if (BuyingCharacter == nullptr)
+		{
+			LOGV(Warning, TEXT("BuyingCharacter == nullptr"));
+			return;
+		}
+
+		UShopInteractionComponent* ShopInteractionComp = BuyingCharacter->GetShopInteractionComponent();
+		if (ShopInteractionComp == nullptr)
+		{
+			LOGV(Warning, TEXT("ShopInteractionComp == nullptr"));
+			return;
+		}
+
+		ShopInteractionComp->S_RequestBuyItems(SelectedItemIdArray, SelectedItemCountArray);
+		ClearSelectedInfos();
 	}
-
-	UShopInteractionComponent* ShopInteractionComp = BuyingCharacter->GetShopInteractionComponent();
-	if (ShopInteractionComp == nullptr)
-	{
-		LOGS(Warning, TEXT("ShopInteractionComp == nullptr"));
-		return;
-	}
-
-	FFADItemDataRow* ItemData = DataTableSubsystem->GetItemData(CurrentSelectedItemId);
-
-	if (TotalTeamCredit < ItemData->Price * Quantity)
-	{
-		LOGS(Warning, TEXT("아이템 구매 돈부족!! 남은 돈 : %d, 필요한 돈 : %d"), TotalTeamCredit, ItemData->Price * Quantity);
-		return;
-	}
-
-	ShopInteractionComp->S_RequestBuyItem(CurrentSelectedItemId, Quantity);
 }
 
 void AShop::OnCloseButtonClicked()
@@ -905,7 +1298,7 @@ void AShop::OnCloseButtonClicked()
 	AUnderwaterCharacter* Requester = Cast<AUnderwaterCharacter>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetPawn());
 	if (Requester == nullptr)
 	{
-		LOGS(Error, TEXT("Requester == nullptr"));
+		LOGV(Error, TEXT("Requester == nullptr"));
 		return;
 	}
 
@@ -918,14 +1311,14 @@ void AShop::OnUpgradeSlotEntryClicked(int32 ClickedSlotIndex)
 	AADPlayerState* PS = PC->GetPlayerState<AADPlayerState>();
 	if (PS == nullptr)
 	{
-		LOGS(Error, TEXT("PS == nullptr"));
+		LOGV(Error, TEXT("PS == nullptr"));
 		return;
 	}
 
 	UUpgradeComponent* UpgradeComp = PS->GetUpgradeComp();
 	if (UpgradeComp == nullptr)
 	{
-		LOGS(Error, TEXT("UpgradeComp == nullptr"));
+		LOGV(Error, TEXT("UpgradeComp == nullptr"));
 		return;
 	}
 
@@ -934,14 +1327,14 @@ void AShop::OnUpgradeSlotEntryClicked(int32 ClickedSlotIndex)
 	uint8 CurrentGrade = UpgradeComp->GetCurrentGrade(UpgradeType);
 	if (CurrentGrade == 0)
 	{
-		LOGS(Log, TEXT("Weird Upgrade Type Detected : %d"), UpgradeType);
+		LOGV(Log, TEXT("Weird Upgrade Type Detected : %d"), UpgradeType);
 		return;
 	}
 
 	UDataTableSubsystem* DataTableSubSystem = GetGameInstance()->GetSubsystem<UDataTableSubsystem>();
 	if (DataTableSubSystem == nullptr)
 	{
-		LOGS(Error, TEXT("DataTableSubSystem == nullptr"));
+		LOGV(Error, TEXT("DataTableSubSystem == nullptr"));
 		return;
 	}
 
@@ -949,10 +1342,257 @@ void AShop::OnUpgradeSlotEntryClicked(int32 ClickedSlotIndex)
 
 	FUpgradeDataRow* UpgradeDataRow = DataTableSubSystem->GetUpgradeData(UpgradeType, CurrentGrade);
 	int32 Price = bIsMaxGrade ? 0 : DataTableSubSystem->GetUpgradeData(UpgradeType, CurrentGrade + 1)->Price;
-	ShopWidget->ShowUpgradeInfos(nullptr, CurrentGrade, bIsMaxGrade, Price, TEXT("임시 텍스트"));
+	ShopWidget->ShowUpgradeInfos(UpgradeType, CurrentGrade, bIsMaxGrade);
 	CurrentSelectedUpgradeType = UpgradeType;
 
-	LOGS(Log, TEXT("UpgradeViewSlotClicked, Index : %d"), ClickedSlotIndex);
+	LOGV(Log, TEXT("UpgradeViewSlotClicked, Index : %d"), ClickedSlotIndex);
+}
+
+int8 AShop::IsSelectedItem(uint8 ItemId) const
+{
+	int32 SelectedItemCount = SelectedItemIdArray.Num();
+	for (int32 i = 0; i < SelectedItemCount; ++i)
+	{
+		if (ItemId == SelectedItemIdArray[i])
+		{
+			return i;
+		}
+	}
+
+	return INDEX_NONE;
+}
+
+void AShop::AddToSelectedItemArray(uint8 ItemId, int8 Amount)
+{
+	if (Amount > MaxItemCount || Amount < 1)
+	{
+		return;
+	}
+
+	int8 SelectedItemIndex = IsSelectedItem(ItemId);
+	if (SelectedItemIndex == INDEX_NONE)
+	{
+		SelectedItemIdArray.Add(ItemId);
+		SelectedItemCountArray.Add(Amount);
+	}
+	else
+	{
+		int8& SelectedItemCount = SelectedItemCountArray[SelectedItemIndex];
+		int8 ActualAddedAmount = FMath::Clamp(SelectedItemCount + Amount, 0, MaxItemCount);
+		SelectedItemCount = ActualAddedAmount;
+	}
+}
+
+void AShop::RemoveFromSelecteItemArray(uint8 ItemId, int8 Amount)
+{
+	if (Amount < 1)
+	{
+		return;
+	}
+
+	int8 SelectedItemIndex = IsSelectedItem(ItemId);
+	if (SelectedItemIndex == INDEX_NONE)
+	{
+		return;
+	}
+
+	RemoveFromSelecteItemArray(SelectedItemIndex, Amount);
+}
+
+void AShop::RemoveFromSelecteItemArray(int32 BuyListSlotIndex, int8 Amount)
+{
+	int8& SelectedItemCount = SelectedItemCountArray[BuyListSlotIndex];
+	if (SelectedItemCount <= Amount)
+	{
+		SelectedItemCountArray.RemoveAt(BuyListSlotIndex);
+		SelectedItemIdArray.RemoveAt(BuyListSlotIndex);
+	}
+	else 
+	{
+		SelectedItemCount -= Amount;
+	}
+}
+
+UDataTableSubsystem* AShop::GetDatatableSubsystem()
+{
+	UGameInstance* GI = GetGameInstance();
+	if (GI == nullptr)
+	{
+		LOGV(Error, TEXT("GI == nullptr"));
+		return nullptr;
+	}
+
+	UDataTableSubsystem* DataTableSubsystem = GI->GetSubsystem<UDataTableSubsystem>();
+	if (DataTableSubsystem == nullptr)
+	{
+		LOGV(Error, TEXT("DataTableSubsystem == nullptr"));
+	}
+
+	return DataTableSubsystem;
+}
+
+int32 AShop::CalcTotalItemPrice(const TArray<uint8>& ItemIdList, const TArray<int8>& ItemCountList)
+{
+	if (ItemIdList.Num() != ItemCountList.Num())
+	{
+		LOGV(Error, TEXT("Number of ItemIdList not equal to Number of ItemCountList"));
+		return INDEX_NONE;
+	}
+
+	UDataTableSubsystem* DataTableSubsystem = GetDatatableSubsystem();
+	if (DataTableSubsystem == nullptr)
+	{
+		LOGV(Error, TEXT("DataTableSubsystem == nullptr"));
+		return INDEX_NONE;
+	}
+
+	UWorld* World = GetWorld();
+	check(World);
+
+	int32 TotalItemPrice = 0;
+
+	const int32 ItemIdCount = ItemIdList.Num();
+	for (int32 i = 0; i < ItemIdCount; ++i)
+	{
+		FFADItemDataRow* ItemDataRow = DataTableSubsystem->GetItemData(ItemIdList[i]);
+		if (ItemDataRow == nullptr)
+		{
+			LOGV(Error, TEXT("ItemData == nullptr"));
+			return INDEX_NONE;
+		}
+
+		TotalItemPrice += ItemDataRow->Price * ItemCountList[i];
+	}
+
+	return TotalItemPrice;
+}
+
+void AShop::LaunchItem()
+{
+	ElapsedTime = 0.0f;
+	CurrentLaunchType = ELaunchType::InProgress;
+
+	if (ReadyQueueForLaunchItemById.IsEmpty())
+	{
+		return;
+	}
+
+	uint8 ItemId = INDEX_NONE;
+
+	if (ReadyQueueForLaunchItemById.Dequeue(ItemId) == false)
+	{
+		LOGV(Warning, TEXT("Falil to Get Spawned Item From Ready Queue"));
+		return;
+	}
+
+	if (ItemId == INDEX_NONE)
+	{
+		LOGV(Error, TEXT("Fail to get Item Id"));
+		return;
+	}
+
+	UDataTableSubsystem* DataTableSubsystem = GetDatatableSubsystem();
+	if (DataTableSubsystem == nullptr)
+	{
+		LOGV(Error, TEXT("DataTableSubsystem == nullptr"));
+		return;
+	}
+
+	FFADItemDataRow* ItemDataRow = DataTableSubsystem->GetItemData(ItemId);
+	if (ItemDataRow == nullptr)
+	{
+		LOGV(Error, TEXT("ItemData == nullptr"));
+		return;
+	}
+
+	FItemData ItemData
+	(
+		ItemDataRow->Name,
+		ItemDataRow->Id,
+		1,
+		0,
+		ItemDataRow->Amount,
+		ItemDataRow->CurrentAmmoInMag,
+		ItemDataRow->ReserveAmmo,
+		ItemDataRow->Weight,
+		ItemDataRow->Price,
+		ItemDataRow->ItemType,
+		ItemDataRow->BulletType,
+		ItemDataRow->Thumbnail
+	);
+
+	UWorld* World = GetWorld();
+	check(World);
+
+	AADUseItem* SpawnedItem = World->SpawnActor<AADUseItem>(AADUseItem::StaticClass(), OriginPoint->GetActorTransform());
+	if (SpawnedItem == nullptr || IsValid(SpawnedItem) == false || SpawnedItem->IsPendingKillPending())
+	{
+		LOGV(Error, TEXT("Not Valid Spawned Item"));
+		return;
+	}
+
+	SpawnedItem->SetItemInfo(ItemData, false, EEnvironmentState::Ground);
+
+	UPrimitiveComponent* ItemRoot = Cast<UPrimitiveComponent>(SpawnedItem->GetRootComponent());
+	if (ItemRoot == nullptr)
+	{
+		LOGV(Error, TEXT("ItemRoot == nullptr"));
+		return;
+	}
+
+	SpawnedItem->M_SetItemVisible(true);
+
+	FVector Destination = DestinationPoint->GetActorLocation();
+	Destination.X += FMath::RandRange(-ErrorOfLaunchDirection, ErrorOfLaunchDirection);
+	Destination.Y += FMath::RandRange(-ErrorOfLaunchDirection, ErrorOfLaunchDirection);
+	Destination.Z += FMath::RandRange(-ErrorOfLaunchDirection, ErrorOfLaunchDirection);
+
+	FVector LaunchDirection = Destination - OriginPoint->GetActorLocation();
+	LaunchDirection.Normalize();
+
+	float ItemMeshMass = SpawnedItem->GetMeshMass();
+	if (ItemMeshMass == 0.0f)
+	{
+		LOGV(Error, TEXT("Invalid Mesh"));
+		return;
+	}
+
+	float ActualForce = ForceAmount * ItemMeshMass;
+	ItemRoot->AddImpulse(LaunchDirection * ActualForce);
+	LOGV(Warning, TEXT("Launch"));
+	
+	if (ReadyQueueForLaunchItemById.IsEmpty())
+	{
+		CurrentLaunchType = ELaunchType::Last;
+	}
+}
+
+void AShop::RotateDoor(float DegreeFrom, float DegreeTo, float Rate)
+{
+	if (DoorActor == nullptr)
+	{
+		return;
+	}
+
+	float CurrentDegree = FMath::Lerp(DegreeFrom, DegreeTo, Rate);
+
+	FRotator CurrentDoorRotation = DoorActor->GetActorRotation();
+	CurrentDoorRotation.Yaw = CurrentDegree;
+	DoorActor->SetActorRotation(CurrentDoorRotation);
+}
+
+void AShop::ClearSelectedInfos()
+{
+	SelectedItemCountArray.Reset();
+	SelectedItemIdArray.Reset();
+	ShopWidget->RemoveBuyListAll();
+	TotalPriceOfBuyList = 0;
+	ShopWidget->ChangeTotalPriceText(TotalPriceOfBuyList);
+}
+
+EShopCategoryTab AShop::GetCurrentTab()
+{
+	return (IsValid(ShopWidget)) ? ShopWidget->GetCurrentActivatedTab() : EShopCategoryTab::Max;
 }
 
 bool AShop::HasItem(int32 ItemId)
@@ -971,6 +1611,30 @@ bool AShop::IsOpened() const
 FString AShop::GetInteractionDescription() const
 {
 	return TEXT("Open Shop!");
+}
+
+USoundSubsystem* AShop::GetSoundSubsystem()
+{
+	UWorld* World = GetWorld();
+
+	if (IsValid(World) == false || World->bIsTearingDown)
+	{
+		return nullptr;
+	}
+
+	UGameInstance* GI = UGameplayStatics::GetGameInstance(World);
+	if (GI == nullptr)
+	{
+		return nullptr;
+	}
+
+	USoundSubsystem* SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
+	if (SoundSubsystem == nullptr)
+	{
+		return nullptr;
+	}
+
+	return SoundSubsystem;
 }
 
 UADInteractableComponent* AShop::GetInteractableComponent() const

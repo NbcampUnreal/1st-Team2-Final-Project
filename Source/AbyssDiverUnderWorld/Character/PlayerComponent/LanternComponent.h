@@ -75,6 +75,15 @@ protected:
 	/** Actor가 Light에 노출되었는지 확인한다. */
 	bool HasActorExposedByLight(const AActor* TargetActor, const FVector& ConeOrigin, const FVector& ConeDirection, float ConeAngle, float ConeHeight) const;
 	
+	/** Detect monsters exposed to light, handle ExposeTime accumulation */
+	void ProcessExposure(const TArray<AActor*>& OverlappedActors, float DeltaTime);
+
+	/** accumulate unexposed time with lights off */
+	void AccumulateUnexposeTime(float DeltaTime);
+
+	/** Undetect monsters that have not been exposed for a certain amount of time */
+	void HandleUnexposedMonsters(float DeltaTime);
+	
 #pragma endregion
 
 #pragma region Variable
@@ -111,6 +120,12 @@ private:
 	UPROPERTY()
 	TMap<TObjectPtr<class AMonster>, float> MonsterExposeTimeMap;
 
+	/** Stores the amount of time the monster has not been exposed to light. Key: Monster pointer, Value: unexposed time */
+	UPROPERTY()
+	TMap<TObjectPtr<class AMonster>, float> MonsterUnexposeTimeMap;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Character|Lantern", meta = (AllowPrivateAccess = "true"))
+	float RemoveDelayTime;
 #pragma endregion
 
 #pragma region Getter Setter

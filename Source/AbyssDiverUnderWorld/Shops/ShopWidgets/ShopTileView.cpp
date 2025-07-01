@@ -16,6 +16,6 @@ void UShopTileView::SetAllElements(const TArray<UShopItemEntryData*>& Elements)
 	DebugText = DebugText.LeftChop(2);
 	DebugText += TEXT(")");
 
-	LOGV(Warning, TEXT("%s"), *DebugText);
+	LOGV(Log, TEXT("%s"), *DebugText);
 	SetListItems(Elements);
 }

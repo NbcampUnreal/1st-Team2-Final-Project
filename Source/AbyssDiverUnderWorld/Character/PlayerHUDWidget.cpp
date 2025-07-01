@@ -48,7 +48,7 @@ void UPlayerHUDWidget::BindWidget(APawn* PlayerPawn)
 	if (UShieldComponent* ShieldComponent = PlayerPawn->FindComponentByClass<UShieldComponent>())
 	{
 		ShieldComponent->OnShieldValueChangedDelegate.AddDynamic(this, &UPlayerHUDWidget::UpdateShieldText);
-		UpdateShieldText(ShieldComponent->GetShieldValue());
+		UpdateShieldText(ShieldComponent->GetShieldValue(), ShieldComponent->GetShieldValue());
 	}
 	if (UOxygenComponent* OxygenComponent = PlayerPawn->FindComponentByClass<UOxygenComponent>())
 	{
@@ -64,6 +64,10 @@ void UPlayerHUDWidget::BindWidget(APawn* PlayerPawn)
 	{
 		UnderwaterCharacter->OnCharacterStateChangedDelegate.AddDynamic(this, &UPlayerHUDWidget::OnCharacterStateChanged);
 		UpdateCharacterStateText(UnderwaterCharacter->GetCharacterState());
+
+		UnderwaterCharacter->OnCombatStartDelegate.AddDynamic(this, &UPlayerHUDWidget::OnCombatStart);
+		UnderwaterCharacter->OnCombatEndDelegate.AddDynamic(this, &UPlayerHUDWidget::OnCombatEnd);
+		UpdateCombatText(UnderwaterCharacter->IsInCombat());
 	}
 }
 
@@ -80,11 +84,11 @@ void UPlayerHUDWidget::UpdateHealthText(int32 Health, int32 MaxHealth)
 	}
 }
 
-void UPlayerHUDWidget::UpdateShieldText(float ShieldValue)
+void UPlayerHUDWidget::UpdateShieldText(float OldShieldValue, float NewShieldValue)
 {
 	if (ShieldTextBlock)
 	{
-		FText ShieldText = FText::Format(FText::FromString(TEXT("Shield : {0}")), FText::AsNumber(ShieldValue));
+		FText ShieldText = FText::Format(FText::FromString(TEXT("Shield : {0}")), FText::AsNumber(NewShieldValue));
 		ShieldTextBlock->SetText(ShieldText);
 	}
 	else
@@ -173,7 +177,19 @@ void UPlayerHUDWidget::UpdateGroggyText(float GroggyTime, float MaxGroggyTime)
 	}
 }
 
-void UPlayerHUDWidget::OnCharacterStateChanged(ECharacterState OldCharacterState, ECharacterState NewCharacterState)
+void UPlayerHUDWidget::UpdateCombatText(bool bIsInCombat)
+{
+	if (CombatTextBlock)
+	{
+		const FText CombatText = FText::Format(
+			FText::FromString(TEXT("Combat : {0}")),
+			FText::FromString(bIsInCombat ? TEXT("On") : TEXT("Off"))
+		);
+		CombatTextBlock->SetText(CombatText);
+	}
+}
+
+void UPlayerHUDWidget::OnCharacterStateChanged(AUnderwaterCharacter* Character, ECharacterState OldCharacterState, ECharacterState NewCharacterState)
 {
 	UpdateCharacterStateText(NewCharacterState);
 
@@ -188,3 +204,15 @@ void UPlayerHUDWidget::OnCharacterStateChanged(ECharacterState OldCharacterState
 		GroggyTextBlock->SetVisibility(ESlateVisibility::Collapsed);
 	}
 }
+
+void UPlayerHUDWidget::OnCombatStart()
+{
+	UpdateCombatText(true);
+}
+
+void UPlayerHUDWidget::OnCombatEnd()
+{
+	UpdateCombatText(false);
+}
+
+

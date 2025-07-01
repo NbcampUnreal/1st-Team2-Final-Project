@@ -27,11 +27,17 @@ protected:
 	UFUNCTION()
 	void OnTargetPerceptionUpdatedHandler(AActor* Actor, FAIStimulus Stimulus);
 
+	virtual void OnSightPerceptionSuccess(AUnderwaterCharacter* Player);
+	virtual void OnSightPerceptionFail();
+	virtual void OnHearingPerceptionSuccess(AUnderwaterCharacter* Player);
+	virtual void SetBloodDetectedState();
+	virtual void OnDamagePerceptionSuccess(AUnderwaterCharacter* Player);
+		
 private:
-	void OnSightPerceptionSuccess(AUnderwaterCharacter* Player);
-	void OnSightPerceptionFail();
-	void OnHearingPerceptionSuccess(const FAIStimulus& Stimulus);
-	void OnDamagePerceptionSuccess();
+	void BindToObstacleComponent();
+	
+	UFUNCTION()
+	void OnObstacleComponentBeginOverlap(AUnderwaterCharacter* OverlappedPlayer);
 
 protected:
 	UPROPERTY(EditAnywhere)
@@ -63,6 +69,7 @@ private:
 	uint8 bIsDisappearPlayer : 1;
 	
 	FTimerHandle DamageStateTransitionTimerHandle;
+	FTimerHandle BloodDetectedTimerHandle;
 
 	static const FName bHasSeenPlayerKey;
 	static const FName PerceptionTypeKey;
@@ -72,11 +79,18 @@ private:
 	static const FName bIsPlayerHiddenKey;
 	static const FName BloodOccurredLocationKey;
 	static const FName TargetPlayerKey;
+	static const FName bIsChasingPlayerKey;
+	static const FName bIsDetectBloodKey;
+	static const FName bIsChasingBloodKey;
 
 public:
 	FORCEINLINE bool GetIsDetectedPlayer() const { return bIsDetectedPlayer; }
 	FORCEINLINE bool GetIsDetectedBlood() const { return bIsDamagedByPlayer; }
 	FORCEINLINE bool GetIsDamagedByPlayer() const { return bIsDamagedByPlayer; }
 	FORCEINLINE bool GetIsDisappearPlayer() const { return bIsDisappearPlayer; }
+
+	FORCEINLINE void SetPerceptionSight(bool bIsEnabled) { bIsPerceptionSight = bIsEnabled; }
+	FORCEINLINE void SetPerceptionHearing(bool bIsEnabled) { bIsPerceptionHearing = bIsEnabled; }
+	FORCEINLINE void SetPerceptionDamage(bool bIsEnabled) { bIsPerceptionDamage = bIsEnabled; }
 	
 };

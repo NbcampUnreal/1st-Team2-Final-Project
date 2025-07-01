@@ -27,5 +27,12 @@ private:
 	TObjectPtr<AActor> CachedTargetActor;
 
 	float AcceptanceRadius;
+
+protected:
+	UPROPERTY(EditAnywhere, Category = "Blackboard")
+	struct FBlackboardKeySelector TargetActorKey;
+	UPROPERTY(EditAnywhere, Category = "Blackboard")
+	struct FBlackboardKeySelector MonsterStateKey;
+
 #pragma endregion
 };

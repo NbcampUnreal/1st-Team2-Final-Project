@@ -9,10 +9,14 @@
 
 DECLARE_LOG_CATEGORY_EXTERN(DroneLog, Log, All);
 
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnPhaseChangeDelegate, int32/*NextPhaseNumber*/);
+
 class UADInteractableComponent;
 class AADDroneSeller;
 class ASpawnManager;
 class USoundSubsystem;
+class ATargetPoint;
+class UADWorldSubsystem;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADDrone : public AActor,  public IIADInteractable
@@ -20,17 +24,18 @@ class ABYSSDIVERUNDERWORLD_API AADDrone : public AActor,  public IIADInteractabl
 	GENERATED_BODY()
 	
 public:	
-	// Sets default values for this actor's properties
+
 	AADDrone();
 
 protected:
-	// Called when the game starts or when spawned
+
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
+	virtual void Destroyed() override;
+
 
 #pragma region Method
 public:
-
 	virtual void Interact_Implementation(AActor* InstigatorActor) override;
 
 	virtual bool CanHighlight_Implementation() const override { return bIsActive; }
@@ -48,6 +53,8 @@ public:
 	void StartRising();
 	void OnDestroyTimer();
 
+	FOnPhaseChangeDelegate OnPhaseChangeDelegate;
+
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 private:
@@ -63,30 +70,45 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Money")
 	int32 AccumulatedMoney = 0;
-	UPROPERTY(ReplicatedUsing = OnRep_IsActive, EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(ReplicatedUsing = OnRep_IsActive, EditAnywhere, BlueprintReadWrite, Category = "DroneSettings")
 	uint8 bIsActive : 1;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(Replicated)
+	uint8 bIsFlying : 1;
+	UPROPERTY(EditAnywhere, Category = "DroneSettings")
 	TObjectPtr<AADDroneSeller> CurrentSeller = nullptr;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "DroneSettings")
 	TObjectPtr<AADDroneSeller> NextSeller = nullptr;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "DroneSettings")
 	TObjectPtr<ASpawnManager> SpawnManager = nullptr;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "DroneSettings")
 	float RaiseSpeed = 200.f;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "DroneSettings")
 	float DestroyDelay = 5.f;
 	UPROPERTY()
 	TObjectPtr<USoundSubsystem> SoundSubsystem;
+	UPROPERTY()
+	TObjectPtr<UADWorldSubsystem> WorldSubsystem;
+	UPROPERTY(EditAnywhere)
+	UDataTable* PhaseBgmTable;
 
 protected:
 
 	// 드론에 해당하는 Phase를 나타내는 숫자
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "DroneSettings")
 	int32 DronePhaseNumber = 0;
 
+	/** 사망 부활 반경 */
+	UPROPERTY(EditAnywhere, Category = "DroneSettings")
+	float ReviveDistance;
+
+	UPROPERTY(EditInstanceOnly, Category = "DroneSettings")
+	TArray<TObjectPtr<ATargetPoint>> PlayerRespawnLocations;
+
 private:
+
 	FTimerHandle DestroyHandle;
 	int32 CachedSoundNumber;
+	int32 DrondeThemeSoundNumber;
 
 #pragma endregion
 
@@ -97,6 +119,9 @@ public:
 
 	int32 GetDronePhaseNumber() const { return DronePhaseNumber; }
 	virtual FString GetInteractionDescription() const override;
+
+	const TArray<ATargetPoint*>& GetPlayerRespawnLocations() const;
+	float GetReviveDistance() const;
 
 private:
 	USoundSubsystem* GetSoundSubsystem();

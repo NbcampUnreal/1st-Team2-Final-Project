@@ -80,7 +80,7 @@ private:
 
 public:
 
-	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnShiledValueChanged, float, ShieldValue);
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnShiledValueChanged, float, OldShieldValue, float, NewShieldValue);
 	/** 실드 값이 변경되었을 때 호출되는 델리게이트 */
 	FOnShiledValueChanged OnShieldValueChangedDelegate;
 	

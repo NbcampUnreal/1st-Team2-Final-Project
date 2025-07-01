@@ -5,12 +5,14 @@
 #include "Monster/Monster.h"
 #include "Monster/EMonsterState.h"
 #include "AIController.h"
+#include "Character/UnderwaterCharacter.h"
 
 UBTTask_DefaultAttack::UBTTask_DefaultAttack()
 {
 	NodeName = "DefaultAttack";
 	bCreateNodeInstance = true;
 	bNotifyTick = false;
+	CachedOwnerComp = nullptr;
 }
 
 EBTNodeResult::Type UBTTask_DefaultAttack::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
@@ -24,13 +26,18 @@ EBTNodeResult::Type UBTTask_DefaultAttack::ExecuteTask(UBehaviorTreeComponent& O
 	AMonster* Monster = Cast<AMonster>(AIPawn);
 	if (!Monster) return EBTNodeResult::Failed;
 
+	CachedMonster = Monster;
+
+	UBlackboardComponent* Blackboard = OwnerComp.GetBlackboardComponent();
+	if (!Blackboard) return EBTNodeResult::Failed;
+
 	// In Server
-	AIController->StopMovement();
-	if (Monster->HasAuthority())
+	const bool bIsAttacking = Blackboard->GetValueAsBool(IsAttackingKey.SelectedKeyName);
+	if (Monster->HasAuthority() && !bIsAttacking)
 	{
 		// Sync to Client
 		Monster->PlayAttackMontage();
-
+		Blackboard->SetValueAsBool(IsAttackingKey.SelectedKeyName, true);
 		// Detect end of montage ¡æ End BTTask
 		if (UAnimInstance* AnimInst = AIPawn->GetMesh()->GetAnimInstance())
 		{
@@ -65,13 +72,14 @@ void UBTTask_DefaultAttack::OnTaskFinished(UBehaviorTreeComponent& OwnerComp, ui
 
 void UBTTask_DefaultAttack::HandleAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
-	if (CachedOwnerComp)
+	if (CachedOwnerComp && CachedMonster)
 	{
 		if (UBlackboardComponent* Blackboard = CachedOwnerComp->GetBlackboardComponent())
 		{
 			// Reverting back to tracking now that the attack is over
-			Blackboard->SetValueAsEnum("MonsterState", static_cast<uint8>(EMonsterState::Chase));
+			Blackboard->SetValueAsBool(IsAttackingKey.SelectedKeyName, false);
+			// CachedMonster->SetMonsterState(EMonsterState::Chase);
 		}
-		FinishLatentTask(*CachedOwnerComp, bInterrupted ? EBTNodeResult::Failed : EBTNodeResult::Succeeded);
+		bInterrupted ? FinishLatentTask(*CachedOwnerComp, EBTNodeResult::Failed) : FinishLatentTask(*CachedOwnerComp, EBTNodeResult::Succeeded);
 	}
 }

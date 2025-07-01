@@ -1,13 +1,15 @@
 #include "Framework/ADPlayerState.h"
+
 #include "Inventory/ADInventoryComponent.h"
 #include "AbyssDiverUnderWorld.h"
-#include "Net/UnrealNetwork.h"
 #include "Character/UpgradeComponent.h"
+#include "Character/UnderwaterCharacter.h"
+#include "Character/PlayerComponent/NameWidgetComponent.h"
 
+#include "Net/UnrealNetwork.h"
 
 AADPlayerState::AADPlayerState()
-	: PlayerNickname(TEXT("Player"))
-	, TotalPersonalCredit(0)
+	: TotalPersonalCredit(0)
 	, TotalMonsterKillCount(0)
 	, TotalOreMinedCount(0)
 	, SafeReturnCount(0)
@@ -16,10 +18,10 @@ AADPlayerState::AADPlayerState()
 	, OreMinedCount(0)
 	, bIsSafeReturn(false)
 	, PlayerIndex(INDEX_NONE)
-	, bIsHost(false)
+	, bHasBeenDead(false)
+	, LastOxygenRemain(0.0f)
 {
 	bReplicates = true;
-
 
 	InventoryComp = CreateDefaultSubobject<UADInventoryComponent>(TEXT("InventoryComp"));
 	UpgradeComp = CreateDefaultSubobject<UUpgradeComponent>(TEXT("UpgradeComp"));
@@ -28,14 +30,21 @@ AADPlayerState::AADPlayerState()
 void AADPlayerState::BeginPlay()
 {
 	Super::BeginPlay();
-	APlayerController* PC = GetPlayerController();
-	if (PC && PC->IsLocalController() && HasAuthority())
-	{
-		LOGVN(Error, TEXT("Map Name : %s"), *GetWorld()->GetMapName());
-		InventoryComp->ClientRequestInventoryInitialize();
-		LOGVN(Error, TEXT("Inventory Initializded"));
 
+	APlayerController* PC = GetPlayerController();
+	if (PC == nullptr || HasAuthority() == false)
+	{
+		return;
 	}
+
+	if (PC->IsLocalController() == false)
+	{
+		return;
+	}
+	
+	LOGVN(Log, TEXT("Map Name : %s"), *GetWorld()->GetMapName());
+	InventoryComp->ClientRequestInventoryInitialize();
+	LOGVN(Log, TEXT("Inventory Initializded"));
 }
 
 //Client
@@ -44,19 +53,24 @@ void AADPlayerState::PostNetInit()
 	Super::PostNetInit();
 
 	APlayerController* PC = GetPlayerController();
-	if (PC && PC->IsLocalController())
+	if (PC == nullptr)
 	{
-
-		InventoryComp->ClientRequestInventoryInitialize();
-		LOGVN(Error, TEXT("Inventory Initializded"));
+		return;
 	}
+
+	if (PC->IsLocalController() == false)
+	{
+		return;
+	}
+
+	InventoryComp->ClientRequestInventoryInitialize();
+	LOGVN(Log, TEXT("Inventory Initializded"));
 }
 
 void AADPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(AADPlayerState, PlayerNickname);
 	DOREPLIFETIME(AADPlayerState, TotalPersonalCredit);
 	DOREPLIFETIME(AADPlayerState, TotalMonsterKillCount);
 	DOREPLIFETIME(AADPlayerState, TotalOreMinedCount);
@@ -72,20 +86,28 @@ void AADPlayerState::CopyProperties(APlayerState* PlayerState)
 {
 	Super::CopyProperties(PlayerState);
 
-	if (ensure(this) == false || ensure(PlayerState) == false)
+	if (IsValid(this) == false)
 	{
+		LOGVN(Error, TEXT("IsValid(this) == false"));
+		return;
+	}
+
+	if (IsValid(PlayerState) == false)
+	{
+		LOGVN(Error, TEXT("IsValid(PlayerState) == false"));
 		return;
 	}
 
 	AADPlayerState* NextPlayerState = CastChecked<AADPlayerState>(PlayerState);
 
 	const FUniqueNetIdRepl& UniqueNetIdRepl = NextPlayerState->GetUniqueId();
-	if (ensure(&UniqueNetIdRepl) == false)
+	if (UniqueNetIdRepl.IsValid() == false)
 	{
+		LOGVN(Error, TEXT("UniqueNetIdRepl.IsValid() == false"));
 		return;
 	}
 
-	LOGV(Warning, TEXT("Id Copied, Old : %d, New : %d, Net : %s"), PlayerIndex, NextPlayerState->GetPlayerIndex(), *UniqueNetIdRepl->ToString());
+	LOGV(Log, TEXT("Id Copied, Old : %d, New : %d, Net : %s"), PlayerIndex, NextPlayerState->GetPlayerIndex(), *UniqueNetIdRepl->ToString());
 	
 	NextPlayerState->SetPlayerIndex(PlayerIndex);
 	if (UUpgradeComponent* NextUpgradeComponent = NextPlayerState->GetUpgradeComp())
@@ -97,17 +119,13 @@ void AADPlayerState::CopyProperties(APlayerState* PlayerState)
 	{
 		NextInventoryComp->CopyInventoryFrom(GetInventory());
 	}
-
-	NextPlayerState->SetPlayerNickname(PlayerNickname);
 }
 
 void AADPlayerState::SetPlayerInfo( const FString& InNickname)
 {
 	if (HasAuthority())
 	{
-		PlayerNickname = InNickname;
-
-		OnRep_Nickname();
+		SetPlayerNickname(InNickname);
 	}
 }
 
@@ -135,6 +153,17 @@ void AADPlayerState::ResetLevelResults()
 	}
 }
 
-void AADPlayerState::OnRep_Nickname()
+void AADPlayerState::SetPlayerNickname(const FString& NewName)
 {
+	SetPlayerName(NewName);
+}
+
+const FString AADPlayerState::GetPlayerNickname() const
+{
+	return GetPlayerName();
+}
+
+void AADPlayerState::SetIsDead(bool bNewIsDead)
+{
+	bIsDead = bNewIsDead;
 }

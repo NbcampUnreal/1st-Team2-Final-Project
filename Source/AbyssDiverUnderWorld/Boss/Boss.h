@@ -121,7 +121,12 @@ public:
 	void LaunchPlayer(AUnderwaterCharacter* Player, const float& Power) const;
 	
 	/** 데미지를 받을 때 호출하는 함수 */
+	UFUNCTION(BlueprintCallable)
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
+
+	UFUNCTION(NetMulticast, Unreliable)
+	void M_PlayBloodEffect(const FVector& Location, const FRotator& Rotation);
+	void M_PlayBloodEffect_Implementation(const FVector& Location, const FRotator& Rotation);
 	
 	/** 보스의 체력이 0이하로 떨어지는 경우 사망 상태로 전이 */
 	virtual void OnDeath();
@@ -146,6 +151,10 @@ public:
 	virtual void M_PlayAnimation(UAnimMontage* AnimMontage, float InPlayRate = 1, FName StartSectionName = NAME_None);
 	virtual void M_PlayAnimation_Implementation(UAnimMontage* AnimMontage, float InPlayRate = 1, FName StartSectionName = NAME_None);
 
+	UFUNCTION(NetMulticast, Reliable)
+	void M_OnDeath();
+	void M_OnDeath_Implementation();
+
 	UFUNCTION()
 	void OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 
@@ -168,6 +177,9 @@ public:
 	void OnAttackCollisionOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
 							UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
+	// 몬스터 죽었을 때 레이더에서 Off 되도록
+	UFUNCTION()
+	void DeathToRaderOff();
 protected:
 	void ApplyPhysicsSimulation();
 	
@@ -216,20 +228,8 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Target")
 	TObjectPtr<AUnderwaterCharacter> CachedTargetPlayer;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Target")
-	FVector LastDetectedLocation;
-
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Animation")
-	TObjectPtr<UAnimMontage> DetectedAnimation;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Animation")
-	TObjectPtr<UAnimMontage> DeathAnimation;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Animation")
-	TArray<TObjectPtr<UAnimMontage>> NormalAttackAnimations;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Animation")
-	TArray<TObjectPtr<UAnimMontage>> SpecialAttackAnimations;
+	TArray<TObjectPtr<UAnimMontage>> AttackAnimations;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Collision")
 	TObjectPtr<UCapsuleComponent> AttackCollision;
@@ -240,6 +240,12 @@ public:
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Stat")
 	float TraceDistance = 800.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Stat")
+	float TurnTraceDistance = 600.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Stat")
+	float FourDirectionTraceDistance = 300.0f;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	float MinTargetDistance = 100.0f;
@@ -252,18 +258,6 @@ protected:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Camera")
 	TObjectPtr<UCameraControllerComponent> CameraControllerComponent;
-	
-	UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Boss|PatrolPoints")
-	TArray<TObjectPtr<ATargetPoint>> PatrolPoints;
-	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|Blackboard")
-	TObjectPtr<UBlackboardComponent> BlackboardComponent;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|AI")
-	TObjectPtr<ABossAIController> AIController;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Stat")
-	float AttackRadius;
 
 	/** 공격 받은 플레이어 리스트
 	 * 
@@ -280,6 +274,15 @@ protected:
 	UPROPERTY(BlueprintReadWrite)
 	float CurrentMoveSpeed = 0.0f;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	uint8 bDrawDebugLine : 1 = false;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	uint8 bEnableDownTrace : 1 = true;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	uint8 bEnableHorizontalTrace : 1 = true;
+
 	UPROPERTY()
 	FVector DamagedLocation;
 
@@ -288,15 +291,15 @@ protected:
 
 	FCollisionQueryParams Params;
 	uint8 bIsTurning : 1 = false;
+	uint8 bIsAttacking : 1 = false;
 
 private:
 	static const FName BossStateKey;
-	uint8 CurrentPatrolPointIndex = 0;
 	uint8 bIsBiteAttackSuccess : 1;
 	uint8 bIsAttackCollisionOverlappedPlayer : 1;
 	float TurnTimer = 0.0f;
 	float OriginDeceleration;
-	const float FourDirectionTraceDistance = 200.0f;
+	float SphereOverlapRadius = 100.0f;
 	FVector TargetLocation;
 	FVector CachedSpawnLocation;
 	FVector TurnDirection;
@@ -309,10 +312,7 @@ public:
 	FORCEINLINE AUnderwaterCharacter* GetTarget() const { return TargetPlayer; };
 	FORCEINLINE void SetTarget(AUnderwaterCharacter* Target) { TargetPlayer = Target; };
 	FORCEINLINE void InitTarget() { TargetPlayer = nullptr; };
-
-	/** LastDetectedLocation Getter */
-	FORCEINLINE void SetLastDetectedLocation(const FVector& InLastDetectedLocation) { LastDetectedLocation = InLastDetectedLocation; };
-
+	
 	FORCEINLINE bool GetIsAttackCollisionOverlappedPlayer() const { return bIsAttackCollisionOverlappedPlayer; };
 
 	FORCEINLINE UCameraControllerComponent* GetCameraControllerComponent() const { return CameraControllerComponent; };

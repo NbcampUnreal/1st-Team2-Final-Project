@@ -1,30 +1,52 @@
-#include "Character/Laser/AnimNotifyState/AnimNotifyState_LaserBeam.h"
+ï»¿#include "Character/Laser/AnimNotifyState/AnimNotifyState_LaserBeam.h"
 #include "NiagaraComponent.h"
 #include "Character/UnderwaterCharacter.h"
 #include "NiagaraFunctionLibrary.h"
 
+TMap<TObjectPtr<USkeletalMeshComponent>, TWeakObjectPtr<UNiagaraComponent>> UAnimNotifyState_LaserBeam::BeamMap1P;
+TMap<TObjectPtr<USkeletalMeshComponent>, TWeakObjectPtr<UNiagaraComponent>> UAnimNotifyState_LaserBeam::BeamMap3P;
+TMap<TObjectPtr<USkeletalMeshComponent>, TWeakObjectPtr<UNiagaraComponent>> UAnimNotifyState_LaserBeam::HitMap1P;
+TMap<TObjectPtr<USkeletalMeshComponent>, TWeakObjectPtr<UNiagaraComponent>> UAnimNotifyState_LaserBeam::HitMap3P;
+
 void UAnimNotifyState_LaserBeam::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Anim, float TotalDuration, const FAnimNotifyEventReference& EventRef)
 {
-	if (!MeshComp || !BeamFX) return;
+	if (!MeshComp || !BeamFX || !IsVisibleMesh(MeshComp)) 
+        return;
 
     AActor* Owner = MeshComp->GetOwner();
-    AUnderwaterCharacter* Diver = Cast<AUnderwaterCharacter>(Owner);
-    if (!Diver || MeshComp != Diver->GetMesh1P()) return;
+    if (!Owner)
+        return; 
+
+    Diver = Cast<AUnderwaterCharacter>(Owner);
+    if (!Diver) 
+        return;
 
     UWorld* World = MeshComp->GetWorld();
-    if (!Owner || !World || World->IsPreviewWorld()) return;
+    if (!World || World->IsPreviewWorld()) 
+        return;
 
-    FVector CamLoc; FRotator CamRot;
-    AController* Controller = Owner->GetInstigatorController();
-    if (!Controller) return;
-
-    Controller->GetPlayerViewPoint(CamLoc, CamRot);
-
+    FVector CamLoc; 
+    FRotator CamRot;
+    if (IsFirstPersonMesh(MeshComp))
+    {
+        // 1P: ì¹´ë©”ë¼ ë·°ì—ì„œ ë¼ì¸íŠ¸ë ˆì´ìŠ¤
+        AController* Controller = Owner->GetInstigatorController();
+        if (!Controller)
+            return;
+        Controller->GetPlayerViewPoint(CamLoc, CamRot);
+    }
+    else
+    {
+        // 3P: BaseAimRotation + ë©”ì‰¬ ì†Œì¼“ ìœ„ì¹˜
+        CamRot = Diver->GetBaseAimRotation();
+        CamLoc = MeshComp->GetSocketLocation(MuzzleSocket);
+    }
+    constexpr ECollisionChannel InteractionChannel = ECC_GameTraceChannel4;
     const FVector TraceEnd = CamLoc + CamRot.Vector() * MaxDistance;
 
     FHitResult Hit;
     World->LineTraceSingleByChannel(
-        Hit, CamLoc, TraceEnd, ECC_Visibility,
+        Hit, CamLoc, TraceEnd, InteractionChannel,
         FCollisionQueryParams(TEXT("LaserTraceCam"), true, Owner));
 
     const FVector TargetPoint = Hit.bBlockingHit ? Hit.ImpactPoint : TraceEnd;
@@ -37,65 +59,117 @@ void UAnimNotifyState_LaserBeam::NotifyBegin(USkeletalMeshComponent* MeshComp, U
 
     if (Beam)
     {
-        Beam->SetVariableVec3(BeamEndParam, TargetPoint);    // ³¡Á¡
-        Beam->SetVariableFloat(DurationParam, TotalDuration); // Áö¼Ó ½Ã°£
-        CachedSpawnedBeam = Beam;
+        Beam->SetVariableVec3(BeamEndParam, TargetPoint);    // ëì 
+        Beam->SetVariableFloat(DurationParam, TotalDuration); // ì§€ì† ì‹œê°„
     }
 
+    UNiagaraComponent* HitEffect = nullptr;
     if (ImpactFX)
     {
         const FRotator ImpactRot = Hit.bBlockingHit ? Hit.ImpactNormal.Rotation() : BeamRot;
-        UNiagaraComponent* HitEffect = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+        HitEffect = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
             World, ImpactFX, TargetPoint, ImpactRot);
         HitEffect->SetVariableFloat(DurationParam, TotalDuration);
-        CachedHitEffect = HitEffect;
+    }
+
+    if (IsFirstPersonMesh(MeshComp))
+    {
+        BeamMap1P.Add(MeshComp, Beam);
+        HitMap1P.Add(MeshComp, HitEffect);
+    }
+    else
+    {
+        BeamMap3P.Add(MeshComp, Beam);
+        HitMap3P.Add(MeshComp, HitEffect);
     }
 }
 
 void UAnimNotifyState_LaserBeam::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Anim, const FAnimNotifyEventReference& EventRef)
 {
-    AActor* Owner = MeshComp->GetOwner();
-    AUnderwaterCharacter* Diver = Cast<AUnderwaterCharacter>(Owner);
-    if (!Diver || MeshComp != Diver->GetMesh1P()) return;
+    TMap<TObjectPtr<USkeletalMeshComponent>, TWeakObjectPtr<UNiagaraComponent>>& BeamMap = IsFirstPersonMesh(MeshComp) ? BeamMap1P : BeamMap3P;
+    TMap<TObjectPtr<USkeletalMeshComponent>, TWeakObjectPtr<UNiagaraComponent>>& HitMap = IsFirstPersonMesh(MeshComp) ? HitMap1P : HitMap3P;
 
-    if (CachedSpawnedBeam.IsValid())
+    if (TWeakObjectPtr<UNiagaraComponent>* BeamPtr = BeamMap.Find(MeshComp))
     {
-        CachedSpawnedBeam->Deactivate();   // ³²¾Æ ÀÖ´ø ºö ±ò²ûÈ÷ Á¾·á
+        if (BeamPtr->IsValid()) BeamPtr->Get()->Deactivate();
+        BeamMap.Remove(MeshComp);
     }
-    if (CachedHitEffect.IsValid())
+
+    if (TWeakObjectPtr<UNiagaraComponent>* HitPtr = HitMap.Find(MeshComp))
     {
-        CachedHitEffect->Deactivate();
+        if (HitPtr->IsValid()) HitPtr->Get()->Deactivate();
+        HitMap.Remove(MeshComp);
     }
 }
 
 void UAnimNotifyState_LaserBeam::NotifyTick(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Anim, float FrameDeltaTime, const FAnimNotifyEventReference& EventRef)
 {
-    if (!CachedSpawnedBeam.IsValid()) return;
+    if (!IsVisibleMesh(MeshComp)) 
+        return;
 
+    TWeakObjectPtr<UNiagaraComponent>* BeamPtr = IsFirstPersonMesh(MeshComp)
+        ? BeamMap1P.Find(MeshComp)
+        : BeamMap3P.Find(MeshComp);
+
+    if (!BeamPtr || !BeamPtr->IsValid()) return;
+
+    UNiagaraComponent* Beam = BeamPtr->Get();
     UWorld* World = MeshComp->GetWorld();
     AActor* Owner = MeshComp->GetOwner();
 
-    AUnderwaterCharacter* Diver = Cast<AUnderwaterCharacter>(Owner);
-    if (!Diver || MeshComp != Diver->GetMesh1P()) return;
+    if (!World || !Owner || !Diver) return;
 
-    AController* Controller = Owner ? Owner->GetInstigatorController() : nullptr;
-    if (!World || !Controller) return;
+    FVector CamLoc; 
+    FRotator CamRot;
+    if (IsFirstPersonMesh(MeshComp))
+    {
+        AController* Controller = Owner->GetInstigatorController();
+        if (!Controller)
+            return;
+        Controller->GetPlayerViewPoint(CamLoc, CamRot);
+    }
+    else
+    {
+        CamRot = Diver->GetBaseAimRotation();
+        CamLoc = MeshComp->GetSocketLocation(MuzzleSocket);
+    }
 
-    FVector CamLoc; FRotator CamRot;
-    Controller->GetPlayerViewPoint(CamLoc, CamRot);
-
+    constexpr ECollisionChannel InteractionChannel = ECC_GameTraceChannel4;
     const FVector TraceEnd = CamLoc + CamRot.Vector() * MaxDistance;
     FHitResult Hit;
     World->LineTraceSingleByChannel(
-        Hit, CamLoc, TraceEnd, ECC_Visibility,
+        Hit, CamLoc, TraceEnd, InteractionChannel,
         FCollisionQueryParams(TEXT("LaserTraceCam"), true, Owner));
 
-    const FVector NewTargetPoint = Hit.bBlockingHit ? Hit.ImpactPoint : TraceEnd;
+    const FVector TargetPoint = Hit.bBlockingHit ? Hit.ImpactPoint : TraceEnd;
+    const FVector MuzzleLoc = MeshComp->GetSocketLocation(MuzzleSocket);
 
-    const FVector NewMuzzleLoc = MeshComp->GetSocketLocation(MuzzleSocket);
+    Beam->SetVariableVec3(BeamEndParam, TargetPoint);
+    Beam->SetWorldLocation(MuzzleLoc);
+    Beam->SetWorldRotation((TargetPoint - MuzzleLoc).Rotation());
 
-    CachedSpawnedBeam->SetVariableVec3(BeamEndParam, NewTargetPoint);
-    CachedSpawnedBeam->SetWorldRotation((NewTargetPoint - NewMuzzleLoc).Rotation());
-    CachedSpawnedBeam->SetWorldLocation(NewMuzzleLoc);
-    CachedHitEffect->SetWorldLocation(NewTargetPoint);
+    TWeakObjectPtr<UNiagaraComponent>* HitPtr = IsFirstPersonMesh(MeshComp) ? HitMap1P.Find(MeshComp) : HitMap3P.Find(MeshComp);
+    if (HitPtr && HitPtr->IsValid())
+    {
+        HitPtr->Get()->SetWorldLocation(TargetPoint);
+    }    
+}
+
+bool UAnimNotifyState_LaserBeam::IsVisibleMesh(const USkeletalMeshComponent* MeshComp)
+{
+    AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(MeshComp->GetOwner());
+    if (!UnderwaterCharacter)
+        return false;
+
+    const bool bLocal = UnderwaterCharacter->IsLocallyControlled();
+    return (bLocal && IsFirstPersonMesh(MeshComp)) || (!bLocal && !IsFirstPersonMesh(MeshComp));
+}
+
+bool UAnimNotifyState_LaserBeam::IsFirstPersonMesh(const USkeletalMeshComponent* MeshComp)
+{
+    if (AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(MeshComp->GetOwner()))
+    {
+        return MeshComp == UnderwaterCharacter->GetMesh1P();
+    }
+    return false;
 }

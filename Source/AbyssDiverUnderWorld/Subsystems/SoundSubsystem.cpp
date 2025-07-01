@@ -4,10 +4,13 @@
 #include "Framework/ADGameInstance.h"
 
 #include "Kismet/GameplayStatics.h"
+#include "Framework/ADInGameState.h"
 
 void USoundSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
+
+	FWorldDelegates::OnWorldBeginTearDown.AddUObject(this, &USoundSubsystem::OnWorldTearDown);
 
 	UADGameInstance* GI = CastChecked<UADGameInstance>(GetGameInstance());
 	GI->SFXDataTable->GetAllRows<FSFXDataRow>(TEXT("Getting SFXs.."), SFXData);
@@ -26,7 +29,7 @@ void USoundSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 		}
 	}
 
-	LOGV(Warning, TEXT("SFXData is Initialized, Count : %d"), SFXDataCount);
+	LOGV(Log, TEXT("SFXData is Initialized, Count : %d"), SFXDataCount);
 
 	GI->BGMDataTable->GetAllRows<FBGMDataRow>(TEXT("Getting BGMs.."), SFXBGMData);
 	SFXBGMDataCount = SFXBGMData.Num();
@@ -44,7 +47,7 @@ void USoundSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 		}
 	}
 
-	LOGV(Warning, TEXT("SFXBGMData is Initialized, Count : %d"), SFXBGMDataCount);
+	LOGV(Log, TEXT("SFXBGMData is Initialized, Count : %d"), SFXBGMDataCount);
 
 	GI->UISFXDataTable->GetAllRows<FUISFXDataRow>(TEXT("Getting UI SFXs.."), SFXUIData);
 	SFXUIDataCount = SFXUIData.Num();
@@ -62,7 +65,7 @@ void USoundSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 		}
 	}
 
-	LOGV(Warning, TEXT("SFXUIData is Initialized, Count : %d"), SFXUIDataCount);
+	LOGV(Log, TEXT("SFXUIData is Initialized, Count : %d"), SFXUIDataCount);
 
 	GI->MonsterSFXDataTable->GetAllRows<FMonsterSFXDataRow>(TEXT("Getting Monster SFXs.."), SFXMonsterData);
 	SFXMonsterDataCount = SFXMonsterData.Num();
@@ -80,7 +83,7 @@ void USoundSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 		}
 	}
 	
-	LOGV(Warning, TEXT("SFXMonsterData is Initialized, Count : %d"), SFXMonsterDataCount);
+	LOGV(Log, TEXT("SFXMonsterData is Initialized, Count : %d"), SFXMonsterDataCount);
 
 	GI->AmbientDataTable->GetAllRows<FAmbientDataRow>(TEXT("Getting Monster SFXs.."), AmbientData);
 	AmbientDataCount = AmbientData.Num();
@@ -98,7 +101,7 @@ void USoundSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 		}
 	}
 
-	LOGV(Warning, TEXT("AmbientData is Initialized, Count : %d"), AmbientDataCount);
+	LOGV(Log, TEXT("AmbientData is Initialized, Count : %d"), AmbientDataCount);
 }
 
 void USoundSubsystem::Init(const int32 InitialPoolCount)
@@ -148,7 +151,7 @@ int32 USoundSubsystem::PlayBGM(const ESFX_BGM& SFXType, const float& Volume, con
 
 int32 USoundSubsystem::PlayAmbient(const ESFX_Ambient& SFXType, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve)
 {
-	return Play2DInternal(SFXBGMData[int32(SFXType)]->Sound, false, true, Volume, bShouldUseFadeIn, FadeInDuration, FadeInCurve);
+	return Play2DInternal(AmbientData[int32(SFXType)]->Sound, false, true, Volume, bShouldUseFadeIn, FadeInDuration, FadeInCurve);
 }
 
 int32 USoundSubsystem::PlayAt(const ESFX& SFXType, const FVector& Position, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve)
@@ -181,11 +184,77 @@ int32 USoundSubsystem::PlayAttach(const ESFX_UI& SFXType, USceneComponent* Attac
 	return Play3DInternal(SFXUIData[int32(SFXType)]->Sound, FVector::ZeroVector, AttachComp, Volume, bShouldUseFadeIn, FadeInDuration, FadeInCurve);
 }
 
+int32 USoundSubsystem::PlayAttach(const ESFX_BGM& SFXType, USceneComponent* AttachComp, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve)
+{
+	return Play3DInternal(SFXBGMData[int32(SFXType)]->Sound, FVector::ZeroVector, AttachComp, Volume, bShouldUseFadeIn, FadeInDuration, FadeInCurve);
+}
+
+int32 USoundSubsystem::K2_Play2DSFX(const ESFX& SFXType, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve)
+{
+	return Play2D(SFXType, Volume, bShouldUseFadeIn, FadeInDuration, FadeInCurve);
+}
+
+int32 USoundSubsystem::K2_Play2DMonster(const ESFX_Monster& SFXType, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve)
+{
+	return Play2D(SFXType, Volume, bShouldUseFadeIn, FadeInDuration, FadeInCurve);
+}
+
+int32 USoundSubsystem::K2_Play2DUI(const ESFX_UI& SFXType, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve)
+{
+	return Play2D(SFXType, Volume, bShouldUseFadeIn, FadeInDuration, FadeInCurve);
+}
+
+int32 USoundSubsystem::K2_PlayBGM(const ESFX_BGM& SFXType, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve)
+{
+	return PlayBGM(SFXType, Volume, bShouldUseFadeIn, FadeInDuration, FadeInCurve);
+}
+
+int32 USoundSubsystem::K2_PlayAmbient(const ESFX_Ambient& SFXType, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve)
+{
+	return PlayAmbient(SFXType, Volume, bShouldUseFadeIn, FadeInDuration, FadeInCurve);
+}
+
+int32 USoundSubsystem::K2_PlayAtSFX(const ESFX& SFXType, const FVector& Position, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve)
+{
+	return PlayAt(SFXType, Position, Volume, bShouldUseFadeIn, FadeInDuration, FadeInCurve);
+}
+
+int32 USoundSubsystem::K2_PlayAtMonster(const ESFX_Monster& SFXType, const FVector& Position, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve)
+{
+	return PlayAt(SFXType, Position, Volume, bShouldUseFadeIn, FadeInDuration, FadeInCurve);
+}
+
+int32 USoundSubsystem::K2_PlayAtUI(const ESFX_UI& SFXType, const FVector& Position, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve)
+{
+	return PlayAt(SFXType, Position, Volume, bShouldUseFadeIn, FadeInDuration, FadeInCurve);
+}
+
+int32 USoundSubsystem::K2_PlayAttachSFX(const ESFX& SFXType, USceneComponent* AttachComp, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve)
+{
+	return PlayAttach(SFXType, AttachComp, Volume, bShouldUseFadeIn, FadeInDuration, FadeInCurve);
+}
+
+int32 USoundSubsystem::K2_PlayAttachMonster(const ESFX_Monster& SFXType, USceneComponent* AttachComp, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve)
+{
+	return PlayAttach(SFXType, AttachComp, Volume, bShouldUseFadeIn, FadeInDuration, FadeInCurve);
+}
+
+int32 USoundSubsystem::K2_PlayAttachUI(const ESFX_UI& SFXType, USceneComponent* AttachComp, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve)
+{
+	return PlayAttach(SFXType, AttachComp, Volume, bShouldUseFadeIn, FadeInDuration, FadeInCurve);
+}
+
+int32 USoundSubsystem::K2_PlayAttachBGM(const ESFX_BGM& SFXType, USceneComponent* AttachComp, const float& Volume, const bool& bShouldUseFadeIn, const float& FadeInDuration, const EAudioFaderCurve& FadeInCurve)
+{
+	return PlayAttach(SFXType, AttachComp, Volume, bShouldUseFadeIn, FadeInDuration, FadeInCurve);
+}
+
 void USoundSubsystem::StopAllBGM()
 {
 	for (const auto& ActivatedBGM : ActivatedBGMComponents)
 	{
 		ActivatedBGM.Key->Stop();
+		ActivatedBGM.Key->SetSound(nullptr);
 	}
 }
 
@@ -194,6 +263,7 @@ void USoundSubsystem::StopAllSFX()
 	for (const auto& ActivatedSFX : ActivatedSFXComponents)
 	{
 		ActivatedSFX.Key->Stop();
+		ActivatedSFX.Key->SetSound(nullptr);
 	}
 }
 
@@ -202,6 +272,7 @@ void USoundSubsystem::StopAllAmbient()
 	for (const auto& ActivatedAmbient : ActivatedAmbientComponents)
 	{
 		ActivatedAmbient.Key->Stop();
+		ActivatedAmbient.Key->SetSound(nullptr);
 	}
 }
 
@@ -351,22 +422,22 @@ void USoundSubsystem::OnAudioFinished(UAudioComponent* FinishedAudio)
 	if (ActivatedBGMComponents.Contains(FinishedAudio))
 	{
 		ActivatedBGMComponents.Remove(FinishedAudio);
-		LOGV(Warning, TEXT("Removing BGM Comp, Activated : %d, Deactivated? : %d"), ActivatedBGMComponents.Num(), DeactivatedComponents.IsEmpty());
+		LOGV(Log, TEXT("Removing BGM Comp, Activated : %d, Deactivated? : %d"), ActivatedBGMComponents.Num(), DeactivatedComponents.IsEmpty());
 	}
 	else if(ActivatedSFXComponents.Contains(FinishedAudio))
 	{
 		ActivatedSFXComponents.Remove(FinishedAudio);
-		LOGV(Warning, TEXT("Removing SFX Comp, Activated : %d, Deactivated? : %d"), ActivatedSFXComponents.Num(), DeactivatedComponents.IsEmpty());
+		LOGV(Log, TEXT("Removing SFX Comp, Activated : %d, Deactivated? : %d"), ActivatedSFXComponents.Num(), DeactivatedComponents.IsEmpty());
 	}
 	else
 	{
 		ActivatedAmbientComponents.Remove(FinishedAudio);
-		LOGV(Warning, TEXT("Removing Ambient Comp, Activated : %d, Deactivated? : %d"), ActivatedAmbientComponents.Num(), DeactivatedComponents.IsEmpty());
+		LOGV(Log, TEXT("Removing Ambient Comp, Activated : %d, Deactivated? : %d"), ActivatedAmbientComponents.Num(), DeactivatedComponents.IsEmpty());
 	}
 
 	if (::IsValid(FinishedAudio) == false || FinishedAudio->IsValidLowLevelFast() == false || FinishedAudio->IsValidLowLevel() == false)
 	{
-		LOGV(Warning, TEXT("Trying to Deactivated, But Not Valid"));
+		LOGV(Log, TEXT("Trying to Deactivated, But Not Valid"));
 
 		if (AudioIdWithComponentMap.Contains(FinishedAudio) == false)
 		{
@@ -384,7 +455,7 @@ void USoundSubsystem::OnAudioFinished(UAudioComponent* FinishedAudio)
 	{
 		FDetachmentTransformRules Rule(EDetachmentRule::KeepWorld, false);
 		FinishedAudio->DetachFromComponent(Rule);
-		LOGV(Warning, TEXT("Detached"));
+		LOGV(Log, TEXT("Detached"));
 	}
 
 	FinishedAudio->OnAudioFinishedNative.RemoveAll(this);
@@ -408,21 +479,21 @@ int32 USoundSubsystem::Play2DInternal(USoundBase* SoundAsset, const bool& bIsBGM
 		check(ActivatedBGMComponents.Contains(NewAudio) == false);
 		ActivatedBGMComponents.Add(NewAudio, Volume);
 		NewVolume *= BGMVolume;
-		LOGV(Warning, TEXT("Play 2D Internal(BGM), Actvated : %d, Deactivated Empty? : %d"), ActivatedBGMComponents.Num(), DeactivatedComponents.IsEmpty());
+		LOGV(Log, TEXT("Play 2D Internal(BGM), Actvated : %d, Deactivated Empty? : %d"), ActivatedBGMComponents.Num(), DeactivatedComponents.IsEmpty());
 	}
 	else if (bIsAmbient)
 	{
 		check(ActivatedAmbientComponents.Contains(NewAudio) == false);
 		ActivatedAmbientComponents.Add(NewAudio, Volume);
 		NewVolume *= AmbientVolume;
-		LOGV(Warning, TEXT("Play 2D Internal(Ambient), Actvated : %d, Deactivated Empty? : %d"), ActivatedAmbientComponents.Num(), DeactivatedComponents.IsEmpty());
+		LOGV(Log, TEXT("Play 2D Internal(Ambient), Actvated : %d, Deactivated Empty? : %d"), ActivatedAmbientComponents.Num(), DeactivatedComponents.IsEmpty());
 	}
 	else
 	{
 		check(ActivatedSFXComponents.Contains(NewAudio) == false);
 		ActivatedSFXComponents.Add(NewAudio, Volume);
 		NewVolume *= SFXVolume;
-		LOGV(Warning, TEXT("Play 2D Internal(SFX), Actvated : %d, Deactivated Empty? : %d"), ActivatedSFXComponents.Num(), DeactivatedComponents.IsEmpty());
+		LOGV(Log, TEXT("Play 2D Internal(SFX), Actvated : %d, Deactivated Empty? : %d"), ActivatedSFXComponents.Num(), DeactivatedComponents.IsEmpty());
 	}
 
 	NewAudio->SetSound(SoundAsset);
@@ -447,7 +518,7 @@ int32 USoundSubsystem::Play3DInternal(USoundBase* SoundAsset, const FVector& Pos
 	check(ActivatedSFXComponents.Contains(NewAudio) == false);
 	ActivatedSFXComponents.Add(NewAudio, Volume);
 	NewVolume *= SFXVolume;
-	LOGV(Warning, TEXT("Play 3D Internal, Actvated : %d, Deactivated Empty? : %d"), ActivatedSFXComponents.Num(), DeactivatedComponents.IsEmpty());
+	LOGV(Log, TEXT("Play 3D Internal, Actvated : %d, Deactivated Empty? : %d"), ActivatedSFXComponents.Num(), DeactivatedComponents.IsEmpty());
 
 	NewAudio->SetSound(SoundAsset);
 	NewAudio->SetVolumeMultiplier(NewVolume);
@@ -455,13 +526,13 @@ int32 USoundSubsystem::Play3DInternal(USoundBase* SoundAsset, const FVector& Pos
 	NewAudio->bAllowSpatialization = true;
 	NewAudio->SetUISound(false);
 	NewAudio->SetWorldLocation(Position);
-	LOGV(Warning, TEXT("Located to : %s"), *Position.ToString());
+	LOGV(Log, TEXT("Located to : %s"), *Position.ToString());
 
 	if (AttachComp)
 	{
 		FAttachmentTransformRules Rule(EAttachmentRule::KeepRelative, false);
 		NewAudio->AttachToComponent(AttachComp, Rule);
-		LOGV(Warning, TEXT("Attached to : %s"), *AttachComp->GetName());
+		LOGV(Log, TEXT("Attached to : %s"), *AttachComp->GetName());
 	}
 
 	return PlayAudio(NewAudio, bShouldUseFadeIn, FadeInDuration, FadeInCurve);
@@ -493,7 +564,7 @@ UAudioComponent* USoundSubsystem::GetNewAudio()
 	TObjectPtr<UAudioComponent> NewAudio = nullptr;
 
 	UWorld* World = GetWorld();
-	if (World == nullptr || World->bIsTearingDown)
+	if (IsValid(World) == false || World->IsInSeamlessTravel() || World->bIsTearingDown || World->IsValidLowLevel() == false)
 	{
 		return nullptr;
 	}
@@ -557,13 +628,19 @@ bool USoundSubsystem::RemoveInvalidAudioComponent(UAudioComponent* SomeAudio)
 void USoundSubsystem::CreateAudioComponent()
 {
 	UWorld* World = GetWorld();
-	if (World == nullptr || World->bIsTearingDown)
+	if (IsValid(World) == false || World->IsInSeamlessTravel() || World->bIsTearingDown || World->IsValidLowLevel() == false)
 	{
 		return;
 	}
 
-	TObjectPtr<UAudioComponent> NewAudio = NewObject<UAudioComponent>((UObject*)World->GetGameState());
-	if (IsValid(NewAudio))
+	AGameStateBase* GS = World->GetGameState();
+	if (IsValid(GS) == false || GS->IsActorBeingDestroyed() || GS->IsValidLowLevel() == false)
+	{
+		return;
+	}
+
+	TObjectPtr<UAudioComponent> NewAudio = NewObject<UAudioComponent>((UObject*)GS);
+	if (IsValid(NewAudio) && NewAudio->IsValidLowLevel())
 	{
 		DeactivatedComponents.Enqueue(NewAudio);
 		NewAudio->RegisterComponent();
@@ -599,5 +676,15 @@ int32 USoundSubsystem::CreateNewId()
 	}
 
 	return NewId;
+}
+
+void USoundSubsystem::OnWorldTearDown(UWorld* World)
+{
+	LOGV(Log, TEXT("World is Tearing Down"));
+
+	StopAllBGM();
+	StopAllAmbient();
+	StopAllSFX();
+	Init(0);
 }
 
