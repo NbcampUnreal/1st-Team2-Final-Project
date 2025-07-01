@@ -29,6 +29,16 @@ public:
 	virtual void Logout(AController* Exiting) override;
 	virtual void FinishRestartPlayer(AController* NewPlayer, const FRotator& StartRotation) override;
 
+protected:
+
+	enum class EPlayerAliveInfo
+	{
+		Alive,
+		Dead,
+		Absent,
+		MAX
+	};
+
 #pragma region Methods
 
 public:
@@ -95,7 +105,7 @@ private:
 	FTimerHandle ResultTimerHandle;
 	FTimerHandle SyncTimerHandle;
 
-	TArray<bool> PlayerAliveInfos;
+	TArray<EPlayerAliveInfo> PlayerAliveInfos;
 
 #pragma endregion
 
