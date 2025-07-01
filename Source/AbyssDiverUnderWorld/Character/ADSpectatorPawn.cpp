@@ -11,7 +11,7 @@ DEFINE_LOG_CATEGORY(LogAbyssDiverSpectate);
 
 AADSpectatorPawn::AADSpectatorPawn()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 }
 
 void AADSpectatorPawn::BeginPlay()
@@ -30,6 +30,18 @@ void AADSpectatorPawn::Destroyed()
 	}
 
 	Super::Destroyed();
+}
+
+void AADSpectatorPawn::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	// Spectator Pawn은 Client에서 존재한다.
+	// Authority가 없는 상황에서 Target View에 맞춰서 위치를 갱신한다.
+	if (GetController()->IsLocalController())
+	{
+		UpdateLocationFromTargetView();
+	}
 }
 
 void AADSpectatorPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -122,5 +134,15 @@ void AADSpectatorPawn::OnCharacterStateChanged(AUnderwaterCharacter* Character, 
 	if (NewCharacterState == ECharacterState::Death)
 	{
 		ViewNextPlayer();
+	}
+}
+
+void AADSpectatorPawn::UpdateLocationFromTargetView()
+{
+	if (PrevTargetCharacter.IsValid())
+	{
+		const FVector TargetLocation = PrevTargetCharacter->GetActorLocation();
+		const FRotator TargetRotation = PrevTargetCharacter->GetActorRotation();
+		SetActorLocationAndRotation(TargetLocation, TargetRotation);		
 	}
 }
