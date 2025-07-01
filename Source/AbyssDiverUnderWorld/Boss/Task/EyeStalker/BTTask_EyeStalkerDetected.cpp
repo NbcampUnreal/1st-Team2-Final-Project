@@ -50,8 +50,6 @@ void UBTTask_EyeStalkerDetected::TickTask(UBehaviorTreeComponent& OwnerComp, uin
 	FEyeStalkerDetectedMemory* TaskMemory = (FEyeStalkerDetectedMemory*)NodeMemory;
 	if (!TaskMemory) return;
 	
-	// @TODO: 플레어건 반경에 존재할 경우 얼리 리턴
-
 	// 타겟이 유효하지 않거나 사망 상태인 경우 탐지 중단
 	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(TaskMemory->AIController->GetBlackboardComponent()->GetValueAsObject("TargetPlayer"));
 	if (!IsValid(Player) || Player->IsDeath() || Player->IsGroggy())
