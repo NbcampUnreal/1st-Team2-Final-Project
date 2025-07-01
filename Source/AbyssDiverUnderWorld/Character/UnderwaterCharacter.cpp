@@ -31,7 +31,6 @@
 #include "Net/UnrealNetwork.h"
 #include "Shops/ShopInteractionComponent.h"
 #include "Subsystems/DataTableSubsystem.h"
-#include "UI/HoldInteractionWidget.h"
 #include "PlayerComponent/LanternComponent.h"
 #include "PlayerComponent/ShieldComponent.h"
 #include "PlayerComponent/UnderwaterEffectComponent.h"
@@ -1984,7 +1983,7 @@ void AUnderwaterCharacter::RequestRevive()
 	}
 }
 
-void AUnderwaterCharacter::Die()
+void AUnderwaterCharacter::Kill()
 {
 	if (!HasAuthority())
 	{

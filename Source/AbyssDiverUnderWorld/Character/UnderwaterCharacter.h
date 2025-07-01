@@ -159,7 +159,7 @@ public:
 
 	/** 캐릭터를 사망시킨다. Authority Node에서만 실행되어야 한다. */
 	UFUNCTION(BlueprintCallable)
-	void Die();
+	void Kill();
 
 	/** 부활 상태 초기화 설정을 한다. Possess 이후에 호출할 것 */
 	void Respawn();
