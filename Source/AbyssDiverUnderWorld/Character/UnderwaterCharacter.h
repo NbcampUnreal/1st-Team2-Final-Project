@@ -992,7 +992,7 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Radar", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<class ARadar> RadarClass;
 
-	/** 생성한 레이더 인스턴스 */
+	/** 생성한 레이더 인스턴스. 레이더는 Replicate 되지 않고 각각의 Local에서 작동한다. */
 	UPROPERTY()
 	TObjectPtr<class ARadar> RadarObject;
 
