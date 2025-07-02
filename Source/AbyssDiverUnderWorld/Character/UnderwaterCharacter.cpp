@@ -842,7 +842,7 @@ void AUnderwaterCharacter::OnRep_CurrentTool()
 		*GetNameSafe(EquipRenderComp),
 		EquipRenderComp ? EquipRenderComp->IsRegistered() : 0);
 
-	if (IsValid(PrevTool) && PrevTool->IsValidLowLevel())
+	if (PrevTool)
 	{
 		EquipRenderComp->DetachItem(PrevTool);
 		PrevTool = nullptr;
