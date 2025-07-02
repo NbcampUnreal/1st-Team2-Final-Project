@@ -366,11 +366,11 @@ void AUnderwaterCharacter::PossessedBy(AController* NewController)
 	if (AADPlayerState* ADPlayerState = GetPlayerState<AADPlayerState>())
 	{
 		InitFromPlayerState(ADPlayerState);
+		NameWidgetComponent->SetNameText(ADPlayerState->GetPlayerNickname());
+		UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Set Player Nick Name On Possess : %s"), *ADPlayerState->GetPlayerNickname());
 		if (!IsLocallyControlled())
 		{
-			NameWidgetComponent->SetNameText(ADPlayerState->GetPlayerNickname());
 			NameWidgetComponent->SetEnable(true);
-			UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Set Player Nick Name On Possess : %s"), *ADPlayerState->GetPlayerNickname());
 		}
 
 		// Possess는 Authority 상황에서 호출되므로 Server 로직만 작성하면 된다.
@@ -426,11 +426,11 @@ void AUnderwaterCharacter::OnRep_PlayerState()
 		if (AADPlayerState* ADPlayerState = Cast<AADPlayerState>(CurrentPlayerState))
 		{
 			InitFromPlayerState(ADPlayerState);
+			NameWidgetComponent->SetNameText(ADPlayerState->GetPlayerNickname());
+			UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Set Player Nick Name On Rep : %s"), *ADPlayerState->GetPlayerNickname());
 			if (!IsLocallyControlled())
 			{
-				NameWidgetComponent->SetNameText(ADPlayerState->GetPlayerNickname());
 				NameWidgetComponent->SetEnable(true);
-				UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Set Player Nick Name On Rep : %s"), *ADPlayerState->GetPlayerNickname());
 			}
 		}
 		else
@@ -882,11 +882,13 @@ void AUnderwaterCharacter::OnRep_InCombat()
 void AUnderwaterCharacter::OnSpectated()
 {
 	SetMeshFirstPersonSetting(true);
+	NameWidgetComponent->SetEnable(false);
 }
 
 void AUnderwaterCharacter::OnEndSpectated()
 {
 	SetMeshFirstPersonSetting(false);
+	NameWidgetComponent->SetEnable(true);
 }
 
 void AUnderwaterCharacter::OnMoveSpeedChanged(float NewMoveSpeed)
@@ -1515,6 +1517,12 @@ void AUnderwaterCharacter::OnLeavePawn()
 	}
 
 	SetMeshFirstPersonSetting(false);
+
+	if (RadarObject)
+	{
+		RadarObject->Destroy();
+	}
+	NameWidgetComponent->SetEnable(true);
 }
 
 void AUnderwaterCharacter::RequestToggleRadar()
