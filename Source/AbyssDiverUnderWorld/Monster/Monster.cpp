@@ -406,7 +406,7 @@ void AMonster::AddDetection(AActor* Actor)
 		AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor);
 		if (Player)
 		{
-			Player->OnTargeted();
+			Player->OnTargeted(this);
 		}
 
 		if (BlackboardComponent)
@@ -428,7 +428,7 @@ void AMonster::RemoveDetection(AActor* Actor)
 		AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor);
 		if (Player)
 		{
-			Player->OnUntargeted();
+			Player->OnUntargeted(this);
 		}
 
 		return;
@@ -456,7 +456,7 @@ void AMonster::RemoveDetection(AActor* Actor)
 			AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor);
 			if (Player)
 			{
-				Player->OnUntargeted();
+				Player->OnUntargeted(this);
 			}
 
 			if (BlackboardComponent)
@@ -474,7 +474,7 @@ void AMonster::RemoveDetection(AActor* Actor)
 					AUnderwaterCharacter* NextAgrroPlayer = Cast<AUnderwaterCharacter>(Pair.Key);
 					if (NextAgrroPlayer)
 					{
-						NextAgrroPlayer->OnTargeted();
+						NextAgrroPlayer->OnTargeted(this);
 					}
 
 					if (BlackboardComponent)
@@ -508,7 +508,7 @@ void AMonster::ForceRemoveDetection(AActor* Actor)
 		AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor);
 		if (Player)
 		{
-			Player->OnUntargeted();
+			Player->OnUntargeted(this);
 		}
 
 		return;
@@ -536,7 +536,7 @@ void AMonster::ForceRemoveDetection(AActor* Actor)
 		AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor);
 		if (Player)
 		{
-			Player->OnUntargeted();
+			Player->OnUntargeted(this);
 		}
 
 		if (BlackboardComponent)
@@ -554,7 +554,7 @@ void AMonster::ForceRemoveDetection(AActor* Actor)
 				AUnderwaterCharacter* NextAgrroPlayer = Cast<AUnderwaterCharacter>(Pair.Key);
 				if (NextAgrroPlayer)
 				{
-					NextAgrroPlayer->OnTargeted();
+					NextAgrroPlayer->OnTargeted(this);
 				}
 
 				if (BlackboardComponent)
