@@ -922,8 +922,8 @@ void UADInventoryComponent::DropItem(FItemData& ItemData)
 
 void UADInventoryComponent::OnInventoryInfoUpdate(int32 MassInfo, int32 PriceInfo)
 {
-	TotalWeight += MassInfo;
-	TotalPrice += PriceInfo;
+	TotalWeight = FMath::Max(TotalWeight+MassInfo, 0);
+	TotalPrice = FMath::Max(TotalPrice+PriceInfo, 0);
 }
 
 void UADInventoryComponent::RebuildIndexMap()
