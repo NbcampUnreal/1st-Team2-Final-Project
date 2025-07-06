@@ -339,10 +339,25 @@ void AShop::Tick(float DeltaSeconds)
 		{
 			CurrentDoorRate = FMath::Clamp(CurrentDoorRate + (DeltaSeconds * DoorOpenSpeed), 0, 1);
 			RotateDoor(DesiredCloseDegree, DesiredOpenDegree, CurrentDoorRate);
-
+			
 			if (CurrentDoorRate == 1)
 			{
 				CurrentDoorState = EDoorState::Opened;
+			}
+
+			if (bIsDoorOpenSoundPlayed == false)
+			{
+				bIsDoorOpenSoundPlayed = true;
+				bIsDoorCloseSoundPlayed = false;
+
+				USoundSubsystem* SoundSubsystem = GetSoundSubsystem();
+				if (SoundSubsystem == nullptr)
+				{
+					return;
+				}
+
+				DoorOpenAudioId = SoundSubsystem->Play2D(ESFX::ShopDoorOpen);
+				SoundSubsystem->StopAudio(DoorCloseAudioId);
 			}
 		}
 		else if (CurrentDoorState == EDoorState::Closed)
@@ -355,6 +370,21 @@ void AShop::Tick(float DeltaSeconds)
 			if (ReadyQueueForLaunchItemById.IsEmpty() == false)
 			{
 				CurrentDoorState = EDoorState::Opening;
+			}
+
+			if (bIsDoorCloseSoundPlayed == false)
+			{
+				bIsDoorOpenSoundPlayed = false;
+				bIsDoorCloseSoundPlayed = true;
+
+				USoundSubsystem* SoundSubsystem = GetSoundSubsystem();
+				if (SoundSubsystem == nullptr)
+				{
+					return;
+				}
+
+				DoorCloseAudioId = SoundSubsystem->Play2D(ESFX::ShopDoorClose);
+				SoundSubsystem->StopAudio(DoorOpenAudioId);
 			}
 		}
 		else /*if (CurrentDoorState == EDoorState::Closing)*/
@@ -393,11 +423,41 @@ void AShop::Tick(float DeltaSeconds)
 			{
 				CurrentDoorState = EDoorState::Opened;
 			}
+
+			if (bIsDoorOpenSoundPlayed == false)
+			{
+				bIsDoorOpenSoundPlayed = true;
+				bIsDoorCloseSoundPlayed = false;
+
+				USoundSubsystem* SoundSubsystem = GetSoundSubsystem();
+				if (SoundSubsystem == nullptr)
+				{
+					return;
+				}
+
+				DoorOpenAudioId = SoundSubsystem->Play2D(ESFX::ShopDoorOpen);
+				SoundSubsystem->StopAudio(DoorCloseAudioId);
+			}
 		}
 		else if (CurrentDoorState == EDoorState::Closed)
 		{
 			CurrentDoorRate = 0;
 			RotateDoor(DesiredCloseDegree, DesiredOpenDegree, CurrentDoorRate);
+
+			if (bIsDoorCloseSoundPlayed == false)
+			{
+				bIsDoorOpenSoundPlayed = false;
+				bIsDoorCloseSoundPlayed = true;
+
+				USoundSubsystem* SoundSubsystem = GetSoundSubsystem();
+				if (SoundSubsystem == nullptr)
+				{
+					return;
+				}
+
+				DoorCloseAudioId = SoundSubsystem->Play2D(ESFX::ShopDoorClose);
+				SoundSubsystem->StopAudio(DoorOpenAudioId);
+			}
 		}
 		else /*if (CurrentDoorState == EDoorState::Closing)*/
 		{
@@ -480,6 +540,11 @@ void AShop::CloseShop(AUnderwaterCharacter* Requester)
 		return;
 	}
 
+	if (IsValid(ShopWidget) == false || ShopWidget->IsValidLowLevel() == false)
+	{
+		return;
+	}
+
 	ShopWidget->PlayCloseAnimation();
 
 	FTimerHandle RemoveWidgetTimerHandle;
@@ -487,6 +552,17 @@ void AShop::CloseShop(AUnderwaterCharacter* Requester)
 	GetWorld()->GetTimerManager().SetTimer(RemoveWidgetTimerHandle,
 		FTimerDelegate::CreateLambda([this]() 
 			{ 
+				UWorld* World = GetWorld();
+				if (IsValid(World) == false || World->IsValidLowLevel() == false || World->bIsTearingDown || World->IsInSeamlessTravel())
+				{
+					return;
+				}
+
+				if (IsValid(ShopWidget) == false || ShopWidget->IsValidLowLevel() == false)
+				{
+					return;
+				}
+
 				ShopWidget->RemoveFromParent();
 
 				APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
@@ -1012,12 +1088,13 @@ void AShop::OnSlotEntryWidgetUpdated(UShopItemSlotWidget* SlotEntryWidget)
 	else
 	{
 		SlotEntryWidget->OnShopItemSlotWidgetClickedDelegate.BindUObject(this, &AShop::OnSlotEntryClicked);
+		SlotEntryWidget->OnShopItemSlotWidgetDoubleClickedDelegate.BindUObject(this, &AShop::OnSlotEntryDoubleClicked);
 	}
 }
 
 void AShop::OnSlotEntryClicked(int32 ClickedSlotIndex)
 {
-	EShopCategoryTab CurrentTab = ShopWidget->GetCurrentActivatedTab();
+	EShopCategoryTab CurrentTab = GetCurrentTab();
 	LOGV(Error, TEXT("Clicked Slot Index : %d"), ClickedSlotIndex);
 	if (CurrentTab >= EShopCategoryTab::Max)
 	{
@@ -1061,6 +1138,26 @@ void AShop::OnSlotEntryClicked(int32 ClickedSlotIndex)
 	CurrentSelectedItemId = ItemId;
 }
 
+void AShop::OnSlotEntryDoubleClicked(int32 ClickedSlotIndex)
+{
+	EShopCategoryTab CurrentTab = GetCurrentTab();
+	LOGV(Error, TEXT("Clicked Slot Index : %d"), ClickedSlotIndex);
+	if (CurrentTab >= EShopCategoryTab::Max)
+	{
+		LOGS(Error, TEXT("Weird Tab Type : %d"), CurrentTab);
+		return;
+	}
+
+	if (CurrentTab == EShopCategoryTab::Upgrade)
+	{
+		OnBuyButtonClicked();
+	}
+	else
+	{
+		OnAddButtonClicked(1);
+	}
+}
+
 void AShop::OnBuyListEntryClicked(int32 ClickedSlotIndex)
 {
 	UDataTableSubsystem* DataTableSubsystem = GetDatatableSubsystem();
@@ -1074,7 +1171,7 @@ void AShop::OnBuyListEntryClicked(int32 ClickedSlotIndex)
 	FFADItemDataRow* ItemDataRow = DataTableSubsystem->GetItemData(ItemId);
 	if (ItemDataRow == nullptr)
 	{
-		LOGS(Error, TEXT("ItemData == nullptr"));
+		LOGV(Error, TEXT("ItemData == nullptr"));
 		return;
 	}
 
@@ -1089,7 +1186,7 @@ void AShop::OnBuyListEntryClicked(int32 ClickedSlotIndex)
 void AShop::OnAddButtonClicked(int32 Quantity)
 {
 	EShopCategoryTab CurrentTab = ShopWidget->GetCurrentActivatedTab();
-	if (CurrentTab == EShopCategoryTab::Upgrade)
+	if (CurrentTab == EShopCategoryTab::Upgrade || CurrentTab == EShopCategoryTab::Max)
 	{
 		return;
 	}
@@ -1491,6 +1588,11 @@ void AShop::ClearSelectedInfos()
 	ShopWidget->RemoveBuyListAll();
 	TotalPriceOfBuyList = 0;
 	ShopWidget->ChangeTotalPriceText(TotalPriceOfBuyList);
+}
+
+EShopCategoryTab AShop::GetCurrentTab()
+{
+	return (IsValid(ShopWidget)) ? ShopWidget->GetCurrentActivatedTab() : EShopCategoryTab::Max;
 }
 
 bool AShop::HasItem(int32 ItemId)

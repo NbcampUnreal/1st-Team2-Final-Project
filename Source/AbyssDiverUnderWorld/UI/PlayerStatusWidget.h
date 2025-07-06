@@ -125,8 +125,12 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UImage> SpearGunTypeImage;
 
+	UPROPERTY()
 	TObjectPtr <UMaterialInstanceDynamic> DynamicMaterial;
+
+	UPROPERTY()
 	TObjectPtr <UMaterialInterface> LoadedMaterial;
+	
 private:
 
 	UPROPERTY()

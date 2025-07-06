@@ -36,6 +36,11 @@ void UNameWidgetComponent::BeginPlay()
 			NameWidget->SetNameText(NameText);
 		}
 	}
+
+	if (UUserWidget* UserWidget = GetUserWidgetObject())
+	{
+		UserWidget->SetVisibility(bIsVisible ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+	}
 }
 
 void UNameWidgetComponent::TickComponent(float DeltaTime, ELevelTick TickType,
