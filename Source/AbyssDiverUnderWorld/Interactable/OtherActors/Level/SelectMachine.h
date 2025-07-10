@@ -85,6 +85,7 @@ private:
 	TArray<EMapName> LevelIDs;
 
 	uint8 bSelectLevel : 1 = false;
+	uint8 bSelectMission : 1 = false;
 
 	EMapName LevelID;
 
@@ -97,5 +98,6 @@ public:
 	UFUNCTION(BlueprintCallable)
 	uint8 GetCurrentLevelIndex() { return CurrentLevelIndex; }
 	void SetSelectMachineStateType(ESelectMachineStateType StateType);
+	void SetbSelectMissionToTrue() { bSelectMission = true; };
 #pragma endregion
 };
