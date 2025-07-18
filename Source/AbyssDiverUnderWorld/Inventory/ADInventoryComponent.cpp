@@ -115,6 +115,17 @@ void UADInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 
 void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType, uint8 SlotIndex, bool bIgnoreCoolTime)
 {
+	if (APlayerController* PC = Cast<APlayerController>(Cast<AADPlayerState>(GetOwner())->GetPlayerController()))
+	{
+		if (AUnderwaterCharacter* Character = Cast<AUnderwaterCharacter>(PC->GetPawn()))
+		{
+			if (Character->GetEnvironmentState() == EEnvironmentState::Ground)
+			{
+				return;
+			}
+				
+		}
+	}
 	if (ItemType == EItemType::Equipment)
 	{
 		if (SlotIndex > InventoryIndexMapByType[ItemType].Num()-1 || InventoryIndexMapByType[ItemType][SlotIndex] == -1 ) return;
@@ -911,8 +922,8 @@ void UADInventoryComponent::DropItem(FItemData& ItemData)
 
 void UADInventoryComponent::OnInventoryInfoUpdate(int32 MassInfo, int32 PriceInfo)
 {
-	TotalWeight += MassInfo;
-	TotalPrice += PriceInfo;
+	TotalWeight = FMath::Max(TotalWeight+MassInfo, 0);
+	TotalPrice = FMath::Max(TotalPrice+PriceInfo, 0);
 }
 
 void UADInventoryComponent::RebuildIndexMap()

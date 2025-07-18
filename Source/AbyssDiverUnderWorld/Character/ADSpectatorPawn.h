@@ -25,16 +25,12 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 	virtual void Destroyed() override;
-	
-public:
-	
-	// Called to bind functionality to input
+	virtual void Tick(float DeltaSeconds) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
 	virtual void PossessedBy(AController* NewController) override;
 	
 #pragma region Method
-
+	
 public:
 	
 	/** 다음 플레이어를 관전한다. */
@@ -52,6 +48,8 @@ protected:
 	/** 캐릭터 상태가 변경되었을 때 호출되는 함수 */
 	UFUNCTION()
 	void OnCharacterStateChanged(AUnderwaterCharacter* Character, ECharacterState OldCharacterState, ECharacterState NewCharacterState);
+
+	void UpdateLocationFromTargetView();
 	
 #pragma endregion
 
