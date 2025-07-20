@@ -25,12 +25,12 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Tutorial")
     void TriggerNextStep();
 
-protected:
     // 현재 단계 재생
     void PlayCurrentStep();
 
     // 다음 단계로 이동
     void AdvanceStep();
+protected:
 
 #pragma endregion
 
@@ -50,5 +50,12 @@ protected:
     // 자동 진행 시 사용할 타이머 핸들
     FTimerHandle mStepTimerHandle;
 
+    // 위젯 클래스 참조
+    UPROPERTY(EditAnywhere, Category = "Tutorial|UI")
+    TSubclassOf<class UTutorialSubtitle> mTutorialSubtitleClass;
+
+    // 생성된 자막 위젯 인스턴스
+    UPROPERTY()
+    TObjectPtr<UTutorialSubtitle> mSubtitleWidget;
 #pragma endregion
 };
