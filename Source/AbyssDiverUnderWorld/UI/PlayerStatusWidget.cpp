@@ -20,6 +20,12 @@ UPlayerStatusWidget::UPlayerStatusWidget(const FObjectInitializer& ObjectInitial
     {
         LoadedMaterial = MaterialFinder.Object;
     }
+
+    ConstructorHelpers::FObjectFinder<UMaterialInterface> UIBlinkMaterialFinder(TEXT("/Game/_AbyssDiver/Materials/M_UIBlink"));
+    if (UIBlinkMaterialFinder.Succeeded())
+    {
+        UIBlinkLoadedMaterial = UIBlinkMaterialFinder.Object;
+    }
 }
 
 void UPlayerStatusWidget::NativeConstruct()
@@ -48,6 +54,18 @@ void UPlayerStatusWidget::NativeConstruct()
         FSlateBrush NewBrush;
         NewBrush.SetResourceObject(DynamicMaterial);
         HealthScreenEffect->SetBrush(NewBrush);
+    }
+
+    
+    DynMat = UMaterialInstanceDynamic::Create(UIBlinkLoadedMaterial, this);
+    if (DynMat)
+    {
+        FSlateBrush Brush;
+        Brush.SetResourceObject(DynMat);
+
+        FProgressBarStyle Style = OxygenBar->GetWidgetStyle();
+        Style.FillImage = Brush;
+        OxygenBar->SetWidgetStyle(Style);
     }
 }
 
@@ -116,8 +134,27 @@ void UPlayerStatusWidget::SetOxygenPercent(float InPercent)
         Style.FillImage.OutlineSettings.CornerRadii = FVector4(TopRadius, TopRadius, 0.0f, 0.0f);
         Style.FillImage.OutlineSettings.RoundingType = ESlateBrushRoundingType::FixedRadius;
 
+
+        float WarningOxygenValue = 0.5f;
+
+        if (ClampedPercent <= WarningOxygenValue)
+        {
+            float GreenBlueValue = FMath::Clamp(ClampedPercent- 0.1f, 0.0f, WarningOxygenValue - 0.1f) / WarningOxygenValue - 0.1f;
+            Style.FillImage.TintColor = FSlateColor(FLinearColor(1.0f, GreenBlueValue, GreenBlueValue, 1.0f));
+
+            float MinPeriod = 0.1f; 
+            float MaxPeriod = 4.0f;
+
+            float DangerAlpha = 1.0f - (ClampedPercent / WarningOxygenValue);
+            Period = FMath::Lerp(MaxPeriod, MinPeriod, DangerAlpha);
+
+            if (DynMat)
+            {
+                DynMat->SetScalarParameterValue(FName("Period"), Period);
+            }
+        }
+
         OxygenBar->SetWidgetStyle(Style);
-        //SetPercent(FMath::Clamp(InPercent, 0.0f, 1.0f));
     }
     else
     {
@@ -127,9 +164,8 @@ void UPlayerStatusWidget::SetOxygenPercent(float InPercent)
 
 void UPlayerStatusWidget::SetHealthPercent(float InPercent)
 {
-    if (HealthBar)
+    if (DynamicMaterial)
     {
-        //HealthBar->SetPercent(FMath::Clamp(InPercent, 0.0f, 1.0f));
         DynamicMaterial->SetScalarParameterValue("Range", 1-FMath::Clamp(InPercent, 0.0f, 1.0f));
     }
     else
@@ -140,15 +176,6 @@ void UPlayerStatusWidget::SetHealthPercent(float InPercent)
 
 void UPlayerStatusWidget::SetStaminaPercent(float InPercent)
 {
-    //if (StaminaBar)
-    //{
-    //    const float Clamped = FMath::Clamp(InPercent, 0.0f, 1.0f);
-    //    StaminaBar->SetPercent(Clamped);
-    //}
-    //else
-    //{
-    //    LOGV(Error, TEXT("StaminaBar is nullptr!"));
-    //}
     if (OxygenBar)
     {
         OxygenBar->SetPercent(FMath::Clamp(InPercent, 0.0f, 1.0f));

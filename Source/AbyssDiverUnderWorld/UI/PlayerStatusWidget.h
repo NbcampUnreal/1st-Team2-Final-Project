@@ -84,12 +84,6 @@ protected:
 	TObjectPtr<UProgressBar> OxygenBar;
 
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UProgressBar> HealthBar;
-
-	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UProgressBar> StaminaBar;
-
-	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UWidget> SpearPanel;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Compass")
@@ -129,8 +123,14 @@ protected:
 	TObjectPtr <UMaterialInstanceDynamic> DynamicMaterial;
 
 	UPROPERTY()
+	TObjectPtr <UMaterialInstanceDynamic> DynMat;
+
+	UPROPERTY()
 	TObjectPtr <UMaterialInterface> LoadedMaterial;
-	
+
+	UPROPERTY()
+	TObjectPtr <UMaterialInterface> UIBlinkLoadedMaterial;
+
 private:
 
 	UPROPERTY()
@@ -141,6 +141,8 @@ private:
 	int32 CachedNextPhaseNumber = 0;
 
 	static const int32 MaxPhaseNumber;
+
+	float Period = 0.0f;
 
 #pragma endregion
 
