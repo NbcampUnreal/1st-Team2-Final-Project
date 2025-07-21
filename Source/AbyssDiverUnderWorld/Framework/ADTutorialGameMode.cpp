@@ -1,4 +1,4 @@
-#include "TutorialGameMode.h"
+#include "ADTutorialGameMode.h"
 #include "Tutorial/TutorialManager.h"
 #include "Character/UnderwaterCharacter.h"
 #include "Framework/ADPlayerController.h"
@@ -7,7 +7,7 @@
 #include "UObject/ConstructorHelpers.h"
 #include "EngineUtils.h"
 
-ATutorialGameMode::ATutorialGameMode()
+AADTutorialGameMode::AADTutorialGameMode()
 {
     DefaultPawnClass = AUnderwaterCharacter::StaticClass();
     PlayerControllerClass = AADPlayerController::StaticClass();
@@ -15,13 +15,13 @@ ATutorialGameMode::ATutorialGameMode()
     GameStateClass = AADInGameState::StaticClass(); 
 }
 
-void ATutorialGameMode::BeginPlay()
+void AADTutorialGameMode::BeginPlay()
 {
     Super::BeginPlay();
     InitializeTutorial();
 }
 
-void ATutorialGameMode::InitializeTutorial()
+void AADTutorialGameMode::InitializeTutorial()
 {
     // 레벨에 배치된 TutorialManager 찾기
     for (TActorIterator<ATutorialManager> It(GetWorld()); It; ++It)

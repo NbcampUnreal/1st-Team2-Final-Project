@@ -1,22 +1,19 @@
-// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Framework/ADInGameMode.h"
 #include "Tutorial/TutorialManager.h"
-#include "TutorialGameMode.generated.h"
+#include "ADTutorialGameMode.generated.h"
 
-/**
- * 
- */
+
 UCLASS()
-class ABYSSDIVERUNDERWORLD_API ATutorialGameMode : public AADInGameMode
+class ABYSSDIVERUNDERWORLD_API AADTutorialGameMode : public AADInGameMode
 {
     GENERATED_BODY()
 
 public:
-    ATutorialGameMode();
+    AADTutorialGameMode();
 
 protected:
     virtual void BeginPlay() override;
@@ -31,6 +28,7 @@ public:
 
 protected:
     /** 현재 레벨에 존재하는 TutorialManager */
-    UPROPERTY()
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Tutorial", meta = (AllowPrivateAccess = "true"))
     TObjectPtr<ATutorialManager> TutorialManager;
+
 };
