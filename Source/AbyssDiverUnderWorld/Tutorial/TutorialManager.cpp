@@ -22,20 +22,21 @@ void ATutorialManager::BeginPlay()
         if (mSubtitleWidget)
         {
             mSubtitleWidget->AddToViewport();
+            mSubtitleWidget->SetVisibility(ESlateVisibility::Hidden);
         }
     }
 
-    // 튜토리얼 시작
     if (mTutorialDataTable)
     {
         mStepRowNames = mTutorialDataTable->GetRowNames();
-        PlayCurrentStep();
+        
     }
     else
     {
         UE_LOG(LogTemp, Warning, TEXT("TutorialDataTable is not assigned."));
     }
 }
+
 
 void ATutorialManager::PlayCurrentStep()
 {
@@ -51,6 +52,7 @@ void ATutorialManager::PlayCurrentStep()
         if (mSubtitleWidget)
         {
             mSubtitleWidget->SetSubtitleText(stepData->SubtitleText);
+            mSubtitleWidget->SetVisibility(ESlateVisibility::Visible);
         }
 
         // 자동 진행이면 타이머
@@ -64,8 +66,6 @@ void ATutorialManager::PlayCurrentStep()
                 false
             );
         }
-
-        // 추후: 여기에서 키보드 힌트 조건 체크도 가능
     }
 }
 
