@@ -27,6 +27,22 @@ void URadar2DWidget::NativeConstruct()
 		// 레이더 오버레이는 정사각형이라 가정
 		RadarWidgetRadius = CanvasSlot->GetSize().X / 2.0f;
 	}
+
+	ActivatedReturnWidgets.Empty();
+	DeactivatedReturnImages.Empty();
+
+	const int32 ChildCount = RadarOverlay->GetChildrenCount();
+
+	for (int32 i = 0; i < ChildCount; ++i)
+	{
+		const int32 ChildIndex = ChildCount - i - 1;
+		UWidget* Child = RadarOverlay->GetChildAt(ChildIndex);
+		if (Child->IsA<URadarReturnWidget>())
+		{
+			RadarOverlay->RemoveChildAt(ChildIndex);
+			Child->RemoveFromParent();
+		}
+	}
 }
 
 void URadar2DWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)

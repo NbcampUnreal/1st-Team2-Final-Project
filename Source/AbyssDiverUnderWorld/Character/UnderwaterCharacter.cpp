@@ -207,6 +207,7 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 
 	RadarReturn2DComponent->SetReturnScale(0.7f);
 	RadarReturn2DComponent->SetReturnForceType(EReturnForceType::Friendly);
+	RadarReturn2DComponent->SetAlwaysDisplay(true);
 }
 
 void AUnderwaterCharacter::BeginPlay()
