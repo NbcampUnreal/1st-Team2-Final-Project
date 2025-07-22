@@ -11,6 +11,7 @@ class UTextBlock;
 class UProgressBar;
 class UOverlay;
 enum class ESpearGunType : uint8;
+class UWarningWidget;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API UPlayerStatusWidget : public UUserWidget
@@ -119,17 +120,18 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UImage> SpearGunTypeImage;
 
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UWarningWidget> OxygenWarningWidget;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UWarningWidget> PhaseWarningWidget;
+
 	UPROPERTY()
 	TObjectPtr <UMaterialInstanceDynamic> DynamicMaterial;
 
 	UPROPERTY()
-	TObjectPtr <UMaterialInstanceDynamic> DynMat;
-
-	UPROPERTY()
 	TObjectPtr <UMaterialInterface> LoadedMaterial;
 
-	UPROPERTY()
-	TObjectPtr <UMaterialInterface> UIBlinkLoadedMaterial;
 
 private:
 

@@ -8,6 +8,7 @@
 #include "Animation/WidgetAnimation.h"
 #include "Components/Image.h"
 #include "Projectile/ADSpearGunBullet.h"
+#include "UI/WarningWidget.h"
 
 const FName UPlayerStatusWidget::OnNextPhaseAnimFinishedName = TEXT("OnNextPhaseAnimFinished");
 const int32 UPlayerStatusWidget::MaxPhaseNumber = 3;
@@ -19,12 +20,6 @@ UPlayerStatusWidget::UPlayerStatusWidget(const FObjectInitializer& ObjectInitial
     if (MaterialFinder.Succeeded())
     {
         LoadedMaterial = MaterialFinder.Object;
-    }
-
-    ConstructorHelpers::FObjectFinder<UMaterialInterface> UIBlinkMaterialFinder(TEXT("/Game/_AbyssDiver/Materials/M_UIBlink"));
-    if (UIBlinkMaterialFinder.Succeeded())
-    {
-        UIBlinkLoadedMaterial = UIBlinkMaterialFinder.Object;
     }
 }
 
@@ -54,18 +49,6 @@ void UPlayerStatusWidget::NativeConstruct()
         FSlateBrush NewBrush;
         NewBrush.SetResourceObject(DynamicMaterial);
         HealthScreenEffect->SetBrush(NewBrush);
-    }
-
-    
-    DynMat = UMaterialInstanceDynamic::Create(UIBlinkLoadedMaterial, this);
-    if (DynMat)
-    {
-        FSlateBrush Brush;
-        Brush.SetResourceObject(DynMat);
-
-        FProgressBarStyle Style = OxygenBar->GetWidgetStyle();
-        Style.FillImage = Brush;
-        OxygenBar->SetWidgetStyle(Style);
     }
 }
 
@@ -139,18 +122,28 @@ void UPlayerStatusWidget::SetOxygenPercent(float InPercent)
 
         if (ClampedPercent <= WarningOxygenValue)
         {
+
             float GreenBlueValue = FMath::Clamp(ClampedPercent- 0.1f, 0.0f, WarningOxygenValue - 0.1f) / WarningOxygenValue - 0.1f;
             Style.FillImage.TintColor = FSlateColor(FLinearColor(1.0f, GreenBlueValue, GreenBlueValue, 1.0f));
+        }
+        else
+        {
+            Style.FillImage.TintColor = FSlateColor(FLinearColor(1.0f, 1.0f, 1.0f, 1.0f));
+        }
 
-            float MinPeriod = 0.1f; 
-            float MaxPeriod = 4.0f;
-
-            float DangerAlpha = 1.0f - (ClampedPercent / WarningOxygenValue);
-            Period = FMath::Lerp(MaxPeriod, MinPeriod, DangerAlpha);
-
-            if (DynMat)
+        if (ClampedPercent <= (WarningOxygenValue - 0.2f))
+        {
+            if (!OxygenWarningWidget->GetbShowWarning())
             {
-                DynMat->SetScalarParameterValue(FName("Period"), Period);
+                OxygenWarningWidget->SetbShowWarning(true);
+            }
+        }
+        else
+        {
+            if (OxygenWarningWidget->GetbShowWarning())
+            {
+                OxygenWarningWidget->SetbShowWarning(false);
+                //DynMat->SetScalarParameterValue(FName("Period"), 0);
             }
         }
 
