@@ -1,18 +1,17 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "UI/KeyboardHintPanel.h"
+#include "UI/TutorialHintPanel.h"
 
 
-void UKeyboardHintPanel::NativeOnInitialized()
+void UTutorialHintPanel::NativeOnInitialized()
 {
     Super::NativeOnInitialized();
     SetVisibility(ESlateVisibility::Hidden);
 }
 
-void UKeyboardHintPanel::SetHintByKey(ETutorialHintKey HintKey)
+void UTutorialHintPanel::SetHintByKey(ETutorialHintKey HintKey)
 {
-    // NoneÀÌ¸é ²¨ÁÜ
     if (HintKey == ETutorialHintKey::None)
     {
         SetVisibility(ESlateVisibility::Hidden);
@@ -31,9 +30,9 @@ void UKeyboardHintPanel::SetHintByKey(ETutorialHintKey HintKey)
     default:                           Index = 0; break;
     }
 
-    if (Switcher_KeyboardHints)
+    if (Switcher_Hints)
     {
-        Switcher_KeyboardHints->SetActiveWidgetIndex(Index);
+        Switcher_Hints->SetActiveWidgetIndex(Index);
     }
 
     SetVisibility(ESlateVisibility::Visible);

@@ -23,11 +23,9 @@ void AADTutorialGameMode::BeginPlay()
 
 void AADTutorialGameMode::InitializeTutorial()
 {
-    // 레벨에 배치된 TutorialManager 찾기
     for (TActorIterator<ATutorialManager> It(GetWorld()); It; ++It)
     {
         TutorialManager = *It;
         break;
     }
-
 }

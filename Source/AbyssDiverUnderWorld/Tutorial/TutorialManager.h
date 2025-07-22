@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "TutorialStepData.h"
-#include "UI/KeyboardHintPanel.h"
+#include "UI/TutorialHintPanel.h"
 #include "TutorialManager.generated.h"
 
 UCLASS()
@@ -22,14 +22,11 @@ protected:
 #pragma region Method
 
 public:
-    // 수동으로 다음 단계 강제 트리거
     UFUNCTION(BlueprintCallable, Category = "Tutorial")
     void TriggerNextStep();
 
-    // 현재 단계 재생
     void PlayCurrentStep();
 
-    // 다음 단계로 이동
     void AdvanceStep();
 protected:
 
@@ -38,32 +35,25 @@ protected:
 #pragma region Variable
 
 protected:
-    // 튜토리얼 단계들을 가진 데이터 테이블
     UPROPERTY(EditAnywhere, Category = "Tutorial")
-    TObjectPtr<UDataTable> mTutorialDataTable;
+    TObjectPtr<UDataTable> TutorialDataTable;
 
-    // 현재 진행 중인 단계 인덱스
-    int32 mCurrentStepIndex = 0;
+    int32 CurrentStepIndex = 0;
 
-    // 튜토리얼 단계들의 RowName 목록
-    TArray<FName> mStepRowNames;
+    TArray<FName> StepRowNames;
 
-    // 자동 진행 시 사용할 타이머 핸들
-    FTimerHandle mStepTimerHandle;
+    FTimerHandle StepTimerHandle;
 
-    // 위젯 클래스 참조
     UPROPERTY(EditAnywhere, Category = "Tutorial|UI")
-    TSubclassOf<class UTutorialSubtitle> mTutorialSubtitleClass;
-
-    // 생성된 자막 위젯 인스턴스
-    UPROPERTY()
-    TObjectPtr<UTutorialSubtitle> mSubtitleWidget;
-
-    // 클래스 내부 변수 추가
-    UPROPERTY(EditAnywhere, Category = "Tutorial|UI")
-    TSubclassOf<UKeyboardHintPanel> mKeyboardHintPanelClass;
+    TSubclassOf<class UTutorialSubtitle> TutorialSubtitleClass;
 
     UPROPERTY()
-    TObjectPtr<UKeyboardHintPanel> mKeyboardHintPanel;
+    TObjectPtr<UTutorialSubtitle> SubtitleWidget;
+
+    UPROPERTY(EditAnywhere, Category = "Tutorial|UI")
+    TSubclassOf<UTutorialHintPanel> TutorialHintPanelClass;
+
+    UPROPERTY()
+    TObjectPtr<UTutorialHintPanel> TutorialHintPanel;
 #pragma endregion
 };

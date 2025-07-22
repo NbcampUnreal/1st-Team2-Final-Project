@@ -2,33 +2,31 @@
 #include "TimerManager.h"
 #include "Engine/World.h"
 #include "Kismet/GameplayStatics.h"
-#include "UI/TutorialSubtitle.h" // 자막 위젯 헤더 포함
+#include "UI/TutorialSubtitle.h" 
 #include "Blueprint/UserWidget.h"
 
 ATutorialManager::ATutorialManager()
 {
     PrimaryActorTick.bCanEverTick = false;
-    mCurrentStepIndex = 0;
+    CurrentStepIndex = 0;
 }
 
 void ATutorialManager::BeginPlay()
 {
     Super::BeginPlay();
-
-    // 자막 위젯 생성
-    if (mTutorialSubtitleClass)
+    if (TutorialSubtitleClass)
     {
-        mSubtitleWidget = CreateWidget<UTutorialSubtitle>(GetWorld(), mTutorialSubtitleClass);
-        if (mSubtitleWidget)
+        SubtitleWidget = CreateWidget<UTutorialSubtitle>(GetWorld(), TutorialSubtitleClass);
+        if (SubtitleWidget)
         {
-            mSubtitleWidget->AddToViewport();
-            mSubtitleWidget->SetVisibility(ESlateVisibility::Hidden);
+            SubtitleWidget->AddToViewport(20);
+            SubtitleWidget->SetVisibility(ESlateVisibility::Hidden);
         }
     }
 
-    if (mTutorialDataTable)
+    if (TutorialDataTable)
     {
-        mStepRowNames = mTutorialDataTable->GetRowNames();
+        StepRowNames = TutorialDataTable->GetRowNames();
         
     }
     else
@@ -36,58 +34,54 @@ void ATutorialManager::BeginPlay()
         UE_LOG(LogTemp, Warning, TEXT("TutorialDataTable is not assigned."));
     }
 
-    if (mKeyboardHintPanelClass)
+    if (TutorialHintPanelClass)
     {
-        mKeyboardHintPanel = CreateWidget<UKeyboardHintPanel>(GetWorld(), mKeyboardHintPanelClass);
-        if (mKeyboardHintPanel)
+        TutorialHintPanel = CreateWidget<UTutorialHintPanel>(GetWorld(), TutorialHintPanelClass);
+        if (TutorialHintPanel)
         {
-            mKeyboardHintPanel->AddToViewport();
-            mKeyboardHintPanel->SetVisibility(ESlateVisibility::Hidden); // 기본은 숨김
+            TutorialHintPanel->AddToViewport(10);
+            TutorialHintPanel->SetVisibility(ESlateVisibility::Hidden); 
         }
     }
 }
 
 void ATutorialManager::PlayCurrentStep()
 {
-    if (!mTutorialDataTable || !mStepRowNames.IsValidIndex(mCurrentStepIndex))
+    if (!TutorialDataTable || !StepRowNames.IsValidIndex(CurrentStepIndex))
         return;
 
-    FName rowName = mStepRowNames[mCurrentStepIndex];
-    const FTutorialStepData* stepData = mTutorialDataTable->FindRow<FTutorialStepData>(rowName, TEXT("TutorialManager"));
+    FName RowName = StepRowNames[CurrentStepIndex];
+    const FTutorialStepData* StepData = TutorialDataTable->FindRow<FTutorialStepData>(RowName, TEXT("TutorialManager"));
 
-    if (stepData)
+    if (StepData)
     {
-        // 자막 출력
-        if (mSubtitleWidget)
+        if (SubtitleWidget)
         {
-            mSubtitleWidget->SetSubtitleText(stepData->SubtitleText);
-            mSubtitleWidget->SetVisibility(ESlateVisibility::Visible);
+            SubtitleWidget->SetSubtitleText(StepData->SubtitleText);
+            SubtitleWidget->SetVisibility(ESlateVisibility::Visible);
         }
 
-        //키보드 힌트 패널 제어
-        if (mKeyboardHintPanel)
+        if (TutorialHintPanel)
         {
-            mKeyboardHintPanel->SetHintByKey(stepData->HintKey); // 힌트 내용은 항상 갱신
+            TutorialHintPanel->SetHintByKey(StepData->HintKey);
 
-            // 🔸 Move 상태일 때만 보여주고, 나머지는 숨김
-            if (stepData->HintKey == ETutorialHintKey::Move)
+            if (StepData->HintKey == ETutorialHintKey::Move)
             {
-                mKeyboardHintPanel->SetVisibility(ESlateVisibility::Visible);
+                TutorialHintPanel->SetVisibility(ESlateVisibility::Visible);
             }
             else
             {
-                mKeyboardHintPanel->SetVisibility(ESlateVisibility::Hidden);
+                TutorialHintPanel->SetVisibility(ESlateVisibility::Hidden);
             }
         }
 
-        // 자동 진행이면 타이머
-        if (!stepData->bWaitForPlayerTrigger)
+        if (!StepData->bWaitForPlayerTrigger)
         {
             GetWorldTimerManager().SetTimer(
-                mStepTimerHandle,
+                StepTimerHandle,
                 this,
                 &ATutorialManager::AdvanceStep,
-                stepData->DisplayDuration,
+                StepData->DisplayDuration,
                 false
             );
         }
@@ -97,15 +91,15 @@ void ATutorialManager::PlayCurrentStep()
 
 void ATutorialManager::AdvanceStep()
 {
-    mCurrentStepIndex++;
+    CurrentStepIndex++;
     PlayCurrentStep();
 }
 
 void ATutorialManager::TriggerNextStep()
 {
-    if (mStepTimerHandle.IsValid())
+    if (StepTimerHandle.IsValid())
     {
-        GetWorldTimerManager().ClearTimer(mStepTimerHandle);
+        GetWorldTimerManager().ClearTimer(StepTimerHandle);
     }
 
     AdvanceStep();
