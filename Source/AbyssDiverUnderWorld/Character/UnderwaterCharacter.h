@@ -87,6 +87,7 @@ enum class EPlayAnimationTarget : uint8
 };
 
 class UInputAction;
+class URadar2DComponent;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AUnderwaterCharacter : public AUnitBase, public IIADInteractable
@@ -1172,6 +1173,9 @@ private:
 	UPROPERTY()
 	TObjectPtr<class UEquipRenderComponent> EquipRenderComp;
 
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<URadar2DComponent> RadarComponent;
+
 	/** Tool 소켓 명 (1P/3P 공용) */
 	FName LaserSocketName = TEXT("Laser");
 
@@ -1264,6 +1268,8 @@ public:
 
 	/** 캐릭터의 현재 상태를 반환. Normal, Groggy, Death... */
 	FORCEINLINE UCombatEffectComponent* GetCombatEffectComponent() const { return CombatEffectComponent; }
+
+	FORCEINLINE URadar2DComponent* GetRadarComponent() const { return RadarComponent; }
 
 	/** 캐릭터의 현재 상태를 반환 */
 	FORCEINLINE ECharacterState GetCharacterState() const { return CharacterState; }
