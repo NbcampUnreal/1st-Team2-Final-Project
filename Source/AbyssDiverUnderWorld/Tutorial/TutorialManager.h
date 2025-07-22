@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "TutorialStepData.h"
+#include "UI/KeyboardHintPanel.h"
 #include "TutorialManager.generated.h"
 
 UCLASS()
@@ -57,5 +58,12 @@ protected:
     // 생성된 자막 위젯 인스턴스
     UPROPERTY()
     TObjectPtr<UTutorialSubtitle> mSubtitleWidget;
+
+    // 클래스 내부 변수 추가
+    UPROPERTY(EditAnywhere, Category = "Tutorial|UI")
+    TSubclassOf<UKeyboardHintPanel> mKeyboardHintPanelClass;
+
+    UPROPERTY()
+    TObjectPtr<UKeyboardHintPanel> mKeyboardHintPanel;
 #pragma endregion
 };

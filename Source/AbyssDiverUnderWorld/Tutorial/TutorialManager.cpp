@@ -1,8 +1,8 @@
-#include "TutorialManager.h"
+ï»¿#include "TutorialManager.h"
 #include "TimerManager.h"
 #include "Engine/World.h"
 #include "Kismet/GameplayStatics.h"
-#include "UI/TutorialSubtitle.h" // ÀÚ¸· À§Á¬ Çì´õ Æ÷ÇÔ
+#include "UI/TutorialSubtitle.h" // ìë§‰ ìœ„ì ¯ í—¤ë” í¬í•¨
 #include "Blueprint/UserWidget.h"
 
 ATutorialManager::ATutorialManager()
@@ -15,7 +15,7 @@ void ATutorialManager::BeginPlay()
 {
     Super::BeginPlay();
 
-    // ÀÚ¸· À§Á¬ »ı¼º
+    // ìë§‰ ìœ„ì ¯ ìƒì„±
     if (mTutorialSubtitleClass)
     {
         mSubtitleWidget = CreateWidget<UTutorialSubtitle>(GetWorld(), mTutorialSubtitleClass);
@@ -35,8 +35,17 @@ void ATutorialManager::BeginPlay()
     {
         UE_LOG(LogTemp, Warning, TEXT("TutorialDataTable is not assigned."));
     }
-}
 
+    if (mKeyboardHintPanelClass)
+    {
+        mKeyboardHintPanel = CreateWidget<UKeyboardHintPanel>(GetWorld(), mKeyboardHintPanelClass);
+        if (mKeyboardHintPanel)
+        {
+            mKeyboardHintPanel->AddToViewport();
+            mKeyboardHintPanel->SetVisibility(ESlateVisibility::Hidden); // ê¸°ë³¸ì€ ìˆ¨ê¹€
+        }
+    }
+}
 
 void ATutorialManager::PlayCurrentStep()
 {
@@ -48,14 +57,30 @@ void ATutorialManager::PlayCurrentStep()
 
     if (stepData)
     {
-        // ÀÚ¸· Ãâ·Â
+        // ìë§‰ ì¶œë ¥
         if (mSubtitleWidget)
         {
             mSubtitleWidget->SetSubtitleText(stepData->SubtitleText);
             mSubtitleWidget->SetVisibility(ESlateVisibility::Visible);
         }
 
-        // ÀÚµ¿ ÁøÇàÀÌ¸é Å¸ÀÌ¸Ó
+        //í‚¤ë³´ë“œ íŒíŠ¸ íŒ¨ë„ ì œì–´
+        if (mKeyboardHintPanel)
+        {
+            mKeyboardHintPanel->SetHintByKey(stepData->HintKey); // íŒíŠ¸ ë‚´ìš©ì€ í•­ìƒ ê°±ì‹ 
+
+            // ğŸ”¸ Move ìƒíƒœì¼ ë•Œë§Œ ë³´ì—¬ì£¼ê³ , ë‚˜ë¨¸ì§€ëŠ” ìˆ¨ê¹€
+            if (stepData->HintKey == ETutorialHintKey::Move)
+            {
+                mKeyboardHintPanel->SetVisibility(ESlateVisibility::Visible);
+            }
+            else
+            {
+                mKeyboardHintPanel->SetVisibility(ESlateVisibility::Hidden);
+            }
+        }
+
+        // ìë™ ì§„í–‰ì´ë©´ íƒ€ì´ë¨¸
         if (!stepData->bWaitForPlayerTrigger)
         {
             GetWorldTimerManager().SetTimer(
@@ -68,6 +93,7 @@ void ATutorialManager::PlayCurrentStep()
         }
     }
 }
+
 
 void ATutorialManager::AdvanceStep()
 {

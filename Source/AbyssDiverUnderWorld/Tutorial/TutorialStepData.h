@@ -44,4 +44,7 @@ struct FTutorialStepData : public FTableRowBase
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     TArray<FText> KeyDescriptions; 
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    ETutorialHintKey HintKey = ETutorialHintKey::None;
 };
