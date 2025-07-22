@@ -2388,6 +2388,8 @@ void AUnderwaterCharacter::M_BroadcastPlayEmote_Implementation(int8 EmoteIndex)
 
 	bPlayingEmote = true;
 	PlayEmoteIndex = EmoteIndex;
+	// Control Rotation을 이용해서 Rotation을 갱신하기 때문에 모든 노드에서 동기화가 되어야 한다.
+	bUseControllerRotationYaw = false;
 	
 	if (UAnimInstance* AnimInstance = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr)
 	{
@@ -2399,13 +2401,10 @@ void AUnderwaterCharacter::M_BroadcastPlayEmote_Implementation(int8 EmoteIndex)
 		AnimInstance->Montage_SetEndDelegate(MontageEndDelegate, EmoteMontage);
 	}
 
-	// Control Rotation을 이용해서 Rotation을 갱신하기 때문에 모든 노드에서 동기화가 되어야 한다.
-	bUseControllerRotationYaw = false;
-
-	if (IsLocallyControlled())
-	{
-		StartEmoteCameraTransition();
-	}
+	// Server에서 모든 Camera Transition을 할 필요는 없다.
+	// 하지만, Client에서 Camera Transition을 하는 시간을 동일하게 시뮬레이션을 하기 위해서는
+	// Server에서 Transition을 같이 해서 정확히 끝나는 시간을 계산해야 한다.
+	// 따라서 Server에서도 Transition을 실행한다.
 	StartEmoteCameraTransition();
 }
 
@@ -2525,6 +2524,7 @@ void AUnderwaterCharacter::UpdateCameraTransition()
 	{
 		GetWorldTimerManager().ClearTimer(EmoteCameraTransitionTimer);
 		bPlayingEmote = false;
+		bUseControllerRotationYaw = true;
 		SetCameraFirstPerson(true);
 		// FirstPersonCameraArm->bInheritRoll = false;
 		return;
