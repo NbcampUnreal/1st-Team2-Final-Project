@@ -19,8 +19,6 @@ public:
     void AdvanceTutorialPhase();
 
 protected:
-    ETutorialPhase CurrentPhase;
-
     void HandleCurrentPhase();
 
     void HandlePhase_Movement();

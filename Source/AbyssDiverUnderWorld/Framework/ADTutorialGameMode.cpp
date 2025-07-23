@@ -8,7 +8,6 @@
 
 AADTutorialGameMode::AADTutorialGameMode()
 {
-    CurrentPhase = ETutorialPhase::None;
 }
 
 void AADTutorialGameMode::StartPlay()
@@ -16,18 +15,27 @@ void AADTutorialGameMode::StartPlay()
     Super::StartPlay();
 
     TutorialPlayerController = Cast<AADPlayerController>(UGameplayStatics::GetPlayerController(this, 0));
-    CurrentPhase = ETutorialPhase::Step1_Movement;
-    HandleCurrentPhase();
+
+    if (AADTutorialGameState* TutorialGS = GetGameState<AADTutorialGameState>())
+    {
+        TutorialGS->SetCurrentPhase(ETutorialPhase::Step1_Movement);
+
+        HandleCurrentPhase();
+    }
 }
 
 void AADTutorialGameMode::AdvanceTutorialPhase()
 {
-    AADTutorialGameState* TutorialGS = GetGameState<AADTutorialGameState>();
-    if (TutorialGS && TutorialGS->GetCurrentPhase() != ETutorialPhase::Complete)
+    if (AADTutorialGameState* TutorialGS = GetGameState<AADTutorialGameState>())
     {
-        ETutorialPhase NextPhase = static_cast<ETutorialPhase>(static_cast<uint8>(TutorialGS->GetCurrentPhase()) + 1);
+        ETutorialPhase CurrentPhase = TutorialGS->GetCurrentPhase();
+        if (CurrentPhase != ETutorialPhase::Complete)
+        {
+            ETutorialPhase NextPhase = static_cast<ETutorialPhase>(static_cast<uint8>(CurrentPhase) + 1);
+            TutorialGS->SetCurrentPhase(NextPhase);
 
-        TutorialGS->SetCurrentPhase(NextPhase);
+            HandleCurrentPhase();
+        }
     }
 }
 
@@ -39,30 +47,33 @@ void AADTutorialGameMode::HandleCurrentPhase()
         if (!TutorialPlayerController) return;
     }
 
-    switch (CurrentPhase)
+    if (AADTutorialGameState* TutorialGS = GetGameState<AADTutorialGameState>())
     {
-    case ETutorialPhase::Step1_Movement:
-        HandlePhase_Movement(); break;
-    case ETutorialPhase::Step2_SprintAndOxygen:
-        HandlePhase_Sprint(); break;
-    case ETutorialPhase::Step3_Radar:
-        HandlePhase_Radar(); break;
-    case ETutorialPhase::Step4_Looting:
-        HandlePhase_Collecting(); break;
-    case ETutorialPhase::Step5_Drone:
-        HandlePhase_Drone(); break;
-    case ETutorialPhase::Step6_LightToggle:
-        HandlePhase_LightToggle(); break;
-    case ETutorialPhase::Step7_Items:
-        HandlePhase_Items(); break;
-    case ETutorialPhase::Step8_OxygenWarning:
-        HandlePhase_OxygenWarning(); break;
-    case ETutorialPhase::Step9_Revival:
-        HandlePhase_Revival(); break;
-    case ETutorialPhase::Complete:
-        HandlePhase_Complete(); break;
-    default:
-        break;
+        switch (TutorialGS->GetCurrentPhase())
+        {
+        case ETutorialPhase::Step1_Movement:
+            HandlePhase_Movement(); break;
+        case ETutorialPhase::Step2_SprintAndOxygen:
+            HandlePhase_Sprint(); break;
+        case ETutorialPhase::Step3_Radar:
+            HandlePhase_Radar(); break;
+        case ETutorialPhase::Step4_Looting:
+            HandlePhase_Collecting(); break;
+        case ETutorialPhase::Step5_Drone:
+            HandlePhase_Drone(); break;
+        case ETutorialPhase::Step6_LightToggle:
+            HandlePhase_LightToggle(); break;
+        case ETutorialPhase::Step7_Items:
+            HandlePhase_Items(); break;
+        case ETutorialPhase::Step8_OxygenWarning:
+            HandlePhase_OxygenWarning(); break;
+        case ETutorialPhase::Step9_Revival:
+            HandlePhase_Revival(); break;
+        case ETutorialPhase::Complete:
+            HandlePhase_Complete(); break;
+        default:
+            break;
+        }
     }
 }
 
