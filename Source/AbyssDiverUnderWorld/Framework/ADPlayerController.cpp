@@ -283,6 +283,17 @@ void AADPlayerController::S_KillPlayer_Implementation()
 	KillPlayer();
 }
 
+void AADPlayerController::SetActiveRadarWidget(bool bShouldActivate)
+{
+	if (IsValid(PlayerHUDComponent) == false || PlayerHUDComponent->IsBeingDestroyed() || PlayerHUDComponent->IsValidLowLevel() == false)
+	{
+		LOGV(Error, TEXT("PlayerHUDComponent Is Not Valid"));
+		return;
+	}
+
+	PlayerHUDComponent->SetActiveRadarWidget(bShouldActivate);
+}
+
 void AADPlayerController::BeginSpectatingState()
 {
 	UE_LOG(LogAbyssDiverSpectate, Display, TEXT("Begin Spectating State for %s, GetPawn : %s"), *GetName(), GetPawn() ? *GetPawn()->GetName() : TEXT("None"));

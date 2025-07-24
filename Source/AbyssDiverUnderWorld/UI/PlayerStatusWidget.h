@@ -11,6 +11,7 @@ class UTextBlock;
 class UProgressBar;
 class UOverlay;
 enum class ESpearGunType : uint8;
+class UWarningWidget;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API UPlayerStatusWidget : public UUserWidget
@@ -84,12 +85,6 @@ protected:
 	TObjectPtr<UProgressBar> OxygenBar;
 
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UProgressBar> HealthBar;
-
-	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UProgressBar> StaminaBar;
-
-	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UWidget> SpearPanel;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Compass")
@@ -125,12 +120,19 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UImage> SpearGunTypeImage;
 
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UWarningWidget> OxygenWarningWidget;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UWarningWidget> PhaseWarningWidget;
+
 	UPROPERTY()
 	TObjectPtr <UMaterialInstanceDynamic> DynamicMaterial;
 
 	UPROPERTY()
 	TObjectPtr <UMaterialInterface> LoadedMaterial;
-	
+
+
 private:
 
 	UPROPERTY()
@@ -141,6 +143,8 @@ private:
 	int32 CachedNextPhaseNumber = 0;
 
 	static const int32 MaxPhaseNumber;
+
+	float Period = 0.0f;
 
 #pragma endregion
 

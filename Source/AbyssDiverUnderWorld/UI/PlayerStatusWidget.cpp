@@ -8,6 +8,7 @@
 #include "Animation/WidgetAnimation.h"
 #include "Components/Image.h"
 #include "Projectile/ADSpearGunBullet.h"
+#include "UI/WarningWidget.h"
 
 const FName UPlayerStatusWidget::OnNextPhaseAnimFinishedName = TEXT("OnNextPhaseAnimFinished");
 const int32 UPlayerStatusWidget::MaxPhaseNumber = 3;
@@ -116,8 +117,37 @@ void UPlayerStatusWidget::SetOxygenPercent(float InPercent)
         Style.FillImage.OutlineSettings.CornerRadii = FVector4(TopRadius, TopRadius, 0.0f, 0.0f);
         Style.FillImage.OutlineSettings.RoundingType = ESlateBrushRoundingType::FixedRadius;
 
+
+        float WarningOxygenValue = 0.5f;
+
+        if (ClampedPercent <= WarningOxygenValue)
+        {
+
+            float GreenBlueValue = FMath::Clamp(ClampedPercent- 0.1f, 0.0f, WarningOxygenValue - 0.1f) / WarningOxygenValue - 0.1f;
+            Style.FillImage.TintColor = FSlateColor(FLinearColor(1.0f, GreenBlueValue, GreenBlueValue, 1.0f));
+        }
+        else
+        {
+            Style.FillImage.TintColor = FSlateColor(FLinearColor(1.0f, 1.0f, 1.0f, 1.0f));
+        }
+
+        if (ClampedPercent <= (WarningOxygenValue - 0.2f))
+        {
+            if (!OxygenWarningWidget->GetbShowWarning())
+            {
+                OxygenWarningWidget->SetbShowWarning(true);
+            }
+        }
+        else
+        {
+            if (OxygenWarningWidget->GetbShowWarning())
+            {
+                OxygenWarningWidget->SetbShowWarning(false);
+                //DynMat->SetScalarParameterValue(FName("Period"), 0);
+            }
+        }
+
         OxygenBar->SetWidgetStyle(Style);
-        //SetPercent(FMath::Clamp(InPercent, 0.0f, 1.0f));
     }
     else
     {
@@ -127,9 +157,8 @@ void UPlayerStatusWidget::SetOxygenPercent(float InPercent)
 
 void UPlayerStatusWidget::SetHealthPercent(float InPercent)
 {
-    if (HealthBar)
+    if (DynamicMaterial)
     {
-        //HealthBar->SetPercent(FMath::Clamp(InPercent, 0.0f, 1.0f));
         DynamicMaterial->SetScalarParameterValue("Range", 1-FMath::Clamp(InPercent, 0.0f, 1.0f));
     }
     else
@@ -140,15 +169,6 @@ void UPlayerStatusWidget::SetHealthPercent(float InPercent)
 
 void UPlayerStatusWidget::SetStaminaPercent(float InPercent)
 {
-    //if (StaminaBar)
-    //{
-    //    const float Clamped = FMath::Clamp(InPercent, 0.0f, 1.0f);
-    //    StaminaBar->SetPercent(Clamped);
-    //}
-    //else
-    //{
-    //    LOGV(Error, TEXT("StaminaBar is nullptr!"));
-    //}
     if (OxygenBar)
     {
         OxygenBar->SetPercent(FMath::Clamp(InPercent, 0.0f, 1.0f));
