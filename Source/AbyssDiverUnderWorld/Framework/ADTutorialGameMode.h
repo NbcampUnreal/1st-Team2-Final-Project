@@ -7,6 +7,8 @@
 #include "Tutorial/TutorialEnums.h"
 #include "ADTutorialGameMode.generated.h"
 
+class UDataTable;
+
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADTutorialGameMode : public AGameMode
 {
@@ -23,10 +25,12 @@ protected:
 
     void HandlePhase_Movement();
     void HandlePhase_Sprint();
+    void HandlePhase_Oxygen();
     void HandlePhase_Radar();
-    void HandlePhase_Collecting();
+    void HandlePhase_Looting();
+    void HandlePhase_Inventory();      
     void HandlePhase_Drone();
-    void HandlePhase_LightToggle();
+    void HandlePhase_LightToggle();    
     void HandlePhase_Items();
     void HandlePhase_OxygenWarning();
     void HandlePhase_Revival();
@@ -37,4 +41,9 @@ protected:
 
     UPROPERTY()
     TObjectPtr<class AADPlayerController> TutorialPlayerController;
+
+    FTimerHandle StepTimerHandle;
+
+    UPROPERTY(EditAnywhere, Category = "Tutorial")
+    TObjectPtr<UDataTable> TutorialDataTable;
 };

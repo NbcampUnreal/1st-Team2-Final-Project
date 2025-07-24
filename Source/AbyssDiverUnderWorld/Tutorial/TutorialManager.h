@@ -22,12 +22,9 @@ protected:
 #pragma region Method
 
 public:
-    UFUNCTION(BlueprintCallable, Category = "Tutorial")
-    void TriggerNextStep();
+    UFUNCTION()
+    void OnTutorialPhaseChanged(ETutorialPhase NewPhase);
 
-    void PlayCurrentStep();
-
-    void AdvanceStep();
 protected:
 
 #pragma endregion

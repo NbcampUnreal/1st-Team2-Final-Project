@@ -1,8 +1,12 @@
 ﻿#include "TutorialManager.h"
 #include "TimerManager.h"
 #include "Engine/World.h"
+#include "Tutorial/TutorialEnums.h"
+#include "TutorialStepData.h"
 #include "Kismet/GameplayStatics.h"
 #include "UI/TutorialSubtitle.h" 
+#include "UI/TutorialHintPanel.h"
+#include "Framework/ADTutorialGameState.h"
 #include "Blueprint/UserWidget.h"
 
 ATutorialManager::ATutorialManager()
@@ -43,14 +47,23 @@ void ATutorialManager::BeginPlay()
             TutorialHintPanel->SetVisibility(ESlateVisibility::Hidden); 
         }
     }
+
+    if (AADTutorialGameState* TutorialGS = GetWorld()->GetGameState<AADTutorialGameState>())
+    {
+
+        TutorialGS->OnPhaseChanged.AddUObject(this, &ATutorialManager::OnTutorialPhaseChanged);
+
+        OnTutorialPhaseChanged(TutorialGS->GetCurrentPhase());
+    }
 }
 
-void ATutorialManager::PlayCurrentStep()
+void ATutorialManager::OnTutorialPhaseChanged(ETutorialPhase NewPhase)
 {
-    if (!TutorialDataTable || !StepRowNames.IsValidIndex(CurrentStepIndex))
-        return;
+    if (!TutorialDataTable) return;
 
-    FName RowName = StepRowNames[CurrentStepIndex];
+    const FString EnumAsString = UEnum::GetValueAsString(NewPhase);
+    const FName RowName = FName(*EnumAsString.RightChop(EnumAsString.Find(TEXT("::")) + 2));
+
     const FTutorialStepData* StepData = TutorialDataTable->FindRow<FTutorialStepData>(RowName, TEXT("TutorialManager"));
 
     if (StepData)
@@ -60,47 +73,14 @@ void ATutorialManager::PlayCurrentStep()
             SubtitleWidget->SetSubtitleText(StepData->SubtitleText);
             SubtitleWidget->SetVisibility(ESlateVisibility::Visible);
         }
-
         if (TutorialHintPanel)
         {
             TutorialHintPanel->SetHintByKey(StepData->HintKey);
-
-            if (StepData->HintKey == ETutorialHintKey::Move)
-            {
-                TutorialHintPanel->SetVisibility(ESlateVisibility::Visible);
-            }
-            else
-            {
-                TutorialHintPanel->SetVisibility(ESlateVisibility::Hidden);
-            }
-        }
-
-        if (!StepData->bWaitForPlayerTrigger)
-        {
-            GetWorldTimerManager().SetTimer(
-                StepTimerHandle,
-                this,
-                &ATutorialManager::AdvanceStep,
-                StepData->DisplayDuration,
-                false
-            );
         }
     }
-}
-
-
-void ATutorialManager::AdvanceStep()
-{
-    CurrentStepIndex++;
-    PlayCurrentStep();
-}
-
-void ATutorialManager::TriggerNextStep()
-{
-    if (StepTimerHandle.IsValid())
+    else
     {
-        GetWorldTimerManager().ClearTimer(StepTimerHandle);
+        if (SubtitleWidget) SubtitleWidget->SetVisibility(ESlateVisibility::Hidden);
+        if (TutorialHintPanel) TutorialHintPanel->SetVisibility(ESlateVisibility::Hidden);
     }
-
-    AdvanceStep();
 }
