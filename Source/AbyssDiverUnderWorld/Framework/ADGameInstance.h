@@ -4,6 +4,7 @@
 #include "Engine/GameInstance.h"
 #include "AdvancedFriendsGameInstance.h"
 #include "UI/MissionData.h"
+#include "Framework/ADTutorialSaveGame.h"
 #include "Framework/SettingsManager.h"
 #include "../UI/LoadingScreenWidget.h" 
 #include "ADGameInstance.generated.h"
@@ -163,7 +164,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Input")
 	const TMap<FName, UInputAction*>& GetInputActionMap() const { return InputActionMap; }
 
-#pragma endregion
+	UFUNCTION(BlueprintPure, Category = "SaveGame")
+	UADTutorialSaveGame* GetTutorialSaveGame() const { return TutorialSaveGameObject; }
 
+#pragma endregion
+private:
+	UPROPERTY()
+	TObjectPtr<UADTutorialSaveGame> TutorialSaveGameObject;
 
 };

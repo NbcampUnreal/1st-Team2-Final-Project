@@ -1,7 +1,9 @@
 ﻿#include "TutorialTriggerZone.h"
 #include "Components/BoxComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "TutorialManager.h"
 #include "Character/UnderwaterCharacter.h"
+#include "Framework/ADTutorialGameMode.h"
 #include "EngineUtils.h"
 #include "GameFramework/Character.h"
 
@@ -43,7 +45,6 @@ void ATutorialTriggerZone::BeginPlay()
     }
 }
 
-
 void ATutorialTriggerZone::OnOverlapBegin(
     UPrimitiveComponent* OverlappedComp,
     AActor* OtherActor,
@@ -54,19 +55,13 @@ void ATutorialTriggerZone::OnOverlapBegin(
 {
     if (AUnderwaterCharacter* PlayerCharacter = Cast<AUnderwaterCharacter>(OtherActor))
     {
-        if (!TutorialManager)
+        if (HasAuthority())
         {
-            for (TActorIterator<ATutorialManager> It(GetWorld()); It; ++It)
+            if (AADTutorialGameMode* TutorialGM = Cast<AADTutorialGameMode>(UGameplayStatics::GetGameMode(GetWorld())))
             {
-                TutorialManager = *It;
-                break;
+                TutorialGM->AdvanceTutorialPhase();
             }
         }
-
-        if (TutorialManager)
-        {
-            TutorialManager->PlayCurrentStep(); 
-            Destroy(); 
-        }
+        Destroy();
     }
 }

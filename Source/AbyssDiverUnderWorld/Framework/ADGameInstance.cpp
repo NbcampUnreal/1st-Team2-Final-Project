@@ -24,6 +24,16 @@ void UADGameInstance::Init()
     SettingsManager->LoadAllSettings(GetFirstLocalPlayerController());
 
     SettingsManager->InitializeActionMap(GetInputActionMap());
+
+    if (UGameplayStatics::DoesSaveGameExist(UADTutorialSaveGame::SaveSlotName, UADTutorialSaveGame::UserIndex))
+    {
+        TutorialSaveGameObject = Cast<UADTutorialSaveGame>(UGameplayStatics::LoadGameFromSlot(UADTutorialSaveGame::SaveSlotName, UADTutorialSaveGame::UserIndex));
+    }
+    else
+    {
+        TutorialSaveGameObject = Cast<UADTutorialSaveGame>(UGameplayStatics::CreateSaveGameObject(UADTutorialSaveGame::StaticClass()));
+        UGameplayStatics::SaveGameToSlot(TutorialSaveGameObject, UADTutorialSaveGame::SaveSlotName, UADTutorialSaveGame::UserIndex);
+    }
 }
 
 

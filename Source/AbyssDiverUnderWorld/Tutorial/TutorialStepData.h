@@ -2,18 +2,9 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
+#include "Tutorial/TutorialEnums.h"
 #include "TutorialStepData.generated.h"
 
-UENUM(BlueprintType)
-enum class ETutorialHintKey : uint8
-{
-	None UMETA(DisplayName = "None"),
-	Move UMETA(DisplayName = "Move"),
-	Sprint UMETA(DisplayName = "Sprint"),
-	Flashlight UMETA(DisplayName = "Flashlight"),
-	Revive UMETA(DisplayName = "Revive"),
-	Inventory UMETA(DisplayName = "Inventory")
-};
 
 USTRUCT(BlueprintType)
 struct FTutorialStepData : public FTableRowBase
