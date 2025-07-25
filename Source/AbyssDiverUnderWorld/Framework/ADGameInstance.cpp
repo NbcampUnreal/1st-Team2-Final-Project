@@ -133,3 +133,8 @@ const float UADGameInstance::GetCurrentAmbientVolume() const
 {
     return GetSubsystem<USoundSubsystem>()->GetAmbientVolume();
 }
+
+const TMap<FString, int32>& UADGameInstance::GetCurrentPlayerIdMap() const
+{
+    return CurrentPlayerIdMap;
+}
