@@ -18,6 +18,7 @@
 #include "Projectile/GenericPool.h"
 #include "Projectile/ADSpearGunBullet.h"
 #include "Projectile/ADFlareGunBullet.h"
+#include "Projectile/ADShotgunBullet.h"
 
 #include "DataRow/PhaseGoalRow.h"
 #include "Container/FStructContainer.h"
@@ -43,6 +44,11 @@ AADInGameMode::AADInGameMode()
 	if (FlareGunBulletFinder.Succeeded())
 	{
 		FlareBulletClass = FlareGunBulletFinder.Class;
+	}
+	ConstructorHelpers::FClassFinder<AADShotgunBullet> ShotgunBulletFinder(TEXT("/Game/_AbyssDiver/Blueprints/Projectile/BP_ADShotgunBullet"));
+	if (ShotgunBulletFinder.Succeeded())
+	{
+		ShotgunBulletClass = ShotgunBulletFinder.Class;
 	}
 }
 
@@ -78,6 +84,8 @@ void AADInGameMode::BeginPlay()
 		SpearGunBulletPool->InitPool<AADSpearGunBullet>(30, SpearBulletClass);
 		FlareGunBulletPool = GetWorld()->SpawnActor<AGenericPool>();
 		FlareGunBulletPool->InitPool<AADFlareGunBullet>(30, FlareBulletClass);
+		ShotgunBulletPool = GetWorld()->SpawnActor<AGenericPool>();
+		ShotgunBulletPool->InitPool<AADShotgunBullet>(50, ShotgunBulletClass);
 		LOGVN(Warning, TEXT("SpawnSpearGunBulletPool"));
 
 		int32 LastDroneNumber = 0;

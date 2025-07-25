@@ -5,6 +5,9 @@
 #include "Components/ActorComponent.h"
 #include "DataRow/FADItemDataRow.h"
 #include "Interactable/Item/ADUseItem.h"
+#include "Framework/ADInGameMode.h"
+#include "Projectile/GenericPool.h"
+#include "GameFrameWork/Character.h"
 #include "EquipUseComponent.generated.h"
 
 UENUM(BlueprintType)
@@ -12,9 +15,10 @@ enum class EEquipmentType : uint8
 {
 	HarpoonGun = 0,
 	FlareGun = 1,
-	DPV = 2,
-	NightVision = 3,
-	Max = 4 UMETA(Hidden)
+	Shotgun = 2,
+	DPV = 3,
+	NightVision = 4,
+	Max = 5 UMETA(Hidden)
 };
 
 USTRUCT(BlueprintType)
@@ -35,6 +39,7 @@ class AADProjectileBase;
 class UUserWidget;
 class AADSpearGunBullet;
 class AADFlareGunBullet;
+class AADShotgunBullet;
 class UADNightVisionGoggle;
 class UChargeBatteryWidget;
 class USoundSubsystem;
@@ -44,6 +49,7 @@ enum class EAction : uint8
 	None,
 	HarpoonFire,
 	FlareFire,
+	ShotgunFire,
 	WeaponReload,
 	ToggleBoost,
 	ToggleNVGToggle,
@@ -85,6 +91,9 @@ public:
 	UFUNCTION(NetMulticast, Unreliable)
 	void M_PlayFireHarpoonSound();
 	void M_PlayFireHarpoonSound_Implementation();
+	UFUNCTION(NetMulticast, Unreliable)
+	void M_PlayFireShotgunSound();
+	void M_PlayFireShotgunSound_Implementation();
 	UFUNCTION(Client, Reliable)
 	void C_ApplyRecoil(const FRecoilConfig& Config);
 	void C_ApplyRecoil_Implementation(const FRecoilConfig& Config);
@@ -109,6 +118,8 @@ public:
 	void FireHarpoon();
 	UFUNCTION(BlueprintCallable)
 	void FireFlare();
+	UFUNCTION(BlueprintCallable)
+	void FireShotgun();
 	UFUNCTION(BlueprintCallable)
 	void ToggleBoost();
 	UFUNCTION(BlueprintCallable)
@@ -158,8 +169,12 @@ public:
 	FVector GetMuzzleLocation(const FVector& CamLoc, const FVector& AimDir) const;
 	AADSpearGunBullet* SpawnHarpoon(const FVector& Loc, const FRotator& Rot);
 	AADFlareGunBullet* SpawnFlareBullet(const FVector& Loc, const FRotator& Rot);
+	AADShotgunBullet* SpawnShotgunBullet(const FVector& Loc, const FRotator& Rot);
 	void ConfigureProjectile(AADProjectileBase* Proj, const FVector& TargetPoint, const FVector& MuzzleLoc);
 	void SelectSpearType(AADSpearGunBullet* Proj);
+
+	template<typename TBullet, typename TPoolGetter>
+	TBullet* SpawnBulletCommon(const FVector& Loc, const FRotator& Rot, TPoolGetter GetPool);
 
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -188,6 +203,15 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
 	int32 FlareMagazineSize = 1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	int32 ShotgunMagzineSize = 5;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Weapon|Shotgun")
+	int32 ShotgunPelletCount = 10;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Weapon|Shotgun")
+	float ShotgunSpreadAngle = 8.f;     // degree
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Weapon")
 	float RateOfFire = 2.f; 
@@ -255,6 +279,9 @@ protected:
 	TSubclassOf<AADSpearGunBullet> SpearGunBulletClass = nullptr;
 	UPROPERTY(EditAnywhere, Category = "Projectile")
 	TSubclassOf<AADFlareGunBullet> FlareGunBulletClass = nullptr;
+	UPROPERTY(EditDefaultsOnly, Category = "Projectile")
+	TSubclassOf<AADShotgunBullet> ShotgunPelletClass = nullptr; 
+
 	UPROPERTY()
 	TObjectPtr<USoundSubsystem> SoundSubsystem;
 
@@ -294,6 +321,9 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Recoil")
 	FRecoilConfig FlareRecoil;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Recoil")
+	FRecoilConfig ShotgunRecoil;
+
 	float ActiveRecoverySpeed = 0.f;
 	float PendingPitch = 0.f;
 	float PendingYaw = 0.f;
@@ -312,3 +342,32 @@ private:
 	
 #pragma endregion		
 };
+
+// 탄환 객체를 가져오는 템플릿 함수
+template<typename TBullet, typename TPoolGetter>
+inline TBullet* UEquipUseComponent::SpawnBulletCommon(const FVector& Loc, const FRotator& Rot, TPoolGetter GetPool)
+{
+	if (GetWorld() == nullptr) return nullptr;
+
+	APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController());
+	AADInGameMode* GM = Cast<AADInGameMode>(GetWorld()->GetAuthGameMode());
+	if (!PC || !GM) return nullptr;
+
+	// 풀 선택(스피어·플레어·샷건 등) --------------------------------------------------
+	AGenericPool* Pool = GetPool(GM);
+	if (!Pool) return nullptr;
+
+	// 객체 가져오기 ------------------------------------------------------------------
+	TBullet* Bullet = Pool->GetObject<TBullet>();
+	if (!Bullet) return nullptr;
+
+	// 소유자‧Instigator 세팅 ----------------------------------------------------------
+	if (APawn* PawnOwner = PC->GetPawn())
+		Bullet->SetInstigator(PawnOwner);
+	Bullet->SetOwner(PC);
+
+	// 위치·회전 초기화 ---------------------------------------------------------------
+	Bullet->InitializeTransform(Loc, Rot);
+
+	return Bullet;
+}

@@ -4,8 +4,8 @@
 
 #include "Projectile/ADProjectileBase.h"
 #include "Projectile/ADSpearGunBullet.h"
-#include "Projectile/GenericPool.h"
 #include "Projectile/ADFlareGunBullet.h"
+#include "Projectile/ADShotgunBullet.h"
 
 #include "UI/ADNightVisionGoggle.h"
 #include "UI/ChargeBatteryWidget.h"
@@ -15,7 +15,7 @@
 
 #include "Framework/ADPlayerState.h"
 #include "Framework/ADGameInstance.h"
-#include "Framework/ADInGameMode.h"
+
 #include "Framework/ADPlayerController.h"
 
 #include "Subsystems/SoundSubsystem.h"
@@ -31,7 +31,7 @@
 #include "GameplayTagContainer.h"
 #include "GameplayTags/EquipNativeTags.h"
 #include "Kismet/GameplayStatics.h"
-#include "GameFrameWork/Character.h"
+
 #include "GameFramework/CharacterMovementComponent.h"
 
 const FName UEquipUseComponent::BASIC_SPEAR_GUN_NAME = TEXT("BasicSpearGun");
@@ -226,6 +226,7 @@ void UEquipUseComponent::S_LeftClick_Implementation()
 	{
 	case EAction::HarpoonFire:     FireHarpoon();       break;
 	case EAction::FlareFire:       FireFlare();	        break;
+	case EAction::ShotgunFire:	   FireShotgun();       break;
 	case EAction::ToggleBoost:     BoostOn();			break;
 	case EAction::ToggleNVGToggle: ToggleNightVision(); break;
 	default:                      break;
@@ -256,6 +257,10 @@ void UEquipUseComponent::S_RKey_Implementation()
 		{
 			StartReload(FlareMagazineSize);
 		}		 
+		else if (EquipType == EEquipmentType::Shotgun)
+		{
+			StartReload(ShotgunMagzineSize);
+		}
 		break;
 	case EAction::ApplyChargeUI:  ShowChargeBatteryWidget();  break;
 	default:                      break;
@@ -302,6 +307,11 @@ void UEquipUseComponent::S_IncreaseAmount_Implementation(int8 AddAmount)
 void UEquipUseComponent::M_PlayFireHarpoonSound_Implementation()
 {
 	GetSoundSubsystem()->PlayAt(ESFX::FireHarpoon, OwningCharacter->GetActorLocation());
+}
+
+void UEquipUseComponent::M_PlayFireShotgunSound_Implementation()
+{
+	GetSoundSubsystem()->PlayAt(ESFX::FireShotgun, OwningCharacter->GetActorLocation());
 }
 
 void UEquipUseComponent::C_ApplyRecoil_Implementation(const FRecoilConfig& Config)
@@ -455,7 +465,7 @@ void UEquipUseComponent::Initialize(FItemData& ItemData)
 	if (!GI)
 	{
 		LOGIC(Log, TEXT("Initialize: No valid GameInstance"))
-		return;
+			return;
 	}
 	UDataTableSubsystem* DataTableSubsystem = GI->GetSubsystem<UDataTableSubsystem>();
 	FFADItemDataRow* InItemMeta = DataTableSubsystem ? DataTableSubsystem->GetItemData(CurrentItemData->Id) : nullptr;
@@ -467,7 +477,7 @@ void UEquipUseComponent::Initialize(FItemData& ItemData)
 	}
 
 	EquipType = TagToEquipmentType(InItemMeta->LeftTag);
-	bIsWeapon = (EquipType == EEquipmentType::HarpoonGun || EquipType == EEquipmentType::FlareGun);
+	bIsWeapon = (EquipType == EEquipmentType::HarpoonGun || EquipType == EEquipmentType::FlareGun || EquipType == EEquipmentType::Shotgun);
 	bHasNoAnimation = (LeftAction == EAction::ToggleNVGToggle);
 	
 
@@ -610,6 +620,7 @@ EAction UEquipUseComponent::TagToAction(const FGameplayTag& Tag)
 {
 	if (Tag.MatchesTagExact(TAG_EquipUse_Fire))                 return EAction::HarpoonFire;
 	else if (Tag.MatchesTagExact(TAG_EquipUse_FireFlareGun))	return EAction::FlareFire;
+	else if (Tag.MatchesTagExact(TAG_EquipUse_FireShotgun))		return EAction::ShotgunFire;
 	else if (Tag.MatchesTagExact(TAG_EquipUse_Reload))          return EAction::WeaponReload;
 	else if (Tag.MatchesTagExact(TAG_EquipUse_DPVToggle))       return EAction::ToggleBoost;
 	else if (Tag.MatchesTagExact(TAG_EquipUse_NVToggle))        return EAction::ToggleNVGToggle;
@@ -621,6 +632,7 @@ EEquipmentType UEquipUseComponent::TagToEquipmentType(const FGameplayTag& Tag)
 {
 	if (Tag.MatchesTagExact(TAG_EquipUse_Fire))           return EEquipmentType::HarpoonGun;
 	else if (Tag.MatchesTagExact(TAG_EquipUse_FireFlareGun)) return EEquipmentType::FlareGun;
+	else if (Tag.MatchesTagExact(TAG_EquipUse_FireShotgun)) return EEquipmentType::Shotgun;
 	else if (Tag.MatchesTagExact(TAG_EquipUse_DPVToggle))    return EEquipmentType::DPV;
 	else if (Tag.MatchesTagExact(TAG_EquipUse_NVToggle))     return EEquipmentType::NightVision;
 	return EEquipmentType::Max;
@@ -702,6 +714,58 @@ void UEquipUseComponent::FireFlare()
 
 	ApplyRecoil(FlareRecoil);
 	C_ApplyRecoil(FlareRecoil);
+}
+
+void UEquipUseComponent::FireShotgun()
+{
+	if (!CanFire()) return;
+	
+	// 샷건 발사 사운드 스폰
+	M_PlayFireShotgunSound();
+
+	// 1) 시점 정보
+	FVector CamLoc; FRotator CamRot;
+	GetCameraView(CamLoc, CamRot);
+	const FVector AimDir = CamRot.Vector();
+
+	// 2) 머즐 위치
+	FVector MuzzleLoc = GetMuzzleLocation(CamLoc, AimDir);
+
+	// 3) 펠릿 반복
+	const int32 PelletCount = ShotgunPelletCount;
+	const float HalfAngleRad = FMath::DegreesToRadians(ShotgunSpreadAngle * 0.5f);
+
+	for (int32 i = 0; i < PelletCount; ++i)
+	{
+		// 3‑1) 무작위 분산 벡터
+		FVector RandDir = FMath::VRandCone(AimDir, HalfAngleRad, HalfAngleRad);
+		FRotator SpawnRot = RandDir.Rotation();
+
+		// 3‑2) 발사체 스폰
+		AADProjectileBase* Pellet = SpawnShotgunBullet(MuzzleLoc, SpawnRot);
+		if (Pellet)
+		{
+			// 3‑3) 속도, 데미지, 수명 등 설정
+			Pellet->InitializeSpeed(RandDir, 2000.f);       // 짧은 사거리
+			Pellet->SetLifeSpan(0.5f);                      // 0.5초 후 파괴
+			//Pellet->SetBaseDamage(ShotgunBaseDamage / PelletCount);
+		}
+	}
+
+	// 4) 탄약 차감 & 쿨다운
+	--CurrentAmmoInMag;
+	OnRep_CurrentAmmoInMag();
+
+	bCanFire = false;
+	GetWorld()->GetTimerManager().SetTimer(
+		TimerHandle_HandleRefire,
+		[this]() { bCanFire = true; },
+		1.f / RateOfFire,
+		false);
+
+
+	ApplyRecoil(ShotgunRecoil);
+	C_ApplyRecoil(ShotgunRecoil);
 }
 
 void UEquipUseComponent::ToggleBoost()
@@ -946,7 +1010,14 @@ void UEquipUseComponent::PlayReloadAnimation(EEquipmentType InEquipType, AUnderw
 			SyncState
 		);
 		break;
-		
+	case EEquipmentType::Shotgun :
+		Diver->M_PlayMontageOnBothMesh(
+			FlareReloadMontage,
+			1.0f,
+			NAME_None,
+			SyncState
+		);
+		break;
 	default:
 		break;
 	}
@@ -1126,6 +1197,10 @@ FVector UEquipUseComponent::GetMuzzleLocation(const FVector& CamLoc, const FVect
 	{
 		SocketName = TEXT("FlareMuzzle");
 	}
+	else if (EquipType == EEquipmentType::Shotgun)
+	{
+		SocketName = TEXT("ShotgunMuzzle");
+	}
 	USkeletalMeshComponent* Mesh = Diver->GetMesh1P();
 
 	if (Mesh && Mesh->DoesSocketExist(SocketName))
@@ -1140,64 +1215,23 @@ FVector UEquipUseComponent::GetMuzzleLocation(const FVector& CamLoc, const FVect
 
 AADSpearGunBullet* UEquipUseComponent::SpawnHarpoon(const FVector& Loc, const FRotator& Rot)
 {
-	APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController());
-	if (GetWorld())
-	{
-		AADInGameMode* GM = Cast<AADInGameMode>(GetWorld()->GetAuthGameMode());
-		if (GM)
-		{
-			AADSpearGunBullet* SpawnedBullet = nullptr;
-			AGenericPool* GenericPool = GM->GetSpearGenericPool();
-			if (GenericPool)
-			{
-				SpawnedBullet = GenericPool->GetObject<AADSpearGunBullet>();
-				if (SpawnedBullet)
-				{
-					APawn* PawnOwner = Cast<APawn>(PC->GetPawn());
-					if (PawnOwner)
-					{
-						SpawnedBullet->SetInstigator(PawnOwner);
-					}
-					SpawnedBullet->SetOwner(PC);
-					SpawnedBullet->InitializeTransform(Loc, Rot);
-				}
-				LOGIC(Log, TEXT("Projectile Id : %d"), SpawnedBullet->GetProjectileId());
-				return SpawnedBullet;
-			}
-		}
-	}
-	return nullptr;
+	return SpawnBulletCommon<AADSpearGunBullet>(
+		Loc, Rot, [](AADInGameMode* GM) { return GM->GetSpearGenericPool(); });
 }
 
 AADFlareGunBullet* UEquipUseComponent::SpawnFlareBullet(const FVector& Loc, const FRotator& Rot)
 {
-	APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController());
-	if (GetWorld())
-	{
-		AADInGameMode* GM = Cast<AADInGameMode>(GetWorld()->GetAuthGameMode());
-		if (GM)
-		{
-			AADFlareGunBullet* FlareBullet = nullptr;
-			AGenericPool* GenericPool = GM->GetFlareGenericPool();
-			if (GenericPool)
-			{
-				FlareBullet = GenericPool->GetObject<AADFlareGunBullet>();
-				if (FlareBullet)
-				{
-					APawn* PawnOwner = Cast<APawn>(PC->GetPawn());
-					if (PawnOwner)
-					{
-						FlareBullet->SetInstigator(PawnOwner);
-					}
-					FlareBullet->SetOwner(PC);
-					FlareBullet->InitializeTransform(Loc, Rot);
-				}
-				return FlareBullet;
-			}
-		}
-	}
-	return nullptr;
+	return SpawnBulletCommon<AADFlareGunBullet>(
+		Loc, Rot, [](AADInGameMode* GM) { return GM->GetFlareGenericPool(); });
 }
+
+AADShotgunBullet* UEquipUseComponent::SpawnShotgunBullet(const FVector& Loc, const FRotator& Rot)
+{
+	return SpawnBulletCommon<AADShotgunBullet>(
+		Loc, Rot, [](AADInGameMode* GM) { return GM->GetShotgunGenericPool(); });
+}
+
+
 
 void UEquipUseComponent::ConfigureProjectile(AADProjectileBase* Proj, const FVector& TargetPoint, const FVector& MuzzleLoc)
 {
