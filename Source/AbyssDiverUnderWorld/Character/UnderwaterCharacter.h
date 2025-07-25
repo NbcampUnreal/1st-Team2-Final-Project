@@ -708,6 +708,16 @@ public:
 	/** 3인칭 메시 몽타주 시작 시 호출되는 델리게이트 */
 	FOnMontageStarted OnMesh3PMontageStartedDelegate;
 
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEmoteStart);
+	/** 감정 표현 시작 시 호출되는 델리게이트 */
+	UPROPERTY(BlueprintAssignable, Category = "Character|Emote")
+	FOnEmoteStart OnEmoteStartDelegate;
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEmoteEnd);
+	/** 감정 표현 종료 시 호출되는 델리게이트 */
+	UPROPERTY(BlueprintAssignable, Category = "Character|Emote")
+	FOnEmoteStart OnEmoteEndDelegate;
+
 	UPROPERTY(VisibleAnywhere, Category = "Mining")
 	/** 현재 1p에 장착된 Tool 인스턴스 */
 	TObjectPtr<AActor> SpawnedTool;

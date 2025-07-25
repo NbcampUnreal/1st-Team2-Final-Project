@@ -23,7 +23,6 @@ class ABYSSDIVERUNDERWORLD_API UCrosshairWidget : public UUserWidget
 #pragma region Method
 
 public:
-
 	/** 폰을 크로스헤어 위젯에 바인딩 */
 	void BindWidget(APawn* Pawn);
 	
@@ -78,6 +77,17 @@ public:
 
 	/** 크로스 헤어 위치 초기화 */
 	void ResetCrosshairPosition();
+
+	// Emote 상황에서 크로스헤어를 제어하게 되면 나중에 다른 기능과 겹칠 경우 문제가 생길 수 있다.
+	// 통합적인 상황이 필요할 경우 Delegate를 Crosshair Widget Class에서 Binding 하는 것이 아니라 Player HUD Component로 이동한다.
+	
+	/** 크로스헤어 이미지를 보이게 설정 */
+	UFUNCTION()
+	void ShowCrosshair();
+
+	/** 크로스헤어 이미지지를 숨김 설정 */
+	UFUNCTION()
+	void HideCrosshair();
 
 #pragma endregion
 	

@@ -2406,6 +2406,7 @@ void AUnderwaterCharacter::M_BroadcastPlayEmote_Implementation(int8 EmoteIndex)
 	// Server에서 Transition을 같이 해서 정확히 끝나는 시간을 계산해야 한다.
 	// 따라서 Server에서도 Transition을 실행한다.
 	StartEmoteCameraTransition();
+	OnEmoteStartDelegate.Broadcast();
 }
 
 bool AUnderwaterCharacter::CanPlayEmote() const
@@ -2526,6 +2527,7 @@ void AUnderwaterCharacter::UpdateCameraTransition()
 		bPlayingEmote = false;
 		bUseControllerRotationYaw = true;
 		SetCameraFirstPerson(true);
+		OnEmoteEndDelegate.Broadcast();
 		// FirstPersonCameraArm->bInheritRoll = false;
 		return;
 	}
