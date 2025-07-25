@@ -12,6 +12,7 @@
 
 #include "Inventory/ADInventoryComponent.h"
 #include "Character/UpgradeComponent.h"
+#include "Subsystems/MissionSubsystem.h"
 
 #include "Kismet/GameplayStatics.h"
 
@@ -22,6 +23,7 @@ void USaveDataSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 
+	FWorldDelegates::OnWorldBeginTearDown.AddUObject(this, &USaveDataSubsystem::OnWorldTearDown);
 	AsyncLoadSavedGameListInfo();
 }
 
@@ -145,6 +147,8 @@ void USaveDataSubsystem::AsyncSaveCurrentGame(const FString& SaveGameName, bool 
 		int32 RandomNumber = FMath::Rand();
 		FString NewSlotName = SaveSlotNamePrefix + FString::FromInt(RandomNumber);
 
+		bIsSavingNow = true;
+
 		if (bShouldOverwrite)
 		{
 			FAsyncSaveGameToSlotDelegate SaveDelegateWithOverwrite;
@@ -193,6 +197,22 @@ void USaveDataSubsystem::AsyncLoadSavedGame(const FString& SavedSlotName)
 		return;
 	}
 
+	AADCampGameMode* CampGameMode = Cast<AADCampGameMode>(UGameplayStatics::GetGameMode(GetWorld()));
+
+	if (CampGameMode == nullptr)
+	{
+		PrintLogWithScreen(TEXT("Fail to Load Saved Game Because of Not Valid CampGameMode"));
+		return;
+	}
+
+	if (CampGameMode->HasPressedTravel())
+	{
+		PrintLogWithScreen(TEXT("Fail to Load Saved Game Because Game is Already Started"));
+		return;
+	}
+
+	bIsLoadingNow = true;
+
 	FAsyncLoadGameFromSlotDelegate OnLoadGameDelegate;
 	OnLoadGameDelegate.BindUObject(this, &USaveDataSubsystem::OnLoadedSavedGame);
 	UGameplayStatics::AsyncLoadGameFromSlot(SavedSlotName, 0, OnLoadGameDelegate);
@@ -216,6 +236,8 @@ void USaveDataSubsystem::AsyncLoadSavedGameListInfo()
 	{
 		return;
 	}
+
+	bIsLoadingNow = true;
 
 	FAsyncLoadGameFromSlotDelegate OnLoadSessionInfoDelegate;
 	OnLoadSessionInfoDelegate.BindUObject(this, &USaveDataSubsystem::OnLoadedSavedGameListInfo);
@@ -358,6 +380,8 @@ void USaveDataSubsystem::OnSaveSessionGame(const FString& SlotName, const int32 
 
 void USaveDataSubsystem::OnSaveSavedGameListInfoGame(const FString& SlotName, const int32 UserIndex, bool bIsSucceeded)
 {
+	bIsSavingNow = false;
+
 	if (IsServer() == false)
 	{
 		return;
@@ -382,6 +406,8 @@ void USaveDataSubsystem::OnSaveSavedGameListInfoGame(const FString& SlotName, co
 
 void USaveDataSubsystem::OnLoadedSavedGame(const FString& LoadedSlotName, const int32 UserIndex, USaveGame* LoadedSavedGame)
 {
+	bIsLoadingNow = false;
+
 	if (IsServer() == false)
 	{
 		return;
@@ -480,10 +506,14 @@ void USaveDataSubsystem::OnLoadedSavedGame(const FString& LoadedSlotName, const 
 			}
 		}
 	}
+
+	RestartWorld();
 }
 
 void USaveDataSubsystem::OnLoadedSavedGameListInfo(const FString& LoadedSlotName, const int32 UserIndex, USaveGame* LoadedSavedGame)
 {
+	bIsLoadingNow = false;
+
 	if (IsServer() == false)
 	{
 		return;
@@ -506,7 +536,6 @@ void USaveDataSubsystem::OnLoadedSavedGameListInfo(const FString& LoadedSlotName
 		ResultString = FString::Printf(TEXT("Load Failed, Make Initial GameListInfo.. Slot : %s, UserIndex : %d"), *LoadedSlotName, UserIndex);
 		PrintLogWithScreen(ResultString);
 
-		AsyncSaveSavedGameListInfo();
 		CachedSavedSessionInfo = Cast<USavedSessionInfoSaveGame>(UGameplayStatics::CreateSaveGameObject(USavedSessionInfoSaveGame::StaticClass()));
 		if (CachedSavedSessionInfo == nullptr)
 		{
@@ -576,6 +605,42 @@ bool USaveDataSubsystem::IsServer() const
 	}
 }
 
+void USaveDataSubsystem::RestartWorld()
+{
+	bIsLoadingNow = true;
+
+	if (IsServer() == false)
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (IsValid(World) == false || World->IsInSeamlessTravel())
+	{
+		return;
+	}
+
+	UMissionSubsystem* MissionSubsystem = GetGameInstance()->GetSubsystem<UMissionSubsystem>();
+	if (MissionSubsystem == nullptr)
+	{
+		LOGV(Error, TEXT("Fail to get MissionSubsystem"));
+		return;
+	}
+
+	MissionSubsystem->RemoveAllMissions();
+
+	AADInGameState* ADInGameState = UGameplayStatics::GetGameMode(World)->GetGameState<AADInGameState>();
+	FString CampMapName = UGameplayStatics::GetCurrentLevelName(World, true);
+
+	ADInGameState->SendDataToGameInstance();
+	World->ServerTravel(CampMapName + TEXT("?listen"));
+}
+
+void USaveDataSubsystem::OnWorldTearDown(UWorld* World)
+{
+	bIsLoadingNow = false;
+}
+
 bool USaveDataSubsystem::IsExistSavedSessionGame(const FString& SlotName)
 {
 	return CachedSavedSessionInfo->SavedSessionInfos.Contains(SlotName);
@@ -584,4 +649,14 @@ bool USaveDataSubsystem::IsExistSavedSessionGame(const FString& SlotName)
 USavedSessionInfoSaveGame* USaveDataSubsystem::GetSavedSesssionListInfo() const
 {
 	return CachedSavedSessionInfo;
+}
+
+bool USaveDataSubsystem::IsLoadingNow() const
+{
+	return bIsLoadingNow;
+}
+
+bool USaveDataSubsystem::IsSavingNow() const
+{
+	return bIsSavingNow;
 }

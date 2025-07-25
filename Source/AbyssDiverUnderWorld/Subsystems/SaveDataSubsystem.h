@@ -64,6 +64,10 @@ private:
 
 	bool IsServer() const;
 
+	void RestartWorld();
+
+	void OnWorldTearDown(UWorld* World);
+
 #pragma endregion
 
 
@@ -79,6 +83,8 @@ protected:
 
 	FString LastSavedGameSlotName;
 
+	uint8 bIsLoadingNow : 1 = false;
+	uint8 bIsSavingNow : 1 = false;
 
 	static const FString SavedSessionInfoSlotName;
 	static const FString SaveSlotNamePrefix;
@@ -92,6 +98,9 @@ public:
 	bool IsExistSavedSessionGame(const FString& SlotName);
 
 	USavedSessionInfoSaveGame* GetSavedSesssionListInfo() const;
+
+	bool IsLoadingNow() const;
+	bool IsSavingNow() const;
 
 #pragma endregion
 
