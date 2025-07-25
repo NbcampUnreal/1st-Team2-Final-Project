@@ -285,6 +285,12 @@ bool UPlayerStatusWidget::TryPlayAnim(UWidgetAnimation* Anim)
     return true;
 }
 
+void UPlayerStatusWidget::ShowPhaseWarning(bool bShouldVisible)
+{
+    if(PhaseWarningWidget)
+        PhaseWarningWidget->SetbShowWarning(bShouldVisible);
+}
+
 void UPlayerStatusWidget::SetSpearVisibility(bool bVisible)
 {
     if (SpearPanel)

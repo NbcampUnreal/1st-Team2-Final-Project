@@ -25,6 +25,7 @@ private:
 	uint8 bShowWarning : 1 = false;
 
 public:
+	UFUNCTION(BlueprintCallable)
 	bool GetbShowWarning() const { return bShowWarning; }
 	void SetbShowWarning(bool newbShowWarning);
 };
