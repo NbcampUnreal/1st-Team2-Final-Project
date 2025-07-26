@@ -25,4 +25,14 @@ private:
 	void HandleHit(AActor* HitActor, const FHitResult& Hit);
 
 #pragma endregion
+
+#pragma region Variable
+public:
+
+protected:
+
+private:
+	UPROPERTY(EditDefaultsOnly, Category = "Knockback")
+	float KnockbackStrength = 1000.f;
+#pragma endregion
 };

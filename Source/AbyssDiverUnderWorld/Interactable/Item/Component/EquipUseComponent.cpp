@@ -720,39 +720,70 @@ void UEquipUseComponent::FireShotgun()
 {
 	if (!CanFire()) return;
 	
-	// 샷건 발사 사운드 스폰
+	/* 샷건 발사 사운드 스폰 */
 	M_PlayFireShotgunSound();
 
-	// 1) 시점 정보
+	/* 시점 정보*/
 	FVector CamLoc; FRotator CamRot;
 	GetCameraView(CamLoc, CamRot);
 	const FVector AimDir = CamRot.Vector();
 
-	// 2) 머즐 위치
+	/* 머즐 위치 */
 	FVector MuzzleLoc = GetMuzzleLocation(CamLoc, AimDir);
 
-	// 3) 펠릿 반복
+	/* 펠릿 반복 */
 	const int32 PelletCount = ShotgunPelletCount;
 	const float HalfAngleRad = FMath::DegreesToRadians(ShotgunSpreadAngle * 0.5f);
 
 	for (int32 i = 0; i < PelletCount; ++i)
 	{
-		// 3‑1) 무작위 분산 벡터
+		/* 무작위 분산 벡터 */
 		FVector RandDir = FMath::VRandCone(AimDir, HalfAngleRad, HalfAngleRad);
 		FRotator SpawnRot = RandDir.Rotation();
 
-		// 3‑2) 발사체 스폰
+		/* 발사체 스폰 */
 		AADProjectileBase* Pellet = SpawnShotgunBullet(MuzzleLoc, SpawnRot);
 		if (Pellet)
 		{
-			// 3‑3) 속도, 데미지, 수명 등 설정
-			Pellet->InitializeSpeed(RandDir, 2000.f);       // 짧은 사거리
-			Pellet->SetLifeSpan(0.5f);                      // 0.5초 후 파괴
+			/* 속도, 데미지, 수명 등 설정 */
+			Pellet->InitializeSpeed(RandDir, PelletSpeed);       // 짧은 사거리
+			Pellet->SetLifeSpan(PelletLifeSec);                      // 0.5초 후 파괴
 			//Pellet->SetBaseDamage(ShotgunBaseDamage / PelletCount);
 		}
+
+//#if WITH_EDITOR
+//#include "DrawDebugHelpers.h"
+//		const float PelletRange = 2000.f * 0.5f;
+//		constexpr ECollisionChannel InteractionChannel = ECC_GameTraceChannel4;
+//
+//		FHitResult Hit;
+//		bool bHitInteraction = GetWorld()->LineTraceSingleByChannel(
+//			Hit,
+//			MuzzleLoc,
+//			MuzzleLoc + RandDir * PelletRange,
+//			InteractionChannel);       
+//
+//		bool bHit = GetWorld()->LineTraceSingleByChannel(
+//			Hit,
+//			MuzzleLoc,
+//			MuzzleLoc + RandDir * PelletRange,
+//			ECC_Visibility);
+//
+//		const FColor DebugColor = bHit ? FColor::Red : FColor::Green;
+//
+//		DrawDebugLine(
+//			GetWorld(),
+//			MuzzleLoc,
+//			MuzzleLoc + RandDir * PelletRange,
+//			DebugColor,
+//			false,         
+//			1.f,         
+//			0,
+//			1.f);        
+//#endif
 	}
 
-	// 4) 탄약 차감 & 쿨다운
+	/* 탄약 차감 & 쿨다운 */
 	--CurrentAmmoInMag;
 	OnRep_CurrentAmmoInMag();
 

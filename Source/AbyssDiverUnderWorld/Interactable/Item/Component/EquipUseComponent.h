@@ -226,6 +226,9 @@ public:
 	uint8 bIsWeapon : 1;
 	uint8 bHasNoAnimation : 1;
 
+	float PelletSpeed = 2000.f; 
+	float PelletLifeSec = 0.5f;      
+
 	FTimerHandle TimerHandle_HandleRefire;
 	FTimerHandle TimerHandle_HandleReload;
 	// ======================
