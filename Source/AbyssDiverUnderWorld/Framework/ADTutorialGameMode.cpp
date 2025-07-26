@@ -53,7 +53,6 @@ void AADTutorialGameMode::HandleCurrentPhase()
 	{
 		ETutorialPhase CurrentPhase = TutorialGS->GetCurrentPhase();
 
-
 		switch (CurrentPhase)
 		{
 		case ETutorialPhase::Step1_Movement:      HandlePhase_Movement(); break;
@@ -63,14 +62,15 @@ void AADTutorialGameMode::HandleCurrentPhase()
 		case ETutorialPhase::Step5_Looting:       HandlePhase_Looting(); break;
 		case ETutorialPhase::Step6_Inventory:     HandlePhase_Inventory(); break;
 		case ETutorialPhase::Step7_Drone:         HandlePhase_Drone(); break;
-		case ETutorialPhase::Step08_LightToggle:  HandlePhase_LightToggle(); break;
-		case ETutorialPhase::Step8_Items:         HandlePhase_Items(); break;
-		case ETutorialPhase::Step9_OxygenWarning: HandlePhase_OxygenWarning(); break;
-		case ETutorialPhase::Step10_Revival:      HandlePhase_Revival(); break;
+		case ETutorialPhase::Step8_LightToggle:   HandlePhase_LightToggle(); break;
+		case ETutorialPhase::Step9_Items:         HandlePhase_Items(); break;
+		case ETutorialPhase::Step10_OxygenWarning:HandlePhase_OxygenWarning(); break;
+		case ETutorialPhase::Step11_Revival:      HandlePhase_Revival(); break;
 		case ETutorialPhase::Complete:            HandlePhase_Complete(); break;
 
 		default:                                  break;
 		}
+
 		if (TutorialDataTable)
 		{
 			const FString EnumString = UEnum::GetValueAsString(CurrentPhase);
