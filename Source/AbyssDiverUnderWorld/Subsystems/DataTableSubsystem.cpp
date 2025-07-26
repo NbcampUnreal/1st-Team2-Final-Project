@@ -6,6 +6,7 @@
 #include "DataRow/FADItemDataRow.h"
 #include "DataRow/FADProjectileDataRow.h"
 #include "DataRow/ButtonDataRow.h"
+#include "DataRow/MapDepthRow.h"
 #include "DataRow/PhaseGoalRow.h"
 #include "DataRow/ShopItemMeshTransformRow.h"
 #include "Interactable/Item/ADOreRock.h"
@@ -72,6 +73,7 @@ void UDataTableSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 	ParsePhaseGoalDataTable(GI);
 	ParseMapPathDataTable(GI);
+	ParseMapDepthDataTable(GI);
 	ParseShopItemMeshTransformDataTable(GI);
 }
 
@@ -123,6 +125,11 @@ FUpgradeDataRow* UDataTableSubsystem::GetUpgradeData(EUpgradeType UpgradeType, u
 FPhaseGoalRow* UDataTableSubsystem::GetPhaseGoalData(EMapName MapName, int32 Phase) const
 {
 	return PhaseGoalTableMap.FindRef(TPair<EMapName, int32>(MapName, Phase));
+}
+
+FMapDepthRow* UDataTableSubsystem::GetMapDepthData(EMapName MapName) const
+{
+	return MapDepthTableMap.FindRef(MapName);
 }
 
 FString UDataTableSubsystem::GetMapPath(EMapName MapName) const
@@ -238,4 +245,28 @@ void UDataTableSubsystem::ParseShopItemMeshTransformDataTable(UADGameInstance* G
 	}
 
 	LOGV(Log, TEXT("ShopItemMeshTransformTableMap size: %d"), ShopItemMeshTransformTableMap.Num());
+}
+
+void UDataTableSubsystem::ParseMapDepthDataTable(class UADGameInstance* GameInstance)
+{
+	if (GameInstance == nullptr || GameInstance->MapDepthTable == nullptr)
+	{
+		LOGV(Error, TEXT("GameInstance or MapDepthTable is null"));
+		return;
+	}
+
+	UDataTable* MapDepthTable = GameInstance->MapDepthTable;
+	TArray<FMapDepthRow*> MapDepthTableArray;
+	MapDepthTable->GetAllRows<FMapDepthRow>(TEXT("MapDepthTable"), MapDepthTableArray);
+	for (FMapDepthRow* Row : MapDepthTableArray)
+	{
+		if (Row == nullptr)
+		{
+			continue;
+		}
+
+		MapDepthTableMap.Add(Row->MapName, Row);
+	}
+
+	LOGV(Log, TEXT("MapDepthTableMap size: %d"), MapDepthTableMap.Num());
 }
