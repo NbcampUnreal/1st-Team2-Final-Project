@@ -23,6 +23,7 @@ protected:
 #pragma region Method
     
 public:
+
     UFUNCTION(Client, Reliable)
     void C_ShowResultScreen();
     void C_ShowResultScreen_Implementation();
@@ -75,6 +76,8 @@ public:
 
     /** 위젯을 보이게 한다. */
     void ShowHudWidget();
+
+    void SetActiveRadarWidget(bool bShouldActivate);
     
 protected:
     
@@ -134,7 +137,14 @@ private:
     UPROPERTY()
     TObjectPtr<class USpectatorHUDWidget> SpectatorHUDWidget;
     
-    
+    /** 레이더 HUD 위젯 클래스 */
+    UPROPERTY(EditDefaultsOnly, Category = UI, meta = (AllowPrivateAccess = "true"))
+    TSubclassOf<class URadar2DWidget> Radar2DWidgetClass;
+
+    /** 레이더 HUD 위젯 인스턴스 */
+    UPROPERTY()
+    TObjectPtr<class URadar2DWidget> Radar2DWidget;
+
 #pragma endregion
 
 #pragma region Getter Setter

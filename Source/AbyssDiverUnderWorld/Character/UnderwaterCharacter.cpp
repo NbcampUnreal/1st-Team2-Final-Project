@@ -27,11 +27,12 @@
 #include "Interactable/Item/Component/EquipUseComponent.h"
 #include "Interactable/OtherActors/Radars/Radar.h"
 #include "Interactable/OtherActors/Radars/RadarReturnComponent.h"
+#include "Interactable/OtherActors/Radars/RadarReturn2DComponent.h"
+#include "Interactable/OtherActors/Radars/Radar2DComponent.h"
 #include "Inventory/ADInventoryComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Shops/ShopInteractionComponent.h"
 #include "Subsystems/DataTableSubsystem.h"
-#include "UI/HoldInteractionWidget.h"
 #include "PlayerComponent/LanternComponent.h"
 #include "PlayerComponent/ShieldComponent.h"
 #include "PlayerComponent/UnderwaterEffectComponent.h"
@@ -116,7 +117,7 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	RecoveryOxygenPenaltyRate = 0.5f;
 
 	bIsInCombat = false;
-	TargetingActorCount = 0;
+	bAutoStartCleanupTargetingActors = true;
 	HealthRegenDelay = 5.0f;
 	HealthRegenRate = 0.1f;
 	
@@ -198,10 +199,15 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	bIsAttackedByEyeStalker = false;
 
 	PostProcessSettingComponent = CreateDefaultSubobject<UPostProcessSettingComponent>(TEXT("PostProcessSettingComponent"));
+	RadarComponent = CreateDefaultSubobject<URadar2DComponent>(TEXT("RadarComponent"));
 
 	GetMesh()->SetLightingChannels(false, true, true);
 
 	ResurrectSFX = ESFX::Resurrection;
+
+	RadarReturn2DComponent->SetReturnScale(0.7f);
+	RadarReturn2DComponent->SetReturnForceType(EReturnForceType::Friendly);
+	RadarReturn2DComponent->SetAlwaysDisplay(true);
 }
 
 void AUnderwaterCharacter::BeginPlay()
@@ -237,6 +243,17 @@ void AUnderwaterCharacter::BeginPlay()
 		if (AADInGameMode* GameManager = Cast<AADInGameMode>(UGameplayStatics::GetGameMode(GetWorld())))
 		{
 			GameManager->BindDelegate(this);
+		}
+
+		if (bAutoStartCleanupTargetingActors)
+		{
+			GetWorldTimerManager().SetTimer(
+				TargetingActorsCleanupTimer,
+				this,
+				&AUnderwaterCharacter::CleanupTargetingActors,
+				TargetingActorsCleanupInterval,
+				true
+			);
 		}
 	}
 
@@ -356,11 +373,11 @@ void AUnderwaterCharacter::PossessedBy(AController* NewController)
 	if (AADPlayerState* ADPlayerState = GetPlayerState<AADPlayerState>())
 	{
 		InitFromPlayerState(ADPlayerState);
+		NameWidgetComponent->SetNameText(ADPlayerState->GetPlayerNickname());
+		UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Set Player Nick Name On Possess : %s"), *ADPlayerState->GetPlayerNickname());
 		if (!IsLocallyControlled())
 		{
-			NameWidgetComponent->SetNameText(ADPlayerState->GetPlayerNickname());
 			NameWidgetComponent->SetEnable(true);
-			UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Set Player Nick Name On Possess : %s"), *ADPlayerState->GetPlayerNickname());
 		}
 
 		// Possess는 Authority 상황에서 호출되므로 Server 로직만 작성하면 된다.
@@ -416,11 +433,11 @@ void AUnderwaterCharacter::OnRep_PlayerState()
 		if (AADPlayerState* ADPlayerState = Cast<AADPlayerState>(CurrentPlayerState))
 		{
 			InitFromPlayerState(ADPlayerState);
+			NameWidgetComponent->SetNameText(ADPlayerState->GetPlayerNickname());
+			UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Set Player Nick Name On Rep : %s"), *ADPlayerState->GetPlayerNickname());
 			if (!IsLocallyControlled())
 			{
-				NameWidgetComponent->SetNameText(ADPlayerState->GetPlayerNickname());
 				NameWidgetComponent->SetEnable(true);
-				UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Set Player Nick Name On Rep : %s"), *ADPlayerState->GetPlayerNickname());
 			}
 		}
 		else
@@ -514,22 +531,6 @@ void AUnderwaterCharacter::SetEnvironmentState(EEnvironmentState State)
 		OxygenComponent->SetShouldConsumeOxygen(false);
 		bCanUseEquipment = false;
 		UpdateBlurEffect();
-		if (AADPlayerState* ADPlayerState = GetPlayerState<AADPlayerState>())
-		{
-			UADInventoryComponent* Inventory = ADPlayerState->GetInventory();
-			if (Inventory)
-			{
-				Inventory->UnEquip();
-				TArray<FItemData> Items = Inventory->GetInventoryList().Items;
-				for (const FItemData& ItemData : Items)
-				{
-					if (ItemData.ItemType == EItemType::Exchangable)
-					{
-						Inventory->RemoveBySlotIndex(ItemData.SlotIndex, EItemType::Exchangable, false);
-					}
-				}
-			}
-		}
 		break;
 	default:
 		UE_LOG(AbyssDiver, Error, TEXT("Invalid Character State"));
@@ -543,25 +544,29 @@ void AUnderwaterCharacter::SetEnvironmentState(EEnvironmentState State)
 	K2_OnEnvironmentStateChanged(OldState, EnvironmentState);
 }
 
-void AUnderwaterCharacter::OnTargeted()
+void AUnderwaterCharacter::OnTargeted(AActor* TargetingActor)
 {
-	if (HasAuthority())
+	if (!HasAuthority())
 	{
-		TargetingActorCount++;
-		StartCombat();
+		return;
 	}
+	
+	TargetingActors.Add(TargetingActor);
+	StartCombat();
 }
 
-void AUnderwaterCharacter::OnUntargeted()
+void AUnderwaterCharacter::OnUntargeted(AActor* TargetingActor)
 {
-	if (HasAuthority())
+	if (!HasAuthority())
 	{
-		TargetingActorCount--;
-		if (TargetingActorCount <= 0)
-		{
-			TargetingActorCount = 0;
-			EndCombat();
-		}
+		return;
+	}
+
+	TargetingActors.Remove(TargetingActor);
+	ValidateTargetingActors();
+	if (TargetingActors.Num() <= 0)
+	{
+		EndCombat();
 	}
 }
 
@@ -851,7 +856,7 @@ void AUnderwaterCharacter::OnRep_CurrentTool()
 		LOG(TEXT("PrevTool"));
 	}
 
-	if (CurrentTool)
+	if (IsValid(CurrentTool) && CurrentTool->IsValidLowLevel())
 	{
 		if (USkeletalMeshComponent* Src = CurrentTool->FindComponentByClass<USkeletalMeshComponent>())
 		{
@@ -860,7 +865,7 @@ void AUnderwaterCharacter::OnRep_CurrentTool()
 		}
 		EquipRenderComp->AttachItem(CurrentTool, LaserSocketName);
 		PrevTool = CurrentTool;                   // 다음 Detach 대비
-		LOG(TEXT("CurrentTool's Owner : %s"), *CurrentTool->GetOwner()->GetName());
+		//LOG(TEXT("CurrentTool's Owner : %s"), *CurrentTool->GetOwner()->GetName());
 	}
 }
 
@@ -884,11 +889,13 @@ void AUnderwaterCharacter::OnRep_InCombat()
 void AUnderwaterCharacter::OnSpectated()
 {
 	SetMeshFirstPersonSetting(true);
+	NameWidgetComponent->SetEnable(false);
 }
 
 void AUnderwaterCharacter::OnEndSpectated()
 {
 	SetMeshFirstPersonSetting(false);
+	NameWidgetComponent->SetEnable(true);
 }
 
 void AUnderwaterCharacter::OnMoveSpeedChanged(float NewMoveSpeed)
@@ -1517,6 +1524,12 @@ void AUnderwaterCharacter::OnLeavePawn()
 	}
 
 	SetMeshFirstPersonSetting(false);
+
+	if (RadarObject)
+	{
+		RadarObject->Destroy();
+	}
+	NameWidgetComponent->SetEnable(true);
 }
 
 void AUnderwaterCharacter::RequestToggleRadar()
@@ -1984,7 +1997,7 @@ void AUnderwaterCharacter::RequestRevive()
 	}
 }
 
-void AUnderwaterCharacter::Die()
+void AUnderwaterCharacter::Kill()
 {
 	if (!HasAuthority())
 	{
@@ -2240,7 +2253,25 @@ void AUnderwaterCharacter::Radar(const FInputActionValue& InputActionValue)
 	{
 		return;
 	}
-	RequestToggleRadar();
+	
+	UWorld* World = GetWorld();
+	if (IsValid(World) == false || World->IsInSeamlessTravel())
+	{
+		LOGV(Error, TEXT("World Is Not Valid"));
+		return;
+	}
+
+	AADPlayerController* PC = Cast<AADPlayerController>(World->GetFirstPlayerController());
+	if (PC == nullptr)
+	{
+		LOGV(Error, TEXT("PlayerController Is Not Valid"));
+		return;
+	}
+
+	bIsRadarOn = (bIsRadarOn == false);
+
+	PC->SetActiveRadarWidget(bIsRadarOn);
+	//RequestToggleRadar();
 }
 
 void AUnderwaterCharacter::EquipSlot1(const FInputActionValue& InputActionValue)
@@ -2551,6 +2582,31 @@ void AUnderwaterCharacter::OnRep_BindCharacter()
 void AUnderwaterCharacter::OnRep_BoundCharacters()
 {
 	AdjustSpeed();
+}
+
+int32 AUnderwaterCharacter::ValidateTargetingActors()
+{
+	int32 InvalidCount = 0;
+	for (auto Iterator = TargetingActors.CreateIterator(); Iterator; ++Iterator)
+	{
+		if (!Iterator->IsValid())
+		{
+			UE_LOG(LogAbyssDiverCharacter, Warning, TEXT("Invalid Targeting Actor found and removed"));
+			Iterator.RemoveCurrent();
+			++InvalidCount;
+		}
+	}
+	
+	return InvalidCount;
+}
+
+void AUnderwaterCharacter::CleanupTargetingActors()
+{
+	const int32 InvalidCount = ValidateTargetingActors();
+	if (InvalidCount > 0)
+	{
+		UE_LOG(LogAbyssDiverCharacter, Warning, TEXT("CleanupTargetingActors: Removed %d invalid targeting actors"), InvalidCount);
+	}
 }
 
 void AUnderwaterCharacter::BindToCharacter(AUnderwaterCharacter* BoundCharacter)

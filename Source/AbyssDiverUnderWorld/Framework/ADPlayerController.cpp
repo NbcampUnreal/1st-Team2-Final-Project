@@ -247,6 +247,21 @@ void AADPlayerController::SetInvincible(bool bIsInvincible)
 	}
 }
 
+void AADPlayerController::KillPlayer()
+{
+	if (HasAuthority())
+	{
+		if (AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(GetPawn()))
+		{
+			UnderwaterCharacter->Kill();
+		}
+	}
+	else
+	{
+		S_KillPlayer();
+	}
+}
+
 void AADPlayerController::S_SetInvincible_Implementation(bool bIsInvincible)
 {
 	SetInvincible(bIsInvincible);
@@ -261,6 +276,22 @@ void AADPlayerController::C_PlaySound_Implementation(ESFX SoundType, float Volum
 			SoundSubsystem->Play2D(SoundType, VolumeMultiplier);
 		}
 	}
+}
+
+void AADPlayerController::S_KillPlayer_Implementation()
+{
+	KillPlayer();
+}
+
+void AADPlayerController::SetActiveRadarWidget(bool bShouldActivate)
+{
+	if (IsValid(PlayerHUDComponent) == false || PlayerHUDComponent->IsBeingDestroyed() || PlayerHUDComponent->IsValidLowLevel() == false)
+	{
+		LOGV(Error, TEXT("PlayerHUDComponent Is Not Valid"));
+		return;
+	}
+
+	PlayerHUDComponent->SetActiveRadarWidget(bShouldActivate);
 }
 
 void AADPlayerController::BeginSpectatingState()

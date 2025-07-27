@@ -87,6 +87,7 @@ enum class EPlayAnimationTarget : uint8
 };
 
 class UInputAction;
+class URadar2DComponent;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AUnderwaterCharacter : public AUnitBase, public IIADInteractable
@@ -159,7 +160,7 @@ public:
 
 	/** 캐릭터를 사망시킨다. Authority Node에서만 실행되어야 한다. */
 	UFUNCTION(BlueprintCallable)
-	void Die();
+	void Kill();
 
 	/** 부활 상태 초기화 설정을 한다. Possess 이후에 호출할 것 */
 	void Respawn();
@@ -177,11 +178,11 @@ public:
 	
 	/** Monster에 의해 Target 되었을 때 호출된다. Authority Node에서만 유효하다. */
 	UFUNCTION(BlueprintCallable)
-	void OnTargeted();
+	void OnTargeted(AActor* TargetingActor);
 
 	/** Monster에 의해 UnTarget 되었을 때 호출된다. Authority Node에서만 유효하다. */
 	UFUNCTION(BlueprintCallable)
-	void OnUntargeted();
+	void OnUntargeted(AActor* TargetingActor);
 
 	/** 빠른 구현을 위해 Captrue를 현재 Multicast로 구현한다.
 	 * 이후 변경 모델
@@ -622,6 +623,12 @@ protected:
 	UFUNCTION()
 	void OnRep_BoundCharacters();
 
+	/** TargetingActors의 유효성을 검증한다. */
+	int32 ValidateTargetingActors();
+
+	/** TargetingActors의 유효하지 않은 Actor를 제거한다. */
+	void CleanupTargetingActors();
+	
 private:
 
 	/** Montage 콜백을 등록 */
@@ -894,9 +901,17 @@ private:
 	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_InCombat, Category = Character, meta = (AllowPrivateAccess = "true"))
 	uint8 bIsInCombat : 1;
 	
-	/** 현재 캐릭터를 타겟팅하고 있는 Actor의 개수. */
-	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	int TargetingActorCount;
+	/** 현재 캐릭터를 타겟팅하고 있는 Actor들의 집합 */
+	TSet<TWeakObjectPtr<AActor>> TargetingActors;
+
+	/** True일 경우 주기적으로 Targeting Actors의 유효성을 확인한다. */
+	uint8 bAutoStartCleanupTargetingActors : 1;
+
+	/** TargetingActors의 유효성을 검사하는 Timer 핸들 */
+	FTimerHandle TargetingActorsCleanupTimer;
+
+	/** TargetingActors의 유효성을 검사하는 주기. 초 단위로 설정한다. */
+	float TargetingActorsCleanupInterval;
 
 	// Tick을 썼다면 쉽게 관리했겠지만 현재로는 Timer를 사용해서 관리한다.
 	/** 체력 회복 중지 상태에서 체력 회복을 시작하기 위해 필요한 시간 */
@@ -978,7 +993,7 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Radar", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<class ARadar> RadarClass;
 
-	/** 생성한 레이더 인스턴스 */
+	/** 생성한 레이더 인스턴스. 레이더는 Replicate 되지 않고 각각의 Local에서 작동한다. */
 	UPROPERTY()
 	TObjectPtr<class ARadar> RadarObject;
 
@@ -1158,6 +1173,9 @@ private:
 	UPROPERTY()
 	TObjectPtr<class UEquipRenderComponent> EquipRenderComp;
 
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<URadar2DComponent> RadarComponent;
+
 	/** Tool 소켓 명 (1P/3P 공용) */
 	FName LaserSocketName = TEXT("Laser");
 
@@ -1251,6 +1269,8 @@ public:
 	/** 캐릭터의 현재 상태를 반환. Normal, Groggy, Death... */
 	FORCEINLINE UCombatEffectComponent* GetCombatEffectComponent() const { return CombatEffectComponent; }
 
+	FORCEINLINE URadar2DComponent* GetRadarComponent() const { return RadarComponent; }
+
 	/** 캐릭터의 현재 상태를 반환 */
 	FORCEINLINE ECharacterState GetCharacterState() const { return CharacterState; }
 
@@ -1342,7 +1362,7 @@ public:
 	FORCEINLINE UPostProcessSettingComponent* GetPostProcessSettingComponent() const { return PostProcessSettingComponent; }
 
 	/** 현재 캐릭터를 어그로로 설정하고 있는 Targeting Actor의 개수를 반환 */
-	FORCEINLINE int GetTargetingActorCount() const { return TargetingActorCount; }
+	FORCEINLINE int GetTargetingActorCount() const { return TargetingActors.Num(); }
 
 	/** 캐릭터가 현재 Capture State 인지 여부를 반환 */
 	FORCEINLINE bool IsCaptured() const { return bIsCaptured; }

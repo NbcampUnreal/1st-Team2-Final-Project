@@ -10,6 +10,7 @@
 #include "Components/AudioComponent.h"
 #include "Interactable/Item/Component/ADInteractableComponent.h"
 #include "Interactable/OtherActors/Radars/RadarReturnComponent.h"
+#include "Interactable/OtherActors/Radars/RadarReturn2DComponent.h"
 #include "Character/UnderwaterCharacter.h"
 #include "Framework/ADPlayerState.h"
 #include "Inventory/ADInventoryComponent.h"
@@ -30,6 +31,9 @@ AADOreRock::AADOreRock()
 
 	RadarReturnComponent = CreateDefaultSubobject<URadarReturnComponent>(TEXT("RadarReturn"));
 	RadarReturnComponent->ChangeNeutralReturnSize(0.3f);
+	
+	RadarReturn2DComponent = CreateDefaultSubobject<URadarReturn2DComponent>(TEXT("RadarReturn2D"));
+	RadarReturn2DComponent->SetReturnForceType(EReturnForceType::Neutral);
 
 	bIsHold = true;
 }
