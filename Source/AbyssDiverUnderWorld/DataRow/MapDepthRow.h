@@ -32,6 +32,10 @@ struct ABYSSDIVERUNDERWORLD_API FMapDepthRow : public FTableRowBase
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	EMapName MapName;
 
+	/** 깊이 정보를 저장할 Map 이름 문자열 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	FName MapNameString;
+
 	/** 게임 맵에서 기준이 되는 Z 좌표 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	float ReferenceZ;

@@ -41,9 +41,6 @@ public:
 
 	FPhaseGoalRow* GetPhaseGoalData(EMapName MapName, int32 Phase) const;
 
-	/** 맵 이름에 따라서 깊이 정보를 반환 */
-	FMapDepthRow* GetMapDepthData(EMapName MapName) const;
-
 	// 유효하지 않으면 "invalid" 반환
 	FString GetMapPath(EMapName MapName) const;
 
@@ -56,9 +53,6 @@ private:
 	void ParseMapPathDataTable(class UADGameInstance* GameInstance);
 	void ParseShopItemMeshTransformDataTable(class UADGameInstance* GameInstance);
 
-	/** Map Depth DataTable을 파싱합니다. */
-	void ParseMapDepthDataTable(class UADGameInstance* GameInstance);
-	
 #pragma endregion
 
 #pragma region Variable
@@ -83,8 +77,6 @@ private:
 	TArray<FShopItemMeshTransformRow*> ShopItemMeshTransformTableArray;
 	TMap<uint8, FShopItemMeshTransformRow*> ShopItemMeshTransformTableMap;
 
-	TMap<EMapName, FMapDepthRow*> MapDepthTableMap;
-
 #pragma endregion
 
 #pragma region Getter/Setter
@@ -92,5 +84,8 @@ private:
 public:
 	const TArray<FFADItemDataRow*>& GetItemDataTableArray() { return ItemDataTableArray; };
 
+	/** Map 이름에 따라 Depth Zone 정보를 반환 */
+	FMapDepthRow* GetDepthZoneDataRow(FName MapName) const;
+	
 #pragma endregion
 };
