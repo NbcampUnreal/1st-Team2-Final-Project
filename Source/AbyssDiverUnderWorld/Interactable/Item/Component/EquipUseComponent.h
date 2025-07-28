@@ -227,7 +227,7 @@ public:
 	uint8 bHasNoAnimation : 1;
 
 	float PelletSpeed = 2000.f; 
-	float PelletLifeSec = 0.5f;      
+	float PelletLifeSec = 0.4f;      
 
 	FTimerHandle TimerHandle_HandleRefire;
 	FTimerHandle TimerHandle_HandleReload;
@@ -318,13 +318,13 @@ private:
 	uint8 bOriginalExposureCached : 1;
 	static const FName BASIC_SPEAR_GUN_NAME;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Recoil")
+	UPROPERTY(EditAnywhere, Category = "Recoil")
 	FRecoilConfig HarpoonRecoil;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Recoil")
+	UPROPERTY(EditAnywhere, Category = "Recoil")
 	FRecoilConfig FlareRecoil;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Recoil")
+	UPROPERTY(EditAnywhere, Category = "Recoil")
 	FRecoilConfig ShotgunRecoil;
 
 	float ActiveRecoverySpeed = 0.f;
