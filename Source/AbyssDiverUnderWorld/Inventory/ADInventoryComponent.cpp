@@ -492,6 +492,7 @@ void UADInventoryComponent::OnRep_CurrentEquipItem()
 		case EEquipmentType::HarpoonGun:	Socket = HarpoonSocketName; break;
 		case EEquipmentType::FlareGun:		Socket = FlareSocketName;   break;
 		case EEquipmentType::DPV:			Socket = DPVSocketName;     break;
+		case EEquipmentType::Shotgun:		Socket = ShotgunSocketName; break;
 		default:														break;
 		}
 
