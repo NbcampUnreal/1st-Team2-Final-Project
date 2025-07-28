@@ -32,7 +32,8 @@ public:
 
 protected:
 
-	EDepthZone GetCurrentZone(float CurrentZ) const;
+	/** 깊이로부터 DepthZone을 결정한다. */
+	EDepthZone DetermineZone(float CurrentZ) const;
 	
 	/** 현재 깊이 구역을 갱신한다. */
 	void UpdateZone();
@@ -77,7 +78,7 @@ private:
 	float DangerZoneZ;
 
 	/** 현재 Actor의 깊이 구역 */
-	EDepthZone CurrentDepthZone;
+	EDepthZone DepthZone;
 	
 #pragma endregion
 	
@@ -92,10 +93,10 @@ public:
 	 * 깊이는 Actor의 Z 위치를 기준으로 계산되고 양수이다.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Depth")
-	float GetCurrentDepth() const;
+	float GetDepth() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Depth")
-	EDepthZone GetCurrentDepthZone() const { return CurrentDepthZone; }
+	EDepthZone GetDepthZone() const { return DepthZone; }
 	
 #pragma endregion
 };

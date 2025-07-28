@@ -240,7 +240,7 @@ void AUnderwaterCharacter::BeginPlay()
 	StatComponent->OnMoveSpeedChanged.AddDynamic(this, &AUnderwaterCharacter::OnMoveSpeedChanged);
 
 	DepthComponent->OnDepthZoneChangedDelegate.AddDynamic(this, &AUnderwaterCharacter::OnDepthZoneChanged);
-	EDepthZone InitialDepthZone = DepthComponent->GetCurrentDepthZone();
+	EDepthZone InitialDepthZone = DepthComponent->GetDepthZone();
 	OnDepthZoneChanged(InitialDepthZone, InitialDepthZone);
 	
 	NoiseEmitterComponent = NewObject<UPawnNoiseEmitterComponent>(this);

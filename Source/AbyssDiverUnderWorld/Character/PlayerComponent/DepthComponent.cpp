@@ -20,13 +20,15 @@ UDepthComponent::UDepthComponent()
 	ReferenceDepth = 0.0f;
 	WarningZoneZ = 0.0f;
 	DangerZoneZ = 0.0f;
-	CurrentDepthZone = EDepthZone::SafeZone;
+	DepthZone = EDepthZone::SafeZone;
 }
 
 // Called every frame
 void UDepthComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	UpdateZone();
 }
 
 void UDepthComponent::GetMapDepthData()
@@ -81,10 +83,10 @@ void UDepthComponent::BeginPlay()
 	}
 	
 	GetMapDepthData();
-	CurrentDepthZone = GetCurrentZone(GetOwner()->GetActorLocation().Z);
+	DepthZone = DetermineZone(GetOwner()->GetActorLocation().Z);
 }
 
-EDepthZone UDepthComponent::GetCurrentZone(float CurrentZ) const
+EDepthZone UDepthComponent::DetermineZone(float CurrentZ) const
 {
 	if (CurrentZ < DangerZoneZ)
 	{
@@ -102,12 +104,20 @@ void UDepthComponent::UpdateZone()
 {
 	// 현재 Actor의 깊이를 계산한다.
 	float CurrentZ = GetOwner()->GetActorLocation().Z;
-	EDepthZone NewDepthZone = bIsActive ? GetCurrentZone(CurrentZ) : EDepthZone::SafeZone;
+	EDepthZone NewDepthZone = bIsActive ? DetermineZone(CurrentZ) : EDepthZone::SafeZone;
+	UE_LOG(LogAbyssDiverCharacter, Display,
+		TEXT("Depth Component: CurrentZ = %f, NewDepthZone = %s for %s"),
+		CurrentZ, *UEnum::GetValueAsString(NewDepthZone), *GetOwner()->GetName());
 
-	if (NewDepthZone != CurrentDepthZone)
+	if (NewDepthZone != DepthZone)
 	{
-		EDepthZone OldDepthZone = CurrentDepthZone;
-		CurrentDepthZone = NewDepthZone;
+		UE_LOG(LogAbyssDiverCharacter, Display,
+			TEXT("Depth Component: DepthZone changed from %s to %s for %s"),
+			*UEnum::GetValueAsString(DepthZone),
+			*UEnum::GetValueAsString(NewDepthZone),
+			*GetOwner()->GetName());
+		EDepthZone OldDepthZone = DepthZone;
+		DepthZone = NewDepthZone;
 
 		OnDepthZoneChangedDelegate.Broadcast(OldDepthZone, NewDepthZone);
 	}
@@ -127,11 +137,11 @@ void UDepthComponent::SetDepthZoneActive(bool bActive)
 	bIsActive = bActive;
 }
 
-float UDepthComponent::GetCurrentDepth() const
+float UDepthComponent::GetDepth() const
 {
 	// 현재 Actor의 Z 위치를 기준으로 깊이를 계산한다.
 	// ReferenceZ와 비교해서 깊이를 반환한다.
-	return GetOwner()->GetActorLocation().Z - ReferenceZ + ReferenceDepth;
+	return (ReferenceZ - GetOwner()->GetActorLocation().Z + ReferenceDepth) / 100.0f; // cm to m conversion
 }
 
 
