@@ -15,6 +15,7 @@ UShieldComponent::UShieldComponent()
 	bCanGainShield = true;
 	ShieldValue = 0.0f;
 	OldShieldValue = ShieldValue;
+	MaxShieldValue = 1000.0f; // 기본 최대 실드 값
 }
 
 
