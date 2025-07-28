@@ -176,6 +176,8 @@ protected:
 	UPROPERTY(Replicated)
 	FActivatedMissionInfoList ActivatedMissionList;
 
+	int32 ClearCount = 0;
+
 private:
 
 #pragma endregion
@@ -237,6 +239,9 @@ public:
 	}
 
 	class UPlayerHUDComponent* GetPlayerHudComponent();
+
+	int32 GetClearCount() const;
+	void SetClearCount(int32 NewClearCount);
 
 #pragma endregion
 
