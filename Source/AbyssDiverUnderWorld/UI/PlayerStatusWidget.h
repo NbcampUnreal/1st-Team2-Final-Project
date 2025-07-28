@@ -130,6 +130,9 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UWarningWidget> PhaseWarningWidget;
 
+	UPROPERTY(meta = (BindWidgetAnim), Transient)
+	TObjectPtr<UWidgetAnimation> IncreaseMoney;
+
 	UPROPERTY()
 	TObjectPtr <UMaterialInstanceDynamic> DynamicMaterial;
 
