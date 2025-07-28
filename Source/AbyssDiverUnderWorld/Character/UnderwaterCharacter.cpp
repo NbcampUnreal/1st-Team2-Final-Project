@@ -16,6 +16,7 @@
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/PawnNoiseEmitterComponent.h"
+#include "DataRow/MapDepthRow.h"
 #include "DataRow/SoundDataRow/SFXDataRow.h"
 #include "Footstep/FootstepComponent.h"
 #include "Framework/ADPlayerState.h"
@@ -37,6 +38,7 @@
 #include "Interactable/EquipableComponent/EquipRenderComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "PlayerComponent/CombatEffectComponent.h"
+#include "PlayerComponent/DepthComponent.h"
 #include "PlayerComponent/NameWidgetComponent.h"
 #include "PlayerComponent/RagdollReplicationComponent.h"
 #include "Subsystems/SoundSubsystem.h"
@@ -173,6 +175,10 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	FootstepComponent = CreateDefaultSubobject<UFootstepComponent>(TEXT("FootstepComponent"));
 
 	RagdollComponent = CreateDefaultSubobject<URagdollReplicationComponent>(TEXT("RagdollComponent"));
+
+	SafeZoneOxygenConsumeRate = 1.0f;
+	WarningZoneOxygenConsumeRate = 1.15f;
+	DangerZoneOxygenConsumeRate = 1.3f;
 	
 	bIsRadarOn = false;
 	RadarOffset = FVector(150.0f, 0.0f, 0.0f);
@@ -201,6 +207,8 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	GetMesh()->SetLightingChannels(false, true, true);
 
 	ResurrectSFX = ESFX::Resurrection;
+
+	DepthComponent = CreateDefaultSubobject<UDepthComponent>(TEXT("DepthComponent"));
 }
 
 void AUnderwaterCharacter::BeginPlay()
@@ -223,6 +231,10 @@ void AUnderwaterCharacter::BeginPlay()
 
 	StatComponent->OnHealthChanged.AddDynamic(this, &AUnderwaterCharacter::OnHealthChanged);
 	StatComponent->OnMoveSpeedChanged.AddDynamic(this, &AUnderwaterCharacter::OnMoveSpeedChanged);
+
+	DepthComponent->OnDepthZoneChangedDelegate.AddDynamic(this, &AUnderwaterCharacter::OnDepthZoneChanged);
+	EDepthZone InitialDepthZone = DepthComponent->GetCurrentDepthZone();
+	OnDepthZoneChanged(InitialDepthZone, InitialDepthZone);
 	
 	NoiseEmitterComponent = NewObject<UPawnNoiseEmitterComponent>(this);
 	NoiseEmitterComponent->RegisterComponent();
@@ -2583,6 +2595,31 @@ void AUnderwaterCharacter::CleanupTargetingActors()
 	if (InvalidCount > 0)
 	{
 		UE_LOG(LogAbyssDiverCharacter, Warning, TEXT("CleanupTargetingActors: Removed %d invalid targeting actors"), InvalidCount);
+	}
+}
+
+void AUnderwaterCharacter::OnDepthZoneChanged(EDepthZone OldDepthZone, EDepthZone NewDepthZone)
+{
+	if (OxygenComponent)
+	{
+		const float ConsumeRate = GetOxygenConsumeRate(NewDepthZone);
+		OxygenComponent->SetConsumeRate(ConsumeRate);
+	}
+}
+
+float AUnderwaterCharacter::GetOxygenConsumeRate(EDepthZone DepthZone) const
+{
+	if (DepthZone == EDepthZone::DangerZone)
+	{
+		return DangerZoneOxygenConsumeRate;
+	}
+	else if (DepthZone == EDepthZone::WarningZone)
+	{
+		return WarningZoneOxygenConsumeRate;
+	}
+	else
+	{
+		return SafeZoneOxygenConsumeRate;
 	}
 }
 

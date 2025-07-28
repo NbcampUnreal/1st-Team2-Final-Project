@@ -20,6 +20,7 @@
 #define LOG_NETWORK(Category, Verbosity, Format, ...) \
 	UE_LOG(Category, Verbosity, TEXT("[%s] %s %s"), LOG_NETMODEINFO, LOG_CALLINFO, *FString::Printf(Format, ##__VA_ARGS__))
 
+enum EDepthZone : int;
 DECLARE_LOG_CATEGORY_EXTERN(LogAbyssDiverCharacter, Log, LOG_ABYSS_DIVER_COMPILE_VERBOSITY);
 
 // @TODO : Character Status Replicate 문제
@@ -627,6 +628,13 @@ protected:
 
 	/** TargetingActors의 유효하지 않은 Actor를 제거한다. */
 	void CleanupTargetingActors();
+
+	/** DepthZone이 변경될 때 호출되는 함수 */
+	UFUNCTION()
+	void OnDepthZoneChanged(EDepthZone OldDepthZone, EDepthZone NewDepthZone);
+
+	/** 현재 DepthZone에 따른 산소 소비율을 반환한다. */
+	float GetOxygenConsumeRate(EDepthZone DepthZone) const;
 	
 private:
 
@@ -1010,6 +1018,22 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character|UI", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UNameWidgetComponent> NameWidgetComponent;
 
+	/** 깊이 위젯 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UDepthComponent> DepthComponent;
+
+	/** 안전 구역에서 산소 소모량 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	float SafeZoneOxygenConsumeRate;
+	
+	/** 경고 구역에서 산소 소모량 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	float WarningZoneOxygenConsumeRate;
+
+	/** 위험 구역에서 산소 소모량 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	float DangerZoneOxygenConsumeRate;
+
 	/** 레이더가 생성된 위치 오프셋. 카메라 기준으로 부착이 된다. */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Radar", meta = (AllowPrivateAccess = "true"))
 	FVector RadarOffset;
@@ -1372,6 +1396,9 @@ public:
 	FORCEINLINE bool IsCaptured() const { return bIsCaptured; }
 
 	FORCEINLINE AADPlayerController* GetOwnerController() const { return OwnerController; }
+
+	/** 깊이 컴포넌트를 반환 */
+	FORCEINLINE UDepthComponent* GetDepthComponent() const { return DepthComponent; }
 
 protected:
 
