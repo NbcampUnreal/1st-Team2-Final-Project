@@ -4,6 +4,7 @@
 #include "Engine/GameInstance.h"
 #include "AdvancedFriendsGameInstance.h"
 #include "UI/MissionData.h"
+#include "Framework/ADTutorialSaveGame.h"
 #include "Framework/SettingsManager.h"
 #include "../UI/LoadingScreenWidget.h" 
 #include "ADGameInstance.generated.h"
@@ -64,8 +65,9 @@ public:
 
 	UPROPERTY(BlueprintReadWrite)
 	int32 TeamCredits;
-	 
 
+	int32 ClearCount;
+	
 	UPROPERTY(EditDefaultsOnly, Category = "ADGameInstance", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.FADItemDataRow"))
 	TObjectPtr<UDataTable> ItemDataTable;
 	UPROPERTY(EditDefaultsOnly, Category = "ADGameInstance", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.FADProjectileDataRow"))
@@ -140,6 +142,9 @@ public:
 
 private:
 
+	UPROPERTY()
+	TObjectPtr<UADTutorialSaveGame> TutorialSaveGameObject;
+	
 	TMap<FString, int32> CurrentPlayerIdMap;
 	TArray<bool> ValidPlayerIndexArray;
 
@@ -167,7 +172,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Input")
 	const TMap<FName, UInputAction*>& GetInputActionMap() const { return InputActionMap; }
 
+	const TMap<FString, int32>& GetCurrentPlayerIdMap() const;
+
+	UFUNCTION(BlueprintPure, Category = "SaveGame")
+	UADTutorialSaveGame* GetTutorialSaveGame() const { return TutorialSaveGameObject; }
+
 #pragma endregion
-
-
 };

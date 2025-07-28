@@ -97,6 +97,8 @@ public:
 	UFUNCTION(Server, Reliable)
 	void S_KillPlayer();
 	void S_KillPlayer_Implementation();
+
+	void SetActiveRadarWidget(bool bShouldActivate);
 	
 protected:
 

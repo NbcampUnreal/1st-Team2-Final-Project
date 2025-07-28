@@ -11,6 +11,8 @@
 #include "Logging/LogMacros.h"
 #include "Subsystems/SoundSubsystem.h"
 
+#include "Kismet/GameplayStatics.h"
+
 UUnderwaterEffectComponent::UUnderwaterEffectComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;

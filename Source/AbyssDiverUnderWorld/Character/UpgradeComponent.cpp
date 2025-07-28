@@ -154,9 +154,8 @@ bool UUpgradeComponent::Upgrade(EUpgradeType UpgradeType)
 	}
 
 	int32 Index = static_cast<int32>(UpgradeType);
-	if (UpgradeGradeMap.IsValidIndex(Index))
+	if (UpgradeGradeMap.IsValidIndex(Index) && TrySetCurrentGrade(UpgradeType, UpgradeGradeMap[Index] + 1))
 	{
-		UpgradeGradeMap[Index]++;
 		OnUpgradePerformed.Broadcast(UpgradeType, UpgradeGradeMap[Index]);
 	}
 	else
@@ -166,7 +165,7 @@ bool UUpgradeComponent::Upgrade(EUpgradeType UpgradeType)
 	return true;
 }
 
-bool UUpgradeComponent::SetCurrentGrade(EUpgradeType UpgradeType, uint8 Grade)
+bool UUpgradeComponent::TrySetCurrentGrade(EUpgradeType UpgradeType, uint8 Grade)
 {
 	if (!DataTableSubsystem.IsValid())
 	{
@@ -219,5 +218,10 @@ bool UUpgradeComponent::IsMaxGrade(EUpgradeType UpgradeType) const
 	}
 	const uint8 NextGrade = UpgradeGradeMap[Index] + 1;
 	return DataTableSubsystem->GetUpgradeData(UpgradeType, NextGrade) == nullptr;
+}
+
+const TArray<uint8>& UUpgradeComponent::GetUpgradeGradeMap() const
+{
+	return UpgradeGradeMap;
 }
 

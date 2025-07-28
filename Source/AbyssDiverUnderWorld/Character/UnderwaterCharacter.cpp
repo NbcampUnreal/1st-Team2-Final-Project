@@ -28,6 +28,8 @@
 #include "Interactable/Item/Component/EquipUseComponent.h"
 #include "Interactable/OtherActors/Radars/Radar.h"
 #include "Interactable/OtherActors/Radars/RadarReturnComponent.h"
+#include "Interactable/OtherActors/Radars/RadarReturn2DComponent.h"
+#include "Interactable/OtherActors/Radars/Radar2DComponent.h"
 #include "Inventory/ADInventoryComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Shops/ShopInteractionComponent.h"
@@ -203,10 +205,15 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	bIsAttackedByEyeStalker = false;
 
 	PostProcessSettingComponent = CreateDefaultSubobject<UPostProcessSettingComponent>(TEXT("PostProcessSettingComponent"));
+	RadarComponent = CreateDefaultSubobject<URadar2DComponent>(TEXT("RadarComponent"));
 
 	GetMesh()->SetLightingChannels(false, true, true);
 
 	ResurrectSFX = ESFX::Resurrection;
+
+	RadarReturn2DComponent->SetReturnScale(0.7f);
+	RadarReturn2DComponent->SetReturnForceType(EReturnForceType::Friendly);
+	RadarReturn2DComponent->SetAlwaysDisplay(true);
 
 	DepthComponent = CreateDefaultSubobject<UDepthComponent>(TEXT("DepthComponent"));
 }
@@ -2258,7 +2265,25 @@ void AUnderwaterCharacter::Radar(const FInputActionValue& InputActionValue)
 	{
 		return;
 	}
-	RequestToggleRadar();
+	
+	UWorld* World = GetWorld();
+	if (IsValid(World) == false || World->IsInSeamlessTravel())
+	{
+		LOGV(Error, TEXT("World Is Not Valid"));
+		return;
+	}
+
+	AADPlayerController* PC = Cast<AADPlayerController>(World->GetFirstPlayerController());
+	if (PC == nullptr)
+	{
+		LOGV(Error, TEXT("PlayerController Is Not Valid"));
+		return;
+	}
+
+	bIsRadarOn = (bIsRadarOn == false);
+
+	PC->SetActiveRadarWidget(bIsRadarOn);
+	//RequestToggleRadar();
 }
 
 void AUnderwaterCharacter::EquipSlot1(const FInputActionValue& InputActionValue)
