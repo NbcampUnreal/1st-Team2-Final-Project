@@ -12,7 +12,7 @@
 #include "DataRow/FADItemDataRow.h"
 
 
-void UEnableShield::Use(AActor* Target)
+bool UEnableShield::Use(AActor* Target)
 {
 
 	LOG(TEXT("UseShield"));
@@ -24,21 +24,28 @@ void UEnableShield::Use(AActor* Target)
 		APlayerController* PC = Cast<APlayerController>(Cast<AADPlayerState>(Target)->GetPlayerController());
 		if (Row && PC)
 		{
-			APawn* OwnerPawn = PC->GetPawn();
-			if (OwnerPawn)
+			if (AUnderwaterCharacter* UnderwaterCharacter = PC->GetPawn<AUnderwaterCharacter>())
 			{
-				AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(OwnerPawn);
-				UShieldComponent* ShieldComp = UnderwaterCharacter->GetShieldComponent();
-				if (ShieldComp)
+				if (UShieldComponent* ShieldComp = UnderwaterCharacter->GetShieldComponent())
 				{
-					ShieldComp->GainShield(Row->Amount);
-				}
-				UCombatEffectComponent* CombatEffectComp = UnderwaterCharacter->GetCombatEffectComponent();
-				if (CombatEffectComp)
-				{
-					CombatEffectComp->C_PlayShieldUseEffect();
+					if (ShieldComp->IsShieldFull())
+					{
+						// Shield 가득 찼을 때 효과음이 있다면 재생 추가
+						return false;
+					}
+					else
+					{
+						ShieldComp->GainShield(Row->Amount);
+						if (UCombatEffectComponent* CombatEffectComp = UnderwaterCharacter->GetCombatEffectComponent())
+						{
+							CombatEffectComp->C_PlayShieldUseEffect();
+						}
+						return true;
+					}
 				}
 			}
 		}
 	}
+
+	return false;
 }

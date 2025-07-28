@@ -10,7 +10,7 @@
 #include "Subsystems/DataTableSubsystem.h"
 #include "DataRow/FADItemDataRow.h"
 
-void URecoveryOxygen::Use(AActor* Target)
+bool URecoveryOxygen::Use(AActor* Target)
 {
 	LOG(TEXT("RecoveryOxygen"));
 	//TODO: 산소 회복 이펙트
@@ -31,8 +31,11 @@ void URecoveryOxygen::Use(AActor* Target)
 				if (OxygenComp)
 				{
 					OxygenComp->RefillOxygen(Row->Amount);
+					return true;
 				}
 			}
 		}
 	}
+
+	return false;
 }
