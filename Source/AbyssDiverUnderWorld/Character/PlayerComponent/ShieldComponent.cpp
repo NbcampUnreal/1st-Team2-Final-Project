@@ -53,7 +53,7 @@ FShieldAbsorbResult UShieldComponent::AbsorbDamage(const float DamageAmount)
 
 void UShieldComponent::GainShield(const float GainAmount)
 {
-	if (GetOwnerRole() != ROLE_Authority || GainAmount <= 0.0f || !bCanGainShield)
+	if (GetOwnerRole() != ROLE_Authority || GainAmount <= 0.0f || !bCanGainShield || IsShieldFull())
 	{
 		return;
 	}
@@ -89,7 +89,7 @@ void UShieldComponent::SetShieldValue(const float NewValue, const bool bAlwaysUp
 
 	OldShieldValue = ShieldValue;
 
-	ShieldValue = NewValue > 0.0f ? NewValue : 0.0f;
+	ShieldValue = FMath::Clamp(NewValue, 0.0f, MaxShieldValue);
 	OnShieldValueChangedDelegate.Broadcast(OldShieldValue, ShieldValue);
 	K2_OnShieldValueChanged(ShieldValue);
 
