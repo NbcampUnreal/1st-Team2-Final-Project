@@ -75,8 +75,6 @@ void UDepthComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	LOGVN(Display, TEXT("AADInGameState Related: Depth Component BeginPlay called for %s"), *GetOwner()->GetName());
-	
 	if (AUnderwaterCharacter* Character = Cast<AUnderwaterCharacter>(GetOwner()))
 	{
 		Character->OnEnvironmentStateChangedDelegate.AddDynamic(this, &UDepthComponent::OnEnvironmentStateChanged);
@@ -105,9 +103,6 @@ void UDepthComponent::UpdateZone()
 	// 현재 Actor의 깊이를 계산한다.
 	float CurrentZ = GetOwner()->GetActorLocation().Z;
 	EDepthZone NewDepthZone = bIsActive ? DetermineZone(CurrentZ) : EDepthZone::SafeZone;
-	UE_LOG(LogAbyssDiverCharacter, Display,
-		TEXT("Depth Component: CurrentZ = %f, NewDepthZone = %s for %s"),
-		CurrentZ, *UEnum::GetValueAsString(NewDepthZone), *GetOwner()->GetName());
 
 	if (NewDepthZone != DepthZone)
 	{
