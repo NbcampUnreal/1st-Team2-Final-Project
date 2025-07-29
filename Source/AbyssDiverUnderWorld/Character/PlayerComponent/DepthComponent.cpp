@@ -18,6 +18,8 @@ UDepthComponent::UDepthComponent()
 	bIsActive = true;
 	ReferenceZ = 0.0f;
 	ReferenceDepth = 0.0f;
+	bUseWarningZone = false;
+	bUseDangerZone = false;
 	WarningZoneZ = 0.0f;
 	DangerZoneZ = 0.0f;
 	DepthZone = EDepthZone::SafeZone;
@@ -64,6 +66,8 @@ void UDepthComponent::GetMapDepthData()
 
 	ReferenceZ = MapDepthRow->ReferenceZ;
 	ReferenceDepth = MapDepthRow->ReferenceDepth;
+	bUseDangerZone = MapDepthRow->bUseDangerZone;
+	bUseWarningZone = MapDepthRow->bUseWarningZone;
 	WarningZoneZ = MapDepthRow->WarningZoneZ;
 	DangerZoneZ = MapDepthRow->DangerZoneZ;
 	UE_LOG(LogAbyssDiverCharacter, Display,
@@ -86,11 +90,11 @@ void UDepthComponent::BeginPlay()
 
 EDepthZone UDepthComponent::DetermineZone(float CurrentZ) const
 {
-	if (CurrentZ < DangerZoneZ)
+	if (bUseDangerZone && CurrentZ < DangerZoneZ)
 	{
 		return EDepthZone::DangerZone;
 	}
-	else if (CurrentZ < WarningZoneZ)
+	else if (bUseWarningZone && CurrentZ < WarningZoneZ)
 	{
 		return EDepthZone::WarningZone;
 	}

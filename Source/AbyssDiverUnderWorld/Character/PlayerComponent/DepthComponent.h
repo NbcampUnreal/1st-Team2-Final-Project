@@ -71,6 +71,12 @@ private:
 	/** ReferenceZ의 게임적 깊이 값 */
 	float ReferenceDepth;
 
+	/** 경고 구역 활성화 여부 */
+	uint8 bUseWarningZone : 1;
+
+	/** 위험 구역 활성화 여부 */
+	uint8 bUseDangerZone : 1;
+	
 	/** 경고 구역의 Z축 값, World Map을 기준으로 한다. */
 	float WarningZoneZ;
 

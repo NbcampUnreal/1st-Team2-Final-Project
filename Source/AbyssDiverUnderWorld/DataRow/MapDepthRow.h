@@ -28,6 +28,8 @@ struct ABYSSDIVERUNDERWORLD_API FMapDepthRow : public FTableRowBase
 {
 	GENERATED_BODY()
 
+	FMapDepthRow();
+	
 	/** 깊이 정보를 저장할 Map 이름 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	EMapName MapName;
@@ -44,6 +46,14 @@ struct ABYSSDIVERUNDERWORLD_API FMapDepthRow : public FTableRowBase
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	float ReferenceDepth;
 
+	/** 경고 구역 활성화 여부 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	uint8 bUseWarningZone : 1;
+
+	/** 위험 구역 활성화 여부 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	uint8 bUseDangerZone : 1;
+	
 	/** 경고 구역의 Z축 값, World Map을 기준으로 한다. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	float WarningZoneZ;
