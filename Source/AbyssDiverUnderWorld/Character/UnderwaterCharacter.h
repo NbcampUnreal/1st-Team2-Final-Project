@@ -404,36 +404,17 @@ protected:
 	UFUNCTION()
 	void AdjustSpeed();
 
-	/** 레이더 Actor를 생성한다. */
-	void SpawnRadar();
-
 	/** 1인칭, 3인칭 시점의 메시를 설정 */
 	void SetMeshFirstPersonSetting(bool bIsFirstPerson);
 
 	/** Pawn을 떠날 때 호출되는 함수. Pawn이 떠나면 캐릭터는 관전 상태로 변경된다. */
 	void OnLeavePawn();
-	
-	/** Radar Toggle을 요청한다. */
-	UFUNCTION(BlueprintCallable)
-	void RequestToggleRadar();
 
 	/** 현재 상태에 맞춰서 Blur 효과를 업데이트한다. */
 	void UpdateBlurEffect();
 	
 	/** Blur 효과 적용 여부를 설정한다. */
 	void SetBlurEffect(const bool bEnable);
-
-	/** Radar 보이는 것을 설정 */
-	void SetRadarVisibility(bool bRadarVisible);
-
-	/** Toggle Radar Server RPC */
-	UFUNCTION(Server, Reliable)
-	void S_ToggleRadar();
-	void S_ToggleRadar_Implementation();
-
-	/** bIsRadarOn Replicate 함수. 변화된 값에 따라서 레이더의 Visibility를 변경한다. */
-	UFUNCTION()
-	void OnRep_bIsRadarOn();
 
 	/** 산소 상태가 변경될 때 호출되는 함수 */
 	UFUNCTION()
@@ -1007,14 +988,6 @@ private:
 	UPROPERTY(BlueprintReadWrite, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float ZoneSpeedMultiplier;
 
-	/** 생성할 레이더 BP */
-	UPROPERTY(EditDefaultsOnly, Category = "Character|Radar", meta = (AllowPrivateAccess = "true"))
-	TSubclassOf<class ARadar> RadarClass;
-
-	/** 생성한 레이더 인스턴스. 레이더는 Replicate 되지 않고 각각의 Local에서 작동한다. */
-	UPROPERTY()
-	TObjectPtr<class ARadar> RadarObject;
-
 	/** 이름 표기 위젯 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character|UI", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UNameWidgetComponent> NameWidgetComponent;
@@ -1035,16 +1008,8 @@ private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	float DangerZoneOxygenConsumeRate;
 
-	/** 레이더가 생성된 위치 오프셋. 카메라 기준으로 부착이 된다. */
-	UPROPERTY(EditDefaultsOnly, Category = "Character|Radar", meta = (AllowPrivateAccess = "true"))
-	FVector RadarOffset;
-
-	/** 레이더가 생성된 회전 오프셋. 카메라 기준으로 부착이 된다. */
-	UPROPERTY(EditAnywhere, Category = "Character|Radar", meta = (AllowPrivateAccess = "true"))
-	FRotator RadarRotation;
-
 	/** 레이더 활성화 여부 */
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, ReplicatedUsing=OnRep_bIsRadarOn, Category = Character, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Replicated, Category = Character, meta = (AllowPrivateAccess = "true"))
 	uint8 bIsRadarOn : 1;
 
 	/** Animation를 재생하기 위한 정보이다. 애니메이션 재생 시에 한 번에 동기화되기 위해 사용된다. */

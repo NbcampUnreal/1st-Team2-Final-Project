@@ -26,7 +26,6 @@
 #include "GameFramework/PhysicsVolume.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Interactable/Item/Component/EquipUseComponent.h"
-#include "Interactable/OtherActors/Radars/Radar.h"
 #include "Interactable/OtherActors/Radars/RadarReturnComponent.h"
 #include "Interactable/OtherActors/Radars/RadarReturn2DComponent.h"
 #include "Interactable/OtherActors/Radars/Radar2DComponent.h"
@@ -183,8 +182,6 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	DangerZoneOxygenConsumeRate = 1.3f;
 	
 	bIsRadarOn = false;
-	RadarOffset = FVector(150.0f, 0.0f, 0.0f);
-	RadarRotation = FRotator(90.0f, 0.0f, 0.0f);
 
 	EnvironmentState = EEnvironmentState::Underwater;
 
@@ -246,7 +243,6 @@ void AUnderwaterCharacter::BeginPlay()
 	NoiseEmitterComponent = NewObject<UPawnNoiseEmitterComponent>(this);
 	NoiseEmitterComponent->RegisterComponent();
 
-	SpawnRadar();
 	SpawnFlipperMesh();
 	LanternComponent->SpawnLight(GetMesh1PSpringArm(), LanternLength);
 
@@ -1491,24 +1487,6 @@ void AUnderwaterCharacter::AdjustSpeed()
 	}
 }
 
-void AUnderwaterCharacter::SpawnRadar()
-{
-	if (RadarClass == nullptr)
-	{
-		LOGVN(Error, TEXT("RadarClass is not valid"));
-		return;
-	}
-
-	FVector SpawnLocation = FirstPersonCameraComponent->GetComponentTransform().TransformPosition(RadarOffset);
-	FRotator SpawnRotation = FirstPersonCameraComponent->GetComponentRotation() + RadarRotation;
-
-	// @ToDO : Forward Actor에 맞추어서 Radar 회전
-	RadarObject = GetWorld()->SpawnActor<ARadar>(RadarClass, SpawnLocation, SpawnRotation);
-	RadarObject->AttachToComponent(FirstPersonCameraComponent, FAttachmentTransformRules::KeepWorldTransform);
-	RadarObject->UpdateRadarSourceComponent(GetRootComponent(), GetRootComponent());
-	RadarObject->SetActorHiddenInGame(true);
-}
-
 void AUnderwaterCharacter::SetMeshFirstPersonSetting(bool bIsFirstPerson)
 {
 	if (bIsFirstPerson)
@@ -1537,31 +1515,14 @@ void AUnderwaterCharacter::OnLeavePawn()
 
 	SetMeshFirstPersonSetting(false);
 
-	if (RadarObject)
-	{
-		RadarObject->Destroy();
-	}
 	NameWidgetComponent->SetEnable(true);
-}
-
-void AUnderwaterCharacter::RequestToggleRadar()
-{
-	if (HasAuthority())
-	{
-		bIsRadarOn = !bIsRadarOn;
-		OnRep_bIsRadarOn();
-	}
-	else
-	{
-		S_ToggleRadar();
-	}
 }
 
 void AUnderwaterCharacter::UpdateBlurEffect()
 {
 	// 레이더가 켜져 있으면 Blur 효과를 꺼야 한다.
 	// 레이더가 꺼져 있으면 수중일 경우 Blur 효과를 켜고 지상일 경우 Blur 효과를 끈다.
-	const bool bShouldEnableBlur = EnvironmentState == EEnvironmentState::Underwater && !bIsRadarOn;
+	const bool bShouldEnableBlur = EnvironmentState == EEnvironmentState::Underwater;
 	SetBlurEffect(bShouldEnableBlur);
 }
 
@@ -1575,28 +1536,6 @@ void AUnderwaterCharacter::SetBlurEffect(const bool bEnable)
 
 	FirstPersonCameraComponent->PostProcessSettings.bOverride_MotionBlurAmount = !bEnable;
 	FirstPersonCameraComponent->PostProcessSettings.MotionBlurAmount = 0.0f;
-}
-
-void AUnderwaterCharacter::SetRadarVisibility(bool bRadarVisible)
-{
-	if (!IsValid(RadarObject) || !IsLocallyControlled())
-	{
-		return;
-	}
-	
-	// Visible == true 이면 Hidden == false이다.
-	RadarObject->SetActorHiddenInGame(!bRadarVisible);
-}
-
-void AUnderwaterCharacter::S_ToggleRadar_Implementation()
-{
-	RequestToggleRadar();
-}
-
-void AUnderwaterCharacter::OnRep_bIsRadarOn()
-{
-	SetRadarVisibility(bIsRadarOn);
-	UpdateBlurEffect();
 }
 
 void AUnderwaterCharacter::OnOxygenLevelChanged(float CurrentOxygenLevel, float MaxOxygenLevel)
@@ -2283,7 +2222,6 @@ void AUnderwaterCharacter::Radar(const FInputActionValue& InputActionValue)
 	bIsRadarOn = (bIsRadarOn == false);
 
 	PC->SetActiveRadarWidget(bIsRadarOn);
-	//RequestToggleRadar();
 }
 
 void AUnderwaterCharacter::EquipSlot1(const FInputActionValue& InputActionValue)
