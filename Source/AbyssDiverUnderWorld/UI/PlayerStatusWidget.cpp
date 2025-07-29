@@ -185,6 +185,7 @@ void UPlayerStatusWidget::SetDroneCurrentText(int32 Current)
     if (CurrentMoneyText && CurrentMoneyText->IsValidLowLevel())
     {
         CurrentMoneyText->SetText(FText::FromString(FString::Printf(TEXT("%d"), Current)));
+        PlayAnimation(IncreaseMoney);
     }
 }
 
@@ -195,7 +196,7 @@ void UPlayerStatusWidget::SetDroneTargetText(int32 Target)
     {
         TargetMoneyText->SetText(FText::FromString(FString::Printf(TEXT("%d"), Target)));
     }
-}
+} 
 
 void UPlayerStatusWidget::SetMoneyProgressBar(float InPercent)
 {
