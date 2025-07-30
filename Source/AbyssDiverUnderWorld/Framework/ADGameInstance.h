@@ -65,8 +65,9 @@ public:
 
 	UPROPERTY(BlueprintReadWrite)
 	int32 TeamCredits;
-	 
 
+	int32 ClearCount;
+	
 	UPROPERTY(EditDefaultsOnly, Category = "ADGameInstance", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.FADItemDataRow"))
 	TObjectPtr<UDataTable> ItemDataTable;
 	UPROPERTY(EditDefaultsOnly, Category = "ADGameInstance", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.FADProjectileDataRow"))
@@ -89,6 +90,10 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, Category = "ADGameInstance", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.ShopItemMeshTransformRow"))
 	TObjectPtr<UDataTable> ShopMeshTransformTable;
+
+	/** 맵의 깊이 정보를 담고 있는 데이터 테이블 */
+	UPROPERTY(EditDefaultsOnly, Category = "ADGameInstance", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.MapDepthRow"))
+	TObjectPtr<UDataTable> MapDepthTable;
 
 #pragma region Sound Tables
 
@@ -137,6 +142,9 @@ public:
 
 private:
 
+	UPROPERTY()
+	TObjectPtr<UADTutorialSaveGame> TutorialSaveGameObject;
+	
 	TMap<FString, int32> CurrentPlayerIdMap;
 	TArray<bool> ValidPlayerIndexArray;
 
@@ -164,12 +172,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Input")
 	const TMap<FName, UInputAction*>& GetInputActionMap() const { return InputActionMap; }
 
+	const TMap<FString, int32>& GetCurrentPlayerIdMap() const;
+
 	UFUNCTION(BlueprintPure, Category = "SaveGame")
 	UADTutorialSaveGame* GetTutorialSaveGame() const { return TutorialSaveGameObject; }
 
 #pragma endregion
-private:
-	UPROPERTY()
-	TObjectPtr<UADTutorialSaveGame> TutorialSaveGameObject;
-
 };

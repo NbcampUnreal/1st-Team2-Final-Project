@@ -33,6 +33,9 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Compass")
 	void SetCompassObjectWidgetVisible(bool bShouldVisible);
 
+	UFUNCTION(BlueprintCallable)
+	void ShowPhaseWarning(bool bShouldVisible);
+
 	// 일반 함수
 	void SetSpearCount(int32 Current, int32 Total);
 	void SetOxygenPercent(float InPercent);
@@ -57,6 +60,7 @@ private:
 	void OnNextPhaseAnimFinished();
 
 	bool TryPlayAnim(UWidgetAnimation* Anim);
+
 
 #pragma endregion
 
@@ -126,6 +130,9 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UWarningWidget> PhaseWarningWidget;
 
+	UPROPERTY(meta = (BindWidgetAnim), Transient)
+	TObjectPtr<UWidgetAnimation> IncreaseMoney;
+
 	UPROPERTY()
 	TObjectPtr <UMaterialInstanceDynamic> DynamicMaterial;
 
@@ -152,6 +159,10 @@ private:
 
 public:
 
+	UFUNCTION(BlueprintCallable)
+	int32 GetCachedNextPhaseNumber() const { return CachedNextPhaseNumber; }
+	UFUNCTION(BlueprintCallable)
+	UWarningWidget* GetPhaseWarningWidget() const { return PhaseWarningWidget; }
 	FORCEINLINE int32 GetCurrentSpear() const { return CurrentSpear; }
 	FORCEINLINE int32 GetTotalSpear() const { return TotalSpearCount; }
 	int8 GetNextPhaseAnimEndTime() const;

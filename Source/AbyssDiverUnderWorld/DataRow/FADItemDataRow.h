@@ -24,6 +24,7 @@ enum class EBulletType : uint8
 	BombSpear = 2,
 	PoisonSpear = 3,
 	Flare = 4,
+	Shotgun = 5,
 	Max = 5 UMETA(Hidden)
 };
 

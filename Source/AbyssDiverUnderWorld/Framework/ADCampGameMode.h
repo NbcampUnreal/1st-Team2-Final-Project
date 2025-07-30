@@ -47,4 +47,13 @@ protected:
 	int32 InitialSupportMoney = 300;
 
 	uint8 bHasPressedTravel : 1 = false;
+
+#pragma region Getter / Setter
+
+public:
+
+	bool HasPressedTravel() const;
+
+#pragma endregion
+
 };
