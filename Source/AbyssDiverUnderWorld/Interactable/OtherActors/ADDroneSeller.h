@@ -133,7 +133,7 @@ private:
 		}
 
 		CurrentMoney = NewCurrentMoney;
-		MoneyRatio = CurrentMoney / TargetMoney;
+		MoneyRatio = (float)CurrentMoney / TargetMoney;
 		OnRep_CurrentMoney();
 	}
 	
