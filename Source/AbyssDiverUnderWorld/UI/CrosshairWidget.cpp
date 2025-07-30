@@ -110,6 +110,10 @@ void UCrosshairWidget::BindWidget(APawn* Pawn)
 	SetSimulatedLaggedRotationComponent(Character->GetMesh1PSpringArm(), Character->GetMesh1PSpringArm()->SocketName);
 	SetUsingLaggedRotation(Character->GetEnvironmentState() == EEnvironmentState::Underwater);
 	Character->OnEnvironmentStateChangedDelegate.AddDynamic(this, &UCrosshairWidget::OnEnvironmentStateChanged);
+
+	// Dynamic Delegate이기 때문에 UFUNCTION만 사용 가능한 상태이다.
+	Character->OnEmoteStartDelegate.AddDynamic(this, &UCrosshairWidget::HideCrosshair);
+	Character->OnEmoteEndDelegate.AddDynamic(this, &UCrosshairWidget::ShowCrosshair);
 }
 
 void UCrosshairWidget::OnEnvironmentStateChanged(EEnvironmentState OldEnvironmentState,
@@ -129,4 +133,20 @@ void UCrosshairWidget::ResetCrosshairPosition()
 	int32 ViewPortSizeX, ViewPortSizeY;
 	GetOwningPlayer()->GetViewportSize(ViewPortSizeX, ViewPortSizeY);
 	CrosshairPosition = FVector2D(0.5f * ViewPortSizeX, 0.5f * ViewPortSizeY);
+}
+
+void UCrosshairWidget::ShowCrosshair()
+{
+	if (CrosshairImage)
+	{
+		CrosshairImage->SetVisibility(ESlateVisibility::Visible);
+	}
+}
+
+void UCrosshairWidget::HideCrosshair()
+{
+	if (CrosshairImage)
+	{
+		CrosshairImage->SetVisibility(ESlateVisibility::Hidden);
+	}
 }

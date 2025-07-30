@@ -91,6 +91,10 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "ADGameInstance", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.ShopItemMeshTransformRow"))
 	TObjectPtr<UDataTable> ShopMeshTransformTable;
 
+	/** 맵의 깊이 정보를 담고 있는 데이터 테이블 */
+	UPROPERTY(EditDefaultsOnly, Category = "ADGameInstance", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.MapDepthRow"))
+	TObjectPtr<UDataTable> MapDepthTable;
+
 #pragma region Sound Tables
 
 	UPROPERTY(EditDefaultsOnly, Category = "ADGameInstance", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.SFXDataRow"))

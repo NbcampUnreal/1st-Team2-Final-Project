@@ -6,9 +6,9 @@
 #include "DataRow/FADItemDataRow.h"
 #include "DataRow/FADProjectileDataRow.h"
 #include "DataRow/ButtonDataRow.h"
+#include "DataRow/MapDepthRow.h"
 #include "DataRow/PhaseGoalRow.h"
 #include "DataRow/ShopItemMeshTransformRow.h"
-#include "Interactable/Item/ADOreRock.h"
 #include "Logging/LogMacros.h"
 
 void UDataTableSubsystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -238,4 +238,24 @@ void UDataTableSubsystem::ParseShopItemMeshTransformDataTable(UADGameInstance* G
 	}
 
 	LOGV(Log, TEXT("ShopItemMeshTransformTableMap size: %d"), ShopItemMeshTransformTableMap.Num());
+}
+
+FMapDepthRow* UDataTableSubsystem::GetDepthZoneDataRow(FName MapName) const
+{
+	UADGameInstance* GameInstance = Cast<UADGameInstance>(GetGameInstance());
+	if (GameInstance == nullptr)
+	{
+		LOGV(Error, TEXT("GameInstance is null"));
+		return nullptr;
+	}
+	
+	const UDataTable* MapDepthTable = GameInstance->MapDepthTable;
+	if (MapDepthTable == nullptr)
+	{
+		LOGV(Error, TEXT("MapDepthTable is null"));
+		return nullptr;
+	}
+		 
+	static const FString Context(TEXT("DepthZoneDataTable"));
+	return MapDepthTable->FindRow<FMapDepthRow>(MapName, Context);
 }
