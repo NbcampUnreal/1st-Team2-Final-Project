@@ -17,14 +17,18 @@ public:
 
 	}
 
-	FSavedSessionInfo(const FString& InSaveName)
+	FSavedSessionInfo(const FString& InSaveName, int32 InClearCount, const TArray<FString>& InSavedPlayerNameTextList)
 	{
 		SaveName = InSaveName;
+		ClearCount = InClearCount;
+		SavedPlayerNameTextList = InSavedPlayerNameTextList;
 
 		const FDateTime Now = FDateTime::UtcNow();
 		SavedUnixTime = Now.ToUnixTimestamp();
 
 	}
+
+public:
 
 	UPROPERTY()
 	FString SaveName;
@@ -32,9 +36,21 @@ public:
 	UPROPERTY()
 	int64 SavedUnixTime;
 
+	UPROPERTY()
+	int32 ClearCount;
+
+	UPROPERTY()
+	TArray<FString> SavedPlayerNameTextList;
+
 	bool operator<(const FSavedSessionInfo& Other)
 	{
 		return SavedUnixTime < Other.SavedUnixTime;
+	}
+
+	FString GetTimestempString() const
+	{
+		FDateTime DateTime = FDateTime::FromUnixTimestamp(SavedUnixTime);
+		return DateTime.ToString(TEXT("[%Y-%m-%d %H:%M:%S]"));
 	}
 };
 
