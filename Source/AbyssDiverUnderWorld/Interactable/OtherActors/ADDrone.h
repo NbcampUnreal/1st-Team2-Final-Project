@@ -17,6 +17,7 @@ class ASpawnManager;
 class USoundSubsystem;
 class ATargetPoint;
 class UADWorldSubsystem;
+class UInteractPopupWidget;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADDrone : public AActor,  public IIADInteractable
@@ -52,13 +53,13 @@ public:
 	void OnRep_IsActive();
 	void StartRising();
 	void OnDestroyTimer();
+	void ExecuteConfirmedInteraction();
 
 	FOnPhaseChangeDelegate OnPhaseChangeDelegate;
 
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 private:
-	
 #pragma endregion
 
 #pragma region Variable
@@ -90,6 +91,8 @@ public:
 	TObjectPtr<UADWorldSubsystem> WorldSubsystem;
 	UPROPERTY(EditAnywhere)
 	UDataTable* PhaseBgmTable;
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<UInteractPopupWidget> PopupWidgetClass;
 
 protected:
 

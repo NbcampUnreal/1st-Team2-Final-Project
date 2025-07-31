@@ -197,6 +197,7 @@ private:
 	const FName HarpoonSocketName = TEXT("Harpoon");
 	const FName DPVSocketName = TEXT("DPV");
 	const FName FlareSocketName = TEXT("Flare");
+	const FName ShotgunSocketName = TEXT("Shotgun");
 #pragma endregion
 
 

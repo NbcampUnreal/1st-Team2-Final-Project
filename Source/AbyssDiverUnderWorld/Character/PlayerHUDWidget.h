@@ -54,6 +54,9 @@ public:
 	UFUNCTION()
 	void UpdateCombatText(bool bIsInCombat);
 
+	UFUNCTION()
+	void UpdateDepthText(float CurrentDepth, EDepthZone DepthZone);
+
 protected:
 
 	/** Character State 변화 처리 */
@@ -99,6 +102,9 @@ private:
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<URichTextBlock> CombatTextBlock;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<URichTextBlock> DepthTextBlock;
 	
 #pragma endregion
 	

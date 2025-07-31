@@ -97,6 +97,10 @@ private:
 	/** 실드 획득 가능 여부. 사망 시에는 Shield가 변경되면 안 된다. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat", meta = (AllowPrivateAccess = "true"))
 	uint8 bCanGainShield : 1;
+
+	UPROPERTY(Replicated, EditDefaultsOnly, BlueprintReadOnly, Category = "Stat", meta = (AllowPrivateAccess = "true"))
+	/** 최대 실드 값, 이 값 이상으로 획득할 수 없다. */
+	float MaxShieldValue;
 	
 	/** 현재 실드 값 */
 	UPROPERTY(ReplicatedUsing="OnRep_ShieldValueChanged", EditAnywhere, BlueprintReadOnly, Category = "Stat", meta = (AllowPrivateAccess = "true"))
@@ -117,6 +121,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	/** 실드를 가지고 있는 여부를 반환 */
 	FORCEINLINE bool HasShield() const { return ShieldValue > 0.0f; }
+
+	/** 실드가 가득 찼는지 여부를 반환 */
+	FORCEINLINE bool IsShieldFull() const { return ShieldValue >= MaxShieldValue; }
 
 	/** 현재 실드 값을 반환 */
 	FORCEINLINE float GetShieldValue() const { return ShieldValue; }
