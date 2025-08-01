@@ -35,7 +35,7 @@ void USaveDataSubsystem::AsyncSaveCurrentGame()
 	}
 
 	const FDateTime Now = FDateTime::Now();
-	const FString SaveGameName = Now.ToString(TEXT("[%Y-%m-%d %H:%M:%S] ")) + TEXT("Auto Saved");
+	const FString SaveGameName = Now.ToString(TEXT("[%Y-%m-%d %H:%M:%S] ")) + TEXT("Quick Save");
 	AsyncSaveCurrentGame(SaveGameName, false);
 }
 
@@ -141,31 +141,33 @@ void USaveDataSubsystem::AsyncSaveCurrentGame(const FString& SaveGameName, bool 
 
 	SessionSaveGame->SetSaveData(SessionData);
 
+	FString SaveSlotName = GetSavedSlotNameFromSaveName(SaveGameName);
+	if (SaveSlotName.IsEmpty() == false && bShouldOverwrite)
+	{
+		FAsyncSaveGameToSlotDelegate SaveDelegateWithOverwrite;
+		SaveDelegateWithOverwrite.BindUObject(this, &USaveDataSubsystem::OnSaveSessionGame);
+		UGameplayStatics::AsyncSaveGameToSlot(SessionSaveGame, SaveSlotName, 0, SaveDelegateWithOverwrite);
+		LastSavedSessionGame = SessionSaveGame;
+		LastSavedGameSlotName = SaveSlotName;
+
+		return;
+	}
+
 	const int32 SafetyNumber = 100;
 	for (int32 i = 0; i < SafetyNumber; ++i)
 	{
 		int32 RandomNumber = FMath::Rand();
-		FString NewSlotName = SaveSlotNamePrefix + FString::FromInt(RandomNumber);
+		SaveSlotName = SaveSlotNamePrefix + FString::FromInt(RandomNumber);
 
 		bIsSavingNow = true;
 
-		if (bShouldOverwrite)
-		{
-			FAsyncSaveGameToSlotDelegate SaveDelegateWithOverwrite;
-			SaveDelegateWithOverwrite.BindUObject(this, &USaveDataSubsystem::OnSaveSessionGame);
-			UGameplayStatics::AsyncSaveGameToSlot(SessionSaveGame, NewSlotName, 0, SaveDelegateWithOverwrite);
-			LastSavedSessionGame = SessionSaveGame;
-			LastSavedGameSlotName = NewSlotName;
-
-			return;
-		}
-		else if(IsExistSavedSessionGame(NewSlotName) == false)
+		if(IsExistSavedSessionGame(SaveSlotName) == false)
 		{
 			FAsyncSaveGameToSlotDelegate SaveDelegateWithoutOverwrite;
 			SaveDelegateWithoutOverwrite.BindUObject(this, &USaveDataSubsystem::OnSaveSessionGame);
-			UGameplayStatics::AsyncSaveGameToSlot(SessionSaveGame, NewSlotName, 0, SaveDelegateWithoutOverwrite);
+			UGameplayStatics::AsyncSaveGameToSlot(SessionSaveGame, SaveSlotName, 0, SaveDelegateWithoutOverwrite);
 			LastSavedSessionGame = SessionSaveGame;
-			LastSavedGameSlotName = NewSlotName;
+			LastSavedGameSlotName = SaveSlotName;
 
 			return;
 		}
@@ -286,6 +288,7 @@ void USaveDataSubsystem::DeleteSavedGame(const FString& SavedSlotName)
 		FString SaveFileName = CachedSavedSessionInfo->SavedSessionInfos[SavedSlotName].SaveName;
 		CachedSavedSessionInfo->SavedSessionInfos.Remove(SavedSlotName);
 		PrintLogWithScreen(FString::Printf(TEXT("%s(%s) is Deleted"), *SavedSlotName, *SaveFileName));
+		AsyncSaveSavedGameListInfo();
 	}
 	else
 	{
@@ -371,7 +374,22 @@ void USaveDataSubsystem::OnSaveSessionGame(const FString& SlotName, const int32 
 		return;
 	}
 
-	CachedSavedSessionInfo->SavedSessionInfos.Add({ SlotName, FSavedSessionInfo(LastSavedSessionGame->GetSaveData().SaveDataName) });
+	AADInGameState* GS = GetWorld()->GetGameState<AADInGameState>();
+	if (GS == nullptr)
+	{
+		PrintLogWithScreen(TEXT("Fail to Save Game Info, GameState is not valid"));
+		return;
+	}
+
+	TArray<FString> PlayerNicknames;
+
+	const int32 CurrentPlayerCount = UGameplayStatics::GetGameMode(GetWorld())->GetNumPlayers();
+	for (int32 i = 0; i < CurrentPlayerCount; ++i)
+	{
+		PlayerNicknames.Emplace(UGameplayStatics::GetPlayerState(GetWorld(), 0)->GetPlayerName());
+	}
+
+	CachedSavedSessionInfo->SavedSessionInfos.Add({ SlotName, FSavedSessionInfo(LastSavedSessionGame->GetSaveData().SaveDataName, GS->GetClearCount(), PlayerNicknames) });
 	AsyncSaveSavedGameListInfo();
 
 	// 저장 성공 알리기
@@ -402,6 +420,8 @@ void USaveDataSubsystem::OnSaveSavedGameListInfoGame(const FString& SlotName, co
 
 	// 저장 리스트 갱신 완료..
 	PrintLogWithScreen(FString::Printf(TEXT("SavedGameListInfo Save Succeeded, Slot : %s, UserIndex : %d"), *SlotName, UserIndex));
+
+	OnSaveCompletedDelegate.Broadcast();
 }
 
 void USaveDataSubsystem::OnLoadedSavedGame(const FString& LoadedSlotName, const int32 UserIndex, USaveGame* LoadedSavedGame)
@@ -506,6 +526,8 @@ void USaveDataSubsystem::OnLoadedSavedGame(const FString& LoadedSlotName, const 
 			}
 		}
 	}
+
+	OnLoadCompletedDelegate.Broadcast();
 
 	RestartWorld();
 }
@@ -644,6 +666,19 @@ void USaveDataSubsystem::OnWorldTearDown(UWorld* World)
 bool USaveDataSubsystem::IsExistSavedSessionGame(const FString& SlotName)
 {
 	return CachedSavedSessionInfo->SavedSessionInfos.Contains(SlotName);
+}
+
+FString USaveDataSubsystem::GetSavedSlotNameFromSaveName(const FString& SaveName)
+{
+	for (const auto& SavedSessionInfo : CachedSavedSessionInfo->SavedSessionInfos)
+	{
+		if (SavedSessionInfo.Value.SaveName == SaveName)
+		{
+			return SavedSessionInfo.Key;
+		}
+	}
+
+	return "";
 }
 
 USavedSessionInfoSaveGame* USaveDataSubsystem::GetSavedSesssionListInfo() const
