@@ -36,5 +36,5 @@ struct FTutorialStepData : public FTableRowBase
     ETutorialHintKey HintKey = ETutorialHintKey::None;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    FName HighlightTargetID;
+    ETutorialHighlightTarget HighlightTargetID = ETutorialHighlightTarget::None;
 };

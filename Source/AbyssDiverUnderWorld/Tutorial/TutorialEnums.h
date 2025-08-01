@@ -41,3 +41,15 @@ enum class ETutorialHintKey : uint8
 	Items UMETA(DisplayName = "Items"), 
 	Revive UMETA(DisplayName = "Revive")
 };
+
+UENUM(BlueprintType)
+enum class ETutorialHighlightTarget : uint8
+{
+	None UMETA(DisplayName = "None"),
+	OxygenBar UMETA(DisplayName = "Oxygen Bar"),
+	SpearPanel UMETA(DisplayName = "Spear Panel"),
+	RadarIcon UMETA(DisplayName = "Radar Icon"),
+	InventoryButton UMETA(DisplayName = "Inventory Button"),
+	FlashlightToggle UMETA(DisplayName = "Flashlight Toggle"),
+	ReviveHintIcon UMETA(DisplayName = "Revive Hint Icon")
+};
