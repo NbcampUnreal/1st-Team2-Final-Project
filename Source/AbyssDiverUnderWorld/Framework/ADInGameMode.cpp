@@ -252,22 +252,6 @@ void AADInGameMode::ReadyForTravelToCamp()
 		return;
 	}
 
-	//for (AADPlayerState* ADPlayerState : TActorRange<AADPlayerState>(GetWorld()))
-	//{
-	//	APawn* Player = ADPlayerState->GetPawn();
-	//	if (Player == nullptr || IsValid(Player) == false || Player->IsValidLowLevel() == false || Player->IsPendingKillPending())
-	//	{
-	//		LOGV(Error, TEXT("Not Valid Player, PlayeStateName : %s"), *ADPlayerState->GetName());
-	//		continue;
-	//	}
-
-	//	ADPlayerState->GetPawn()->bAlwaysRelevant = true;
-	//}
-
-	//ForceNetUpdate();
-
-	//LOGV(Log, TEXT("Releveant On"));
-
 	TimerManager.ClearTimer(SyncTimerHandle);
 	const float WaitForSync = 1.0f;
 	TimerManager.SetTimer(SyncTimerHandle, [&]()
@@ -322,6 +306,11 @@ void AADInGameMode::TravelToCamp()
 					LOGV(Error, TEXT("LevelLoad is empty"));
 					return;
 				}
+				
+				if (bWasGameOver == false)
+				{
+					ADInGameState->SetClearCount(ADInGameState->GetClearCount() + 1);
+				}
 
 				ADInGameState->SendDataToGameInstance();
 				//input spot level name
@@ -358,7 +347,6 @@ void AADInGameMode::BindDelegate(AUnderwaterCharacter* PlayerCharacter)
 		return;
 	}
 
-	LOGV(Error, TEXT("DelegateBound"));
 	PlayerCharacter->OnCharacterStateChangedDelegate.AddDynamic(this, &AADInGameMode::OnCharacterStateChanged);
 }
 
@@ -520,6 +508,7 @@ void AADInGameMode::GameOver()
 
 #endif
 
+	bWasGameOver = true;
 	ReadyForTravelToCamp();
 	
 	for (AADPlayerController* PC : TActorRange<AADPlayerController>(GetWorld()))

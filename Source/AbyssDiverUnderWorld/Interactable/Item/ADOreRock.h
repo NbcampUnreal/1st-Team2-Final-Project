@@ -12,6 +12,7 @@ class UNiagaraSystem;
 class UNiagaraComponent;
 class UADInteractableComponent;
 class URadarReturnComponent;
+class URadarReturn2DComponent;
 class AUnderwaterCharacter;
 class USoundSubsystem;
 
@@ -123,6 +124,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "Radar Settings")
 	TObjectPtr<URadarReturnComponent> RadarReturnComponent;
+
+	UPROPERTY(EditAnywhere, Category = "Radar Settings")
+	TObjectPtr<URadarReturn2DComponent> RadarReturn2DComponent;
 
 	UPROPERTY(EditAnywhere, Category = "Mining")
 	int32 DefaultMiningStrength = 25;

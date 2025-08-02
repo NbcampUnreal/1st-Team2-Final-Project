@@ -218,6 +218,7 @@ void AADInGameState::SendDataToGameInstance()
 	{
 		ADGameInstance->SelectedLevelName = SelectedLevelName;
 		ADGameInstance->TeamCredits = TeamCredits;
+		ADGameInstance->ClearCount = ClearCount;
 	}
 
 	LOGVN(Error, TEXT("SelectedLevelName: %d / TeamCredits: %d"), SelectedLevelName, TeamCredits);
@@ -345,6 +346,7 @@ void AADInGameState::ReceiveDataFromGameInstance()
 	{
 		SelectedLevelName = ADGameInstance->SelectedLevelName;
 		TeamCredits = ADGameInstance->TeamCredits;
+		ClearCount = ADGameInstance->ClearCount;
 	}
 }
 
@@ -399,6 +401,16 @@ UPlayerHUDComponent* AADInGameState::GetPlayerHudComponent()
 
 	UPlayerHUDComponent* HudComp = PC->GetPlayerHUDComponent();
 	return HudComp;
+}
+
+int32 AADInGameState::GetClearCount() const
+{
+	return ClearCount;
+}
+
+void AADInGameState::SetClearCount(int32 NewClearCount)
+{
+	ClearCount = FMath::Max(ClearCount, 0);
 }
 
 FString AADInGameState::GetMapDisplayName() const

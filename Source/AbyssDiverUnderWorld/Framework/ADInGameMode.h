@@ -110,6 +110,8 @@ private:
 
 	TArray<EPlayerAliveInfo> PlayerAliveInfos;
 
+	uint8 bWasGameOver : 1 = false;
+
 #pragma endregion
 
 public:

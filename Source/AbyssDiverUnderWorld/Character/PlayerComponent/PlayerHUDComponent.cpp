@@ -1,24 +1,29 @@
 ﻿#include "PlayerHUDComponent.h"
 
 #include "AbyssDiverUnderWorld.h"
+
 #include "Character/PlayerHUDWidget.h"
 #include "Character/UnderwaterCharacter.h"
 #include "Character/PlayerComponent/OxygenComponent.h"
 #include "Character/PlayerComponent/StaminaComponent.h"
 #include "Character/StatComponent.h"
+
 #include "Framework/ADInGameState.h"
 #include "Framework/ADPlayerState.h"
+#include "Framework/ADPlayerController.h"
+
 #include "UI/ResultScreen.h"
 #include "UI/PlayerStatusWidget.h"
 #include "UI/MissionsOnHUDWidget.h"
-#include "GameFramework/PlayerController.h"
+#include "UI/CrosshairWidget.h"
+#include "UI/SpectatorHUDWidget.h"
+#include "UI/RadarWidgets/Radar2DWidget.h"
+
+#include "Interactable/OtherActors/ADDroneSeller.h"
+#include "Subsystems/SoundSubsystem.h"
+
 #include "EngineUtils.h"
 #include "Components/CanvasPanel.h"
-#include "Framework/ADPlayerController.h"
-#include "UI/CrosshairWidget.h"
-#include "Interactable/OtherActors/ADDroneSeller.h"
-#include "UI/SpectatorHUDWidget.h"
-#include "Subsystems/SoundSubsystem.h"
 #include "Kismet/GameplayStatics.h"
 
 UPlayerHUDComponent::UPlayerHUDComponent()
@@ -83,7 +88,14 @@ void UPlayerHUDComponent::BeginPlay()
 		MissionsOnHUDWidget->AddToViewport();
 	}
 
-	// 올바른 수정
+	if (Radar2DWidgetClass)
+	{
+		Radar2DWidget = CreateWidget<URadar2DWidget>(PlayerController, Radar2DWidgetClass);
+		Radar2DWidget->AddToViewport(-1);
+		SetActiveRadarWidget(false);
+	}
+
+
 	if (APawn* Pawn = PlayerController->GetPawn())
 	{
 		if (AUnderwaterCharacter* UWCharacter = Cast<AUnderwaterCharacter>(Pawn)) 
@@ -341,6 +353,20 @@ void UPlayerHUDComponent::SetupHudWidgetToNewPawn(APawn* NewPawn, APlayerControl
 		MissionsOnHUDWidget->AddToViewport();
 	}
 
+	if (!IsValid(Radar2DWidget) && Radar2DWidgetClass)
+	{
+		Radar2DWidget = CreateWidget<URadar2DWidget>(PlayerController, Radar2DWidgetClass);
+	}
+
+	if (Radar2DWidget)
+	{
+		if (Radar2DWidget->IsInViewport() == false)
+		{
+			Radar2DWidget->AddToViewport(-1);
+			SetActiveRadarWidget(false);
+		}
+	}
+
 	if (AUnderwaterCharacter* UWCharacter = Cast<AUnderwaterCharacter>(NewPawn))
 	{
 		if (UOxygenComponent* OxygenComp = UWCharacter->GetOxygenComponent())
@@ -390,6 +416,23 @@ void UPlayerHUDComponent::ShowHudWidget()
 	if (PlayerController && Pawn)
 	{
 		SetupHudWidgetToNewPawn(Pawn, PlayerController);
+	}
+}
+
+void UPlayerHUDComponent::SetActiveRadarWidget(bool bShouldActivate)
+{
+	if (IsValid(Radar2DWidget) == false || Radar2DWidget->IsValidLowLevel() == false)
+	{
+		return;
+	}
+
+	if (bShouldActivate)
+	{
+		Radar2DWidget->SetVisibility(ESlateVisibility::HitTestInvisible);
+	}
+	else
+	{
+		Radar2DWidget->SetVisibility(ESlateVisibility::Hidden);
 	}
 }
 
