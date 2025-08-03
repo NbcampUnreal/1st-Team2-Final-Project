@@ -83,7 +83,7 @@ void AADDroneSeller::Interact_Implementation(AActor* InstigatorActor)
 		return;
 	}
 
-	SetCurrentMoeny(CurrentMoney + Gained);
+	SetCurrentMoney(CurrentMoney + Gained);
 
 	LOGD(Log, TEXT("→ 누적 금액: %d / %d"), CurrentMoney, TargetMoney);
 

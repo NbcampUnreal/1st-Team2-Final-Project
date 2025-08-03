@@ -125,7 +125,7 @@ public:
 	
 private:
 
-	void SetCurrentMoeny(const int32& NewCurrentMoney)
+	void SetCurrentMoney(const int32& NewCurrentMoney)
 	{
 		if (HasAuthority() == false)
 		{
