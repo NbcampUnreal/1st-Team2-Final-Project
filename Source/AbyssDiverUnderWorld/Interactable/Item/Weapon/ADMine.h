@@ -54,7 +54,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly) 
 	float InnerRadius = 100.f;
 	UPROPERTY(EditDefaultsOnly) 
-	float OuterRadius = 450.f;
+	float OuterRadius = 250.f;
 	UPROPERTY(EditDefaultsOnly) 
 	float DamageFalloff = 1.0f;
 
