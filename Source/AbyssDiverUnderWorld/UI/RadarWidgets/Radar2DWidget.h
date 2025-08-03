@@ -52,7 +52,7 @@ protected:
 	TObjectPtr<UOverlay> RadarOverlay;
 
 	UPROPERTY()
-	TMap<TObjectPtr<URadarReturn2DComponent>, TObjectPtr<URadarReturnWidget>> ActivatedReturnWidgets;
+	TMap<TWeakObjectPtr<URadarReturn2DComponent>, TObjectPtr<URadarReturnWidget>> ActivatedReturnWidgets;
 	TQueue<TObjectPtr<URadarReturnWidget>> DeactivatedReturnImages;
 
 	FVector2D OwnerLocation2D;

@@ -113,6 +113,7 @@ void URadar2DComponent::UnregisterReturnComponent(AActor* RegisteredActor)
 void URadar2DComponent::UnregisterReturnComponent(URadarReturn2DComponent* RegisteredReturn)
 {
 	CachedReturns.Remove(RegisteredReturn);
+	CachedReturnsInDetectRadius.Remove(RegisteredReturn);
 }
 
 void URadar2DComponent::RegisterCurrentReturns()
