@@ -60,6 +60,10 @@ public:
 protected:
 	int32 SellAllExchangeableItems(AActor* InstigatorActor);
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	/** 제출한 Player의 State를 갱신 */
+	void UpdatePlayerState(AActor* Actor, int32 GainedValue);
+	
 private:
 #pragma endregion
 

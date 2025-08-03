@@ -84,6 +84,7 @@ void AADDroneSeller::Interact_Implementation(AActor* InstigatorActor)
 	}
 
 	SetCurrentMoney(CurrentMoney + Gained);
+	UpdatePlayerState(InstigatorActor, Gained);
 
 	LOGD(Log, TEXT("→ 누적 금액: %d / %d"), CurrentMoney, TargetMoney);
 
@@ -230,6 +231,30 @@ void AADDroneSeller::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME(AADDroneSeller, CurrentMoney);
 	DOREPLIFETIME(AADDroneSeller, TargetMoney);
 	DOREPLIFETIME(AADDroneSeller, MoneyRatio);
+}
+
+void AADDroneSeller::UpdatePlayerState(AActor* Actor, int32 GainedValue)
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+	
+	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor);
+	if (Player == nullptr)
+	{
+		return;
+	}
+
+	if (AADPlayerState* PlayerState = Player->GetPlayerState<AADPlayerState>())
+	{
+		LOGV(Log, TEXT("PlayerState is valid, GainedValue: %d"), GainedValue);
+		PlayerState->AddOreCollectedValue(GainedValue);
+	}
+	else
+	{
+		LOGD(Log, TEXT("PlayerState is not valid"));
+	}
 }
 
 UADInteractableComponent* AADDroneSeller::GetInteractableComponent() const
