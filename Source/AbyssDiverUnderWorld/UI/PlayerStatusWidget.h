@@ -36,6 +36,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void ShowPhaseWarning(bool bShouldVisible);
 
+	UFUNCTION(BlueprintCallable)
+	void SetTopName(const FString& TopPlayerName);
 	// 일반 함수
 	void SetSpearCount(int32 Current, int32 Total);
 	void SetOxygenPercent(float InPercent);
@@ -93,6 +95,16 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, Category = "Compass")
 	TObjectPtr<AActor> CompassTargetObject;
+
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> TopName;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> TopNameCopy;
+
+	UPROPERTY(meta = (BindWidgetAnim), Transient)
+	TObjectPtr<UWidgetAnimation> ChangeTopPlayer;
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UTextBlock> CurrentMoneyText;

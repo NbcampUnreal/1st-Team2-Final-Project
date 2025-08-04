@@ -210,6 +210,13 @@ void UPlayerStatusWidget::SetMoneyProgressBar(float InPercent)
     }
 }
 
+void UPlayerStatusWidget::SetTopName(const FString& TopPlayerName)
+{
+    TopName->SetText(FText::FromString(TopPlayerName));
+    TopNameCopy->SetText(FText::FromString(TopPlayerName));
+    PlayAnimation(ChangeTopPlayer);
+}
+
 void UPlayerStatusWidget::PlayNextPhaseAnim(int32 NextPhaseNumber)
 {
     // 나중에 테이블로 텍스트 정리할수도?
