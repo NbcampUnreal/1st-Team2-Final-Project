@@ -33,6 +33,8 @@
 #include "Framework/ADTutorialGameMode.h"
 #include "Framework/ADTutorialGameState.h"
 
+#include "Kismet/GameplayStatics.h"
+
 AADPlayerController::AADPlayerController()
 {
 	static ConstructorHelpers::FObjectFinder<UInputMappingContext> MappingContextAsset(TEXT("/Game/_AbyssDiver/Input/IMC_Player.IMC_Player"));
@@ -558,10 +560,10 @@ void AADPlayerController::CheckTutorialObjective(const FInputActionValue& Value,
 	{
 		bObjectiveMet = true;
 	}
-	else if (CurrentPhase == ETutorialPhase::Step5_Looting && SourceAction == LootingAction)
-	{
-		bObjectiveMet = true;
-	}
+	//else if (CurrentPhase == ETutorialPhase::Step5_Looting && SourceAction == LootingAction)
+	//{
+	//	bObjectiveMet = true;
+	//}
 	else if (CurrentPhase == ETutorialPhase::Step6_Inventory && SourceAction == InventoryAction)
 	{
 		bObjectiveMet = true;

@@ -78,9 +78,10 @@ protected:
 #pragma region Getters / Setters
 
 public:
-
+	void SetupIndicator(AActor* NewOwner, UTexture2D* NewIcon);
 	int32 GetTargetOrder() const;
 	UTexture2D* GetTargetIcon() const;
+
 
 #pragma endregion
 

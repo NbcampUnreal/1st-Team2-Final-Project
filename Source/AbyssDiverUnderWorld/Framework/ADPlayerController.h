@@ -100,7 +100,10 @@ public:
 	void S_KillPlayer_Implementation();
 
 	void SetActiveRadarWidget(bool bShouldActivate);
-	
+
+	UFUNCTION(Server, Reliable)
+	void Server_RequestAdvanceTutorialPhase();
+
 protected:
 
 	/** 관전 상태가 시작될 때 호출되는 함수 */
@@ -151,8 +154,6 @@ protected:
 
 	void CheckTutorialObjective(const FInputActionValue& Value, UInputAction* SourceAction);
 
-	UFUNCTION(Server, Reliable)
-	void Server_RequestAdvanceTutorialPhase();
 #pragma endregion
 	
 #pragma region Variable

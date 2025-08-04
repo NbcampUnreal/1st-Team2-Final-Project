@@ -71,6 +71,9 @@ public:
 	bool TryGetTargetLocation(FVector& OutLocation);
 	bool TryGetCurrentTarget(AIndicatingTarget*& OutTarget);
 
+	UFUNCTION(BlueprintCallable, Category = "TargetIndicatorManager")
+	void RegisterNewTarget(AIndicatingTarget* NewTarget);
+
 #pragma endregion
 
 
