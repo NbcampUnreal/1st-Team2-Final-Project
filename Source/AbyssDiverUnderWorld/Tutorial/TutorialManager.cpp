@@ -51,8 +51,7 @@ void ATutorialManager::BeginPlay()
     if (AADTutorialGameState* TutorialGS = GetWorld()->GetGameState<AADTutorialGameState>())
     {
 
-        TutorialGS->OnPhaseChanged.AddUObject(this, &ATutorialManager::OnTutorialPhaseChanged);
-
+        TutorialGS->OnPhaseChanged.AddDynamic(this, &ATutorialManager::OnTutorialPhaseChanged);
         OnTutorialPhaseChanged(TutorialGS->GetCurrentPhase());
     }
 }

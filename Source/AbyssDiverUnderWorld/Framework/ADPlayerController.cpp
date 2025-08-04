@@ -30,6 +30,9 @@
 
 #include "UI/HoldInteractionWidget.h"
 
+#include "Framework/ADTutorialGameMode.h"
+#include "Framework/ADTutorialGameState.h"
+
 AADPlayerController::AADPlayerController()
 {
 	static ConstructorHelpers::FObjectFinder<UInputMappingContext> MappingContextAsset(TEXT("/Game/_AbyssDiver/Input/IMC_Player.IMC_Player"));
@@ -343,18 +346,37 @@ void AADPlayerController::SetupInputComponent()
 	{
 		if (InventoryAction)
 		{
-			EnhancedInput->BindAction(
-				InventoryAction,
-				ETriggerEvent::Started,
-				this,
-				&AADPlayerController::ShowInventory
-			);
-			EnhancedInput->BindAction(
-				InventoryAction,
-				ETriggerEvent::Completed,
-				this,
-				&AADPlayerController::HideInventory
-			);
+			EnhancedInput->BindAction(InventoryAction, ETriggerEvent::Started, this, &AADPlayerController::ShowInventory);
+			EnhancedInput->BindAction(InventoryAction, ETriggerEvent::Completed, this, &AADPlayerController::HideInventory);
+			EnhancedInput->BindAction(InventoryAction, ETriggerEvent::Triggered, this, &AADPlayerController::OnInventoryTriggered);
+		}
+		if (SprintAction)
+		{
+			EnhancedInput->BindAction(SprintAction, ETriggerEvent::Triggered, this, &AADPlayerController::OnSprintTriggered);
+		}
+		if (RadarAction)
+		{
+			EnhancedInput->BindAction(RadarAction, ETriggerEvent::Triggered, this, &AADPlayerController::OnRadarTriggered);
+		}
+		if (LightToggleAction)
+		{
+			EnhancedInput->BindAction(LightToggleAction, ETriggerEvent::Triggered, this, &AADPlayerController::OnLightToggleTriggered);
+		}
+		if (LootingAction)
+		{
+			EnhancedInput->BindAction(LootingAction, ETriggerEvent::Triggered, this, &AADPlayerController::OnLootingTriggered);
+		}
+		if (DroneAction)
+		{
+			EnhancedInput->BindAction(DroneAction, ETriggerEvent::Triggered, this, &AADPlayerController::OnDroneTriggered);
+		}
+		if (ItemsAction)
+		{
+			EnhancedInput->BindAction(ItemsAction, ETriggerEvent::Triggered, this, &AADPlayerController::OnItemsTriggered);
+		}
+		if (ReviveAction)
+		{
+			EnhancedInput->BindAction(ReviveAction, ETriggerEvent::Triggered, this, &AADPlayerController::OnReviveTriggered);
 		}
 	}
 }
@@ -478,4 +500,99 @@ void AADPlayerController::ShowFadeIn()
 void AADPlayerController::OnCameraBlankEnd()
 {
 	
+}
+
+void AADPlayerController::OnInventoryTriggered(const FInputActionValue& Value)
+{
+	CheckTutorialObjective(Value, InventoryAction);
+}
+
+void AADPlayerController::OnSprintTriggered(const FInputActionValue& Value)
+{
+	CheckTutorialObjective(Value, SprintAction);
+}
+
+void AADPlayerController::OnRadarTriggered(const FInputActionValue& Value)
+{
+	CheckTutorialObjective(Value, RadarAction);
+}
+
+void AADPlayerController::OnLightToggleTriggered(const FInputActionValue& Value)
+{
+	CheckTutorialObjective(Value, LightToggleAction);
+}
+
+void AADPlayerController::OnLootingTriggered(const FInputActionValue& Value)
+{
+	CheckTutorialObjective(Value, LootingAction);
+}
+
+void AADPlayerController::OnDroneTriggered(const FInputActionValue& Value)
+{
+	CheckTutorialObjective(Value, DroneAction);
+}
+
+void AADPlayerController::OnItemsTriggered(const FInputActionValue& Value)
+{
+	CheckTutorialObjective(Value, ItemsAction);
+}
+
+void AADPlayerController::OnReviveTriggered(const FInputActionValue& Value)
+{
+	CheckTutorialObjective(Value, ReviveAction);
+}
+
+void AADPlayerController::CheckTutorialObjective(const FInputActionValue& Value, UInputAction* SourceAction)
+{
+	AADTutorialGameState* TutorialGS = GetWorld() ? GetWorld()->GetGameState<AADTutorialGameState>() : nullptr;
+	if (!TutorialGS) return;
+
+	ETutorialPhase CurrentPhase = TutorialGS->GetCurrentPhase();
+	bool bObjectiveMet = false;
+
+	if (CurrentPhase == ETutorialPhase::Step2_Sprint && SourceAction == SprintAction)
+	{
+		bObjectiveMet = true;
+	}
+	else if (CurrentPhase == ETutorialPhase::Step4_Radar && SourceAction == RadarAction)
+	{
+		bObjectiveMet = true;
+	}
+	else if (CurrentPhase == ETutorialPhase::Step5_Looting && SourceAction == LootingAction)
+	{
+		bObjectiveMet = true;
+	}
+	else if (CurrentPhase == ETutorialPhase::Step6_Inventory && SourceAction == InventoryAction)
+	{
+		bObjectiveMet = true;
+	}
+	else if (CurrentPhase == ETutorialPhase::Step7_Drone && SourceAction == DroneAction)
+	{
+		bObjectiveMet = true;
+	}
+	else if (CurrentPhase == ETutorialPhase::Step8_LightToggle && SourceAction == LightToggleAction)
+	{
+		bObjectiveMet = true;
+	}
+	else if (CurrentPhase == ETutorialPhase::Step9_Items && SourceAction == ItemsAction)
+	{
+		bObjectiveMet = true;
+	}
+	else if (CurrentPhase == ETutorialPhase::Step11_Revival && SourceAction == ReviveAction)
+	{
+		bObjectiveMet = true;
+	}
+
+	if (bObjectiveMet)
+	{
+		Server_RequestAdvanceTutorialPhase();
+	}
+}
+
+void AADPlayerController::Server_RequestAdvanceTutorialPhase_Implementation()
+{
+	if (AADTutorialGameMode* TutorialGM = GetWorld()->GetAuthGameMode<AADTutorialGameMode>())
+	{
+		TutorialGM->AdvanceTutorialPhase();
+	}
 }

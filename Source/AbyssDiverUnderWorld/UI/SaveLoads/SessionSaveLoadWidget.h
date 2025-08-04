@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-
+#include "SaveData/CoopData/SavedSessionInfoSaveGame.h"
 #include "SessionSaveLoadWidget.generated.h"
 
 class UButton;
@@ -14,7 +14,7 @@ class USavedSessionInfoWidget;
 class UWaitForSomethingWidget;
 class UConfirmationDialogWidget;
 
-struct FSavedSessionInfo;
+//struct FSavedSessionInfo;
 
 enum class EConfirmationStep
 {

@@ -5,9 +5,10 @@
 #include "CoreMinimal.h"
 #include "GameFramework/GameState.h"
 #include "Tutorial/TutorialEnums.h"
+#include "Delegates/Delegate.h"
 #include "ADTutorialGameState.generated.h"
 
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnPhaseChangedDelegate, ETutorialPhase);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPhaseChangedDelegate, ETutorialPhase, NewPhase);
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADTutorialGameState : public AGameState
@@ -17,6 +18,7 @@ class ABYSSDIVERUNDERWORLD_API AADTutorialGameState : public AGameState
 public:
 	AADTutorialGameState();
 
+	UPROPERTY(BlueprintAssignable, Category = "Tutorial")
 	FOnPhaseChangedDelegate OnPhaseChanged;
 
 	FORCEINLINE ETutorialPhase GetCurrentPhase() const { return CurrentPhase; }
