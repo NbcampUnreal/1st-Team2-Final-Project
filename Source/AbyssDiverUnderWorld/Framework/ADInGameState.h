@@ -105,8 +105,6 @@ protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void PostNetInit() override;
 
-	
-
 #pragma region Method
 
 public:
@@ -128,6 +126,10 @@ public:
 	FOnGameStatePropertyChangedDelegate CurrentPhaseChangedDelegate;
 	FOnMissionListRefreshedDelegate OnMissionListRefreshedDelegate;
 
+	virtual void AddPlayerState(APlayerState* PlayerState) override;
+
+	virtual void RemovePlayerState(APlayerState* PlayerState) override;
+	
 protected:
 
 	virtual void OnRep_ReplicatedHasBegunPlay() override;
@@ -144,6 +146,15 @@ protected:
 	UFUNCTION()
 	void OnRep_DestinationTarget();
 
+	void OnPlayerMinedCountChanged(AADPlayerState* PlayerState, int32 NewAmount);
+
+	/** 최고 채굴자가 변경되었을 때 호출되는 함수
+	 * NewTopMiner, NewMiningAmount를 동시에 전파하기 위해 Replicate를 사용하지 않고 Multicast 함수를 사용한다.
+	 */ 
+	UFUNCTION(NetMulticast, Reliable)
+	void M_BroadcastTopMinerChanged(AADPlayerState* NewTopMiner, int32 NewMiningAmount);
+	void M_BroadcastTopMinerChanged_Implementation(AADPlayerState* NewTopMiner, int32 NewMiningAmount);
+	
 private:
 
 	void ReceiveDataFromGameInstance();
@@ -153,6 +164,13 @@ private:
 
 #pragma region Variable
 
+public:
+	/** 최고 채굴자 변경 시 호출되는 델리게이트.
+	 * NewMiningAmount를 통해 최고 채굴자의 채굴량을 알 수 있다.
+	 * AADPlayerState의 경우 복제가 동시에 이루어지지 않을 수 있으므로 해당 정보를 신뢰하지 않고 NewMiningAmount를 사용해야 한다.
+	 */
+	DECLARE_MULTICAST_DELEGATE_TwoParams(FOnTopMinerChangedDelegate, AADPlayerState* /*NewTopMiner*/, int32 /*NewMiningAmount*/);
+	FOnTopMinerChangedDelegate OnTopMinerChangedDelegate;
 
 protected:
 	UPROPERTY(Replicated)
@@ -177,6 +195,13 @@ protected:
 	FActivatedMissionInfoList ActivatedMissionList;
 
 	int32 ClearCount = 0;
+
+	/** 현재 최고 채굴자. M_BroadcastTopMinerChanged를 통해서 동기화된다. */
+	UPROPERTY()
+	TObjectPtr<class AADPlayerState> TopMiner;
+
+	/** 최고 채굴자의 채굴량. M_BroadcastTopMinerChanged를 통해서 동기화된다. */
+	int32 TopMiningAmount = 0;
 
 private:
 
