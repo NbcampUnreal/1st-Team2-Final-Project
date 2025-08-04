@@ -7,6 +7,8 @@
 #include "Projectile/ADFlareGunBullet.h"
 #include "Projectile/ADShotgunBullet.h"
 
+#include "Interactable/Item/Weapon/ADMine.h"
+
 #include "UI/ADNightVisionGoggle.h"
 #include "UI/ChargeBatteryWidget.h"
 
@@ -229,6 +231,7 @@ void UEquipUseComponent::S_LeftClick_Implementation()
 	case EAction::ShotgunFire:	   FireShotgun();       break;
 	case EAction::ToggleBoost:     BoostOn();			break;
 	case EAction::ToggleNVGToggle: ToggleNightVision(); break;
+	case EAction::PlaceMine:	   PlaceMine();			break;
 	default:                      break;
 	}
 }
@@ -263,6 +266,7 @@ void UEquipUseComponent::S_RKey_Implementation()
 		}
 		break;
 	case EAction::ApplyChargeUI:  ShowChargeBatteryWidget();  break;
+	case EAction::DetonateMine:   DetonateMine();			  break;
 	default:                      break;
 	}
 }
@@ -625,16 +629,19 @@ EAction UEquipUseComponent::TagToAction(const FGameplayTag& Tag)
 	else if (Tag.MatchesTagExact(TAG_EquipUse_DPVToggle))       return EAction::ToggleBoost;
 	else if (Tag.MatchesTagExact(TAG_EquipUse_NVToggle))        return EAction::ToggleNVGToggle;
 	else if (Tag.MatchesTagExact(TAG_EquipUse_ApplyChargeUI))   return EAction::ApplyChargeUI;
+	else if (Tag.MatchesTagExact(TAG_EquipUse_PlaceMine))       return EAction::PlaceMine;
+	else if (Tag.MatchesTagExact(TAG_EquipUse_DetonateMine))    return EAction::DetonateMine;
 	return EAction::None;
 }
 
 EEquipmentType UEquipUseComponent::TagToEquipmentType(const FGameplayTag& Tag)
 {
-	if (Tag.MatchesTagExact(TAG_EquipUse_Fire))           return EEquipmentType::HarpoonGun;
+	if (Tag.MatchesTagExact(TAG_EquipUse_Fire))              return EEquipmentType::HarpoonGun;
 	else if (Tag.MatchesTagExact(TAG_EquipUse_FireFlareGun)) return EEquipmentType::FlareGun;
-	else if (Tag.MatchesTagExact(TAG_EquipUse_FireShotgun)) return EEquipmentType::Shotgun;
+	else if (Tag.MatchesTagExact(TAG_EquipUse_FireShotgun))  return EEquipmentType::Shotgun;
 	else if (Tag.MatchesTagExact(TAG_EquipUse_DPVToggle))    return EEquipmentType::DPV;
 	else if (Tag.MatchesTagExact(TAG_EquipUse_NVToggle))     return EEquipmentType::NightVision;
+	else if (Tag.MatchesTagExact(TAG_EquipUse_PlaceMine))    return EEquipmentType::Mine;
 	return EEquipmentType::Max;
 }
 
@@ -750,37 +757,6 @@ void UEquipUseComponent::FireShotgun()
 			Pellet->SetLifeSpan(PelletLifeSec);                      // 0.5초 후 파괴
 			//Pellet->SetBaseDamage(ShotgunBaseDamage / PelletCount);
 		}
-
-//#if WITH_EDITOR
-//#include "DrawDebugHelpers.h"
-//		const float PelletRange = 2000.f * 0.5f;
-//		constexpr ECollisionChannel InteractionChannel = ECC_GameTraceChannel4;
-//
-//		FHitResult Hit;
-//		bool bHitInteraction = GetWorld()->LineTraceSingleByChannel(
-//			Hit,
-//			MuzzleLoc,
-//			MuzzleLoc + RandDir * PelletRange,
-//			InteractionChannel);       
-//
-//		bool bHit = GetWorld()->LineTraceSingleByChannel(
-//			Hit,
-//			MuzzleLoc,
-//			MuzzleLoc + RandDir * PelletRange,
-//			ECC_Visibility);
-//
-//		const FColor DebugColor = bHit ? FColor::Red : FColor::Green;
-//
-//		DrawDebugLine(
-//			GetWorld(),
-//			MuzzleLoc,
-//			MuzzleLoc + RandDir * PelletRange,
-//			DebugColor,
-//			false,         
-//			1.f,         
-//			0,
-//			1.f);        
-//#endif
 	}
 
 	/* 탄약 차감 & 쿨다운 */
@@ -997,6 +973,32 @@ void UEquipUseComponent::OpenChargeWidget()
 	bChargeBatteryWidgetVisible = ~bChargeBatteryWidgetVisible;
 
 	ToggleChargeBatteryWidget();
+}
+
+void UEquipUseComponent::PlaceMine()
+{
+	if (Amount <= 0 || !MineClass) return;
+	AUnderwaterCharacter* Diver = Cast<AUnderwaterCharacter>(OwningCharacter.Get());
+	FVector SpawnLoc = Diver->GetActorLocation() + Diver->GetActorForwardVector() * 100.f;
+	AADMine* MineActor = GetWorld()->SpawnActor<AADMine>(MineClass, SpawnLoc, FRotator::ZeroRotator);
+	if (MineActor)
+	{
+		PlacedMines.Add(MineActor);
+		Amount = FMath::Max(0, Amount - 1);
+		OnRep_Amount(); // UI 업데이트
+	}
+}
+
+void UEquipUseComponent::DetonateMine()
+{
+	for (AADMine* Mine : PlacedMines)
+	{
+		if (Mine)
+		{
+			Mine->Explode();
+		}
+	}
+	PlacedMines.Empty();
 }
 
 void UEquipUseComponent::FinishReload(int32 InMagazineSize, AUnderwaterCharacter* Diver)

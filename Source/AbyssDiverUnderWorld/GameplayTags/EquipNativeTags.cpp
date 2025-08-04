@@ -7,3 +7,5 @@ UE_DEFINE_GAMEPLAY_TAG(TAG_EquipUse_Reload, "EquipmentUseTag.Reload");
 UE_DEFINE_GAMEPLAY_TAG(TAG_EquipUse_DPVToggle, "EquipmentUseTag.DPVToggle");
 UE_DEFINE_GAMEPLAY_TAG(TAG_EquipUse_NVToggle, "EquipmentUseTag.NVToggle");
 UE_DEFINE_GAMEPLAY_TAG(TAG_EquipUse_ApplyChargeUI, "EquipmentUseTag.ApplyChargeUI");
+UE_DEFINE_GAMEPLAY_TAG(TAG_EquipUse_PlaceMine, "EquipmentUseTag.PlaceMine");
+UE_DEFINE_GAMEPLAY_TAG(TAG_EquipUse_DetonateMine, "EquipmentUseTag.DetonateMine");

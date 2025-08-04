@@ -377,7 +377,9 @@ bool UADInventoryComponent::AddInventoryItem(const FItemData& ItemData)
 				if (ItemData.ItemType == EItemType::Equipment)
 				{
 					if (ItemIndex != -1)
+					{
 						return false;
+					}		
 				}
 				LOGINVEN(Warning, TEXT("AddInventoryItem ItemIndex : %d"), ItemIndex);
 				bool bIsUpdateSuccess = false;
@@ -495,6 +497,7 @@ void UADInventoryComponent::OnRep_CurrentEquipItem()
 		case EEquipmentType::FlareGun:		Socket = FlareSocketName;   break;
 		case EEquipmentType::DPV:			Socket = DPVSocketName;     break;
 		case EEquipmentType::Shotgun:		Socket = ShotgunSocketName; break;
+		case EEquipmentType::Mine:			Socket = MineSocketName;    break;
 		default:														break;
 		}
 
@@ -743,6 +746,7 @@ bool UADInventoryComponent::TryGiveAmmoToEquipment(EBulletType BulletType, int32
 			Item.BulletType == BulletType)
 		{
 			Item.ReserveAmmo += AmountPerPickup;
+			Item.Amount += AmountPerPickup;
 			InventoryList.MarkItemDirty(Item); 
 			return true;      
 		}

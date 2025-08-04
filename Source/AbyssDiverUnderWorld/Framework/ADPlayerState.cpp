@@ -3,8 +3,6 @@
 #include "Inventory/ADInventoryComponent.h"
 #include "AbyssDiverUnderWorld.h"
 #include "Character/UpgradeComponent.h"
-#include "Character/UnderwaterCharacter.h"
-#include "Character/PlayerComponent/NameWidgetComponent.h"
 
 #include "Net/UnrealNetwork.h"
 
@@ -16,6 +14,7 @@ AADPlayerState::AADPlayerState()
 	, PersonalCredit(0)
 	, MonsterKillCount(0)
 	, OreMinedCount(0)
+	, OreCollectedValue(0)
 	, bIsSafeReturn(false)
 	, PlayerIndex(INDEX_NONE)
 	, bHasBeenDead(false)
@@ -45,7 +44,7 @@ void AADPlayerState::BeginPlay()
 	
 	LOGVN(Log, TEXT("Map Name : %s"), *GetWorld()->GetMapName());
 	InventoryComp->ClientRequestInventoryInitialize();
-	LOGVN(Log, TEXT("Inventory Initializded"));
+	LOGVN(Log, TEXT("Inventory Initialized"));
 }
 
 //Client
@@ -65,7 +64,7 @@ void AADPlayerState::PostNetInit()
 	}
 
 	InventoryComp->ClientRequestInventoryInitialize();
-	LOGVN(Log, TEXT("Inventory Initializded"));
+	LOGVN(Log, TEXT("Inventory Initialized"));
 }
 
 void AADPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -79,6 +78,7 @@ void AADPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME(AADPlayerState, PersonalCredit);
 	DOREPLIFETIME(AADPlayerState, MonsterKillCount);
 	DOREPLIFETIME(AADPlayerState, OreMinedCount);
+	DOREPLIFETIME(AADPlayerState, OreCollectedValue);
 	DOREPLIFETIME(AADPlayerState, bIsSafeReturn);
 	DOREPLIFETIME(AADPlayerState, PlayerIndex);
 }
@@ -162,6 +162,27 @@ void AADPlayerState::SetPlayerNickname(const FString& NewName)
 const FString AADPlayerState::GetPlayerNickname() const
 {
 	return GetPlayerName();
+}
+
+void AADPlayerState::SetOreCollectedValue(int32 Value)
+{
+	if (!HasAuthority()) return;
+
+	if (OreCollectedValue != Value)
+	{
+		OreCollectedValue = Value;
+
+		OnOreCollectedValueChangedDelegate.Broadcast(this, OreCollectedValue);
+		LOGV(Log, TEXT("OreCollectedValue Changed: %d"), OreCollectedValue);
+	}
+}
+
+void AADPlayerState::AddOreCollectedValue(int32 Value)
+{
+	if (!HasAuthority()) return;
+
+	const int32 NewValue = OreCollectedValue + Value;
+	SetOreCollectedValue(NewValue);
 }
 
 void AADPlayerState::SetIsDead(bool bNewIsDead)
