@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/GameMode.h"
 #include "Tutorial/TutorialEnums.h"
+#include "Interactable/OtherActors/TargetIndicators/IndicatingTarget.h"
 #include "ADTutorialGameMode.generated.h"
 
 class UDataTable;
@@ -20,6 +21,9 @@ class ABYSSDIVERUNDERWORLD_API AADTutorialGameMode : public AGameMode
 	virtual void StartPlay() override;
 	void AdvanceTutorialPhase();
 
+	void PlayerActionTriggered(EPlayerActionTrigger ActionType);
+
+	void OnTypingAnimationFinished();
 protected:
 	void HandleCurrentPhase();
 
@@ -46,4 +50,15 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "Tutorial")
 	TObjectPtr<UDataTable> TutorialDataTable;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Spawning")
+	TSubclassOf<AActor> LootableOreClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Spawning")
+	TSubclassOf<AIndicatingTarget> IndicatingTargetClass; 
+
+	UPROPERTY(EditAnywhere, Category = "Tutorial|Spawning")
+	FName OreSpawnTag;
+
+	bool bIsTypingFinishedForCurrentPhase = false;
 };

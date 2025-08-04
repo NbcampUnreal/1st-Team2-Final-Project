@@ -47,9 +47,36 @@ enum class ETutorialHighlightTarget : uint8
 {
 	None UMETA(DisplayName = "None"),
 	OxygenBar UMETA(DisplayName = "Oxygen Bar"),
+	OreTarget UMETA(DisplayName = "OreTarget"),
 	SpearPanel UMETA(DisplayName = "Spear Panel"),
 	RadarIcon UMETA(DisplayName = "Radar Icon"),
 	InventoryButton UMETA(DisplayName = "Inventory Button"),
 	FlashlightToggle UMETA(DisplayName = "Flashlight Toggle"),
 	ReviveHintIcon UMETA(DisplayName = "Revive Hint Icon")
+
+};
+
+UENUM(BlueprintType)
+enum class EPlayerActionTrigger : uint8
+{
+	None,         
+
+	Sprint        UMETA(DisplayName = "Sprint (Shift)"),
+
+	Interact      UMETA(DisplayName = "Interact (E)"),
+
+	Radar         UMETA(DisplayName = "Radar (Q)"),
+
+	Inventory     UMETA(DisplayName = "Inventory (Tab)"),
+
+	Flashlight    UMETA(DisplayName = "Flashlight (F)"),
+
+	Reload        UMETA(DisplayName = "Reload/Recharge (R)"),
+
+	UseItem1      UMETA(DisplayName = "Use Item 1"),
+	UseItem2      UMETA(DisplayName = "Use Item 2"),
+	UseItem3      UMETA(DisplayName = "Use Item 3"),
+
+	Ascend        UMETA(DisplayName = "Ascend (Space)"),
+	Descend       UMETA(DisplayName = "Descend (C)")
 };
