@@ -18,6 +18,7 @@
 #include "Projectile/GenericPool.h"
 #include "Projectile/ADSpearGunBullet.h"
 #include "Projectile/ADFlareGunBullet.h"
+#include "Projectile/ADShotgunBullet.h"
 
 #include "DataRow/PhaseGoalRow.h"
 #include "Container/FStructContainer.h"
@@ -43,6 +44,11 @@ AADInGameMode::AADInGameMode()
 	if (FlareGunBulletFinder.Succeeded())
 	{
 		FlareBulletClass = FlareGunBulletFinder.Class;
+	}
+	ConstructorHelpers::FClassFinder<AADShotgunBullet> ShotgunBulletFinder(TEXT("/Game/_AbyssDiver/Blueprints/Projectile/BP_ADShotgunBullet"));
+	if (ShotgunBulletFinder.Succeeded())
+	{
+		ShotgunBulletClass = ShotgunBulletFinder.Class;
 	}
 }
 
@@ -78,6 +84,8 @@ void AADInGameMode::BeginPlay()
 		SpearGunBulletPool->InitPool<AADSpearGunBullet>(30, SpearBulletClass);
 		FlareGunBulletPool = GetWorld()->SpawnActor<AGenericPool>();
 		FlareGunBulletPool->InitPool<AADFlareGunBullet>(30, FlareBulletClass);
+		ShotgunBulletPool = GetWorld()->SpawnActor<AGenericPool>();
+		ShotgunBulletPool->InitPool<AADShotgunBullet>(50, ShotgunBulletClass);
 		LOGVN(Warning, TEXT("SpawnSpearGunBulletPool"));
 
 		int32 LastDroneNumber = 0;
@@ -244,22 +252,6 @@ void AADInGameMode::ReadyForTravelToCamp()
 		return;
 	}
 
-	//for (AADPlayerState* ADPlayerState : TActorRange<AADPlayerState>(GetWorld()))
-	//{
-	//	APawn* Player = ADPlayerState->GetPawn();
-	//	if (Player == nullptr || IsValid(Player) == false || Player->IsValidLowLevel() == false || Player->IsPendingKillPending())
-	//	{
-	//		LOGV(Error, TEXT("Not Valid Player, PlayeStateName : %s"), *ADPlayerState->GetName());
-	//		continue;
-	//	}
-
-	//	ADPlayerState->GetPawn()->bAlwaysRelevant = true;
-	//}
-
-	//ForceNetUpdate();
-
-	//LOGV(Log, TEXT("Releveant On"));
-
 	TimerManager.ClearTimer(SyncTimerHandle);
 	const float WaitForSync = 1.0f;
 	TimerManager.SetTimer(SyncTimerHandle, [&]()
@@ -314,6 +306,11 @@ void AADInGameMode::TravelToCamp()
 					LOGV(Error, TEXT("LevelLoad is empty"));
 					return;
 				}
+				
+				if (bWasGameOver == false)
+				{
+					ADInGameState->SetClearCount(ADInGameState->GetClearCount() + 1);
+				}
 
 				ADInGameState->SendDataToGameInstance();
 				//input spot level name
@@ -350,7 +347,6 @@ void AADInGameMode::BindDelegate(AUnderwaterCharacter* PlayerCharacter)
 		return;
 	}
 
-	LOGV(Error, TEXT("DelegateBound"));
 	PlayerCharacter->OnCharacterStateChangedDelegate.AddDynamic(this, &AADInGameMode::OnCharacterStateChanged);
 }
 
@@ -512,6 +508,7 @@ void AADInGameMode::GameOver()
 
 #endif
 
+	bWasGameOver = true;
 	ReadyForTravelToCamp();
 	
 	for (AADPlayerController* PC : TActorRange<AADPlayerController>(GetWorld()))

@@ -218,6 +218,7 @@ void AADInGameState::SendDataToGameInstance()
 	{
 		ADGameInstance->SelectedLevelName = SelectedLevelName;
 		ADGameInstance->TeamCredits = TeamCredits;
+		ADGameInstance->ClearCount = ClearCount;
 	}
 
 	LOGVN(Error, TEXT("SelectedLevelName: %d / TeamCredits: %d"), SelectedLevelName, TeamCredits);
@@ -339,12 +340,73 @@ void AADInGameState::OnRep_DestinationTarget()
 	PlayerStatusWidget->SetCompassObject(DestinationTarget);
 }
 
+void AADInGameState::OnPlayerMinedCountChanged(AADPlayerState* PlayerState, int32 NewAmount)
+{
+	if (!HasAuthority()) return;
+
+	if (NewAmount > TopMiningAmount)
+	{
+		TopMiner = PlayerState;
+		TopMiningAmount = NewAmount;
+
+		LOGV(Log, TEXT("New Top Miner: %s, Amount: %d"), *PlayerState->GetPlayerName(), NewAmount);
+		M_BroadcastTopMinerChanged(TopMiner, TopMiningAmount);
+	}
+}
+
+void AADInGameState::M_BroadcastTopMinerChanged_Implementation(AADPlayerState* NewTopMiner, int32 NewMiningAmount)
+{
+	TopMiner = NewTopMiner;
+	TopMiningAmount = NewMiningAmount;
+	OnTopMinerChangedDelegate.Broadcast(TopMiner, TopMiningAmount);
+
+	LOGV(Log, TEXT("Broadcast Top Miner Changed: %s, Amount: %d"), *TopMiner->GetPlayerName(), TopMiningAmount);
+}
+
+void AADInGameState::AddPlayerState(APlayerState* PlayerState)
+{
+	Super::AddPlayerState(PlayerState);
+
+	if (!HasAuthority()) return;
+
+	if (AADPlayerState* ADPlayerState = Cast<AADPlayerState>(PlayerState))
+	{
+		LOGV(Log, TEXT("Register Ore Collected Value: %s"), *ADPlayerState->GetPlayerName());
+		ADPlayerState->OnOreCollectedValueChangedDelegate.AddUObject(this, &AADInGameState::OnPlayerMinedCountChanged);
+
+		int32 CurrentAmount = ADPlayerState->GetOreMinedCount();
+		if (CurrentAmount > TopMiningAmount)
+		{
+			TopMiner = ADPlayerState;
+			TopMiningAmount = CurrentAmount;
+		}
+	}
+}
+
+void AADInGameState::RemovePlayerState(APlayerState* PlayerState)
+{
+	Super::RemovePlayerState(PlayerState);
+
+	if (!HasAuthority()) return;
+
+	if (AADPlayerState* ADPlayerState = Cast<AADPlayerState>(PlayerState))
+	{
+		ADPlayerState->OnOreCollectedValueChangedDelegate.RemoveAll(this);
+
+		// 중간에 최고 채굴자가 제거된 경우라도 업데이트를 일단 하지 않는다.
+		// 추후, 접속이 종료된 Player가 있을 경우 여기서 처리한다.
+
+		LOGV(Log, TEXT("Unregister Ore Collected Value: %s"), *ADPlayerState->GetPlayerName());
+	}
+}
+
 void AADInGameState::ReceiveDataFromGameInstance()
 {
 	if (UADGameInstance* ADGameInstance = GetGameInstance<UADGameInstance>())
 	{
 		SelectedLevelName = ADGameInstance->SelectedLevelName;
 		TeamCredits = ADGameInstance->TeamCredits;
+		ClearCount = ADGameInstance->ClearCount;
 	}
 }
 
@@ -399,6 +461,16 @@ UPlayerHUDComponent* AADInGameState::GetPlayerHudComponent()
 
 	UPlayerHUDComponent* HudComp = PC->GetPlayerHUDComponent();
 	return HudComp;
+}
+
+int32 AADInGameState::GetClearCount() const
+{
+	return ClearCount;
+}
+
+void AADInGameState::SetClearCount(int32 NewClearCount)
+{
+	ClearCount = FMath::Max(ClearCount, 0);
 }
 
 FString AADInGameState::GetMapDisplayName() const

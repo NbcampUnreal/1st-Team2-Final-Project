@@ -28,7 +28,7 @@ void URadar2DWidget::NativeConstruct()
 		RadarWidgetRadius = CanvasSlot->GetSize().X / 2.0f;
 	}
 
-	ActivatedReturnWidgets.Empty();
+	ActivatedReturnWidgets.Reset();
 	DeactivatedReturnImages.Empty();
 
 	const int32 ChildCount = RadarOverlay->GetChildrenCount();
@@ -81,10 +81,10 @@ void URadar2DWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 
 	for (auto It = ActivatedReturnWidgets.CreateIterator(); It; ++It)
 	{
-		if (AvailableRadarReturns.Contains(It->Key) == false)
+		if (It->Key.IsValid() == false || AvailableRadarReturns.Contains(It->Key.Get()) == false)
 		{
-			DespawnReturnWidget(It->Value);
-			ActivatedReturnWidgets.Remove(It->Key);
+			DespawnReturnWidget(It->Value.Get());
+			It.RemoveCurrent();
 		}
 	}
 
@@ -103,20 +103,36 @@ void URadar2DWidget::AddReturn(URadarReturn2DComponent* ReturnComponent)
 {
 	if (HasReturn(ReturnComponent))
 	{
+		LOGV(Log, TEXT("Altready Exist, %s"), *ReturnComponent->GetName());
 		return;
 	}
-
+	
 	TObjectPtr<URadarReturnWidget> NewReturnWidget = nullptr;
-	if (DeactivatedReturnImages.Dequeue(NewReturnWidget) && IsValid(NewReturnWidget))
+
+	static const int32 SafetyLimit = 100;
+	int32 IterationCount = 0;
+	for (; IterationCount < SafetyLimit; ++IterationCount)
 	{
-		NewReturnWidget->SetVisibility(ESlateVisibility::HitTestInvisible);
-		SetProperReturnColor(ReturnComponent, NewReturnWidget);
-		ActivatedReturnWidgets.Add({ ReturnComponent, NewReturnWidget });
+		if (DeactivatedReturnImages.IsEmpty())
+		{
+			break;
+		}
+
+		if (DeactivatedReturnImages.Dequeue(NewReturnWidget) && IsValid(NewReturnWidget))
+		{
+			NewReturnWidget->SetVisibility(ESlateVisibility::HitTestInvisible);
+			SetProperReturnColor(ReturnComponent, NewReturnWidget);
+			ActivatedReturnWidgets.Add({ ReturnComponent, NewReturnWidget });
+			return;
+		}
 	}
-	else
+
+	if (IterationCount >= SafetyLimit)
 	{
-		SpawnReturn(ReturnComponent);
+		LOGV(Error, TEXT("IterationCount >= SafetyLimit"));
 	}
+	
+	SpawnReturn(ReturnComponent);
 }
 
 void URadar2DWidget::SpawnReturn(URadarReturn2DComponent* ReturnComponent)
@@ -151,10 +167,11 @@ void URadar2DWidget::DespawnReturn(const URadarReturn2DComponent* ReturnComponen
 {
 	if (HasReturn(ReturnComponent) == false)
 	{
+		LOGV(Log, TEXT("Not Exist Return, %s"), *ReturnComponent->GetName());
 		return;
 	}
 
-	URadarReturnWidget* ReturnWidget = ActivatedReturnWidgets[ReturnComponent];
+	URadarReturnWidget* ReturnWidget = ActivatedReturnWidgets[ReturnComponent].Get();
 	if (IsValid(ReturnWidget))
 	{
 		DespawnReturnWidget(ReturnWidget);
@@ -182,7 +199,7 @@ void URadar2DWidget::UpdateReturn(URadarReturn2DComponent* ReturnComponent)
 		AddReturn(ReturnComponent);
 	}
 
-	URadarReturnWidget* CurrentReturnWidget = ActivatedReturnWidgets[ReturnComponent];
+	URadarReturnWidget* CurrentReturnWidget = ActivatedReturnWidgets[ReturnComponent].Get();
 	if (IsValid(CurrentReturnWidget) == false)
 	{
 		LOGV(Error, TEXT("Return Image Is Not Valid"));
@@ -232,12 +249,14 @@ void URadar2DWidget::SetReturnWidgetTransform(URadarReturn2DComponent* ReturnCom
 {
 	if (IsValid(ReturnComponent) == false || ReturnComponent->IsBeingDestroyed())
 	{
+		LOGV(Error, TEXT("Not valid return"));
 		return;
 	}
 
 	AActor* TargetReturn = ReturnComponent->GetOwner();
 	if (IsValid(TargetReturn) == false || TargetReturn->IsPendingKillPending())
 	{
+		LOGV(Error, TEXT("Not valid return owner"));
 		return;
 	}
 

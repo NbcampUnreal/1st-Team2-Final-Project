@@ -172,17 +172,19 @@ void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType
 			UUseStrategy* Strategy = Cast<UUseStrategy>(NewObject<UObject>(this, FoundRow->UseFunction));
 			if (Strategy)
 			{
-				Strategy->Use(GetOwner());
-				if (Item.Amount <= 100)
+				if (Strategy->Use(GetOwner()))
 				{
-					C_InventoryPlaySound(ESFX::Breath);
-					FTimerHandle SpawnEffectDelay;
-					GetWorld()->GetTimerManager().SetTimer(SpawnEffectDelay, this, &UADInventoryComponent::C_SpawnItemEffect, 1.5f, false);
+					RemoveBySlotIndex(SlotIndex, EItemType::Consumable, false);
+					if (Item.Amount <= 100)
+					{
+						C_InventoryPlaySound(ESFX::Breath);
+						FTimerHandle SpawnEffectDelay;
+						GetWorld()->GetTimerManager().SetTimer(SpawnEffectDelay, this, &UADInventoryComponent::C_SpawnItemEffect, 1.5f, false);
+					}
+					LOGINVEN(Warning, TEXT("Use Consumable Item %s"), *FoundRow->Name.ToString());
 				}
-				LOGINVEN(Warning, TEXT("Use Consumable Item %s"), *FoundRow->Name.ToString());
 			}
 		}
-		RemoveBySlotIndex(SlotIndex, EItemType::Consumable, false);
 	}
 }
 
@@ -375,7 +377,9 @@ bool UADInventoryComponent::AddInventoryItem(const FItemData& ItemData)
 				if (ItemData.ItemType == EItemType::Equipment)
 				{
 					if (ItemIndex != -1)
+					{
 						return false;
+					}		
 				}
 				LOGINVEN(Warning, TEXT("AddInventoryItem ItemIndex : %d"), ItemIndex);
 				bool bIsUpdateSuccess = false;
@@ -492,6 +496,8 @@ void UADInventoryComponent::OnRep_CurrentEquipItem()
 		case EEquipmentType::HarpoonGun:	Socket = HarpoonSocketName; break;
 		case EEquipmentType::FlareGun:		Socket = FlareSocketName;   break;
 		case EEquipmentType::DPV:			Socket = DPVSocketName;     break;
+		case EEquipmentType::Shotgun:		Socket = ShotgunSocketName; break;
+		case EEquipmentType::Mine:			Socket = MineSocketName;    break;
 		default:														break;
 		}
 
@@ -740,6 +746,7 @@ bool UADInventoryComponent::TryGiveAmmoToEquipment(EBulletType BulletType, int32
 			Item.BulletType == BulletType)
 		{
 			Item.ReserveAmmo += AmountPerPickup;
+			Item.Amount += AmountPerPickup;
 			InventoryList.MarkItemDirty(Item); 
 			return true;      
 		}

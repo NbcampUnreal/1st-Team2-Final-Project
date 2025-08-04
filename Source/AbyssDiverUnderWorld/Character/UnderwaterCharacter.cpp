@@ -16,6 +16,7 @@
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/PawnNoiseEmitterComponent.h"
+#include "DataRow/MapDepthRow.h"
 #include "DataRow/SoundDataRow/SFXDataRow.h"
 #include "Footstep/FootstepComponent.h"
 #include "Framework/ADPlayerState.h"
@@ -25,7 +26,6 @@
 #include "GameFramework/PhysicsVolume.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Interactable/Item/Component/EquipUseComponent.h"
-#include "Interactable/OtherActors/Radars/Radar.h"
 #include "Interactable/OtherActors/Radars/RadarReturnComponent.h"
 #include "Interactable/OtherActors/Radars/RadarReturn2DComponent.h"
 #include "Interactable/OtherActors/Radars/Radar2DComponent.h"
@@ -39,6 +39,7 @@
 #include "Interactable/EquipableComponent/EquipRenderComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "PlayerComponent/CombatEffectComponent.h"
+#include "PlayerComponent/DepthComponent.h"
 #include "PlayerComponent/NameWidgetComponent.h"
 #include "PlayerComponent/RagdollReplicationComponent.h"
 #include "Subsystems/SoundSubsystem.h"
@@ -175,10 +176,12 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	FootstepComponent = CreateDefaultSubobject<UFootstepComponent>(TEXT("FootstepComponent"));
 
 	RagdollComponent = CreateDefaultSubobject<URagdollReplicationComponent>(TEXT("RagdollComponent"));
+
+	SafeZoneOxygenConsumeRate = 1.0f;
+	WarningZoneOxygenConsumeRate = 1.15f;
+	DangerZoneOxygenConsumeRate = 1.3f;
 	
 	bIsRadarOn = false;
-	RadarOffset = FVector(150.0f, 0.0f, 0.0f);
-	RadarRotation = FRotator(90.0f, 0.0f, 0.0f);
 
 	EnvironmentState = EEnvironmentState::Underwater;
 
@@ -208,6 +211,8 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	RadarReturn2DComponent->SetReturnScale(0.7f);
 	RadarReturn2DComponent->SetReturnForceType(EReturnForceType::Friendly);
 	RadarReturn2DComponent->SetAlwaysDisplay(true);
+
+	DepthComponent = CreateDefaultSubobject<UDepthComponent>(TEXT("DepthComponent"));
 }
 
 void AUnderwaterCharacter::BeginPlay()
@@ -230,11 +235,14 @@ void AUnderwaterCharacter::BeginPlay()
 
 	StatComponent->OnHealthChanged.AddDynamic(this, &AUnderwaterCharacter::OnHealthChanged);
 	StatComponent->OnMoveSpeedChanged.AddDynamic(this, &AUnderwaterCharacter::OnMoveSpeedChanged);
+
+	DepthComponent->OnDepthZoneChangedDelegate.AddDynamic(this, &AUnderwaterCharacter::OnDepthZoneChanged);
+	EDepthZone InitialDepthZone = DepthComponent->GetDepthZone();
+	OnDepthZoneChanged(InitialDepthZone, InitialDepthZone);
 	
 	NoiseEmitterComponent = NewObject<UPawnNoiseEmitterComponent>(this);
 	NoiseEmitterComponent->RegisterComponent();
 
-	SpawnRadar();
 	SpawnFlipperMesh();
 	LanternComponent->SpawnLight(GetMesh1PSpringArm(), LanternLength);
 
@@ -1479,24 +1487,6 @@ void AUnderwaterCharacter::AdjustSpeed()
 	}
 }
 
-void AUnderwaterCharacter::SpawnRadar()
-{
-	if (RadarClass == nullptr)
-	{
-		LOGVN(Error, TEXT("RadarClass is not valid"));
-		return;
-	}
-
-	FVector SpawnLocation = FirstPersonCameraComponent->GetComponentTransform().TransformPosition(RadarOffset);
-	FRotator SpawnRotation = FirstPersonCameraComponent->GetComponentRotation() + RadarRotation;
-
-	// @ToDO : Forward Actor에 맞추어서 Radar 회전
-	RadarObject = GetWorld()->SpawnActor<ARadar>(RadarClass, SpawnLocation, SpawnRotation);
-	RadarObject->AttachToComponent(FirstPersonCameraComponent, FAttachmentTransformRules::KeepWorldTransform);
-	RadarObject->UpdateRadarSourceComponent(GetRootComponent(), GetRootComponent());
-	RadarObject->SetActorHiddenInGame(true);
-}
-
 void AUnderwaterCharacter::SetMeshFirstPersonSetting(bool bIsFirstPerson)
 {
 	if (bIsFirstPerson)
@@ -1525,31 +1515,14 @@ void AUnderwaterCharacter::OnLeavePawn()
 
 	SetMeshFirstPersonSetting(false);
 
-	if (RadarObject)
-	{
-		RadarObject->Destroy();
-	}
 	NameWidgetComponent->SetEnable(true);
-}
-
-void AUnderwaterCharacter::RequestToggleRadar()
-{
-	if (HasAuthority())
-	{
-		bIsRadarOn = !bIsRadarOn;
-		OnRep_bIsRadarOn();
-	}
-	else
-	{
-		S_ToggleRadar();
-	}
 }
 
 void AUnderwaterCharacter::UpdateBlurEffect()
 {
 	// 레이더가 켜져 있으면 Blur 효과를 꺼야 한다.
 	// 레이더가 꺼져 있으면 수중일 경우 Blur 효과를 켜고 지상일 경우 Blur 효과를 끈다.
-	const bool bShouldEnableBlur = EnvironmentState == EEnvironmentState::Underwater && !bIsRadarOn;
+	const bool bShouldEnableBlur = EnvironmentState == EEnvironmentState::Underwater;
 	SetBlurEffect(bShouldEnableBlur);
 }
 
@@ -1563,28 +1536,6 @@ void AUnderwaterCharacter::SetBlurEffect(const bool bEnable)
 
 	FirstPersonCameraComponent->PostProcessSettings.bOverride_MotionBlurAmount = !bEnable;
 	FirstPersonCameraComponent->PostProcessSettings.MotionBlurAmount = 0.0f;
-}
-
-void AUnderwaterCharacter::SetRadarVisibility(bool bRadarVisible)
-{
-	if (!IsValid(RadarObject) || !IsLocallyControlled())
-	{
-		return;
-	}
-	
-	// Visible == true 이면 Hidden == false이다.
-	RadarObject->SetActorHiddenInGame(!bRadarVisible);
-}
-
-void AUnderwaterCharacter::S_ToggleRadar_Implementation()
-{
-	RequestToggleRadar();
-}
-
-void AUnderwaterCharacter::OnRep_bIsRadarOn()
-{
-	SetRadarVisibility(bIsRadarOn);
-	UpdateBlurEffect();
 }
 
 void AUnderwaterCharacter::OnOxygenLevelChanged(float CurrentOxygenLevel, float MaxOxygenLevel)
@@ -2271,7 +2222,6 @@ void AUnderwaterCharacter::Radar(const FInputActionValue& InputActionValue)
 	bIsRadarOn = (bIsRadarOn == false);
 
 	PC->SetActiveRadarWidget(bIsRadarOn);
-	//RequestToggleRadar();
 }
 
 void AUnderwaterCharacter::EquipSlot1(const FInputActionValue& InputActionValue)
@@ -2413,6 +2363,8 @@ void AUnderwaterCharacter::M_BroadcastPlayEmote_Implementation(int8 EmoteIndex)
 
 	bPlayingEmote = true;
 	PlayEmoteIndex = EmoteIndex;
+	// Control Rotation을 이용해서 Rotation을 갱신하기 때문에 모든 노드에서 동기화가 되어야 한다.
+	bUseControllerRotationYaw = false;
 	
 	if (UAnimInstance* AnimInstance = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr)
 	{
@@ -2424,14 +2376,12 @@ void AUnderwaterCharacter::M_BroadcastPlayEmote_Implementation(int8 EmoteIndex)
 		AnimInstance->Montage_SetEndDelegate(MontageEndDelegate, EmoteMontage);
 	}
 
-	// Control Rotation을 이용해서 Rotation을 갱신하기 때문에 모든 노드에서 동기화가 되어야 한다.
-	bUseControllerRotationYaw = false;
-
-	if (IsLocallyControlled())
-	{
-		StartEmoteCameraTransition();
-	}
+	// Server에서 모든 Camera Transition을 할 필요는 없다.
+	// 하지만, Client에서 Camera Transition을 하는 시간을 동일하게 시뮬레이션을 하기 위해서는
+	// Server에서 Transition을 같이 해서 정확히 끝나는 시간을 계산해야 한다.
+	// 따라서 Server에서도 Transition을 실행한다.
 	StartEmoteCameraTransition();
+	OnEmoteStartDelegate.Broadcast();
 }
 
 bool AUnderwaterCharacter::CanPlayEmote() const
@@ -2550,7 +2500,9 @@ void AUnderwaterCharacter::UpdateCameraTransition()
 	{
 		GetWorldTimerManager().ClearTimer(EmoteCameraTransitionTimer);
 		bPlayingEmote = false;
+		bUseControllerRotationYaw = true;
 		SetCameraFirstPerson(true);
+		OnEmoteEndDelegate.Broadcast();
 		// FirstPersonCameraArm->bInheritRoll = false;
 		return;
 	}
@@ -2606,6 +2558,31 @@ void AUnderwaterCharacter::CleanupTargetingActors()
 	if (InvalidCount > 0)
 	{
 		UE_LOG(LogAbyssDiverCharacter, Warning, TEXT("CleanupTargetingActors: Removed %d invalid targeting actors"), InvalidCount);
+	}
+}
+
+void AUnderwaterCharacter::OnDepthZoneChanged(EDepthZone OldDepthZone, EDepthZone NewDepthZone)
+{
+	if (OxygenComponent)
+	{
+		const float ConsumeRate = GetOxygenConsumeRate(NewDepthZone);
+		OxygenComponent->SetConsumeRate(ConsumeRate);
+	}
+}
+
+float AUnderwaterCharacter::GetOxygenConsumeRate(EDepthZone DepthZone) const
+{
+	if (DepthZone == EDepthZone::DangerZone)
+	{
+		return DangerZoneOxygenConsumeRate;
+	}
+	else if (DepthZone == EDepthZone::WarningZone)
+	{
+		return WarningZoneOxygenConsumeRate;
+	}
+	else
+	{
+		return SafeZoneOxygenConsumeRate;
 	}
 }
 

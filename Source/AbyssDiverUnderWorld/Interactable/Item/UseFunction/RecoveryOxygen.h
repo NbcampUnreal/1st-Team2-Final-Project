@@ -13,5 +13,5 @@ class ABYSSDIVERUNDERWORLD_API URecoveryOxygen : public UUseStrategy
 	GENERATED_BODY()
 	
 public:
-	virtual void Use(AActor* Target) override;
+	virtual bool Use(AActor* Target) override;
 };
