@@ -18,7 +18,8 @@ enum class EEquipmentType : uint8
 	Shotgun = 2,
 	DPV = 3,
 	NightVision = 4,
-	Max = 5 UMETA(Hidden)
+	Mine = 5,
+	Max = 6 UMETA(Hidden)
 };
 
 USTRUCT(BlueprintType)
@@ -43,6 +44,7 @@ class AADShotgunBullet;
 class UADNightVisionGoggle;
 class UChargeBatteryWidget;
 class USoundSubsystem;
+class AADMine;
 
 enum class EAction : uint8
 {
@@ -53,7 +55,9 @@ enum class EAction : uint8
 	WeaponReload,
 	ToggleBoost,
 	ToggleNVGToggle,
-	ApplyChargeUI
+	ApplyChargeUI,
+	PlaceMine,
+	DetonateMine
 };
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -138,6 +142,10 @@ public:
 	void StartReload(int32 InMagazineSize);
 	UFUNCTION(BlueprintCallable)
 	void OpenChargeWidget();
+	UFUNCTION(BlueprintCallable)
+	void PlaceMine();
+	UFUNCTION(BlueprintCallable)
+	void DetonateMine();
 	UFUNCTION(BlueprintCallable)
 	void HandleLeftClick();
 	UFUNCTION(BlueprintCallable)
@@ -296,6 +304,10 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Weapon")
 	TObjectPtr<UAnimMontage> WeaponIdleMontage;
 
+	UPROPERTY()
+	TArray<TObjectPtr<AADMine>> PlacedMines;
+	UPROPERTY(EditAnywhere, Category = "Mine")
+	TSubclassOf<AActor> MineClass = nullptr;
 
 	FItemData* CurrentItemData = nullptr;
 
