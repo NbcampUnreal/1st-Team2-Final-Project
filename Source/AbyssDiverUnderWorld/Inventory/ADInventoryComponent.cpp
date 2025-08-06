@@ -26,6 +26,7 @@
 #include "GameFramework/Pawn.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Interactable/EquipableComponent/EquipRenderComponent.h"
+#include "Character/PlayerComponent/PlayerHUDComponent.h"
 
 DEFINE_LOG_CATEGORY(InventoryLog);
 
@@ -145,7 +146,7 @@ void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType
 	int8 InventoryIndex = GetInventoryIndexByTypeAndSlotIndex(ItemType, SlotIndex);
 	if (InventoryIndex == -1) return;
 	FItemData& Item = InventoryList.Items[InventoryIndex];
-	LOGINVEN(Warning, TEXT("UseItem %s"), *Item.Name.ToString());
+	LOGINVEN(Warning, TEXT("TryUseItem %s"), *Item.Name.ToString());
 	if (ItemType == EItemType::Equipment)
 	{
 		if (CurrentEquipmentSlotIndex == SlotIndex)
@@ -182,6 +183,14 @@ void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType
 						GetWorld()->GetTimerManager().SetTimer(SpawnEffectDelay, this, &UADInventoryComponent::C_SpawnItemEffect, 1.5f, false);
 					}
 					LOGINVEN(Warning, TEXT("Use Consumable Item %s"), *FoundRow->Name.ToString());
+				}
+				else
+				{
+					if (Item.Amount <= 1000)
+					{
+						C_OnShieldUseFailed();
+					}
+					LOGINVEN(Warning, TEXT("Use Consumable Item Failed %s"), *FoundRow->Name.ToString());
 				}
 			}
 		}
@@ -332,6 +341,18 @@ void UADInventoryComponent::C_UpdateBatteryInfo_Implementation()
 {
 	if(ChargeBatteryWidget)
 		ChargeBatteryWidget->UpdateBatteryInfo();
+}
+
+void UADInventoryComponent::C_OnShieldUseFailed_Implementation()
+{
+	APlayerState* PS = Cast<APlayerState>(GetOwner());
+	if (!PS) return;
+	AADPlayerController* PC = Cast<AADPlayerController>(PS->GetOwningController());
+	if (!PC) return;
+
+	UPlayerHUDComponent* HUD = PC->GetPlayerHUDComponent();
+
+	HUD->OnShieldUseFailed();
 }
 
 void UADInventoryComponent::C_SetEquipBatteryAmount_Implementation(EChargeBatteryType ItemChargeBatteryType)

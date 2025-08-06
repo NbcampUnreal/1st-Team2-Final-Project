@@ -12,6 +12,7 @@ class UProgressBar;
 class UOverlay;
 enum class ESpearGunType : uint8;
 class UWarningWidget;
+class UNoticeWidget;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API UPlayerStatusWidget : public UUserWidget
@@ -35,6 +36,9 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void ShowPhaseWarning(bool bShouldVisible);
+
+	UFUNCTION(BlueprintCallable)
+	void NoticeInfo(const FString& Info, const FVector2D& Position);
 
 	UFUNCTION(BlueprintCallable)
 	void SetTopName(const FString& TopPlayerName);
@@ -144,6 +148,9 @@ protected:
 
 	UPROPERTY(meta = (BindWidgetAnim), Transient)
 	TObjectPtr<UWidgetAnimation> IncreaseMoney;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UNoticeWidget> NoticeWidget;
 
 	UPROPERTY()
 	TObjectPtr <UMaterialInstanceDynamic> DynamicMaterial;

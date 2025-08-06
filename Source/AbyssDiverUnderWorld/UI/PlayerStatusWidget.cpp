@@ -7,8 +7,10 @@
 #include "Components/Overlay.h"
 #include "Animation/WidgetAnimation.h"
 #include "Components/Image.h"
+#include "Components/CanvasPanelSlot.h"
 #include "Projectile/ADSpearGunBullet.h"
 #include "UI/WarningWidget.h"
+#include "UI/NoticeWidget.h"
 
 const FName UPlayerStatusWidget::OnNextPhaseAnimFinishedName = TEXT("OnNextPhaseAnimFinished");
 const int32 UPlayerStatusWidget::MaxPhaseNumber = 3;
@@ -297,6 +299,19 @@ void UPlayerStatusWidget::ShowPhaseWarning(bool bShouldVisible)
 {
     if(PhaseWarningWidget)
         PhaseWarningWidget->SetbShowWarning(bShouldVisible);
+}
+
+void UPlayerStatusWidget::NoticeInfo(const FString& Info, const FVector2D& Position)
+{
+    if (NoticeWidget && NoticeWidget->Slot)
+    {
+        if (UCanvasPanelSlot* CanvasSlot = Cast<UCanvasPanelSlot>(NoticeWidget->Slot))
+        {
+            CanvasSlot->SetPosition(Position);
+        }
+        NoticeWidget->SetNoticeText(Info);
+        NoticeWidget->ShowNotice();
+    }
 }
 
 void UPlayerStatusWidget::SetSpearVisibility(bool bVisible)
