@@ -85,6 +85,10 @@ public:
 	void C_UpdateBatteryInfo_Implementation();
 
 	UFUNCTION(Client, Reliable)
+	void C_OnShieldUseFailed();
+	void C_OnShieldUseFailed_Implementation();
+
+	UFUNCTION(Client, Reliable)
 	void C_SetEquipBatteryAmount(EChargeBatteryType ItemChargeBatteryType);
 	void C_SetEquipBatteryAmount_Implementation(EChargeBatteryType ItemChargeBatteryType);
 
