@@ -11,6 +11,8 @@
 #include "Projectile/ADSpearGunBullet.h"
 #include "UI/WarningWidget.h"
 #include "UI/NoticeWidget.h"
+#include "Framework/ADPlayerState.h"
+#include "Framework/ADInGameState.h"
 
 const FName UPlayerStatusWidget::OnNextPhaseAnimFinishedName = TEXT("OnNextPhaseAnimFinished");
 const int32 UPlayerStatusWidget::MaxPhaseNumber = 3;
@@ -30,6 +32,20 @@ void UPlayerStatusWidget::NativeConstruct()
     Super::NativeConstruct();
 
     SetSpearVisibility(false); 
+
+	FTimerHandle DelayBindTimerHandle;
+	float DelayTime = 1.0f; 
+    FTimerHandle TimerHandle;
+    GetWorld()->GetTimerManager().SetTimer(DelayBindTimerHandle, [this]()
+        {
+            AADInGameState* GS = Cast<AADInGameState>(GetWorld()->GetGameState());
+            if (GS)
+            {
+                GS->OnTopMinerChangedDelegate.AddUFunction(this, FName("SetTopName"));
+            }
+        }, DelayTime, false);
+
+
 
     if (IsValid(NextPhaseAnim) == false)
     {
@@ -212,13 +228,6 @@ void UPlayerStatusWidget::SetMoneyProgressBar(float InPercent)
     }
 }
 
-void UPlayerStatusWidget::SetTopName(const FString& TopPlayerName)
-{
-    TopName->SetText(FText::FromString(TopPlayerName));
-    TopNameCopy->SetText(FText::FromString(TopPlayerName));
-    PlayAnimation(ChangeTopPlayer);
-}
-
 void UPlayerStatusWidget::PlayNextPhaseAnim(int32 NextPhaseNumber)
 {
     // 나중에 테이블로 텍스트 정리할수도?
@@ -312,6 +321,16 @@ void UPlayerStatusWidget::NoticeInfo(const FString& Info, const FVector2D& Posit
         NoticeWidget->SetNoticeText(Info);
         NoticeWidget->ShowNotice();
     }
+}
+
+void UPlayerStatusWidget::SetTopName(AADPlayerState* PS, int32 MinedAmount)
+{
+        TopName->SetText(FText::FromString(PS->GetPlayerNickname()));
+        TopNameCopy->SetText(FText::FromString(PS->GetPlayerNickname()));
+
+        FString TopAmountString = FString::Printf(TEXT("%dCr"), MinedAmount);
+        TopAmount->SetText(FText::FromString(TopAmountString));
+        PlayAnimation(ChangeTopPlayer);
 }
 
 void UPlayerStatusWidget::SetSpearVisibility(bool bVisible)

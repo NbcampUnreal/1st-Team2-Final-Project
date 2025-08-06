@@ -41,7 +41,8 @@ public:
 	void NoticeInfo(const FString& Info, const FVector2D& Position);
 
 	UFUNCTION(BlueprintCallable)
-	void SetTopName(const FString& TopPlayerName);
+	void SetTopName(AADPlayerState* PS, int32 MinedAmount);
+
 	// 일반 함수
 	void SetSpearCount(int32 Current, int32 Total);
 	void SetOxygenPercent(float InPercent);
@@ -106,6 +107,9 @@ protected:
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UTextBlock> TopNameCopy;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> TopAmount;
 
 	UPROPERTY(meta = (BindWidgetAnim), Transient)
 	TObjectPtr<UWidgetAnimation> ChangeTopPlayer;
