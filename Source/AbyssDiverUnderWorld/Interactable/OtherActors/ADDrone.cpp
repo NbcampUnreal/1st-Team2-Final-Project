@@ -20,6 +20,7 @@
 #include "Net/UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/TargetPoint.h"
+#include "UI/InteractPopupWidget.h"
 
 DEFINE_LOG_CATEGORY(DroneLog);
 
@@ -34,6 +35,12 @@ AADDrone::AADDrone()
 	bIsFlying = false;
 	bIsHold = false;
 	ReviveDistance = 1000.f;
+
+	ConstructorHelpers::FClassFinder<UInteractPopupWidget> PopupFinder(TEXT("/Game/_AbyssDiver/Blueprints/UI/InteractableUI/WBP_InteractPopupWidget"));
+	if (PopupFinder.Succeeded())
+	{
+		PopupWidgetClass = PopupFinder.Class;
+	}
 }
 
 void AADDrone::BeginPlay()
@@ -113,52 +120,32 @@ void AADDrone::Interact_Implementation(AActor* InstigatorActor)
 {
 	if (!HasAuthority() || !bIsActive || !IsValid(CurrentSeller) || bIsFlying) return;
 
-	if (!CurrentSeller->GetSubmittedPlayerIndexes().IsEmpty())
-	{
-		if (AADInGameMode* GameMode = GetWorld()->GetAuthGameMode<AADInGameMode>())
-		{
-			GameMode->RevivePlayersAroundDroneAtRespawnLocation(CurrentSeller->GetSubmittedPlayerIndexes(), this);
-			CurrentSeller->GetSubmittedPlayerIndexes().Empty();
-		}
-	}
-	
-	// 차액 계산
-	int32 Diff = CurrentSeller->GetCurrentMoney() - CurrentSeller->GetTargetMoney();
+	APlayerController* PC = Cast<APlayerController>(InstigatorActor->GetInstigatorController());
+	if(!PC) return;
 
-	if (Diff > 0)
+	if (PopupWidgetClass)
 	{
-		if (AADInGameState* GS = GetWorld()->GetGameState<AADInGameState>())
+		UInteractPopupWidget* Popup = CreateWidget<UInteractPopupWidget>(PC, PopupWidgetClass);
+		if (Popup)
 		{
-			GS->AddTeamCredit(Diff);
-			GS->IncrementPhase();
-			if (NextSeller)
-			{
-				NextSeller->Activate();
-				GS->SetCurrentDroneSeller(NextSeller);
-				GS->SetDestinationTarget(NextSeller);
-			}
-			else
-			{
-				GS->SetCurrentDroneSeller(nullptr);
-				GS->SetDestinationTarget(UGameplayStatics::GetActorOfClass(GetWorld(), APortalToSubmarine::StaticClass()));
-			}
+			Popup->AddToViewport();
+			PC->bShowMouseCursor = true;
+			
+			FInputModeUIOnly InputMode;
+			InputMode.SetWidgetToFocus(Popup->TakeWidget());
+			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+			PC->SetInputMode(InputMode);
+
+			Popup->OnPopupConfirmed.BindLambda([this, PC]() {
+					this->ExecuteConfirmedInteraction();
+					PC->bShowMouseCursor = false;
+					PC->SetInputMode(FInputModeGameOnly());
+			});
+			Popup->OnPopupCanceled.BindLambda([this, PC]() {
+				PC->bShowMouseCursor = false;
+				PC->SetInputMode(FInputModeGameOnly());
+				});
 		}
-	}
-	CurrentSeller->DisableSelling();
-	StartRising();
-	bIsFlying = true;
-	if (SpawnManager && NextSeller)
-	{
-		SpawnManager->SpawnByGroup();
-		LOGD(Log, TEXT("Monster Spawns"));
-	}
-	// 다음 BGM 실행
-	if (HasAuthority())
-	{
-		LOGN(TEXT("No PhaseSound, DronePhaseNumber : %d"), DronePhaseNumber);
-		LOGN(TEXT("No PhaseSound, DroneName : %s"), *GetName());
-		M_PlayPhaseBGM(DronePhaseNumber + 1);
-		LOGD(Log,TEXT("Next Phase : PhaseSound"));
 	}
 }
 
@@ -251,6 +238,57 @@ void AADDrone::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetime
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AADDrone, bIsActive);
 	DOREPLIFETIME(AADDrone, bIsFlying);
+}
+
+void AADDrone::ExecuteConfirmedInteraction()
+{
+	if (!CurrentSeller->GetSubmittedPlayerIndexes().IsEmpty())
+	{
+		if (AADInGameMode* GameMode = GetWorld()->GetAuthGameMode<AADInGameMode>())
+		{
+			GameMode->RevivePlayersAroundDroneAtRespawnLocation(CurrentSeller->GetSubmittedPlayerIndexes(), this);
+			CurrentSeller->GetSubmittedPlayerIndexes().Empty();
+		}
+	}
+
+	// 차액 계산
+	int32 Diff = CurrentSeller->GetCurrentMoney() - CurrentSeller->GetTargetMoney();
+
+	if (Diff > 0)
+	{
+		if (AADInGameState* GS = GetWorld()->GetGameState<AADInGameState>())
+		{
+			GS->AddTeamCredit(Diff);
+			GS->IncrementPhase();
+			if (NextSeller)
+			{
+				NextSeller->Activate();
+				GS->SetCurrentDroneSeller(NextSeller);
+				GS->SetDestinationTarget(NextSeller);
+			}
+			else
+			{
+				GS->SetCurrentDroneSeller(nullptr);
+				GS->SetDestinationTarget(UGameplayStatics::GetActorOfClass(GetWorld(), APortalToSubmarine::StaticClass()));
+			}
+		}
+	}
+	CurrentSeller->DisableSelling();
+	StartRising();
+	bIsFlying = true;
+	if (SpawnManager && NextSeller)
+	{
+		SpawnManager->SpawnByGroup();
+		LOGD(Log, TEXT("Monster Spawns"));
+	}
+	// 다음 BGM 실행
+	if (HasAuthority())
+	{
+		LOGN(TEXT("No PhaseSound, DronePhaseNumber : %d"), DronePhaseNumber);
+		LOGN(TEXT("No PhaseSound, DroneName : %s"), *GetName());
+		M_PlayPhaseBGM(DronePhaseNumber + 1);
+		LOGD(Log, TEXT("Next Phase : PhaseSound"));
+	}
 }
 
 UADInteractableComponent* AADDrone::GetInteractableComponent() const

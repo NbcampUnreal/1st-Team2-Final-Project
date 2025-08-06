@@ -85,6 +85,10 @@ public:
 	void C_UpdateBatteryInfo_Implementation();
 
 	UFUNCTION(Client, Reliable)
+	void C_OnShieldUseFailed();
+	void C_OnShieldUseFailed_Implementation();
+
+	UFUNCTION(Client, Reliable)
 	void C_SetEquipBatteryAmount(EChargeBatteryType ItemChargeBatteryType);
 	void C_SetEquipBatteryAmount_Implementation(EChargeBatteryType ItemChargeBatteryType);
 
@@ -197,6 +201,8 @@ private:
 	const FName HarpoonSocketName = TEXT("Harpoon");
 	const FName DPVSocketName = TEXT("DPV");
 	const FName FlareSocketName = TEXT("Flare");
+	const FName ShotgunSocketName = TEXT("Shotgun");
+	const FName MineSocketName = TEXT("MineController");
 #pragma endregion
 
 

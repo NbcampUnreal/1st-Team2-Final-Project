@@ -25,6 +25,7 @@
 #include "EngineUtils.h"
 #include "Components/CanvasPanel.h"
 #include "Kismet/GameplayStatics.h"
+#include "Inventory/ADInventoryComponent.h"
 
 UPlayerHUDComponent::UPlayerHUDComponent()
 {
@@ -36,6 +37,7 @@ void UPlayerHUDComponent::BeginPlay()
 	Super::BeginPlay();
 
 	AADPlayerController* PlayerController = Cast<AADPlayerController>(GetOwner());
+
 	if (!PlayerController || !PlayerController->IsLocalController())
 	{
 		return;
@@ -139,12 +141,14 @@ void UPlayerHUDComponent::BeginPlay()
 		return;
 	}
 	
+
 	AADDroneSeller* CurrentDroneSeller = GS->GetCurrentDroneSeller();
 	if (CurrentDroneSeller == nullptr)
 	{
 		LOGV(Warning, TEXT("CurrentDroneSeller == nullptr, Server? : %d"), GetOwner()->GetNetMode() != ENetMode::NM_Client);
 		return;
 	}
+
 
 	PlayerStatusWidget->SetDroneTargetText(CurrentDroneSeller->GetTargetMoney());
 	PlayerStatusWidget->SetDroneCurrentText(CurrentDroneSeller->GetCurrentMoney());
@@ -497,6 +501,13 @@ void UPlayerHUDComponent::UpdateHealthHUD(int32 CurrentHealth, int32 MaxHealth)
 		const float Ratio = MaxHealth > 0 ? (float)CurrentHealth / MaxHealth : 0.f;
 		PlayerStatusWidget->SetHealthPercent(Ratio);
 	}
+}
+
+void UPlayerHUDComponent::OnShieldUseFailed()
+{
+	LOGV(Error, TEXT("OnShieldUseFailed Succeeded"));
+	if (PlayerStatusWidget)
+		PlayerStatusWidget->NoticeInfo(TEXT("Shield가 가득 찼습니다!"), FVector2D(0.0f, -160.0f));
 }
 
 void UPlayerHUDComponent::UpdateStaminaHUD(float Stamina, float MaxStamina)

@@ -60,6 +60,10 @@ public:
 protected:
 	int32 SellAllExchangeableItems(AActor* InstigatorActor);
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	/** 제출한 Player의 State를 갱신 */
+	void UpdatePlayerState(AActor* Actor, int32 GainedValue);
+	
 private:
 #pragma endregion
 
@@ -125,7 +129,7 @@ public:
 	
 private:
 
-	void SetCurrentMoeny(const int32& NewCurrentMoney)
+	void SetCurrentMoney(const int32& NewCurrentMoney)
 	{
 		if (HasAuthority() == false)
 		{
@@ -133,7 +137,7 @@ private:
 		}
 
 		CurrentMoney = NewCurrentMoney;
-		MoneyRatio = CurrentMoney / TargetMoney;
+		MoneyRatio = (float)CurrentMoney / TargetMoney;
 		OnRep_CurrentMoney();
 	}
 	

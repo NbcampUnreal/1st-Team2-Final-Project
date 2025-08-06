@@ -11,6 +11,9 @@ class USavedSessionInfoSaveGame;
 
 struct FSavedSessionInfo;
 
+DECLARE_MULTICAST_DELEGATE(FOnSaveCompletedDelegate);
+DECLARE_MULTICAST_DELEGATE(FOnLoadCompletedDelegate);
+
 /**
  * 
  */
@@ -27,7 +30,7 @@ protected:
 
 public:
 
-	// Auto Save 전용
+	// Quick Save 전용
 	UFUNCTION(BlueprintCallable, Category = "SaveDataSubsystem")
 	void AsyncSaveCurrentGame();
 	void AsyncSaveCurrentGame(const FString& SaveGameName, bool bShouldOverwrite);
@@ -48,6 +51,10 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "SaveDataSubsystem")
 	void DisplayAllSaves();
+
+
+	FOnSaveCompletedDelegate OnSaveCompletedDelegate;
+	FOnLoadCompletedDelegate OnLoadCompletedDelegate;
 
 private:
 
@@ -96,6 +103,9 @@ protected:
 public:
 
 	bool IsExistSavedSessionGame(const FString& SlotName);
+
+	// 존재하면 해당하는 SlotName 반환, 없으면 빈 문자열 "" 반환
+	FString GetSavedSlotNameFromSaveName(const FString& SaveName);
 
 	USavedSessionInfoSaveGame* GetSavedSesssionListInfo() const;
 

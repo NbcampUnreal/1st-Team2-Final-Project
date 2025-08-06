@@ -13,6 +13,9 @@
 #include "Interactable/OtherActors/Radars/RadarReturn2DComponent.h"
 #include "Character/UnderwaterCharacter.h"
 #include "Framework/ADPlayerState.h"
+#include "Framework/ADTutorialGameMode.h"
+#include "Framework/ADTutorialGameState.h"
+#include "Character/UnderwaterCharacter.h"
 #include "Inventory/ADInventoryComponent.h"
 #include "DataRow/FADItemDataRow.h"
 #include "DataRow/SoundDataRow/SFXDataRow.h"
@@ -196,6 +199,33 @@ void AADOreRock::HandleMineRequest(APawn* InstigatorPawn)
 	{
 		IIADInteractable::Execute_OnHoldStop(this, InstigatorPawn);
 		LOGV(Warning, TEXT("Mine Completes and Call OnHoldStop"));
+	}
+
+	if (CurrentMiningGauge <= 0)
+	{
+		PlayFractureFX();
+		SpawnDrops();
+
+		AUnderwaterCharacter* Diver = Cast<AUnderwaterCharacter>(InstigatorPawn);
+		if (!Diver) return;
+
+		AADPlayerState* PS = Diver->GetPlayerState<AADPlayerState>();
+		if (PS)
+		{
+			int32 MineCount = PS->GetOreMinedCount();
+			PS->SetOreMinedCount(MineCount + 1);
+		}
+
+		if (AADTutorialGameState* TutorialGS = GetWorld()->GetGameState<AADTutorialGameState>())
+		{
+			if (TutorialGS->GetCurrentPhase() == ETutorialPhase::Step5_Looting)
+			{
+				if (AADTutorialGameMode* TutorialGM = GetWorld()->GetAuthGameMode<AADTutorialGameMode>())
+				{
+					TutorialGM->AdvanceTutorialPhase();
+				}
+			}
+		}
 	}
 }
 

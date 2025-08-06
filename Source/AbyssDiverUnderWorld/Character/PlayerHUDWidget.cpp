@@ -7,6 +7,7 @@
 #include "StatComponent.h"
 #include "UnderwaterCharacter.h"
 #include "Components/RichTextBlock.h"
+#include "PlayerComponent/DepthComponent.h"
 #include "PlayerComponent/OxygenComponent.h"
 #include "PlayerComponent/ShieldComponent.h"
 #include "PlayerComponent/StaminaComponent.h"
@@ -26,8 +27,15 @@ void UPlayerHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime
 
 	if (AUnderwaterCharacter* PlayerCharacter = Cast<AUnderwaterCharacter>(GetOwningPlayerPawn()))
 	{
-		float GroggyTime = PlayerCharacter->GetRemainGroggyTime();
+		const float GroggyTime = PlayerCharacter->GetRemainGroggyTime();
 		UpdateGroggyText(GroggyTime, 0.0f);
+
+		if (UDepthComponent* DepthComponent = PlayerCharacter->GetDepthComponent())
+		{
+			const float CurrentDepth = DepthComponent->GetDepth();
+			const EDepthZone DepthZone = DepthComponent->GetDepthZone();
+			UpdateDepthText(CurrentDepth, DepthZone);
+		}
 	}
 }
 
@@ -186,6 +194,19 @@ void UPlayerHUDWidget::UpdateCombatText(bool bIsInCombat)
 			FText::FromString(bIsInCombat ? TEXT("On") : TEXT("Off"))
 		);
 		CombatTextBlock->SetText(CombatText);
+	}
+}
+
+void UPlayerHUDWidget::UpdateDepthText(float CurrentDepth, EDepthZone DepthZone)
+{
+	if (DepthTextBlock)
+	{
+		const FText DepthText = FText::Format(
+			FText::FromString(TEXT("Depth : {0} m, Zone : {1}")),
+			FText::AsNumber(CurrentDepth),
+			FText::FromString(UEnum::GetDisplayValueAsText(DepthZone).ToString())
+		);
+		DepthTextBlock->SetText(DepthText);
 	}
 }
 

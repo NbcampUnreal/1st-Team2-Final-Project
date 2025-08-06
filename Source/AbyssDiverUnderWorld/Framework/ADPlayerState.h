@@ -40,6 +40,13 @@ public:
 #pragma endregion
 
 #pragma region Variable
+
+public:
+	
+	DECLARE_MULTICAST_DELEGATE_TwoParams(FOnOreCollectedValueChanged, AADPlayerState* /*PlayerState */, int32 /*NewAmount*/);
+	/** 제출한 광물 채굴량이 변경되었을 때 호출되는 델리게이트 */
+	FOnOreCollectedValueChanged OnOreCollectedValueChangedDelegate;
+	
 protected:
 
 	UPROPERTY(Replicated)
@@ -61,8 +68,13 @@ protected:
 	UPROPERTY(Replicated)
 	int32 MonsterKillCount;
 
+	/** 채광 횟수 */
 	UPROPERTY(Replicated)
 	int32 OreMinedCount;
+
+	/** 제출한 광물 가치 총량 */
+	UPROPERTY(Replicated)
+	int32 OreCollectedValue;
 
 	UPROPERTY(Replicated)
 	uint8 bIsSafeReturn : 1;
@@ -132,11 +144,23 @@ public:
 	UFUNCTION(BlueprintPure)
 	int32 GetMonsterKillCount() const { return MonsterKillCount; }
 
-	// OreMinedCount
+	/** 채광 횟수 설정 */
 	UFUNCTION(BlueprintCallable)
 	void SetOreMinedCount(int32 Value) { OreMinedCount = Value; }
 	UFUNCTION(BlueprintPure)
 	int32 GetOreMinedCount() const { return OreMinedCount; }
+
+	/** 제출한 광물 가치 총량 설정 */
+	UFUNCTION(BlueprintCallable)
+	void SetOreCollectedValue(int32 Value);
+
+	/** 제출한 광물 가치 총량 더하기 */
+	UFUNCTION(BlueprintCallable)
+	void AddOreCollectedValue(int32 Value);
+	
+	/** 제출한 광물 가치 총량 반환 */
+	UFUNCTION(BlueprintPure)
+	int32 GetOreCollectedValue() const { return OreCollectedValue; }
 
 	// bIsSafeReturn
 	UFUNCTION(BlueprintCallable)

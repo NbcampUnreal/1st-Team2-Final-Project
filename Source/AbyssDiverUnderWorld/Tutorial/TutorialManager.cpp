@@ -7,6 +7,8 @@
 #include "UI/TutorialSubtitle.h" 
 #include "UI/TutorialHintPanel.h"
 #include "Framework/ADTutorialGameState.h"
+#include "Framework/ADPlayerController.h"
+#include "Framework/ADTutorialGameMode.h"
 #include "Blueprint/UserWidget.h"
 
 ATutorialManager::ATutorialManager()
@@ -51,36 +53,99 @@ void ATutorialManager::BeginPlay()
     if (AADTutorialGameState* TutorialGS = GetWorld()->GetGameState<AADTutorialGameState>())
     {
 
-        TutorialGS->OnPhaseChanged.AddUObject(this, &ATutorialManager::OnTutorialPhaseChanged);
-
+        TutorialGS->OnPhaseChanged.AddDynamic(this, &ATutorialManager::OnTutorialPhaseChanged);
         OnTutorialPhaseChanged(TutorialGS->GetCurrentPhase());
     }
 }
 
 void ATutorialManager::OnTutorialPhaseChanged(ETutorialPhase NewPhase)
 {
-    if (!TutorialDataTable) return;
+	if (CurrentHighlightWidget)
+	{
+		CurrentHighlightWidget->RemoveFromParent();
+		CurrentHighlightWidget = nullptr;
+	}
 
-    const FString EnumAsString = UEnum::GetValueAsString(NewPhase);
-    const FName RowName = FName(*EnumAsString.RightChop(EnumAsString.Find(TEXT("::")) + 2));
+	if (NewPhase == ETutorialPhase::None)
+	{
+		if (SubtitleWidget) SubtitleWidget->SetVisibility(ESlateVisibility::Hidden);
+		if (TutorialHintPanel) TutorialHintPanel->SetVisibility(ESlateVisibility::Hidden);
+		return;
+	}
 
-    const FTutorialStepData* StepData = TutorialDataTable->FindRow<FTutorialStepData>(RowName, TEXT("TutorialManager"));
+	if (!TutorialDataTable) return;
 
-    if (StepData)
+	const FString EnumAsString = UEnum::GetValueAsString(NewPhase);
+	const FName RowName = FName(*EnumAsString.RightChop(EnumAsString.Find(TEXT("::")) + 2));
+	const FTutorialStepData* StepDataPtr = TutorialDataTable->FindRow<FTutorialStepData>(RowName, TEXT("TutorialManager"));
+
+	if (StepDataPtr)
+	{
+		if (SubtitleWidget)
+		{
+
+			SubtitleWidget->OnTypingCompleted.Clear();
+			SubtitleWidget->OnTypingCompleted.AddLambda([this, StepDataPtr]()
+				{
+					if (StepDataPtr)
+					{
+						OnTypingFinished(*StepDataPtr);
+					}
+				});
+			SubtitleWidget->SetSubtitleText(StepDataPtr->SubtitleText);
+			SubtitleWidget->SetVisibility(ESlateVisibility::Visible);
+		}
+
+		if (TutorialHintPanel)
+		{
+			if (StepDataPtr->HintKey != ETutorialHintKey::None)
+			{
+				TutorialHintPanel->SetHintByKey(StepDataPtr->HintKey);
+				TutorialHintPanel->SetVisibility(ESlateVisibility::Visible);
+			}
+			else
+			{
+				TutorialHintPanel->SetVisibility(ESlateVisibility::Hidden);
+			}
+		}
+
+		if (StepDataPtr->HighlightTargetID != ETutorialHighlightTarget::None)
+		{
+			if (const TSubclassOf<UUserWidget>* WidgetClassPtr = HighlightWidgetClasses.Find(StepDataPtr->HighlightTargetID))
+			{
+				CurrentHighlightWidget = CreateWidget<UUserWidget>(GetWorld(), *WidgetClassPtr);
+				if (CurrentHighlightWidget)
+				{
+					CurrentHighlightWidget->AddToViewport(5);
+				}
+			}
+		}
+	}
+	else
+	{
+		if (SubtitleWidget) SubtitleWidget->SetVisibility(ESlateVisibility::Hidden);
+		if (TutorialHintPanel) TutorialHintPanel->SetVisibility(ESlateVisibility::Hidden);
+	}
+}
+
+void ATutorialManager::OnTypingFinished(const FTutorialStepData& StepData)
+{
+	if (AADTutorialGameMode* GM = GetWorld()->GetAuthGameMode<AADTutorialGameMode>())
+	{
+		GM->OnTypingAnimationFinished();
+	}
+
+	if (!StepData.bWaitForPlayerTrigger)
+	{
+		FTimerHandle WaitTimer;
+		GetWorldTimerManager().SetTimer(WaitTimer, this, &ATutorialManager::RequestAdvancePhase, StepData.DisplayDuration, false);
+	}
+}
+
+void ATutorialManager::RequestAdvancePhase()
+{
+    if (AADPlayerController* PC = GetWorld()->GetFirstPlayerController<AADPlayerController>())
     {
-        if (SubtitleWidget)
-        {
-            SubtitleWidget->SetSubtitleText(StepData->SubtitleText);
-            SubtitleWidget->SetVisibility(ESlateVisibility::Visible);
-        }
-        if (TutorialHintPanel)
-        {
-            TutorialHintPanel->SetHintByKey(StepData->HintKey);
-        }
-    }
-    else
-    {
-        if (SubtitleWidget) SubtitleWidget->SetVisibility(ESlateVisibility::Hidden);
-        if (TutorialHintPanel) TutorialHintPanel->SetVisibility(ESlateVisibility::Hidden);
+        PC->Server_RequestAdvanceTutorialPhase();
     }
 }

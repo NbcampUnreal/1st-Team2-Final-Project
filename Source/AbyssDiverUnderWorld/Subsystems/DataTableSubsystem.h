@@ -5,6 +5,7 @@
 
 #include "DataTableSubsystem.generated.h"
 
+struct FMapDepthRow;
 enum class EUpgradeType : uint8;
 enum class EMapName : uint8;
 struct FFADItemDataRow;
@@ -51,7 +52,7 @@ private:
 	void ParsePhaseGoalDataTable(class UADGameInstance* GameInstance);
 	void ParseMapPathDataTable(class UADGameInstance* GameInstance);
 	void ParseShopItemMeshTransformDataTable(class UADGameInstance* GameInstance);
-	
+
 #pragma endregion
 
 #pragma region Variable
@@ -83,5 +84,8 @@ private:
 public:
 	const TArray<FFADItemDataRow*>& GetItemDataTableArray() { return ItemDataTableArray; };
 
+	/** Map 이름에 따라 Depth Zone 정보를 반환 */
+	FMapDepthRow* GetDepthZoneDataRow(FName MapName) const;
+	
 #pragma endregion
 };
