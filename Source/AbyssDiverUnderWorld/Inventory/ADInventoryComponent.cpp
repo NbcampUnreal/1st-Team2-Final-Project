@@ -176,7 +176,7 @@ void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType
 				if (Strategy->Use(GetOwner()))
 				{
 					RemoveBySlotIndex(SlotIndex, EItemType::Consumable, false);
-					if (Item.Amount <= 100)
+					if (Item.Id == 1)
 					{
 						C_InventoryPlaySound(ESFX::Breath);
 						FTimerHandle SpawnEffectDelay;
@@ -186,7 +186,7 @@ void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType
 				}
 				else
 				{
-					if (Item.Amount <= 1000)
+					if (Item.Id == 0)
 					{
 						C_OnShieldUseFailed();
 					}
