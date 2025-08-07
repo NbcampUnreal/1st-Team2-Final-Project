@@ -12,6 +12,7 @@ enum class EBossPhysicsType : uint8;
 class UCameraControllerComponent;
 class ATargetPoint;
 class AUnderwaterCharacter;
+class UAquaticMovementComponent;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API ABoss : public AUnitBase
@@ -146,6 +147,7 @@ public:
 
 	/** 보스의 이동속도를 설정하는 함수 */
 	void SetMoveSpeed(const float& SpeedMultiplier);
+
 	
 	UFUNCTION(NetMulticast, Reliable)
 	virtual void M_PlayAnimation(UAnimMontage* AnimMontage, float InPlayRate = 1, FName StartSectionName = NAME_None);
@@ -237,6 +239,10 @@ public:
 	UPROPERTY()
 	float ChaseAccumulatedTime = 0.0f;
 	
+	/** 새로운 물리 기반 수중 이동 컴포넌트 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Movement")
+	TObjectPtr<UAquaticMovementComponent> AquaticMovementComponent;
+
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Stat")
 	float TraceDistance = 800.0f;
@@ -258,6 +264,8 @@ protected:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Camera")
 	TObjectPtr<UCameraControllerComponent> CameraControllerComponent;
+
+	
 
 	/** 공격 받은 플레이어 리스트
 	 * 
@@ -301,6 +309,10 @@ private:
 	float OriginDeceleration;
 	float SphereOverlapRadius = 100.0f;
 	FVector TargetLocation;
+	FVector DesiredTargetLocation;  // 새로운 목표 위치 (보간 전)
+	FVector InterpolatedTargetLocation;  // 보간된 목표 위치
+	float TargetLocationInterpSpeed = 2.0f;  // 타겟 위치 보간 속도
+	float PatrolInterpSpeed = 1.5f;  // 순찰 시 더 부드러운 보간 속도
 	FVector CachedSpawnLocation;
 	FVector TurnDirection;
 

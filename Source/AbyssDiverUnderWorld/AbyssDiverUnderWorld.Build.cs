@@ -33,6 +33,8 @@ public class AbyssDiverUnderWorld : ModuleRules
             , "NavigationSystem"
             , "CableComponent"
             , "AsyncLoadingScreen"
+            , "AnimGraph" //NEW
+            , "BlueprintGraph" //NEW
         });
 		
         PublicIncludePaths.AddRange(new string[] { "AbyssDiverUnderWorld" });

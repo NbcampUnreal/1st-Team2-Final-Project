@@ -1,3 +1,6 @@
+// [DEPRECATED] - NavMesh는 더 이상 사용되지 않습니다.
+// 이 서비스는 기존 BehaviorTree와의 호환성을 위해 유지되며, 항상 true를 반환합니다.
+
 #include "Boss/Task/AlienShark/BTService_CheckOnNavMesh.h"
 #include "Boss/Boss.h"
 #include "Boss/EnhancedBossAIController.h"
@@ -6,7 +9,7 @@ const FName UBTService_CheckOnNavMesh::NavMeshCheckKey = "bIsOnNavMesh";
 
 UBTService_CheckOnNavMesh::UBTService_CheckOnNavMesh()
 {
-	NodeName = TEXT("Check On NavMesh");
+	NodeName = TEXT("[DEPRECATED] Check On NavMesh");
 	bCreateNodeInstance = false;
 	bNotifyBecomeRelevant = true;
 	Interval = 0.5f;

@@ -2,6 +2,7 @@
 #include "Components/CapsuleComponent.h"
 
 
+
 AAlienShark::AAlienShark()
 {
 	PrimaryActorTick.bCanEverTick = false;
@@ -20,4 +21,3 @@ void AAlienShark::BeginPlay()
 
 	BiteCollision->OnComponentBeginOverlap.AddDynamic(this, &ABoss::OnMeshOverlapBegin);
 }
-

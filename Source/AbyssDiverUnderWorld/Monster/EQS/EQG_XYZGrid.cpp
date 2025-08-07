@@ -6,6 +6,8 @@
 #include "EnvironmentQuery/Contexts/EnvQueryContext_Querier.h"
 #include "NavigationSystem.h"
 #include "EnvironmentQuery/Items/EnvQueryItemType_Point.h"
+#include "Boss/Boss.h"
+#include "Outsourced/AquaticMovementComponent.h"
 
 
 UEQG_XYZGrid::UEQG_XYZGrid()  
@@ -25,7 +27,19 @@ void UEQG_XYZGrid::GenerateItems(FEnvQueryInstance& QueryInstance) const
 
    const float HalfXY = GridHalfSizeXY.GetValue();  
    const float HalfZ = GridHalfHeightZ.GetValue();  
-   const float Spacing = PointSpacing.GetValue();  
+   float Spacing = PointSpacing.GetValue();  
+   
+   // Boss의 LOD 정보를 가져와서 스페이싱 조정
+   if (ABoss* Boss = Cast<ABoss>(QueryInstance.Owner.Get()))
+   {
+       if (Boss->AquaticMovementComponent)
+       {
+           const float LODFactor = Boss->AquaticMovementComponent->CurrentLODFactor;
+           // LOD가 0에 가까울수록(멀수록) 스페이싱을 늘림
+           // LOD 1.0 = 기본 스페이싱, LOD 0.0 = 3배 스페이싱
+           Spacing = Spacing * FMath::Lerp(3.0f, 1.0f, LODFactor);
+       }
+   }
 
    for (const FVector& Origin : ContextLocations)  
    {  
@@ -36,11 +50,24 @@ void UEQG_XYZGrid::GenerateItems(FEnvQueryInstance& QueryInstance) const
                for (float Z = -HalfZ; Z <= HalfZ; Z += Spacing)  
                {  
                    const FVector Point = Origin + FVector(X, Y, Z);  
-                   // Register only when on top of NavMesh
-                   FNavLocation NavLoc;  
-                   if (UNavigationSystemV1::GetCurrent(QueryInstance.World)->ProjectPointToNavigation(Point, NavLoc, FVector(50, 50, 50)))  
+                   
+                   // 수중 환경용: 장애물 내부가 아닌 모든 점을 유효한 것으로 처리
+                   FCollisionQueryParams QueryParams;
+                   QueryParams.AddIgnoredActor(Cast<AActor>(QueryInstance.Owner.Get()));
+                   
+                   // 위치가 장애물 내부가 아닌지 확인 (구체 오버랩)
+                   const bool bIsInsideObstacle = QueryInstance.World->OverlapAnyTestByChannel(
+                       Point,
+                       FQuat::Identity,
+                       ECC_Visibility,
+                       FCollisionShape::MakeSphere(30.0f),  // 작은 구체로 체크
+                       QueryParams
+                   );
+                   
+                   // 장애물 내부가 아니면 유효한 지점
+                   if (!bIsInsideObstacle)
                    {  
-                       QueryInstance.AddItemData<UEnvQueryItemType_Point>(NavLoc.Location);
+                       QueryInstance.AddItemData<UEnvQueryItemType_Point>(Point);
                    }  
                }  
            }  

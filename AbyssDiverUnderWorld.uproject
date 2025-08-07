@@ -13,7 +13,8 @@
 				"AIModule",
 				"UMG",
 				"CoreUObject",
-				"AdvancedSessions"
+				"AdvancedSessions",
+				"AnimGraph"
 			]
 		}
 	],
