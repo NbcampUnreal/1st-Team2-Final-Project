@@ -1,16 +1,23 @@
 ﻿#include "Interactable/OtherActors/ADDroneSeller.h"
+
 #include "Inventory/ADInventoryComponent.h"
-#include "Framework/ADInGameState.h"
 #include "ADDrone.h"
-#include "Character/UnderwaterCharacter.h"
-#include "Character/PlayerComponent/OxygenComponent.h"
-#include "Net/UnrealNetwork.h"
-#include "Interactable/Item/Component/ADInteractableComponent.h"
+
+#include "Framework/ADInGameState.h"
 #include "Framework/ADPlayerState.h"
 #include "Framework/ADGameInstance.h"
 #include "Framework/ADPlayerController.h"
+
+#include "Character/UnderwaterCharacter.h"
+#include "Character/PlayerComponent/OxygenComponent.h"
+
+#include "Interactable/Item/Component/ADInteractableComponent.h"
+
 #include "Subsystems/SoundSubsystem.h"
 #include "Subsystems/MissionSubsystem.h"
+#include "Subsystems/Localizations/LocalizationSubsystem.h"
+
+#include "Net/UnrealNetwork.h"
 
 AADDroneSeller::AADDroneSeller()
 {
@@ -269,7 +276,14 @@ bool AADDroneSeller::IsHoldMode() const
 
 FString AADDroneSeller::GetInteractionDescription() const
 {
-	return TEXT("Submit Ore!");
+	ULocalizationSubsystem* LocalizationSubsystem = GetGameInstance()->GetSubsystem<ULocalizationSubsystem>();
+	if (IsValid(LocalizationSubsystem) == false)
+	{
+		LOGV(Error, TEXT("Cant Get LocalizationSubsystem"));
+		return "";
+	}
+
+	return LocalizationSubsystem->GetLocalizedText(ST_InteractionDescription::TableKey, ST_InteractionDescription::DroneSeller_SubmitOre).ToString();
 }
 
 USoundSubsystem* AADDroneSeller::GetSoundSubsystem()
