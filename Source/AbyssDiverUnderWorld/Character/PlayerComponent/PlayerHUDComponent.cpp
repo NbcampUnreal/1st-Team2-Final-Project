@@ -26,6 +26,8 @@
 #include "Components/CanvasPanel.h"
 #include "Kismet/GameplayStatics.h"
 #include "Inventory/ADInventoryComponent.h"
+#include "Character/PlayerComponent/DepthComponent.h"
+#include "UI/DepthWidget.h"
 
 UPlayerHUDComponent::UPlayerHUDComponent()
 {
@@ -239,6 +241,13 @@ void UPlayerHUDComponent::SetCurrentPhaseOverlayVisible(bool bShouldVisible)
 	}
 
 	PlayerStatusWidget->SetCurrentPhaseOverlayVisible(bShouldVisible);
+}
+
+void UPlayerHUDComponent::BindDeptWidgetFunction(UDepthComponent* DepthComp)
+{
+	UDepthWidget* DepthWidget = PlayerStatusWidget->GetDepthWidget();
+	DepthComp->OnDepthZoneChangedDelegate.AddDynamic(DepthWidget, &UDepthWidget::ApplyZoneChangeToWidget);
+	DepthComp->OnDepthUpdatedDelegate.AddDynamic(DepthWidget, &UDepthWidget::SetDepthText);
 }
 
 void UPlayerHUDComponent::C_SetSpearGunTypeImage_Implementation(int8 TypeNum)
