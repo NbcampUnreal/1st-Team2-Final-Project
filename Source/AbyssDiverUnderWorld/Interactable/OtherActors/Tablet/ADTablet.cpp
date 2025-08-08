@@ -1,12 +1,16 @@
 ﻿#include "Interactable/OtherActors/Tablet/ADTablet.h"
-#include "Components/WidgetComponent.h"
-#include "Camera/CameraComponent.h"
+
 #include "Character/UnderwaterCharacter.h"
 #include "AbyssDiverUnderWorld.h"
-#include "Net/UnrealNetwork.h"
 #include "UI/TabletBaseWidget.h"
 #include "Framework/ADGameInstance.h"
+
 #include "Subsystems/SoundSubsystem.h"
+#include "Subsystems/Localizations/LocalizationSubsystem.h"
+
+#include "Components/WidgetComponent.h"
+#include "Net/UnrealNetwork.h"
+#include "Camera/CameraComponent.h"
 
 // Sets default values
 AADTablet::AADTablet()
@@ -154,6 +158,18 @@ void AADTablet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetim
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AADTablet, bIsHeld);
 	DOREPLIFETIME(AADTablet, HeldBy);
+}
+
+FString AADTablet::GetInteractionDescription() const
+{
+	ULocalizationSubsystem* LocalizationSubsystem = GetGameInstance()->GetSubsystem<ULocalizationSubsystem>();
+	if (IsValid(LocalizationSubsystem) == false)
+	{
+		LOGV(Error, TEXT("Cant Get LocalizationSubsystem"));
+		return "";
+	}
+
+	return LocalizationSubsystem->GetLocalizedText(ST_InteractionDescription::TableKey, ST_InteractionDescription::Tablet_Pickup).ToString();
 }
 
 USoundSubsystem* AADTablet::GetSoundSubsystem()
