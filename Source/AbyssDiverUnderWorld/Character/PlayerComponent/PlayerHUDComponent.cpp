@@ -246,6 +246,7 @@ void UPlayerHUDComponent::SetCurrentPhaseOverlayVisible(bool bShouldVisible)
 void UPlayerHUDComponent::BindDeptWidgetFunction(UDepthComponent* DepthComp)
 {
 	UDepthWidget* DepthWidget = PlayerStatusWidget->GetDepthWidget();
+	if (!DepthWidget || !DepthComp) return;
 	DepthComp->OnDepthZoneChangedDelegate.AddDynamic(DepthWidget, &UDepthWidget::ApplyZoneChangeToWidget);
 	DepthComp->OnDepthUpdatedDelegate.AddDynamic(DepthWidget, &UDepthWidget::SetDepthText);
 }
