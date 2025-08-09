@@ -7,15 +7,18 @@
 
 #include "DataRow/PhaseGoalRow.h"
 #include "AbyssDiverUnderWorld.h"
+#include "UI/LoadingScreenWidget.h"
+
 #include "Subsystems/DataTableSubsystem.h"
 #include "Subsystems/MissionSubsystem.h"
+#include "Subsystems/SaveDataSubsystem.h"
 
 #include "Kismet/GameplayStatics.h"
 #include "EngineUtils.h"
 #include "AsyncLoadingScreenLibrary.h"
 #include "Engine/World.h"
 #include "GameFramework/WorldSettings.h"
-#include "UI/LoadingScreenWidget.h"
+
 
 void AADCampGameMode::ADCampGameMode()
 {
@@ -137,11 +140,25 @@ void AADCampGameMode::TravelToInGameLevel()
 		return;
 	}
 
+	USaveDataSubsystem* SaveDataSubsystem = GetGameInstance()->GetSubsystem<USaveDataSubsystem>();
+	if (IsValid(SaveDataSubsystem) == false)
+	{
+		LOGV(Error, TEXT("SaveDataSubsystem Is not valid"));
+		return;
+	}
+
+	if (SaveDataSubsystem->IsLoadingNow() || SaveDataSubsystem->IsSavingNow())
+	{
+		LOGV(Warning, TEXT("Game is loading or saving now, Cant Travel to InGameLevel"));
+		return;
+	}
+
 	if (bHasPressedTravel)
 	{
 		LOGV(Warning, TEXT("Already Pressed Travel Button"));
 		return;
 	}
+
 	bHasPressedTravel = true;
 
 	for (AADPlayerController* PC : TActorRange<AADPlayerController>(GetWorld()))
@@ -171,4 +188,9 @@ void AADCampGameMode::TravelToInGameLevel()
 			}
 
 		}, 2.0f, false);
+}
+
+bool AADCampGameMode::HasPressedTravel() const
+{
+	return bHasPressedTravel;
 }

@@ -82,7 +82,7 @@ public:
 	
 	/** Upgrade Type의 Grade를 지정, 최대 레벨을 벗어날 경우 false를 반환 */
 	UFUNCTION(BlueprintCallable)
-	bool SetCurrentGrade(EUpgradeType UpgradeType, uint8 Grade);
+	bool TrySetCurrentGrade(EUpgradeType UpgradeType, uint8 Grade);
 
 	/** 현재 Type을 Upgrade하기 위한 비용을 반환, 최대 레벨일 경우 음수를 반환 */
 	UFUNCTION(BlueprintCallable)
@@ -91,6 +91,9 @@ public:
 	/** Upgrade Type이 최대 레벨인지 확인, 다음 Grade가 없으면 Max Level이다. */
 	UFUNCTION(BlueprintCallable)
 	bool IsMaxGrade(EUpgradeType UpgradeType) const;
+
+	/** 현재 Upgrade 정보를 가져온다. Type 별로 Grade를 저장하고 있고 1이 기본값이다. */
+	const TArray<uint8>& GetUpgradeGradeMap() const;
 
 protected:
 	

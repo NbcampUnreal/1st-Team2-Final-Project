@@ -7,8 +7,11 @@
 #include "Character/UnderwaterCharacter.h"
 #include "Components/AudioComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "Logging/LogMacros.h"
 #include "Subsystems/SoundSubsystem.h"
+
+#include "Kismet/GameplayStatics.h"
 
 UUnderwaterEffectComponent::UUnderwaterEffectComponent()
 {

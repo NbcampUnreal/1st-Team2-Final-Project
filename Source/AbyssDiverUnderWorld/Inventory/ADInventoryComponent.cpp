@@ -26,6 +26,7 @@
 #include "GameFramework/Pawn.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Interactable/EquipableComponent/EquipRenderComponent.h"
+#include "Character/PlayerComponent/PlayerHUDComponent.h"
 
 DEFINE_LOG_CATEGORY(InventoryLog);
 
@@ -115,6 +116,17 @@ void UADInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 
 void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType, uint8 SlotIndex, bool bIgnoreCoolTime)
 {
+	if (APlayerController* PC = Cast<APlayerController>(Cast<AADPlayerState>(GetOwner())->GetPlayerController()))
+	{
+		if (AUnderwaterCharacter* Character = Cast<AUnderwaterCharacter>(PC->GetPawn()))
+		{
+			if (Character->GetEnvironmentState() == EEnvironmentState::Ground)
+			{
+				return;
+			}
+				
+		}
+	}
 	if (ItemType == EItemType::Equipment)
 	{
 		if (SlotIndex > InventoryIndexMapByType[ItemType].Num()-1 || InventoryIndexMapByType[ItemType][SlotIndex] == -1 ) return;
@@ -134,7 +146,7 @@ void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType
 	int8 InventoryIndex = GetInventoryIndexByTypeAndSlotIndex(ItemType, SlotIndex);
 	if (InventoryIndex == -1) return;
 	FItemData& Item = InventoryList.Items[InventoryIndex];
-	LOGINVEN(Warning, TEXT("UseItem %s"), *Item.Name.ToString());
+	LOGINVEN(Warning, TEXT("TryUseItem %s"), *Item.Name.ToString());
 	if (ItemType == EItemType::Equipment)
 	{
 		if (CurrentEquipmentSlotIndex == SlotIndex)
@@ -161,17 +173,27 @@ void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType
 			UUseStrategy* Strategy = Cast<UUseStrategy>(NewObject<UObject>(this, FoundRow->UseFunction));
 			if (Strategy)
 			{
-				Strategy->Use(GetOwner());
-				if (Item.Amount <= 100)
+				if (Strategy->Use(GetOwner()))
 				{
-					C_InventoryPlaySound(ESFX::Breath);
-					FTimerHandle SpawnEffectDelay;
-					GetWorld()->GetTimerManager().SetTimer(SpawnEffectDelay, this, &UADInventoryComponent::C_SpawnItemEffect, 1.5f, false);
+					RemoveBySlotIndex(SlotIndex, EItemType::Consumable, false);
+					if (Item.Id == 1)
+					{
+						C_InventoryPlaySound(ESFX::Breath);
+						FTimerHandle SpawnEffectDelay;
+						GetWorld()->GetTimerManager().SetTimer(SpawnEffectDelay, this, &UADInventoryComponent::C_SpawnItemEffect, 1.5f, false);
+					}
+					LOGINVEN(Warning, TEXT("Use Consumable Item %s"), *FoundRow->Name.ToString());
 				}
-				LOGINVEN(Warning, TEXT("Use Consumable Item %s"), *FoundRow->Name.ToString());
+				else
+				{
+					if (Item.Id == 0)
+					{
+						C_OnShieldUseFailed();
+					}
+					LOGINVEN(Warning, TEXT("Use Consumable Item Failed %s"), *FoundRow->Name.ToString());
+				}
 			}
 		}
-		RemoveBySlotIndex(SlotIndex, EItemType::Consumable, false);
 	}
 }
 
@@ -321,6 +343,18 @@ void UADInventoryComponent::C_UpdateBatteryInfo_Implementation()
 		ChargeBatteryWidget->UpdateBatteryInfo();
 }
 
+void UADInventoryComponent::C_OnShieldUseFailed_Implementation()
+{
+	APlayerState* PS = Cast<APlayerState>(GetOwner());
+	if (!PS) return;
+	AADPlayerController* PC = Cast<AADPlayerController>(PS->GetOwningController());
+	if (!PC) return;
+
+	UPlayerHUDComponent* HUD = PC->GetPlayerHUDComponent();
+
+	HUD->OnShieldUseFailed();
+}
+
 void UADInventoryComponent::C_SetEquipBatteryAmount_Implementation(EChargeBatteryType ItemChargeBatteryType)
 {
 	if (ChargeBatteryWidget)
@@ -364,7 +398,9 @@ bool UADInventoryComponent::AddInventoryItem(const FItemData& ItemData)
 				if (ItemData.ItemType == EItemType::Equipment)
 				{
 					if (ItemIndex != -1)
+					{
 						return false;
+					}		
 				}
 				LOGINVEN(Warning, TEXT("AddInventoryItem ItemIndex : %d"), ItemIndex);
 				bool bIsUpdateSuccess = false;
@@ -481,6 +517,8 @@ void UADInventoryComponent::OnRep_CurrentEquipItem()
 		case EEquipmentType::HarpoonGun:	Socket = HarpoonSocketName; break;
 		case EEquipmentType::FlareGun:		Socket = FlareSocketName;   break;
 		case EEquipmentType::DPV:			Socket = DPVSocketName;     break;
+		case EEquipmentType::Shotgun:		Socket = ShotgunSocketName; break;
+		case EEquipmentType::Mine:			Socket = MineSocketName;    break;
 		default:														break;
 		}
 
@@ -729,6 +767,7 @@ bool UADInventoryComponent::TryGiveAmmoToEquipment(EBulletType BulletType, int32
 			Item.BulletType == BulletType)
 		{
 			Item.ReserveAmmo += AmountPerPickup;
+			Item.Amount += AmountPerPickup;
 			InventoryList.MarkItemDirty(Item); 
 			return true;      
 		}
@@ -911,8 +950,8 @@ void UADInventoryComponent::DropItem(FItemData& ItemData)
 
 void UADInventoryComponent::OnInventoryInfoUpdate(int32 MassInfo, int32 PriceInfo)
 {
-	TotalWeight += MassInfo;
-	TotalPrice += PriceInfo;
+	TotalWeight = FMath::Max(TotalWeight+MassInfo, 0);
+	TotalPrice = FMath::Max(TotalPrice+PriceInfo, 0);
 }
 
 void UADInventoryComponent::RebuildIndexMap()

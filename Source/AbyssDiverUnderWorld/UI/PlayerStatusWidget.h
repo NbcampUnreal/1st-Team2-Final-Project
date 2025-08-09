@@ -11,6 +11,9 @@ class UTextBlock;
 class UProgressBar;
 class UOverlay;
 enum class ESpearGunType : uint8;
+class UWarningWidget;
+class UNoticeWidget;
+class UDepthWidget;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API UPlayerStatusWidget : public UUserWidget
@@ -32,6 +35,17 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Compass")
 	void SetCompassObjectWidgetVisible(bool bShouldVisible);
 
+	UFUNCTION(BlueprintCallable)
+	void ShowPhaseWarning(bool bShouldVisible);
+
+	UFUNCTION(BlueprintCallable)
+	void NoticeInfo(const FString& Info, const FVector2D& Position);
+
+	UFUNCTION(BlueprintCallable)
+	void SetTopName(AADPlayerState* PS, int32 MinedAmount);
+
+
+
 	// 일반 함수
 	void SetSpearCount(int32 Current, int32 Total);
 	void SetOxygenPercent(float InPercent);
@@ -50,12 +64,14 @@ public:
 
 	void SetSpearGunTypeImage(int8 TypeNum);
 
+
 private:
 
 	UFUNCTION()
 	void OnNextPhaseAnimFinished();
 
 	bool TryPlayAnim(UWidgetAnimation* Anim);
+
 
 #pragma endregion
 
@@ -84,16 +100,23 @@ protected:
 	TObjectPtr<UProgressBar> OxygenBar;
 
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UProgressBar> HealthBar;
-
-	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UProgressBar> StaminaBar;
-
-	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UWidget> SpearPanel;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Compass")
 	TObjectPtr<AActor> CompassTargetObject;
+
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> TopName;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> TopNameCopy;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> TopAmount;
+
+	UPROPERTY(meta = (BindWidgetAnim), Transient)
+	TObjectPtr<UWidgetAnimation> ChangeTopPlayer;
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UTextBlock> CurrentMoneyText;
@@ -125,7 +148,25 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UImage> SpearGunTypeImage;
 
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UWarningWidget> OxygenWarningWidget;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UWarningWidget> PhaseWarningWidget;
+
+	UPROPERTY(meta = (BindWidgetAnim), Transient)
+	TObjectPtr<UWidgetAnimation> IncreaseMoney;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UNoticeWidget> NoticeWidget;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UDepthWidget> DepthWidget;
+
+	UPROPERTY()
 	TObjectPtr <UMaterialInstanceDynamic> DynamicMaterial;
+
+	UPROPERTY()
 	TObjectPtr <UMaterialInterface> LoadedMaterial;
 private:
 
@@ -138,12 +179,18 @@ private:
 
 	static const int32 MaxPhaseNumber;
 
+	float Period = 0.0f;
+
 #pragma endregion
 
 #pragma region Getter, Setter
 
 public:
 
+	UFUNCTION(BlueprintCallable)
+	int32 GetCachedNextPhaseNumber() const { return CachedNextPhaseNumber; }
+	UFUNCTION(BlueprintCallable)
+	UWarningWidget* GetPhaseWarningWidget() const { return PhaseWarningWidget; }
 	FORCEINLINE int32 GetCurrentSpear() const { return CurrentSpear; }
 	FORCEINLINE int32 GetTotalSpear() const { return TotalSpearCount; }
 	int8 GetNextPhaseAnimEndTime() const;
@@ -152,5 +199,6 @@ public:
 	void SetSpearVisibility(bool bVisible);
 	void SetCompassObject(AActor* NewTargetObject);
 
+	UDepthWidget* GetDepthWidget() const { return DepthWidget; }
 #pragma endregion
 };

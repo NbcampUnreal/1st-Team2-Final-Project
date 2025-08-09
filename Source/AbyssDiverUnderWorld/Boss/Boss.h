@@ -126,6 +126,7 @@ public:
 
 	UFUNCTION(NetMulticast, Unreliable)
 	void M_PlayBloodEffect(const FVector& Location, const FRotator& Rotation);
+	void M_PlayBloodEffect_Implementation(const FVector& Location, const FRotator& Rotation);
 	
 	/** 보스의 체력이 0이하로 떨어지는 경우 사망 상태로 전이 */
 	virtual void OnDeath();
@@ -176,6 +177,9 @@ public:
 	void OnAttackCollisionOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
 							UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
+	// 몬스터 죽었을 때 레이더에서 Off 되도록
+	UFUNCTION()
+	void DeathToRaderOff();
 protected:
 	void ApplyPhysicsSimulation();
 	

@@ -7,6 +7,7 @@
 
 enum class EMissionType : uint8;
 class USoundSubsystem;
+class UDepthComponent;
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class ABYSSDIVERUNDERWORLD_API UPlayerHUDComponent : public UActorComponent
@@ -23,6 +24,7 @@ protected:
 #pragma region Method
     
 public:
+
     UFUNCTION(Client, Reliable)
     void C_ShowResultScreen();
     void C_ShowResultScreen_Implementation();
@@ -35,9 +37,6 @@ public:
     void M_UpdateSpearCount(const int32& CurrentSpear, const int32& TotalSpear);
     void M_UpdateSpearCount_Implementation(const int32& CurrentSpear, const int32& TotalSpear);
 
-    /*UFUNCTION(NetMulticast, Reliable)
-    void M_SetSpearGunTypeImage(int8 TypeNum);
-    void M_SetSpearGunTypeImage_Implementation(int8 TypeNum);*/
     UFUNCTION(Client, Reliable)
     void C_SetSpearGunTypeImage(int8 TypeNum);
     void C_SetSpearGunTypeImage_Implementation(int8 TypeNum);
@@ -65,16 +64,23 @@ public:
     UFUNCTION()
     void UpdateHealthHUD(int32 CurrentHealth, int32 MaxHealth);
 
+    UFUNCTION()
+    void OnShieldUseFailed();
+
     void UpdateMissionsOnHUD(EMissionType MissionType, uint8 MissionIndex, int32 CurrentProgress);
 
     void PlayNextPhaseAnim(int32 NextPhaseNumber);
     void SetCurrentPhaseOverlayVisible(bool bShouldVisible);
+
+    void BindDeptWidgetFunction(UDepthComponent* DepthComp);
 
     /** HUD 위젯을 숨긴다. */
     void HideHudWidget();
 
     /** 위젯을 보이게 한다. */
     void ShowHudWidget();
+
+    void SetActiveRadarWidget(bool bShouldActivate);
     
 protected:
     
@@ -134,7 +140,14 @@ private:
     UPROPERTY()
     TObjectPtr<class USpectatorHUDWidget> SpectatorHUDWidget;
     
-    
+    /** 레이더 HUD 위젯 클래스 */
+    UPROPERTY(EditDefaultsOnly, Category = UI, meta = (AllowPrivateAccess = "true"))
+    TSubclassOf<class URadar2DWidget> Radar2DWidgetClass;
+
+    /** 레이더 HUD 위젯 인스턴스 */
+    UPROPERTY()
+    TObjectPtr<class URadar2DWidget> Radar2DWidget;
+
 #pragma endregion
 
 #pragma region Getter Setter

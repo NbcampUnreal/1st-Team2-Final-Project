@@ -15,5 +15,5 @@ class ABYSSDIVERUNDERWORLD_API UUseStrategy : public UObject
 	GENERATED_BODY()
 	
 public:
-	virtual void Use(AActor* Target) PURE_VIRTUAL(UUseStrategy::Use, );//PURE_VIRTUAL은 자식이 override 하도록 강제
+	virtual bool Use(AActor* Target) PURE_VIRTUAL(UUseStrategy::Use, return true;);//PURE_VIRTUAL은 자식이 override 하도록 강제
 };

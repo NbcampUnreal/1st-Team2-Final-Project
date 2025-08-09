@@ -20,6 +20,7 @@
 #define LOG_NETWORK(Category, Verbosity, Format, ...) \
 	UE_LOG(Category, Verbosity, TEXT("[%s] %s %s"), LOG_NETMODEINFO, LOG_CALLINFO, *FString::Printf(Format, ##__VA_ARGS__))
 
+enum EDepthZone : int;
 DECLARE_LOG_CATEGORY_EXTERN(LogAbyssDiverCharacter, Log, LOG_ABYSS_DIVER_COMPILE_VERBOSITY);
 
 // @TODO : Character Status Replicate 문제
@@ -87,6 +88,7 @@ enum class EPlayAnimationTarget : uint8
 };
 
 class UInputAction;
+class URadar2DComponent;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AUnderwaterCharacter : public AUnitBase, public IIADInteractable
@@ -159,7 +161,7 @@ public:
 
 	/** 캐릭터를 사망시킨다. Authority Node에서만 실행되어야 한다. */
 	UFUNCTION(BlueprintCallable)
-	void Die();
+	void Kill();
 
 	/** 부활 상태 초기화 설정을 한다. Possess 이후에 호출할 것 */
 	void Respawn();
@@ -177,11 +179,11 @@ public:
 	
 	/** Monster에 의해 Target 되었을 때 호출된다. Authority Node에서만 유효하다. */
 	UFUNCTION(BlueprintCallable)
-	void OnTargeted();
+	void OnTargeted(AActor* TargetingActor);
 
 	/** Monster에 의해 UnTarget 되었을 때 호출된다. Authority Node에서만 유효하다. */
 	UFUNCTION(BlueprintCallable)
-	void OnUntargeted();
+	void OnUntargeted(AActor* TargetingActor);
 
 	/** 빠른 구현을 위해 Captrue를 현재 Multicast로 구현한다.
 	 * 이후 변경 모델
@@ -402,36 +404,17 @@ protected:
 	UFUNCTION()
 	void AdjustSpeed();
 
-	/** 레이더 Actor를 생성한다. */
-	void SpawnRadar();
-
 	/** 1인칭, 3인칭 시점의 메시를 설정 */
 	void SetMeshFirstPersonSetting(bool bIsFirstPerson);
 
 	/** Pawn을 떠날 때 호출되는 함수. Pawn이 떠나면 캐릭터는 관전 상태로 변경된다. */
 	void OnLeavePawn();
-	
-	/** Radar Toggle을 요청한다. */
-	UFUNCTION(BlueprintCallable)
-	void RequestToggleRadar();
 
 	/** 현재 상태에 맞춰서 Blur 효과를 업데이트한다. */
 	void UpdateBlurEffect();
 	
 	/** Blur 효과 적용 여부를 설정한다. */
 	void SetBlurEffect(const bool bEnable);
-
-	/** Radar 보이는 것을 설정 */
-	void SetRadarVisibility(bool bRadarVisible);
-
-	/** Toggle Radar Server RPC */
-	UFUNCTION(Server, Reliable)
-	void S_ToggleRadar();
-	void S_ToggleRadar_Implementation();
-
-	/** bIsRadarOn Replicate 함수. 변화된 값에 따라서 레이더의 Visibility를 변경한다. */
-	UFUNCTION()
-	void OnRep_bIsRadarOn();
 
 	/** 산소 상태가 변경될 때 호출되는 함수 */
 	UFUNCTION()
@@ -622,6 +605,19 @@ protected:
 	UFUNCTION()
 	void OnRep_BoundCharacters();
 
+	/** TargetingActors의 유효성을 검증한다. */
+	int32 ValidateTargetingActors();
+
+	/** TargetingActors의 유효하지 않은 Actor를 제거한다. */
+	void CleanupTargetingActors();
+
+	/** DepthZone이 변경될 때 호출되는 함수 */
+	UFUNCTION()
+	void OnDepthZoneChanged(EDepthZone OldDepthZone, EDepthZone NewDepthZone);
+
+	/** 현재 DepthZone에 따른 산소 소비율을 반환한다. */
+	float GetOxygenConsumeRate(EDepthZone DepthZone) const;
+	
 private:
 
 	/** Montage 콜백을 등록 */
@@ -701,6 +697,16 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = Animation)
 	/** 3인칭 메시 몽타주 시작 시 호출되는 델리게이트 */
 	FOnMontageStarted OnMesh3PMontageStartedDelegate;
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEmoteStart);
+	/** 감정 표현 시작 시 호출되는 델리게이트 */
+	UPROPERTY(BlueprintAssignable, Category = "Character|Emote")
+	FOnEmoteStart OnEmoteStartDelegate;
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEmoteEnd);
+	/** 감정 표현 종료 시 호출되는 델리게이트 */
+	UPROPERTY(BlueprintAssignable, Category = "Character|Emote")
+	FOnEmoteStart OnEmoteEndDelegate;
 
 	UPROPERTY(VisibleAnywhere, Category = "Mining")
 	/** 현재 1p에 장착된 Tool 인스턴스 */
@@ -894,9 +900,17 @@ private:
 	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_InCombat, Category = Character, meta = (AllowPrivateAccess = "true"))
 	uint8 bIsInCombat : 1;
 	
-	/** 현재 캐릭터를 타겟팅하고 있는 Actor의 개수. */
-	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	int TargetingActorCount;
+	/** 현재 캐릭터를 타겟팅하고 있는 Actor들의 집합 */
+	TSet<TWeakObjectPtr<AActor>> TargetingActors;
+
+	/** True일 경우 주기적으로 Targeting Actors의 유효성을 확인한다. */
+	uint8 bAutoStartCleanupTargetingActors : 1;
+
+	/** TargetingActors의 유효성을 검사하는 Timer 핸들 */
+	FTimerHandle TargetingActorsCleanupTimer;
+
+	/** TargetingActors의 유효성을 검사하는 주기. 초 단위로 설정한다. */
+	float TargetingActorsCleanupInterval;
 
 	// Tick을 썼다면 쉽게 관리했겠지만 현재로는 Timer를 사용해서 관리한다.
 	/** 체력 회복 중지 상태에서 체력 회복을 시작하기 위해 필요한 시간 */
@@ -974,28 +988,28 @@ private:
 	UPROPERTY(BlueprintReadWrite, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float ZoneSpeedMultiplier;
 
-	/** 생성할 레이더 BP */
-	UPROPERTY(EditDefaultsOnly, Category = "Character|Radar", meta = (AllowPrivateAccess = "true"))
-	TSubclassOf<class ARadar> RadarClass;
-
-	/** 생성한 레이더 인스턴스 */
-	UPROPERTY()
-	TObjectPtr<class ARadar> RadarObject;
-
 	/** 이름 표기 위젯 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character|UI", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UNameWidgetComponent> NameWidgetComponent;
 
-	/** 레이더가 생성된 위치 오프셋. 카메라 기준으로 부착이 된다. */
-	UPROPERTY(EditDefaultsOnly, Category = "Character|Radar", meta = (AllowPrivateAccess = "true"))
-	FVector RadarOffset;
+	/** 깊이 위젯 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UDepthComponent> DepthComponent;
 
-	/** 레이더가 생성된 회전 오프셋. 카메라 기준으로 부착이 된다. */
-	UPROPERTY(EditAnywhere, Category = "Character|Radar", meta = (AllowPrivateAccess = "true"))
-	FRotator RadarRotation;
+	/** 안전 구역에서 산소 소모량 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	float SafeZoneOxygenConsumeRate;
+	
+	/** 경고 구역에서 산소 소모량 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	float WarningZoneOxygenConsumeRate;
+
+	/** 위험 구역에서 산소 소모량 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	float DangerZoneOxygenConsumeRate;
 
 	/** 레이더 활성화 여부 */
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, ReplicatedUsing=OnRep_bIsRadarOn, Category = Character, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Replicated, Category = Character, meta = (AllowPrivateAccess = "true"))
 	uint8 bIsRadarOn : 1;
 
 	/** Animation를 재생하기 위한 정보이다. 애니메이션 재생 시에 한 번에 동기화되기 위해 사용된다. */
@@ -1158,6 +1172,9 @@ private:
 	UPROPERTY()
 	TObjectPtr<class UEquipRenderComponent> EquipRenderComp;
 
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<URadar2DComponent> RadarComponent;
+
 	/** Tool 소켓 명 (1P/3P 공용) */
 	FName LaserSocketName = TEXT("Laser");
 
@@ -1251,6 +1268,8 @@ public:
 	/** 캐릭터의 현재 상태를 반환. Normal, Groggy, Death... */
 	FORCEINLINE UCombatEffectComponent* GetCombatEffectComponent() const { return CombatEffectComponent; }
 
+	FORCEINLINE URadar2DComponent* GetRadarComponent() const { return RadarComponent; }
+
 	/** 캐릭터의 현재 상태를 반환 */
 	FORCEINLINE ECharacterState GetCharacterState() const { return CharacterState; }
 
@@ -1342,12 +1361,15 @@ public:
 	FORCEINLINE UPostProcessSettingComponent* GetPostProcessSettingComponent() const { return PostProcessSettingComponent; }
 
 	/** 현재 캐릭터를 어그로로 설정하고 있는 Targeting Actor의 개수를 반환 */
-	FORCEINLINE int GetTargetingActorCount() const { return TargetingActorCount; }
+	FORCEINLINE int GetTargetingActorCount() const { return TargetingActors.Num(); }
 
 	/** 캐릭터가 현재 Capture State 인지 여부를 반환 */
 	FORCEINLINE bool IsCaptured() const { return bIsCaptured; }
 
 	FORCEINLINE AADPlayerController* GetOwnerController() const { return OwnerController; }
+
+	/** 깊이 컴포넌트를 반환 */
+	FORCEINLINE UDepthComponent* GetDepthComponent() const { return DepthComponent; }
 
 protected:
 

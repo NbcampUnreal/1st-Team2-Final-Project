@@ -24,7 +24,9 @@ enum class EBulletType : uint8
 	BombSpear = 2,
 	PoisonSpear = 3,
 	Flare = 4,
-	Max = 5 UMETA(Hidden)
+	Shotgun = 5,
+	Mine = 6,
+	Max = 7 UMETA(Hidden)
 };
 
 USTRUCT(BlueprintType)

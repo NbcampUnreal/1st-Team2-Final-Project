@@ -67,6 +67,7 @@ void ASelectMachine::BeginPlay()
 			UMissionSelectWidget* MissionSelectWidget = Cast<UMissionSelectWidget>(Widget);
 			MissionSelectWidget->OnStartButtonClickedDelegate.AddUObject(MissionSubsystem, &UMissionSubsystem::ReceiveMissionDataFromUIData);
 			MissionSelectWidget->OnStartButtonClickedDelegate.AddUObject(this, &ASelectMachine::SwitchbSelectMission);
+			//MissionSelectWidget->OnStartButtonClickedDelegate.AddUObject(this, &ASelectMachine::SwitchbSelectMission);
 			//미션 초기화 버튼 연결 시 SwitchbSelectMission도 Bind 해줘야함
 		}
 		if (UDataTableSubsystem* DTSubsystem = GI->GetSubsystem<UDataTableSubsystem>())
@@ -143,6 +144,8 @@ void ASelectMachine::UpdatelevelImage_Implementation()
 void ASelectMachine::HandlePrevLevel(AActor* InteractInstigator)
 {
 	if (SelectMachineStateType == ESelectMachineStateType::CloseState) return;
+	if (bSelectMission) return;
+
 	LOGV(Warning, TEXT("PrevLevel Button Pressed"));
 	--CurrentLevelIndex;
 	CurrentLevelIndex = FMath::Clamp(CurrentLevelIndex, 0, LevelIDs.Num() - 1);
@@ -152,6 +155,8 @@ void ASelectMachine::HandlePrevLevel(AActor* InteractInstigator)
 void ASelectMachine::HandleNextLevel(AActor* InteractInstigator)
 {
 	if (SelectMachineStateType == ESelectMachineStateType::CloseState) return;
+	if (bSelectMission) return;
+
 	LOGV(Warning, TEXT("NextLevel Button Pressed"));
 	++CurrentLevelIndex;
 	CurrentLevelIndex = FMath::Clamp(CurrentLevelIndex, 0, LevelIDs.Num() - 1);
@@ -222,7 +227,7 @@ void ASelectMachine::HandleTravelLevel(AActor* InteractInstigator)
 
 void ASelectMachine::SwitchbSelectMission(const TArray<FMissionData>& MissionsFromUI)
 {
-	//bSelectMission = !bSelectMission;
+	SetbSelectMissionToTrue();
 	//UpdateButtonDescription();
 }
 

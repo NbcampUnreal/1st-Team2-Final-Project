@@ -29,6 +29,16 @@ public:
 	virtual void Logout(AController* Exiting) override;
 	virtual void FinishRestartPlayer(AController* NewPlayer, const FRotator& StartRotation) override;
 
+protected:
+
+	enum class EPlayerAliveInfo
+	{
+		Alive,
+		Dead,
+		Absent,
+		MAX
+	};
+
 #pragma region Methods
 
 public:
@@ -85,22 +95,28 @@ private:
 
 	TSubclassOf<class AADSpearGunBullet> SpearBulletClass;
 	TSubclassOf<class AADFlareGunBullet> FlareBulletClass;
+	TSubclassOf<class AADShotgunBullet> ShotgunBulletClass;
 	UPROPERTY()
 	TObjectPtr<AGenericPool> SpearGunBulletPool = nullptr;
 	UPROPERTY()
 	TObjectPtr<AGenericPool> FlareGunBulletPool = nullptr;
+	UPROPERTY()
+	TObjectPtr<AGenericPool> ShotgunBulletPool = nullptr;
 	UPROPERTY()
 	TObjectPtr<USoundSubsystem> SoundSubsystem;
 
 	FTimerHandle ResultTimerHandle;
 	FTimerHandle SyncTimerHandle;
 
-	TArray<bool> PlayerAliveInfos;
+	TArray<EPlayerAliveInfo> PlayerAliveInfos;
+
+	uint8 bWasGameOver : 1 = false;
 
 #pragma endregion
 
 public:
 	FORCEINLINE AGenericPool* GetSpearGenericPool() const { return SpearGunBulletPool; }
 	FORCEINLINE AGenericPool* GetFlareGenericPool() const { return FlareGunBulletPool; }
+	FORCEINLINE AGenericPool* GetShotgunGenericPool() const { return ShotgunBulletPool; }
 	USoundSubsystem* GetSoundSubsystem();
 };

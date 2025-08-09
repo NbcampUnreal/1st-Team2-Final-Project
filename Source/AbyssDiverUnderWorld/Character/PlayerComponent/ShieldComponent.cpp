@@ -15,6 +15,7 @@ UShieldComponent::UShieldComponent()
 	bCanGainShield = true;
 	ShieldValue = 0.0f;
 	OldShieldValue = ShieldValue;
+	MaxShieldValue = 1000.0f; // 기본 최대 실드 값
 }
 
 
@@ -53,7 +54,7 @@ FShieldAbsorbResult UShieldComponent::AbsorbDamage(const float DamageAmount)
 
 void UShieldComponent::GainShield(const float GainAmount)
 {
-	if (GetOwnerRole() != ROLE_Authority || GainAmount <= 0.0f || !bCanGainShield)
+	if (GetOwnerRole() != ROLE_Authority || GainAmount <= 0.0f || !bCanGainShield || IsShieldFull())
 	{
 		return;
 	}
@@ -89,7 +90,7 @@ void UShieldComponent::SetShieldValue(const float NewValue, const bool bAlwaysUp
 
 	OldShieldValue = ShieldValue;
 
-	ShieldValue = NewValue > 0.0f ? NewValue : 0.0f;
+	ShieldValue = FMath::Clamp(NewValue, 0.0f, MaxShieldValue);
 	OnShieldValueChangedDelegate.Broadcast(OldShieldValue, ShieldValue);
 	K2_OnShieldValueChanged(ShieldValue);
 

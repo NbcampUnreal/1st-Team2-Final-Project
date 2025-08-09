@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "InputActionValue.h"
 #include "GameFramework/PlayerController.h"
+#include "InputAction.h"
 
 #include "ADPlayerController.generated.h"
 
@@ -90,7 +91,19 @@ public:
 
 	UFUNCTION(Server, Reliable)
 	void S_SetInvincible(bool bIsInvincible);
-	
+
+	UFUNCTION(Exec)
+	void KillPlayer();
+
+	UFUNCTION(Server, Reliable)
+	void S_KillPlayer();
+	void S_KillPlayer_Implementation();
+
+	void SetActiveRadarWidget(bool bShouldActivate);
+
+	UFUNCTION(Server, Reliable)
+	void Server_RequestAdvanceTutorialPhase();
+
 protected:
 
 	/** 관전 상태가 시작될 때 호출되는 함수 */
@@ -121,6 +134,25 @@ protected:
 	void S_GainShield(int Amount);
 	
 	void OnCameraBlankEnd();
+
+	UFUNCTION()
+	void OnInventoryTriggered(const FInputActionValue& Value);
+	UFUNCTION()
+	void OnSprintTriggered(const FInputActionValue& Value);
+	UFUNCTION()
+	void OnRadarTriggered(const FInputActionValue& Value);
+	UFUNCTION()
+	void OnLightToggleTriggered(const FInputActionValue& Value);
+	UFUNCTION()
+	void OnLootingTriggered(const FInputActionValue& Value);
+	UFUNCTION()
+	void OnDroneTriggered(const FInputActionValue& Value);
+	UFUNCTION()
+	void OnItemsTriggered(const FInputActionValue& Value);
+	UFUNCTION()
+	void OnReviveTriggered(const FInputActionValue& Value);
+
+	void CheckTutorialObjective(const FInputActionValue& Value, UInputAction* SourceAction);
 
 #pragma endregion
 	
@@ -165,6 +197,26 @@ private:
 	/** Camera Blank Timer Handle */
 	FTimerHandle CameraBlankTimerHandle;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputAction> SprintAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputAction> RadarAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputAction> LightToggleAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputAction> LootingAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputAction> DroneAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputAction> ItemsAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputAction> ReviveAction;
 #pragma endregion 
 
 #pragma region Getters / Setters

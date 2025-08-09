@@ -1,5 +1,8 @@
 ﻿#include "Shops/Shop.h"
 
+#include "AbyssDiverUnderWorld.h"	
+#include "Inventory/ADInventoryComponent.h"
+
 #include "Character/UnitBase.h"
 #include "Character/UnderwaterCharacter.h"
 #include "Character/UpgradeComponent.h"
@@ -12,12 +15,12 @@
 #include "Shops/ShopWidgets/ShopElementInfoWidget.h"
 #include "Shops/ShopWidgets/ShopItemSlotWidget.h"
 #include "Shops/ShopWidgets/ShopBuyListSlotWidget.h"
+
 #include "ShopInteractionComponent.h"
 
-#include "AbyssDiverUnderWorld.h"	
-#include "Inventory/ADInventoryComponent.h"
 #include "Subsystems/DataTableSubsystem.h"
 #include "Subsystems/SoundSubsystem.h"
+#include "Subsystems/Localizations/LocalizationSubsystem.h"
 
 #include "Framework/ADPlayerState.h"
 #include "Framework/ADInGameState.h"
@@ -540,6 +543,11 @@ void AShop::CloseShop(AUnderwaterCharacter* Requester)
 		return;
 	}
 
+	if (IsValid(ShopWidget) == false || ShopWidget->IsValidLowLevel() == false)
+	{
+		return;
+	}
+
 	ShopWidget->PlayCloseAnimation();
 
 	FTimerHandle RemoveWidgetTimerHandle;
@@ -547,6 +555,17 @@ void AShop::CloseShop(AUnderwaterCharacter* Requester)
 	GetWorld()->GetTimerManager().SetTimer(RemoveWidgetTimerHandle,
 		FTimerDelegate::CreateLambda([this]() 
 			{ 
+				UWorld* World = GetWorld();
+				if (IsValid(World) == false || World->IsValidLowLevel() == false || World->bIsTearingDown || World->IsInSeamlessTravel())
+				{
+					return;
+				}
+
+				if (IsValid(ShopWidget) == false || ShopWidget->IsValidLowLevel() == false)
+				{
+					return;
+				}
+
 				ShopWidget->RemoveFromParent();
 
 				APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
@@ -1594,7 +1613,14 @@ bool AShop::IsOpened() const
 
 FString AShop::GetInteractionDescription() const
 {
-	return TEXT("Open Shop!");
+	ULocalizationSubsystem* LocalizationSubsystem = GetGameInstance()->GetSubsystem<ULocalizationSubsystem>();
+	if (IsValid(LocalizationSubsystem) == false)
+	{
+		LOGV(Error, TEXT("Cant Get LocalizationSubsystem"));
+		return "";
+	}
+
+	return LocalizationSubsystem->GetLocalizedText(ST_InteractionDescription::TableKey, ST_InteractionDescription::Shop_OpenShop).ToString();
 }
 
 USoundSubsystem* AShop::GetSoundSubsystem()

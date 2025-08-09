@@ -2,6 +2,10 @@
 
 #include "AbyssDiverUnderWorld.h"
 #include "Framework/ADPlayerController.h"
+#include "Framework/ADPlayerState.h"
+#include "Inventory/ADInventoryComponent.h"
+
+#include "EngineUtils.h"
 
 const FString UADWorldSubsystem::MainMenuLevelName = TEXT("MainLevel");
 const FString UADWorldSubsystem::CampLevelName = TEXT("Submarine_Lobby");
@@ -22,15 +26,38 @@ void UADWorldSubsystem::OnWorldBeginPlay(UWorld& InWorld)
 		return;
 	}
 
-	AADPlayerController* PC = InWorld.GetFirstPlayerController <AADPlayerController>();
-	if (PC == nullptr)
+	AADPlayerController* PlayerController = InWorld.GetFirstPlayerController <AADPlayerController>();
+	if (PlayerController == nullptr)
 	{
 		return;
 	}
 
-	PC->SetInputMode(FInputModeGameOnly());
-	PC->SetShowMouseCursor(false);
-	PC->SetIgnoreMoveInput(false);
+	PlayerController->SetInputMode(FInputModeGameOnly());
+	PlayerController->SetShowMouseCursor(false);
+	PlayerController->SetIgnoreMoveInput(false);
 	// 카메라 페이드 아웃이 적용되어 있으면 원래대로 복구한다.
-	PC->ShowFadeIn();
+	PlayerController->ShowFadeIn();
+
+	if (PlayerController->HasAuthority())
+	{
+		for (AADPlayerController* PC : TActorRange<AADPlayerController>(&InWorld))
+		{
+			if (AADPlayerState* ADPlayerState = PC->GetPlayerState<AADPlayerState>())
+			{
+				UADInventoryComponent* Inventory = ADPlayerState->GetInventory();
+				if (Inventory)
+				{
+					Inventory->UnEquip();
+					TArray<FItemData> Items = Inventory->GetInventoryList().Items;
+					for (const FItemData& ItemData : Items)
+					{
+						if (ItemData.ItemType == EItemType::Exchangable)
+						{
+							Inventory->RemoveBySlotIndex(ItemData.SlotIndex, EItemType::Exchangable, false);
+						}
+					}
+				}
+			}
+		}
+	}
 }
