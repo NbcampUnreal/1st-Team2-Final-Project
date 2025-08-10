@@ -1245,13 +1245,12 @@ void AUnderwaterCharacter::HandleEnterDeath()
 		{
 			PS->SetIsDead(true);
 		}
+
+		DropAllExchangeableItems();
 	}
 	
 	if (IsLocallyControlled())
 	{
-		// @ToDo: Death UI 출력
-		// @ToDo: Death Camera Transition
-		
 		if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
 		{
 			PlayerController->SetIgnoreLookInput(false);
@@ -1269,11 +1268,8 @@ void AUnderwaterCharacter::HandleEnterDeath()
 		InteractionComponent->OnInteractReleased();
 	}
 
-	// @TODO 사망 처리
-	// 1. Server의 경우 Game Mode에 Report
-	// 2. 사망 시의 UI 출력
-	// 3. 사망 시의 캐릭터 처리 : 충돌 처리라던가 삭제 등
-
+	// Host, Client 동작
+	
 	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
 	{
 		AnimInstance->StopAllMontages(0.0f);
@@ -1448,6 +1444,27 @@ void AUnderwaterCharacter::EndDeath()
 	else
 	{
 		UE_LOG(LogAbyssDiverCharacter,Error, TEXT("PlayerController is not valid for %s"), *GetName());
+	}
+}
+
+void AUnderwaterCharacter::DropAllExchangeableItems()
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	if (CachedInventoryComponent)
+	{
+		const TArray<FItemData>& Items = CachedInventoryComponent->GetInventoryList().Items;
+		const int32 ItemCount = Items.Num();
+		for (int32 i = ItemCount - 1; i >= 0; --i)
+		{
+			if (Items[i].ItemType == EItemType::Exchangable)
+			{
+				CachedInventoryComponent->RemoveBySlotIndex(i, EItemType::Exchangable, true);
+			}
+		}
 	}
 }
 

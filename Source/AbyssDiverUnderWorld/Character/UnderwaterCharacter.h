@@ -397,6 +397,9 @@ protected:
 
 	/** 캐릭터가 사망을 완료했을 때 호출되는 함수. 관전으로 변경된다. */
 	void EndDeath();
+
+	/** 현재 소지 중인 교환 가능 아이템들을 모두 드랍한다. */
+	void DropAllExchangeableItems();
 	
 	float GetSwimEffectiveSpeed() const;
 
