@@ -9,6 +9,7 @@
 #include "ADTutorialGameMode.generated.h"
 
 class UDataTable;
+class ALight;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADTutorialGameMode : public AGameMode
@@ -24,9 +25,11 @@ class ABYSSDIVERUNDERWORLD_API AADTutorialGameMode : public AGameMode
 	void PlayerActionTriggered(EPlayerActionTrigger ActionType);
 
 	void OnTypingAnimationFinished();
+
+	void OnPlayerItemAction(EPlayerActionTrigger ItemActionType);
 protected:
 	void HandleCurrentPhase();
-
+	void HandlePhase_Dialogue_02();
 	void HandlePhase_Movement();
 	void HandlePhase_Sprint();
 	void HandlePhase_Oxygen();
@@ -36,12 +39,18 @@ protected:
 	void HandlePhase_Drone();
 	void HandlePhase_LightToggle();
 	void HandlePhase_Items();
-	void HandlePhase_OxygenWarning();
-	void HandlePhase_Revival();
+	void HandlePhase_Battery();         
+	void HandlePhase_Drop();          
+	void HandlePhase_OxygenWarning();   
+	void HandlePhase_Revive();
+	void HandlePhase_Die();
+	void HandlePhase_Resurrection();
 	void HandlePhase_Complete();
 
 	UFUNCTION(BlueprintCallable)
 	void SpawnDownedNPC();
+	void HidePhaseActors();
+
 
 	UPROPERTY()
 	TObjectPtr<class AADPlayerController> TutorialPlayerController;
@@ -60,5 +69,25 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Tutorial|Spawning")
 	FName OreSpawnTag;
 
+	UPROPERTY(EditAnywhere, Category = "Tutorial|Spawning")
+	FName DialogueTargetSpawnTag;
+
 	bool bIsTypingFinishedForCurrentPhase = false;
+
+	UPROPERTY()
+	TArray<TObjectPtr<AActor>> ActorsToShowThisPhase;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Tutorial Settings | Icons")
+	TObjectPtr<UTexture2D> LootingOreIcon;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Tutorial Settings | Icons")
+	TObjectPtr<UTexture2D> DialogueIndicatorIcon;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Tutorial Settings | Icons")
+	TObjectPtr<UTexture2D> DroneIndicatorIcon;
+	UPROPERTY()
+	TArray<TObjectPtr<ALight>> DisabledLights;
+
+
+	int32 ItemsPhaseProgress;
 };

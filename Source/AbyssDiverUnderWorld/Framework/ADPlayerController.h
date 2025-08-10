@@ -4,8 +4,9 @@
 #include "InputActionValue.h"
 #include "GameFramework/PlayerController.h"
 #include "InputAction.h"
-
+#include "Tutorial/TutorialEnums.h"
 #include "ADPlayerController.generated.h"
+
 
 enum class ESFX : uint8;
 enum class EMapName : uint8;
@@ -144,15 +145,24 @@ protected:
 	UFUNCTION()
 	void OnLightToggleTriggered(const FInputActionValue& Value);
 	UFUNCTION()
-	void OnLootingTriggered(const FInputActionValue& Value);
+	void OnInteractTriggered(const FInputActionValue& Value); 
 	UFUNCTION()
-	void OnDroneTriggered(const FInputActionValue& Value);
+	void OnItemAction1Triggered(const FInputActionValue& Value);
 	UFUNCTION()
-	void OnItemsTriggered(const FInputActionValue& Value);
+	void OnItemAction2Triggered(const FInputActionValue& Value);
+	UFUNCTION()
+	void OnItemAction3Triggered(const FInputActionValue& Value);
 	UFUNCTION()
 	void OnReviveTriggered(const FInputActionValue& Value);
+	UFUNCTION()
+	void OnBatteryTriggered(const FInputActionValue& Value);
+	UFUNCTION()
+	void OnDropTriggered(const FInputActionValue& Value);
 
 	void CheckTutorialObjective(const FInputActionValue& Value, UInputAction* SourceAction);
+
+	UFUNCTION(Server, Reliable)
+	void Server_ReportItemAction(EPlayerActionTrigger ItemActionType);
 
 #pragma endregion
 	
@@ -207,16 +217,25 @@ private:
 	TObjectPtr<class UInputAction> LightToggleAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<class UInputAction> LootingAction;
+	TObjectPtr<class UInputAction> InteractAction; 
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<class UInputAction> DroneAction;
+	TObjectPtr<class UInputAction> ItemAction1;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<class UInputAction> ItemsAction;
+	TObjectPtr<class UInputAction> ItemAction2;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputAction> ItemAction3;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputAction> ReviveAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> BatteryAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> DropAction;
 #pragma endregion 
 
 #pragma region Getters / Setters

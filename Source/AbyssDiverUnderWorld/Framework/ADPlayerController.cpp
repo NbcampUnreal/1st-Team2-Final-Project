@@ -364,21 +364,33 @@ void AADPlayerController::SetupInputComponent()
 		{
 			EnhancedInput->BindAction(LightToggleAction, ETriggerEvent::Triggered, this, &AADPlayerController::OnLightToggleTriggered);
 		}
-		if (LootingAction)
+		if (InteractAction)
 		{
-			EnhancedInput->BindAction(LootingAction, ETriggerEvent::Triggered, this, &AADPlayerController::OnLootingTriggered);
+			EnhancedInput->BindAction(InteractAction, ETriggerEvent::Triggered, this, &AADPlayerController::OnInteractTriggered);
 		}
-		if (DroneAction)
+		if (ItemAction1)
 		{
-			EnhancedInput->BindAction(DroneAction, ETriggerEvent::Triggered, this, &AADPlayerController::OnDroneTriggered);
+			EnhancedInput->BindAction(ItemAction1, ETriggerEvent::Triggered, this, &AADPlayerController::OnItemAction1Triggered);
 		}
-		if (ItemsAction)
+		if (ItemAction2)
 		{
-			EnhancedInput->BindAction(ItemsAction, ETriggerEvent::Triggered, this, &AADPlayerController::OnItemsTriggered);
+			EnhancedInput->BindAction(ItemAction2, ETriggerEvent::Triggered, this, &AADPlayerController::OnItemAction2Triggered);
+		}
+		if (ItemAction3)
+		{
+			EnhancedInput->BindAction(ItemAction3, ETriggerEvent::Triggered, this, &AADPlayerController::OnItemAction3Triggered);
 		}
 		if (ReviveAction)
 		{
 			EnhancedInput->BindAction(ReviveAction, ETriggerEvent::Triggered, this, &AADPlayerController::OnReviveTriggered);
+		}
+		if (BatteryAction)
+		{
+			EnhancedInput->BindAction(BatteryAction, ETriggerEvent::Triggered, this, &AADPlayerController::OnBatteryTriggered);
+		}
+		if (DropAction)
+		{
+			EnhancedInput->BindAction(DropAction, ETriggerEvent::Triggered, this, &AADPlayerController::OnDropTriggered);
 		}
 	}
 }
@@ -504,6 +516,26 @@ void AADPlayerController::OnCameraBlankEnd()
 	
 }
 
+void AADPlayerController::OnInteractTriggered(const FInputActionValue& Value)
+{
+	CheckTutorialObjective(Value, InteractAction);
+}
+
+void AADPlayerController::OnItemAction1Triggered(const FInputActionValue& Value)
+{
+	Server_ReportItemAction(EPlayerActionTrigger::UseItem1);
+}
+
+void AADPlayerController::OnItemAction2Triggered(const FInputActionValue& Value)
+{
+	Server_ReportItemAction(EPlayerActionTrigger::UseItem2);
+}
+
+void AADPlayerController::OnItemAction3Triggered(const FInputActionValue& Value)
+{
+	Server_ReportItemAction(EPlayerActionTrigger::UseItem3);
+}
+
 void AADPlayerController::OnInventoryTriggered(const FInputActionValue& Value)
 {
 	CheckTutorialObjective(Value, InventoryAction);
@@ -524,24 +556,19 @@ void AADPlayerController::OnLightToggleTriggered(const FInputActionValue& Value)
 	CheckTutorialObjective(Value, LightToggleAction);
 }
 
-void AADPlayerController::OnLootingTriggered(const FInputActionValue& Value)
-{
-	CheckTutorialObjective(Value, LootingAction);
-}
-
-void AADPlayerController::OnDroneTriggered(const FInputActionValue& Value)
-{
-	CheckTutorialObjective(Value, DroneAction);
-}
-
-void AADPlayerController::OnItemsTriggered(const FInputActionValue& Value)
-{
-	CheckTutorialObjective(Value, ItemsAction);
-}
-
 void AADPlayerController::OnReviveTriggered(const FInputActionValue& Value)
 {
 	CheckTutorialObjective(Value, ReviveAction);
+}
+
+void AADPlayerController::OnBatteryTriggered(const FInputActionValue& Value)
+{
+	CheckTutorialObjective(Value, BatteryAction);
+}
+
+void AADPlayerController::OnDropTriggered(const FInputActionValue& Value)
+{
+	CheckTutorialObjective(Value, DropAction);
 }
 
 void AADPlayerController::CheckTutorialObjective(const FInputActionValue& Value, UInputAction* SourceAction)
@@ -551,36 +578,50 @@ void AADPlayerController::CheckTutorialObjective(const FInputActionValue& Value,
 
 	ETutorialPhase CurrentPhase = TutorialGS->GetCurrentPhase();
 	bool bObjectiveMet = false;
-
-	if (CurrentPhase == ETutorialPhase::Step2_Sprint && SourceAction == SprintAction)
+	if (SourceAction == InteractAction)
+	{
+		if (CurrentPhase == ETutorialPhase::Step5_Looting ||
+			CurrentPhase == ETutorialPhase::Step7_Drone ||
+			CurrentPhase == ETutorialPhase::Step14_Die ||
+			CurrentPhase == ETutorialPhase::Step15_Resurrection)
+		{
+			bObjectiveMet = true;
+		}
+	}
+	// 스프린트 (Shift)
+	else if (CurrentPhase == ETutorialPhase::Step2_Sprint && SourceAction == SprintAction)
 	{
 		bObjectiveMet = true;
 	}
+	// 레이더 (Q)
 	else if (CurrentPhase == ETutorialPhase::Step4_Radar && SourceAction == RadarAction)
 	{
 		bObjectiveMet = true;
 	}
-	//else if (CurrentPhase == ETutorialPhase::Step5_Looting && SourceAction == LootingAction)
-	//{
-	//	bObjectiveMet = true;
-	//}
+	// 인벤토리 (Tab)
 	else if (CurrentPhase == ETutorialPhase::Step6_Inventory && SourceAction == InventoryAction)
 	{
 		bObjectiveMet = true;
 	}
-	else if (CurrentPhase == ETutorialPhase::Step7_Drone && SourceAction == DroneAction)
-	{
-		bObjectiveMet = true;
-	}
+	// 손전등 (F)
 	else if (CurrentPhase == ETutorialPhase::Step8_LightToggle && SourceAction == LightToggleAction)
 	{
 		bObjectiveMet = true;
 	}
-	else if (CurrentPhase == ETutorialPhase::Step9_Items && SourceAction == ItemsAction)
+	// 아이템 사용 (1,2,3)
+	//else if (CurrentPhase == ETutorialPhase::Step9_Items && SourceAction == ItemsAction)
+	//{
+	//	bObjectiveMet = true;
+	//}
+	else if (CurrentPhase == ETutorialPhase::Step10_Battery && SourceAction == BatteryAction)
 	{
 		bObjectiveMet = true;
 	}
-	else if (CurrentPhase == ETutorialPhase::Step11_Revival && SourceAction == ReviveAction)
+	else if (CurrentPhase == ETutorialPhase::Step11_Drop && SourceAction == DropAction)
+	{
+		bObjectiveMet = true;
+	}
+	else if (CurrentPhase == ETutorialPhase::Step13_Revive && SourceAction == ReviveAction)
 	{
 		bObjectiveMet = true;
 	}
@@ -589,6 +630,15 @@ void AADPlayerController::CheckTutorialObjective(const FInputActionValue& Value,
 	{
 		Server_RequestAdvanceTutorialPhase();
 	}
+}
+
+void AADPlayerController::Server_ReportItemAction_Implementation(EPlayerActionTrigger ItemActionType)
+{
+	if (AADTutorialGameMode* TutorialGM = GetWorld()->GetAuthGameMode<AADTutorialGameMode>())
+	{
+		TutorialGM->OnPlayerItemAction(ItemActionType);
+	}
+
 }
 
 void AADPlayerController::Server_RequestAdvanceTutorialPhase_Implementation()
