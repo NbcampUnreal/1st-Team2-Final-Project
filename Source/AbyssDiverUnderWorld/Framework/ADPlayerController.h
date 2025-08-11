@@ -102,8 +102,8 @@ public:
 
 	void SetActiveRadarWidget(bool bShouldActivate);
 
-	UFUNCTION(Server, Reliable)
-	void Server_RequestAdvanceTutorialPhase();
+	void RequestAdvanceTutorialPhase();
+	void ReportItemAction(EPlayerActionTrigger ItemActionType);
 
 protected:
 
@@ -147,11 +147,11 @@ protected:
 	UFUNCTION()
 	void OnInteractTriggered(const FInputActionValue& Value); 
 	UFUNCTION()
-	void OnItemAction1Triggered(const FInputActionValue& Value);
+	void OnSelectInventorySlot1Triggered(const FInputActionValue& Value);
 	UFUNCTION()
-	void OnItemAction2Triggered(const FInputActionValue& Value);
+	void OnSelectInventorySlot2Triggered(const FInputActionValue& Value);
 	UFUNCTION()
-	void OnItemAction3Triggered(const FInputActionValue& Value);
+	void OnSelectInventorySlot3Triggered(const FInputActionValue& Value);
 	UFUNCTION()
 	void OnReviveTriggered(const FInputActionValue& Value);
 	UFUNCTION()
@@ -160,10 +160,6 @@ protected:
 	void OnDropTriggered(const FInputActionValue& Value);
 
 	void CheckTutorialObjective(const FInputActionValue& Value, UInputAction* SourceAction);
-
-	UFUNCTION(Server, Reliable)
-	void Server_ReportItemAction(EPlayerActionTrigger ItemActionType);
-
 #pragma endregion
 	
 #pragma region Variable
@@ -208,25 +204,7 @@ private:
 	FTimerHandle CameraBlankTimerHandle;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<class UInputAction> SprintAction;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<class UInputAction> RadarAction;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<class UInputAction> LightToggleAction;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputAction> InteractAction; 
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<class UInputAction> ItemAction1;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<class UInputAction> ItemAction2;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<class UInputAction> ItemAction3;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputAction> ReviveAction;

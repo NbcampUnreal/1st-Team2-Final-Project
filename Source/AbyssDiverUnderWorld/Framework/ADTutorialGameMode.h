@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -14,19 +12,19 @@ class ALight;
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADTutorialGameMode : public AGameMode
 {
-    GENERATED_BODY()
+	GENERATED_BODY()
 
-    public:
+public:
 	AADTutorialGameMode();
 
 	virtual void StartPlay() override;
 	void AdvanceTutorialPhase();
-
-	void PlayerActionTriggered(EPlayerActionTrigger ActionType);
-
 	void OnTypingAnimationFinished();
-
 	void OnPlayerItemAction(EPlayerActionTrigger ItemActionType);
+
+	UFUNCTION()
+	void OnTrackedOwnerDestroyed(AActor* DestroyedActor);
+
 protected:
 	void HandleCurrentPhase();
 	void HandlePhase_Dialogue_02();
@@ -39,9 +37,9 @@ protected:
 	void HandlePhase_Drone();
 	void HandlePhase_LightToggle();
 	void HandlePhase_Items();
-	void HandlePhase_Battery();         
-	void HandlePhase_Drop();          
-	void HandlePhase_OxygenWarning();   
+	void HandlePhase_Battery();
+	void HandlePhase_Drop();
+	void HandlePhase_OxygenWarning();
 	void HandlePhase_Revive();
 	void HandlePhase_Die();
 	void HandlePhase_Resurrection();
@@ -49,8 +47,12 @@ protected:
 
 	UFUNCTION(BlueprintCallable)
 	void SpawnDownedNPC();
+
 	void HidePhaseActors();
 
+private:
+	void TrackPhaseActor(AActor* Actor) { if (IsValid(Actor)) { ActorsToShowThisPhase.Add(Actor); } }
+	void BindIndicatorToOwner(AActor* OwnerActor, AActor* IndicatorActor);
 
 	UPROPERTY()
 	TObjectPtr<class AADPlayerController> TutorialPlayerController;
@@ -64,7 +66,7 @@ protected:
 	TSubclassOf<AActor> LootableOreClass;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Spawning")
-	TSubclassOf<AIndicatingTarget> IndicatingTargetClass; 
+	TSubclassOf<AIndicatingTarget> IndicatingTargetClass;
 
 	UPROPERTY(EditAnywhere, Category = "Tutorial|Spawning")
 	FName OreSpawnTag;
@@ -85,9 +87,12 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Tutorial Settings | Icons")
 	TObjectPtr<UTexture2D> DroneIndicatorIcon;
+
 	UPROPERTY()
 	TArray<TObjectPtr<ALight>> DisabledLights;
 
+	UPROPERTY()
+	TMap<TWeakObjectPtr<AActor>, TWeakObjectPtr<AActor>> OwnerToIndicator;
 
 	int32 ItemsPhaseProgress;
 };

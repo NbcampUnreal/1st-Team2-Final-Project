@@ -144,8 +144,17 @@ void ATutorialManager::OnTypingFinished(const FTutorialStepData& StepData)
 
 void ATutorialManager::RequestAdvancePhase()
 {
-    if (AADPlayerController* PC = GetWorld()->GetFirstPlayerController<AADPlayerController>())
-    {
-        PC->Server_RequestAdvanceTutorialPhase();
-    }
+	if (UWorld* World = GetWorld())
+	{
+		if (AADTutorialGameMode* GM = World->GetAuthGameMode<AADTutorialGameMode>())
+		{
+			GM->AdvanceTutorialPhase();    
+			return;
+		}
+	}
+
+	if (AADPlayerController* PC = Cast<AADPlayerController>(UGameplayStatics::GetPlayerController(this, 0)))
+	{
+		PC->RequestAdvanceTutorialPhase(); 
+	}
 }
