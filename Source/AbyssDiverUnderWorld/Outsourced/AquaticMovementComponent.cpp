@@ -40,7 +40,7 @@ void UAquaticMovementComponent::BeginPlay()
     OwnerCharacter = Cast<ACharacter>(GetOwner());
     if (OwnerCharacter)
     {
-        InitializeComponent(OwnerCharacter);
+        InitComponent(OwnerCharacter);
     }
 
     LocalPlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
@@ -49,7 +49,7 @@ void UAquaticMovementComponent::BeginPlay()
     CalculateAverageBoneDistance();
 }
 
-void UAquaticMovementComponent::InitializeComponent(ACharacter* InCharacter)
+void UAquaticMovementComponent::InitComponent(ACharacter* InCharacter)
 {
     if (!InCharacter) return;
 
