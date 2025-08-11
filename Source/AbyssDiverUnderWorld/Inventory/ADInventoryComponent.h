@@ -188,6 +188,9 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "DPV")
 	TObjectPtr<UAnimMontage> DPVDrawMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Hammer")
+	TObjectPtr<UAnimMontage> HammerDrawMontage;
 	
 	//UPROPERTY()
 	//TObjectPtr<AUnderwaterCharacter> CachedDiver;
@@ -203,6 +206,7 @@ private:
 	const FName FlareSocketName = TEXT("Flare");
 	const FName ShotgunSocketName = TEXT("Shotgun");
 	const FName MineSocketName = TEXT("MineController");
+	const FName HammerSocketName = TEXT("ToyHammer");
 #pragma endregion
 
 

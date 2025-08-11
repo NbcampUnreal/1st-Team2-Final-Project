@@ -232,6 +232,7 @@ void UEquipUseComponent::S_LeftClick_Implementation()
 	case EAction::ToggleBoost:     BoostOn();			break;
 	case EAction::ToggleNVGToggle: ToggleNightVision(); break;
 	case EAction::PlaceMine:	   PlaceMine();			break;
+	case EAction::SwingHammer:     SwingHammer();		break;
 	default:                      break;
 	}
 }
@@ -631,6 +632,7 @@ EAction UEquipUseComponent::TagToAction(const FGameplayTag& Tag)
 	else if (Tag.MatchesTagExact(TAG_EquipUse_ApplyChargeUI))   return EAction::ApplyChargeUI;
 	else if (Tag.MatchesTagExact(TAG_EquipUse_PlaceMine))       return EAction::PlaceMine;
 	else if (Tag.MatchesTagExact(TAG_EquipUse_DetonateMine))    return EAction::DetonateMine;
+	else if (Tag.MatchesTagExact(TAG_EquipUse_SwingHammer))     return EAction::SwingHammer;
 	return EAction::None;
 }
 
@@ -642,6 +644,7 @@ EEquipmentType UEquipUseComponent::TagToEquipmentType(const FGameplayTag& Tag)
 	else if (Tag.MatchesTagExact(TAG_EquipUse_DPVToggle))    return EEquipmentType::DPV;
 	else if (Tag.MatchesTagExact(TAG_EquipUse_NVToggle))     return EEquipmentType::NightVision;
 	else if (Tag.MatchesTagExact(TAG_EquipUse_PlaceMine))    return EEquipmentType::Mine;
+	else if (Tag.MatchesTagExact(TAG_EquipUse_SwingHammer))  return EEquipmentType::ToyHammer;
 	return EEquipmentType::Max;
 }
 
@@ -1001,6 +1004,90 @@ void UEquipUseComponent::DetonateMine()
 	PlacedMines.Empty();
 }
 
+void UEquipUseComponent::SwingHammer()
+{
+	if (!bCanFire || !OwningCharacter.IsValid())
+		return;
+	bCanFire = false;
+
+	AUnderwaterCharacter* Diver = Cast<AUnderwaterCharacter>(OwningCharacter);
+	PlaySwingAnimation(Diver);
+
+	FVector CamLoc;
+	FRotator CamRot;
+	GetCameraView(CamLoc, CamRot);
+	const FVector Fwd = CamRot.Vector();
+
+	const FVector Start = CamLoc + Fwd * 40.f;
+	const FVector End = Start + Fwd * HammerRange;
+
+	TArray<FHitResult> Hits;
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(SwingHammer), false, GetOwner());
+	FCollisionObjectQueryParams ObjParams;
+	ObjParams.AddObjectTypesToQuery(ECC_Pawn);
+
+	const bool bHit = GetWorld()->SweepMultiByObjectType(
+		Hits, Start, End, FQuat::Identity, ObjParams, FCollisionShape::MakeSphere(HammerRadius), Params
+	); 
+
+	// 디버그용
+	if (bHammerDebug)
+	{
+		const FVector Dir = (End - Start);
+		const float   Dist = Dir.Size();
+		const FVector Mid = (Start + End) * 0.5f;
+		const FQuat   Rot = FRotationMatrix::MakeFromZ(Dir.GetSafeNormal()).ToQuat();
+
+		// 스윕된 구 == 캡슐 (반경=HammerRadius, halfHeight=Dist/2)
+		DrawDebugCapsule(GetWorld(), Mid, Dist * 0.5f, HammerRadius, Rot,
+			bHit ? FColor::Green : FColor::Red, false, 1.5f, 0, 2.f);
+
+		// 시작/끝 구체도 함께
+		DrawDebugSphere(GetWorld(), Start, HammerRadius, 12, FColor::Blue, false, 1.5f, 0, 1.5f);
+		DrawDebugSphere(GetWorld(), End, HammerRadius, 12, FColor::Blue, false, 1.5f, 0, 1.5f);
+
+		// 각 타격 지점
+		for (const FHitResult& Hit : Hits)
+		{
+			DrawDebugPoint(GetWorld(),
+				Hit.ImpactPoint.IsNearlyZero() ? Hit.Location : Hit.ImpactPoint,
+				14.f, FColor::Yellow, false, 1.5f, 0);
+		}
+	}
+
+	if (bHit)
+	{
+		for (const FHitResult& Hit : Hits)
+		{
+			AActor* Target = Hit.GetActor();
+			if (!Target || Target == OwningCharacter.Get())
+				continue;
+
+			// 보스 몬스터에게는 통하지 않도록 설정하기 위한 보스 몬스터 Tag 필요
+
+			// 한방 처리: 매우 큰 데미지
+			UGameplayStatics::ApplyDamage(
+				Target,
+				999999.f,
+				OwningCharacter->GetController(),
+				GetOwner(),
+				UDamageType::StaticClass()
+			);
+		}
+
+		const float CoolDown = 1.f / HammerRateOfSwing;
+		GetWorld()->GetTimerManager().SetTimer(
+			TimerHandle_HandleRefire,
+			[this]()
+			{
+				bCanFire = true;
+			},
+			CoolDown,
+			false
+		);
+	}
+}
+
 void UEquipUseComponent::FinishReload(int32 InMagazineSize, AUnderwaterCharacter* Diver)
 {
 	const int32 Needed = InMagazineSize - CurrentAmmoInMag;
@@ -1083,6 +1170,25 @@ void UEquipUseComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 	DOREPLIFETIME(UEquipUseComponent, bNVGWidgetVisible);
 	DOREPLIFETIME(UEquipUseComponent, bChargeBatteryWidgetVisible);
 	DOREPLIFETIME(UEquipUseComponent, CurrentEquipmentName);
+}
+
+void UEquipUseComponent::PlaySwingAnimation(AUnderwaterCharacter* Diver)
+{
+	if (!SwingMontage || !Diver) return;
+
+	FAnimSyncState SyncState;
+	SyncState.bEnableRightHandIK = true;
+	SyncState.bEnableLeftHandIK = false;
+	SyncState.bEnableFootIK = true;
+	SyncState.bIsStrafing = false;
+
+	Diver->M_StopAllMontagesOnBothMesh(0.f);
+	Diver->M_PlayMontageOnBothMesh(
+		SwingMontage,
+		1.0f,
+		NAME_None,
+		SyncState
+	);
 }
 
 bool UEquipUseComponent::IsInterpolating() const

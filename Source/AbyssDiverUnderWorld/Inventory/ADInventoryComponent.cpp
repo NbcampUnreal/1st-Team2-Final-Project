@@ -519,6 +519,7 @@ void UADInventoryComponent::OnRep_CurrentEquipItem()
 		case EEquipmentType::DPV:			Socket = DPVSocketName;     break;
 		case EEquipmentType::Shotgun:		Socket = ShotgunSocketName; break;
 		case EEquipmentType::Mine:			Socket = MineSocketName;    break;
+		case EEquipmentType::ToyHammer:     Socket = HammerSocketName;  break;
 		default:														break;
 		}
 
