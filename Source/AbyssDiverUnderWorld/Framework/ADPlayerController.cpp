@@ -32,6 +32,7 @@
 
 #include "Framework/ADTutorialGameMode.h"
 #include "Framework/ADTutorialGameState.h"
+#include "Character/UnderwaterCharacter.h"
 
 #include "Kismet/GameplayStatics.h"
 
@@ -82,9 +83,9 @@ void AADPlayerController::SetPawn(APawn* InPawn)
 
 	Super::SetPawn(InPawn);
 
-	if (AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(GetPawn()))
+	if (AUnderwaterCharacter* PossessedCharacter = Cast<AUnderwaterCharacter>(InPawn))
 	{
-		if (UADInteractionComponent* InteractionComponent = UnderwaterCharacter->GetInteractionComponent())
+		if (UADInteractionComponent* InteractionComponent = PossessedCharacter->GetInteractionComponent())
 		{
 			if (InteractionWidgetClass && IsLocalController())
 			{
@@ -106,7 +107,43 @@ void AADPlayerController::SetPawn(APawn* InPawn)
 				}
 			}
 		}
+		if (UEnhancedInputComponent* EnhancedInput = Cast<UEnhancedInputComponent>(InputComponent))
+		{
+			if (PossessedCharacter->GetSprintAction())
+			{
+				EnhancedInput->BindAction(PossessedCharacter->GetSprintAction(), ETriggerEvent::Triggered, this, &AADPlayerController::OnSprintTriggered);
+			}
+			if (PossessedCharacter->GetRadarAction())
+			{
+				EnhancedInput->BindAction(PossessedCharacter->GetRadarAction(), ETriggerEvent::Triggered, this, &AADPlayerController::OnRadarTriggered);
+			}
+			if (PossessedCharacter->GetLightToggleAction())
+			{
+				EnhancedInput->BindAction(PossessedCharacter->GetLightToggleAction(), ETriggerEvent::Triggered, this, &AADPlayerController::OnLightToggleTriggered);
+			}
+			if (PossessedCharacter->GetInteractAction())
+			{
+				EnhancedInput->BindAction(PossessedCharacter->GetInteractAction(), ETriggerEvent::Triggered, this, &AADPlayerController::OnInteractTriggered);
+			}
+			if (PossessedCharacter->GetSelectInventorySlot1())
+			{
+				EnhancedInput->BindAction(PossessedCharacter->GetSelectInventorySlot1(), ETriggerEvent::Triggered, this, &AADPlayerController::OnSelectInventorySlot1Triggered);
+			}
+			if (PossessedCharacter->GetSelectInventorySlot2())
+			{
+				EnhancedInput->BindAction(PossessedCharacter->GetSelectInventorySlot2(), ETriggerEvent::Triggered, this, &AADPlayerController::OnSelectInventorySlot2Triggered);
+			}
+			if (PossessedCharacter->GetSelectInventorySlot3())
+			{
+				EnhancedInput->BindAction(PossessedCharacter->GetSelectInventorySlot3(), ETriggerEvent::Triggered, this, &AADPlayerController::OnSelectInventorySlot3Triggered);
+			}
+			if (PossessedCharacter->GetReloadAction())
+			{
+				EnhancedInput->BindAction(PossessedCharacter->GetReloadAction(), ETriggerEvent::Triggered, this, &AADPlayerController::OnBatteryTriggered);
+			}
+		}
 	}
+
 }
 
 void AADPlayerController::PostNetInit()
@@ -346,39 +383,20 @@ void AADPlayerController::SetupInputComponent()
 
 	if (UEnhancedInputComponent* EnhancedInput = Cast<UEnhancedInputComponent>(InputComponent))
 	{
+
 		if (InventoryAction)
 		{
 			EnhancedInput->BindAction(InventoryAction, ETriggerEvent::Started, this, &AADPlayerController::ShowInventory);
 			EnhancedInput->BindAction(InventoryAction, ETriggerEvent::Completed, this, &AADPlayerController::HideInventory);
 			EnhancedInput->BindAction(InventoryAction, ETriggerEvent::Triggered, this, &AADPlayerController::OnInventoryTriggered);
 		}
-		if (SprintAction)
-		{
-			EnhancedInput->BindAction(SprintAction, ETriggerEvent::Triggered, this, &AADPlayerController::OnSprintTriggered);
-		}
-		if (RadarAction)
-		{
-			EnhancedInput->BindAction(RadarAction, ETriggerEvent::Triggered, this, &AADPlayerController::OnRadarTriggered);
-		}
-		if (LightToggleAction)
-		{
-			EnhancedInput->BindAction(LightToggleAction, ETriggerEvent::Triggered, this, &AADPlayerController::OnLightToggleTriggered);
-		}
-		if (LootingAction)
-		{
-			EnhancedInput->BindAction(LootingAction, ETriggerEvent::Triggered, this, &AADPlayerController::OnLootingTriggered);
-		}
-		if (DroneAction)
-		{
-			EnhancedInput->BindAction(DroneAction, ETriggerEvent::Triggered, this, &AADPlayerController::OnDroneTriggered);
-		}
-		if (ItemsAction)
-		{
-			EnhancedInput->BindAction(ItemsAction, ETriggerEvent::Triggered, this, &AADPlayerController::OnItemsTriggered);
-		}
 		if (ReviveAction)
 		{
 			EnhancedInput->BindAction(ReviveAction, ETriggerEvent::Triggered, this, &AADPlayerController::OnReviveTriggered);
+		}
+		if (DropAction)
+		{
+			EnhancedInput->BindAction(DropAction, ETriggerEvent::Triggered, this, &AADPlayerController::OnDropTriggered);
 		}
 	}
 }
@@ -504,6 +522,27 @@ void AADPlayerController::OnCameraBlankEnd()
 	
 }
 
+void AADPlayerController::OnInteractTriggered(const FInputActionValue& Value)
+{
+	CheckTutorialObjective(Value, InteractAction);
+}
+
+void AADPlayerController::OnSelectInventorySlot1Triggered(const FInputActionValue& Value)
+{
+	ReportItemAction(EPlayerActionTrigger::UseItem1);
+}
+
+void AADPlayerController::OnSelectInventorySlot2Triggered(const FInputActionValue& Value)
+{
+	ReportItemAction(EPlayerActionTrigger::UseItem2);
+}
+
+void AADPlayerController::OnSelectInventorySlot3Triggered(const FInputActionValue& Value)
+{
+	ReportItemAction(EPlayerActionTrigger::UseItem3);
+}
+
+
 void AADPlayerController::OnInventoryTriggered(const FInputActionValue& Value)
 {
 	CheckTutorialObjective(Value, InventoryAction);
@@ -511,32 +550,26 @@ void AADPlayerController::OnInventoryTriggered(const FInputActionValue& Value)
 
 void AADPlayerController::OnSprintTriggered(const FInputActionValue& Value)
 {
-	CheckTutorialObjective(Value, SprintAction);
+	if (AUnderwaterCharacter* PossessedCharacter = Cast<AUnderwaterCharacter>(GetPawn()))
+	{
+		CheckTutorialObjective(Value, PossessedCharacter->GetSprintAction());
+	}
 }
 
 void AADPlayerController::OnRadarTriggered(const FInputActionValue& Value)
 {
-	CheckTutorialObjective(Value, RadarAction);
+	if (AUnderwaterCharacter* PossessedCharacter = Cast<AUnderwaterCharacter>(GetPawn()))
+	{
+		CheckTutorialObjective(Value, PossessedCharacter->GetRadarAction());
+	}
 }
 
 void AADPlayerController::OnLightToggleTriggered(const FInputActionValue& Value)
 {
-	CheckTutorialObjective(Value, LightToggleAction);
-}
-
-void AADPlayerController::OnLootingTriggered(const FInputActionValue& Value)
-{
-	CheckTutorialObjective(Value, LootingAction);
-}
-
-void AADPlayerController::OnDroneTriggered(const FInputActionValue& Value)
-{
-	CheckTutorialObjective(Value, DroneAction);
-}
-
-void AADPlayerController::OnItemsTriggered(const FInputActionValue& Value)
-{
-	CheckTutorialObjective(Value, ItemsAction);
+	if (AUnderwaterCharacter* PossessedCharacter = Cast<AUnderwaterCharacter>(GetPawn()))
+	{
+		CheckTutorialObjective(Value, PossessedCharacter->GetLightToggleAction());
+	}
 }
 
 void AADPlayerController::OnReviveTriggered(const FInputActionValue& Value)
@@ -544,57 +577,99 @@ void AADPlayerController::OnReviveTriggered(const FInputActionValue& Value)
 	CheckTutorialObjective(Value, ReviveAction);
 }
 
+void AADPlayerController::OnBatteryTriggered(const FInputActionValue& Value)
+{
+	CheckTutorialObjective(Value, BatteryAction);
+}
+
+void AADPlayerController::OnDropTriggered(const FInputActionValue& Value)
+{
+	CheckTutorialObjective(Value, DropAction);
+}
+
 void AADPlayerController::CheckTutorialObjective(const FInputActionValue& Value, UInputAction* SourceAction)
 {
+	AUnderwaterCharacter* PossessedCharacter = Cast<AUnderwaterCharacter>(GetPawn());
+	if (!PossessedCharacter) return;
+
 	AADTutorialGameState* TutorialGS = GetWorld() ? GetWorld()->GetGameState<AADTutorialGameState>() : nullptr;
 	if (!TutorialGS) return;
 
 	ETutorialPhase CurrentPhase = TutorialGS->GetCurrentPhase();
 	bool bObjectiveMet = false;
+	if (SourceAction == InteractAction)
+	{
+		if (/*CurrentPhase == ETutorialPhase::Step5_Looting ||*/ 
+			CurrentPhase == ETutorialPhase::Step7_Drone ||
+			CurrentPhase == ETutorialPhase::Step14_Die ||
+			CurrentPhase == ETutorialPhase::Step15_Resurrection)
+		{
+			bObjectiveMet = true;
+		}
+	}
 
-	if (CurrentPhase == ETutorialPhase::Step2_Sprint && SourceAction == SprintAction)
+	else if (CurrentPhase == ETutorialPhase::Step2_Sprint && SourceAction == PossessedCharacter->GetSprintAction())
 	{
 		bObjectiveMet = true;
 	}
-	else if (CurrentPhase == ETutorialPhase::Step4_Radar && SourceAction == RadarAction)
+
+	else if (CurrentPhase == ETutorialPhase::Step4_Radar && SourceAction == PossessedCharacter->GetRadarAction())
 	{
 		bObjectiveMet = true;
 	}
-	//else if (CurrentPhase == ETutorialPhase::Step5_Looting && SourceAction == LootingAction)
-	//{
-	//	bObjectiveMet = true;
-	//}
+
 	else if (CurrentPhase == ETutorialPhase::Step6_Inventory && SourceAction == InventoryAction)
 	{
 		bObjectiveMet = true;
 	}
-	else if (CurrentPhase == ETutorialPhase::Step7_Drone && SourceAction == DroneAction)
+
+	else if (CurrentPhase == ETutorialPhase::Step8_LightToggle && SourceAction == PossessedCharacter->GetLightToggleAction())
 	{
 		bObjectiveMet = true;
 	}
-	else if (CurrentPhase == ETutorialPhase::Step8_LightToggle && SourceAction == LightToggleAction)
+	// 아이템 사용 (1,2,3)
+	//else if (CurrentPhase == ETutorialPhase::Step9_Items && SourceAction == ItemsAction)
+	//{
+	//	bObjectiveMet = true;
+	//}
+	else if (CurrentPhase == ETutorialPhase::Step10_Battery && SourceAction == BatteryAction)
 	{
 		bObjectiveMet = true;
 	}
-	else if (CurrentPhase == ETutorialPhase::Step9_Items && SourceAction == ItemsAction)
+	else if (CurrentPhase == ETutorialPhase::Step11_Drop && SourceAction == DropAction)
 	{
 		bObjectiveMet = true;
 	}
-	else if (CurrentPhase == ETutorialPhase::Step11_Revival && SourceAction == ReviveAction)
+	else if (CurrentPhase == ETutorialPhase::Step13_Revive && SourceAction == ReviveAction)
 	{
 		bObjectiveMet = true;
 	}
 
 	if (bObjectiveMet)
 	{
-		Server_RequestAdvanceTutorialPhase();
+		RequestAdvanceTutorialPhase(); 
 	}
 }
 
-void AADPlayerController::Server_RequestAdvanceTutorialPhase_Implementation()
+void AADPlayerController::RequestAdvanceTutorialPhase()
 {
-	if (AADTutorialGameMode* TutorialGM = GetWorld()->GetAuthGameMode<AADTutorialGameMode>())
+	if (UWorld* World = GetWorld())
 	{
-		TutorialGM->AdvanceTutorialPhase();
+		if (AADTutorialGameMode* GM = World->GetAuthGameMode<AADTutorialGameMode>())
+		{
+			GM->AdvanceTutorialPhase();
+		}
 	}
 }
+
+void AADPlayerController::ReportItemAction(EPlayerActionTrigger ItemActionType)
+{
+	if (UWorld* World = GetWorld())
+	{
+		if (AADTutorialGameMode* GM = World->GetAuthGameMode<AADTutorialGameMode>())
+		{
+			GM->OnPlayerItemAction(ItemActionType);
+		}
+	}
+}
+
