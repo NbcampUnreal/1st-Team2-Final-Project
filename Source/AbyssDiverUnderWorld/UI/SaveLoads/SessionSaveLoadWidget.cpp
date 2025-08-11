@@ -8,7 +8,6 @@
 #include "UI/ConfirmationDialogWidget.h"
 
 #include "Subsystems/SaveDataSubsystem.h"
-#include "SaveData/CoopData/SavedSessionInfoSaveGame.h"
 #include "SaveData/CoopData/SavedSessionInfoWidgetData.h"
 
 #include "Components/Button.h"

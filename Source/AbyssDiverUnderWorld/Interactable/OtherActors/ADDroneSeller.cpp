@@ -1,16 +1,23 @@
 ﻿#include "Interactable/OtherActors/ADDroneSeller.h"
+
 #include "Inventory/ADInventoryComponent.h"
-#include "Framework/ADInGameState.h"
 #include "ADDrone.h"
-#include "Character/UnderwaterCharacter.h"
-#include "Character/PlayerComponent/OxygenComponent.h"
-#include "Net/UnrealNetwork.h"
-#include "Interactable/Item/Component/ADInteractableComponent.h"
+
+#include "Framework/ADInGameState.h"
 #include "Framework/ADPlayerState.h"
 #include "Framework/ADGameInstance.h"
 #include "Framework/ADPlayerController.h"
+
+#include "Character/UnderwaterCharacter.h"
+#include "Character/PlayerComponent/OxygenComponent.h"
+
+#include "Interactable/Item/Component/ADInteractableComponent.h"
+
 #include "Subsystems/SoundSubsystem.h"
 #include "Subsystems/MissionSubsystem.h"
+#include "Subsystems/Localizations/LocalizationSubsystem.h"
+
+#include "Net/UnrealNetwork.h"
 
 AADDroneSeller::AADDroneSeller()
 {
@@ -83,7 +90,8 @@ void AADDroneSeller::Interact_Implementation(AActor* InstigatorActor)
 		return;
 	}
 
-	SetCurrentMoeny(CurrentMoney + Gained);
+	SetCurrentMoney(CurrentMoney + Gained);
+	UpdatePlayerState(InstigatorActor, Gained);
 
 	LOGD(Log, TEXT("→ 누적 금액: %d / %d"), CurrentMoney, TargetMoney);
 
@@ -232,6 +240,30 @@ void AADDroneSeller::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME(AADDroneSeller, MoneyRatio);
 }
 
+void AADDroneSeller::UpdatePlayerState(AActor* Actor, int32 GainedValue)
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+	
+	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor);
+	if (Player == nullptr)
+	{
+		return;
+	}
+
+	if (AADPlayerState* PlayerState = Player->GetPlayerState<AADPlayerState>())
+	{
+		LOGV(Log, TEXT("PlayerState is valid, GainedValue: %d"), GainedValue);
+		PlayerState->AddOreCollectedValue(GainedValue);
+	}
+	else
+	{
+		LOGD(Log, TEXT("PlayerState is not valid"));
+	}
+}
+
 UADInteractableComponent* AADDroneSeller::GetInteractableComponent() const
 {
 	return InteractableComp;
@@ -244,7 +276,14 @@ bool AADDroneSeller::IsHoldMode() const
 
 FString AADDroneSeller::GetInteractionDescription() const
 {
-	return TEXT("Submit Ore!");
+	ULocalizationSubsystem* LocalizationSubsystem = GetGameInstance()->GetSubsystem<ULocalizationSubsystem>();
+	if (IsValid(LocalizationSubsystem) == false)
+	{
+		LOGV(Error, TEXT("Cant Get LocalizationSubsystem"));
+		return "";
+	}
+
+	return LocalizationSubsystem->GetLocalizedText(ST_InteractionDescription::TableKey, ST_InteractionDescription::DroneSeller_SubmitOre).ToString();
 }
 
 USoundSubsystem* AADDroneSeller::GetSoundSubsystem()

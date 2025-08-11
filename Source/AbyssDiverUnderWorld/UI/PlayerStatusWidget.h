@@ -12,6 +12,8 @@ class UProgressBar;
 class UOverlay;
 enum class ESpearGunType : uint8;
 class UWarningWidget;
+class UNoticeWidget;
+class UDepthWidget;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API UPlayerStatusWidget : public UUserWidget
@@ -36,6 +38,14 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void ShowPhaseWarning(bool bShouldVisible);
 
+	UFUNCTION(BlueprintCallable)
+	void NoticeInfo(const FString& Info, const FVector2D& Position);
+
+	UFUNCTION(BlueprintCallable)
+	void SetTopName(AADPlayerState* PS, int32 MinedAmount);
+
+
+
 	// 일반 함수
 	void SetSpearCount(int32 Current, int32 Total);
 	void SetOxygenPercent(float InPercent);
@@ -53,6 +63,7 @@ public:
 	void SetCurrentPhaseOverlayVisible(bool bShouldVisible);
 
 	void SetSpearGunTypeImage(int8 TypeNum);
+
 
 private:
 
@@ -94,6 +105,19 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Compass")
 	TObjectPtr<AActor> CompassTargetObject;
 
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> TopName;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> TopNameCopy;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> TopAmount;
+
+	UPROPERTY(meta = (BindWidgetAnim), Transient)
+	TObjectPtr<UWidgetAnimation> ChangeTopPlayer;
+
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UTextBlock> CurrentMoneyText;
 
@@ -133,13 +157,17 @@ protected:
 	UPROPERTY(meta = (BindWidgetAnim), Transient)
 	TObjectPtr<UWidgetAnimation> IncreaseMoney;
 
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UNoticeWidget> NoticeWidget;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UDepthWidget> DepthWidget;
+
 	UPROPERTY()
 	TObjectPtr <UMaterialInstanceDynamic> DynamicMaterial;
 
 	UPROPERTY()
 	TObjectPtr <UMaterialInterface> LoadedMaterial;
-
-
 private:
 
 	UPROPERTY()
@@ -171,5 +199,6 @@ public:
 	void SetSpearVisibility(bool bVisible);
 	void SetCompassObject(AActor* NewTargetObject);
 
+	UDepthWidget* GetDepthWidget() const { return DepthWidget; }
 #pragma endregion
 };

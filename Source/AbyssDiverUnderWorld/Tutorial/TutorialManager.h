@@ -25,6 +25,10 @@ public:
     UFUNCTION()
     void OnTutorialPhaseChanged(ETutorialPhase NewPhase);
 
+    UFUNCTION()
+    void OnTypingFinished(const FTutorialStepData& StepData);
+
+    void RequestAdvancePhase();
 protected:
 
 #pragma endregion
@@ -52,5 +56,11 @@ protected:
 
     UPROPERTY()
     TObjectPtr<UTutorialHintPanel> TutorialHintPanel;
+
+    UPROPERTY(EditAnywhere, Category = "Tutorial|UI|Highlights")
+    TMap<ETutorialHighlightTarget, TSubclassOf<UUserWidget>> HighlightWidgetClasses;
+
+    UPROPERTY()
+    TObjectPtr<UUserWidget> CurrentHighlightWidget;
 #pragma endregion
 };

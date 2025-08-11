@@ -25,6 +25,9 @@
 #include "EngineUtils.h"
 #include "Components/CanvasPanel.h"
 #include "Kismet/GameplayStatics.h"
+#include "Inventory/ADInventoryComponent.h"
+#include "Character/PlayerComponent/DepthComponent.h"
+#include "UI/DepthWidget.h"
 
 UPlayerHUDComponent::UPlayerHUDComponent()
 {
@@ -36,6 +39,7 @@ void UPlayerHUDComponent::BeginPlay()
 	Super::BeginPlay();
 
 	AADPlayerController* PlayerController = Cast<AADPlayerController>(GetOwner());
+
 	if (!PlayerController || !PlayerController->IsLocalController())
 	{
 		return;
@@ -139,12 +143,14 @@ void UPlayerHUDComponent::BeginPlay()
 		return;
 	}
 	
+
 	AADDroneSeller* CurrentDroneSeller = GS->GetCurrentDroneSeller();
 	if (CurrentDroneSeller == nullptr)
 	{
 		LOGV(Warning, TEXT("CurrentDroneSeller == nullptr, Server? : %d"), GetOwner()->GetNetMode() != ENetMode::NM_Client);
 		return;
 	}
+
 
 	PlayerStatusWidget->SetDroneTargetText(CurrentDroneSeller->GetTargetMoney());
 	PlayerStatusWidget->SetDroneCurrentText(CurrentDroneSeller->GetCurrentMoney());
@@ -235,6 +241,14 @@ void UPlayerHUDComponent::SetCurrentPhaseOverlayVisible(bool bShouldVisible)
 	}
 
 	PlayerStatusWidget->SetCurrentPhaseOverlayVisible(bShouldVisible);
+}
+
+void UPlayerHUDComponent::BindDeptWidgetFunction(UDepthComponent* DepthComp)
+{
+	UDepthWidget* DepthWidget = PlayerStatusWidget->GetDepthWidget();
+	if (!DepthWidget || !DepthComp) return;
+	DepthComp->OnDepthZoneChangedDelegate.AddDynamic(DepthWidget, &UDepthWidget::ApplyZoneChangeToWidget);
+	DepthComp->OnDepthUpdatedDelegate.AddDynamic(DepthWidget, &UDepthWidget::SetDepthText);
 }
 
 void UPlayerHUDComponent::C_SetSpearGunTypeImage_Implementation(int8 TypeNum)
@@ -497,6 +511,13 @@ void UPlayerHUDComponent::UpdateHealthHUD(int32 CurrentHealth, int32 MaxHealth)
 		const float Ratio = MaxHealth > 0 ? (float)CurrentHealth / MaxHealth : 0.f;
 		PlayerStatusWidget->SetHealthPercent(Ratio);
 	}
+}
+
+void UPlayerHUDComponent::OnShieldUseFailed()
+{
+	LOGV(Error, TEXT("OnShieldUseFailed Succeeded"));
+	if (PlayerStatusWidget)
+		PlayerStatusWidget->NoticeInfo(TEXT("Shield가 가득 찼습니다!"), FVector2D(0.0f, -160.0f));
 }
 
 void UPlayerHUDComponent::UpdateStaminaHUD(float Stamina, float MaxStamina)

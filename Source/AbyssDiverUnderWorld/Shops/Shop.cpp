@@ -1,5 +1,8 @@
 ﻿#include "Shops/Shop.h"
 
+#include "AbyssDiverUnderWorld.h"	
+#include "Inventory/ADInventoryComponent.h"
+
 #include "Character/UnitBase.h"
 #include "Character/UnderwaterCharacter.h"
 #include "Character/UpgradeComponent.h"
@@ -12,12 +15,12 @@
 #include "Shops/ShopWidgets/ShopElementInfoWidget.h"
 #include "Shops/ShopWidgets/ShopItemSlotWidget.h"
 #include "Shops/ShopWidgets/ShopBuyListSlotWidget.h"
+
 #include "ShopInteractionComponent.h"
 
-#include "AbyssDiverUnderWorld.h"	
-#include "Inventory/ADInventoryComponent.h"
 #include "Subsystems/DataTableSubsystem.h"
 #include "Subsystems/SoundSubsystem.h"
+#include "Subsystems/Localizations/LocalizationSubsystem.h"
 
 #include "Framework/ADPlayerState.h"
 #include "Framework/ADInGameState.h"
@@ -1610,7 +1613,14 @@ bool AShop::IsOpened() const
 
 FString AShop::GetInteractionDescription() const
 {
-	return TEXT("Open Shop!");
+	ULocalizationSubsystem* LocalizationSubsystem = GetGameInstance()->GetSubsystem<ULocalizationSubsystem>();
+	if (IsValid(LocalizationSubsystem) == false)
+	{
+		LOGV(Error, TEXT("Cant Get LocalizationSubsystem"));
+		return "";
+	}
+
+	return LocalizationSubsystem->GetLocalizedText(ST_InteractionDescription::TableKey, ST_InteractionDescription::Shop_OpenShop).ToString();
 }
 
 USoundSubsystem* AShop::GetSoundSubsystem()

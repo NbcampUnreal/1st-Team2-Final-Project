@@ -1,0 +1,337 @@
+# Fill out your copyright notice in the Description page of Project Settings.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Game_ko\n"
+"POT-Creation-Date: 2025-08-07 06:04\n"
+"PO-Revision-Date: 2025-08-07 15:10+0900\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: ko\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: Poedit 3.6\n"
+
+#. Key:	BasicSpearGun
+#. SourceLocation:	/Game/_AbyssDiver/Localizations/InteractionStringTable/ST_ItemName.ST_ItemName
+#: /Game/_AbyssDiver/Localizations/InteractionStringTable/ST_ItemName.ST_ItemName
+msgctxt "ST_ItemName,BasicSpearGun"
+msgid "BasicSpearGun"
+msgstr "기본 작살총"
+
+#. Key:	BasicSpearGunBullet
+#. SourceLocation:	/Game/_AbyssDiver/Localizations/InteractionStringTable/ST_ItemName.ST_ItemName
+#: /Game/_AbyssDiver/Localizations/InteractionStringTable/ST_ItemName.ST_ItemName
+msgctxt "ST_ItemName,BasicSpearGunBullet"
+msgid "BasicSpearGunBullet"
+msgstr "기본 작살"
+
+#. Key:	Battery
+#. SourceLocation:	/Game/_AbyssDiver/Localizations/InteractionStringTable/ST_ItemName.ST_ItemName
+#: /Game/_AbyssDiver/Localizations/InteractionStringTable/ST_ItemName.ST_ItemName
+msgctxt "ST_ItemName,Battery"
+msgid "Battery"
+msgstr "배터리"
+
+#. Key:	BombSpearGun
+#. SourceLocation:	/Game/_AbyssDiver/Localizations/InteractionStringTable/ST_ItemName.ST_ItemName
+#: /Game/_AbyssDiver/Localizations/InteractionStringTable/ST_ItemName.ST_ItemName
+msgctxt "ST_ItemName,BombSpearGun"
+msgid "BombSpearGun"
+msgstr "폭발 작살총"
+
+#. Key:	BombSpearGunBullet
+#. SourceLocation:	/Game/_AbyssDiver/Localizations/InteractionStringTable/ST_ItemName.ST_ItemName
+#: /Game/_AbyssDiver/Localizations/InteractionStringTable/ST_ItemName.ST_ItemName
+msgctxt "ST_ItemName,BombSpearGunBullet"
+msgid "BombSpearGunBullet"
+msgstr "폭발 작살"
+
+#. Key:	Chromite
+#. SourceLocation:	/Game/_AbyssDiver/Localizations/InteractionStringTable/ST_ItemName.ST_ItemName
+#: /Game/_AbyssDiver/Localizations/InteractionStringTable/ST_ItemName.ST_ItemName
+msgctxt "ST_ItemName,Chromite"
+msgid "Chromite"
+msgstr "크롬철광석"
+
+#. Key:	CobaltShell
+#. SourceLocation:	/Game/_AbyssDiver/Localizations/InteractionStringTable/ST_ItemName.ST_ItemName
+#: /Game/_AbyssDiver/Localizations/InteractionStringTable/ST_ItemName.ST_ItemName
+msgctxt "ST_ItemName,CobaltShell"
+msgid "CobaltShell"
+msgstr "코발트"
+
+#. Key:	DPV
+#. SourceLocation:	/Game/_AbyssDiver/Localizations/InteractionStringTable/ST_ItemName.ST_ItemName
+#: /Game/_AbyssDiver/Localizations/InteractionStringTable/ST_ItemName.ST_ItemName
+msgctxt "ST_ItemName,DPV"
+msgid "DPV"
+msgstr "수중 스쿠터"
+
+#. Key:	FlareGun
+#. SourceLocation:	/Game/_AbyssDiver/Localizations/InteractionStringTable/ST_ItemName.ST_ItemName
+#: /Game/_AbyssDiver/Localizations/InteractionStringTable/ST_ItemName.ST_ItemName
+msgctxt "ST_ItemName,FlareGun"
+msgid "FlareGun"
+msgstr "플레어 건"
+
+#. Key:	FlareGunBullet
+#. SourceLocation:	/Game/_AbyssDiver/Localizations/InteractionStringTable/ST_ItemName.ST_ItemName
+#: /Game/_AbyssDiver/Localizations/InteractionStringTable/ST_ItemName.ST_ItemName
+msgctxt "ST_ItemName,FlareGunBullet"
+msgid "FlareGunBullet"
+msgstr "플레어 건 총알"
+
+#. Key:	LostRune
+#. SourceLocation:	/Game/_AbyssDiver/Localizations/InteractionStringTable/ST_ItemName.ST_ItemName
+#: /Game/_AbyssDiver/Localizations/InteractionStringTable/ST_ItemName.ST_ItemName
+msgctxt "ST_ItemName,LostRune"
+msgid "LostRune"
+msgstr "발광석"
+
+#. Key:	MagneticCrystal
+#. SourceLocation:	/Game/_AbyssDiver/Localizations/InteractionStringTable/ST_ItemName.ST_ItemName
+#: /Game/_AbyssDiver/Localizations/InteractionStringTable/ST_ItemName.ST_ItemName
+msgctxt "ST_ItemName,MagneticCrystal"
+msgid "MagneticCrystal"
+msgstr "자기결정"
+
+#. Key:	Mine
+#. SourceLocation:	/Game/_AbyssDiver/Localizations/InteractionStringTable/ST_ItemName.ST_ItemName
+#: /Game/_AbyssDiver/Localizations/InteractionStringTable/ST_ItemName.ST_ItemName
+msgctxt "ST_ItemName,Mine"
+msgid "Mine"
+msgstr "지뢰"
+
+#. Key:	MineController
+#. SourceLocation:	/Game/_AbyssDiver/Localizations/InteractionStringTable/ST_ItemName.ST_ItemName
+#: /Game/_AbyssDiver/Localizations/InteractionStringTable/ST_ItemName.ST_ItemName
+msgctxt "ST_ItemName,MineController"
+msgid "MineController"
+msgstr "지뢰 제어기"
+
+#. Key:	NightVisionGoggle
+#. SourceLocation:	/Game/_AbyssDiver/Localizations/InteractionStringTable/ST_ItemName.ST_ItemName
+#: /Game/_AbyssDiver/Localizations/InteractionStringTable/ST_ItemName.ST_ItemName
+msgctxt "ST_ItemName,NightVisionGoggle"
+msgid "NightVisionGoggle"
+msgstr "야간투시경"
+
+#. Key:	OxygenPack
+#. SourceLocation:	/Game/_AbyssDiver/Localizations/InteractionStringTable/ST_ItemName.ST_ItemName
+#: /Game/_AbyssDiver/Localizations/InteractionStringTable/ST_ItemName.ST_ItemName
+msgctxt "ST_ItemName,OxygenPack"
+msgid "OxygenPack"
+msgstr "산소팩"
+
+#. Key:	PoisonSpearGun
+#. SourceLocation:	/Game/_AbyssDiver/Localizations/InteractionStringTable/ST_ItemName.ST_ItemName
+#: /Game/_AbyssDiver/Localizations/InteractionStringTable/ST_ItemName.ST_ItemName
+msgctxt "ST_ItemName,PoisonSpearGun"
+msgid "PoisonSpearGun"
+msgstr "독 작살총"
+
+#. Key:	PoisonSpearGunBullet
+#. SourceLocation:	/Game/_AbyssDiver/Localizations/InteractionStringTable/ST_ItemName.ST_ItemName
+#: /Game/_AbyssDiver/Localizations/InteractionStringTable/ST_ItemName.ST_ItemName
+msgctxt "ST_ItemName,PoisonSpearGunBullet"
+msgid "PoisonSpearGunBullet"
+msgstr "독 작살"
+
+#. Key:	QuantumCore
+#. SourceLocation:	/Game/_AbyssDiver/Localizations/InteractionStringTable/ST_ItemName.ST_ItemName
+#: /Game/_AbyssDiver/Localizations/InteractionStringTable/ST_ItemName.ST_ItemName
+msgctxt "ST_ItemName,QuantumCore"
+msgid "QuantumCore"
+msgstr "퀀텀 코어"
+
+#. Key:	Shield
+#. SourceLocation:	/Game/_AbyssDiver/Localizations/InteractionStringTable/ST_ItemName.ST_ItemName
+#: /Game/_AbyssDiver/Localizations/InteractionStringTable/ST_ItemName.ST_ItemName
+msgctxt "ST_ItemName,Shield"
+msgid "Shield"
+msgstr "실드"
+
+#. Key:	Shotgun
+#. SourceLocation:	/Game/_AbyssDiver/Localizations/InteractionStringTable/ST_ItemName.ST_ItemName
+#: /Game/_AbyssDiver/Localizations/InteractionStringTable/ST_ItemName.ST_ItemName
+msgctxt "ST_ItemName,Shotgun"
+msgid "Shotgun"
+msgstr "샷건"
+
+#. Key:	ShotgunBullet
+#. SourceLocation:	/Game/_AbyssDiver/Localizations/InteractionStringTable/ST_ItemName.ST_ItemName
+#: /Game/_AbyssDiver/Localizations/InteractionStringTable/ST_ItemName.ST_ItemName
+msgctxt "ST_ItemName,ShotgunBullet"
+msgid "ShotgunBullet"
+msgstr "샷건 총알"
+
+#. Key:	Interaction.Drone_SendDrone
+#. SourceLocation:	/Game/_AbyssDiver/Localizations/InteractionStringTables/ST_InteractionDescription.ST_InteractionDescription
+#: /Game/_AbyssDiver/Localizations/InteractionStringTables/ST_InteractionDescription.ST_InteractionDescription
+msgctxt "ST_InteractionDescription,Interaction.Drone_SendDrone"
+msgid "Send Drone"
+msgstr "드론 보내기"
+
+#. Key:	Interaction.DroneSeller_SubmitOre
+#. SourceLocation:	/Game/_AbyssDiver/Localizations/InteractionStringTables/ST_InteractionDescription.ST_InteractionDescription
+#: /Game/_AbyssDiver/Localizations/InteractionStringTables/ST_InteractionDescription.ST_InteractionDescription
+msgctxt "ST_InteractionDescription,Interaction.DroneSeller_SubmitOre"
+msgid "Submit Ore"
+msgstr "광물 제출"
+
+#. Key:	Interaction.ItemBase_Pickup
+#. SourceLocation:	/Game/_AbyssDiver/Localizations/InteractionStringTables/ST_InteractionDescription.ST_InteractionDescription
+#: /Game/_AbyssDiver/Localizations/InteractionStringTables/ST_InteractionDescription.ST_InteractionDescription
+msgctxt "ST_InteractionDescription,Interaction.ItemBase_Pickup"
+msgid "Pick Up"
+msgstr "줍기"
+
+#. Key:	Interaction.LevelTraveler_ReturnToCamp
+#. SourceLocation:	/Game/_AbyssDiver/Localizations/InteractionStringTables/ST_InteractionDescription.ST_InteractionDescription
+#: /Game/_AbyssDiver/Localizations/InteractionStringTables/ST_InteractionDescription.ST_InteractionDescription
+msgctxt "ST_InteractionDescription,Interaction.LevelTraveler_ReturnToCamp"
+msgid "Return To Camp"
+msgstr "캠프로 돌아가기"
+
+#. Key:	Interaction.MissionSelector_SelectMission
+#. SourceLocation:	/Game/_AbyssDiver/Localizations/InteractionStringTables/ST_InteractionDescription.ST_InteractionDescription
+#: /Game/_AbyssDiver/Localizations/InteractionStringTables/ST_InteractionDescription.ST_InteractionDescription
+msgctxt "ST_InteractionDescription,Interaction.MissionSelector_SelectMission"
+msgid "Select Mission"
+msgstr "미션 선택"
+
+#. Key:	Interaction.OreRock_Mine
+#. SourceLocation:	/Game/_AbyssDiver/Localizations/InteractionStringTables/ST_InteractionDescription.ST_InteractionDescription
+#: /Game/_AbyssDiver/Localizations/InteractionStringTables/ST_InteractionDescription.ST_InteractionDescription
+msgctxt "ST_InteractionDescription,Interaction.OreRock_Mine"
+msgid "Mine"
+msgstr "채굴"
+
+#. Key:	Interaction.Shop_OpenShop
+#. SourceLocation:	/Game/_AbyssDiver/Localizations/InteractionStringTables/ST_InteractionDescription.ST_InteractionDescription
+#: /Game/_AbyssDiver/Localizations/InteractionStringTables/ST_InteractionDescription.ST_InteractionDescription
+msgctxt "ST_InteractionDescription,Interaction.Shop_OpenShop"
+msgid "Open Shop"
+msgstr "성점 열기"
+
+#. Key:	Interaction.Tablet_Pickup
+#. SourceLocation:	/Game/_AbyssDiver/Localizations/InteractionStringTables/ST_InteractionDescription.ST_InteractionDescription
+#: /Game/_AbyssDiver/Localizations/InteractionStringTables/ST_InteractionDescription.ST_InteractionDescription
+msgctxt "ST_InteractionDescription,Interaction.Tablet_Pickup"
+msgid "Pick Up"
+msgstr "줍기"
+
+#. Key:	CreateTeam.ButtonConfirmText
+#. SourceLocation:	/Game/_AbyssDiver/Localizations/MainMenuStringTables/ST_CreateTeam.ST_CreateTeam
+#: /Game/_AbyssDiver/Localizations/MainMenuStringTables/ST_CreateTeam.ST_CreateTeam
+msgctxt "ST_CreateTeam,CreateTeam.ButtonConfirmText"
+msgid "Confirm"
+msgstr "확인"
+
+#. Key:	CreateTeam.ButtonPrivateText
+#. SourceLocation:	/Game/_AbyssDiver/Localizations/MainMenuStringTables/ST_CreateTeam.ST_CreateTeam
+#: /Game/_AbyssDiver/Localizations/MainMenuStringTables/ST_CreateTeam.ST_CreateTeam
+msgctxt "ST_CreateTeam,CreateTeam.ButtonPrivateText"
+msgid "Private"
+msgstr "Private"
+
+#. Key:	CreateTeam.ButtonPublicText
+#. SourceLocation:	/Game/_AbyssDiver/Localizations/MainMenuStringTables/ST_CreateTeam.ST_CreateTeam
+#: /Game/_AbyssDiver/Localizations/MainMenuStringTables/ST_CreateTeam.ST_CreateTeam
+msgctxt "ST_CreateTeam,CreateTeam.ButtonPublicText"
+msgid "Public"
+msgstr "Public"
+
+#. Key:	CreateTeam.CreateTeamText
+#. SourceLocation:	/Game/_AbyssDiver/Localizations/MainMenuStringTables/ST_CreateTeam.ST_CreateTeam
+#: /Game/_AbyssDiver/Localizations/MainMenuStringTables/ST_CreateTeam.ST_CreateTeam
+msgctxt "ST_CreateTeam,CreateTeam.CreateTeamText"
+msgid "CreateTeam"
+msgstr "팀 생성"
+
+#. Key:	CreateTeam.SessionNameText
+#. SourceLocation:	/Game/_AbyssDiver/Localizations/MainMenuStringTables/ST_CreateTeam.ST_CreateTeam
+#: /Game/_AbyssDiver/Localizations/MainMenuStringTables/ST_CreateTeam.ST_CreateTeam
+msgctxt "ST_CreateTeam,CreateTeam.SessionNameText"
+msgid "Session Name"
+msgstr "세션 이름"
+
+#. Key:	MainMenu.Text_Create
+#. SourceLocation:	/Game/_AbyssDiver/Localizations/MainMenuStringTables/ST_MainMenu.ST_MainMenu
+#: /Game/_AbyssDiver/Localizations/MainMenuStringTables/ST_MainMenu.ST_MainMenu
+msgctxt "ST_MainMenu,MainMenu.Text_Create"
+msgid "Create Team"
+msgstr "팀 생성"
+
+#. Key:	MainMenu.Text_Credits
+#. SourceLocation:	/Game/_AbyssDiver/Localizations/MainMenuStringTables/ST_MainMenu.ST_MainMenu
+#: /Game/_AbyssDiver/Localizations/MainMenuStringTables/ST_MainMenu.ST_MainMenu
+msgctxt "ST_MainMenu,MainMenu.Text_Credits"
+msgid "Credits"
+msgstr "Credits"
+
+#. Key:	MainMenu.Text_Join
+#. SourceLocation:	/Game/_AbyssDiver/Localizations/MainMenuStringTables/ST_MainMenu.ST_MainMenu
+#: /Game/_AbyssDiver/Localizations/MainMenuStringTables/ST_MainMenu.ST_MainMenu
+msgctxt "ST_MainMenu,MainMenu.Text_Join"
+msgid "Join Team"
+msgstr "팀 참가"
+
+#. Key:	MainMenu.Text_Options
+#. SourceLocation:	/Game/_AbyssDiver/Localizations/MainMenuStringTables/ST_MainMenu.ST_MainMenu
+#: /Game/_AbyssDiver/Localizations/MainMenuStringTables/ST_MainMenu.ST_MainMenu
+msgctxt "ST_MainMenu,MainMenu.Text_Options"
+msgid "Options"
+msgstr "옵션"
+
+#. Key:	MainMenu.Text_Quit
+#. SourceLocation:	/Game/_AbyssDiver/Localizations/MainMenuStringTables/ST_MainMenu.ST_MainMenu
+#: /Game/_AbyssDiver/Localizations/MainMenuStringTables/ST_MainMenu.ST_MainMenu
+msgctxt "ST_MainMenu,MainMenu.Text_Quit"
+msgid "Quit"
+msgstr "종료"
+
+#. Key:	PauseWidget.ButtonExitText
+#. SourceLocation:	/Game/_AbyssDiver/Localizations/MainMenuStringTables/ST_PauseWidget.ST_PauseWidget
+#: /Game/_AbyssDiver/Localizations/MainMenuStringTables/ST_PauseWidget.ST_PauseWidget
+msgctxt "ST_PauseWidget,PauseWidget.ButtonExitText"
+msgid "Exit Game"
+msgstr "게임 나가기"
+
+#. Key:	PauseWidget.ButtonOptionText
+#. SourceLocation:	/Game/_AbyssDiver/Localizations/MainMenuStringTables/ST_PauseWidget.ST_PauseWidget
+#: /Game/_AbyssDiver/Localizations/MainMenuStringTables/ST_PauseWidget.ST_PauseWidget
+msgctxt "ST_PauseWidget,PauseWidget.ButtonOptionText"
+msgid "Option"
+msgstr "옵션"
+
+#. Key:	PauseWidget.ButtonResumeText
+#. SourceLocation:	/Game/_AbyssDiver/Localizations/MainMenuStringTables/ST_PauseWidget.ST_PauseWidget
+#: /Game/_AbyssDiver/Localizations/MainMenuStringTables/ST_PauseWidget.ST_PauseWidget
+msgctxt "ST_PauseWidget,PauseWidget.ButtonResumeText"
+msgid "Resume"
+msgstr "재개"
+
+#. Key:	PauseWidget.ButtonSaveAndLoadText
+#. SourceLocation:	/Game/_AbyssDiver/Localizations/MainMenuStringTables/ST_PauseWidget.ST_PauseWidget
+#: /Game/_AbyssDiver/Localizations/MainMenuStringTables/ST_PauseWidget.ST_PauseWidget
+msgctxt "ST_PauseWidget,PauseWidget.ButtonSaveAndLoadText"
+msgid "Save & Load"
+msgstr "저장 & 불러오기"
+
+#. Key:	SessionEntry.Text_Join
+#. SourceLocation:	/Game/_AbyssDiver/Localizations/MainMenuStringTables/ST_SessionEntry.ST_SessionEntry
+#: /Game/_AbyssDiver/Localizations/MainMenuStringTables/ST_SessionEntry.ST_SessionEntry
+msgctxt "ST_SessionEntry,SessionEntry.Text_Join"
+msgid "Join"
+msgstr "참가"
+
+#. Key:	SessionList.JoinTeamText
+#. SourceLocation:	/Game/_AbyssDiver/Localizations/MainMenuStringTables/ST_SessionList.ST_SessionList
+#: /Game/_AbyssDiver/Localizations/MainMenuStringTables/ST_SessionList.ST_SessionList
+msgctxt "ST_SessionList,SessionList.JoinTeamText"
+msgid "JoinTeam"
+msgstr "팀에참가"

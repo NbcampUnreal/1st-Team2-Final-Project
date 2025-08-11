@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/GameMode.h"
 #include "Tutorial/TutorialEnums.h"
+#include "Interactable/OtherActors/TargetIndicators/IndicatingTarget.h"
 #include "ADTutorialGameMode.generated.h"
 
 class UDataTable;
@@ -14,36 +15,50 @@ class ABYSSDIVERUNDERWORLD_API AADTutorialGameMode : public AGameMode
 {
     GENERATED_BODY()
 
-public:
-    AADTutorialGameMode();
+    public:
+	AADTutorialGameMode();
 
-    virtual void StartPlay() override;
-    void AdvanceTutorialPhase();
+	virtual void StartPlay() override;
+	void AdvanceTutorialPhase();
 
+	void PlayerActionTriggered(EPlayerActionTrigger ActionType);
+
+	void OnTypingAnimationFinished();
 protected:
-    void HandleCurrentPhase();
+	void HandleCurrentPhase();
 
-    void HandlePhase_Movement();
-    void HandlePhase_Sprint();
-    void HandlePhase_Oxygen();
-    void HandlePhase_Radar();
-    void HandlePhase_Looting();
-    void HandlePhase_Inventory();      
-    void HandlePhase_Drone();
-    void HandlePhase_LightToggle();    
-    void HandlePhase_Items();
-    void HandlePhase_OxygenWarning();
-    void HandlePhase_Revival();
-    void HandlePhase_Complete();
+	void HandlePhase_Movement();
+	void HandlePhase_Sprint();
+	void HandlePhase_Oxygen();
+	void HandlePhase_Radar();
+	void HandlePhase_Looting();
+	void HandlePhase_Inventory();
+	void HandlePhase_Drone();
+	void HandlePhase_LightToggle();
+	void HandlePhase_Items();
+	void HandlePhase_OxygenWarning();
+	void HandlePhase_Revival();
+	void HandlePhase_Complete();
 
-    UFUNCTION(BlueprintCallable)
-    void SpawnDownedNPC();
+	UFUNCTION(BlueprintCallable)
+	void SpawnDownedNPC();
 
-    UPROPERTY()
-    TObjectPtr<class AADPlayerController> TutorialPlayerController;
+	UPROPERTY()
+	TObjectPtr<class AADPlayerController> TutorialPlayerController;
 
-    FTimerHandle StepTimerHandle;
+	FTimerHandle StepTimerHandle;
 
-    UPROPERTY(EditAnywhere, Category = "Tutorial")
-    TObjectPtr<UDataTable> TutorialDataTable;
+	UPROPERTY(EditAnywhere, Category = "Tutorial")
+	TObjectPtr<UDataTable> TutorialDataTable;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Spawning")
+	TSubclassOf<AActor> LootableOreClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Spawning")
+	TSubclassOf<AIndicatingTarget> IndicatingTargetClass; 
+
+	UPROPERTY(EditAnywhere, Category = "Tutorial|Spawning")
+	FName OreSpawnTag;
+
+	bool bIsTypingFinishedForCurrentPhase = false;
 };

@@ -1,14 +1,20 @@
 #include "Interactable/Item/ADItemBase.h"
+
 #include "AbyssDiverUnderWorld.h"
-#include "Net/UnrealNetwork.h"
-#include "Kismet/GameplayStatics.h"
+
 #include "Interactable/Item/Component/ADInteractableComponent.h"
 #include "Inventory/ADInventoryComponent.h"
-#include "Framework/ADPlayerState.h"
-#include "GameFramework/ProjectileMovementComponent.h"
-#include "Framework/ADGameInstance.h"
-#include "Subsystems/SoundSubsystem.h"
 #include "Character/UnderwaterCharacter.h"
+
+#include "Framework/ADPlayerState.h"
+#include "Framework/ADGameInstance.h"
+
+#include "Subsystems/SoundSubsystem.h"
+#include "Subsystems/Localizations/LocalizationSubsystem.h"
+
+#include "Net/UnrealNetwork.h"
+#include "Kismet/GameplayStatics.h"
+#include "GameFramework/ProjectileMovementComponent.h"
 
 DEFINE_LOG_CATEGORY(ItemLog);
 
@@ -136,7 +142,14 @@ bool AADItemBase::IsHoldMode() const
 
 FString AADItemBase::GetInteractionDescription() const
 {
-	return TEXT("Pick up!");
+	ULocalizationSubsystem* LocalizationSubsystem = GetGameInstance()->GetSubsystem<ULocalizationSubsystem>();
+	if (IsValid(LocalizationSubsystem) == false)
+	{
+		LOGV(Error, TEXT("Cant Get LocalizationSubsystem"));
+		return "";
+	}
+
+	return LocalizationSubsystem->GetLocalizedText(ST_InteractionDescription::TableKey, ST_InteractionDescription::ItemBase_Pickup).ToString();
 }
 
 USoundSubsystem* AADItemBase::GetSoundSubsystem()

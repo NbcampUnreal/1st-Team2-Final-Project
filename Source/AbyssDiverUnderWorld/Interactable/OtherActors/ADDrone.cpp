@@ -1,21 +1,24 @@
 ﻿#include "Interactable/OtherActors/ADDrone.h"
 
+#include "Inventory/ADInventoryComponent.h"
+#include "ADDroneSeller.h"
+#include "Gimmic/Spawn/SpawnManager.h"
+#include "DataRow/PhaseBGMRow.h"
+
 #include "Interactable/Item/Component/ADInteractableComponent.h"
 #include "Interactable/OtherActors/Portals/PortalToSubmarine.h"
 
 #include "FrameWork/ADInGameState.h"
 #include "Framework/ADGameInstance.h"
 #include "Framework/ADPlayerController.h"
+#include "Framework/ADInGameMode.h"
 
-#include "Inventory/ADInventoryComponent.h"
-#include "ADDroneSeller.h"
+#include "Character/PlayerComponent/PlayerHUDComponent.h"
 #include "Character/UnderwaterCharacter.h"
-#include "Gimmic/Spawn/SpawnManager.h"
+
 #include "Subsystems/SoundSubsystem.h"
 #include "Subsystems/ADWorldSubsystem.h"
-#include "DataRow/PhaseBGMRow.h"
-#include "Character/PlayerComponent/PlayerHUDComponent.h"
-#include "Framework/ADInGameMode.h"
+#include "Subsystems/Localizations/LocalizationSubsystem.h"
 
 #include "Net/UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"
@@ -303,7 +306,14 @@ bool AADDrone::IsHoldMode() const
 
 FString AADDrone::GetInteractionDescription() const
 {
-	return TEXT("Send Drone!");
+	ULocalizationSubsystem* LocalizationSubsystem = GetGameInstance()->GetSubsystem<ULocalizationSubsystem>();
+	if (IsValid(LocalizationSubsystem) == false)
+	{
+		LOGV(Error, TEXT("Cant Get LocalizationSubsystem"));
+		return "";
+	}
+
+	return LocalizationSubsystem->GetLocalizedText(ST_InteractionDescription::TableKey, ST_InteractionDescription::Drone_SendDrone).ToString();
 }
 
 const TArray<ATargetPoint*>& AADDrone::GetPlayerRespawnLocations() const
