@@ -94,5 +94,11 @@ private:
 	UPROPERTY()
 	TMap<TWeakObjectPtr<AActor>, TWeakObjectPtr<AActor>> OwnerToIndicator;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Tutorial")
+	TSubclassOf<AActor> CurrentWallClass;
+
+	UPROPERTY()
+	TObjectPtr<AActor> ActiveCurrentWall;
+
 	int32 ItemsPhaseProgress;
 };
