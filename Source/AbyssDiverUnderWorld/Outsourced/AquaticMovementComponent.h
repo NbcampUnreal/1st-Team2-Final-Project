@@ -84,7 +84,7 @@ protected:
 public:
     // === 초기화 ===
     UFUNCTION(BlueprintCallable, Category = "Aquatic Movement")
-    void InitializeComponent(class ACharacter* InCharacter);
+    void InitComponent(class ACharacter* InCharacter);
 
     // === 이동 제어 ===
     UFUNCTION(BlueprintCallable, Category = "Aquatic Movement")
@@ -207,7 +207,7 @@ public:
     float ObstacleAvoidanceStrength = 300.0f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Avoidance")
-    int32 AvoidanceRayCount = 8;
+    int32 AvoidanceRayCount = 8; // 회피용 레이케스트 쏘는 횟수
     
     // 벽면 타기 모드 (0: 자동 선택, 1: 좌수법, -1: 우수법)
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Avoidance")

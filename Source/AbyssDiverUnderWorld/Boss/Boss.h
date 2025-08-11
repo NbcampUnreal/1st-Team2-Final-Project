@@ -36,7 +36,7 @@ public:
 	 * @param Radius - 탐색 반경
 	 * @return NavMesh 상의 랜덤 위치 반환
 	 */
-	FVector GetRandomNavMeshLocation(const FVector& Origin, const float& Radius) const;
+	//FVector GetRandomNavMeshLocation(const FVector& Origin, const float& Radius) const;
 
 	/** 새로운 목표 이동지점을 할당하는 함수 */
 	void SetNewTargetLocation();
@@ -47,7 +47,7 @@ public:
 	 *
 	 * @param InDeltaTime - 프레임 시간
 	 */
-	void SmoothMoveAlongSurface(const float& InDeltaTime);
+	//void SmoothMoveAlongSurface(const float& InDeltaTime);
 
 	/** TargetLocation 방향으로 회전하며 이동하는 함수
 	 * 
@@ -67,31 +67,31 @@ public:
 	 * 
 	 * 회전 중인 경우 PerformTurn 함수를 호출하여 회전을 수행한다.
 	 */
-	void StartTurn();
+	//void StartTurn();
 
 	/** 현재 액터가 NavMesh 상에 존재하지 않는 경우 NavMesh 상의 유효한 위치로 이동
 	 * 
 	 * NavMesh 상에 존재하지 않는 경우, NavMesh 상의 가장 가까운 위치로 이동한다.
 	 */
-	void ReturnToNavMeshArea();
+	//void ReturnToNavMeshArea();
 
 	/** 회전 중인 경우 회전 수행
 	 * 
 	 * 회전 중인 경우에만 호출되며, 회전이 끝나면 bIsTurning 변수를 false로 설정한다.
 	 * @param InDeltaTime - 프레임 시간
 	 */
-	void PerformTurn(const float& InDeltaTime);
+	//void PerformTurn(const float& InDeltaTime);
 
 	/** 현재 액터의 전방에 장애물이 있는지 확인하는 함수
 	 * @return 전방에 장애물이 있는 경우 true, 그렇지 않은 경우 false 반환
 	 */
-	bool HasObstacleAhead();
+	//bool HasObstacleAhead();
 
 	/** 현재 액터가 NavMesh 상에 존재하는지 확인하는 함수
 	 * @param InLocation - 검사할 위치
 	 * @return NavMesh 상에 존재하는 경우 true, 그렇지 않은 경우 false 반환
 	 */
-	bool IsLocationOnNavMesh(const FVector& InLocation) const;
+	//bool IsLocationOnNavMesh(const FVector& InLocation) const;
 
 	/** 캐릭터의 이동 설정을 변경하는 함수
 	 * @param InBrakingDecelerationSwimming: 수영 중 감속값

@@ -29,5 +29,5 @@ void UBTTask_RotationAlongSurface::TickTask(UBehaviorTreeComponent& OwnerComp, u
 	FBTRotationAlongSurfaceMemory* TaskMemory = (FBTRotationAlongSurfaceMemory*)NodeMemory;
 	if (!TaskMemory) return;
 
-	TaskMemory->Boss->SmoothMoveAlongSurface(DeltaSeconds);
+	//TaskMemory->Boss->SmoothMoveAlongSurface(DeltaSeconds);
 }
