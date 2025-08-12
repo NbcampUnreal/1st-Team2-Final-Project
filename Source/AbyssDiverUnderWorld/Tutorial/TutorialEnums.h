@@ -79,3 +79,11 @@ enum class EPlayerActionTrigger : uint8
 	Revive        UMETA(DisplayName = "Revive(E)"),
 	Drop          UMETA(DisplayName = "Drop")
 };
+
+UENUM(BlueprintType)
+enum class EGaugeInteractionType : uint8
+{
+	Tap,    
+	Hold,   
+	Hybrid  
+};

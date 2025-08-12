@@ -5,11 +5,13 @@
 #include "Kismet/GameplayStatics.h"
 #include "Engine/DataTable.h" 
 #include "Tutorial/TutorialStepData.h"
+#include "Tutorial/TutorialManager.h"
 #include "Interactable/OtherActors/TargetIndicators/TargetIndicatorManager.h"
 #include "Components/PrimitiveComponent.h"
 #include "Framework/ADTutorialGameState.h"
 #include "Framework/ADPlayerController.h"
 #include "Engine/Light.h"
+#include "NiagaraComponent.h"
 #include "Components/LightComponent.h" 
 #include "EngineUtils.h"
 
@@ -17,12 +19,10 @@ AADTutorialGameMode::AADTutorialGameMode()
 {
 }
 
-// AADTutorialGameMode.cpp
-
 void AADTutorialGameMode::StartPlay()
 {
     Super::StartPlay();
-
+    SpawnNewWall(FName("TutorialWall_1"));
     TutorialPlayerController = Cast<AADPlayerController>(UGameplayStatics::GetPlayerController(this, 0));
 
     TArray<AActor*> TutorialActors;
@@ -70,6 +70,7 @@ void AADTutorialGameMode::StartPlay()
             Actor->SetActorHiddenInGame(true); 
         }
     }
+    HandleCurrentPhase();
 }
 
 void AADTutorialGameMode::AdvanceTutorialPhase()
@@ -136,14 +137,25 @@ void AADTutorialGameMode::HandlePhase_Movement()
 
 void AADTutorialGameMode::HandlePhase_Sprint()
 {
+    if (ATutorialManager* Manager = Cast<ATutorialManager>(UGameplayStatics::GetActorOfClass(GetWorld(), ATutorialManager::StaticClass())))
+    {
+        Manager->StartGaugeObjective(EGaugeInteractionType::Hybrid, 100.f, 5.f, 30.f);
+    }
 }
 
 void AADTutorialGameMode::HandlePhase_Radar()
 {
+    SpawnNewWall(FName("TutorialWall_2"));
+
+    if (ATutorialManager* Manager = Cast<ATutorialManager>(UGameplayStatics::GetActorOfClass(GetWorld(), ATutorialManager::StaticClass())))
+    {
+        Manager->StartGaugeObjective(EGaugeInteractionType::Tap, 100.f, 10.f, 0.f);
+    }
 }
 
 void AADTutorialGameMode::HandlePhase_Oxygen()
 {
+
 }
 
 void AADTutorialGameMode::HandlePhase_Dialogue_02()
@@ -254,10 +266,15 @@ void AADTutorialGameMode::HandlePhase_Looting()
 
 void AADTutorialGameMode::HandlePhase_Inventory()
 {
+    if (ATutorialManager* Manager = Cast<ATutorialManager>(UGameplayStatics::GetActorOfClass(GetWorld(), ATutorialManager::StaticClass())))
+    {
+        Manager->StartGaugeObjective(EGaugeInteractionType::Tap, 100.f, 10.f, 0.f);
+    }
 }
 
 void AADTutorialGameMode::HandlePhase_Drone()
 {
+    SpawnNewWall(FName("TutorialWall_7"));
     TArray<AActor*> FoundActors;
     UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("TutorialDrone"), FoundActors);
     if (FoundActors.Num() == 0)
@@ -290,11 +307,19 @@ void AADTutorialGameMode::HandlePhase_LightToggle()
 {
     DisabledLights.Empty();
 
+    APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
+    if (!PlayerPawn) return;
+
     for (TActorIterator<ALight> It(GetWorld()); It; ++It)
     {
         ALight* LightActor = *It;
         if (LightActor)
         {
+            if (LightActor->GetOwner() == PlayerPawn)
+            {
+                continue;
+            }
+
             ULightComponent* LightComponent = LightActor->GetLightComponent();
             if (LightComponent && LightComponent->IsVisible())
             {
@@ -303,15 +328,43 @@ void AADTutorialGameMode::HandlePhase_LightToggle()
             }
         }
     }
+    if (!TutorialPPV)
+    {
+        TutorialPPV = GetWorld()->SpawnActor<APostProcessVolume>();
+        TutorialPPV->bUnbound = true;               
+        TutorialPPV->BlendWeight = 1.0f;
+
+        auto& S = TutorialPPV->Settings;
+        S.bOverride_AutoExposureMinBrightness = true;
+        S.bOverride_AutoExposureMaxBrightness = true;
+        S.AutoExposureMinBrightness = 1.0f;         
+        S.AutoExposureMaxBrightness = 1.0f;
+
+        S.bOverride_AutoExposureSpeedUp = true;
+        S.bOverride_AutoExposureSpeedDown = true;
+        S.AutoExposureSpeedUp = 100.f;             
+        S.AutoExposureSpeedDown = 100.f;
+    }
+
+    if (ATutorialManager* Manager = Cast<ATutorialManager>(UGameplayStatics::GetActorOfClass(GetWorld(), ATutorialManager::StaticClass())))
+    {
+        Manager->StartGaugeObjective(EGaugeInteractionType::Tap, 100.f, 10.f, 0.f);
+    }
 }
 
 void AADTutorialGameMode::HandlePhase_Items()
 {
+    SpawnNewWall(FName("TutorialWall_9"));
     ItemsPhaseProgress = 0;
 }
 
 void AADTutorialGameMode::HandlePhase_Battery()
 {
+    if (ATutorialManager* Manager = Cast<ATutorialManager>(UGameplayStatics::GetActorOfClass(GetWorld(), ATutorialManager::StaticClass())))
+    {
+        const float TargetChargeAmount = 20.f;
+        Manager->StartGaugeObjective(EGaugeInteractionType::Tap, TargetChargeAmount, 0.f, 0.f);
+    }
 }
 
 void AADTutorialGameMode::HandlePhase_Drop()
@@ -320,10 +373,12 @@ void AADTutorialGameMode::HandlePhase_Drop()
 
 void AADTutorialGameMode::HandlePhase_OxygenWarning()
 {
+    SpawnNewWall(FName("TutorialWall_12"));
 }
 
 void AADTutorialGameMode::HandlePhase_Revive()
 {
+    SpawnNewWall(FName("TutorialWall_13"));
 }
 
 void AADTutorialGameMode::HandlePhase_Die()
@@ -403,5 +458,57 @@ void AADTutorialGameMode::OnTrackedOwnerDestroyed(AActor* DestroyedActor)
             FoundIndicator->Get()->Destroy();
         }
         OwnerToIndicator.Remove(DestroyedActor);
+    }
+}
+
+void AADTutorialGameMode::DestroyActiveWall()
+{
+    if (IsValid(ActiveCurrentWall))
+    {
+        ActiveCurrentWall->SetActorEnableCollision(false);
+        if (UNiagaraComponent* NiagaraComp = ActiveCurrentWall->FindComponentByClass<UNiagaraComponent>())
+        {
+            NiagaraComp->Deactivate();
+        }
+        ActiveCurrentWall->SetLifeSpan(2.0f);
+        ActiveCurrentWall = nullptr;
+    }
+}
+
+void AADTutorialGameMode::SpawnNewWall(FName WallTag)
+{
+    DestroyActiveWall();
+
+    TArray<AActor*> FoundMarkers;
+    UGameplayStatics::GetAllActorsWithTag(GetWorld(), WallTag, FoundMarkers);
+    if (FoundMarkers.Num() > 0 && IsValid(CurrentWallClass))
+    {
+        AActor* Marker = FoundMarkers[0];
+        FTransform SpawnTransform = Marker->GetActorTransform();
+
+        FRotator SpawnRotation = SpawnTransform.GetRotation().Rotator();
+        SpawnRotation.Yaw += 180.0f;
+        SpawnTransform.SetRotation(SpawnRotation.Quaternion());
+        ActiveCurrentWall = GetWorld()->SpawnActor<AActor>(CurrentWallClass, SpawnTransform);
+
+        if (IsValid(ActiveCurrentWall))
+        {
+            ActiveCurrentWall->SetActorHiddenInGame(false);
+            ActiveCurrentWall->SetActorEnableCollision(true);
+
+            if (UNiagaraComponent* NiagaraComp = ActiveCurrentWall->FindComponentByClass<UNiagaraComponent>())
+            {
+                NiagaraComp->Activate(true);
+            }
+            UE_LOG(LogTemp, Warning, TEXT("[Wall] Spawned: %s"), *ActiveCurrentWall->GetName());
+        }
+        else
+        {
+            UE_LOG(LogTemp, Error, TEXT("[Wall] SpawnActor failed"));
+        }
+    }
+    else
+    {
+        UE_LOG(LogTemp, Error, TEXT("[Wall] No marker or class invalid"));
     }
 }
