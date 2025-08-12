@@ -10,6 +10,13 @@ AADTutorialPlayerController::AADTutorialPlayerController()
 {
 }
 
+void AADTutorialPlayerController::BeginPlay()
+{
+	Super::BeginPlay();
+
+	CachedTutorialManager = Cast<ATutorialManager>(UGameplayStatics::GetActorOfClass(GetWorld(), ATutorialManager::StaticClass()));
+}
+
 void AADTutorialPlayerController::SetPawn(APawn* InPawn)
 {
 	Super::SetPawn(InPawn);
@@ -18,7 +25,6 @@ void AADTutorialPlayerController::SetPawn(APawn* InPawn)
 	{
 		if (UEnhancedInputComponent* EnhancedInput = Cast<UEnhancedInputComponent>(InputComponent))
 		{
-
 			if (PossessedCharacter->GetSprintAction())
 			{
 				EnhancedInput->BindAction(PossessedCharacter->GetSprintAction(), ETriggerEvent::Started, this, &AADTutorialPlayerController::OnSprintStarted);
@@ -39,7 +45,7 @@ void AADTutorialPlayerController::SetPawn(APawn* InPawn)
 				EnhancedInput->BindAction(InteractAction, ETriggerEvent::Started, this, &AADTutorialPlayerController::OnInteractStarted);
 				EnhancedInput->BindAction(InteractAction, ETriggerEvent::Completed, this, &AADTutorialPlayerController::OnInteractCompleted);
 			}
-			if (InventoryAction) 
+			if (InventoryAction)
 			{
 				EnhancedInput->BindAction(InventoryAction, ETriggerEvent::Started, this, &AADTutorialPlayerController::OnInventoryStarted);
 				EnhancedInput->BindAction(InventoryAction, ETriggerEvent::Completed, this, &AADTutorialPlayerController::OnInventoryCompleted);
@@ -113,10 +119,9 @@ void AADTutorialPlayerController::ReportItemAction(EPlayerActionTrigger ItemActi
 
 void AADTutorialPlayerController::OnInteractStarted(const FInputActionValue& Value)
 {
-	ATutorialManager* Manager = Cast<ATutorialManager>(UGameplayStatics::GetActorOfClass(GetWorld(), ATutorialManager::StaticClass()));
-	if (Manager && Manager->IsGaugeObjectiveActive())
+	if (IsValid(CachedTutorialManager) && CachedTutorialManager->IsGaugeObjectiveActive())
 	{
-		Manager->NotifyInteractionStart();
+		CachedTutorialManager->NotifyInteractionStart();
 	}
 	else
 	{
@@ -124,122 +129,122 @@ void AADTutorialPlayerController::OnInteractStarted(const FInputActionValue& Val
 	}
 }
 
-void AADTutorialPlayerController::OnSprintStarted(const FInputActionValue& Value)
-{
-	if (ATutorialManager* Manager = Cast<ATutorialManager>(UGameplayStatics::GetActorOfClass(GetWorld(), ATutorialManager::StaticClass())))
-	{
-		Manager->NotifyInteractionStart();
-	}
-}
-
-void AADTutorialPlayerController::OnRadarStarted(const FInputActionValue& Value)
-{
-	if (ATutorialManager* Manager = Cast<ATutorialManager>(UGameplayStatics::GetActorOfClass(GetWorld(), ATutorialManager::StaticClass())))
-	{
-		Manager->NotifyInteractionStart();
-	}
-}
-
-void AADTutorialPlayerController::OnInventoryStarted(const FInputActionValue& Value)
-{
-	if (ATutorialManager* Manager = Cast<ATutorialManager>(UGameplayStatics::GetActorOfClass(GetWorld(), ATutorialManager::StaticClass())))
-	{
-		Manager->NotifyInteractionStart();
-	}
-}
-
-void AADTutorialPlayerController::OnLightToggleStarted(const FInputActionValue& Value)
-{
-	if (ATutorialManager* Manager = Cast<ATutorialManager>(UGameplayStatics::GetActorOfClass(GetWorld(), ATutorialManager::StaticClass())))
-	{
-		Manager->NotifyInteractionStart();
-	}
-}
-
-void AADTutorialPlayerController::OnBatteryStarted(const FInputActionValue& Value)
-{
-	if (ATutorialManager* Manager = Cast<ATutorialManager>(UGameplayStatics::GetActorOfClass(GetWorld(), ATutorialManager::StaticClass())))
-	{
-		Manager->NotifyInteractionStart();
-	}
-}
-
-void AADTutorialPlayerController::OnDropStarted(const FInputActionValue& Value)
-{
-	if (ATutorialManager* Manager = Cast<ATutorialManager>(UGameplayStatics::GetActorOfClass(GetWorld(), ATutorialManager::StaticClass())))
-	{
-		Manager->NotifyInteractionStart();
-	}
-}
-
-void AADTutorialPlayerController::OnReviveStarted(const FInputActionValue& Value)
-{
-	if (ATutorialManager* Manager = Cast<ATutorialManager>(UGameplayStatics::GetActorOfClass(GetWorld(), ATutorialManager::StaticClass())))
-	{
-		Manager->NotifyInteractionStart();
-	}
-}
-
 void AADTutorialPlayerController::OnInteractCompleted(const FInputActionValue& Value)
 {
-	if (ATutorialManager* Manager = Cast<ATutorialManager>(UGameplayStatics::GetActorOfClass(GetWorld(), ATutorialManager::StaticClass())))
+	if (IsValid(CachedTutorialManager))
 	{
-		Manager->NotifyInteractionEnd();
+		CachedTutorialManager->NotifyInteractionEnd();
+	}
+}
+
+void AADTutorialPlayerController::OnSprintStarted(const FInputActionValue& Value)
+{
+	if (IsValid(CachedTutorialManager))
+	{
+		CachedTutorialManager->NotifyInteractionStart();
 	}
 }
 
 void AADTutorialPlayerController::OnSprintCompleted(const FInputActionValue& Value)
 {
-	if (ATutorialManager* Manager = Cast<ATutorialManager>(UGameplayStatics::GetActorOfClass(GetWorld(), ATutorialManager::StaticClass())))
+	if (IsValid(CachedTutorialManager))
 	{
-		Manager->NotifyInteractionEnd();
+		CachedTutorialManager->NotifyInteractionEnd();
+	}
+}
+
+void AADTutorialPlayerController::OnRadarStarted(const FInputActionValue& Value)
+{
+	if (IsValid(CachedTutorialManager))
+	{
+		CachedTutorialManager->NotifyInteractionStart();
 	}
 }
 
 void AADTutorialPlayerController::OnRadarCompleted(const FInputActionValue& Value)
 {
-	if (ATutorialManager* Manager = Cast<ATutorialManager>(UGameplayStatics::GetActorOfClass(GetWorld(), ATutorialManager::StaticClass())))
+	if (IsValid(CachedTutorialManager))
 	{
-		Manager->NotifyInteractionEnd();
+		CachedTutorialManager->NotifyInteractionEnd();
+	}
+}
+
+void AADTutorialPlayerController::OnInventoryStarted(const FInputActionValue& Value)
+{
+	if (IsValid(CachedTutorialManager))
+	{
+		CachedTutorialManager->NotifyInteractionStart();
 	}
 }
 
 void AADTutorialPlayerController::OnInventoryCompleted(const FInputActionValue& Value)
 {
-	if (ATutorialManager* Manager = Cast<ATutorialManager>(UGameplayStatics::GetActorOfClass(GetWorld(), ATutorialManager::StaticClass())))
+	if (IsValid(CachedTutorialManager))
 	{
-		Manager->NotifyInteractionEnd();
+		CachedTutorialManager->NotifyInteractionEnd();
+	}
+}
+
+void AADTutorialPlayerController::OnLightToggleStarted(const FInputActionValue& Value)
+{
+	if (IsValid(CachedTutorialManager))
+	{
+		CachedTutorialManager->NotifyInteractionStart();
 	}
 }
 
 void AADTutorialPlayerController::OnLightToggleCompleted(const FInputActionValue& Value)
 {
-	if (ATutorialManager* Manager = Cast<ATutorialManager>(UGameplayStatics::GetActorOfClass(GetWorld(), ATutorialManager::StaticClass())))
+	if (IsValid(CachedTutorialManager))
 	{
-		Manager->NotifyInteractionEnd();
+		CachedTutorialManager->NotifyInteractionEnd();
+	}
+}
+
+void AADTutorialPlayerController::OnBatteryStarted(const FInputActionValue& Value)
+{
+	if (IsValid(CachedTutorialManager))
+	{
+		CachedTutorialManager->NotifyInteractionStart();
 	}
 }
 
 void AADTutorialPlayerController::OnBatteryCompleted(const FInputActionValue& Value)
 {
-	if (ATutorialManager* Manager = Cast<ATutorialManager>(UGameplayStatics::GetActorOfClass(GetWorld(), ATutorialManager::StaticClass())))
+	if (IsValid(CachedTutorialManager))
 	{
-		Manager->NotifyInteractionEnd();
+		CachedTutorialManager->NotifyInteractionEnd();
+	}
+}
+
+void AADTutorialPlayerController::OnDropStarted(const FInputActionValue& Value)
+{
+	if (IsValid(CachedTutorialManager))
+	{
+		CachedTutorialManager->NotifyInteractionStart();
 	}
 }
 
 void AADTutorialPlayerController::OnDropCompleted(const FInputActionValue& Value)
 {
-	if (ATutorialManager* Manager = Cast<ATutorialManager>(UGameplayStatics::GetActorOfClass(GetWorld(), ATutorialManager::StaticClass())))
+	if (IsValid(CachedTutorialManager))
 	{
-		Manager->NotifyInteractionEnd();
+		CachedTutorialManager->NotifyInteractionEnd();
+	}
+}
+
+void AADTutorialPlayerController::OnReviveStarted(const FInputActionValue& Value)
+{
+	if (IsValid(CachedTutorialManager))
+	{
+		CachedTutorialManager->NotifyInteractionStart();
 	}
 }
 
 void AADTutorialPlayerController::OnReviveCompleted(const FInputActionValue& Value)
 {
-	if (ATutorialManager* Manager = Cast<ATutorialManager>(UGameplayStatics::GetActorOfClass(GetWorld(), ATutorialManager::StaticClass())))
+	if (IsValid(CachedTutorialManager))
 	{
-		Manager->NotifyInteractionEnd();
+		CachedTutorialManager->NotifyInteractionEnd();
 	}
 }

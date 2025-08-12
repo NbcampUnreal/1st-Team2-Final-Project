@@ -5,6 +5,8 @@
 #include "InputAction.h"
 #include "ADTutorialPlayerController.generated.h"
 
+class ATutorialManager;
+
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADTutorialPlayerController : public AADPlayerController
 {
@@ -12,6 +14,8 @@ class ABYSSDIVERUNDERWORLD_API AADTutorialPlayerController : public AADPlayerCon
 
 public:
 	AADTutorialPlayerController();
+
+	virtual void BeginPlay() override;
 
 	void RequestAdvanceTutorialPhase();
 
@@ -48,6 +52,9 @@ protected:
 	void CheckTutorialObjective(const FInputActionValue& Value, UInputAction* SourceAction);
 
 private:
+	UPROPERTY()
+	TObjectPtr<ATutorialManager> CachedTutorialManager;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> ReviveAction;
 
