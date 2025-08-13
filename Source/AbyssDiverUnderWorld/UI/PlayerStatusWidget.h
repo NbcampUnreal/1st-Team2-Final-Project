@@ -13,6 +13,7 @@ class UOverlay;
 enum class ESpearGunType : uint8;
 class UWarningWidget;
 class UNoticeWidget;
+class UDepthWidget;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API UPlayerStatusWidget : public UUserWidget
@@ -43,6 +44,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SetTopName(AADPlayerState* PS, int32 MinedAmount);
 
+
+
 	// 일반 함수
 	void SetSpearCount(int32 Current, int32 Total);
 	void SetOxygenPercent(float InPercent);
@@ -60,6 +63,7 @@ public:
 	void SetCurrentPhaseOverlayVisible(bool bShouldVisible);
 
 	void SetSpearGunTypeImage(int8 TypeNum);
+
 
 private:
 
@@ -156,13 +160,14 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UNoticeWidget> NoticeWidget;
 
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UDepthWidget> DepthWidget;
+
 	UPROPERTY()
 	TObjectPtr <UMaterialInstanceDynamic> DynamicMaterial;
 
 	UPROPERTY()
 	TObjectPtr <UMaterialInterface> LoadedMaterial;
-
-
 private:
 
 	UPROPERTY()
@@ -194,5 +199,6 @@ public:
 	void SetSpearVisibility(bool bVisible);
 	void SetCompassObject(AActor* NewTargetObject);
 
+	UDepthWidget* GetDepthWidget() const { return DepthWidget; }
 #pragma endregion
 };

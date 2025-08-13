@@ -19,10 +19,14 @@ enum class ETutorialPhase : uint8
 	Step7_Drone,       
 	Dialogue_03,        
 	Step8_LightToggle,   
-	Step9_Items,         
-	Step10_OxygenWarning,
-	Step11_Revival,      
-	Dialogue_04,         
+	Step9_Items,
+	Step10_Battery,
+	Step11_Drop,
+	Step12_OxygenWarning,
+	Step13_Revive,
+	Dialogue_04,
+	Step14_Die,
+	Step15_Resurrection,
 	Complete
 };
 
@@ -47,36 +51,39 @@ enum class ETutorialHighlightTarget : uint8
 {
 	None UMETA(DisplayName = "None"),
 	OxygenBar UMETA(DisplayName = "Oxygen Bar"),
+	SprintBar UMETA(DisplayName = "Sprint Bar"),      
 	OreTarget UMETA(DisplayName = "OreTarget"),
-	SpearPanel UMETA(DisplayName = "Spear Panel"),
+	InventoryPanel UMETA(DisplayName = "Item Panel"),         
 	RadarIcon UMETA(DisplayName = "Radar Icon"),
 	InventoryButton UMETA(DisplayName = "Inventory Button"),
+	DroneTarget UMETA(DisplayName = "Drone Target"),      
 	FlashlightToggle UMETA(DisplayName = "Flashlight Toggle"),
-	ReviveHintIcon UMETA(DisplayName = "Revive Hint Icon")
-
+	BatteryItem UMETA(DisplayName = "Battery Item"),       
+	Revive UMETA(DisplayName = "Revive Hint Icon")
 };
 
 UENUM(BlueprintType)
 enum class EPlayerActionTrigger : uint8
 {
-	None,         
+	None,
 
 	Sprint        UMETA(DisplayName = "Sprint (Shift)"),
-
 	Interact      UMETA(DisplayName = "Interact (E)"),
-
 	Radar         UMETA(DisplayName = "Radar (Q)"),
-
 	Inventory     UMETA(DisplayName = "Inventory (Tab)"),
-
 	Flashlight    UMETA(DisplayName = "Flashlight (F)"),
-
 	Reload        UMETA(DisplayName = "Reload/Recharge (R)"),
-
 	UseItem1      UMETA(DisplayName = "Use Item 1"),
 	UseItem2      UMETA(DisplayName = "Use Item 2"),
 	UseItem3      UMETA(DisplayName = "Use Item 3"),
+	Revive        UMETA(DisplayName = "Revive(E)"),
+	Drop          UMETA(DisplayName = "Drop")
+};
 
-	Ascend        UMETA(DisplayName = "Ascend (Space)"),
-	Descend       UMETA(DisplayName = "Descend (C)")
+UENUM(BlueprintType)
+enum class EGaugeInteractionType : uint8
+{
+	Tap,    
+	Hold,   
+	Hybrid  
 };
