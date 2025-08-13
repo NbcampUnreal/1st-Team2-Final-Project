@@ -28,7 +28,6 @@ void URadar2DComponent::BeginPlay()
 		SetComponentTickEnabled(false);
 		return;
 	}
-
 	
 	RegisterCurrentReturns();
 }
@@ -52,6 +51,12 @@ void URadar2DComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAct
 	for (URadarReturn2DComponent* RadarReturn : CachedReturns)
 	{
 		if (IsValid(RadarReturn) == false || RadarReturn->IsBeingDestroyed() || RadarReturn->IsValidLowLevelFast() == false)
+		{
+			CachedReturnsInDetectRadius.Remove(RadarReturn);
+			continue;
+		}
+
+		if (RadarReturn->GetAlwaysIgnore())
 		{
 			CachedReturnsInDetectRadius.Remove(RadarReturn);
 			continue;
@@ -119,8 +124,7 @@ void URadar2DComponent::UnregisterReturnComponent(URadarReturn2DComponent* Regis
 void URadar2DComponent::RegisterCurrentReturns()
 {
 	UWorld* World = GetWorld();
-
-	if (::IsValid(World) == false && World->IsInSeamlessTravel())
+	if (::IsValid(World) == false || World->IsInSeamlessTravel())
 	{
 		return;
 	}
