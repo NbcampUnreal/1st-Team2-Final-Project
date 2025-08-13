@@ -24,7 +24,7 @@ AADTutorialGameMode::AADTutorialGameMode()
 void AADTutorialGameMode::StartPlay()
 {
     Super::StartPlay();
-    SpawnNewWall(FName("TutorialWall_1"));
+    SpawnNewWall(FName("TutorialWall_1")); 
     TutorialPlayerController = Cast<AADPlayerController>(UGameplayStatics::GetPlayerController(this, 0));
 
     TArray<AActor*> TutorialActors;
@@ -37,7 +37,7 @@ void AADTutorialGameMode::StartPlay()
             Actor->SetActorHiddenInGame(true);
             if (URadarReturn2DComponent* RadarComp = Actor->FindComponentByClass<URadarReturn2DComponent>())
             {
-                RadarComp->bAlwaysIgnore = true;
+                RadarComp->SetAlwaysIgnore(true);
             }
         }
     }
@@ -51,7 +51,7 @@ void AADTutorialGameMode::StartPlay()
             Actor->SetActorHiddenInGame(true);
             if (URadarReturn2DComponent* RadarComp = Actor->FindComponentByClass<URadarReturn2DComponent>())
             {
-                RadarComp->bAlwaysIgnore = true;
+                RadarComp->SetAlwaysIgnore(true);
             }
         }
     }
@@ -65,7 +65,7 @@ void AADTutorialGameMode::StartPlay()
             Actor->SetActorHiddenInGame(true);
             if (URadarReturn2DComponent* RadarComp = Actor->FindComponentByClass<URadarReturn2DComponent>())
             {
-                RadarComp->bAlwaysIgnore = true;
+                RadarComp->SetAlwaysIgnore(true);
             }
         }
     }
@@ -79,7 +79,7 @@ void AADTutorialGameMode::StartPlay()
             Actor->SetActorHiddenInGame(true);
             if (URadarReturn2DComponent* RadarComp = Actor->FindComponentByClass<URadarReturn2DComponent>())
             {
-                RadarComp->bAlwaysIgnore = true;
+                RadarComp->SetAlwaysIgnore(true);
             }
         }
     }
@@ -92,6 +92,7 @@ void AADTutorialGameMode::StartPlay()
         false
     );
 }
+
 
 void AADTutorialGameMode::StartFirstTutorialPhase()
 {
@@ -184,7 +185,7 @@ void AADTutorialGameMode::HandlePhase_Radar()
         Rock->SetActorHiddenInGame(false);
         if (URadarReturn2DComponent* RadarComp = Rock->FindComponentByClass<URadarReturn2DComponent>())
         {
-            RadarComp->bAlwaysIgnore = false;
+            RadarComp->SetAlwaysIgnore(false);
         }
     }
     FoundActors.Empty();
@@ -195,7 +196,7 @@ void AADTutorialGameMode::HandlePhase_Radar()
         Monster->SetActorHiddenInGame(false);
         if (URadarReturn2DComponent* RadarComp = Monster->FindComponentByClass<URadarReturn2DComponent>())
         {
-            RadarComp->bAlwaysIgnore = false;
+            RadarComp->SetAlwaysIgnore(false);
         }
     }
     FoundActors.Empty();
@@ -206,7 +207,7 @@ void AADTutorialGameMode::HandlePhase_Radar()
         Friendly->SetActorHiddenInGame(false);
         if (URadarReturn2DComponent* RadarComp = Friendly->FindComponentByClass<URadarReturn2DComponent>())
         {
-            RadarComp->bAlwaysIgnore = false;
+            RadarComp->SetAlwaysIgnore(false);
         }
     }
 }

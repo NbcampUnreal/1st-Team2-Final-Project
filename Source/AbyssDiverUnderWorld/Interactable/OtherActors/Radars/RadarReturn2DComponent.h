@@ -28,10 +28,6 @@ protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 #pragma region Variables
-public:
-	// 레이더에 표시할 지 말 지 설정, true이면 bAlwaysDisplay는 무시
-	UPROPERTY(EditAnywhere, Category = "RadarReturnSettings")
-	uint8 bAlwaysIgnore : 1 = false;
 protected:
 
 	UPROPERTY(EditAnywhere, Category = "RadarReturnSettings")
@@ -44,6 +40,9 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "RadarReturnSettings")
 	uint8 bAlwaysDisplay : 1 = false;
 
+	// 레이더에 표시할 지 말 지 설정, true이면 bAlwaysDisplay는 무시
+	UPROPERTY(EditAnywhere, Category = "RadarReturnSettings")
+	uint8 bAlwaysIgnore : 1 = false;
 #pragma endregion
 
 #pragma region Getters / Setters
