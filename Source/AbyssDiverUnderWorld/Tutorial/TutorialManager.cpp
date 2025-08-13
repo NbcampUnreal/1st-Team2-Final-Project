@@ -24,6 +24,9 @@ ATutorialManager::ATutorialManager()
 void ATutorialManager::BeginPlay()
 {
 	Super::BeginPlay();
+
+	CachedGameMode = Cast<AADTutorialGameMode>(UGameplayStatics::GetGameMode(GetWorld()));
+
 	if (TutorialSubtitleClass)
 	{
 		SubtitleWidget = CreateWidget<UTutorialSubtitle>(GetWorld(), TutorialSubtitleClass);
@@ -66,7 +69,7 @@ void ATutorialManager::BeginPlay()
 
 	if (AADTutorialGameState* TutorialGS = GetWorld()->GetGameState<AADTutorialGameState>())
 	{
-		TutorialGS->OnPhaseChanged.RemoveAll(this); 
+		TutorialGS->OnPhaseChanged.RemoveAll(this);
 		TutorialGS->OnPhaseChanged.AddDynamic(this, &ATutorialManager::OnTutorialPhaseChanged);
 		OnTutorialPhaseChanged(TutorialGS->GetCurrentPhase());
 	}
@@ -77,6 +80,11 @@ void ATutorialManager::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	if (!bIsGaugeObjectiveActive) return;
+
+	if (CachedGameMode && !CachedGameMode->IsTypingFinishedForCurrentPhase())
+	{
+		return;
+	}
 
 	if ((CurrentInteractionType == EGaugeInteractionType::Hold || CurrentInteractionType == EGaugeInteractionType::Hybrid) && bIsPlayerHoldingKey)
 	{
@@ -94,7 +102,6 @@ void ATutorialManager::Tick(float DeltaTime)
 		GaugeProgressBar->SetPercent(DisplayGaugeValue / TargetGaugeValue);
 	}
 
-	// 4. 미션 완료를 체크합니다.
 	if (CurrentGaugeValue >= TargetGaugeValue && FMath::IsNearlyEqual(DisplayGaugeValue, TargetGaugeValue, 0.01f))
 	{
 		bIsGaugeObjectiveActive = false;
@@ -235,6 +242,11 @@ void ATutorialManager::StartGaugeObjective(EGaugeInteractionType InInteractionTy
 void ATutorialManager::NotifyInteractionStart()
 {
 	if (!bIsGaugeObjectiveActive) return;
+
+	if (CachedGameMode && !CachedGameMode->IsTypingFinishedForCurrentPhase())
+	{
+		return;
+	}
 
 	if (CurrentInteractionType == EGaugeInteractionType::Tap || CurrentInteractionType == EGaugeInteractionType::Hybrid)
 	{

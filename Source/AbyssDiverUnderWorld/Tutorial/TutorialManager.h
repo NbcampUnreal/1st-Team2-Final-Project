@@ -4,6 +4,7 @@
 #include "GameFramework/Actor.h"
 #include "TutorialStepData.h"
 #include "TutorialEnums.h"
+#include "Framework/ADTutorialGameMode.h"
 #include "Components/ProgressBar.h"
 #include "TutorialManager.generated.h"
 
@@ -87,6 +88,9 @@ protected:
 	TObjectPtr<UProgressBar> GaugeProgressBar;
 
 	FTimerHandle StepTimerHandle;
+
+	UPROPERTY()
+	TObjectPtr<AADTutorialGameMode> CachedGameMode;
 #pragma endregion
 
 #pragma region Getter, Setter
