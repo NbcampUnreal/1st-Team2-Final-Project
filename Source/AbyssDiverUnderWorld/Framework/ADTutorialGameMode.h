@@ -23,7 +23,7 @@ protected:
 
 #pragma region Method
 public:
-
+	void StartFirstTutorialPhase();
 	void AdvanceTutorialPhase();
 	void OnTypingAnimationFinished();
 	void OnPlayerItemAction(EPlayerActionTrigger ItemActionType);
@@ -65,6 +65,8 @@ private:
 
 #pragma region Variable
 protected:
+	FTimerHandle TutorialStartTimerHandle;
+
 	UPROPERTY(EditAnywhere, Category = "Tutorial")
 	TObjectPtr<UDataTable> TutorialDataTable;
 

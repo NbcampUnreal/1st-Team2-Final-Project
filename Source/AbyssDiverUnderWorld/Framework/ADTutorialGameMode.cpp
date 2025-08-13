@@ -12,7 +12,9 @@
 #include "Framework/ADPlayerController.h"
 #include "Engine/Light.h"
 #include "NiagaraComponent.h"
+#include "TimerManager.h"
 #include "Components/LightComponent.h" 
+#include "Interactable/OtherActors/Radars/RadarReturn2DComponent.h"
 #include "EngineUtils.h"
 
 AADTutorialGameMode::AADTutorialGameMode()
@@ -22,19 +24,21 @@ AADTutorialGameMode::AADTutorialGameMode()
 void AADTutorialGameMode::StartPlay()
 {
     Super::StartPlay();
-    SpawnNewWall(FName("TutorialWall_1"));
+    SpawnNewWall(FName("TutorialWall_1")); 
     TutorialPlayerController = Cast<AADPlayerController>(UGameplayStatics::GetPlayerController(this, 0));
 
     TArray<AActor*> TutorialActors;
-    const FName RadarTag = FName("Radar");
 
     UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("TutorialRock_D2"), TutorialActors);
     for (AActor* Actor : TutorialActors)
     {
         if (IsValid(Actor))
         {
-            Actor->Tags.Remove(RadarTag);
             Actor->SetActorHiddenInGame(true);
+            if (URadarReturn2DComponent* RadarComp = Actor->FindComponentByClass<URadarReturn2DComponent>())
+            {
+                RadarComp->SetAlwaysIgnore(true);
+            }
         }
     }
     TutorialActors.Empty();
@@ -44,8 +48,11 @@ void AADTutorialGameMode::StartPlay()
     {
         if (IsValid(Actor))
         {
-            Actor->Tags.Remove(RadarTag);
-            Actor->SetActorHiddenInGame(true); 
+            Actor->SetActorHiddenInGame(true);
+            if (URadarReturn2DComponent* RadarComp = Actor->FindComponentByClass<URadarReturn2DComponent>())
+            {
+                RadarComp->SetAlwaysIgnore(true);
+            }
         }
     }
     TutorialActors.Empty();
@@ -55,8 +62,11 @@ void AADTutorialGameMode::StartPlay()
     {
         if (IsValid(Actor))
         {
-            Actor->Tags.Remove(RadarTag);
-            Actor->SetActorHiddenInGame(true); 
+            Actor->SetActorHiddenInGame(true);
+            if (URadarReturn2DComponent* RadarComp = Actor->FindComponentByClass<URadarReturn2DComponent>())
+            {
+                RadarComp->SetAlwaysIgnore(true);
+            }
         }
     }
     TutorialActors.Empty();
@@ -66,11 +76,27 @@ void AADTutorialGameMode::StartPlay()
     {
         if (IsValid(Actor))
         {
-            Actor->Tags.Remove(RadarTag);
-            Actor->SetActorHiddenInGame(true); 
+            Actor->SetActorHiddenInGame(true);
+            if (URadarReturn2DComponent* RadarComp = Actor->FindComponentByClass<URadarReturn2DComponent>())
+            {
+                RadarComp->SetAlwaysIgnore(true);
+            }
         }
     }
-    HandleCurrentPhase();
+
+    GetWorldTimerManager().SetTimer(
+        TutorialStartTimerHandle,
+        this,
+        &AADTutorialGameMode::StartFirstTutorialPhase,
+        2.0f,
+        false
+    );
+}
+
+
+void AADTutorialGameMode::StartFirstTutorialPhase()
+{
+    AdvanceTutorialPhase();
 }
 
 void AADTutorialGameMode::AdvanceTutorialPhase()
@@ -151,6 +177,39 @@ void AADTutorialGameMode::HandlePhase_Radar()
     {
         Manager->StartGaugeObjective(EGaugeInteractionType::Tap, 100.f, 10.f, 0.f);
     }
+
+    TArray<AActor*> FoundActors;
+    UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("TutorialRock_D2"), FoundActors);
+    for (AActor* Rock : FoundActors)
+    {
+        Rock->SetActorHiddenInGame(false);
+        if (URadarReturn2DComponent* RadarComp = Rock->FindComponentByClass<URadarReturn2DComponent>())
+        {
+            RadarComp->SetAlwaysIgnore(false);
+        }
+    }
+    FoundActors.Empty();
+
+    UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("TutorialMonster_D2"), FoundActors);
+    for (AActor* Monster : FoundActors)
+    {
+        Monster->SetActorHiddenInGame(false);
+        if (URadarReturn2DComponent* RadarComp = Monster->FindComponentByClass<URadarReturn2DComponent>())
+        {
+            RadarComp->SetAlwaysIgnore(false);
+        }
+    }
+    FoundActors.Empty();
+
+    UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("TutorialFriendly_D2"), FoundActors);
+    for (AActor* Friendly : FoundActors)
+    {
+        Friendly->SetActorHiddenInGame(false);
+        if (URadarReturn2DComponent* RadarComp = Friendly->FindComponentByClass<URadarReturn2DComponent>())
+        {
+            RadarComp->SetAlwaysIgnore(false);
+        }
+    }
 }
 
 void AADTutorialGameMode::HandlePhase_Oxygen()
@@ -160,62 +219,41 @@ void AADTutorialGameMode::HandlePhase_Oxygen()
 
 void AADTutorialGameMode::HandlePhase_Dialogue_02()
 {
+    TArray<AActor*> ActorsToTrack;
+    UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("TutorialMonster_D2"), ActorsToTrack);
+    for (AActor* Monster : ActorsToTrack)
+    {
+        TrackPhaseActor(Monster);
+    }
+    ActorsToTrack.Empty();
+
+    UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("TutorialFriendly_D2"), ActorsToTrack);
+    for (AActor* Friendly : ActorsToTrack)
+    {
+        TrackPhaseActor(Friendly);
+    }
+
     if (!IndicatingTargetClass)
     {
         UE_LOG(LogTemp, Error, TEXT("IndicatingTargetClass is not set in TutorialGameMode BP."));
         return;
     }
-
     TArray<AActor*> SpawnPoints;
     UGameplayStatics::GetAllActorsWithTag(GetWorld(), DialogueTargetSpawnTag, SpawnPoints);
-    if (SpawnPoints.Num() == 0)
+    if (SpawnPoints.Num() > 0)
     {
-        UE_LOG(LogTemp, Error, TEXT("Cannot find an actor with tag '%s' to spawn the dialogue target."), *DialogueTargetSpawnTag.ToString());
-        return;
-    }
-
-    AActor* SpawnPoint = SpawnPoints[0];
-    FVector   SpawnLocation = SpawnPoint->GetActorLocation();
-    FRotator  SpawnRotation = SpawnPoint->GetActorRotation();
-
-    AIndicatingTarget* Indicator = GetWorld()->SpawnActor<AIndicatingTarget>(IndicatingTargetClass, SpawnLocation, SpawnRotation);
-    if (Indicator)
-    {
-        Indicator->SetupIndicator(nullptr, DialogueIndicatorIcon);
-
-        if (ATargetIndicatorManager* Manager = *TActorIterator<ATargetIndicatorManager>(GetWorld()))
+        AActor* SpawnPoint = SpawnPoints[0];
+        AIndicatingTarget* Indicator = GetWorld()->SpawnActor<AIndicatingTarget>(IndicatingTargetClass, SpawnPoint->GetActorTransform());
+        if (Indicator)
         {
-            Manager->RegisterNewTarget(Indicator);
+            Indicator->SetupIndicator(nullptr, DialogueIndicatorIcon);
+            if (ATargetIndicatorManager* TargetManager = *TActorIterator<ATargetIndicatorManager>(GetWorld()))
+            {
+                TargetManager->RegisterNewTarget(Indicator);
+            }
+            TrackPhaseActor(Indicator);
         }
-        TrackPhaseActor(Indicator);
     }
-
-    TArray<AActor*> FoundActors;
-    UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("TutorialRock_D2"), FoundActors);
-    for (AActor* Rock : FoundActors)
-    {
-        Rock->SetActorHiddenInGame(false);
-        Rock->Tags.Add(FName("Radar"));
-    }
-    FoundActors.Empty();
-
-    UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("TutorialMonster_D2"), FoundActors);
-    for (AActor* Monster : FoundActors)
-    {
-        Monster->SetActorHiddenInGame(false);
-        Monster->Tags.Add(FName("Radar"));
-        TrackPhaseActor(Monster); 
-    }
-    FoundActors.Empty();
-
-    UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("TutorialFriendly_D2"), FoundActors);
-    for (AActor* Friendly : FoundActors)
-    {
-        Friendly->SetActorHiddenInGame(false);
-        Friendly->Tags.Add(FName("Radar"));
-        TrackPhaseActor(Friendly); 
-    }
-
 }
 
 void AADTutorialGameMode::HandlePhase_Looting()
