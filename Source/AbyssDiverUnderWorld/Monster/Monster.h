@@ -50,7 +50,7 @@ public:
 	virtual void OnDeath();
 	UFUNCTION(NetMulticast, Reliable)
 	void M_OnDeath();
-	void M_OnDeath_Implementation();
+	virtual void M_OnDeath_Implementation();
 
 	virtual void PlayAttackMontage();
 	void UnPossessAI();
