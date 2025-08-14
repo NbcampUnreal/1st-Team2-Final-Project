@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Monster/Monster.h"
@@ -13,6 +13,7 @@
 #include "Character/UnderwaterCharacter.h"
 #include "Components/CapsuleComponent.h"
 #include "Interactable/OtherActors/Radars/RadarReturn2DComponent.h"
+#include "AnimNodes/AquaticMovementComponent.h"
 
 const FName AMonster::MonsterStateKey = "MonsterState";
 const FName AMonster::InvestigateLocationKey = "InvestigateLocation";
@@ -47,6 +48,9 @@ AMonster::AMonster()
 	GetCapsuleComponent()->SetCollisionObjectType(ECC_GameTraceChannel3);
 
 	//RadarReturnComponent->FactionTags.Init(TEXT("Hostile"), 1);
+
+	// 새로운 물리 기반 수중 이동 컴포넌트 초기화
+	AquaticMovementComponent = CreateDefaultSubobject<UAquaticMovementComponent>("Aquatic Movement Component");
 }
 
 void AMonster::BeginPlay()

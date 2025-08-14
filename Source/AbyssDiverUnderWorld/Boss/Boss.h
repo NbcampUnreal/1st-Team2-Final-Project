@@ -241,8 +241,8 @@ public:
 	float ChaseAccumulatedTime = 0.0f;
 	
 	/** 새로운 물리 기반 수중 이동 컴포넌트 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Movement")
-	TObjectPtr<UAquaticMovementComponent> AquaticMovementComponent;
+	//UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Movement")
+	//TObjectPtr<UAquaticMovementComponent> AquaticMovementComponent;
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Stat")

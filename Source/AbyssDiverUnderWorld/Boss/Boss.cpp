@@ -55,8 +55,8 @@ ABoss::ABoss()
 
 	CameraControllerComponent = CreateDefaultSubobject<UCameraControllerComponent>("Camera Controller Component");
 
-	// 새로운 물리 기반 수중 이동 컴포넌트 초기화
-	AquaticMovementComponent = CreateDefaultSubobject<UAquaticMovementComponent>("Aquatic Movement Component");
+	//// 새로운 물리 기반 수중 이동 컴포넌트 초기화
+	//AquaticMovementComponent = CreateDefaultSubobject<UAquaticMovementComponent>("Aquatic Movement Component");
 
 	static ConstructorHelpers::FObjectFinder<UNiagaraSystem> BloodNiagara(TEXT("/Game/SurvivalFX/Particles/Hit/PS_Hit_Blood_Big"));
 	if (BloodNiagara.Succeeded())
