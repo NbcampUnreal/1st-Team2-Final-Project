@@ -7,7 +7,7 @@
 #include "NavigationSystem.h"
 #include "EnvironmentQuery/Items/EnvQueryItemType_Point.h"
 #include "Boss/Boss.h"
-#include "Outsourced/AquaticMovementComponent.h"
+#include "AnimNodes/AquaticMovementComponent.h"
 
 
 UEQG_XYZGrid::UEQG_XYZGrid()  

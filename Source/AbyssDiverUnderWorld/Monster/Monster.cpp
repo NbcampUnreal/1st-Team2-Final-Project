@@ -12,7 +12,7 @@
 #include "NiagaraFunctionLibrary.h"
 #include "Character/UnderwaterCharacter.h"
 #include "Components/CapsuleComponent.h"
-#include "Interactable/OtherActors/Radars/RadarReturnComponent.h"
+#include "Interactable/OtherActors/Radars/RadarReturn2DComponent.h"
 
 const FName AMonster::MonsterStateKey = "MonsterState";
 const FName AMonster::InvestigateLocationKey = "InvestigateLocation";
@@ -46,7 +46,7 @@ AMonster::AMonster()
 	// Set Collision Channel == Monster
 	GetCapsuleComponent()->SetCollisionObjectType(ECC_GameTraceChannel3);
 
-	RadarReturnComponent->FactionTags.Init(TEXT("Hostile"), 1);
+	//RadarReturnComponent->FactionTags.Init(TEXT("Hostile"), 1);
 }
 
 void AMonster::BeginPlay()
@@ -587,10 +587,10 @@ void AMonster::DelayDestroyed()
 
 void AMonster::MonsterRaderOff()
 {
-	URadarReturnComponent* RaderComponent = Cast<URadarReturnComponent>(GetComponentByClass(URadarReturnComponent::StaticClass()));
+	URadarReturn2DComponent* RaderComponent = Cast<URadarReturn2DComponent>(GetComponentByClass(URadarReturn2DComponent::StaticClass()));
 	if (RaderComponent)
 	{
-		RaderComponent->SetIgnore(true);
+		RaderComponent->SetAlwaysIgnore(true);
 	}
 }
 
