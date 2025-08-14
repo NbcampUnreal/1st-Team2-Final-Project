@@ -34,10 +34,6 @@ protected:
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 #pragma region Method
 public:
-	UFUNCTION(BlueprintCallable)
-	FVector GetPatrolLocation(int32 Index) const;
-	UFUNCTION(BlueprintCallable)
-	int32 GetNextPatrolIndex(int32 CurrentIndex) const;
 	UFUNCTION(NetMulticast, Reliable)
 	void M_PlayMontage(UAnimMontage* AnimMontage, float InPlayRate = 1, FName StartSectionName = NAME_None);
 	void M_PlayMontage_Implementation(UAnimMontage* AnimMontage, float InPlayRate = 1, FName StartSectionName = NAME_None);
@@ -96,9 +92,6 @@ public:
 	TObjectPtr<UAquaticMovementComponent> AquaticMovementComponent;
 
 protected:
-
-	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "AI|Patrol")
-	TObjectPtr<ASplinePathActor> AssignedSplineActor;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI|Blackboard")
 	TObjectPtr<UBlackboardComponent> BlackboardComponent;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI|AIController")
