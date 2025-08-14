@@ -54,9 +54,12 @@ private:
 public:
 
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnDepthZoneChanged, EDepthZone, OldDepthZone, EDepthZone, NewDepthZone);
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDepthUpdated, float, NewDepth);
 	/** 깊이 구역이 변경되었을 때 호출되는 델리게이트 */
 	UPROPERTY(BlueprintAssignable, Category = "Depth")
 	FOnDepthZoneChanged OnDepthZoneChangedDelegate;
+	UPROPERTY(BlueprintAssignable, Category = "Depth")
+	FOnDepthUpdated OnDepthUpdatedDelegate;
 
 private:
 

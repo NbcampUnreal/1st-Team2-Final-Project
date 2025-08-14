@@ -43,6 +43,7 @@
 #include "PlayerComponent/NameWidgetComponent.h"
 #include "PlayerComponent/RagdollReplicationComponent.h"
 #include "Subsystems/SoundSubsystem.h"
+#include "Character/PlayerComponent/PlayerHUDComponent.h"
 
 DEFINE_LOG_CATEGORY(LogAbyssDiverCharacter);
 
@@ -239,7 +240,16 @@ void AUnderwaterCharacter::BeginPlay()
 	DepthComponent->OnDepthZoneChangedDelegate.AddDynamic(this, &AUnderwaterCharacter::OnDepthZoneChanged);
 	EDepthZone InitialDepthZone = DepthComponent->GetDepthZone();
 	OnDepthZoneChanged(InitialDepthZone, InitialDepthZone);
-	
+
+	if (AADPlayerController* PlayerController = Cast<AADPlayerController>(GetController()))
+	{
+		if (UPlayerHUDComponent* HUDComp = PlayerController->GetPlayerHUDComponent())
+		{
+			HUDComp->BindDeptWidgetFunction(DepthComponent);
+		}
+	}
+
+
 	NoiseEmitterComponent = NewObject<UPawnNoiseEmitterComponent>(this);
 	NoiseEmitterComponent->RegisterComponent();
 

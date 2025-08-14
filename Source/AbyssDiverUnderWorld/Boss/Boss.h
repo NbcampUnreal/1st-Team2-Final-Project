@@ -1,9 +1,10 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "AbyssDiverUnderWorld.h"
+
 #include "BossAIController.h"
-#include "Character/UnitBase.h"
+#include "Monster/Monster.h"
+
 #include "Boss.generated.h"
 
 class AEnhancedBossAIController;
@@ -15,7 +16,7 @@ class AUnderwaterCharacter;
 class UAquaticMovementComponent;
 
 UCLASS()
-class ABYSSDIVERUNDERWORLD_API ABoss : public AUnitBase
+class ABYSSDIVERUNDERWORLD_API ABoss : public AMonster
 {
 	GENERATED_BODY()
 	
@@ -153,9 +154,9 @@ public:
 	virtual void M_PlayAnimation(UAnimMontage* AnimMontage, float InPlayRate = 1, FName StartSectionName = NAME_None);
 	virtual void M_PlayAnimation_Implementation(UAnimMontage* AnimMontage, float InPlayRate = 1, FName StartSectionName = NAME_None);
 
-	UFUNCTION(NetMulticast, Reliable)
-	void M_OnDeath();
-	void M_OnDeath_Implementation();
+	//UFUNCTION(NetMulticast, Reliable)
+	//void M_OnDeath();
+	virtual void M_OnDeath_Implementation() override;
 
 	UFUNCTION()
 	void OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted);
@@ -206,8 +207,8 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
 	EBossPhysicsType BossPhysicsType;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Effect")
-	TObjectPtr<UNiagaraSystem> BloodEffect;
+	//UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Effect")
+	//TObjectPtr<UNiagaraSystem> BloodEffect;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
 	float MinPatrolDistance;
@@ -221,8 +222,8 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
 	float AttackedCameraShakeScale;
 	
-	UPROPERTY(VisibleAnywhere)
-	TObjectPtr<UAnimInstance> AnimInstance;
+	//UPROPERTY(VisibleAnywhere)
+	//TObjectPtr<UAnimInstance> AnimInstance;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Target")
 	TObjectPtr<AUnderwaterCharacter> TargetPlayer;
@@ -230,8 +231,8 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Target")
 	TObjectPtr<AUnderwaterCharacter> CachedTargetPlayer;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Animation")
-	TArray<TObjectPtr<UAnimMontage>> AttackAnimations;
+	//UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Animation")
+	//TArray<TObjectPtr<UAnimMontage>> AttackAnimations;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Collision")
 	TObjectPtr<UCapsuleComponent> AttackCollision;

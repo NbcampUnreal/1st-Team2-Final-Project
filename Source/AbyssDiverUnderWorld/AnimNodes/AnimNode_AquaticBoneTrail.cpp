@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Outsourced/AnimNode_AquaticBoneTrail.h"
+#include "AnimNodes/AnimNode_AquaticBoneTrail.h"
 #include "Animation/AnimInstanceProxy.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "AquaticMovementComponent.h"

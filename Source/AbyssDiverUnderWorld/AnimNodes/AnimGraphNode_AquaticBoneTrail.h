@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "AnimGraphNode_SkeletalControlBase.h"
-#include "Outsourced/AnimNode_AquaticBoneTrail.h"
+#include "AnimNodes/AnimNode_AquaticBoneTrail.h"
 #include "AnimGraphNode_AquaticBoneTrail.generated.h"
 
 /**
