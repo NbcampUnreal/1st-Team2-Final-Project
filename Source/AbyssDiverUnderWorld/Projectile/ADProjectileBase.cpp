@@ -6,7 +6,7 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "AbyssDiverUnderWorld.h"
-#include "Boss/Boss.h"
+#include "Monster/Boss/Boss.h"
 #include "Monster/Monster.h"
 #include "NiagaraSystem.h"
 #include "NiagaraComponent.h"
