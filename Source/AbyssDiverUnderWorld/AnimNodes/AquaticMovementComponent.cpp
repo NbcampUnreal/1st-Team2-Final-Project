@@ -651,27 +651,25 @@ void UAquaticMovementComponent::RecordTrajectoryPoint(float Importance)
     NewPoint.Time = GetWorld()->GetTimeSeconds();
     NewPoint.Importance = Importance;
     
-    
-
     // 크기 제한 체크
-    if (TrajectoryHistory.Num() >= MaxTrajectoryPoints)
-    {
-        // 가장 중요도가 낮은 중간 포인트 제거
-        int32 RemoveIndex = 1; // 첫 번째는 유지
-        float LowestImportance = 1.0f;
-
-        for (int32 i = 1; i < TrajectoryHistory.Num() - 1; i++)
-        {
-            if (TrajectoryHistory[i].Importance < LowestImportance)
-            {
-                LowestImportance = TrajectoryHistory[i].Importance;
-                RemoveIndex = i;
-            }
-        }
-
-        TrajectoryHistory.RemoveAt(TrajectoryHistory.Num() - 1);
-    }
-
+    // if (TrajectoryHistory.Num() >= MaxTrajectoryPoints)
+    // {
+    //     // 가장 중요도가 낮은 중간 포인트 제거
+    //     int32 RemoveIndex = 1; // 첫 번째는 유지
+    //     float LowestImportance = 1.0f;
+    // 
+    //     for (int32 i = 1; i < TrajectoryHistory.Num() - 1; i++)
+    //     {
+    //         if (TrajectoryHistory[i].Importance < LowestImportance)
+    //         {
+    //             LowestImportance = TrajectoryHistory[i].Importance;
+    //             RemoveIndex = i;
+    //         }
+    //     }
+    // 
+    //     
+    // }
+    TrajectoryHistory.RemoveAt(TrajectoryHistory.Num() - 1);
     TrajectoryHistory.Add(NewPoint);
 }
 
