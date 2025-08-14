@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -15,6 +15,7 @@
 class ASplinePathActor;
 class USphereComponent;
 class UNiagaraSystem;
+class UAquaticMovementComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnMonsterDeadSignature, AActor*, Killer, AMonster*, DeadMonster);
 
@@ -91,6 +92,11 @@ public:
 	TObjectPtr<AActor> TargetActor;
 
 protected:
+
+	/** 새로운 물리 기반 수중 이동 컴포넌트 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Movement")
+	TObjectPtr<UAquaticMovementComponent> AquaticMovementComponent;
+
 	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "AI|Patrol")
 	TObjectPtr<ASplinePathActor> AssignedSplineActor;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI|Blackboard")
