@@ -91,11 +91,11 @@ public:
 	UPROPERTY()
 	TObjectPtr<AActor> TargetActor;
 
-protected:
-
 	/** 새로운 물리 기반 수중 이동 컴포넌트 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Movement")
 	TObjectPtr<UAquaticMovementComponent> AquaticMovementComponent;
+
+protected:
 
 	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "AI|Patrol")
 	TObjectPtr<ASplinePathActor> AssignedSplineActor;
