@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Outsourced/AnimGraphNode_AquaticBoneTrail.h"
+#include "AnimNodes/AnimGraphNode_AquaticBoneTrail.h"
 #include "AnimationGraphSchema.h"
 #include "Kismet2/CompilerResultsLog.h"
 #include "Animation/AnimInstance.h"
