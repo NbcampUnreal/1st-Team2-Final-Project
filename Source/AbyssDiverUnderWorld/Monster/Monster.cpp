@@ -3,7 +3,6 @@
 
 #include "Monster/Monster.h"
 #include "Components/SplineComponent.h"
-#include "Monster/SplinePathActor.h"
 #include "Character/StatComponent.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Net/UnrealNetwork.h"
@@ -25,7 +24,6 @@ AMonster::AMonster()
 	PrimaryActorTick.bCanEverTick = true;
 
 	// Initialize
-	AssignedSplineActor = nullptr;
 	BlackboardComponent = nullptr;
 	AIController = nullptr;
 	AnimInstance = nullptr;
@@ -107,41 +105,6 @@ void AMonster::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLi
 
 	DOREPLIFETIME(AMonster, MonsterState);
 	DOREPLIFETIME(AMonster, bIsChasing);
-}
-
-FVector AMonster::GetPatrolLocation(int32 Index) const
-{
-	if (AssignedSplineActor)
-	{
-		USplineComponent* PatrolSpline = AssignedSplineActor->GetSplineComponent();
-		if (!PatrolSpline || PatrolSpline->GetNumberOfSplinePoints() == 0) return GetActorLocation();
-
-		// Get SplinePoint to World Location
-		FVector Location = PatrolSpline->GetLocationAtSplinePoint(Index, ESplineCoordinateSpace::World);
-		return Location;
-	}
-	else
-	{
-		LOG(TEXT("SplineActor is not Assigned."));
-		return FVector::ZeroVector;
-	}
-}
-
-int32 AMonster::GetNextPatrolIndex(int32 CurrentIndex) const
-{
-	if (AssignedSplineActor)
-	{
-		USplineComponent* PatrolSpline = AssignedSplineActor->GetSplineComponent();
-		CurrentIndex = (CurrentIndex + 1) % PatrolSpline->GetNumberOfSplinePoints(); // Cycle
-		LOG(TEXT("PatrolIndex increment : %d"), CurrentIndex);
-
-		return CurrentIndex;
-	}
-	else
-	{
-		LOG(TEXT("SplineActor is not Assigned."));
-		return -1;
-	}
 }
 
 void AMonster::M_PlayMontage_Implementation(UAnimMontage* AnimMontage, float InPlayRate, FName StartSectionName)
