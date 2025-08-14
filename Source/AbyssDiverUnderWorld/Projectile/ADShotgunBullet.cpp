@@ -3,7 +3,7 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Components/SphereComponent.h"
 #include "Character/UnderwaterCharacter.h"
-#include "Boss/Boss.h"
+#include "Monster/Boss/Boss.h"
 #include "Monster/Monster.h"
 
 AADShotgunBullet::AADShotgunBullet()

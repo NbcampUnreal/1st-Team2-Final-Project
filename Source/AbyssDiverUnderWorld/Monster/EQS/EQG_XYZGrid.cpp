@@ -6,7 +6,7 @@
 #include "EnvironmentQuery/Contexts/EnvQueryContext_Querier.h"
 #include "NavigationSystem.h"
 #include "EnvironmentQuery/Items/EnvQueryItemType_Point.h"
-#include "Boss/Boss.h"
+#include "Monster/Boss/Boss.h"
 #include "AnimNodes/AquaticMovementComponent.h"
 
 
