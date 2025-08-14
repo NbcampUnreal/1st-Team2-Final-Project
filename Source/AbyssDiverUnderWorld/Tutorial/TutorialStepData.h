@@ -37,4 +37,7 @@ struct FTutorialStepData : public FTableRowBase
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     ETutorialHighlightTarget HighlightTargetID = ETutorialHighlightTarget::None;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tutorial", meta = (EditCondition = "bWaitForPlayerTrigger"))
+    EPlayerActionTrigger ActionToWaitFor = EPlayerActionTrigger::None;
 };

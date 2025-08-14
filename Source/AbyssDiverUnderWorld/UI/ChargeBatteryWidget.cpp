@@ -12,6 +12,7 @@
 #include "Character/UnderwaterCharacter.h"
 #include "Interactable/Item/Component/EquipUseComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Tutorial/TutorialManager.h"
 #include "Components/AudioComponent.h"
 #include "Animation/WidgetAnimation.h"
 
@@ -152,7 +153,13 @@ void UChargeBatteryWidget::ChargeBatteryAmount()
 		}
 		InventoryComp->S_UseBatteryAmount(-IncreaseAmount);
 		UpdateBatteryInfo();
+
+		if (ATutorialManager* Manager = Cast<ATutorialManager>(UGameplayStatics::GetActorOfClass(GetWorld(), ATutorialManager::StaticClass())))
+		{
+			Manager->AddGaugeProgress(IncreaseAmount);
+		}
 	}
+
 }
 
 void UChargeBatteryWidget::UpdateBatteryInfoDelay()

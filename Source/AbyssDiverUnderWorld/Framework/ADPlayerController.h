@@ -4,8 +4,9 @@
 #include "InputActionValue.h"
 #include "GameFramework/PlayerController.h"
 #include "InputAction.h"
-
+#include "Tutorial/TutorialEnums.h"
 #include "ADPlayerController.generated.h"
+
 
 enum class ESFX : uint8;
 enum class EMapName : uint8;
@@ -15,7 +16,7 @@ UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADPlayerController : public APlayerController
 {
 	GENERATED_BODY()
-
+public:
 	AADPlayerController();
 	
 protected:
@@ -100,7 +101,6 @@ public:
 	void S_KillPlayer_Implementation();
 
 	void SetActiveRadarWidget(bool bShouldActivate);
-	
 protected:
 
 	/** 관전 상태가 시작될 때 호출되는 함수 */
@@ -131,28 +131,6 @@ protected:
 	void S_GainShield(int Amount);
 	
 	void OnCameraBlankEnd();
-
-	UFUNCTION()
-	void OnInventoryTriggered(const FInputActionValue& Value);
-	UFUNCTION()
-	void OnSprintTriggered(const FInputActionValue& Value);
-	UFUNCTION()
-	void OnRadarTriggered(const FInputActionValue& Value);
-	UFUNCTION()
-	void OnLightToggleTriggered(const FInputActionValue& Value);
-	UFUNCTION()
-	void OnLootingTriggered(const FInputActionValue& Value);
-	UFUNCTION()
-	void OnDroneTriggered(const FInputActionValue& Value);
-	UFUNCTION()
-	void OnItemsTriggered(const FInputActionValue& Value);
-	UFUNCTION()
-	void OnReviveTriggered(const FInputActionValue& Value);
-
-	void CheckTutorialObjective(const FInputActionValue& Value, UInputAction* SourceAction);
-
-	UFUNCTION(Server, Reliable)
-	void Server_RequestAdvanceTutorialPhase();
 #pragma endregion
 	
 #pragma region Variable
@@ -169,13 +147,15 @@ public:
 	/** View Target가 변경될 때 호출되는 Delegate. SetViewTarget를 주석을 확인할 것 */
 	UPROPERTY(BlueprintAssignable, Category = "ViewTarget")
 	FOnTargetViewChanged OnTargetViewChanged;
-	
-private:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<class UInputMappingContext> DefaultMappingContext;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputAction> InventoryAction;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputAction> InteractAction;
+private:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputMappingContext> DefaultMappingContext;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HUD", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UPlayerHUDComponent> PlayerHUDComponent;
@@ -195,27 +175,6 @@ private:
 
 	/** Camera Blank Timer Handle */
 	FTimerHandle CameraBlankTimerHandle;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<class UInputAction> SprintAction;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<class UInputAction> RadarAction;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<class UInputAction> LightToggleAction;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<class UInputAction> LootingAction;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<class UInputAction> DroneAction;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<class UInputAction> ItemsAction;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<class UInputAction> ReviveAction;
 #pragma endregion 
 
 #pragma region Getters / Setters

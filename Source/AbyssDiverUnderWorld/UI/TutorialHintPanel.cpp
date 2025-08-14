@@ -24,10 +24,10 @@ void UTutorialHintPanel::SetHintByKey(ETutorialHintKey HintKey)
     {
     case ETutorialHintKey::Move:       Index = 0; break;
     case ETutorialHintKey::Sprint:     Index = 1; break;
-    case ETutorialHintKey::Flashlight: Index = 2; break;
+    case ETutorialHintKey::Flashlight: Index = 1; break; 
     case ETutorialHintKey::Revive:     Index = 3; break;
     case ETutorialHintKey::Inventory:  Index = 4; break;
-    default:                           Index = 0; break;
+    default:                         Index = 0; break;
     }
 
     if (Switcher_Hints)

@@ -174,3 +174,28 @@ bool ATargetIndicatorManager::TryGetCurrentTarget(AIndicatingTarget*& OutTarget)
 	return (OutTarget && IsValid(OutTarget) && OutTarget->IsPendingKillPending() == false && Target->IsActivateConditionMet());
 }
 
+void ATargetIndicatorManager::RegisterNewTarget(AIndicatingTarget* NewTarget)
+{
+	if (!NewTarget)
+	{
+		return;
+	}
+
+	TargetArrayByReverseOrder.Emplace(NewTarget);
+
+	NewTarget->OnIndicatingTargetBeginOverlapDelegate.AddUObject(this, &ATargetIndicatorManager::OnIndicatingTargetOverlapped);
+	NewTarget->OnSwitchActorDestroyedDelegate.AddUObject(this, &ATargetIndicatorManager::TryActivateNextTarget);
+	NewTarget->OnOwnerActorDestroyedDelegate.AddUObject(this, &ATargetIndicatorManager::SkipTarget);
+
+	Algo::Sort(TargetArrayByReverseOrder, [](const AIndicatingTarget* A, const AIndicatingTarget* B)
+		{
+			return A->GetTargetOrder() > B->GetTargetOrder();
+		});
+
+	TryActivateNextTarget();
+
+	if (TargetIndicatorWidgetInstance && !TargetIndicatorWidgetInstance->IsVisible())
+	{
+		TargetIndicatorWidgetInstance->SetVisible(true);
+	}
+}

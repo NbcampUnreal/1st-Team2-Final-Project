@@ -1,11 +1,24 @@
 #include "UI/InteractionDescriptionWidget.h"
-#include "Components/TextBlock.h"
-#include "Animation/WidgetAnimation.h"
+
+#include "AbyssDiverUnderWorld.h"
+
 #include "Interactable/Item/ADItemBase.h"
 #include "Interactable/Item/ADExchangeableItem.h"
 
+#include "Subsystems/Localizations/LocalizationSubsystem.h"
+
+#include "Components/TextBlock.h"
+#include "Animation/WidgetAnimation.h"
+
 void UInteractionDescriptionWidget::HandleFocus(AActor* Actor, FString Description)
 {  
+    ULocalizationSubsystem* LocalizationSubsystem = GetGameInstance()->GetSubsystem<ULocalizationSubsystem>();
+    if (IsValid(LocalizationSubsystem) == false)
+    {
+        LOGV(Error, TEXT("Fail to Get LocalizationSubsystem"));
+        return;
+    }
+
     if (!TextAction || !NameText || !PriceText)
         return;
 
@@ -13,15 +26,13 @@ void UInteractionDescriptionWidget::HandleFocus(AActor* Actor, FString Descripti
     NameText->SetVisibility(ESlateVisibility::Collapsed);
     PriceText->SetVisibility(ESlateVisibility::Collapsed);
     TextAction->SetText(Label);
-     
-
 
     if (AADItemBase* BaseItem = Cast<AADItemBase>(Actor))
     {
         FName Name = BaseItem->GetItemName();
         int32 Price = BaseItem->GetItemPrice();
 
-        FText TextName = FText::FromName(Name);
+        FText TextName = LocalizationSubsystem->GetLocalizedItemName(Name);
         NameText->SetText(TextName);
         NameText->SetVisibility(ESlateVisibility::Visible);
         UE_LOG(LogTemp, Warning, TEXT("NameText is Visible"));
