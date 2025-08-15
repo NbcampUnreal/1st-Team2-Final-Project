@@ -49,6 +49,10 @@ protected:
 	void OnReviveStarted(const FInputActionValue& Value);
 	void OnReviveCompleted(const FInputActionValue& Value);
 
+	void OnUseItem1(const FInputActionValue& Value);
+	void OnUseItem2(const FInputActionValue& Value);
+	void OnUseItem3(const FInputActionValue& Value);
+
 	void CheckTutorialObjective(const FInputActionValue& Value, UInputAction* SourceAction);
 
 private:
@@ -63,4 +67,13 @@ private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> DropAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> UseItem1Action;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> UseItem2Action;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> UseItem3Action;
 };
