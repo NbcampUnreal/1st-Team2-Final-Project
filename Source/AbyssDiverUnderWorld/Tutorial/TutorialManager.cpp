@@ -6,6 +6,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "UI/TutorialSubtitle.h" 
 #include "UI/TutorialHintPanel.h"
+#include "UI/TutorialHighlighting.h"
 #include "Framework/ADTutorialGameState.h"
 #include "Framework/ADTutorialPlayerController.h"
 #include "Framework/ADTutorialGameMode.h"
@@ -67,6 +68,16 @@ void ATutorialManager::BeginPlay()
 		}
 	}
 
+	if (HighlightingWidgetClass)
+	{
+		HighlightingWidget = CreateWidget<UTutorialHighlighting>(GetWorld(), HighlightingWidgetClass);
+		if (HighlightingWidget)
+		{
+			HighlightingWidget->AddToViewport(5); 
+			HighlightingWidget->HighlightEnd(); 
+		}
+	}
+
 	if (AADTutorialGameState* TutorialGS = GetWorld()->GetGameState<AADTutorialGameState>())
 	{
 		TutorialGS->OnPhaseChanged.RemoveAll(this);
@@ -121,17 +132,16 @@ void ATutorialManager::OnTutorialPhaseChanged(ETutorialPhase NewPhase)
 		GaugeWidget->SetVisibility(ESlateVisibility::Collapsed);
 	}
 
-	if (CurrentHighlightWidget)
-	{
-		CurrentHighlightWidget->RemoveFromParent();
-		CurrentHighlightWidget = nullptr;
-	}
-
 	if (NewPhase == ETutorialPhase::None)
 	{
 		if (SubtitleWidget) SubtitleWidget->SetVisibility(ESlateVisibility::Hidden);
 		if (TutorialHintPanel) TutorialHintPanel->SetVisibility(ESlateVisibility::Hidden);
 		return;
+	}
+
+	if (HighlightingWidget)
+	{
+		HighlightingWidget->HighlightEnd();
 	}
 
 	if (!TutorialDataTable) return;
@@ -170,16 +180,9 @@ void ATutorialManager::OnTutorialPhaseChanged(ETutorialPhase NewPhase)
 			}
 		}
 
-		if (StepDataPtr->HighlightTargetID != ETutorialHighlightTarget::None)
+		if (HighlightingWidget && StepDataPtr->HighlightTargetID != ETutorialHighlightTarget::None)
 		{
-			if (const TSubclassOf<UUserWidget>* WidgetClassPtr = HighlightWidgetClasses.Find(StepDataPtr->HighlightTargetID))
-			{
-				CurrentHighlightWidget = CreateWidget<UUserWidget>(GetWorld(), *WidgetClassPtr);
-				if (CurrentHighlightWidget)
-				{
-					CurrentHighlightWidget->AddToViewport(5);
-				}
-			}
+			HighlightingWidget->HighlightStart(StepDataPtr->HighlightInfo);
 		}
 	}
 	else

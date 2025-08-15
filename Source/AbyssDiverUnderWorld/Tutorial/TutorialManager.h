@@ -11,6 +11,7 @@
 class UUserWidget;
 class UTutorialSubtitle;
 class UTutorialHintPanel;
+class UTutorialHighlighting;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API ATutorialManager : public AActor
@@ -53,7 +54,7 @@ protected:
 	TSubclassOf<UTutorialHintPanel> TutorialHintPanelClass;
 
 	UPROPERTY(EditAnywhere, Category = "Tutorial|UI|Highlights")
-	TMap<ETutorialHighlightTarget, TSubclassOf<UUserWidget>> HighlightWidgetClasses;
+	TSubclassOf<UTutorialHighlighting> HighlightingWidgetClass;
 
 	UPROPERTY(EditAnywhere, Category = "Tutorial|UI")
 	TSubclassOf<UUserWidget> GaugeWidgetClass;
@@ -79,7 +80,7 @@ protected:
 	TObjectPtr<UTutorialHintPanel> TutorialHintPanel;
 
 	UPROPERTY()
-	TObjectPtr<UUserWidget> CurrentHighlightWidget;
+	TObjectPtr<UTutorialHighlighting> HighlightingWidget;
 
 	UPROPERTY()
 	TObjectPtr<UUserWidget> GaugeWidget;
