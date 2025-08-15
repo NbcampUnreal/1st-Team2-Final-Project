@@ -26,7 +26,11 @@ void ATutorialManager::BeginPlay()
 {
 	Super::BeginPlay();
 
-	CachedGameMode = Cast<AADTutorialGameMode>(UGameplayStatics::GetGameMode(GetWorld()));
+	CachedGameMode = GetWorld()->GetAuthGameMode<AADTutorialGameMode>();
+	if (!CachedGameMode)
+	{
+		UE_LOG(LogTemp, Error, TEXT("ATutorialManager: AADTutorialGameMode not found!"));
+	}
 
 	if (TutorialSubtitleClass)
 	{
@@ -132,16 +136,16 @@ void ATutorialManager::OnTutorialPhaseChanged(ETutorialPhase NewPhase)
 		GaugeWidget->SetVisibility(ESlateVisibility::Collapsed);
 	}
 
+	if (HighlightingWidget)
+	{
+		HighlightingWidget->HighlightEnd();
+	}
+
 	if (NewPhase == ETutorialPhase::None)
 	{
 		if (SubtitleWidget) SubtitleWidget->SetVisibility(ESlateVisibility::Hidden);
 		if (TutorialHintPanel) TutorialHintPanel->SetVisibility(ESlateVisibility::Hidden);
 		return;
-	}
-
-	if (HighlightingWidget)
-	{
-		HighlightingWidget->HighlightEnd();
 	}
 
 	if (!TutorialDataTable) return;
@@ -154,7 +158,6 @@ void ATutorialManager::OnTutorialPhaseChanged(ETutorialPhase NewPhase)
 	{
 		if (SubtitleWidget)
 		{
-
 			SubtitleWidget->OnTypingCompleted.Clear();
 			SubtitleWidget->OnTypingCompleted.AddLambda([this, StepDataPtr]()
 				{
@@ -182,7 +185,10 @@ void ATutorialManager::OnTutorialPhaseChanged(ETutorialPhase NewPhase)
 
 		if (HighlightingWidget && StepDataPtr->HighlightTargetID != ETutorialHighlightTarget::None)
 		{
-			HighlightingWidget->HighlightStart(StepDataPtr->HighlightInfo);
+			if (NewPhase != ETutorialPhase::Step6_Inventory)
+			{
+				HighlightingWidget->HighlightStart(StepDataPtr->HighlightInfo);
+			}
 		}
 	}
 	else
@@ -194,9 +200,9 @@ void ATutorialManager::OnTutorialPhaseChanged(ETutorialPhase NewPhase)
 
 void ATutorialManager::OnTypingFinished(const FTutorialStepData& StepData)
 {
-	if (AADTutorialGameMode* GM = GetWorld()->GetAuthGameMode<AADTutorialGameMode>())
+	if (CachedGameMode)
 	{
-		GM->OnTypingAnimationFinished();
+		CachedGameMode->OnTypingAnimationFinished();
 	}
 
 	if (!StepData.bWaitForPlayerTrigger)
@@ -208,18 +214,14 @@ void ATutorialManager::OnTypingFinished(const FTutorialStepData& StepData)
 
 void ATutorialManager::RequestAdvancePhase()
 {
-	if (UWorld* World = GetWorld())
+	if (CachedGameMode)
 	{
-		if (AADTutorialGameMode* GM = World->GetAuthGameMode<AADTutorialGameMode>())
-		{
-			GM->AdvanceTutorialPhase();    
-			return;
-		}
+		CachedGameMode->AdvanceTutorialPhase();
 	}
 
-	if (AADTutorialPlayerController* PC = Cast<AADTutorialPlayerController>(UGameplayStatics::GetPlayerController(this, 0)))
+	else if (AADTutorialPlayerController* PC = Cast<AADTutorialPlayerController>(UGameplayStatics::GetPlayerController(this, 0)))
 	{
-		PC->RequestAdvanceTutorialPhase(); 
+		PC->RequestAdvanceTutorialPhase();
 	}
 }
 
@@ -285,4 +287,31 @@ void ATutorialManager::AddGaugeProgress(float Amount)
 	CurrentGaugeValue += Amount;
 	CurrentGaugeValue = FMath::Clamp(CurrentGaugeValue, 0.f, TargetGaugeValue);
 
+}
+
+
+void ATutorialManager::OnInventoryInputPressed()
+{
+	if (AADTutorialGameState* TutorialGS = GetWorld()->GetGameState<AADTutorialGameState>())
+	{
+		if (TutorialGS->GetCurrentPhase() == ETutorialPhase::Step6_Inventory)
+		{
+			if (TutorialDataTable)
+			{
+				const FTutorialStepData* StepDataPtr = TutorialDataTable->FindRow<FTutorialStepData>(FName("Step6_Inventory"), TEXT(""));
+				if (StepDataPtr && HighlightingWidget)
+				{
+					HighlightingWidget->HighlightStart(StepDataPtr->HighlightInfo);
+				}
+			}
+		}
+	}
+}
+
+void ATutorialManager::OnInventoryInputReleased()
+{
+	if (HighlightingWidget)
+	{
+		HighlightingWidget->HighlightEnd();
+	}
 }
