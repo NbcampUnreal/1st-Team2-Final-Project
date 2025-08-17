@@ -30,10 +30,11 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
-	virtual void Tick(float DeltaTime) override;
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 #pragma region Method
 public:
+	virtual void SetNewTargetLocation();
+
 	UFUNCTION(NetMulticast, Reliable)
 	void M_PlayMontage(UAnimMontage* AnimMontage, float InPlayRate = 1, FName StartSectionName = NAME_None);
 	void M_PlayMontage_Implementation(UAnimMontage* AnimMontage, float InPlayRate = 1, FName StartSectionName = NAME_None);
@@ -125,11 +126,28 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TMap<AActor*, int32> DetectionRefCounts;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	float WanderRadius = 1300.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	float MinTargetDistance = 100.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	uint8 bDrawDebugLine : 1 = false;
+
+	FCollisionQueryParams Params;
+
 	static const FName MonsterStateKey;
 	static const FName InvestigateLocationKey;
 	static const FName PatrolLocationKey;
 	static const FName TargetActorKey;
-	
+
+private:
+	FVector DesiredTargetLocation;
+	FVector InterpolatedTargetLocation;
+	float TargetLocationInterpSpeed = 2.0f;
+	float PatrolInterpSpeed = 1.5f;
+
 #pragma endregion
 
 #pragma region Getter. Setter

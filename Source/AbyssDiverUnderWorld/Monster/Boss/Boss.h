@@ -40,7 +40,7 @@ public:
 	//FVector GetRandomNavMeshLocation(const FVector& Origin, const float& Radius) const;
 
 	/** 새로운 목표 이동지점을 할당하는 함수 */
-	void SetNewTargetLocation();
+	virtual void SetNewTargetLocation() override;
 
 	/** 상하좌우 방향으로 라인 트레이싱을 한다.
 	 *
@@ -54,7 +54,7 @@ public:
 	 * 
 	 * @param InDeltaTime - 프레임 시간
 	 */
-	void PerformNormalMovement(const float& InDeltaTime);
+	virtual void PerformNormalMovement(const float& InDeltaTime) override;
 
 	/** TargetPlayer를 추적하며 이동하는 함수
 	 * 
@@ -254,12 +254,6 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Stat")
 	float FourDirectionTraceDistance = 300.0f;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
-	float MinTargetDistance = 100.0f;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
-	float WanderRadius = 1300.0f;
-	
 	UPROPERTY(EditDefaultsOnly, Category = "Boss|Stat")
 	uint8 bIsAttackInfinite : 1;
 	
@@ -282,9 +276,6 @@ protected:
 
 	UPROPERTY(BlueprintReadWrite)
 	float CurrentMoveSpeed = 0.0f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-	uint8 bDrawDebugLine : 1 = false;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	uint8 bEnableDownTrace : 1 = true;
