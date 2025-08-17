@@ -15,9 +15,7 @@ const FName ABossAIController::BossStateKey = "BossState";
 ABossAIController::ABossAIController()
 {
 	PrimaryActorTick.bCanEverTick = false;
-	
-	AIPerceptionComponent = CreateDefaultSubobject<UAIPerceptionComponent>("PerceptionComponent");
-	SightConfig = CreateDefaultSubobject<UAISenseConfig_Sight>("SightConfig");
+
 	DamageConfig = CreateDefaultSubobject<UAISenseConfig_Damage>("DamageConfig");
 	HearingConfig = CreateDefaultSubobject<UAISenseConfig_Hearing>("HearingConfig");
 

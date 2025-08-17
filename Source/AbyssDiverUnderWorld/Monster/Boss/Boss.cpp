@@ -82,8 +82,6 @@ void ABoss::BeginPlay()
 	if (EnhancedAIController && EnhancedAIController->GetBlackboardComponent())
 	{
 		EnhancedAIController->GetBlackboardComponent()->SetValueAsVector("TargetLocation", GetActorLocation());
-
-		AIController = Cast<AMonsterAIController>(EnhancedAIController);
 	}
 
 	AttackCollision->OnComponentBeginOverlap.AddDynamic(this, &ABoss::OnAttackCollisionOverlapBegin);

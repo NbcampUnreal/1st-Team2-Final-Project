@@ -398,7 +398,7 @@ void AMonster::PerformChasing(const float& InDeltaTime)
 
 		const float LeftDistance = FVector::Dist(LeftBypass, PlayerLocation);
 		const float RightDistance = FVector::Dist(RightBypass, PlayerLocation);
-
+			
 		DesiredTargetLocation = (LeftDistance < RightDistance) ? LeftBypass : RightBypass;
 	}
 	else
