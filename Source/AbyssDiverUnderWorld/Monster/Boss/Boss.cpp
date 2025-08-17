@@ -82,6 +82,8 @@ void ABoss::BeginPlay()
 	if (EnhancedAIController && EnhancedAIController->GetBlackboardComponent())
 	{
 		EnhancedAIController->GetBlackboardComponent()->SetValueAsVector("TargetLocation", GetActorLocation());
+
+		AIController = Cast<AMonsterAIController>(EnhancedAIController);
 	}
 
 	AttackCollision->OnComponentBeginOverlap.AddDynamic(this, &ABoss::OnAttackCollisionOverlapBegin);
@@ -114,183 +116,11 @@ void ABoss::SetNewTargetLocation()
 void ABoss::PerformNormalMovement(const float& InDeltaTime)
 {
 	Super::PerformNormalMovement(InDeltaTime);
-
-	if (!AquaticMovementComponent)
-	{
-		LOG(TEXT("PerformNormalMovement: AquaticMovementComponent is null"));
-		return;
-	}
-
-	const FVector CurrentLocation = GetActorLocation();
-	
-	// 보간된 타겟 위치가 초기화되지 않았으면 현재 위치로 설정
-	if (InterpolatedTargetLocation.IsZero())
-	{
-		InterpolatedTargetLocation = CurrentLocation + GetActorForwardVector() * WanderRadius;
-		DesiredTargetLocation = InterpolatedTargetLocation;
-	}
-	
-	// 연속적인 이동을 위한 거리 체크
-	const float DistanceToDesiredTarget = FVector::Dist(CurrentLocation, DesiredTargetLocation);
-	const float DistanceToInterpolatedTarget = FVector::Dist(CurrentLocation, InterpolatedTargetLocation);
-	
-	// TargetPlayer가 없을 때만 연속 이동 적용
-	const bool bHasTargetPlayer = EnhancedAIController && 
-		EnhancedAIController->GetBlackboardComponent() &&
-		EnhancedAIController->GetBlackboardComponent()->GetValueAsObject("TargetPlayer") != nullptr;
-	
-	if (!bHasTargetPlayer)
-	{
-		// 목표점에 가까워지면 미리 새 목표 설정 (멈추지 않고 계속 이동)
-		if (DistanceToDesiredTarget < 500 || DesiredTargetLocation.IsZero())
-		{
-			SetNewTargetLocation();
-		}
-		
-		// 목표점이 너무 멀면 재설정
-		if (DistanceToDesiredTarget > WanderRadius * 2.0f)
-		{
-			SetNewTargetLocation();
-		}
-		
-	}
-	else
-	{
-		// TargetPlayer가 있으면 기존 로직 사용
-		if (DesiredTargetLocation.IsZero() || AquaticMovementComponent->HasReachedTarget())
-		{
-			SetNewTargetLocation();
-		}
-	}
-	
-	// DesiredTargetLocation을 InterpolatedTargetLocation으로 부드럽게 보간
-	if (!DesiredTargetLocation.IsZero())
-	{
-		// 순찰 시 더 부드러운 보간 속도 사용
-		const float CurrentInterpSpeed = bHasTargetPlayer ? TargetLocationInterpSpeed : PatrolInterpSpeed;
-		
-		InterpolatedTargetLocation = FMath::VInterpTo(
-			InterpolatedTargetLocation,
-			DesiredTargetLocation,
-			InDeltaTime,
-			CurrentInterpSpeed
-		);
-		
-		// 보간된 위치를 실제 타겟으로 설정
-		TargetLocation = InterpolatedTargetLocation;
-		AquaticMovementComponent->SetTargetLocation(TargetLocation, MinTargetDistance);
-		
-		// 블랙보드의 TargetLocation을 보간된 값으로 업데이트
-		if (EnhancedAIController && EnhancedAIController->GetBlackboardComponent())
-		{
-			EnhancedAIController->GetBlackboardComponent()->SetValueAsVector("TargetLocation", InterpolatedTargetLocation);
-		}
-		
-#if WITH_EDITOR
-		if (bDrawDebugLine)
-		{
-			// 보간된 타겟 위치를 보라색으로 표시
-			DrawDebugSphere(GetWorld(), InterpolatedTargetLocation, 40.0f, 8, FColor::Purple, false, 0.1f);
-			// 최종 목표 위치와의 선
-			DrawDebugLine(GetWorld(), InterpolatedTargetLocation, DesiredTargetLocation, FColor::Purple, false, 0.1f, 0, 2.0f);
-		}
-#endif
-	}
-	
-	// AquaticMovementComponent가 이동과 회전을 처리
-	// TickComponent에서 자동으로 처리되므로 여기서는 추가 작업 불필요
 }
 
 void ABoss::PerformChasing(const float& InDeltaTime)
 {
-	if (!AquaticMovementComponent)
-	{
-		LOG(TEXT("PerformChasing: AquaticMovementComponent is null"));
-		return;
-	}
-	
-	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(EnhancedAIController->GetBlackboardComponent()->GetValueAsObject("TargetPlayer"));
-	if (!IsValid(Player))
-	{
-		LOG(TEXT("PerformChasing: Player is not valid"));
-		return;
-	}
-	
-	const FVector PlayerLocation = Player->GetActorLocation();
-	const FVector CurrentLocation = GetActorLocation();
-	
-	// 보간된 타겟 위치가 초기화되지 않았으면 현재 위치로 설정
-	if (InterpolatedTargetLocation.IsZero())
-	{
-		InterpolatedTargetLocation = CurrentLocation;
-	}
-	
-	// 플레이어까지 직선 경로가 막혀있는지 확인
-	FHitResult HitResult;
-	const bool bPathBlocked = GetWorld()->LineTraceSingleByChannel(
-		HitResult,
-		CurrentLocation,
-		PlayerLocation,
-		ECC_Visibility,
-		Params
-	);
-	
-	// 경로가 막혀있으면 우회 경로 탐색
-	if (bPathBlocked && HitResult.GetActor() != Player)
-	{
-		// 장애물 주변으로 우회
-		const FVector ObstacleLocation = HitResult.ImpactPoint;
-		const FVector ToObstacle = (ObstacleLocation - CurrentLocation).GetSafeNormal();
-		const FVector Right = FVector::CrossProduct(ToObstacle, FVector::UpVector);
-		
-		// 좌우 중 플레이어에 더 가까운 방향 선택
-		const FVector LeftBypass = ObstacleLocation + Right * 300.0f;
-		const FVector RightBypass = ObstacleLocation - Right * 300.0f;
-		
-		const float LeftDistance = FVector::Dist(LeftBypass, PlayerLocation);
-		const float RightDistance = FVector::Dist(RightBypass, PlayerLocation);
-		
-		DesiredTargetLocation = (LeftDistance < RightDistance) ? LeftBypass : RightBypass;
-	}
-	else
-	{
-		// 직접 추적
-		DesiredTargetLocation = PlayerLocation;
-	}
-	
-	// DesiredTargetLocation을 InterpolatedTargetLocation으로 부드럽게 보간
-	// 추적 시에는 더 빠른 보간 속도 사용
-	const float ChasingInterpSpeed = TargetLocationInterpSpeed * 2.0f;
-	InterpolatedTargetLocation = FMath::VInterpTo(
-		InterpolatedTargetLocation,
-		DesiredTargetLocation,
-		InDeltaTime,
-		ChasingInterpSpeed
-	);
-	
-	// 보간된 위치를 실제 타겟으로 설정
-	TargetLocation = InterpolatedTargetLocation;
-	AquaticMovementComponent->SetTargetLocation(TargetLocation, MinTargetDistance);
-	
-	// 블랙보드의 TargetLocation을 보간된 값으로 업데이트 (추적 시에는 플레이어 위치)
-	if (EnhancedAIController && EnhancedAIController->GetBlackboardComponent())
-	{
-		EnhancedAIController->GetBlackboardComponent()->SetValueAsVector("TargetLocation", InterpolatedTargetLocation);
-	}
-	
-	// 추적 속도 설정
-	AquaticMovementComponent->MaxSpeed = StatComponent->MoveSpeed * ChasingMovementSpeedMultiplier;
-	AquaticMovementComponent->TurnSpeed = RotationInterpSpeed * ChasingRotationSpeedMultiplier * 30.0f;
-	
-#if WITH_EDITOR
-	if (bDrawDebugLine)
-	{
-		// 보간된 타겟 위치를 빨간색으로 표시
-		DrawDebugSphere(GetWorld(), InterpolatedTargetLocation, 40.0f, 8, FColor::Red, false, 0.1f);
-		// 플레이어 위치와의 선
-		DrawDebugLine(GetWorld(), InterpolatedTargetLocation, PlayerLocation, FColor::Red, false, 0.1f, 0, 2.0f);
-	}
-#endif
+	Super::PerformChasing(InDeltaTime);
 }
 
 #pragma endregion

@@ -193,18 +193,6 @@ private:
 #pragma region Variable
 public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
-	float ChasingRotationSpeedMultiplier = 1.5f;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
-	float ChasingMovementSpeedMultiplier = 2.2f;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
-	float MovementInterpSpeed = 1.0f;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
-	float RotationInterpSpeed;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
 	EBossPhysicsType BossPhysicsType;
 
 	//UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Effect")
@@ -300,11 +288,6 @@ private:
 	float TurnTimer = 0.0f;
 	float OriginDeceleration;
 	float SphereOverlapRadius = 100.0f;
-	FVector TargetLocation;
-	FVector DesiredTargetLocation;  // 새로운 목표 위치 (보간 전)
-	FVector InterpolatedTargetLocation;  // 보간된 목표 위치
-	float TargetLocationInterpSpeed = 2.0f;  // 타겟 위치 보간 속도
-	float PatrolInterpSpeed = 1.5f;  // 순찰 시 더 부드러운 보간 속도
 	FVector CachedSpawnLocation;
 	FVector TurnDirection;
 
@@ -329,8 +312,6 @@ public:
 	FORCEINLINE void SetCachedTarget(AUnderwaterCharacter* Target) { CachedTargetPlayer = Target; };
 	FORCEINLINE void InitCachedTarget() { CachedTargetPlayer = nullptr; };
 	FORCEINLINE FVector GetCachedSpawnLocation() const { return CachedSpawnLocation; }
-
-	FORCEINLINE void SetTargetLocation(const FVector& InTargetLocation) { TargetLocation = InTargetLocation; }
 
 #pragma endregion
 	

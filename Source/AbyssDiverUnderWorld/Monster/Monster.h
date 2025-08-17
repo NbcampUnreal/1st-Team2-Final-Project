@@ -34,6 +34,8 @@ protected:
 #pragma region Method
 public:
 	virtual void SetNewTargetLocation();
+	virtual void PerformNormalMovement(const float& InDeltaTime);
+	virtual void PerformChasing(const float& InDeltaTime);
 
 	UFUNCTION(NetMulticast, Reliable)
 	void M_PlayMontage(UAnimMontage* AnimMontage, float InPlayRate = 1, FName StartSectionName = NAME_None);
@@ -74,13 +76,23 @@ public:
 
 protected:
 	void ApplyPhysicsSimulation();
-	void RotateToTarget(float DeltaTime);
-	void RotateToMovementForward(float DeltaTime);
 
 #pragma endregion
 
 #pragma region Variable
 public:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
+	float ChasingRotationSpeedMultiplier = 1.5f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
+	float ChasingMovementSpeedMultiplier = 2.2f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
+	float MovementInterpSpeed = 1.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
+	float RotationInterpSpeed = 1.1f;
+
 	UPROPERTY(BlueprintAssignable, Category = "Event")
 	FOnMonsterDeadSignature OnMonsterDead;
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly)
@@ -143,10 +155,11 @@ protected:
 	static const FName TargetActorKey;
 
 private:
-	FVector DesiredTargetLocation;
-	FVector InterpolatedTargetLocation;
-	float TargetLocationInterpSpeed = 2.0f;
-	float PatrolInterpSpeed = 1.5f;
+	FVector TargetLocation;
+	FVector DesiredTargetLocation; // 새로운 목표 위치 (보간 전)
+	FVector InterpolatedTargetLocation; // 보간된 목표 위치
+	float TargetLocationInterpSpeed = 2.0f;  // 타겟 위치 보간 속도
+	float PatrolInterpSpeed = 1.5f; // 순찰 시 더 부드러운 보간 속도
 
 #pragma endregion
 
@@ -160,8 +173,9 @@ public:
 	void SetMaxSwimSpeed(float Speed);
 	int32 GetDetectionCount() const;
 
-
 	// Virtual function to get collision components for attack range determination externally
 	virtual USphereComponent* GetAttackHitComponent() const { return nullptr; }
+
+	FORCEINLINE void SetTargetLocation(const FVector& InTargetLocation) { TargetLocation = InTargetLocation; }
 	
 };
