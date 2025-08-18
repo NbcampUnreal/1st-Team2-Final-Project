@@ -117,7 +117,7 @@ public:
 	void CopyInventoryFrom(UADInventoryComponent* Source);
 	void InventoryMarkArrayDirty();
 	void CheckItemsForBattery();
-	void PlayEquipAnimation(AUnderwaterCharacter* Character, bool bIsHarpoon);
+	void PlayEquipAnimation(AUnderwaterCharacter* Character, EEquipmentType InType);
 	void Equip(FItemData& ItemData, int8 SlotIndex);
 	void UnEquip();
 
@@ -188,6 +188,9 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "DPV")
 	TObjectPtr<UAnimMontage> DPVDrawMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Hammer")
+	TObjectPtr<UAnimMontage> HammerDrawMontage;
 	
 	//UPROPERTY()
 	//TObjectPtr<AUnderwaterCharacter> CachedDiver;
@@ -203,6 +206,7 @@ private:
 	const FName FlareSocketName = TEXT("Flare");
 	const FName ShotgunSocketName = TEXT("Shotgun");
 	const FName MineSocketName = TEXT("MineController");
+	const FName HammerSocketName = TEXT("ToyHammer");
 #pragma endregion
 
 
@@ -230,5 +234,6 @@ public:
 
 private:
 	USoundSubsystem* GetSoundSubsystem();
+	UAnimMontage* GetDrawMontageByType(EEquipmentType InType) const;
 #pragma endregion
 };
