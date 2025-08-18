@@ -117,7 +117,7 @@ public:
 	void CopyInventoryFrom(UADInventoryComponent* Source);
 	void InventoryMarkArrayDirty();
 	void CheckItemsForBattery();
-	void PlayEquipAnimation(AUnderwaterCharacter* Character, bool bIsHarpoon);
+	void PlayEquipAnimation(AUnderwaterCharacter* Character, EEquipmentType InType);
 	void Equip(FItemData& ItemData, int8 SlotIndex);
 	void UnEquip();
 
@@ -234,5 +234,6 @@ public:
 
 private:
 	USoundSubsystem* GetSoundSubsystem();
+	UAnimMontage* GetDrawMontageByType(EEquipmentType InType) const;
 #pragma endregion
 };

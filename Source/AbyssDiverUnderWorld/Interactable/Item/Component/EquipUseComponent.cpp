@@ -1010,10 +1010,23 @@ void UEquipUseComponent::SwingHammer()
 		return;
 	bCanFire = false;
 
+	constexpr ECollisionChannel MonsterChannel = ECC_GameTraceChannel3;
 	AUnderwaterCharacter* Diver = Cast<AUnderwaterCharacter>(OwningCharacter);
 	PlaySwingAnimation(Diver);
 
-	FVector CamLoc;
+	const float CoolDown = 1.f / HammerRateOfSwing;
+	GetWorld()->GetTimerManager().ClearTimer(TimerHandle_HandleRefire);
+	GetWorld()->GetTimerManager().SetTimer(
+		TimerHandle_HandleRefire,
+		[this]()
+		{
+			bCanFire = true;
+		},
+		CoolDown,
+		false
+	);
+
+	/*FVector CamLoc;
 	FRotator CamRot;
 	GetCameraView(CamLoc, CamRot);
 	const FVector Fwd = CamRot.Vector();
@@ -1025,67 +1038,67 @@ void UEquipUseComponent::SwingHammer()
 	FCollisionQueryParams Params(SCENE_QUERY_STAT(SwingHammer), false, GetOwner());
 	FCollisionObjectQueryParams ObjParams;
 	ObjParams.AddObjectTypesToQuery(ECC_Pawn);
+	ObjParams.AddObjectTypesToQuery(MonsterChannel);
 
 	const bool bHit = GetWorld()->SweepMultiByObjectType(
 		Hits, Start, End, FQuat::Identity, ObjParams, FCollisionShape::MakeSphere(HammerRadius), Params
-	); 
+	); */
 
-	// 디버그용
-	if (bHammerDebug)
-	{
-		const FVector Dir = (End - Start);
-		const float   Dist = Dir.Size();
-		const FVector Mid = (Start + End) * 0.5f;
-		const FQuat   Rot = FRotationMatrix::MakeFromZ(Dir.GetSafeNormal()).ToQuat();
 
-		// 스윕된 구 == 캡슐 (반경=HammerRadius, halfHeight=Dist/2)
-		DrawDebugCapsule(GetWorld(), Mid, Dist * 0.5f, HammerRadius, Rot,
-			bHit ? FColor::Green : FColor::Red, false, 1.5f, 0, 2.f);
+	//// 디버그용
+	//if (bHammerDebug)
+	//{
+	//	const FVector Dir = (End - Start);
+	//	const float   Dist = Dir.Size();
+	//	const FVector Mid = (Start + End) * 0.5f;
+	//	const FQuat   Rot = FRotationMatrix::MakeFromZ(Dir.GetSafeNormal()).ToQuat();
 
-		// 시작/끝 구체도 함께
-		DrawDebugSphere(GetWorld(), Start, HammerRadius, 12, FColor::Blue, false, 1.5f, 0, 1.5f);
-		DrawDebugSphere(GetWorld(), End, HammerRadius, 12, FColor::Blue, false, 1.5f, 0, 1.5f);
+	//	// 스윕된 구 == 캡슐 (반경=HammerRadius, halfHeight=Dist/2)
+	//	DrawDebugCapsule(GetWorld(), Mid, Dist * 0.5f, HammerRadius, Rot,
+	//		bHit ? FColor::Green : FColor::Red, false, 1.5f, 0, 2.f);
 
-		// 각 타격 지점
-		for (const FHitResult& Hit : Hits)
-		{
-			DrawDebugPoint(GetWorld(),
-				Hit.ImpactPoint.IsNearlyZero() ? Hit.Location : Hit.ImpactPoint,
-				14.f, FColor::Yellow, false, 1.5f, 0);
-		}
-	}
+	//	// 시작/끝 구체도 함께
+	//	DrawDebugSphere(GetWorld(), Start, HammerRadius, 12, FColor::Blue, false, 1.5f, 0, 1.5f);
+	//	DrawDebugSphere(GetWorld(), End, HammerRadius, 12, FColor::Blue, false, 1.5f, 0, 1.5f);
 
-	if (bHit)
-	{
-		for (const FHitResult& Hit : Hits)
-		{
-			AActor* Target = Hit.GetActor();
-			if (!Target || Target == OwningCharacter.Get())
-				continue;
+	//	// 각 타격 지점
+	//	for (const FHitResult& Hit : Hits)
+	//	{
+	//		DrawDebugPoint(GetWorld(),
+	//			Hit.ImpactPoint.IsNearlyZero() ? Hit.Location : Hit.ImpactPoint,
+	//			14.f, FColor::Yellow, false, 1.5f, 0);
+	//	}
+	//}
 
-			// 보스 몬스터에게는 통하지 않도록 설정하기 위한 보스 몬스터 Tag 필요
+	//if (bHit)
+	//{
+	//	TSet<AActor*> UniqueActors;
+	//	UniqueActors.Reserve(Hits.Num());
 
-			// 한방 처리: 매우 큰 데미지
-			UGameplayStatics::ApplyDamage(
-				Target,
-				999999.f,
-				OwningCharacter->GetController(),
-				GetOwner(),
-				UDamageType::StaticClass()
-			);
-		}
+	//	for (const FHitResult& Hit : Hits)
+	//	{
+	//		AActor* Target = Hit.GetActor();
+	//		if (!Target || Target == OwningCharacter.Get())
+	//			continue;
 
-		const float CoolDown = 1.f / HammerRateOfSwing;
-		GetWorld()->GetTimerManager().SetTimer(
-			TimerHandle_HandleRefire,
-			[this]()
-			{
-				bCanFire = true;
-			},
-			CoolDown,
-			false
-		);
-	}
+	//		// 이미 처리한 액터면 건너뜀
+	//		if (UniqueActors.Contains(Target))
+	//			continue;
+
+	//		// 보스 몬스터일 경우 데미지가 적용되지 않도록 추가해야함
+
+	//		UniqueActors.Add(Target);
+
+	//		// 데미지 적용
+	//		UGameplayStatics::ApplyDamage(
+	//			Target,
+	//			2000.f,
+	//			OwningCharacter->GetController(),
+	//			GetOwner(),
+	//			UDamageType::StaticClass()
+	//		);
+	//	}
+	//}
 }
 
 void UEquipUseComponent::FinishReload(int32 InMagazineSize, AUnderwaterCharacter* Diver)
