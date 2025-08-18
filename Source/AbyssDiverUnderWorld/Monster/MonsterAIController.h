@@ -29,7 +29,6 @@ protected:
 #pragma region Method
 protected:
 	void LoadSightDataFromTable();
-	void InitializePatrolPoint();
 	
 	UFUNCTION()
 	virtual void OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus); // Perception Callback Method
@@ -65,14 +64,6 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "AI|SightData")
 	FName MonsterID;
-
-	UPROPERTY(EditAnywhere, Category = "AI|MovementFallback")
-	float FallbackMoveDistance;
-
-	UPROPERTY(EditAnywhere, Category = "AI|MovementFallback")
-	int32 MaxMoveFailRetries = 3;
-
-	int32 MoveFailCount = 0;
 
 private:
 	uint8 bIsLosingTarget : 1;

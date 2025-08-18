@@ -31,7 +31,6 @@ AMonsterAIController::AMonsterAIController()
 	AIPerceptionComponent->ConfigureSense(*SightConfig);
 	AIPerceptionComponent->SetDominantSense(SightConfig->GetSenseImplementation());
 	bIsLosingTarget = false;
-	FallbackMoveDistance = 300.0f;
 }
 
 void AMonsterAIController::BeginPlay()
@@ -107,9 +106,6 @@ void AMonsterAIController::OnPossess(APawn* InPawn)
 	}
 
 	Monster = Cast<AMonster>(GetPawn());
-
-	FTimerHandle TimerHandle;
-	GetWorldTimerManager().SetTimer(TimerHandle, this, &AMonsterAIController::InitializePatrolPoint, 0.5f, false);
 }
 
 void AMonsterAIController::LoadSightDataFromTable()
@@ -137,15 +133,6 @@ void AMonsterAIController::LoadSightDataFromTable()
 		LOG(TEXT("No matching row found for MonsterID"));
 	}
 }
-
-void AMonsterAIController::InitializePatrolPoint()
-{
-	if (BlackboardComponent)
-	{
-		BlackboardComponent->SetValueAsInt("PatrolIndex", 0);
-	}
-}
-
 
 void AMonsterAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
