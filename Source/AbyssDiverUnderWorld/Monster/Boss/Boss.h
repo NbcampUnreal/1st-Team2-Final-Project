@@ -212,12 +212,6 @@ public:
 	
 	//UPROPERTY(VisibleAnywhere)
 	//TObjectPtr<UAnimInstance> AnimInstance;
-	
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Target")
-	TObjectPtr<AUnderwaterCharacter> TargetPlayer;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Target")
-	TObjectPtr<AUnderwaterCharacter> CachedTargetPlayer;
 
 	//UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Animation")
 	//TArray<TObjectPtr<UAnimMontage>> AttackAnimations;
@@ -262,9 +256,6 @@ protected:
 	UPROPERTY(Replicated, BlueprintReadWrite)
 	EBossState BossState;
 
-	UPROPERTY(BlueprintReadWrite)
-	float CurrentMoveSpeed = 0.0f;
-
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	uint8 bEnableDownTrace : 1 = true;
 
@@ -296,10 +287,6 @@ private:
 #pragma region Getter, Setter
 public:
 	/** Target Getter, Setter */
-	FORCEINLINE AUnderwaterCharacter* GetTarget() const { return TargetPlayer; };
-	FORCEINLINE void SetTarget(AUnderwaterCharacter* Target) { TargetPlayer = Target; };
-	FORCEINLINE void InitTarget() { TargetPlayer = nullptr; };
-	
 	FORCEINLINE bool GetIsAttackCollisionOverlappedPlayer() const { return bIsAttackCollisionOverlappedPlayer; };
 
 	FORCEINLINE UCameraControllerComponent* GetCameraControllerComponent() const { return CameraControllerComponent; };
@@ -308,9 +295,6 @@ public:
 	FORCEINLINE void SetIsBiteAttackFalse() { bIsBiteAttackSuccess = false; }
 	FORCEINLINE UAnimInstance* GetAnimInstance() const { return AnimInstance; }
 	FORCEINLINE FVector GetDamagedLocation() const { return DamagedLocation; }
-	FORCEINLINE AUnderwaterCharacter* GetCachedTarget() const { return CachedTargetPlayer; };
-	FORCEINLINE void SetCachedTarget(AUnderwaterCharacter* Target) { CachedTargetPlayer = Target; };
-	FORCEINLINE void InitCachedTarget() { CachedTargetPlayer = nullptr; };
 	FORCEINLINE FVector GetCachedSpawnLocation() const { return CachedSpawnLocation; }
 
 #pragma endregion

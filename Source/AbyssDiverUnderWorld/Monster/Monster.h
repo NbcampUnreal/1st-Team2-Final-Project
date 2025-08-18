@@ -16,6 +16,7 @@ class ASplinePathActor;
 class USphereComponent;
 class UNiagaraSystem;
 class UAquaticMovementComponent;
+class AUnderwaterCharacter;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnMonsterDeadSignature, AActor*, Killer, AMonster*, DeadMonster);
 
@@ -104,6 +105,12 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Movement")
 	TObjectPtr<UAquaticMovementComponent> AquaticMovementComponent;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Target")
+	TObjectPtr<AUnderwaterCharacter> TargetPlayer;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Target")
+	TObjectPtr<AUnderwaterCharacter> CachedTargetPlayer;
+
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI|Blackboard")
 	TObjectPtr<UBlackboardComponent> BlackboardComponent;
@@ -144,6 +151,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	float MinTargetDistance = 100.0f;
 
+	UPROPERTY(BlueprintReadWrite)
+	float CurrentMoveSpeed = 0.0f;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	uint8 bDrawDebugLine : 1 = false;
 
@@ -160,6 +170,7 @@ private:
 	FVector InterpolatedTargetLocation; // 보간된 목표 위치
 	float TargetLocationInterpSpeed = 2.0f;  // 타겟 위치 보간 속도
 	float PatrolInterpSpeed = 1.5f; // 순찰 시 더 부드러운 보간 속도
+	uint8 bIsAttackCollisionOverlappedPlayer : 1;
 
 #pragma endregion
 
@@ -176,6 +187,14 @@ public:
 	// Virtual function to get collision components for attack range determination externally
 	virtual USphereComponent* GetAttackHitComponent() const { return nullptr; }
 
+	// @ TODO : PerformAttack Task빌드를 위해 임시로 가져온 Getter. Monster에는 AttackCollision이 없음. Boss에만 있다.
+	FORCEINLINE bool GetIsAttackCollisionOverlappedPlayer() const { return bIsAttackCollisionOverlappedPlayer; };
+
 	FORCEINLINE void SetTargetLocation(const FVector& InTargetLocation) { TargetLocation = InTargetLocation; }
-	
+	FORCEINLINE void InitTarget() { TargetPlayer = nullptr; };
+	FORCEINLINE AUnderwaterCharacter* GetCachedTarget() const { return CachedTargetPlayer; };
+	FORCEINLINE void SetCachedTarget(AUnderwaterCharacter* Target) { CachedTargetPlayer = Target; };
+	FORCEINLINE void InitCachedTarget() { CachedTargetPlayer = nullptr; };
+	FORCEINLINE AUnderwaterCharacter* GetTarget() const { return TargetPlayer; };
+	FORCEINLINE void SetTarget(AUnderwaterCharacter* Target) { TargetPlayer = Target; };
 };

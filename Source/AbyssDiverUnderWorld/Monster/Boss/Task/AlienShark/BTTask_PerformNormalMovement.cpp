@@ -1,7 +1,7 @@
 #include "Monster/Boss/Task/AlienShark/BTTask_PerformNormalMovement.h"
 
 #include "AIController.h"
-#include "Monster/Boss/Boss.h"
+#include "Monster/Monster.h"
 #include "Monster/Boss/EnhancedBossAIController.h"
 
 UBTTask_PerformNormalMovement::UBTTask_PerformNormalMovement()
@@ -16,10 +16,10 @@ EBTNodeResult::Type UBTTask_PerformNormalMovement::ExecuteTask(UBehaviorTreeComp
 	FBTPerformNormalMovementMemory* TaskMemory = (FBTPerformNormalMovementMemory*)NodeMemory;
 	if (!TaskMemory) return EBTNodeResult::Failed;
 
-	TaskMemory->AIController = Cast<AEnhancedBossAIController>(OwnerComp.GetAIOwner());
-	TaskMemory->Boss = Cast<ABoss>(OwnerComp.GetAIOwner()->GetCharacter());
+	TaskMemory->AIController = Cast<AMonsterAIController>(OwnerComp.GetAIOwner());
+	TaskMemory->Monster = Cast<AMonster>(OwnerComp.GetAIOwner()->GetCharacter());
 
-	if (!TaskMemory->AIController.IsValid() || !TaskMemory->Boss.IsValid()) return EBTNodeResult::Failed;
+	if (!TaskMemory->AIController.IsValid() || !TaskMemory->Monster.IsValid()) return EBTNodeResult::Failed;
 	
 	return EBTNodeResult::InProgress;
 }
@@ -31,5 +31,5 @@ void UBTTask_PerformNormalMovement::TickTask(UBehaviorTreeComponent& OwnerComp, 
 	FBTPerformNormalMovementMemory* TaskMemory = (FBTPerformNormalMovementMemory*)NodeMemory;
 	if (!TaskMemory) return;
 
-	TaskMemory->Boss->PerformNormalMovement(DeltaSeconds);
+	TaskMemory->Monster->PerformNormalMovement(DeltaSeconds);
 }
