@@ -24,6 +24,7 @@ AMonster::AMonster()
 	PrimaryActorTick.bCanEverTick = true;
 
 	// Initialize
+	bIsAttackCollisionOverlappedPlayer = false;
 	BlackboardComponent = nullptr;
 	AIController = nullptr;
 	AnimInstance = nullptr;
@@ -44,6 +45,13 @@ AMonster::AMonster()
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 	// Set Collision Channel == Monster
 	GetCapsuleComponent()->SetCollisionObjectType(ECC_GameTraceChannel3);
+
+	AttackCollision = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Attack Collision"));
+	AttackCollision->SetupAttachment(GetMesh(), TEXT("AttackSocket"));
+	AttackCollision->SetCapsuleHalfHeight(80.0f);
+	AttackCollision->SetCapsuleRadius(80.0f);
+	AttackCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	AttackCollision->ComponentTags.Add(TEXT("Attack Collision"));
 
 	//RadarReturnComponent->FactionTags.Init(TEXT("Hostile"), 1);
 
@@ -71,6 +79,9 @@ void AMonster::BeginPlay()
 	AnimInstance = GetMesh()->GetAnimInstance();
 	AIController = Cast<AMonsterAIController>(GetController());
 
+	AttackCollision->OnComponentBeginOverlap.AddDynamic(this, &AMonster::OnAttackCollisionOverlapBegin);
+	AttackCollision->OnComponentEndOverlap.AddDynamic(this, &AMonster::OnAttackCollisionOverlapEnd);
+
 	if (IsValid(AIController))
 	{
 		BlackboardComponent = AIController->GetBlackboardComponent();
@@ -97,6 +108,26 @@ void AMonster::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLi
 
 	DOREPLIFETIME(AMonster, MonsterState);
 	DOREPLIFETIME(AMonster, bIsChasing);
+}
+
+void AMonster::OnAttackCollisionOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	// 공격 대상이 플레이어가 아닌 경우 얼리 리턴
+	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(OtherActor);
+	if (!IsValid(Player)) return;
+
+	bIsAttackCollisionOverlappedPlayer = true;
+}
+
+void AMonster::OnAttackCollisionOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	// 공격 대상이 플레이어가 아닌 경우 얼리 리턴
+	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(OtherActor);
+	if (!IsValid(Player)) return;
+
+	bIsAttackCollisionOverlappedPlayer = false;
 }
 
 void AMonster::SetNewTargetLocation()

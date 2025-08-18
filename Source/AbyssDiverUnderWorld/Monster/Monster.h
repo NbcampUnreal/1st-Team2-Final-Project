@@ -75,6 +75,15 @@ public:
 	UFUNCTION()
 	void MonsterRaderOff();
 
+	UFUNCTION()
+	void OnAttackCollisionOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
+		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
+		bool bFromSweep, const FHitResult& SweepResult);
+
+	UFUNCTION()
+	void OnAttackCollisionOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
+		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
 protected:
 	void ApplyPhysicsSimulation();
 
@@ -102,46 +111,64 @@ public:
 	TObjectPtr<AActor> TargetActor;
 
 	/** 새로운 물리 기반 수중 이동 컴포넌트 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Movement")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Monster|Movement")
 	TObjectPtr<UAquaticMovementComponent> AquaticMovementComponent;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Target")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Monster|Target")
 	TObjectPtr<AUnderwaterCharacter> TargetPlayer;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Target")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Monster|Target")
 	TObjectPtr<AUnderwaterCharacter> CachedTargetPlayer;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Monster|Collision")
+	TObjectPtr<UCapsuleComponent> AttackCollision;
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI|Blackboard")
 	TObjectPtr<UBlackboardComponent> BlackboardComponent;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI|AIController")
 	TObjectPtr<AMonsterAIController> AIController;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI|SoundComponent")
 	TObjectPtr<UMonsterSoundComponent> MonsterSoundComponent;
+
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UAnimInstance> AnimInstance;
+
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UAnimMontage> CurrentAttackAnim;
+
 	UPROPERTY(Replicated, BlueprintReadWrite)
 	EMonsterState MonsterState;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AI|AttackAnimation")
 	TArray<TObjectPtr<UAnimMontage>> AttackAnimations;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AI|DetectedAnimation")
 	TObjectPtr<UAnimMontage> DetectedAnimations;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AI|HitReactAnimation")
 	TObjectPtr<UAnimMontage> HitReactAnimations;
+
 	UPROPERTY(EditDefaultsOnly, Category = "AI|FX")
 	TObjectPtr<UNiagaraSystem> BloodEffect;
+
 	UPROPERTY(EditAnywhere, Category = "AI")
 	float ChaseTriggerTime;
+
 	UPROPERTY(EditAnywhere, Category = "AI")
 	float ChaseSpeed;
+
 	UPROPERTY(EditAnywhere, Category = "AI")
 	float PatrolSpeed;
+
 	UPROPERTY(EditAnywhere, Category = "AI")
 	float InvestigateSpeed;
+
 	UPROPERTY(EditAnywhere, Category = "AI")
 	float FleeSpeed;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TMap<AActor*, int32> DetectionRefCounts;
 
@@ -158,6 +185,8 @@ protected:
 	uint8 bDrawDebugLine : 1 = false;
 
 	FCollisionQueryParams Params;
+	uint8 bIsTurning : 1 = false;
+	uint8 bIsAttacking : 1 = false;
 
 	static const FName MonsterStateKey;
 	static const FName InvestigateLocationKey;

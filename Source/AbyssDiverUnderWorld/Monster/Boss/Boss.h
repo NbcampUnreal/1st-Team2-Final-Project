@@ -171,14 +171,6 @@ public:
 							UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, 
 							bool bFromSweep, const FHitResult& SweepResult);
 							
-	UFUNCTION()
-	void OnAttackCollisionOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, 
-							UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, 
-							bool bFromSweep, const FHitResult& SweepResult);
-
-	UFUNCTION()
-	void OnAttackCollisionOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
-							UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 	// 몬스터 죽었을 때 레이더에서 Off 되도록
 	UFUNCTION()
@@ -215,9 +207,6 @@ public:
 
 	//UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Animation")
 	//TArray<TObjectPtr<UAnimMontage>> AttackAnimations;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Collision")
-	TObjectPtr<UCapsuleComponent> AttackCollision;
 
 	UPROPERTY()
 	float ChaseAccumulatedTime = 0.0f;
@@ -269,8 +258,6 @@ protected:
 	TObjectPtr<AEnhancedBossAIController> EnhancedAIController;
 
 	FCollisionQueryParams Params;
-	uint8 bIsTurning : 1 = false;
-	uint8 bIsAttacking : 1 = false;
 
 private:
 	static const FName BossStateKey;

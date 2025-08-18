@@ -30,8 +30,7 @@ const FName ABoss::BossStateKey = "BossState";
 ABoss::ABoss()
 {
 	PrimaryActorTick.bCanEverTick = false;
-	
-	bIsAttackCollisionOverlappedPlayer = false;
+
 	TargetPlayer = nullptr;
 	LaunchPower = 1000.0f;
 	MinPatrolDistance = 500.0f;
@@ -45,13 +44,6 @@ ABoss::ABoss()
 	bIsAttackInfinite = true;
 	
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
-
-	AttackCollision = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Attack Collision"));
-	AttackCollision->SetupAttachment(GetMesh(), TEXT("AttackSocket"));
-	AttackCollision->SetCapsuleHalfHeight(80.0f);
-	AttackCollision->SetCapsuleRadius(80.0f);
-	AttackCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-	AttackCollision->ComponentTags.Add(TEXT("Attack Collision"));
 
 	CameraControllerComponent = CreateDefaultSubobject<UCameraControllerComponent>("Camera Controller Component");
 
@@ -83,9 +75,6 @@ void ABoss::BeginPlay()
 	{
 		EnhancedAIController->GetBlackboardComponent()->SetValueAsVector("TargetLocation", GetActorLocation());
 	}
-
-	AttackCollision->OnComponentBeginOverlap.AddDynamic(this, &ABoss::OnAttackCollisionOverlapBegin);
-	AttackCollision->OnComponentEndOverlap.AddDynamic(this, &ABoss::OnAttackCollisionOverlapEnd);
 
 	GetCharacterMovement()->MaxSwimSpeed = StatComponent->GetMoveSpeed();
 	OriginDeceleration = GetCharacterMovement()->BrakingDecelerationSwimming;
@@ -396,26 +385,6 @@ void ABoss::OnBiteCollisionOverlapBegin(UPrimitiveComponent* OverlappedComp, AAc
 	// 타겟 설정
 	SetTarget(Player);
 	Player->StartCaptureState();
-}
-
-void ABoss::OnAttackCollisionOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
-                                          UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
-{
-	// 공격 대상이 플레이어가 아닌 경우 얼리 리턴
-	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(OtherActor);
-	if (!IsValid(Player)) return;
-	
-	bIsAttackCollisionOverlappedPlayer = true;
-}
-
-void ABoss::OnAttackCollisionOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
-							UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
-{
-	// 공격 대상이 플레이어가 아닌 경우 얼리 리턴
-	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(OtherActor);
-	if (!IsValid(Player)) return;
-	
-	bIsAttackCollisionOverlappedPlayer = false;
 }
 
 void ABoss::DeathToRaderOff()
