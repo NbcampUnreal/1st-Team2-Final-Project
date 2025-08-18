@@ -2,48 +2,53 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "TutorialStepData.h"
 #include "TutorialEnums.h"
-#include "Framework/ADTutorialGameMode.h"
 #include "Components/ProgressBar.h"
 #include "TutorialManager.generated.h"
 
 class UUserWidget;
 class UTutorialSubtitle;
 class UTutorialHintPanel;
+class UTutorialHighlighting;
+class AADTutorialGameMode;
+struct FTutorialStepData;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API ATutorialManager : public AActor
 {
 	GENERATED_BODY()
 
-public:
+	public:
 	ATutorialManager();
 
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 
-#pragma region Method
 public:
-	UFUNCTION()
-	void OnTutorialPhaseChanged(ETutorialPhase NewPhase);
-	UFUNCTION()
-	void OnTypingFinished(const FTutorialStepData& StepData);
-
 	void RequestAdvancePhase();
+
 	void StartGaugeObjective(EGaugeInteractionType InInteractionType, float InTargetValue, float InTapValue, float InHoldValuePerSecond);
 	void NotifyInteractionStart();
 	void NotifyInteractionEnd();
 	void AddGaugeProgress(float Amount);
 
-protected:
-	void ContributeToGaugeByTap();
-#pragma endregion
+	void OnInventoryInputPressed();
+	void OnInventoryInputReleased();
 
-#pragma region Variable
+	bool IsGaugeObjectiveActive() const { return bIsGaugeObjectiveActive; }
+
 protected:
-	UPROPERTY(EditAnywhere, Category = "Tutorial")
+	UFUNCTION()
+	void OnTutorialPhaseChanged(ETutorialPhase NewPhase);
+
+	UFUNCTION()
+	void OnTypingFinished(const FTutorialStepData& StepData);
+
+	void ContributeToGaugeByTap();
+
+private:
+	UPROPERTY(EditAnywhere, Category = "Tutorial|Data")
 	TObjectPtr<UDataTable> TutorialDataTable;
 
 	UPROPERTY(EditAnywhere, Category = "Tutorial|UI")
@@ -52,17 +57,33 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Tutorial|UI")
 	TSubclassOf<UTutorialHintPanel> TutorialHintPanelClass;
 
-	UPROPERTY(EditAnywhere, Category = "Tutorial|UI|Highlights")
-	TMap<ETutorialHighlightTarget, TSubclassOf<UUserWidget>> HighlightWidgetClasses;
+	UPROPERTY(EditAnywhere, Category = "Tutorial|UI")
+	TSubclassOf<UTutorialHighlighting> HighlightingWidgetClass;
 
 	UPROPERTY(EditAnywhere, Category = "Tutorial|UI")
 	TSubclassOf<UUserWidget> GaugeWidgetClass;
 
-	UPROPERTY(EditAnywhere, Category = "Tutorial|UI")
-	float GaugeInterpolationSpeed = 5.f;
+	UPROPERTY()
+	TObjectPtr<UTutorialSubtitle> SubtitleWidget;
 
-	int32 CurrentStepIndex = 0;
-	TArray<FName> StepRowNames;
+	UPROPERTY()
+	TObjectPtr<UTutorialHintPanel> TutorialHintPanel;
+
+	UPROPERTY()
+	TObjectPtr<UTutorialHighlighting> HighlightingWidget;
+
+	UPROPERTY()
+	TObjectPtr<UUserWidget> GaugeWidget;
+
+	UPROPERTY()
+	TObjectPtr<UProgressBar> GaugeProgressBar;
+
+	UPROPERTY()
+	TObjectPtr<AADTutorialGameMode> CachedGameMode;
+
+	UPROPERTY(EditAnywhere, Category = "Tutorial|UI")
+	float GaugeInterpolationSpeed = 15.f;
+
 	EGaugeInteractionType CurrentInteractionType;
 	uint8 bIsPlayerHoldingKey : 1;
 	float CurrentGaugeValue = 0.f;
@@ -72,29 +93,6 @@ protected:
 	float GaugeHoldValuePerSecond;
 	uint8 bIsGaugeObjectiveActive : 1;
 
-	UPROPERTY()
-	TObjectPtr<UTutorialSubtitle> SubtitleWidget;
-
-	UPROPERTY()
-	TObjectPtr<UTutorialHintPanel> TutorialHintPanel;
-
-	UPROPERTY()
-	TObjectPtr<UUserWidget> CurrentHighlightWidget;
-
-	UPROPERTY()
-	TObjectPtr<UUserWidget> GaugeWidget;
-
-	UPROPERTY()
-	TObjectPtr<UProgressBar> GaugeProgressBar;
-
-	FTimerHandle StepTimerHandle;
-
-	UPROPERTY()
-	TObjectPtr<AADTutorialGameMode> CachedGameMode;
-#pragma endregion
-
-#pragma region Getter, Setter
-public:
-	bool IsGaugeObjectiveActive() const { return bIsGaugeObjectiveActive; }
-#pragma endregion
+	int32 CurrentStepIndex;
+	TArray<FName> StepRowNames;
 };
