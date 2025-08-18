@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "AIController.h"
 #include "Navigation/PathFollowingComponent.h"
+#include "Monster/MonsterAIController.h"
 #include "BossAIController.generated.h"
 
 class UAISenseConfig_Hearing;
@@ -16,7 +17,7 @@ class UPawnSensingComponent;
 class UBehaviorTreeComponent;
 
 UCLASS()
-class ABYSSDIVERUNDERWORLD_API ABossAIController : public AAIController
+class ABYSSDIVERUNDERWORLD_API ABossAIController : public AMonsterAIController
 {
 	GENERATED_BODY()
 
@@ -47,6 +48,7 @@ public:
 	float ChasingVisionAngle;
 
 protected:
+	/*
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI|Blackboard")
 	TObjectPtr<UBlackboardComponent> BlackboardComponent;
 
@@ -58,6 +60,7 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Perception")
 	TObjectPtr<UAISenseConfig_Sight> SightConfig;
+	*/
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Perception")
 	TObjectPtr<UAISenseConfig_Damage> DamageConfig;

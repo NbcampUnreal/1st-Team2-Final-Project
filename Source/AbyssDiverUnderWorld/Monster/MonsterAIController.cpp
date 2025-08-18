@@ -31,7 +31,6 @@ AMonsterAIController::AMonsterAIController()
 	AIPerceptionComponent->ConfigureSense(*SightConfig);
 	AIPerceptionComponent->SetDominantSense(SightConfig->GetSenseImplementation());
 	bIsLosingTarget = false;
-	FallbackMoveDistance = 300.0f;
 }
 
 void AMonsterAIController::BeginPlay()
@@ -107,9 +106,6 @@ void AMonsterAIController::OnPossess(APawn* InPawn)
 	}
 
 	Monster = Cast<AMonster>(GetPawn());
-
-	FTimerHandle TimerHandle;
-	GetWorldTimerManager().SetTimer(TimerHandle, this, &AMonsterAIController::InitializePatrolPoint, 0.5f, false);
 }
 
 void AMonsterAIController::LoadSightDataFromTable()
@@ -137,15 +133,6 @@ void AMonsterAIController::LoadSightDataFromTable()
 		LOG(TEXT("No matching row found for MonsterID"));
 	}
 }
-
-void AMonsterAIController::InitializePatrolPoint()
-{
-	if (BlackboardComponent)
-	{
-		BlackboardComponent->SetValueAsInt("PatrolIndex", 0);
-	}
-}
-
 
 void AMonsterAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
@@ -191,77 +178,3 @@ void AMonsterAIController::SetbIsLosingTarget(bool IsLosingTargetValue)
 	}
 }
 
-void AMonsterAIController::HandleMoveFailure()
-{
-	FVector AvoidDirection = ComputeAvoidanceDirection();
-	if (!AvoidDirection.IsNearlyZero())
-	{
-		FVector FallbackLocation = Monster->GetActorLocation() + AvoidDirection * 300.f;
-		if (UNavigationSystemV1* NavSys = UNavigationSystemV1::GetCurrent(GetWorld()))
-		{
-			FNavLocation ProjectedLocation;
-			if (NavSys->ProjectPointToNavigation(FallbackLocation, ProjectedLocation))
-			{
-				MoveToLocation(ProjectedLocation.Location, 100.f);
-			}
-			else
-			{
-				UE_LOG(LogTemp, Warning, TEXT("Fallback location not on NavMesh."));
-			}
-		}
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("No valid avoidance direction found!"));
-	}
-}
-
-FVector AMonsterAIController::ComputeAvoidanceDirection()
-{
-	const FVector Start = Monster->GetActorLocation();
-	const FVector Forward = Monster->GetActorForwardVector();
-	FVector AccumulatedDir = FVector::ZeroVector;
-
-	for (int32 Angle = -60; Angle <= 60; Angle += 30)
-	{
-		FVector Dir = Forward.RotateAngleAxis(Angle, FVector::UpVector);
-		FVector End = Start + Dir * 300.f;
-		FHitResult Hit;
-		if (!GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility))
-		{
-			AccumulatedDir += Dir;
-		}
-	}
-
-	if (AccumulatedDir.IsNearlyZero())
-	{
-		return -Forward; // Fallback: go backward
-	}
-
-	AccumulatedDir.Normalize();
-	return AccumulatedDir;
-}
-
-void AMonsterAIController::OnMoveCompleted(FAIRequestID RequestID, const FPathFollowingResult& Result)
-{
-	Super::OnMoveCompleted(RequestID, Result);
-
-	if (Result.Code != EPathFollowingResult::Success)
-	{
-		MoveFailCount++;
-		if (MoveFailCount <= MaxMoveFailRetries)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Move failed. Retry %d/%d"), MoveFailCount, MaxMoveFailRetries);
-			HandleMoveFailure();
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("Move failed too many times. Aborting fallback."));
-			MoveFailCount = 0;
-		}
-	}
-	else
-	{
-		MoveFailCount = 0;
-	}
-}

@@ -27,8 +27,8 @@ void AGobleFish::FireProjectile()
 	if (!LockOnActor) return;
 
 	FVector FireLocation = GetMesh()->GetSocketLocation("ProjectileSocket");
-	FVector TargetLocation = LockOnActor->GetActorLocation();
-	FVector ProjectileDirection = (TargetLocation - FireLocation).GetSafeNormal();
+	FVector TargetActorLocation = LockOnActor->GetActorLocation();
+	FVector ProjectileDirection = (TargetActorLocation - FireLocation).GetSafeNormal();
 	FRotator FireRotation = ProjectileDirection.Rotation();
 
 	FActorSpawnParameters SpawnParams;

@@ -7,10 +7,10 @@
 struct FBTPerformNormalMovementMemory
 {
 	/** 빙의한 AIController에 대한 참조 */
-	TWeakObjectPtr<class AEnhancedBossAIController> AIController;
+	TWeakObjectPtr<class AMonsterAIController> AIController;
 
 	/** AIController의 주체에 대한 참조 */
-	TWeakObjectPtr<class ABoss> Boss;
+	TWeakObjectPtr<class AMonster> Monster;
 };
 
 UCLASS()

@@ -6,8 +6,8 @@
 
 struct FBTPerformChasingTaskMemory
 {
-	TWeakObjectPtr<class AEnhancedBossAIController> AIController;
-	TWeakObjectPtr<class ABoss> Boss;
+	TWeakObjectPtr<class AMonsterAIController> AIController;
+	TWeakObjectPtr<class AMonster> Monster;
 	float AccumulatedTime = 0.0f;
 	float ChasingTime = 0.0f;
 };

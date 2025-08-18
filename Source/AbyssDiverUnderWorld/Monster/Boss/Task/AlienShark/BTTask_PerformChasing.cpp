@@ -24,10 +24,10 @@ EBTNodeResult::Type UBTTask_PerformChasing::ExecuteTask(UBehaviorTreeComponent& 
 	FBTPerformChasingTaskMemory* TaskMemory = (FBTPerformChasingTaskMemory*)NodeMemory;
 	if (!TaskMemory) return EBTNodeResult::Failed;
 
-	TaskMemory->AIController = Cast<AEnhancedBossAIController>(OwnerComp.GetAIOwner());
-	TaskMemory->Boss = Cast<ABoss>(OwnerComp.GetAIOwner()->GetCharacter());
+	TaskMemory->AIController = Cast<AMonsterAIController>(OwnerComp.GetAIOwner());
+	TaskMemory->Monster = Cast<AMonster>(OwnerComp.GetAIOwner()->GetCharacter());
 
-	if (!TaskMemory->AIController.IsValid() || !TaskMemory->Boss.IsValid()) return EBTNodeResult::Failed;
+	if (!TaskMemory->AIController.IsValid() || !TaskMemory->Monster.IsValid()) return EBTNodeResult::Failed;
 
 	TaskMemory->ChasingTime = FMath::RandRange(MinChasingTime, MaxChasingTime);
 
@@ -54,7 +54,7 @@ void UBTTask_PerformChasing::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* 
 	
 
 	// 플레이어가 NavMesh 밖으로 벗어난 경우 ...
-	//if (!TaskMemory->Boss->IsLocationOnNavMesh(Player->GetActorLocation()))
+	//if (!TaskMemory->Monster->IsLocationOnNavMesh(Player->GetActorLocation()))
 	//{
 	//	LOG(TEXT("PerformChasing: Player is not on NavMesh"));
 	//	TaskMemory->AIController->GetBlackboardComponent()->SetValueAsBool(bIsHidingKey, true);
@@ -74,7 +74,7 @@ void UBTTask_PerformChasing::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* 
 	}
 
 	// 공격 영역 내에 들어온 경우 ...
-	if (!bHasAttacked && TaskMemory->Boss->GetIsAttackCollisionOverlappedPlayer())
+	if (!bHasAttacked && TaskMemory->Monster->GetIsAttackCollisionOverlappedPlayer())
 	{
 		LOG(TEXT("PerformChasing: Player Is Overlapped With Attack Collision"));
 		bHasAttacked = true;
@@ -112,7 +112,7 @@ void UBTTask_PerformChasing::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* 
 		}
 	}
 	
-	TaskMemory->Boss->PerformChasing(DeltaSeconds);
+	TaskMemory->Monster->PerformChasing(DeltaSeconds);
 }
 
 void UBTTask_PerformChasing::OnTaskFinished(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory,
@@ -124,6 +124,6 @@ void UBTTask_PerformChasing::OnTaskFinished(UBehaviorTreeComponent& OwnerComp, u
 	if (!TaskMemory) return;
 
 	TaskMemory->AccumulatedTime = 0.0f;
-	TaskMemory->Boss->InitTarget();
+	TaskMemory->Monster->InitTarget();
 	bHasAttacked = false;
 }

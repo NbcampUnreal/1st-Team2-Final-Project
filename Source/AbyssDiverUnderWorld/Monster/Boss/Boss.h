@@ -40,7 +40,7 @@ public:
 	//FVector GetRandomNavMeshLocation(const FVector& Origin, const float& Radius) const;
 
 	/** 새로운 목표 이동지점을 할당하는 함수 */
-	void SetNewTargetLocation();
+	virtual void SetNewTargetLocation() override;
 
 	/** 상하좌우 방향으로 라인 트레이싱을 한다.
 	 *
@@ -54,7 +54,7 @@ public:
 	 * 
 	 * @param InDeltaTime - 프레임 시간
 	 */
-	void PerformNormalMovement(const float& InDeltaTime);
+	virtual void PerformNormalMovement(const float& InDeltaTime) override;
 
 	/** TargetPlayer를 추적하며 이동하는 함수
 	 * 
@@ -171,14 +171,6 @@ public:
 							UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, 
 							bool bFromSweep, const FHitResult& SweepResult);
 							
-	UFUNCTION()
-	void OnAttackCollisionOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, 
-							UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, 
-							bool bFromSweep, const FHitResult& SweepResult);
-
-	UFUNCTION()
-	void OnAttackCollisionOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
-							UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 	// 몬스터 죽었을 때 레이더에서 Off 되도록
 	UFUNCTION()
@@ -192,18 +184,6 @@ private:
 
 #pragma region Variable
 public:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
-	float ChasingRotationSpeedMultiplier = 1.5f;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
-	float ChasingMovementSpeedMultiplier = 2.2f;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
-	float MovementInterpSpeed = 1.0f;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
-	float RotationInterpSpeed;
-	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
 	EBossPhysicsType BossPhysicsType;
 
@@ -224,18 +204,9 @@ public:
 	
 	//UPROPERTY(VisibleAnywhere)
 	//TObjectPtr<UAnimInstance> AnimInstance;
-	
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Target")
-	TObjectPtr<AUnderwaterCharacter> TargetPlayer;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Target")
-	TObjectPtr<AUnderwaterCharacter> CachedTargetPlayer;
 
 	//UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Animation")
 	//TArray<TObjectPtr<UAnimMontage>> AttackAnimations;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Collision")
-	TObjectPtr<UCapsuleComponent> AttackCollision;
 
 	UPROPERTY()
 	float ChaseAccumulatedTime = 0.0f;
@@ -253,12 +224,6 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Stat")
 	float FourDirectionTraceDistance = 300.0f;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
-	float MinTargetDistance = 100.0f;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
-	float WanderRadius = 1300.0f;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Boss|Stat")
 	uint8 bIsAttackInfinite : 1;
@@ -280,12 +245,6 @@ protected:
 	UPROPERTY(Replicated, BlueprintReadWrite)
 	EBossState BossState;
 
-	UPROPERTY(BlueprintReadWrite)
-	float CurrentMoveSpeed = 0.0f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-	uint8 bDrawDebugLine : 1 = false;
-
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	uint8 bEnableDownTrace : 1 = true;
 
@@ -299,8 +258,6 @@ protected:
 	TObjectPtr<AEnhancedBossAIController> EnhancedAIController;
 
 	FCollisionQueryParams Params;
-	uint8 bIsTurning : 1 = false;
-	uint8 bIsAttacking : 1 = false;
 
 private:
 	static const FName BossStateKey;
@@ -309,11 +266,6 @@ private:
 	float TurnTimer = 0.0f;
 	float OriginDeceleration;
 	float SphereOverlapRadius = 100.0f;
-	FVector TargetLocation;
-	FVector DesiredTargetLocation;  // 새로운 목표 위치 (보간 전)
-	FVector InterpolatedTargetLocation;  // 보간된 목표 위치
-	float TargetLocationInterpSpeed = 2.0f;  // 타겟 위치 보간 속도
-	float PatrolInterpSpeed = 1.5f;  // 순찰 시 더 부드러운 보간 속도
 	FVector CachedSpawnLocation;
 	FVector TurnDirection;
 
@@ -322,10 +274,6 @@ private:
 #pragma region Getter, Setter
 public:
 	/** Target Getter, Setter */
-	FORCEINLINE AUnderwaterCharacter* GetTarget() const { return TargetPlayer; };
-	FORCEINLINE void SetTarget(AUnderwaterCharacter* Target) { TargetPlayer = Target; };
-	FORCEINLINE void InitTarget() { TargetPlayer = nullptr; };
-	
 	FORCEINLINE bool GetIsAttackCollisionOverlappedPlayer() const { return bIsAttackCollisionOverlappedPlayer; };
 
 	FORCEINLINE UCameraControllerComponent* GetCameraControllerComponent() const { return CameraControllerComponent; };
@@ -334,12 +282,7 @@ public:
 	FORCEINLINE void SetIsBiteAttackFalse() { bIsBiteAttackSuccess = false; }
 	FORCEINLINE UAnimInstance* GetAnimInstance() const { return AnimInstance; }
 	FORCEINLINE FVector GetDamagedLocation() const { return DamagedLocation; }
-	FORCEINLINE AUnderwaterCharacter* GetCachedTarget() const { return CachedTargetPlayer; };
-	FORCEINLINE void SetCachedTarget(AUnderwaterCharacter* Target) { CachedTargetPlayer = Target; };
-	FORCEINLINE void InitCachedTarget() { CachedTargetPlayer = nullptr; };
 	FORCEINLINE FVector GetCachedSpawnLocation() const { return CachedSpawnLocation; }
-
-	FORCEINLINE void SetTargetLocation(const FVector& InTargetLocation) { TargetLocation = InTargetLocation; }
 
 #pragma endregion
 	
