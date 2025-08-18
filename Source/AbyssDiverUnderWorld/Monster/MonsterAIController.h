@@ -31,16 +31,9 @@ protected:
 	void LoadSightDataFromTable();
 	void InitializePatrolPoint();
 	
-	// Move Failure Handling
-	UFUNCTION()
-	void HandleMoveFailure();
-
-	FVector ComputeAvoidanceDirection();
-
 	UFUNCTION()
 	virtual void OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus); // Perception Callback Method
-	
-	virtual void OnMoveCompleted(FAIRequestID RequestID, const FPathFollowingResult& Result) override;
+
 
 #pragma endregion
 

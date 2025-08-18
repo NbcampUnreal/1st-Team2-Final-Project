@@ -67,6 +67,7 @@ void AMonster::BeginPlay()
 		//AquaticMovementComponent->BrakingDeceleration = GetCharacterMovement()->BrakingDecelerationSwimming;
 	}
 
+	CurrentMoveSpeed = StatComponent->MoveSpeed;
 	AnimInstance = GetMesh()->GetAnimInstance();
 	AIController = Cast<AMonsterAIController>(GetController());
 
