@@ -3,6 +3,7 @@
 
 #include "UnderwaterEffectComponent.h"
 
+#include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "Character/UnderwaterCharacter.h"
 #include "Components/AudioComponent.h"
@@ -10,8 +11,6 @@
 #include "Kismet/GameplayStatics.h"
 #include "Logging/LogMacros.h"
 #include "Subsystems/SoundSubsystem.h"
-
-#include "Kismet/GameplayStatics.h"
 
 UUnderwaterEffectComponent::UUnderwaterEffectComponent()
 {
@@ -21,7 +20,7 @@ UUnderwaterEffectComponent::UUnderwaterEffectComponent()
 	BreathFirstDelay = 5.0f;
 	BreathSocketName = TEXT("head_bubble_socket");
 
-	bShouldPlayMovementSound = false;
+	bShouldPlayMovementEffect = false;
 	MovementSoundThreshold = 300.0f;
 	MoveRequireTime = 0.5f;
 	MoveTimeAccumulator = 0.0f;
@@ -59,6 +58,21 @@ void UUnderwaterEffectComponent::BeginPlay()
 	{
 		UE_LOG(LogAbyssDiverCharacter, Error, TEXT("UUnderwaterFXComponent: Owner is not an AUnderwaterCharacter"));
 	}
+
+	if (MoveBubbleParticleSystem && OwnerCharacter)
+	{
+		MoveBubbleParticleComponent = UNiagaraFunctionLibrary::SpawnSystemAttached(
+			MoveBubbleParticleSystem,
+			OwnerCharacter->GetMesh(),
+			MoveBubbleSocketName,
+			FVector::ZeroVector,
+			FRotator::ZeroRotator,
+			EAttachLocation::SnapToTarget,
+			false,
+			false
+		);
+		UE_LOG(LogAbyssDiverCharacter, Display, TEXT("UUnderwaterFXComponent: Spawning MoveBubbleParticleSystem on %s"), *OwnerCharacter->GetName());
+	}
 }
 
 void UUnderwaterEffectComponent::TickComponent(float DeltaTime, ELevelTick TickType,
@@ -72,7 +86,7 @@ void UUnderwaterEffectComponent::TickComponent(float DeltaTime, ELevelTick TickT
 		return;
 	}
 
-	if (OwnerCharacter && OwnerCharacter->IsLocallyControlled())
+	if (OwnerCharacter)
 	{
 		UpdateMovementEffects(DeltaTime);
 	}
@@ -105,7 +119,7 @@ void UUnderwaterEffectComponent::SetEnableEffect(bool bNewEnabled)
 			SoundSubsystem->StopAudio(SprintMovementAudioId);
 		}
 		MoveTimeAccumulator = 0.0f;
-		bShouldPlayMovementSound = false;
+		bShouldPlayMovementEffect = false;
 	}
 }
 
@@ -174,7 +188,7 @@ void UUnderwaterEffectComponent::OnDamageTaken(float DamageAmount, float Current
 {
 	// 피해를 입으면 피해 사운드가 재생되어야 한다.
 	// 숨쉬기 효과를 초기화하고 버블 효과를 중지한다.
-	bShouldPlayMovementSound = false;
+	bShouldPlayMovementEffect = false;
 	StartBreathEffect(BreathFirstDelay * 0.5f);
 }
 
@@ -196,7 +210,7 @@ void UUnderwaterEffectComponent::PlayBreathEffects()
 	}
 
 	// @ToDo : Groggy 상태에서 다른 효과를 재생해야 할 수 있다.
-	ESFX BreathSoundToPlay = bShouldPlayMovementSound ? MoveBreathSound : IdleBreathSound;
+	ESFX BreathSoundToPlay = bShouldPlayMovementEffect ? MoveBreathSound : IdleBreathSound;
 
 	float AudioDuration = 3.0f;
 	if (OwnerCharacter->IsLocallyControlled())
@@ -245,7 +259,7 @@ void UUnderwaterEffectComponent::UpdateMovementEffects(float DeltaTime)
 	const bool bCurrentMoving = Speed > MovementSoundThreshold;
 	MoveTimeAccumulator = bCurrentMoving ? MoveTimeAccumulator + DeltaTime : 0.0f;
 	
-	bShouldPlayMovementSound = bCurrentMoving && MoveTimeAccumulator > MoveRequireTime;
+	bShouldPlayMovementEffect = bCurrentMoving && MoveTimeAccumulator > MoveRequireTime;
 
 	USoundSubsystem* SoundSubsystem = GetSoundSubsystem();
 	if (!IsValid(SoundSubsystem))
@@ -253,27 +267,45 @@ void UUnderwaterEffectComponent::UpdateMovementEffects(float DeltaTime)
 		return;
 	}
 	
-	if (bShouldPlayMovementSound)
+	if (bShouldPlayMovementEffect)
 	{
-		if (!SoundSubsystem->IsPlaying(MovementAudioId))
+		// 플레이어 이동 소리 재생
+		if (OwnerCharacter && OwnerCharacter->IsLocallyControlled() && !SoundSubsystem->IsPlaying(MovementAudioId))
 		{
 			MovementAudioId = SoundSubsystem->Play2D(MovementSound, 0.5f);
+		}
+		if (MoveBubbleParticleComponent && !MoveBubbleParticleComponent->IsActive())
+		{
+			MoveBubbleParticleComponent->Activate();
+		}
+		if (MoveBubbleParticleComponent->IsActive())
+		{
+			MoveBubbleParticleComponent->SetFloatParameter(MoveBubbleIntensityParameterName, 0.0f);
 		}
 		
 		// 플레이어가 직접 움직일 때 소리가 나야 한다.
 		// 캐릭터가 Launch 되거나 밀릴 경우 소리가 나면 안 된다.
 		if (Speed > OwnerCharacter->GetSprintSpeed() - 50.0f
-			&& OwnerCharacter->GetCharacterMovement()->GetCurrentAcceleration().Size() > 0.0f
-			&& !SoundSubsystem->IsPlaying(SprintMovementAudioId))
+			&& OwnerCharacter->GetCharacterMovement()->GetCurrentAcceleration().Size() > 0.0f)
 		{
-			SprintMovementAudioId = SoundSubsystem->Play2D(SprintMovementSound, 0.5f);
+			if (OwnerCharacter && OwnerCharacter->IsLocallyControlled()
+				&& !SoundSubsystem->IsPlaying(SprintMovementAudioId))
+			{
+				SprintMovementAudioId = SoundSubsystem->Play2D(SprintMovementSound, 0.5f);
+			}
+			MoveBubbleParticleComponent->SetFloatParameter(MoveBubbleIntensityParameterName, 1.0f);
 		}
 	}
 	else
 	{
-		if (SoundSubsystem->IsPlaying(MovementAudioId))
+		if (OwnerCharacter && OwnerCharacter->IsLocallyControlled()
+			&& SoundSubsystem->IsPlaying(MovementAudioId))
 		{
 			SoundSubsystem->StopAudio(MovementAudioId, true, MovementSoundFadeTime, 0.0f, MovementSoundFadeCurve);
+		}
+		if (MoveBubbleParticleComponent && MoveBubbleParticleComponent->IsActive())
+		{
+			MoveBubbleParticleComponent->Deactivate();
 		}
 	}
 }

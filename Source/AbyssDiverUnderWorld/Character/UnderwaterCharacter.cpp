@@ -1324,7 +1324,6 @@ void AUnderwaterCharacter::M_StartCaptureState_Implementation()
 		}
 
 		bCanUseEquipment = false;
-		// Play SFX
 	}
 
 	SetActorHiddenInGame(true);
