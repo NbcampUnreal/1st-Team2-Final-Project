@@ -15,6 +15,10 @@ void AADTutorialPlayerController::BeginPlay()
 	Super::BeginPlay();
 
 	CachedTutorialManager = Cast<ATutorialManager>(UGameplayStatics::GetActorOfClass(GetWorld(), ATutorialManager::StaticClass()));
+	if (!CachedTutorialManager)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("AADTutorialPlayerController: ATutorialManager not found in the world. Tutorial features may not work."));
+	}
 }
 
 void AADTutorialPlayerController::SetPawn(APawn* InPawn)
@@ -64,6 +68,18 @@ void AADTutorialPlayerController::SetPawn(APawn* InPawn)
 			{
 				EnhancedInput->BindAction(ReviveAction, ETriggerEvent::Started, this, &AADTutorialPlayerController::OnReviveStarted);
 				EnhancedInput->BindAction(ReviveAction, ETriggerEvent::Completed, this, &AADTutorialPlayerController::OnReviveCompleted);
+			}
+			if (UInputAction* Item1Action = PossessedCharacter->GetSelectInventorySlot1())
+			{
+				EnhancedInput->BindAction(Item1Action, ETriggerEvent::Triggered, this, &AADTutorialPlayerController::OnUseItem1);
+			}
+			if (UInputAction* Item2Action = PossessedCharacter->GetSelectInventorySlot2())
+			{
+				EnhancedInput->BindAction(Item2Action, ETriggerEvent::Triggered, this, &AADTutorialPlayerController::OnUseItem2);
+			}
+			if (UInputAction* Item3Action = PossessedCharacter->GetSelectInventorySlot3())
+			{
+				EnhancedInput->BindAction(Item3Action, ETriggerEvent::Triggered, this, &AADTutorialPlayerController::OnUseItem3);
 			}
 		}
 	}
@@ -173,14 +189,21 @@ void AADTutorialPlayerController::OnInventoryStarted(const FInputActionValue& Va
 {
 	if (IsValid(CachedTutorialManager))
 	{
-		CachedTutorialManager->NotifyInteractionStart();
+		CachedTutorialManager->OnInventoryInputPressed();
+
+		if (CachedTutorialManager->IsGaugeObjectiveActive())
+		{
+			CachedTutorialManager->NotifyInteractionStart();
+		}
 	}
 }
+
 
 void AADTutorialPlayerController::OnInventoryCompleted(const FInputActionValue& Value)
 {
 	if (IsValid(CachedTutorialManager))
 	{
+		CachedTutorialManager->OnInventoryInputReleased();
 		CachedTutorialManager->NotifyInteractionEnd();
 	}
 }
@@ -247,4 +270,19 @@ void AADTutorialPlayerController::OnReviveCompleted(const FInputActionValue& Val
 	{
 		CachedTutorialManager->NotifyInteractionEnd();
 	}
+}
+
+void AADTutorialPlayerController::OnUseItem1(const FInputActionValue& Value)
+{
+	ReportItemAction(EPlayerActionTrigger::UseItem1);
+}
+
+void AADTutorialPlayerController::OnUseItem2(const FInputActionValue& Value)
+{
+	ReportItemAction(EPlayerActionTrigger::UseItem2);
+}
+
+void AADTutorialPlayerController::OnUseItem3(const FInputActionValue& Value)
+{
+	ReportItemAction(EPlayerActionTrigger::UseItem3);
 }
