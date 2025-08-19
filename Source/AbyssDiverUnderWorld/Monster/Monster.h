@@ -86,6 +86,7 @@ public:
 
 protected:
 	void ApplyPhysicsSimulation();
+	void HandleSetting_OnDeath();
 
 #pragma endregion
 
