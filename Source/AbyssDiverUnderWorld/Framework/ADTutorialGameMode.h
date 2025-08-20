@@ -18,10 +18,6 @@ class ABYSSDIVERUNDERWORLD_API AADTutorialGameMode : public AGameMode
 public:
 	AADTutorialGameMode();
 
-protected:
-	virtual void StartPlay() override;
-
-#pragma region Method
 public:
 	void StartFirstTutorialPhase();
 	void AdvanceTutorialPhase();
@@ -36,7 +32,15 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SpawnDownedNPC();
 
+public:
+	UFUNCTION(BlueprintPure, Category = "Tutorial")
+	bool IsTypingFinishedForCurrentPhase() const;
+
 protected:
+	virtual void StartPlay() override;
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Tutorial")
+	void OnPhaseBatteryStart();
 
 	void HandleCurrentPhase();
 	void HandlePhase_Dialogue_02();
@@ -58,16 +62,11 @@ protected:
 	void HandlePhase_Complete();
 	void HidePhaseActors();
 
-private:
-	void TrackPhaseActor(AActor* Actor) { if (IsValid(Actor)) { ActorsToShowThisPhase.Add(Actor); } }
-	void BindIndicatorToOwner(AActor* OwnerActor, AActor* IndicatorActor);
-#pragma endregion 
-
-#pragma region Variable
 protected:
-	FTimerHandle TutorialStartTimerHandle;
+	UPROPERTY(EditAnywhere, Category = "Tutorial|Debug")
+	ETutorialPhase StartPhaseOverride = ETutorialPhase::None;
 
-	UPROPERTY(EditAnywhere, Category = "Tutorial")
+	UPROPERTY(EditAnywhere, Category = "Tutorial|Data")
 	TObjectPtr<UDataTable> TutorialDataTable;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Spawning")
@@ -94,10 +93,13 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Tutorial")
 	TSubclassOf<AActor> CurrentWallClass;
 
-private:
-	bool bIsTypingFinishedForCurrentPhase = false;
-	int32 ItemsPhaseProgress;
+	FTimerHandle TutorialStartTimerHandle;
 
+private:
+	void TrackPhaseActor(AActor* Actor);
+	void BindIndicatorToOwner(AActor* OwnerActor, AActor* IndicatorActor);
+
+private:
 	UPROPERTY()
 	TObjectPtr<class AADPlayerController> TutorialPlayerController;
 
@@ -108,19 +110,12 @@ private:
 	TArray<TObjectPtr<ALight>> DisabledLights;
 
 	UPROPERTY()
-	TMap<TWeakObjectPtr<AActor>, TWeakObjectPtr<AActor>> OwnerToIndicator;
-
-	UPROPERTY()
 	TObjectPtr<AActor> ActiveCurrentWall;
 
 	UPROPERTY()
 	TObjectPtr<APostProcessVolume> TutorialPPV = nullptr;
 
-	FTimerHandle StepTimerHandle;
-#pragma endregion
-
-#pragma region Getter, Setter
-public:
-	bool IsTypingFinishedForCurrentPhase() const { return bIsTypingFinishedForCurrentPhase; }
-#pragma endregion
+	bool bIsTypingFinishedForCurrentPhase = false;
+	int32 ItemsPhaseProgress;
+	TMap<TWeakObjectPtr<AActor>, TWeakObjectPtr<AActor>> OwnerToIndicator;
 };
