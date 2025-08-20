@@ -37,7 +37,7 @@ void ATutorialManager::BeginPlay()
 		SubtitleWidget = CreateWidget<UTutorialSubtitle>(GetWorld(), TutorialSubtitleClass);
 		if (SubtitleWidget)
 		{
-			SubtitleWidget->AddToViewport(20);
+			SubtitleWidget->AddToViewport(-100);
 			SubtitleWidget->SetVisibility(ESlateVisibility::Hidden);
 		}
 	}
@@ -56,7 +56,7 @@ void ATutorialManager::BeginPlay()
 		TutorialHintPanel = CreateWidget<UTutorialHintPanel>(GetWorld(), TutorialHintPanelClass);
 		if (TutorialHintPanel)
 		{
-			TutorialHintPanel->AddToViewport(10);
+			TutorialHintPanel->AddToViewport(-50);
 			TutorialHintPanel->SetVisibility(ESlateVisibility::Hidden);
 		}
 	}
@@ -66,7 +66,7 @@ void ATutorialManager::BeginPlay()
 		GaugeWidget = CreateWidget<UUserWidget>(GetWorld(), GaugeWidgetClass);
 		if (GaugeWidget)
 		{
-			GaugeWidget->AddToViewport(15);
+			GaugeWidget->AddToViewport(-10);
 			GaugeWidget->SetVisibility(ESlateVisibility::Collapsed);
 			GaugeProgressBar = Cast<UProgressBar>(GaugeWidget->GetWidgetFromName(TEXT("GaugeBar")));
 		}
@@ -77,7 +77,7 @@ void ATutorialManager::BeginPlay()
 		HighlightingWidget = CreateWidget<UTutorialHighlighting>(GetWorld(), HighlightingWidgetClass);
 		if (HighlightingWidget)
 		{
-			HighlightingWidget->AddToViewport(5); 
+			HighlightingWidget->AddToViewport(-5); 
 			HighlightingWidget->HighlightEnd(); 
 		}
 	}
