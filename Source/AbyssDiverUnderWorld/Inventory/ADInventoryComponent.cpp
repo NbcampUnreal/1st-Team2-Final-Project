@@ -23,6 +23,7 @@
 #include "NiagaraSystem.h"
 #include "Subsystems/SoundSubsystem.h"
 #include "Framework/ADGameInstance.h"
+#include "Framework/ADTutorialGameMode.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Interactable/EquipableComponent/EquipRenderComponent.h"
@@ -569,6 +570,10 @@ void UADInventoryComponent::RemoveBySlotIndex(uint8 SlotIndex, EItemType ItemTyp
 		if (bIsDropAction)
 		{
 			DropItem(Item);
+			if (AADTutorialGameMode* GM = GetWorld()->GetAuthGameMode<AADTutorialGameMode>())
+			{
+				GM->OnPlayerItemAction(EPlayerActionTrigger::Drop);
+			}
 		}
 		InventoryList.UpdateQuantity(InventoryIndex, INDEX_NONE);
 

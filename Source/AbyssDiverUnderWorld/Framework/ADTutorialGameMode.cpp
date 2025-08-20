@@ -1,14 +1,16 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "Framework/ADTutorialGameMode.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/DataTable.h" 
 #include "Tutorial/TutorialStepData.h"
 #include "Tutorial/TutorialManager.h"
+#include "Framework/ADTutorialGameState.h"
+#include "Framework/ADPlayerState.h"
+#include "Inventory/ADInventoryComponent.h"
+#include "DataRow/FADItemDataRow.h"
 #include "Interactable/OtherActors/TargetIndicators/TargetIndicatorManager.h"
 #include "Components/PrimitiveComponent.h"
-#include "Framework/ADTutorialGameState.h"
 #include "Framework/ADPlayerController.h"
 #include "Engine/Light.h"
 #include "NiagaraComponent.h"
@@ -24,11 +26,10 @@ AADTutorialGameMode::AADTutorialGameMode()
 void AADTutorialGameMode::StartPlay()
 {
     Super::StartPlay();
-    SpawnNewWall(FName("TutorialWall_1")); 
+    SpawnNewWall(FName("TutorialWall_1"));
     TutorialPlayerController = Cast<AADPlayerController>(UGameplayStatics::GetPlayerController(this, 0));
 
     TArray<AActor*> TutorialActors;
-
     UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("TutorialRock_D2"), TutorialActors);
     for (AActor* Actor : TutorialActors)
     {
@@ -42,7 +43,6 @@ void AADTutorialGameMode::StartPlay()
         }
     }
     TutorialActors.Empty();
-
     UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("TutorialMonster_D2"), TutorialActors);
     for (AActor* Actor : TutorialActors)
     {
@@ -56,7 +56,6 @@ void AADTutorialGameMode::StartPlay()
         }
     }
     TutorialActors.Empty();
-
     UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("TutorialFriendly_D2"), TutorialActors);
     for (AActor* Actor : TutorialActors)
     {
@@ -70,7 +69,6 @@ void AADTutorialGameMode::StartPlay()
         }
     }
     TutorialActors.Empty();
-
     UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("TutorialDrone"), TutorialActors);
     for (AActor* Actor : TutorialActors)
     {
@@ -83,16 +81,26 @@ void AADTutorialGameMode::StartPlay()
             }
         }
     }
-
-    GetWorldTimerManager().SetTimer(
-        TutorialStartTimerHandle,
-        this,
-        &AADTutorialGameMode::StartFirstTutorialPhase,
-        2.0f,
-        false
-    );
+    if (StartPhaseOverride != ETutorialPhase::None)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Debug Start: Starting from phase %s"), *UEnum::GetValueAsString(StartPhaseOverride));
+        if (AADTutorialGameState* TutorialGS = GetGameState<AADTutorialGameState>())
+        {
+            TutorialGS->SetCurrentPhase(StartPhaseOverride);
+            HandleCurrentPhase();
+        }
+    }
+    else
+    {
+        GetWorldTimerManager().SetTimer(
+            TutorialStartTimerHandle,
+            this,
+            &AADTutorialGameMode::StartFirstTutorialPhase,
+            2.0f,
+            false
+        );
+    }
 }
-
 
 void AADTutorialGameMode::StartFirstTutorialPhase()
 {
@@ -108,7 +116,6 @@ void AADTutorialGameMode::AdvanceTutorialPhase()
         {
             ETutorialPhase NextPhase = static_cast<ETutorialPhase>(static_cast<uint8>(CurrentPhase) + 1);
             TutorialGS->SetCurrentPhase(NextPhase);
-
             HandleCurrentPhase();
         }
     }
@@ -118,19 +125,16 @@ void AADTutorialGameMode::HandleCurrentPhase()
 {
     HidePhaseActors();
     bIsTypingFinishedForCurrentPhase = false;
-
-	if (!TutorialPlayerController)
-	{
-		TutorialPlayerController = Cast<AADPlayerController>(UGameplayStatics::GetPlayerController(this, 0));
-		if (!TutorialPlayerController) return;
-	}
-
-	if (AADTutorialGameState* TutorialGS = GetGameState<AADTutorialGameState>())
-	{
-		ETutorialPhase CurrentPhase = TutorialGS->GetCurrentPhase();
-
-		switch (CurrentPhase)
-		{
+    if (!TutorialPlayerController)
+    {
+        TutorialPlayerController = Cast<AADPlayerController>(UGameplayStatics::GetPlayerController(this, 0));
+        if (!TutorialPlayerController) return;
+    }
+    if (AADTutorialGameState* TutorialGS = GetGameState<AADTutorialGameState>())
+    {
+        ETutorialPhase CurrentPhase = TutorialGS->GetCurrentPhase();
+        switch (CurrentPhase)
+        {
         case ETutorialPhase::Step1_Movement:      HandlePhase_Movement(); break;
         case ETutorialPhase::Step2_Sprint:        HandlePhase_Sprint(); break;
         case ETutorialPhase::Step3_Oxygen:        HandlePhase_Oxygen(); break;
@@ -149,15 +153,12 @@ void AADTutorialGameMode::HandleCurrentPhase()
         case ETutorialPhase::Step14_Die:          HandlePhase_Die(); break;
         case ETutorialPhase::Step15_Resurrection: HandlePhase_Resurrection(); break;
         case ETutorialPhase::Complete:            HandlePhase_Complete(); break;
-
-
-		default:                                  break;
-		}
-
-	}
+        default:                                  break;
+        }
+    }
 }
 
-void AADTutorialGameMode::HandlePhase_Movement()
+void AADTutorialGameMode::HandlePhase_Movement() 
 {
 }
 
@@ -172,12 +173,10 @@ void AADTutorialGameMode::HandlePhase_Sprint()
 void AADTutorialGameMode::HandlePhase_Radar()
 {
     SpawnNewWall(FName("TutorialWall_2"));
-
     if (ATutorialManager* Manager = Cast<ATutorialManager>(UGameplayStatics::GetActorOfClass(GetWorld(), ATutorialManager::StaticClass())))
     {
         Manager->StartGaugeObjective(EGaugeInteractionType::Tap, 100.f, 10.f, 0.f);
     }
-
     TArray<AActor*> FoundActors;
     UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("TutorialRock_D2"), FoundActors);
     for (AActor* Rock : FoundActors)
@@ -189,7 +188,6 @@ void AADTutorialGameMode::HandlePhase_Radar()
         }
     }
     FoundActors.Empty();
-
     UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("TutorialMonster_D2"), FoundActors);
     for (AActor* Monster : FoundActors)
     {
@@ -200,7 +198,6 @@ void AADTutorialGameMode::HandlePhase_Radar()
         }
     }
     FoundActors.Empty();
-
     UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("TutorialFriendly_D2"), FoundActors);
     for (AActor* Friendly : FoundActors)
     {
@@ -212,9 +209,8 @@ void AADTutorialGameMode::HandlePhase_Radar()
     }
 }
 
-void AADTutorialGameMode::HandlePhase_Oxygen()
+void AADTutorialGameMode::HandlePhase_Oxygen() 
 {
-
 }
 
 void AADTutorialGameMode::HandlePhase_Dialogue_02()
@@ -226,13 +222,11 @@ void AADTutorialGameMode::HandlePhase_Dialogue_02()
         TrackPhaseActor(Monster);
     }
     ActorsToTrack.Empty();
-
     UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("TutorialFriendly_D2"), ActorsToTrack);
     for (AActor* Friendly : ActorsToTrack)
     {
         TrackPhaseActor(Friendly);
     }
-
     if (!IndicatingTargetClass)
     {
         UE_LOG(LogTemp, Error, TEXT("IndicatingTargetClass is not set in TutorialGameMode BP."));
@@ -263,7 +257,6 @@ void AADTutorialGameMode::HandlePhase_Looting()
         UE_LOG(LogTemp, Error, TEXT("LootableOreClass or IndicatingTargetClass is not set in TutorialGameMode BP."));
         return;
     }
-
     TArray<AActor*> SpawnPoints;
     UGameplayStatics::GetAllActorsWithTag(GetWorld(), OreSpawnTag, SpawnPoints);
     if (SpawnPoints.Num() == 0)
@@ -271,11 +264,9 @@ void AADTutorialGameMode::HandlePhase_Looting()
         UE_LOG(LogTemp, Error, TEXT("Cannot find an actor with tag '%s' to spawn the ore."), *OreSpawnTag.ToString());
         return;
     }
-
     AActor* SpawnPoint = SpawnPoints[0];
     FVector  SpawnLocation = SpawnPoint->GetActorLocation();
     FRotator SpawnRotation = SpawnPoint->GetActorRotation();
-
     AActor* SpawnedOre = GetWorld()->SpawnActor<AActor>(LootableOreClass, SpawnLocation, SpawnRotation);
     if (!SpawnedOre)
     {
@@ -283,7 +274,6 @@ void AADTutorialGameMode::HandlePhase_Looting()
         return;
     }
     TrackPhaseActor(SpawnedOre);
-
     AIndicatingTarget* Indicator = GetWorld()->SpawnActor<AIndicatingTarget>(IndicatingTargetClass, SpawnLocation, SpawnRotation);
     if (Indicator)
     {
@@ -297,10 +287,8 @@ void AADTutorialGameMode::HandlePhase_Looting()
     else
     {
         UE_LOG(LogTemp, Error, TEXT("Failed to spawn IndicatingTarget."));
-        return;
     }
 }
-
 
 void AADTutorialGameMode::HandlePhase_Inventory()
 {
@@ -320,12 +308,10 @@ void AADTutorialGameMode::HandlePhase_Drone()
         UE_LOG(LogTemp, Warning, TEXT("Cannot find actor with tag 'TutorialDrone'"));
         return;
     }
-
     AActor* Drone = FoundActors[0];
     Drone->SetActorHiddenInGame(false);
     Drone->Tags.Add(FName("Radar"));
     TrackPhaseActor(Drone);
-
     if (IndicatingTargetClass)
     {
         AIndicatingTarget* Indicator = GetWorld()->SpawnActor<AIndicatingTarget>(IndicatingTargetClass, Drone->GetActorLocation(), Drone->GetActorRotation());
@@ -344,20 +330,13 @@ void AADTutorialGameMode::HandlePhase_Drone()
 void AADTutorialGameMode::HandlePhase_LightToggle()
 {
     DisabledLights.Empty();
-
     APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
     if (!PlayerPawn) return;
-
     for (TActorIterator<ALight> It(GetWorld()); It; ++It)
     {
         ALight* LightActor = *It;
-        if (LightActor)
+        if (LightActor && LightActor->GetOwner() != PlayerPawn)
         {
-            if (LightActor->GetOwner() == PlayerPawn)
-            {
-                continue;
-            }
-
             ULightComponent* LightComponent = LightActor->GetLightComponent();
             if (LightComponent && LightComponent->IsVisible())
             {
@@ -369,21 +348,18 @@ void AADTutorialGameMode::HandlePhase_LightToggle()
     if (!TutorialPPV)
     {
         TutorialPPV = GetWorld()->SpawnActor<APostProcessVolume>();
-        TutorialPPV->bUnbound = true;               
+        TutorialPPV->bUnbound = true;
         TutorialPPV->BlendWeight = 1.0f;
-
         auto& S = TutorialPPV->Settings;
         S.bOverride_AutoExposureMinBrightness = true;
         S.bOverride_AutoExposureMaxBrightness = true;
-        S.AutoExposureMinBrightness = 1.0f;         
+        S.AutoExposureMinBrightness = 1.0f;
         S.AutoExposureMaxBrightness = 1.0f;
-
         S.bOverride_AutoExposureSpeedUp = true;
         S.bOverride_AutoExposureSpeedDown = true;
-        S.AutoExposureSpeedUp = 100.f;             
+        S.AutoExposureSpeedUp = 100.f;
         S.AutoExposureSpeedDown = 100.f;
     }
-
     if (ATutorialManager* Manager = Cast<ATutorialManager>(UGameplayStatics::GetActorOfClass(GetWorld(), ATutorialManager::StaticClass())))
     {
         Manager->StartGaugeObjective(EGaugeInteractionType::Tap, 100.f, 10.f, 0.f);
@@ -398,6 +374,7 @@ void AADTutorialGameMode::HandlePhase_Items()
 
 void AADTutorialGameMode::HandlePhase_Battery()
 {
+    OnPhaseBatteryStart();
     if (ATutorialManager* Manager = Cast<ATutorialManager>(UGameplayStatics::GetActorOfClass(GetWorld(), ATutorialManager::StaticClass())))
     {
         const float TargetChargeAmount = 20.f;
@@ -407,32 +384,41 @@ void AADTutorialGameMode::HandlePhase_Battery()
 
 void AADTutorialGameMode::HandlePhase_Drop()
 {
+    if (ATutorialManager* Manager = Cast<ATutorialManager>(UGameplayStatics::GetActorOfClass(GetWorld(), ATutorialManager::StaticClass())))
+    {
+        Manager->StartGaugeObjective(EGaugeInteractionType::Tap, 100.f, 50.f, 0.f);
+    }
 }
 
-void AADTutorialGameMode::HandlePhase_OxygenWarning()
-{
-    SpawnNewWall(FName("TutorialWall_12"));
+void AADTutorialGameMode::HandlePhase_OxygenWarning() 
+{ 
+    SpawnNewWall(FName("TutorialWall_12")); 
 }
 
-void AADTutorialGameMode::HandlePhase_Revive()
-{
-    SpawnNewWall(FName("TutorialWall_13"));
+void AADTutorialGameMode::HandlePhase_Revive() 
+{ 
+ 
 }
 
-void AADTutorialGameMode::HandlePhase_Die()
-{
-}
-
-void AADTutorialGameMode::HandlePhase_Resurrection()
-{
-}
-
-void AADTutorialGameMode::HandlePhase_Complete()
+void AADTutorialGameMode::HandlePhase_Die() 
 {
 }
 
-void AADTutorialGameMode::SpawnDownedNPC()
+void AADTutorialGameMode::HandlePhase_Resurrection() 
 {
+}
+
+void AADTutorialGameMode::HandlePhase_Complete() 
+{
+}
+
+void AADTutorialGameMode::SpawnDownedNPC() 
+{
+}
+
+bool AADTutorialGameMode::IsTypingFinishedForCurrentPhase() const
+{ 
+    return bIsTypingFinishedForCurrentPhase; 
 }
 
 void AADTutorialGameMode::OnTypingAnimationFinished()
@@ -444,7 +430,7 @@ void AADTutorialGameMode::HidePhaseActors()
 {
     for (AActor* ActorToDestroy : ActorsToShowThisPhase)
     {
-        if (ActorToDestroy) 
+        if (ActorToDestroy)
         {
             ActorToDestroy->OnDestroyed.RemoveAll(this);
             ActorToDestroy->Destroy();
@@ -457,32 +443,50 @@ void AADTutorialGameMode::OnPlayerItemAction(EPlayerActionTrigger ItemActionType
 {
     if (AADTutorialGameState* TutorialGS = GetGameState<AADTutorialGameState>())
     {
-        if (TutorialGS->GetCurrentPhase() != ETutorialPhase::Step9_Items)
+        const ETutorialPhase CurrentPhase = TutorialGS->GetCurrentPhase();
+
+        if (CurrentPhase == ETutorialPhase::Step9_Items)
         {
+            if (ItemsPhaseProgress == 0 && ItemActionType == EPlayerActionTrigger::UseItem1)
+            {
+                ItemsPhaseProgress++;
+            }
+            else if (ItemsPhaseProgress == 1 && ItemActionType == EPlayerActionTrigger::UseItem2)
+            {
+                ItemsPhaseProgress++;
+            }
+            else if (ItemsPhaseProgress == 2 && ItemActionType == EPlayerActionTrigger::UseItem3)
+            {
+                AdvanceTutorialPhase();
+            }
+            return;
+        }
+
+        if (CurrentPhase == ETutorialPhase::Step11_Drop)
+        {
+            if (ItemActionType == EPlayerActionTrigger::Drop)
+            {
+                if (ATutorialManager* Manager = Cast<ATutorialManager>(UGameplayStatics::GetActorOfClass(GetWorld(), ATutorialManager::StaticClass())))
+                {
+                    Manager->NotifyInteractionStart();
+                }
+            }
             return;
         }
     }
+}
 
-    if (ItemsPhaseProgress == 0 && ItemActionType == EPlayerActionTrigger::UseItem1)
+void AADTutorialGameMode::TrackPhaseActor(AActor* Actor)
+{
+    if (IsValid(Actor))
     {
-        ItemsPhaseProgress++; 
-    }
-
-    else if (ItemsPhaseProgress == 1 && ItemActionType == EPlayerActionTrigger::UseItem2)
-    {
-        ItemsPhaseProgress++;
-    }
-
-    else if (ItemsPhaseProgress == 2 && ItemActionType == EPlayerActionTrigger::UseItem3)
-    {
-        AdvanceTutorialPhase();
+        ActorsToShowThisPhase.Add(Actor);
     }
 }
 
 void AADTutorialGameMode::BindIndicatorToOwner(AActor* OwnerActor, AActor* IndicatorActor)
 {
     if (!IsValid(OwnerActor) || !IsValid(IndicatorActor)) return;
-
     OwnerToIndicator.Add(OwnerActor, IndicatorActor);
     OwnerActor->OnDestroyed.AddDynamic(this, &AADTutorialGameMode::OnTrackedOwnerDestroyed);
 }
@@ -516,24 +520,20 @@ void AADTutorialGameMode::DestroyActiveWall()
 void AADTutorialGameMode::SpawnNewWall(FName WallTag)
 {
     DestroyActiveWall();
-
     TArray<AActor*> FoundMarkers;
     UGameplayStatics::GetAllActorsWithTag(GetWorld(), WallTag, FoundMarkers);
     if (FoundMarkers.Num() > 0 && IsValid(CurrentWallClass))
     {
         AActor* Marker = FoundMarkers[0];
         FTransform SpawnTransform = Marker->GetActorTransform();
-
         FRotator SpawnRotation = SpawnTransform.GetRotation().Rotator();
         SpawnRotation.Yaw += 180.0f;
         SpawnTransform.SetRotation(SpawnRotation.Quaternion());
         ActiveCurrentWall = GetWorld()->SpawnActor<AActor>(CurrentWallClass, SpawnTransform);
-
         if (IsValid(ActiveCurrentWall))
         {
             ActiveCurrentWall->SetActorHiddenInGame(false);
             ActiveCurrentWall->SetActorEnableCollision(true);
-
             if (UNiagaraComponent* NiagaraComp = ActiveCurrentWall->FindComponentByClass<UNiagaraComponent>())
             {
                 NiagaraComp->Activate(true);
