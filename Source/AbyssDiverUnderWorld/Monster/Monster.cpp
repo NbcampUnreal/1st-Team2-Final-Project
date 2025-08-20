@@ -562,30 +562,40 @@ void AMonster::OnDeath()
 		);
 	}
 
+	HandleSetting_OnDeath();
 	SetMonsterState(EMonsterState::Death);
 }
 
 void AMonster::M_OnDeath_Implementation()
 {
-	GetCharacterMovement()->StopMovementImmediately();
-	
 	if (IsValid(AnimInstance))
 	{
 		AnimInstance->StopAllMontages(1.0f);
 	}
+}
 
-	// Applying the Physics Asset Physics Engine
-	FTimerHandle TimerHandle;
-	GetWorldTimerManager().SetTimer(TimerHandle, this, &AMonster::ApplyPhysicsSimulation, 0.5f, false);
+void AMonster::HandleSetting_OnDeath()
+{
+	// 죽었을 때 Tick 비활성화
+	if (AquaticMovementComponent)
+	{
+		AquaticMovementComponent->SetComponentTickEnabled(false);
+	}
+	ApplyPhysicsSimulation();
 }
 
 void AMonster::ApplyPhysicsSimulation()
 {
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	GetAttackHitComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-	GetMesh()->SetEnableGravity(true);
-	GetMesh()->SetSimulatePhysics(true);
+	
+	USkeletalMeshComponent* MeshComp = GetMesh();
+	if (MeshComp)
+	{
+		MeshComp->SetCollisionProfileName(TEXT("Ragdoll"));
+		MeshComp->SetEnableGravity(true);
+		MeshComp->SetSimulatePhysics(true);
+	}
 }
 
 void AMonster::PlayAttackMontage()
