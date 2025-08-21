@@ -26,6 +26,7 @@ const FName AEnhancedBossAIController::bIsChasingBloodKey = "bIsChasingBlood";
 
 AEnhancedBossAIController::AEnhancedBossAIController()
 {
+	PrimaryActorTick.bCanEverTick = true;
 	bIsDetectedBlood = false;
 	bIsDetectedPlayer = false;
 	bIsDamagedByPlayer = false;

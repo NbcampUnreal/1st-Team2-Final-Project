@@ -65,7 +65,8 @@ void ABlowfish::M_TriggerExplosion_Implementation()
 	ScaleUpTriggered();
 
 	// 이동 속도를 ExplosionTriggeredMovementMultiplier만큼 곱한 값으로 증가
-	SetCharacterMovementSetting(0.0f, StatComponent->GetMoveSpeed() * ExplosionTriggeredMovementMultiplier);
+	// 임시 BrakingDeceleration 설정, 기존 0이면 이동 자체를 하지 않음.
+	SetCharacterMovementSetting(111.0f, StatComponent->GetMoveSpeed() * ExplosionTriggeredMovementMultiplier);
 
 	// Explosion을 1회성으로 호출하기 위한 bool 값 활성화
 	bIsExplosionTriggered = true;

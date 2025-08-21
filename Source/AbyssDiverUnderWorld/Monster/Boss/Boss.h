@@ -262,7 +262,7 @@ protected:
 private:
 	static const FName BossStateKey;
 	uint8 bIsBiteAttackSuccess : 1;
-	uint8 bIsAttackCollisionOverlappedPlayer : 1;
+	//uint8 bIsAttackCollisionOverlappedPlayer : 1;
 	float TurnTimer = 0.0f;
 	float OriginDeceleration;
 	float SphereOverlapRadius = 100.0f;
@@ -274,7 +274,7 @@ private:
 #pragma region Getter, Setter
 public:
 	/** Target Getter, Setter */
-	FORCEINLINE bool GetIsAttackCollisionOverlappedPlayer() const { return bIsAttackCollisionOverlappedPlayer; };
+	//FORCEINLINE bool GetIsAttackCollisionOverlappedPlayer() const { return bIsAttackCollisionOverlappedPlayer; };
 
 	FORCEINLINE UCameraControllerComponent* GetCameraControllerComponent() const { return CameraControllerComponent; };
 
