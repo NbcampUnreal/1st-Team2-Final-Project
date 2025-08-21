@@ -87,6 +87,7 @@ public:
     void InitComponent(class ACharacter* InCharacter);
 
     // === 이동 제어 ===
+
     UFUNCTION(BlueprintCallable, Category = "Aquatic Movement")
     void SetDesiredVelocity(const FVector& DesiredVel);
 
@@ -103,6 +104,7 @@ public:
     float GetDistanceToTarget() const;
 
     // === 장애물 회피 ===
+
     UFUNCTION(BlueprintCallable, Category = "Aquatic Movement")
     void AddAvoidanceLocation(const FVector& Location, float Radius, float Strength = 1.0f);
 
@@ -110,6 +112,7 @@ public:
     void ClearAvoidanceLocations();
 
     // === 애니메이션 인터페이스 ===
+
     UFUNCTION(BlueprintCallable, Category = "Aquatic Movement|Animation")
     FVector GetBoneWorldOffset(const FName& BoneName) const;
 
@@ -128,6 +131,7 @@ public:
 
 protected:
     // === 경로 관리 ===
+
     void UpdateTrajectory(float DeltaTime);
     void RecordTrajectoryPoint(float Importance = 1.0f);
     void OptimizeTrajectoryForLOD();
@@ -135,9 +139,11 @@ protected:
     void PredictFuturePath(float PredictionTime);
 
     // === 보간 ===
+
     void InterpolateTrajectory(float TimeDelay, FVector& OutPosition, FRotator& OutRotation) const;
 
     // === 본 추적 ===
+
     void CalculateAverageBoneDistance();
     
     // 거리 기반 시스템
@@ -145,21 +151,25 @@ protected:
     void GetPositionAndRotationAlongPath(float DistanceFromHead, FVector& OutPosition, FRotator& OutRotation) const;
     
     // === 본 위치 ===
+
     FVector GetHeadBoneLocation() const;
     FVector GetTailBoneLocation() const;
     FVector GetOriginalBoneLocation(int32 BoneArrayIndex) const; // 오프셋 제거된 원래 본 위치
 
     // === 이동 업데이트 ===
+
     void UpdateMovement(float DeltaTime);
     FVector CalculateSteeringForce() const;
     FVector CalculateAvoidanceForce();
 
     // === LOD ===
+
     float GetLODFactor() const;
     float GetTrajectoryRecordInterval() const;
 
 public:
     // === 이동 파라미터 ===
+
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
     float MaxSpeed = 600.0f;
 
@@ -176,6 +186,7 @@ public:
     float BrakingDeceleration = 400.0f;
 
     // === 경로 설정 ===
+
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trajectory", meta = (ClampMin = "10", ClampMax = "1000"))
     int32 MaxTrajectoryPoints = 200;
 
@@ -193,13 +204,18 @@ public:
     float SplineInterpolationDistance = 1.0f; // 1초 이내는 스플라인
 
     // === 본 추적 설정 ===
+
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bone Trail")
     TArray<FBoneTrailInfo> TrackedBones;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bone Trail")
     float BoneOffsetSmoothSpeed = 10.0f;
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bone Trail")
+    uint8 bShouldUpdateBoneTrails : 1 = true;;
+
     // === 장애물 회피 ===
+
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Avoidance")
     float ObstacleDetectionRange = 500.0f;
 
@@ -218,6 +234,7 @@ public:
     float TargetDirectionWeight = 1.5f;
 
     // === LOD 설정 ===
+
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "LOD")
     float LODDistanceMin = 1000.0f;
 
@@ -231,16 +248,18 @@ public:
     float CurrentLODFactor;
 
     // === 디버그 ===
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug")
-    bool bDrawTrajectory = false;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug")
-    bool bDrawBoneTrails = false;
+    uint8 bDrawTrajectory : 1 = false;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug")
-    bool bDrawAvoidance = false;
+    uint8 bDrawBoneTrails : 1 = false;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug")
+    uint8 bDrawAvoidance : 1 = false;
 
     // === 상태 ===   
+
     UPROPERTY(BlueprintReadOnly, Category = "State")
     FVector CurrentVelocity;
 
@@ -250,26 +269,26 @@ public:
     UPROPERTY(BlueprintReadOnly, Category = "State")
     FVector TargetLocation;
 
-    
-
 protected:
     
-
     UPROPERTY(BlueprintReadOnly, Category = "State")
-    bool bHasTarget;
+    uint8 bHasTarget : 1 = false;
 
     UPROPERTY(BlueprintReadOnly, Category = "State")
     float TargetAcceptanceRadius;
 
     // === 경로 데이터 ===
+
     UPROPERTY()
     TArray<FTrajectoryPoint> TrajectoryHistory;
 
     // === 장애물 데이터 ===
+
     UPROPERTY()
     TArray<FObstacleInfo> ActiveObstacles;
 
     // === 캐시 ===
+
     UPROPERTY()
     class ACharacter* OwnerCharacter;
 
@@ -282,7 +301,7 @@ protected:
     float LastRecordTime;
     FVector LastRecordedLocation;
     float AverageBoneDistance;
-    bool bBoneDistanceCalculated;
+    uint8 bBoneDistanceCalculated : 1 = false;
     
     // 벽면 타기 상태 캐시
     int32 CurrentWallFollowDirection; // 현재 벽면 타기 방향 (-1, 0, 1)
@@ -291,8 +310,10 @@ protected:
 
 private:
     // === 스플라인 보간 ===
+
     FVector CatmullRomSpline(const FVector& P0, const FVector& P1, const FVector& P2, const FVector& P3, float T) const;
 
     // === 디버그 ===
+
     void DrawDebugVisualization();
 };

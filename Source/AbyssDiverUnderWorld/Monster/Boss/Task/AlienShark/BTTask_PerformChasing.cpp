@@ -64,7 +64,7 @@ void UBTTask_PerformChasing::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* 
 
 
 	// 추적 시간이 경과한 경우 ...
-	TaskMemory->AccumulatedTime += FMath::Clamp(DeltaSeconds, 0.0f, 0.1f);
+	TaskMemory->AccumulatedTime += DeltaSeconds;
 	if (TaskMemory->AccumulatedTime > TaskMemory->ChasingTime)
 	{
 		LOG(TEXT("PerformChasing: Chasing time exceeded"));

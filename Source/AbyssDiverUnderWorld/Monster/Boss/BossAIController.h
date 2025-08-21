@@ -33,8 +33,8 @@ public:
 	void SetSightRadius(float InRadius);
 	void SetVisionAngle(float Angle);
 	bool IsStateSame(EBossState State);
-	EPathFollowingRequestResult::Type MoveToActorWithRadius(AActor* TargetActor);
-	EPathFollowingRequestResult::Type MoveToLocationWithRadius(const FVector& Location);
+	void MoveToActorWithRadius(AActor* TargetActor);
+	void MoveToLocationWithRadius(const FVector& Location);
 
 private:
 #pragma endregion

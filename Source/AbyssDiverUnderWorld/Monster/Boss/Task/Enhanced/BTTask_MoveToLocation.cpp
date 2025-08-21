@@ -48,7 +48,7 @@ EBTNodeResult::Type UBTTask_MoveToLocation::ExecuteTask(UBehaviorTreeComponent& 
 	// MoveTask를 종료할 랜덤 시간 추출
 	TaskMemory->AccumulatedTime = 0.f;
 
-	Result = TaskMemory->AIController->MoveToLocationWithRadius(TaskMemory->TargetLocation);
+	TaskMemory->AIController->MoveToLocationWithRadius(TaskMemory->TargetLocation);
 
 	return EBTNodeResult::InProgress;
 }
