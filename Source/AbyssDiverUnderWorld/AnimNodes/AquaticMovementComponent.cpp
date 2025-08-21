@@ -87,8 +87,11 @@ void UAquaticMovementComponent::TickComponent(float DeltaTime, ELevelTick TickTy
     // 경로 업데이트
     UpdateTrajectory(DeltaTime);
 
-    // 본 추적 업데이트
-    UpdateBoneTrailsDistanceBased(DeltaTime);
+    if (bShouldUpdateBoneTrails)
+    {
+        // 본 추적 업데이트
+        UpdateBoneTrailsDistanceBased(DeltaTime);
+    }
 
     // 디버그 시각화
     if (bDrawTrajectory || bDrawBoneTrails || bDrawAvoidance)

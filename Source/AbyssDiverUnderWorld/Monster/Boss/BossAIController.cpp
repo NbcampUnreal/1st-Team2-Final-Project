@@ -1,14 +1,19 @@
 #include "Monster/Boss/BossAIController.h"
+
 #include "AbyssDiverUnderWorld.h"
+#include "Character/UnderwaterCharacter.h"
+
 #include "Boss.h"
 #include "ENum/EBossState.h"
-#include "BehaviorTree/BehaviorTree.h"
-#include "BehaviorTree/BlackboardComponent.h"
-#include "Character/UnderwaterCharacter.h"
+#include "AnimNodes/AquaticMovementComponent.h"
+
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Damage.h"
 #include "Perception/AISenseConfig_Hearing.h"
 #include "Perception/AISenseConfig_Sight.h"
+
+#include "BehaviorTree/BehaviorTree.h"
+#include "BehaviorTree/BlackboardComponent.h"
 
 const FName ABossAIController::BossStateKey = "BossState";
 
@@ -100,12 +105,25 @@ bool ABossAIController::IsStateSame(EBossState State)
 	return (GetBlackboardComponent()->GetValueAsEnum(BossStateKey) == static_cast<uint8>(State));
 }
 
-EPathFollowingRequestResult::Type ABossAIController::MoveToActorWithRadius(AActor* TargetActor)
+void ABossAIController::MoveToActorWithRadius(AActor* TargetActor)
 {
-	return MoveToActor(TargetActor, MoveToActorAcceptanceRadius);
+	if (IsValid(TargetActor) == false)
+	{
+		LOGV(Error, TEXT("TargetActor is not valid"));
+		return;
+	}
+
+	MoveToLocationWithRadius(TargetActor->GetActorLocation());
 }
 
-EPathFollowingRequestResult::Type ABossAIController::MoveToLocationWithRadius(const FVector& Location)
+void ABossAIController::MoveToLocationWithRadius(const FVector& Location)
 {
-	return MoveToLocation(Location, MoveToLocationAcceptanceRadius);
+	ABoss* BossCharacter = Cast<ABoss>(GetPawn());
+	if (IsValid(BossCharacter) == false)
+	{
+		LOGV(Error, TEXT("BossCharacter is not valid"));
+		return;
+	}
+
+	BossCharacter->AquaticMovementComponent->SetTargetLocation(Location, MoveToActorAcceptanceRadius);
 }
