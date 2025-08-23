@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #include "Framework/ADTutorialGameMode.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/DataTable.h" 
@@ -11,16 +9,21 @@
 #include "DataRow/FADItemDataRow.h"
 #include "Interactable/OtherActors/TargetIndicators/TargetIndicatorManager.h"
 #include "Components/PrimitiveComponent.h"
-#include "Framework/ADPlayerController.h"
+#include "Framework/ADTutorialPlayerController.h"
 #include "Engine/Light.h"
 #include "NiagaraComponent.h"
 #include "TimerManager.h"
 #include "Components/LightComponent.h" 
+#include "Character/UnderwaterCharacter.h"
 #include "Interactable/OtherActors/Radars/RadarReturn2DComponent.h"
 #include "EngineUtils.h"
+#include "Animation/AnimMontage.h"
+#include "TimerManager.h" 
+#include "Kismet/GameplayStatics.h" 
 
 AADTutorialGameMode::AADTutorialGameMode()
 {
+    bBatteryGaugeStarted = false;
 }
 
 void AADTutorialGameMode::StartPlay()
@@ -130,35 +133,39 @@ void AADTutorialGameMode::HandleCurrentPhase()
         TutorialPlayerController = Cast<AADPlayerController>(UGameplayStatics::GetPlayerController(this, 0));
         if (!TutorialPlayerController) return;
     }
+
     if (AADTutorialGameState* TutorialGS = GetGameState<AADTutorialGameState>())
     {
         ETutorialPhase CurrentPhase = TutorialGS->GetCurrentPhase();
         switch (CurrentPhase)
         {
-        case ETutorialPhase::Step1_Movement:      HandlePhase_Movement(); break;
-        case ETutorialPhase::Step2_Sprint:        HandlePhase_Sprint(); break;
-        case ETutorialPhase::Step3_Oxygen:        HandlePhase_Oxygen(); break;
-        case ETutorialPhase::Step4_Radar:         HandlePhase_Radar(); break;
-        case ETutorialPhase::Dialogue_02:         HandlePhase_Dialogue_02(); break;
-        case ETutorialPhase::Step5_Looting:       HandlePhase_Looting(); break;
-        case ETutorialPhase::Step6_Inventory:     HandlePhase_Inventory(); break;
-        case ETutorialPhase::Step7_Drone:         HandlePhase_Drone(); break;
-        case ETutorialPhase::Step8_LightToggle:   HandlePhase_LightToggle(); break;
-        case ETutorialPhase::Step9_Items:         HandlePhase_Items(); break;
-        case ETutorialPhase::Step10_Battery:      HandlePhase_Battery(); break;
-        case ETutorialPhase::Step11_Drop:         HandlePhase_Drop(); break;
-        case ETutorialPhase::Step12_OxygenWarning:HandlePhase_OxygenWarning(); break;
-        case ETutorialPhase::Step13_Revive:       HandlePhase_Revive(); break;
-        case ETutorialPhase::Dialogue_04:         break;
-        case ETutorialPhase::Step14_Die:          HandlePhase_Die(); break;
-        case ETutorialPhase::Step15_Resurrection: HandlePhase_Resurrection(); break;
-        case ETutorialPhase::Complete:            HandlePhase_Complete(); break;
-        default:                                  break;
+        case ETutorialPhase::Step1_Movement:       HandlePhase_Movement(); break;
+        case ETutorialPhase::Step2_Sprint:         HandlePhase_Sprint(); break;
+        case ETutorialPhase::Step3_Oxygen:         HandlePhase_Oxygen(); break;
+        case ETutorialPhase::Step4_Radar:          HandlePhase_Radar(); break;
+        case ETutorialPhase::Dialogue_02:          HandlePhase_Dialogue_02(); break;
+        case ETutorialPhase::Step5_Looting:        HandlePhase_Looting(); break;
+        case ETutorialPhase::Step6_Inventory:      HandlePhase_Inventory(); break;
+        case ETutorialPhase::Step7_Drone:          HandlePhase_Drone(); break;
+        case ETutorialPhase::Dialogue_03:          break;
+        case ETutorialPhase::Step8_LightToggle:    HandlePhase_LightToggle(); break;
+        case ETutorialPhase::Step9_Items:          HandlePhase_Items(); break;
+        case ETutorialPhase::Dialogue_06:          HandlePhase_Dialogue_06(); break;
+        case ETutorialPhase::Step10_Battery:       HandlePhase_Battery(); break;
+        case ETutorialPhase::Step11_Drop:          HandlePhase_Drop(); break;
+        case ETutorialPhase::Dialogue_05:          HandlePhase_Dialogue_05(); break;
+        case ETutorialPhase::Step12_OxygenWarning: HandlePhase_OxygenWarning(); break;
+        case ETutorialPhase::Step13_Revive:        HandlePhase_Revive(); break;
+        case ETutorialPhase::Dialogue_04:          break;
+        case ETutorialPhase::Step14_Die:           HandlePhase_Die(); break;
+        case ETutorialPhase::Step15_Resurrection:  HandlePhase_Resurrection(); break;
+        case ETutorialPhase::Complete:             HandlePhase_Complete(); break;
+        default:                                   break;
         }
     }
 }
 
-void AADTutorialGameMode::HandlePhase_Movement() 
+void AADTutorialGameMode::HandlePhase_Movement()
 {
 }
 
@@ -209,7 +216,7 @@ void AADTutorialGameMode::HandlePhase_Radar()
     }
 }
 
-void AADTutorialGameMode::HandlePhase_Oxygen() 
+void AADTutorialGameMode::HandlePhase_Oxygen()
 {
 }
 
@@ -369,15 +376,37 @@ void AADTutorialGameMode::HandlePhase_LightToggle()
 void AADTutorialGameMode::HandlePhase_Items()
 {
     SpawnNewWall(FName("TutorialWall_9"));
+}
+
+void AADTutorialGameMode::HandlePhase_Dialogue_06()
+{
+    OnPhaseBatteryStart();
     ItemsPhaseProgress = 0;
 }
 
 void AADTutorialGameMode::HandlePhase_Battery()
 {
-    OnPhaseBatteryStart();
-    if (ATutorialManager* Manager = Cast<ATutorialManager>(UGameplayStatics::GetActorOfClass(GetWorld(), ATutorialManager::StaticClass())))
+    if (bBatteryGaugeStarted) return;
+    bBatteryGaugeStarted = true;
+
+    float StartBattPct = BatteryStartPercentOverride;
+    if (StartBattPct < 0.f)
     {
-        const float TargetChargeAmount = 20.f;
+        StartBattPct = 50.f;
+    }
+    StartBattPct = FMath::Clamp(StartBattPct, 0.f, 100.f);
+
+    const float TargetChargeAmount = FMath::Max(0.f, 100.f - StartBattPct);
+
+    if (TargetChargeAmount <= KINDA_SMALL_NUMBER)
+    {
+        AdvanceTutorialPhase();
+        return;
+    }
+
+    if (ATutorialManager* Manager = Cast<ATutorialManager>(
+        UGameplayStatics::GetActorOfClass(GetWorld(), ATutorialManager::StaticClass())))
+    {
         Manager->StartGaugeObjective(EGaugeInteractionType::Tap, TargetChargeAmount, 0.f, 0.f);
     }
 }
@@ -390,35 +419,68 @@ void AADTutorialGameMode::HandlePhase_Drop()
     }
 }
 
-void AADTutorialGameMode::HandlePhase_OxygenWarning() 
-{ 
-    SpawnNewWall(FName("TutorialWall_12")); 
-}
-
-void AADTutorialGameMode::HandlePhase_Revive() 
-{ 
- 
-}
-
-void AADTutorialGameMode::HandlePhase_Die() 
+void AADTutorialGameMode::HandlePhase_Dialogue_05()
 {
 }
 
-void AADTutorialGameMode::HandlePhase_Resurrection() 
+void AADTutorialGameMode::HandlePhase_OxygenWarning()
+{
+    SpawnNewWall(FName("TutorialWall_12"));
+}
+
+void AADTutorialGameMode::HandlePhase_Revive()
+{
+    SpawnNewWall(FName("TutorialWall_13"));
+
+    if (!GroggyNPCClass)
+    {
+        UE_LOG(LogTemp, Error, TEXT("GroggyNPCClass is not set in TutorialGameMode BP."));
+        return;
+    }
+
+    TArray<AActor*> SpawnPoints;
+    UGameplayStatics::GetAllActorsWithTag(GetWorld(), GroggyNPCSpawnTag, SpawnPoints);
+    if (SpawnPoints.Num() == 0)
+    {
+        UE_LOG(LogTemp, Error, TEXT("Cannot find an actor with tag '%s' to spawn the Groggy NPC."), *GroggyNPCSpawnTag.ToString());
+        return;
+    }
+    AActor* SpawnPoint = SpawnPoints[0];
+    FTransform SpawnTransform = SpawnPoint->GetActorTransform();
+
+    AUnderwaterCharacter* SpawnedNPC = GetWorld()->SpawnActor<AUnderwaterCharacter>(GroggyNPCClass, SpawnTransform);
+
+    if (SpawnedNPC)
+    {
+        SpawnedNPC->SetCharacterState(ECharacterState::Groggy);
+        TrackPhaseActor(SpawnedNPC);
+        TutorialNPC = SpawnedNPC;
+    }
+    else
+    {
+        UE_LOG(LogTemp, Error, TEXT("Failed to spawn Groggy NPC."));
+    }
+}
+
+void AADTutorialGameMode::HandlePhase_Die()
 {
 }
 
-void AADTutorialGameMode::HandlePhase_Complete() 
+void AADTutorialGameMode::HandlePhase_Resurrection()
 {
 }
 
-void AADTutorialGameMode::SpawnDownedNPC() 
+void AADTutorialGameMode::HandlePhase_Complete()
+{
+}
+
+void AADTutorialGameMode::SpawnDownedNPC()
 {
 }
 
 bool AADTutorialGameMode::IsTypingFinishedForCurrentPhase() const
-{ 
-    return bIsTypingFinishedForCurrentPhase; 
+{
+    return bIsTypingFinishedForCurrentPhase;
 }
 
 void AADTutorialGameMode::OnTypingAnimationFinished()
@@ -445,7 +507,7 @@ void AADTutorialGameMode::OnPlayerItemAction(EPlayerActionTrigger ItemActionType
     {
         const ETutorialPhase CurrentPhase = TutorialGS->GetCurrentPhase();
 
-        if (CurrentPhase == ETutorialPhase::Step9_Items)
+        if (CurrentPhase == ETutorialPhase::Dialogue_06)
         {
             if (ItemsPhaseProgress == 0 && ItemActionType == EPlayerActionTrigger::UseItem1)
             {

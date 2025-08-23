@@ -31,13 +31,14 @@ public:
 	void StartGaugeObjective(EGaugeInteractionType InInteractionType, float InTargetValue, float InTapValue, float InHoldValuePerSecond);
 	void NotifyInteractionStart();
 	void NotifyInteractionEnd();
-	void AddGaugeProgress(float Amount);
 
 	void OnInventoryInputPressed();
 	void OnInventoryInputReleased();
 
 	bool IsGaugeObjectiveActive() const { return bIsGaugeObjectiveActive; }
 
+	UFUNCTION(BlueprintCallable, Category = "Tutorial")
+	void AddGaugeProgress(float Amount);
 protected:
 	UFUNCTION()
 	void OnTutorialPhaseChanged(ETutorialPhase NewPhase);

@@ -308,9 +308,6 @@ protected:
 	UFUNCTION(NetMulticast, Reliable)
 	void M_UpdateAnimSyncState(FAnimSyncState NewAnimSyncState);
 	void M_UpdateAnimSyncState_Implementation(FAnimSyncState NewAnimSyncState);
-	
-	/** 캐릭터 상태를 설정한다. Server에서만 실행 가능하다. */
-	void SetCharacterState(ECharacterState NewCharacterState);
 
 	/** Server에서 설정한 Multicast를 전파한다. 전파 중에 다시 상태를 전이하면 안 된다. */
 	UFUNCTION(NetMulticast, Reliable)
@@ -1229,6 +1226,7 @@ private:
 
 	TWeakObjectPtr<class USoundSubsystem> SoundSubsystem;
 	
+	uint8 bIsMovementBlockedByTutorial : 1;
 #pragma endregion
 
 #pragma region Getter Setter
@@ -1294,6 +1292,9 @@ public:
 	/** 캐릭터가 현재 살아있는지 여부를 반환. 살아 있으면 타겟팅될 수 있다. 사망이 아닌 상태를 의미한다. */
 	UFUNCTION(BlueprintCallable)
 	bool IsAlive() const;
+
+	/** 캐릭터 상태를 설정한다. Server에서만 실행 가능하다. */
+	void SetCharacterState(ECharacterState NewCharacterState);
 
 	/** 캐릭터의 남은 그로기 시간을 반환 */
 	UFUNCTION(BlueprintCallable)
@@ -1380,6 +1381,7 @@ public:
 	FORCEINLINE UInputAction* GetSelectInventorySlot2() const { return EquipSlot2Action; }
 	FORCEINLINE UInputAction* GetSelectInventorySlot3() const { return EquipSlot3Action; }
 
+	void SetMovementBlockedByTutorial(bool bIsBlocked);
 protected:
 
 	class USoundSubsystem* GetSoundSubsystem();
