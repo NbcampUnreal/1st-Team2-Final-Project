@@ -1471,7 +1471,7 @@ void AUnderwaterCharacter::DropAllExchangeableItems()
 float AUnderwaterCharacter::CalculateEffectiveSpeed() const
 {
 	float BaseSpeed = GetEnvironmentState() == EEnvironmentState::Underwater
-		                        ? StatComponent->MoveSpeed
+		                        ? BaseSwimSpeed
 		                        : BaseGroundSpeed;
 	if (StaminaComponent->IsSprinting())
 	{
@@ -1503,7 +1503,7 @@ void AUnderwaterCharacter::AdjustSpeed()
 	
 	EffectiveSpeed = CalculateEffectiveSpeed();
 
-	// UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Adjust Speed : %s, EffectiveSpeed = %f"), *GetName(), EffectiveSpeed);
+	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Adjust Speed : %s, EffectiveSpeed = %f"), *GetName(), EffectiveSpeed);
 	
 	if (EnvironmentState == EEnvironmentState::Underwater)
 	{
@@ -2030,6 +2030,9 @@ void AUnderwaterCharacter::Move(const FInputActionValue& InputActionValue)
 	{
 		MoveUnderwater(MoveInput);
 	}
+
+	// 후방 이동에 따른 최종 속도 계산
+	AdjustSpeed();
 }
 
 void AUnderwaterCharacter::MoveUnderwater(const FVector& MoveInput)
