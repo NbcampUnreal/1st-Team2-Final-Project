@@ -9,3 +9,4 @@ UE_DEFINE_GAMEPLAY_TAG(TAG_EquipUse_NVToggle, "EquipmentUseTag.NVToggle");
 UE_DEFINE_GAMEPLAY_TAG(TAG_EquipUse_ApplyChargeUI, "EquipmentUseTag.ApplyChargeUI");
 UE_DEFINE_GAMEPLAY_TAG(TAG_EquipUse_PlaceMine, "EquipmentUseTag.PlaceMine");
 UE_DEFINE_GAMEPLAY_TAG(TAG_EquipUse_DetonateMine, "EquipmentUseTag.DetonateMine");
+UE_DEFINE_GAMEPLAY_TAG(TAG_EquipUse_SwingHammer, "EquipmentUseTag.SwingHammer");
