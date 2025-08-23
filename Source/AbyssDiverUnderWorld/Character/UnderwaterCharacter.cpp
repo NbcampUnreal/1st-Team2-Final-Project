@@ -356,7 +356,8 @@ void AUnderwaterCharacter::ApplyUpgradeFactor(UUpgradeComponent* UpgradeComponen
 			    break;
 	    	case EUpgradeType::Speed:
 	    		// 최종 속도는 나중에 AdjustSpeed를 통해서 계산된다. 현재는 BaseSpeed만 조정하면 된다.
-	    		BaseSwimSpeed += StatFactor;
+	    		UpgradeSwimSpeed = StatFactor;
+	    		BaseSwimSpeed += UpgradeSwimSpeed;
 	    		break;
 			case EUpgradeType::Light:
 	    		if (Grade > 1)
@@ -919,6 +920,7 @@ void AUnderwaterCharacter::OnEndSpectated()
 
 void AUnderwaterCharacter::OnMoveSpeedChanged(float NewMoveSpeed)
 {
+	BaseSwimSpeed = NewMoveSpeed + UpgradeSwimSpeed;
 	AdjustSpeed();
 }
 

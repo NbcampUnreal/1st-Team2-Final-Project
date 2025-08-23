@@ -980,6 +980,9 @@ private:
 	/** Upgrade가 적용된 최종 속도. Ground, Water을 전환할 때 속도를 갱신하기 위해 속도를 저장한다. 초기값은 StatComponent의 값을 참조한다. */
 	float BaseSwimSpeed;
 
+	/** Upgrade 추가 이동 속도 */ 
+	float UpgradeSwimSpeed = 0.0f;
+
 	// @ToDo: Multiplier를 통합 적용
 	// @ToDo: DPV 상황 추가
 	
