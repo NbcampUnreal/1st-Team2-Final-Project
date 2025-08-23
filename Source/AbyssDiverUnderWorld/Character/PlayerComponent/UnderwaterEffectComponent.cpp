@@ -278,7 +278,7 @@ void UUnderwaterEffectComponent::UpdateMovementEffects(float DeltaTime)
 		{
 			MoveBubbleParticleComponent->Activate();
 		}
-		if (MoveBubbleParticleComponent->IsActive())
+		if (MoveBubbleParticleComponent && MoveBubbleParticleComponent->IsActive())
 		{
 			MoveBubbleParticleComponent->SetFloatParameter(MoveBubbleIntensityParameterName, 0.0f);
 		}
@@ -293,7 +293,10 @@ void UUnderwaterEffectComponent::UpdateMovementEffects(float DeltaTime)
 			{
 				SprintMovementAudioId = SoundSubsystem->Play2D(SprintMovementSound, 0.5f);
 			}
-			MoveBubbleParticleComponent->SetFloatParameter(MoveBubbleIntensityParameterName, 1.0f);
+			if (MoveBubbleParticleComponent)
+			{
+				MoveBubbleParticleComponent->SetFloatParameter(MoveBubbleIntensityParameterName, 1.0f);
+			}
 		}
 	}
 	else
