@@ -232,6 +232,7 @@ void UEquipUseComponent::S_LeftClick_Implementation()
 	case EAction::ToggleBoost:     BoostOn();			break;
 	case EAction::ToggleNVGToggle: ToggleNightVision(); break;
 	case EAction::PlaceMine:	   PlaceMine();			break;
+	case EAction::SwingHammer:     SwingHammer();		break;
 	default:                      break;
 	}
 }
@@ -631,6 +632,7 @@ EAction UEquipUseComponent::TagToAction(const FGameplayTag& Tag)
 	else if (Tag.MatchesTagExact(TAG_EquipUse_ApplyChargeUI))   return EAction::ApplyChargeUI;
 	else if (Tag.MatchesTagExact(TAG_EquipUse_PlaceMine))       return EAction::PlaceMine;
 	else if (Tag.MatchesTagExact(TAG_EquipUse_DetonateMine))    return EAction::DetonateMine;
+	else if (Tag.MatchesTagExact(TAG_EquipUse_SwingHammer))     return EAction::SwingHammer;
 	return EAction::None;
 }
 
@@ -642,6 +644,7 @@ EEquipmentType UEquipUseComponent::TagToEquipmentType(const FGameplayTag& Tag)
 	else if (Tag.MatchesTagExact(TAG_EquipUse_DPVToggle))    return EEquipmentType::DPV;
 	else if (Tag.MatchesTagExact(TAG_EquipUse_NVToggle))     return EEquipmentType::NightVision;
 	else if (Tag.MatchesTagExact(TAG_EquipUse_PlaceMine))    return EEquipmentType::Mine;
+	else if (Tag.MatchesTagExact(TAG_EquipUse_SwingHammer))  return EEquipmentType::ToyHammer;
 	return EEquipmentType::Max;
 }
 
@@ -1001,6 +1004,29 @@ void UEquipUseComponent::DetonateMine()
 	PlacedMines.Empty();
 }
 
+void UEquipUseComponent::SwingHammer()
+{
+	if (!bCanFire || !OwningCharacter.IsValid())
+		return;
+	bCanFire = false;
+
+	constexpr ECollisionChannel MonsterChannel = ECC_GameTraceChannel3;
+	AUnderwaterCharacter* Diver = Cast<AUnderwaterCharacter>(OwningCharacter);
+	PlaySwingAnimation(Diver);
+
+	const float CoolDown = 1.f / HammerRateOfSwing;
+	GetWorld()->GetTimerManager().ClearTimer(TimerHandle_HandleRefire);
+	GetWorld()->GetTimerManager().SetTimer(
+		TimerHandle_HandleRefire,
+		[this]()
+		{
+			bCanFire = true;
+		},
+		CoolDown,
+		false
+	);
+}
+
 void UEquipUseComponent::FinishReload(int32 InMagazineSize, AUnderwaterCharacter* Diver)
 {
 	const int32 Needed = InMagazineSize - CurrentAmmoInMag;
@@ -1083,6 +1109,25 @@ void UEquipUseComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 	DOREPLIFETIME(UEquipUseComponent, bNVGWidgetVisible);
 	DOREPLIFETIME(UEquipUseComponent, bChargeBatteryWidgetVisible);
 	DOREPLIFETIME(UEquipUseComponent, CurrentEquipmentName);
+}
+
+void UEquipUseComponent::PlaySwingAnimation(AUnderwaterCharacter* Diver)
+{
+	if (!SwingMontage || !Diver) return;
+
+	FAnimSyncState SyncState;
+	SyncState.bEnableRightHandIK = true;
+	SyncState.bEnableLeftHandIK = false;
+	SyncState.bEnableFootIK = true;
+	SyncState.bIsStrafing = false;
+
+	Diver->M_StopAllMontagesOnBothMesh(0.f);
+	Diver->M_PlayMontageOnBothMesh(
+		SwingMontage,
+		1.0f,
+		NAME_None,
+		SyncState
+	);
 }
 
 bool UEquipUseComponent::IsInterpolating() const

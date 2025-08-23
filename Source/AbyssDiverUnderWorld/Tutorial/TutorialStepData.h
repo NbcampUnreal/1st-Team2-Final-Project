@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
 #include "Tutorial/TutorialEnums.h"
+#include "UI/TutorialHighlighting.h" 
 #include "TutorialStepData.generated.h"
 
 
@@ -40,4 +41,7 @@ struct FTutorialStepData : public FTableRowBase
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tutorial", meta = (EditCondition = "bWaitForPlayerTrigger"))
     EPlayerActionTrigger ActionToWaitFor = EPlayerActionTrigger::None;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (EditCondition = "HighlightTargetID != ETutorialHighlightTarget::None"))
+    FHighlightingInfo HighlightInfo;
 };
