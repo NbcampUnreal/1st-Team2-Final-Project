@@ -1481,7 +1481,7 @@ float AUnderwaterCharacter::CalculateEffectiveSpeed() const
 	}
 
 	// Effective Speed = BaseSpeed * (1 - OverloadSpeedFactor) * ZoneSpeedMultiplier
-	//					* (1 - BindMultiplier)
+	//					* (1 - BindMultiplier) * BackwardSpeedFactor
 	float Multiplier = 1.0f;
 	if (IsOverloaded())
 	{
@@ -1491,6 +1491,11 @@ float AUnderwaterCharacter::CalculateEffectiveSpeed() const
 	if (!BoundCharacters.IsEmpty())
 	{
 		Multiplier *= (1 - BindMultiplier * BoundCharacters.Num());
+	}
+	// Tick이었다면 GetLastMoveInput을 고려할 수 있지만, 현재 구현으로는 불가능하므로 Move에서 갱신된 이동 방향을 이용해 계산한다.
+	if (MoveDirection == EMoveDirection::Backward)
+	{
+		Multiplier *= BackwardMoveSpeedFactor;
 	}
 	
 	Multiplier = FMath::Max(0.0f, Multiplier);
@@ -1505,7 +1510,7 @@ void AUnderwaterCharacter::AdjustSpeed()
 	
 	EffectiveSpeed = CalculateEffectiveSpeed();
 
-	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Adjust Speed : %s, EffectiveSpeed = %f"), *GetName(), EffectiveSpeed);
+	// UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Adjust Speed : %s, EffectiveSpeed = %f"), *GetName(), EffectiveSpeed);
 	
 	if (EnvironmentState == EEnvironmentState::Underwater)
 	{
@@ -2032,6 +2037,10 @@ void AUnderwaterCharacter::Move(const FInputActionValue& InputActionValue)
 	{
 		MoveUnderwater(MoveInput);
 	}
+	// Tick에서 매 프레임 계산하면 MoveDirection을 계산할 필요가 없지만,
+	// 현재 구현에서는 Tick이 없으므로 이동 입력을 받을 때마다 갱신한다.
+	// 추후, Tick으로 변경할 경우 Tick 프레임에서 갱신하도록 수정
+	UpdateMoveDirection(MoveInput);
 
 	// 후방 이동에 따른 최종 속도 계산
 	AdjustSpeed();
@@ -2069,11 +2078,11 @@ void AUnderwaterCharacter::MoveGround(const FVector& MoveInput)
 		RequestStopPlayingEmote(PlayEmoteIndex);
 	}
 	
-	const FRotator ControllerRotator = FRotator(0.f, Controller->GetControlRotation().Yaw, 0.f);
+	const FRotator ControlRotation = FRotator(0.f, Controller->GetControlRotation().Yaw, 0.f);
 
 	// World에서 Controller의 X축, Y축 방향
-	const FVector ForwardVector = FRotationMatrix(ControllerRotator).GetUnitAxis(EAxis::X);
-	const FVector RightVector = FRotationMatrix(ControllerRotator).GetUnitAxis(EAxis::Y);
+	const FVector ForwardVector = FRotationMatrix(ControlRotation).GetUnitAxis(EAxis::X);
+	const FVector RightVector = FRotationMatrix(ControlRotation).GetUnitAxis(EAxis::Y);
 
 	// 전후 이동
 	if (!FMath::IsNearlyZero(MoveInput.X))
@@ -2084,6 +2093,22 @@ void AUnderwaterCharacter::MoveGround(const FVector& MoveInput)
 	if (!FMath::IsNearlyZero(MoveInput.Y))
 	{
 		AddMovementInput(RightVector, MoveInput.Y);
+	}
+}
+
+void AUnderwaterCharacter::UpdateMoveDirection(const FVector& MoveInput)
+{
+	if (MoveInput.X > 0)
+	{
+		MoveDirection = EMoveDirection::Forward;
+	}
+	else if (MoveInput.X < 0)
+	{
+		MoveDirection = EMoveDirection::Backward;
+	}
+	else
+	{
+		MoveDirection = EMoveDirection::Other;
 	}
 }
 

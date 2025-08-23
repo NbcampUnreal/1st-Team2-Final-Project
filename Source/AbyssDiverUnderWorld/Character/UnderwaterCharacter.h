@@ -7,11 +7,13 @@
 #include "UnitBase.h"
 #include "Interface/IADInteractable.h"
 #include "AbyssDiverUnderWorld.h"
+#include "LocomotionMode.h"
 #include "StatComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "UnderwaterCharacter.generated.h"
 
 #if UE_BUILD_SHIPPING
+enum class EMoveDirection : uint8;
 	#define LOG_ABYSS_DIVER_COMPILE_VERBOSITY Error
 #else
 	#define LOG_ABYSS_DIVER_COMPILE_VERBOSITY All
@@ -444,6 +446,9 @@ protected:
 	/** 지상 이동 함수 */
 	void MoveGround(const FVector& MoveInput);
 
+	/** 이동 방향을 업데이트 한다. */
+	void UpdateMoveDirection(const FVector& MoveInput);
+	
 	/** 점프 입력 시작 함수. 지상에서만 작동한다. */
 	void JumpInputStart(const FInputActionValue& InputActionValue);
 
@@ -965,6 +970,10 @@ private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Weight", meta = (AllowPrivateAccess = "true", ClampMin = "0.0", ClampMax = "1.0"))
 	float OverloadSpeedFactor;
 
+	/** 후방 이동 시의 속도 비율. 0.7일 경우 70%의 속도로 이동한다. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Move", meta = (AllowPrivateAccess = "true", ClampMin = "0.0", ClampMax = "1.0"))
+	float BackwardMoveSpeedFactor = 0.7f;
+	
 	/** 캐릭터의 효과가 적용된 최종 속도 */
 	UPROPERTY(Transient, BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float EffectiveSpeed;
@@ -979,6 +988,9 @@ private:
 
 	/** Upgrade가 적용된 최종 속도. Ground, Water을 전환할 때 속도를 갱신하기 위해 속도를 저장한다. 초기값은 StatComponent의 값을 참조한다. */
 	float BaseSwimSpeed;
+
+	/** 캐릭터의 현재 이동 방향 */
+	EMoveDirection MoveDirection = EMoveDirection::Other;
 
 	/** Upgrade 추가 이동 속도 */ 
 	float UpgradeSwimSpeed = 0.0f;
