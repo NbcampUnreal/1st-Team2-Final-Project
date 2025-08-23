@@ -1374,6 +1374,15 @@ public:
 	/** 깊이 컴포넌트를 반환 */
 	FORCEINLINE UDepthComponent* GetDepthComponent() const { return DepthComponent; }
 
+	FORCEINLINE UInputAction* GetSprintAction() const { return SprintAction; }
+	FORCEINLINE UInputAction* GetRadarAction() const { return RadarAction; }
+	FORCEINLINE UInputAction* GetInteractAction() const { return InteractionAction; }
+	FORCEINLINE UInputAction* GetLightToggleAction() const { return LightAction; }
+	FORCEINLINE UInputAction* GetReloadAction() const { return ReloadAction; } 
+	FORCEINLINE UInputAction* GetSelectInventorySlot1() const { return EquipSlot1Action; }
+	FORCEINLINE UInputAction* GetSelectInventorySlot2() const { return EquipSlot2Action; }
+	FORCEINLINE UInputAction* GetSelectInventorySlot3() const { return EquipSlot3Action; }
+
 protected:
 
 	class USoundSubsystem* GetSoundSubsystem();
