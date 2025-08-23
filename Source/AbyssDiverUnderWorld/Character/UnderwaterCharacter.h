@@ -401,7 +401,7 @@ protected:
 	/** 현재 소지 중인 교환 가능 아이템들을 모두 드랍한다. */
 	void DropAllExchangeableItems();
 	
-	float GetSwimEffectiveSpeed() const;
+	float CalculateEffectiveSpeed() const;
 
 	/** 현재 상태 속도 갱신.(무게, Sprint) */
 	UFUNCTION()
@@ -439,10 +439,10 @@ protected:
 	void Move(const FInputActionValue& InputActionValue);
 
 	/** 수중 이동 함수. Forward : Camera 방향으로 이동, Right : Forward 기준을 바탕으로 왼쪽, 오른쪽 수평 이동, Up : 위쪽 수직 이동 */
-	void MoveUnderwater(FVector MoveInput);
+	void MoveUnderwater(const FVector& MoveInput);
 
 	/** 지상 이동 함수 */
-	void MoveGround(FVector MoveInput);
+	void MoveGround(const FVector& MoveInput);
 
 	/** 점프 입력 시작 함수. 지상에서만 작동한다. */
 	void JumpInputStart(const FInputActionValue& InputActionValue);

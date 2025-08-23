@@ -277,6 +277,7 @@ void AUnderwaterCharacter::BeginPlay()
 
 	// @ToDo : Enter Normal로 처리가 가능한 부분은 Enter Normal로 처리
 	InteractableComponent->SetInteractable(false);
+	// 초기값으로 속도 조정
 	AdjustSpeed();
 }
 
@@ -1467,11 +1468,15 @@ void AUnderwaterCharacter::DropAllExchangeableItems()
 	}
 }
 
-float AUnderwaterCharacter::GetSwimEffectiveSpeed() const
+float AUnderwaterCharacter::CalculateEffectiveSpeed() const
 {
-	const float BaseSpeed = StaminaComponent->IsSprinting()
-		                        ? StatComponent->MoveSpeed * SprintMultiplier
-		                        : StatComponent->MoveSpeed;
+	float BaseSpeed = GetEnvironmentState() == EEnvironmentState::Underwater
+		                        ? StatComponent->MoveSpeed
+		                        : BaseGroundSpeed;
+	if (StaminaComponent->IsSprinting())
+	{
+		BaseSpeed *= SprintMultiplier;
+	}
 
 	// Effective Speed = BaseSpeed * (1 - OverloadSpeedFactor) * ZoneSpeedMultiplier
 	//					* (1 - BindMultiplier)
@@ -1493,9 +1498,10 @@ float AUnderwaterCharacter::GetSwimEffectiveSpeed() const
 
 void AUnderwaterCharacter::AdjustSpeed()
 {
-	EffectiveSpeed = EnvironmentState == EEnvironmentState::Underwater
-		? GetSwimEffectiveSpeed()
-		: BaseGroundSpeed;
+	// 캐릭터에 Tick이 없기 때문에 Adjust Speed를 호출하는 것이 필요 이상으로 복잡해지고 있다.
+	// 추후 Tick을 추가해서 속도 조절 로직을 간소화한다.
+	
+	EffectiveSpeed = CalculateEffectiveSpeed();
 
 	// UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Adjust Speed : %s, EffectiveSpeed = %f"), *GetName(), EffectiveSpeed);
 	
@@ -2026,7 +2032,7 @@ void AUnderwaterCharacter::Move(const FInputActionValue& InputActionValue)
 	}
 }
 
-void AUnderwaterCharacter::MoveUnderwater(const FVector MoveInput)
+void AUnderwaterCharacter::MoveUnderwater(const FVector& MoveInput)
 {
 	// Forward : Camera Forward with pitch
 	const FRotator ControlRotation = GetControlRotation();
@@ -2050,7 +2056,7 @@ void AUnderwaterCharacter::MoveUnderwater(const FVector MoveInput)
 	}
 }
 
-void AUnderwaterCharacter::MoveGround(FVector MoveInput)
+void AUnderwaterCharacter::MoveGround(const FVector& MoveInput)
 {
 	UAnimInstance* AnimInstance = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr;
 	if (bPlayingEmote && AnimInstance && AnimInstance->IsAnyMontagePlaying())
