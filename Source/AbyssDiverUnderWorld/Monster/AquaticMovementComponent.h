@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"	
+
 #include "AquaticMovementComponent.generated.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(LogAquaticMovement, Log, All);

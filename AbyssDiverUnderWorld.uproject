@@ -13,8 +13,16 @@
 				"AIModule",
 				"UMG",
 				"CoreUObject",
-				"AdvancedSessions",
-				"AnimGraph"
+				"AdvancedSessions"
+			]
+		},
+		{
+			"Name": "AbyssDiverUnderWorldEditor",
+			"Type": "UncookedOnly",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"AnimGraph",
+				"BlueprintGraph"
 			]
 		}
 	],

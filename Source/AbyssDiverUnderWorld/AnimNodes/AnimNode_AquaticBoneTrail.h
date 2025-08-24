@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -33,44 +33,44 @@ private:
     // End of FAnimNode_SkeletalControlBase interface
 
 public:
-    // ÃßÀûÇÒ º» ÀÌ¸§ ¹è¿­
+    // ì¶”ì í•  ë³¸ ì´ë¦„ ë°°ì—´
     UPROPERTY(EditAnywhere, Category = "Trail")
     TArray<FName> BoneNames;
 
-    // Movement Component ÂüÁ¶¸¦ À§ÇÑ ÅÂ±× ÀÌ¸§
+    // Movement Component ì°¸ì¡°ë¥¼ ìœ„í•œ íƒœê·¸ ì´ë¦„
     UPROPERTY(EditAnywhere, Category = "Trail")
     FName MovementComponentTag = "AquaticMovement";
 
-    // Àü¿ª ½ºÄÉÀÏ ÆÑÅÍ
+    // ì „ì—­ ìŠ¤ì¼€ì¼ íŒ©í„°
     UPROPERTY(EditAnywhere, Category = "Trail", meta = (ClampMin = "0.0", ClampMax = "4.0"))
     float GlobalOffsetScale = 1.0f;
 
     UPROPERTY(EditAnywhere, Category = "Trail", meta = (ClampMin = "0.0", ClampMax = "4.0"))
     float GlobalRotationScale = 1.0f;
 
-    // µğ¹ö±× ¿É¼Ç
+    // ë””ë²„ê·¸ ì˜µì…˜
     UPROPERTY(EditAnywhere, Category = "Debug")
     bool bEnableDebugDraw = false;
 
 protected:
-    // º» ÂüÁ¶ Ä³½Ã
+    // ë³¸ ì°¸ì¡° ìºì‹œ
     TArray<FBoneReference> BoneReferences;
 
-    // ¿ø·¡ ÀÎµ¦½º¿¡¼­ Á¤·ÄµÈ ÀÎµ¦½º·ÎÀÇ ¸ÅÇÎ
+    // ì›ë˜ ì¸ë±ìŠ¤ì—ì„œ ì •ë ¬ëœ ì¸ë±ìŠ¤ë¡œì˜ ë§¤í•‘
     TArray<int32> CachedBoneIndexMap;
 
-    // Ä³½ÃµÈ ÄÄÆ÷³ÍÆ® ÂüÁ¶
+    // ìºì‹œëœ ì»´í¬ë„ŒíŠ¸ ì°¸ì¡°
     class UAquaticMovementComponent* CachedMovementComponent;
 
-    // ¸¶Áö¸· ¾÷µ¥ÀÌÆ® ½Ã°£
+    // ë§ˆì§€ë§‰ ì—…ë°ì´íŠ¸ ì‹œê°„
     float LastUpdateTime;
 
-    // º» ¿ÀÇÁ¼Â Ä³½Ã
+    // ë³¸ ì˜¤í”„ì…‹ ìºì‹œ
     TArray<FVector> CachedOffsets;
     TArray<FRotator> CachedRotations;
 
 private:
-    // ÇïÆÛ ÇÔ¼öµé
+    // í—¬í¼ í•¨ìˆ˜ë“¤
     void FindMovementComponent(const FAnimationUpdateContext& Context);
     void ApplyBoneOffset(FComponentSpacePoseContext& Output, int32 BoneIndex, const FVector& Offset, const FRotator& Rotation, TArray<FBoneTransform>& OutBoneTransforms);
 };
