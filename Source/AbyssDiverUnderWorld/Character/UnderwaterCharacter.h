@@ -446,8 +446,13 @@ protected:
 	/** 지상 이동 함수 */
 	void MoveGround(const FVector& MoveInput);
 
-	/** 이동 방향을 업데이트 한다. */
-	void UpdateMoveDirection(const FVector& MoveInput);
+	/** 이동 방향을 업데이트 한다. 현재 방향이 변경되었을 경우 true를 반환하고 아닐 경우 false를 반환한다. */
+	bool UpdateMoveDirection(const FVector& MoveInput);
+
+	/** 현재 이동 방향을 Server에 보고한다. */
+	UFUNCTION(Server, Reliable)
+	void S_ReportMoveDirection(EMoveDirection NewMoveDirection);
+	void S_ReportMoveDirection_Implementation(EMoveDirection NewMoveDirection);
 	
 	/** 점프 입력 시작 함수. 지상에서만 작동한다. */
 	void JumpInputStart(const FInputActionValue& InputActionValue);

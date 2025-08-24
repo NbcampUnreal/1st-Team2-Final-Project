@@ -1510,7 +1510,8 @@ void AUnderwaterCharacter::AdjustSpeed()
 	
 	EffectiveSpeed = CalculateEffectiveSpeed();
 
-	// UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Adjust Speed : %s, EffectiveSpeed = %f"), *GetName(), EffectiveSpeed);
+	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Adjust Speed : %s, EffectiveSpeed = %f / Authority : %s"),
+		*GetName(), EffectiveSpeed, HasAuthority() ? TEXT("True") : TEXT("False"));
 	
 	if (EnvironmentState == EEnvironmentState::Underwater)
 	{
@@ -2037,13 +2038,14 @@ void AUnderwaterCharacter::Move(const FInputActionValue& InputActionValue)
 	{
 		MoveUnderwater(MoveInput);
 	}
-	// Tick에서 매 프레임 계산하면 MoveDirection을 계산할 필요가 없지만,
-	// 현재 구현에서는 Tick이 없으므로 이동 입력을 받을 때마다 갱신한다.
-	// 추후, Tick으로 변경할 경우 Tick 프레임에서 갱신하도록 수정
-	UpdateMoveDirection(MoveInput);
 
-	// 후방 이동에 따른 최종 속도 계산
-	AdjustSpeed();
+	// Move Direction을 Server RPC로 Report하는 과도한 RPC 호출 가능성이 존재한다.
+	// 추후에 Network 문제가 발생할 경우 최적화를 진행해야 한다.
+	const bool bHasMoveDirectionChanged = UpdateMoveDirection(MoveInput);
+	if (bHasMoveDirectionChanged)
+	{
+		AdjustSpeed();
+	}
 }
 
 void AUnderwaterCharacter::MoveUnderwater(const FVector& MoveInput)
@@ -2096,8 +2098,9 @@ void AUnderwaterCharacter::MoveGround(const FVector& MoveInput)
 	}
 }
 
-void AUnderwaterCharacter::UpdateMoveDirection(const FVector& MoveInput)
+bool AUnderwaterCharacter::UpdateMoveDirection(const FVector& MoveInput)
 {
+	const EMoveDirection PrevDirection = MoveDirection;
 	if (MoveInput.X > 0)
 	{
 		MoveDirection = EMoveDirection::Forward;
@@ -2110,6 +2113,20 @@ void AUnderwaterCharacter::UpdateMoveDirection(const FVector& MoveInput)
 	{
 		MoveDirection = EMoveDirection::Other;
 	}
+
+	if (MoveDirection != PrevDirection)
+	{
+		S_ReportMoveDirection(MoveDirection);
+		return true;
+	}
+
+	return false;
+}
+
+void AUnderwaterCharacter::S_ReportMoveDirection_Implementation(EMoveDirection NewMoveDirection)
+{
+	MoveDirection = NewMoveDirection;
+	AdjustSpeed();
 }
 
 void AUnderwaterCharacter::JumpInputStart(const FInputActionValue& InputActionValue)
