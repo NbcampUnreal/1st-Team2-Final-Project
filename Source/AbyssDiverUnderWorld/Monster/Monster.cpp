@@ -12,7 +12,7 @@
 #include "Character/UnderwaterCharacter.h"
 #include "Components/CapsuleComponent.h"
 #include "Interactable/OtherActors/Radars/RadarReturn2DComponent.h"
-#include "AnimNodes/AquaticMovementComponent.h"
+#include "Monster/AquaticMovementComponent.h"
 
 const FName AMonster::MonsterStateKey = "MonsterState";
 const FName AMonster::InvestigateLocationKey = "InvestigateLocation";

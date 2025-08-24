@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -11,7 +11,7 @@
  * 
  */
 UCLASS()
-class ABYSSDIVERUNDERWORLD_API UAnimGraphNode_AquaticBoneTrail : public UAnimGraphNode_SkeletalControlBase
+class ABYSSDIVERUNDERWORLDEDITOR_API UAnimGraphNode_AquaticBoneTrail : public UAnimGraphNode_SkeletalControlBase
 {
 	GENERATED_BODY()
 public:
