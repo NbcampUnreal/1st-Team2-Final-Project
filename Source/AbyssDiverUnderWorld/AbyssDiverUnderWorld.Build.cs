@@ -33,23 +33,16 @@ public class AbyssDiverUnderWorld : ModuleRules
             , "NavigationSystem"
             , "CableComponent"
             , "AsyncLoadingScreen"
-            , "AnimGraph" //NEW
-            , "BlueprintGraph" //NEW
+            , "AnimGraphRuntime"
         });
 		
         PublicIncludePaths.AddRange(new string[] { "AbyssDiverUnderWorld" });
 
         if (Target.Type == TargetType.Editor) 
         {
-            PublicDependencyModuleNames.Add("UnrealEd");
+            PublicDependencyModuleNames.AddRange(new string[]{
+            "UnrealEd"            
+            });
         }
-
-        // Uncomment if you are using Slate UI
-        // PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
-
-        // Uncomment if you are using online features
-        // PrivateDependencyModuleNames.Add("OnlineSubsystem");
-
-        // To include OnlineSubsystemSteam, add it to the plugins section in your uproject file with the Enabled attribute set to true
     }
 }

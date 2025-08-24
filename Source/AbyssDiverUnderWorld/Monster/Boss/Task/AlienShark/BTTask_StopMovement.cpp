@@ -1,7 +1,7 @@
 #include "Monster/Boss/Task/AlienShark/BTTask_StopMovement.h"
 #include "AIController.h"
 #include "Monster/Boss/Boss.h"
-#include "AnimNodes/AquaticMovementComponent.h"
+#include "Monster/AquaticMovementComponent.h"
 
 UBTTask_StopMovement::UBTTask_StopMovement()
 {

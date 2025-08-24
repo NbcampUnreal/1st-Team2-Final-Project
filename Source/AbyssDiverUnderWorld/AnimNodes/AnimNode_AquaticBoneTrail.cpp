@@ -4,7 +4,7 @@
 #include "AnimNodes/AnimNode_AquaticBoneTrail.h"
 #include "Animation/AnimInstanceProxy.h"
 #include "Components/SkeletalMeshComponent.h"
-#include "AquaticMovementComponent.h"
+#include "Monster/AquaticMovementComponent.h"
 #include "GameFramework/Character.h"
 #include "DrawDebugHelpers.h"
 

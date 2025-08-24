@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "AnimNodes/AnimGraphNode_AquaticBoneTrail.h"
@@ -60,14 +60,14 @@ void UAnimGraphNode_AquaticBoneTrail::ValidateAnimNodeDuringCompilation(USkeleto
 {
     Super::ValidateAnimNodeDuringCompilation(ForSkeleton, MessageLog);
 
-    // º» ÀÌ¸§ °ËÁõ
+    // ë³¸ ì´ë¦„ ê²€ì¦
     if (Node.BoneNames.Num() == 0)
     {
         MessageLog.Warning(*LOCTEXT("NoBones", "@@ has no bones specified").ToString(), this);
     }
     else
     {
-        // °¢ º»ÀÌ ½ºÄÌ·¹Åæ¿¡ Á¸ÀçÇÏ´ÂÁö È®ÀÎ
+        // ê° ë³¸ì´ ìŠ¤ì¼ˆë ˆí†¤ì— ì¡´ìž¬í•˜ëŠ”ì§€ í™•ì¸
         for (const FName& BoneName : Node.BoneNames)
         {
             if (ForSkeleton && ForSkeleton->GetReferenceSkeleton().FindBoneIndex(BoneName) == INDEX_NONE)
@@ -80,7 +80,7 @@ void UAnimGraphNode_AquaticBoneTrail::ValidateAnimNodeDuringCompilation(USkeleto
         }
     }
 
-    // Movement Component ÅÂ±× °ËÁõ
+    // Movement Component íƒœê·¸ ê²€ì¦
     if (Node.MovementComponentTag.IsNone())
     {
         MessageLog.Warning(*LOCTEXT("NoComponentTag", "@@ has no Movement Component Tag specified. Using default search.").ToString(), this);
@@ -96,7 +96,7 @@ void UAnimGraphNode_AquaticBoneTrail::PostEditChangeProperty(FPropertyChangedEve
 {
     Super::PostEditChangeProperty(PropertyChangedEvent);
 
-    // ÇÁ·ÎÆÛÆ¼ º¯°æ ½Ã ³ëµå Å¸ÀÌÆ² ¾÷µ¥ÀÌÆ®
+    // í”„ë¡œí¼í‹° ë³€ê²½ ì‹œ ë…¸ë“œ íƒ€ì´í‹€ ì—…ë°ì´íŠ¸
     if (PropertyChangedEvent.Property != nullptr)
     {
         if (PropertyChangedEvent.Property->GetFName() == GET_MEMBER_NAME_CHECKED(FAnimNode_AquaticBoneTrail, BoneNames))
