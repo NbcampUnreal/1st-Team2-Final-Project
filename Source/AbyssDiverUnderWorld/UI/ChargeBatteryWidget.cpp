@@ -15,6 +15,7 @@
 #include "Tutorial/TutorialManager.h"
 #include "Components/AudioComponent.h"
 #include "Animation/WidgetAnimation.h"
+#include "Framework/ADTutorialGameMode.h"
 
 
 DEFINE_LOG_CATEGORY(BatteryLog);
@@ -61,10 +62,32 @@ void UChargeBatteryWidget::StartChargeBattery(FName ItemName)
 	if (SoundCue)
 	{
 		UAudioComponent* Sound = UGameplayStatics::SpawnSound2D(this, SoundCue, 1.0f, 1.0f, 0.0f, nullptr, true);
-		if (Sound)
+		if (Sound) { Sound->Play(); ChargeBatterySound = Sound; }
+	}
+
+	if (AADTutorialGameMode* GM = GetWorld()->GetAuthGameMode<AADTutorialGameMode>())
+	{
+		if (GM->BatteryStartPercentOverride < 0.f)
 		{
-			Sound->Play();
-			ChargeBatterySound = Sound;
+			int32 MaxToCompare = (CurrentChargeItem == DPVRow->Name) ? DPVBatteryMax : NVBatteryMax;
+
+			int32 CurrentAmount = 0;
+			if (InventoryComp && EquipUseComp)
+			{
+				if (FItemData* CurEquip = InventoryComp->GetCurrentEquipmentItemData();
+					CurEquip && CurEquip->Name == CurrentChargeItem)
+				{
+					CurrentAmount = EquipUseComp->Amount;
+				}
+				else
+				{
+					if (const FItemData* ItemInfo = InventoryComp->GetInventoryItemData(CurrentChargeItem))
+						CurrentAmount = ItemInfo->Amount;
+				}
+			}
+
+			float StartPct = (MaxToCompare > 0) ? (float)CurrentAmount / (float)MaxToCompare * 100.f : 0.f;
+			GM->BatteryStartPercentOverride = FMath::Clamp(StartPct, 0.f, 100.f);
 		}
 	}
 
@@ -75,6 +98,7 @@ void UChargeBatteryWidget::StartChargeBattery(FName ItemName)
 		LOGB(Warning, TEXT("Start Charge Battery"));
 	}
 }
+
 
 void UChargeBatteryWidget::StopChargeBattery()
 {
@@ -121,46 +145,65 @@ bool UChargeBatteryWidget::CanCharge()
 void UChargeBatteryWidget::ChargeBatteryAmount()
 {
 	if (!CanCharge()) return;
-	if (InventoryComp && EquipUseComp)
+	if (!(InventoryComp && EquipUseComp)) return;
+	if (CurrentChargeItem == NAME_None) return;
+
+	const int32 MaxToCompare = (CurrentChargeItem == DPVRow->Name) ? DPVBatteryMax : NVBatteryMax;
+
+	const float ChargeRate = 0.01f;
+	const int32 TickIncrease = FMath::Max(1, FMath::RoundToInt(MaxToCompare * ChargeRate));
+
+	int32 BeforeAmount = 0;
+	bool bChargingEquipped = false;
+
+	if (FItemData* CurEquip = InventoryComp->GetCurrentEquipmentItemData();
+		CurEquip && CurEquip->Name == CurrentChargeItem)
 	{
-		FItemData* CurrentEquipment = InventoryComp->GetCurrentEquipmentItemData();
-
-		int32 MaxToCompare = CurrentChargeItem == DPVRow->Name ? DPVBatteryMax : NVBatteryMax;
-		if (CurrentChargeItem == NAME_None) return;
-		float ChargeRate = 0.01f;
-		int32 IncreaseAmount = FMath::Max(1, FMath::RoundToInt(MaxToCompare * ChargeRate));
-
-		if (CurrentEquipment && CurrentEquipment->Name == CurrentChargeItem)
-		{
-			if (EquipUseComp->Amount >= MaxToCompare)
-			{
-				StopChargeBattery();
-				return;
-			}
-			EquipUseComp->S_IncreaseAmount(IncreaseAmount);
-			LOGB(Warning, TEXT("Amount of EquipUseComp is charged"));
-		}
-		else
-		{
-			const FItemData* ItemInfoToCharge = InventoryComp->GetInventoryItemData(CurrentChargeItem);
-			if (ItemInfoToCharge->Amount >= MaxToCompare)
-			{
-				StopChargeBattery();
-				return;
-			}
-			InventoryComp->S_EquipmentChargeBattery(ChargeBatteryTypeMap[CurrentChargeItem], IncreaseAmount);
-			LOGB(Warning, TEXT("Amount of InventoryComp is charged"));
-		}
-		InventoryComp->S_UseBatteryAmount(-IncreaseAmount);
-		UpdateBatteryInfo();
-
-		if (ATutorialManager* Manager = Cast<ATutorialManager>(UGameplayStatics::GetActorOfClass(GetWorld(), ATutorialManager::StaticClass())))
-		{
-			Manager->AddGaugeProgress(IncreaseAmount);
-		}
+		bChargingEquipped = true;
+		BeforeAmount = EquipUseComp->Amount;
+	}
+	else
+	{
+		if (const FItemData* ItemInfo = InventoryComp->GetInventoryItemData(CurrentChargeItem))
+			BeforeAmount = ItemInfo->Amount;
 	}
 
+	if (BeforeAmount >= MaxToCompare)
+	{
+		StopChargeBattery();
+		return;
+	}
+
+	const int32 Room = MaxToCompare - BeforeAmount;
+	const int32 AppliedIncrease = FMath::Clamp(TickIncrease, 0, Room);
+
+	if (bChargingEquipped)
+	{
+		EquipUseComp->S_IncreaseAmount(AppliedIncrease);
+		LOGB(Warning, TEXT("Amount of EquipUseComp is charged"));
+	}
+	else
+	{
+		InventoryComp->S_EquipmentChargeBattery(ChargeBatteryTypeMap[CurrentChargeItem], AppliedIncrease);
+		LOGB(Warning, TEXT("Amount of InventoryComp is charged"));
+	}
+
+	InventoryComp->S_UseBatteryAmount(-AppliedIncrease);
+	UpdateBatteryInfo();
+
+	if (ATutorialManager* Manager = Cast<ATutorialManager>(UGameplayStatics::GetActorOfClass(GetWorld(), ATutorialManager::StaticClass())))
+	{
+		const float DeltaPercent = (MaxToCompare > 0) ? (float)AppliedIncrease / (float)MaxToCompare * 100.f : 0.f;
+		if (DeltaPercent > KINDA_SMALL_NUMBER)
+			Manager->AddGaugeProgress(DeltaPercent);
+	}
+
+	if (AppliedIncrease >= Room)
+	{
+		StopChargeBattery();
+	}
 }
+
 
 void UChargeBatteryWidget::UpdateBatteryInfoDelay()
 {
