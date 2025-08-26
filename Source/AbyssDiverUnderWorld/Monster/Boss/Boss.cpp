@@ -22,7 +22,7 @@
 #include "Framework/ADPlayerController.h"
 #include "Perception/AISense_Damage.h"
 #include "Interactable/OtherActors/Radars/RadarReturnComponent.h"
-#include "Monster/AquaticMovementComponent.h"
+#include "Monster/Components/AquaticMovementComponent.h"
 
 const FName ABoss::BossStateKey = "BossState";
 
