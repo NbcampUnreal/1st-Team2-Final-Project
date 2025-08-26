@@ -8,7 +8,7 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Components/SphereComponent.h"
 #include "Delegates/DelegateCombinations.h"
-#include "Monster/MonsterSoundComponent.h"
+#include "Monster/Components/MonsterSoundComponent.h"
 #include "Monster/EMonsterState.h"
 #include "Monster.generated.h"
 
@@ -17,6 +17,7 @@ class USphereComponent;
 class UNiagaraSystem;
 class UAquaticMovementComponent;
 class AUnderwaterCharacter;
+class UTickControlComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnMonsterDeadSignature, AActor*, Killer, AMonster*, DeadMonster);
 
@@ -125,6 +126,11 @@ public:
 	TObjectPtr<UCapsuleComponent> AttackCollision;
 
 protected:
+
+	/** 틱 최적화용 컴포넌트 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI")
+	TObjectPtr<UTickControlComponent> TickControlComponent;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI|Blackboard")
 	TObjectPtr<UBlackboardComponent> BlackboardComponent;
 

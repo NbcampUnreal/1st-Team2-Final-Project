@@ -12,7 +12,8 @@
 #include "Character/UnderwaterCharacter.h"
 #include "Components/CapsuleComponent.h"
 #include "Interactable/OtherActors/Radars/RadarReturn2DComponent.h"
-#include "Monster/AquaticMovementComponent.h"
+#include "Monster/Components/AquaticMovementComponent.h"
+#include "Monster/Components/TickControlComponent.h"
 
 const FName AMonster::MonsterStateKey = "MonsterState";
 const FName AMonster::InvestigateLocationKey = "InvestigateLocation";
@@ -57,11 +58,17 @@ AMonster::AMonster()
 
 	// 새로운 물리 기반 수중 이동 컴포넌트 초기화
 	AquaticMovementComponent = CreateDefaultSubobject<UAquaticMovementComponent>("Aquatic Movement Component");
+
+	// 틱 최적화용 컴포넌트 초기화
+	TickControlComponent = CreateDefaultSubobject<UTickControlComponent>(TEXT("Tick Control Component"));
 }
 
 void AMonster::BeginPlay()
 {
 	Super::BeginPlay();
+
+	TickControlComponent->RegisterComponent(GetMesh());
+	TickControlComponent->AddIgnoreActor(this);
 
 	// AquaticMovementComponent 초기화
 	if (AquaticMovementComponent)
