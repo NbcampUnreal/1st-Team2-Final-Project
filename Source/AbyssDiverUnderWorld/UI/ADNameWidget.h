@@ -4,13 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "NameWidget.generated.h"
+#include "ADNameWidget.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class ABYSSDIVERUNDERWORLD_API UNameWidget : public UUserWidget
+class ABYSSDIVERUNDERWORLD_API UADNameWidget : public UUserWidget
 {
 	GENERATED_BODY()
 
