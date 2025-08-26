@@ -12,7 +12,7 @@
 #include "Framework/ADPlayerState.h"
 #include "Interactable/Item/ADUseItem.h"
 #include "Interactable/Item/UseFunction/UseStrategy.h"
-#include "Actions/PawnActionsComponent.h"
+//#include "Actions/PawnActionsComponent.h"
 #include "GameFramework/Character.h"
 #include "Interactable/Item/Component/EquipUseComponent.h"
 #include "UI/ChargeBatteryWidget.h"
