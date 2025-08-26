@@ -6,6 +6,24 @@
 
 #include "TickControlComponent.generated.h"
 
+// 플레이어별 상태 캐싱
+struct FPlayerState
+{
+    FVector Location;
+    FVector CameraLocation;
+    FVector CameraForward;
+    uint8 bIsValid : 1 = false;
+    uint8 bIsLocalPlayer : 1 = false;  // 로컬 플레이어 구분용
+};
+
+// 가시성 상태 열거형
+enum class EVisibilityState : uint8
+{
+    FullyVisible,
+    InViewOccluded,
+    OutOfView
+};
+
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class ABYSSDIVERUNDERWORLD_API UTickControlComponent : public UActorComponent
 {
@@ -21,22 +39,56 @@ protected:
     virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 public:
-    // 컴포넌트 등록 함수
 
+    // 등록 함수
+    // 틱 관리할 컴포넌트 등록
     UFUNCTION(BlueprintCallable, Category = "TickControlComponentSettings|Tick Control")
     void RegisterComponent(UActorComponent* Component);
 
     UFUNCTION(BlueprintCallable, Category = "TickControlComponentSettings|Tick Control")
     void UnregisterComponent(UActorComponent* Component);
 
+    // 틱 관리할 액터 등록
     UFUNCTION(BlueprintCallable, Category = "TickControlComponentSettings|Tick Control")
-    void ClearAllComponents();
+    void RegisterNewActor(AActor* NewActor);
+
+    UFUNCTION(BlueprintCallable, Category = "TickControlComponentSettings|Tick Control")
+    void UnregisterNewActor(AActor* NewActor);
+
+    UFUNCTION(BlueprintCallable, Category = "TickControlComponentSettings|Tick Control")
+    void ClearAllComponentsAndActors();
+
+    // 장애물 취급 무시용 액터 등록
+    UFUNCTION(BlueprintCallable, Category = "TickControlComponentSettings|Tick Control")
+    void AddIgnoreActor(AActor* IgnoreActor);
+
+    UFUNCTION(BlueprintCallable, Category = "TickControlComponentSettings|Tick Control")
+    void RemoveIgnoreActor(AActor* IgnoreActor);
+
+private:
+
+    void InitializeNetworkInfo();
+    void UpdateTickRate();
+    void UpdatePlayerStates();
+
+    void SetComponentTickRate(UActorComponent* Component, float TickInterval);
+    void SetActorTickRate(AActor* RegisteredActor, float TickInterval);
+    // 컴포넌트 틱을 비활성화했다가 다시 활성화하여 즉시 적용하여 틱 즉시 재시작
+    void ForceComponentTickReset(UActorComponent* Component);
+    void ForceActorTickReset(AActor* RegisteredActor);
 
 protected:
 
     // 제어할 컴포넌트들
-    UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "TickControlComponentSettings|Target Components", meta = (AllowPrivateAccess = "true"))
+    UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "TickControlComponentSettings|Targets", meta = (AllowPrivateAccess = "true"))
     TArray<TObjectPtr<UActorComponent>> TargetComponents;
+
+    // 제어할 액터들
+    UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "TickControlComponentSettings|Targets", meta = (AllowPrivateAccess = "true"))
+	TArray<TObjectPtr<AActor>> TargetActors;
+
+    UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "TickControlComponentSettings", meta = (AllowPrivateAccess = "true"))
+    TArray<TObjectPtr<AActor>> IgnoreActors;
 
     // 플레이어 캐시 간격 설정
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TickControlComponentSettings|Player State Cache", meta = (AllowPrivateAccess = "true"))
@@ -49,13 +101,13 @@ protected:
     // 거리별 설정
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TickControlComponentSettings|Distance Settings", meta = (AllowPrivateAccess = "true"))
-    float NearDistance = 500.0f;
+    float NearDistance = 1500.0f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TickControlComponentSettings|Distance Settings", meta = (AllowPrivateAccess = "true"))
-    float MediumDistance = 1500.0f;
+    float MediumDistance = 5000.0f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TickControlComponentSettings|Distance Settings", meta = (AllowPrivateAccess = "true"))
-    float FarDistance = 3000.0f;
+    float FarDistance = 9000.0f;
 
     // 시야 내 틱 간격 (초)
 
@@ -63,7 +115,7 @@ protected:
     float InView_NearTickInterval = 0.0f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TickControlComponentSettings|In View Tick Rates", meta = (AllowPrivateAccess = "true"))
-    float InView_MediumTickInterval = 0.1f;
+    float InView_MediumTickInterval = 0.05f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TickControlComponentSettings|In View Tick Rates", meta = (AllowPrivateAccess = "true"))
     float InView_FarTickInterval = 1.0f;
@@ -74,13 +126,13 @@ protected:
     // 가려진 오브젝트 틱 간격 (초)
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TickControlComponentSettings|Occluded Tick Rates", meta = (AllowPrivateAccess = "true"))
-    float Occluded_NearTickInterval = 0.1f;
+    float Occluded_NearTickInterval = 0.05f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TickControlComponentSettings|Occluded Tick Rates", meta = (AllowPrivateAccess = "true"))
     float Occluded_MediumTickInterval = 0.2f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TickControlComponentSettings|Occluded Tick Rates", meta = (AllowPrivateAccess = "true"))
-    float Occluded_FarTickInterval = 1.5f;
+    float Occluded_FarTickInterval = 2.0f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TickControlComponentSettings|Occluded Tick Rates", meta = (AllowPrivateAccess = "true"))
     float Occluded_VeryFarTickInterval = 2.5f;
@@ -88,16 +140,16 @@ protected:
     // 시야 밖 틱 간격 (초)
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TickControlComponentSettings|Out of View Tick Rates", meta = (AllowPrivateAccess = "true"))
-    float OutOfView_NearTickInterval = 0.1f;
+    float OutOfView_NearTickInterval = 0.0f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TickControlComponentSettings|Out of View Tick Rates", meta = (AllowPrivateAccess = "true"))
-    float OutOfView_MediumTickInterval = 0.2f;
+    float OutOfView_MediumTickInterval = 1000.0f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TickControlComponentSettings|Out of View Tick Rates", meta = (AllowPrivateAccess = "true"))
-    float OutOfView_FarTickInterval = 1.5f;
+    float OutOfView_FarTickInterval = 2000.0f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TickControlComponentSettings|Out of View Tick Rates", meta = (AllowPrivateAccess = "true"))
-    float OutOfView_VeryFarTickInterval = 2.5f;
+    float OutOfView_VeryFarTickInterval = 3000.0f;
 
     // 시야 판정 설정
 
@@ -113,7 +165,7 @@ protected:
     uint8 bEnableVisibilityCheck : 1 = true;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TickControlComponentSettings|Visibility Settings", meta = (AllowPrivateAccess = "true"))
-    float VisibilityCheckDistance = 5000.0f;
+    float VisibilityCheckDistance = 10000.0f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TickControlComponentSettings|Visibility Settings", meta = (AllowPrivateAccess = "true"))
     TArray<TEnumAsByte<EObjectTypeQuery>> VisibilityBlockingObjects;
@@ -133,7 +185,7 @@ protected:
     // 업데이트 설정
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TickControlComponentSettings|Update Settings", meta = (AllowPrivateAccess = "true"))
-    float UpdateInterval = 0.3f;
+    float UpdateInterval = 0.1f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TickControlComponentSettings|Update Settings", meta = (AllowPrivateAccess = "true"))
     uint8 bEnableDistanceBasedTick : 1 = true;
@@ -147,8 +199,8 @@ protected:
 
     // 프레임 분산 설정
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TickControlComponentSettings|Performance Settings", meta = (AllowPrivateAccess = "true"))
-    uint8 bEnableFrameDistribution : 1 = true;
+    //UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TickControlComponentSettings|Performance Settings", meta = (AllowPrivateAccess = "true"))
+    //uint8 bEnableFrameDistribution : 1 = true;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TickControlComponentSettings|Performance Settings", meta = (AllowPrivateAccess = "true"))
     int32 MaxChecksPerFrame = 5;  // 한 프레임당 최대 체크 수
@@ -170,35 +222,15 @@ private:
     uint8 bIsServer : 1 = false;
     uint8 bHasAuthority : 1 = false;
 
-    // 플레이어별 상태 캐싱
-    struct FPlayerState
-    {
-        FVector Location;
-        FVector CameraLocation;
-        FVector CameraForward;
-        uint8 bIsValid : 1 = false;
-        uint8 bIsLocalPlayer : 1 = false;  // 로컬 플레이어 구분용
-    };
-
     TArray<FPlayerState> CachedPlayerStates;
     float LastPlayerStateCacheTime = 0.0f;
-    
-    // 가시성 상태 열거형
-    enum class EVisibilityState : uint8
-    {
-        FullyVisible,
-        InViewOccluded,
-        OutOfView
-    };
 
-    void InitializeNetworkInfo();
-    void UpdateTickRate();
-    void UpdatePlayerStates();
+private:
+
     float GetClosestPlayerDistance();
     EVisibilityState GetBestVisibilityState();
     bool IsInAnyPlayerView();
     bool IsVisibleToAnyPlayer();
-    void SetComponentTickRate(UActorComponent* Component, float TickInterval);
     bool ShouldCheckAllPlayers() const;
 
     // 개별 플레이어 체크 함수들
