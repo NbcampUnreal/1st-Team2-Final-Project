@@ -40,7 +40,7 @@ void UTickControlComponent::BeginPlay()
     CachedPlayerStates.SetNum(MaxPlayerCount);
 
     // 초기 틱 레이트 설정
-    if (TargetComponents.Num() > 0 && (bEnableDistanceBasedTick || bEnableViewBasedTick))
+    if ((TargetComponents.Num() > 0 || TargetActors.Num() > 0) && (bEnableDistanceBasedTick || bEnableViewBasedTick))
     {
         UpdatePlayerStates();
         UpdateTickRate();
@@ -72,7 +72,7 @@ void UTickControlComponent::TickComponent(float DeltaTime, ELevelTick TickType, 
         return;
     }
 
-    if (TargetComponents.Num() == 0 || (!bEnableDistanceBasedTick && !bEnableViewBasedTick))
+    if (TargetComponents.Num() == 0 && TargetActors.Num() == 0 || (!bEnableDistanceBasedTick && !bEnableViewBasedTick))
     {
         return;
     }
@@ -83,27 +83,30 @@ void UTickControlComponent::TickComponent(float DeltaTime, ELevelTick TickType, 
     {
         UpdatePlayerStates();
 
-        if (bEnableFrameDistribution && TargetComponents.Num() > MaxChecksPerFrame)
-        {
-            // 프레임 분산 처리
-            int32 ComponentsToCheck = FMath::Min(MaxChecksPerFrame, TargetComponents.Num());
-            for (int32 i = 0; i < ComponentsToCheck; ++i)
-            {
-                int32 Index = (CurrentCheckIndex + i) % TargetComponents.Num();
-                if (TargetComponents.IsValidIndex(Index) && TargetComponents[Index])
-                {
-                    UpdateTickRate();  // 개별 컴포넌트별로는 구현하지 않고 전체 적용
-                    break;
-                }
-            }
+		// 굳이 분산처리를 해야하나? 등록을 많이 하지 않으면 필요없을 듯
+		//const int32 CheckCount = TargetComponents.Num() + TargetActors.Num();
+  //      if (bEnableFrameDistribution && CheckCount > MaxChecksPerFrame)
+  //      {
+  //          // 프레임 분산 처리
 
-            CurrentCheckIndex = (CurrentCheckIndex + ComponentsToCheck) % TargetComponents.Num();
-        }
-        else
-        {
-            UpdateTickRate();
-        }
+  //          for (int32 i = 0; i < MaxChecksPerFrame; ++i)
+  //          {
+  //              int32 Index = (CurrentCheckIndex + i) % TargetComponents.Num();
+  //              if (TargetComponents.IsValidIndex(Index) && TargetComponents[Index])
+  //              {
+  //                  UpdateTickRate();  // 개별 컴포넌트별로는 구현하지 않고 전체 적용
+  //                  break;
+  //              }
+  //          }
 
+  //          CurrentCheckIndex = (CurrentCheckIndex + CheckCount) % TargetComponents.Num();
+  //      }
+  //      else
+  //      {
+  //          UpdateTickRate();
+  //      }
+
+        UpdateTickRate();
         LastUpdateTime = 0.0f;
     }
 }
@@ -125,10 +128,12 @@ bool UTickControlComponent::ShouldCheckAllPlayers() const
 
 void UTickControlComponent::RegisterComponent(UActorComponent* Component)
 {
-    if (Component && Component != this && !TargetComponents.Contains(Component))
+    if (Component == nullptr || Component != this && TargetComponents.Contains(Component))
     {
-        TargetComponents.Add(Component);
+        return;
     }
+
+    TargetComponents.Add(Component);
 }
 
 void UTickControlComponent::UnregisterComponent(UActorComponent* Component)
@@ -136,9 +141,38 @@ void UTickControlComponent::UnregisterComponent(UActorComponent* Component)
     TargetComponents.Remove(Component);
 }
 
-void UTickControlComponent::ClearAllComponents()
+void UTickControlComponent::RegisterNewActor(AActor* NewActor)
+{
+    if(NewActor == nullptr || TargetActors.Contains(NewActor))
+    {
+        return;
+	}
+
+	TargetActors.Add(NewActor);
+}
+
+void UTickControlComponent::UnregisterNewActor(AActor* NewActor)
+{
+	TargetActors.Remove(NewActor);
+}
+
+void UTickControlComponent::ClearAllComponentsAndActors()
 {
     TargetComponents.Reset();
+	TargetActors.Reset();
+}
+
+void UTickControlComponent::AddIgnoreActor(AActor* IgnoreActor)
+{
+    if (IgnoreActor && !IgnoreActors.Contains(IgnoreActor))
+    {
+        IgnoreActors.Add(IgnoreActor);
+    }
+}
+
+void UTickControlComponent::RemoveIgnoreActor(AActor* IgnoreActor)
+{
+    IgnoreActors.Remove(IgnoreActor);
 }
 
 void UTickControlComponent::UpdatePlayerStates()
@@ -201,7 +235,7 @@ void UTickControlComponent::UpdatePlayerStates()
 
 void UTickControlComponent::UpdateTickRate()
 {
-    if (TargetComponents.Num() == 0)
+    if (TargetComponents.Num() == 0 && TargetActors.Num() == 0)
     {
         return;
     }
@@ -279,6 +313,12 @@ void UTickControlComponent::UpdateTickRate()
         SetComponentTickRate(Component, TickInterval);
     }
 
+	// 모든 등록된 액터에 틱 레이트 적용
+    for (AActor* RegisteredActor : TargetActors)
+    {
+		SetActorTickRate(RegisteredActor, TickInterval);
+    }
+
     // 디버그 정보 출력
     if (bShowDebugInfo && GetOwner())
     {
@@ -300,14 +340,14 @@ void UTickControlComponent::UpdateTickRate()
         FString Authority = bHasAuthority ? TEXT("AUTH") : TEXT("NO_AUTH");
 
         FString DebugText = FString::Printf(
-            TEXT("%s [%s_%s] - Distance: %.0f, State: %s, Tick: %.3f, Components: %d"),
+            TEXT("%s [%s_%s] - Distance: %.0f, State: %s, Tick: %.3f, TargetCount: %d"),
             *GetOwner()->GetName(),
             *NetworkRole,
             *Authority,
             CurrentDistance,
             *StateString,
             TickInterval,
-            TargetComponents.Num()
+			TargetComponents.Num() + TargetActors.Num()
         );
 
         FColor DebugColor = FColor::Red;
@@ -365,7 +405,7 @@ float UTickControlComponent::GetClosestPlayerDistance()
     return ClosestDistance == FLT_MAX ? 0.0f : ClosestDistance;
 }
 
-UTickControlComponent::EVisibilityState UTickControlComponent::GetBestVisibilityState()
+EVisibilityState UTickControlComponent::GetBestVisibilityState()
 {
     if (bEnableViewBasedTick == false)
     {
@@ -479,7 +519,7 @@ bool UTickControlComponent::IsVisibleToPlayer(const FPlayerState& PlayerState)
         TraceEnd,
         VisibilityBlockingObjects,
         false,
-        TArray<AActor*>({ GetOwner() }),
+        IgnoreActors,
         bShowDebugInfo ? EDrawDebugTrace::ForOneFrame : EDrawDebugTrace::None,
         HitResult,
         true
@@ -505,6 +545,8 @@ void UTickControlComponent::SetComponentTickRate(UActorComponent* Component, flo
         return;
     }
 
+    bool bShouldResetTick = (Component->PrimaryComponentTick.TickInterval > TickInterval);
+
     if (TickInterval <= 0.0f)
     {
         Component->PrimaryComponentTick.bCanEverTick = true;
@@ -515,4 +557,59 @@ void UTickControlComponent::SetComponentTickRate(UActorComponent* Component, flo
         Component->PrimaryComponentTick.bCanEverTick = true;
         Component->PrimaryComponentTick.TickInterval = TickInterval;
     }
+
+    if (bShouldResetTick)
+    {
+		ForceComponentTickReset(Component);
+    }
+}
+
+void UTickControlComponent::SetActorTickRate(AActor* RegisteredActor, float TickInterval)
+{
+    if (RegisteredActor == nullptr)
+    {
+        return;
+    }
+
+    bool bShouldResetTick = (RegisteredActor->PrimaryActorTick.TickInterval > TickInterval);
+
+    if (TickInterval <= 0.0f)
+    {
+        RegisteredActor->PrimaryActorTick.bCanEverTick = true;
+        RegisteredActor->PrimaryActorTick.TickInterval = 0.0f;
+    }
+    else
+    {
+        RegisteredActor->PrimaryActorTick.bCanEverTick = true;
+        RegisteredActor->PrimaryActorTick.TickInterval = TickInterval;
+    }
+
+    if (bShouldResetTick)
+    {
+        ForceActorTickReset(RegisteredActor);
+    }
+}
+
+void UTickControlComponent::ForceComponentTickReset(UActorComponent* Component)
+{
+    if (Component == nullptr)
+    {
+        return;
+    }
+
+    // 컴포넌트 틱을 비활성화했다가 다시 활성화하여 즉시 적용
+    Component->SetComponentTickEnabled(false);
+    Component->SetComponentTickEnabled(true);
+}
+
+void UTickControlComponent::ForceActorTickReset(AActor* RegisteredActor)
+{
+    if (RegisteredActor == nullptr)
+    {
+        return;
+    }
+
+    // 액터 틱을 비활성화했다가 다시 활성화하여 즉시 적용
+    RegisteredActor->SetActorTickEnabled(false);
+    RegisteredActor->SetActorTickEnabled(true);
 }
