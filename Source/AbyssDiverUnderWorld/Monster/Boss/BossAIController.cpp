@@ -5,7 +5,7 @@
 
 #include "Boss.h"
 #include "ENum/EBossState.h"
-#include "Monster/AquaticMovementComponent.h"
+#include "Monster/Components/AquaticMovementComponent.h"
 
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Damage.h"

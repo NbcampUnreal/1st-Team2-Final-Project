@@ -8,7 +8,7 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Components/SphereComponent.h"
 #include "Delegates/DelegateCombinations.h"
-#include "Monster/MonsterSoundComponent.h"
+#include "Monster/Components/MonsterSoundComponent.h"
 #include "Monster/EMonsterState.h"
 #include "Monster.generated.h"
 

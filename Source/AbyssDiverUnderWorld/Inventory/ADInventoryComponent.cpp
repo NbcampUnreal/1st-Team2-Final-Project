@@ -37,8 +37,8 @@ UADInventoryComponent::UADInventoryComponent() :
 	TotalPrice(0),
 	CurrentEquipmentSlotIndex(INDEX_NONE),
 	CurrentEquipmentInstance(nullptr),
-	WeightMax(100),
 	ToggleWidgetInstance(nullptr),
+	WeightMax(100),
 	bCanUseItem(true),
 	DataTableSubsystem(nullptr),
 	ChargeBatteryWidget(nullptr)

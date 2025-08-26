@@ -2,7 +2,7 @@
 
 // AquaticMovementComponent.cpp
 
-#include "Monster/AquaticMovementComponent.h"
+#include "Monster/Components/AquaticMovementComponent.h"
 #include "GameFramework/Character.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "DrawDebugHelpers.h"
