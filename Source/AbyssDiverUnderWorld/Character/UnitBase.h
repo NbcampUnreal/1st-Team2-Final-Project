@@ -7,6 +7,7 @@
 
 class URadarReturnComponent;
 class URadarReturn2DComponent;
+class UDebuffComponent;
 
 UENUM(BlueprintType)
 enum class EUnitId : uint8
@@ -60,6 +61,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "Radar Settings")
 	TObjectPtr<URadarReturn2DComponent> RadarReturn2DComponent;
+
+	UPROPERTY(EditAnywhere, Category = "Debuff")
+	TObjectPtr<UDebuffComponent> DebuffComponent;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Id")
 	EUnitId UnitId;
