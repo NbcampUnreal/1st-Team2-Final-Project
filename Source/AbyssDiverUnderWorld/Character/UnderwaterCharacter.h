@@ -402,7 +402,8 @@ protected:
 
 	/** 현재 소지 중인 교환 가능 아이템들을 모두 드랍한다. */
 	void DropAllExchangeableItems();
-	
+
+	/** 현재 캐릭터의 이동 속도를 계산한다. */
 	float CalculateEffectiveSpeed() const;
 
 	/** 현재 상태 속도 갱신.(무게, Sprint) */
@@ -1403,6 +1404,12 @@ public:
 	FORCEINLINE UInputAction* GetSelectInventorySlot2() const { return EquipSlot2Action; }
 	FORCEINLINE UInputAction* GetSelectInventorySlot3() const { return EquipSlot3Action; }
 
+	/** 현재 캐릭터의 이동 방향을 반환. Server와 Client가 동기화되어 있다. */
+	FORCEINLINE EMoveDirection GetMoveDirection() const { return MoveDirection; }
+
+	/** 현재 캐릭터가 스프린트를 할 수 있는지 여부를 반환. 전방 이동이 있을 경우에만 스프린트를 할 수 있다. Server / Client 복제됨 */
+	bool CanSprint() const;
+	
 protected:
 
 	class USoundSubsystem* GetSoundSubsystem();

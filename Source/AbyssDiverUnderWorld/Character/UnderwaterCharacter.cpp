@@ -1475,7 +1475,7 @@ float AUnderwaterCharacter::CalculateEffectiveSpeed() const
 	float BaseSpeed = GetEnvironmentState() == EEnvironmentState::Underwater
 		                        ? BaseSwimSpeed
 		                        : BaseGroundSpeed;
-	if (StaminaComponent->IsSprinting())
+	if (StaminaComponent->IsSprinting() && CanSprint())
 	{
 		BaseSpeed *= SprintMultiplier;
 	}
@@ -1501,6 +1501,11 @@ float AUnderwaterCharacter::CalculateEffectiveSpeed() const
 	Multiplier = FMath::Max(0.0f, Multiplier);
 	
 	return FMath::Max(MinSpeed, BaseSpeed * Multiplier);
+}
+
+bool AUnderwaterCharacter::CanSprint() const
+{
+	return MoveDirection == EMoveDirection::Forward;
 }
 
 void AUnderwaterCharacter::AdjustSpeed()
@@ -2024,9 +2029,6 @@ void AUnderwaterCharacter::Respawn()
 
 void AUnderwaterCharacter::Move(const FInputActionValue& InputActionValue)
 {
-	// To-Do
-	// Can Move 확인
-	
 	// 캐릭터의 XYZ 축을 기준으로 입력을 받는다.
 	const FVector MoveInput = InputActionValue.Get<FVector>();
 

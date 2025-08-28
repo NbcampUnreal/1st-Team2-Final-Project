@@ -68,7 +68,7 @@ protected:
 	void K2_OnSprintStateChanged(bool bNewSprinting);
 
 	/** 현재 캐릭터가 움직이고 있는지 확인하는 함수 */
-	bool IsCharacterMoving() const;
+	bool IsCharacterSprinting() const;
 	
 private:
 	/** Stamina OnRep 함수 */
@@ -115,7 +115,7 @@ protected:
 
 	/** Stamina 컴포넌트의 소유자 캐릭터 */
 	UPROPERTY()
-	TObjectPtr<ACharacter> OwnerCharacter;
+	TObjectPtr<class AUnderwaterCharacter> OwnerCharacter;
 
 	/** 가장 최근에 Sprint를 실행한 시간 */
 	float TimeSinceLastSprint;
