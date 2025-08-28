@@ -69,6 +69,9 @@ private:
 	uint8 bIsLosingTarget : 1;
 	float LostTargetTime;
 
+	static const FName bIsChasingKey;
+	static const FName TargetPlayerKey;
+
 #pragma endregion
 
 #pragma region Getter, Setter

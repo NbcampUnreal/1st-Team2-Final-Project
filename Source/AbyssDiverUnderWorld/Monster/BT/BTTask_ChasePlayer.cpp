@@ -4,88 +4,111 @@
 #include "Monster/BT/BTTask_ChasePlayer.h"
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
-#include "Navigation/PathFollowingComponent.h"
 #include "Monster/EMonsterState.h"
+#include "Character/UnderwaterCharacter.h"
 #include "Monster/Monster.h"
 #include "AbyssDiverUnderWorld.h"
+
+const FName UBTTask_ChasePlayer::bCanAttackKey = "bCanAttack";
+const FName UBTTask_ChasePlayer::bIsHidingKey = "bIsHiding";
+const FName UBTTask_ChasePlayer::bIsPlayerHiddenKey = "bIsPlayerHidden";
+const FName UBTTask_ChasePlayer::TargetPlayerKey = "TargetPlayer";
 
 UBTTask_ChasePlayer::UBTTask_ChasePlayer()
 {
 	NodeName = TEXT("Chase Player");
-	bNotifyTaskFinished = true;
 	bNotifyTick = true;
-
-	AcceptanceRadius = 300.0f;
+	bNotifyTaskFinished = true;
+	bCreateNodeInstance = false;
 }
 
 EBTNodeResult::Type UBTTask_ChasePlayer::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
-	CachedOwnerComp = &OwnerComp;
+	FBTChasePlayerTaskMemory* TaskMemory = (FBTChasePlayerTaskMemory*)NodeMemory;
+	if (!TaskMemory) return EBTNodeResult::Failed;
 
-	AAIController* AIController = OwnerComp.GetAIOwner();
-	if (!AIController) return EBTNodeResult::Failed;
+	TaskMemory->AIController = Cast<AMonsterAIController>(OwnerComp.GetAIOwner());
+	TaskMemory->Monster = Cast<AMonster>(OwnerComp.GetAIOwner()->GetCharacter());
 
-	UBlackboardComponent* BlackboardComp = AIController->GetBlackboardComponent();
-	if (!BlackboardComp) return EBTNodeResult::Failed;
+	if (!TaskMemory->AIController.IsValid() || !TaskMemory->Monster.IsValid()) return EBTNodeResult::Failed;
 
-	AActor* TargetActor = Cast<AActor>(BlackboardComp->GetValueAsObject(TargetActorKey.SelectedKeyName));
-	if (!TargetActor || !IsValid(TargetActor)) return EBTNodeResult::Failed;
+	TaskMemory->ChasingTime = FMath::RandRange(MinChasingTime, MaxChasingTime);
 
-	CachedTargetActor = TargetActor;
-
-	// MoveRequest
-	FAIMoveRequest MoveRequest;
-	MoveRequest.SetGoalActor(TargetActor);
-	MoveRequest.SetAcceptanceRadius(AcceptanceRadius);
-	MoveRequest.SetCanStrafe(false);
-
-	FNavPathSharedPtr NavPath; // Variable to receive the navigation path the AI will actually follow
-	FPathFollowingRequestResult Result = AIController->MoveTo(MoveRequest, &NavPath);
-
-	if (Result.Code == EPathFollowingRequestResult::AlreadyAtGoal)
-	{
-		// Already Arrived -> State Change
-		BlackboardComp->SetValueAsEnum(MonsterStateKey.SelectedKeyName, static_cast<uint8>(EMonsterState::Attack));
-		return EBTNodeResult::Succeeded;
-	}
-	else if (Result.Code == EPathFollowingRequestResult::RequestSuccessful)
-	{
-		// MonsterState : Chase
-		return EBTNodeResult::InProgress;
-	}
-	else
-	{
-		return EBTNodeResult::Failed;
-	}
+	return EBTNodeResult::InProgress;
 }
 
 void UBTTask_ChasePlayer::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
 {
-	AAIController* AIController = OwnerComp.GetAIOwner();
-	if (!AIController) return;
+	Super::TickTask(OwnerComp, NodeMemory, DeltaSeconds);
 
-	ACharacter* AIPawn = Cast<ACharacter>(AIController->GetPawn());
-	if (!AIPawn) return;
+	FBTChasePlayerTaskMemory* TaskMemory = (FBTChasePlayerTaskMemory*)NodeMemory;
+	if (!TaskMemory) return;
 
-	UBlackboardComponent* BlackboardComp = AIController->GetBlackboardComponent();
-	if (!BlackboardComp) return;
+	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(TaskMemory->AIController->GetBlackboardComponent()->GetValueAsObject("TargetPlayer"));
 
-	if (!CachedTargetActor || !IsValid(CachedTargetActor))
+	if (!IsValid(Player))
 	{
-		// Lost TargetActor
-		FinishLatentTask(*CachedOwnerComp, EBTNodeResult::Failed);
-
-		// MonsterAIController handles this processing, but explicitly writes
-		BlackboardComp->SetValueAsEnum(MonsterStateKey.SelectedKeyName, static_cast<uint8>(EMonsterState::Patrol));
-		BlackboardComp->ClearValue(TargetActorKey.SelectedKeyName);
+		LOG(TEXT("ChasePlayer: Player is not valid"));
+		TaskMemory->AIController->GetBlackboardComponent()->SetValueAsBool(bIsHidingKey, true);
+		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 		return;
 	}
 
-	if (AIController->GetMoveStatus() == EPathFollowingStatus::Idle)
+	TaskMemory->AccumulatedTime += DeltaSeconds;
+	if (TaskMemory->AccumulatedTime > TaskMemory->ChasingTime)
 	{
-		// When it arrives, switch the status to Attack
-		BlackboardComp->SetValueAsEnum(MonsterStateKey.SelectedKeyName, static_cast<uint8>(EMonsterState::Attack));
-		FinishLatentTask(*CachedOwnerComp, EBTNodeResult::Succeeded);
+		LOG(TEXT("PerformChasing: Chasing time exceeded"));
+		TaskMemory->AIController->GetBlackboardComponent()->SetValueAsBool(bIsHidingKey, true);
+		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
+		return;
 	}
+
+	if (!bHasAttacked && TaskMemory->Monster->GetIsAttackCollisionOverlappedPlayer())
+	{
+		LOG(TEXT("PerformChasing: Player Is Overlapped With Attack Collision"));
+		bHasAttacked = true;
+		TaskMemory->AIController->GetBlackboardComponent()->SetValueAsBool(bCanAttackKey, true);
+	}
+
+	FActorPerceptionBlueprintInfo PerceptionInfo;
+	const bool bIsPerceptionSuccess = TaskMemory->AIController->PerceptionComponent->GetActorsPerception(Player, PerceptionInfo);
+	if (bIsPerceptionSuccess)
+	{
+		bool bIsPlayerInSight = false;
+
+		for (const FAIStimulus& Stimulus : PerceptionInfo.LastSensedStimuli)
+		{
+			if (Stimulus.Type == UAISense::GetSenseID<UAISense_Sight>() &&
+				Stimulus.WasSuccessfullySensed())
+			{
+				bIsPlayerInSight = true;
+				break;
+			}
+		}
+
+		if (!bIsPlayerInSight)
+		{
+			if (Player->IsHideInSeaweed())
+			{
+				TaskMemory->AIController->GetBlackboardComponent()->SetValueAsBool(bIsPlayerHiddenKey, true);
+				FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
+				return;
+			}
+		}
+	}
+
+	TaskMemory->Monster->PerformChasing(DeltaSeconds);
+}
+
+void UBTTask_ChasePlayer::OnTaskFinished(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, EBTNodeResult::Type TaskResult)
+{
+	Super::OnTaskFinished(OwnerComp, NodeMemory, TaskResult);
+
+	FBTChasePlayerTaskMemory* TaskMemory = (FBTChasePlayerTaskMemory*)NodeMemory;
+	if (!TaskMemory) return;
+
+	TaskMemory->AccumulatedTime = 0.0f;
+	TaskMemory->Monster->InitTarget();
+	bHasAttacked = false;
 }
 
