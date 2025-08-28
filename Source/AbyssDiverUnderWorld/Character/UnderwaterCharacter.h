@@ -282,6 +282,9 @@ public:
 
 	/** 관전 당하는 것이 끝났을 때 호출되는 함수 */
 	void OnEndSpectated();
+
+	/** 감정 표현 재생 요청 */
+	void RequestPlayEmote(int8 EmoteIndex);
 	
 protected:
 
@@ -546,8 +549,6 @@ protected:
 	UFUNCTION()
 	virtual void OnMesh3PMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 
-	/** 감정 표현 재생 요청 */
-	void RequestPlayEmote(int8 EmoteIndex);
 
 	/** Server에 감정 표현 재생 요청 */
 	UFUNCTION(Server, Reliable)
