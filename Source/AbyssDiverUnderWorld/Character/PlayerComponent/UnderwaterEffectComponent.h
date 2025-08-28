@@ -39,7 +39,6 @@ public:
 	void StopCombatEffect();
 
 protected:
-
 	/** 환경 상태가 변경되었을 때 호출되는 함수. 수중 상태일 때만 효과를 활성화한다. */
 	UFUNCTION()
 	void OnEnvironmentStateChanged(EEnvironmentState OldEnvironmentState, EEnvironmentState NewEnvironmentState);
@@ -68,7 +67,7 @@ protected:
 
 	/** 숨쉬기 효과 재생을 중지한다. */
 	void StopBreathEffect();
-	
+
 	/** 공기 방울 효과를 생성한다. */
 	void SpawnBreathBubbleEffect();
 
@@ -77,13 +76,12 @@ protected:
 
 	/** 급격한 속도 변화가 있을 경우에 사운드를 재생한다. */
 	void CheckVelocityChange(const float DeltaTime);
-	
+
 #pragma endregion
 
 #pragma region Variable
 
 private:
-
 	/** AUnderwaterCharacter Cache */
 	UPROPERTY()
 	TObjectPtr<class AUnderwaterCharacter> OwnerCharacter;
@@ -91,7 +89,7 @@ private:
 	/** 수중 효과 활성화 여부. 이 값이 true일 때만 숨쉬기 효과와 이동 소리가 재생된다. */
 	UPROPERTY(BlueprintReadOnly, Category = "Character|UnderwaterEffect", meta = (AllowPrivateAccess = "true"))
 	uint8 bEnabled : 1 = false;
-	
+
 	/** 숨쉬기 효과 재생 간격. 숨쉬기 간격마다 Breath Sound를 재생하고 Bubble 효과를 생성한다. */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|UnderwaterEffect")
 	float BreathInterval;
@@ -107,7 +105,7 @@ private:
 	/** 대기 중에 재생할 숨쉬기 효과 사운드 */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|UnderwaterEffect")
 	ESFX IdleBreathSound;
-	
+
 	/** 움직일 때 재생될 숨쉬기 효과 사운드 */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|UnderwaterEffect")
 	ESFX MoveBreathSound;
@@ -126,11 +124,9 @@ private:
 	/** 숨쉬기 효과 후에 재생할 공기 방울 효과 핸들. 숨을 내쉴 때 공기 방울 효과를 재생하는 데 사용된다. */
 	FTimerHandle BreathBubbleEffectTimerHandle;
 
-	// @ToDo : Sound Subsystem으로 변경
-
 	/** 수중에서 이동 소리를 재생하고 있는지 여부. 이 값이 true일 때만 이동 소리가 재생된다. */
 	UPROPERTY(BlueprintReadOnly, Category = "Character|UnderwaterEffect", meta = (AllowPrivateAccess = "true"))
-	uint8 bShouldPlayMovementSound : 1;
+	uint8 bShouldPlayMovementEffect : 1;
 
 	/** 수중에서 이동할 때 재생하는 사운드 ID */
 	int32 MovementAudioId;
@@ -141,7 +137,7 @@ private:
 
 	/** 수중에서 스프린트 할 때 재생하는 사운드 컴포넌트 */
 	int32 SprintMovementAudioId;
-	
+
 	/** 수중에서 이동 소리 재생을 위한 사운드. 이 사운드는 MovementSoundThreshold보다 큰 속도로 이동할 때만 재생된다. */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|UnderwaterEffect")
 	ESFX MovementSound;
@@ -171,14 +167,30 @@ private:
 	/** 소리 재생할 사운드 서브 시스템 Weak Pointer */
 	TWeakObjectPtr<USoundSubsystem> SoundSubsystemWeakPtr;
 
+	/** 움직일 때 생성되는 공기 방울 이펙트. 스프린트 시에는 더 많은 공기 방울이 생성된다. */
+	UPROPERTY(EditAnywhere, Category = "Character|UnderwaterEffect")
+	TObjectPtr<UNiagaraSystem> MoveBubbleParticleSystem;
+
+	/** 움직일 때 생성되는 공기 방울 이펙트가 생성될 소켓 이름 */
+	UPROPERTY(EditAnywhere, Category = "Character|UnderwaterEffect")
+	FName MoveBubbleSocketName = TEXT("move_bubble_socket");
+
+	/** 움직일 때 생성되는 공기 방울 이펙트 컴포넌트. 이 컴포넌트는 캐릭터의 메시에 부착되어 공기 방울을 생성한다. */
+	UPROPERTY(Transient)
+	TObjectPtr<class UNiagaraComponent> MoveBubbleParticleComponent;
+
+	UPROPERTY(EditAnywhere, Category = "Character|UnderwaterEffect")
+	FName MoveBubbleIntensityParameterName = TEXT("BigBubbleIntensity");
+
 #pragma endregion
 
 #pragma region Getter Setter
 
-protected:
 
+
+protected:
 	/** 사운드 서브 시스템 접근 */
 	USoundSubsystem* GetSoundSubsystem();
-	
+
 #pragma endregion
 };

@@ -7,11 +7,13 @@
 #include "UnitBase.h"
 #include "Interface/IADInteractable.h"
 #include "AbyssDiverUnderWorld.h"
+#include "LocomotionMode.h"
 #include "StatComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "UnderwaterCharacter.generated.h"
 
 #if UE_BUILD_SHIPPING
+enum class EMoveDirection : uint8;
 	#define LOG_ABYSS_DIVER_COMPILE_VERBOSITY Error
 #else
 	#define LOG_ABYSS_DIVER_COMPILE_VERBOSITY All
@@ -280,6 +282,9 @@ public:
 
 	/** 관전 당하는 것이 끝났을 때 호출되는 함수 */
 	void OnEndSpectated();
+
+	/** 감정 표현 재생 요청 */
+	void RequestPlayEmote(int8 EmoteIndex);
 	
 protected:
 
@@ -394,8 +399,12 @@ protected:
 
 	/** 캐릭터가 사망을 완료했을 때 호출되는 함수. 관전으로 변경된다. */
 	void EndDeath();
-	
-	float GetSwimEffectiveSpeed() const;
+
+	/** 현재 소지 중인 교환 가능 아이템들을 모두 드랍한다. */
+	void DropAllExchangeableItems();
+
+	/** 현재 캐릭터의 이동 속도를 계산한다. */
+	float CalculateEffectiveSpeed() const;
 
 	/** 현재 상태 속도 갱신.(무게, Sprint) */
 	UFUNCTION()
@@ -433,11 +442,19 @@ protected:
 	void Move(const FInputActionValue& InputActionValue);
 
 	/** 수중 이동 함수. Forward : Camera 방향으로 이동, Right : Forward 기준을 바탕으로 왼쪽, 오른쪽 수평 이동, Up : 위쪽 수직 이동 */
-	void MoveUnderwater(FVector MoveInput);
+	void MoveUnderwater(const FVector& MoveInput);
 
 	/** 지상 이동 함수 */
-	void MoveGround(FVector MoveInput);
+	void MoveGround(const FVector& MoveInput);
 
+	/** 이동 방향을 업데이트 한다. 현재 방향이 변경되었을 경우 true를 반환하고 아닐 경우 false를 반환한다. */
+	bool UpdateMoveDirection(const FVector& MoveInput);
+
+	/** 현재 이동 방향을 Server에 보고한다. */
+	UFUNCTION(Server, Reliable)
+	void S_ReportMoveDirection(EMoveDirection NewMoveDirection);
+	void S_ReportMoveDirection_Implementation(EMoveDirection NewMoveDirection);
+	
 	/** 점프 입력 시작 함수. 지상에서만 작동한다. */
 	void JumpInputStart(const FInputActionValue& InputActionValue);
 
@@ -529,8 +546,6 @@ protected:
 	UFUNCTION()
 	virtual void OnMesh3PMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 
-	/** 감정 표현 재생 요청 */
-	void RequestPlayEmote(int8 EmoteIndex);
 
 	/** Server에 감정 표현 재생 요청 */
 	UFUNCTION(Server, Reliable)
@@ -959,6 +974,10 @@ private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Weight", meta = (AllowPrivateAccess = "true", ClampMin = "0.0", ClampMax = "1.0"))
 	float OverloadSpeedFactor;
 
+	/** 후방 이동 시의 속도 비율. 0.7일 경우 70%의 속도로 이동한다. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Move", meta = (AllowPrivateAccess = "true", ClampMin = "0.0", ClampMax = "1.0"))
+	float BackwardMoveSpeedFactor = 0.7f;
+	
 	/** 캐릭터의 효과가 적용된 최종 속도 */
 	UPROPERTY(Transient, BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float EffectiveSpeed;
@@ -973,6 +992,12 @@ private:
 
 	/** Upgrade가 적용된 최종 속도. Ground, Water을 전환할 때 속도를 갱신하기 위해 속도를 저장한다. 초기값은 StatComponent의 값을 참조한다. */
 	float BaseSwimSpeed;
+
+	/** 캐릭터의 현재 이동 방향 */
+	EMoveDirection MoveDirection = EMoveDirection::Other;
+
+	/** Upgrade 추가 이동 속도 */ 
+	float UpgradeSwimSpeed = 0.0f;
 
 	// @ToDo: Multiplier를 통합 적용
 	// @ToDo: DPV 상황 추가
@@ -1227,6 +1252,7 @@ private:
 	TWeakObjectPtr<class USoundSubsystem> SoundSubsystem;
 	
 	uint8 bIsMovementBlockedByTutorial : 1;
+	
 #pragma endregion
 
 #pragma region Getter Setter
@@ -1382,6 +1408,13 @@ public:
 	FORCEINLINE UInputAction* GetSelectInventorySlot3() const { return EquipSlot3Action; }
 
 	void SetMovementBlockedByTutorial(bool bIsBlocked);
+	
+	/** 현재 캐릭터의 이동 방향을 반환. Server와 Client가 동기화되어 있다. */
+	FORCEINLINE EMoveDirection GetMoveDirection() const { return MoveDirection; }
+
+	/** 현재 캐릭터가 스프린트를 할 수 있는지 여부를 반환. 전방 이동이 있을 경우에만 스프린트를 할 수 있다. Server / Client 복제됨 */
+	bool CanSprint() const;
+	
 protected:
 
 	class USoundSubsystem* GetSoundSubsystem();
