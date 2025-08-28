@@ -13,6 +13,9 @@
 #include "Monster/HorrorCreature/HorrorCreature.h"
 #include "AbyssDiverUnderWorld.h"
 
+const FName AMonsterAIController::TargetPlayerKey = "TargetPlayer";
+const FName AMonsterAIController::bIsChasingKey = "bIsChasing";
+
 AMonsterAIController::AMonsterAIController()
 {
 	PrimaryActorTick.bCanEverTick = true;
@@ -138,17 +141,12 @@ void AMonsterAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus 
 {
 	if (!IsValid(Monster)) return;
 
+	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor);
+	if (!IsValid(Player) || Player->IsDeath() || Player->IsGroggy()) return;
+
 	if (Actor->IsA(AUnderwaterCharacter::StaticClass()))
 	{
-		if (AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor))
-		{
-			if (Player->GetCharacterState() == ECharacterState::Death)
-			{
-				return;
-			}
-		}
-
- 		if (Stimulus.WasSuccessfullySensed() && Monster->GetMonsterState() != EMonsterState::Flee)
+		if (Stimulus.WasSuccessfullySensed() && Monster->GetMonsterState() != EMonsterState::Flee)
 		{
 			LostActorsMap.Remove(Actor); // Remove when detected again
 			Monster->AddDetection(Actor);
@@ -157,6 +155,8 @@ void AMonsterAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus 
 			{
 				Monster->SetMonsterState(EMonsterState::Chase);
 				Monster->bIsChasing = true;
+				BlackboardComponent->SetValueAsBool(bIsChasingKey, true);
+				BlackboardComponent->SetValueAsObject(TargetPlayerKey, Player);
 			}
 		}
 		else

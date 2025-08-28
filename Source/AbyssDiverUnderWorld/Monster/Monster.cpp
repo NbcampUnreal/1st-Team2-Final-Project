@@ -18,7 +18,8 @@
 const FName AMonster::MonsterStateKey = "MonsterState";
 const FName AMonster::InvestigateLocationKey = "InvestigateLocation";
 const FName AMonster::PatrolLocationKey = "PatrolLocation";
-const FName AMonster::TargetActorKey = "TargetActor";
+const FName AMonster::TargetPlayerKey = "TargetPlayer";
+const FName AMonster::TargetLocationKey = "TargetLocation";
 
 AMonster::AMonster()
 {
@@ -96,7 +97,7 @@ void AMonster::BeginPlay()
 
 		if (BlackboardComponent)
 		{
-			BlackboardComponent->SetValueAsVector("TargetLocation", GetActorLocation());
+			BlackboardComponent->SetValueAsVector(TargetLocationKey, GetActorLocation());
 		}
 	}
 
@@ -161,7 +162,7 @@ void AMonster::SetNewTargetLocation()
 	// TargetPlayer 존재 여부 확인
 	const bool bHasTargetPlayer = AIController &&
 		AIController->GetBlackboardComponent() &&
-		AIController->GetBlackboardComponent()->GetValueAsObject("TargetPlayer") != nullptr;
+		AIController->GetBlackboardComponent()->GetValueAsObject(TargetPlayerKey) != nullptr;
 
 	// 순찰 시 회전 제한, 그러나 배회를 위해 전방향도 가능
 	const float MaxHorizontalAngle = 180.0f;//bHasTargetPlayer ? 90.0f : 60.0f;
@@ -216,7 +217,7 @@ void AMonster::SetNewTargetLocation()
 			// 블랙보드의 TargetLocation 업데이트
 			if (AIController && AIController->GetBlackboardComponent())
 			{
-				AIController->GetBlackboardComponent()->SetValueAsVector("TargetLocation", DesiredTargetLocation);
+				AIController->GetBlackboardComponent()->SetValueAsVector(TargetLocationKey, DesiredTargetLocation);
 			}
 
 #if WITH_EDITOR
@@ -266,7 +267,7 @@ void AMonster::SetNewTargetLocation()
 			// 블랙보드의 TargetLocation 업데이트
 			if (AIController && AIController->GetBlackboardComponent())
 			{
-				AIController->GetBlackboardComponent()->SetValueAsVector("TargetLocation", DesiredTargetLocation);
+				AIController->GetBlackboardComponent()->SetValueAsVector(TargetLocationKey, DesiredTargetLocation);
 			}
 
 #if WITH_EDITOR
@@ -294,7 +295,7 @@ void AMonster::SetNewTargetLocation()
 	// 블랙보드의 TargetLocation 업데이트
 	if (AIController && AIController->GetBlackboardComponent())
 	{
-		AIController->GetBlackboardComponent()->SetValueAsVector("TargetLocation", DesiredTargetLocation);
+		AIController->GetBlackboardComponent()->SetValueAsVector(TargetLocationKey, DesiredTargetLocation);
 	}
 
 	DrawDebugSphere(GetWorld(), DesiredTargetLocation, 50.0f, 12, FColor::Red, false, 3.0f, 0, 5.0f);
@@ -371,7 +372,7 @@ void AMonster::PerformNormalMovement(const float& InDeltaTime)
 		// 블랙보드의 TargetLocation을 보간된 값으로 업데이트
 		if (AIController && AIController->GetBlackboardComponent())
 		{
-			AIController->GetBlackboardComponent()->SetValueAsVector("TargetLocation", InterpolatedTargetLocation);
+			AIController->GetBlackboardComponent()->SetValueAsVector(TargetLocationKey, InterpolatedTargetLocation);
 		}
 
 #if WITH_EDITOR
@@ -463,7 +464,7 @@ void AMonster::PerformChasing(const float& InDeltaTime)
 	// 블랙보드의 TargetLocation을 보간된 값으로 업데이트 (추적 시에는 플레이어 위치)
 	if (AIController && AIController->GetBlackboardComponent())
 	{
-		AIController->GetBlackboardComponent()->SetValueAsVector("TargetLocation", InterpolatedTargetLocation);
+		AIController->GetBlackboardComponent()->SetValueAsVector(TargetLocationKey, InterpolatedTargetLocation);
 	}
 
 	// 추적 속도 설정
@@ -728,7 +729,7 @@ void AMonster::AddDetection(AActor* Actor)
 
 		if (BlackboardComponent)
 		{
-			BlackboardComponent->SetValueAsObject(TargetActorKey, TargetActor);
+			BlackboardComponent->SetValueAsObject(TargetPlayerKey, TargetActor);
 		}
 	}
 }
@@ -778,7 +779,7 @@ void AMonster::RemoveDetection(AActor* Actor)
 
 			if (BlackboardComponent)
 			{
-				BlackboardComponent->ClearValue(TargetActorKey);
+				BlackboardComponent->ClearValue(TargetPlayerKey);
 			}
 
 			// Alternate targeting
@@ -797,7 +798,7 @@ void AMonster::RemoveDetection(AActor* Actor)
 					if (BlackboardComponent)
 					{
 						SetMonsterState(EMonsterState::Chase);
-						BlackboardComponent->SetValueAsObject(TargetActorKey, TargetActor);
+						BlackboardComponent->SetValueAsObject(TargetPlayerKey, TargetActor);
 					}
 					UE_LOG(LogTemp, Log, TEXT("[%s] New TargetActor: %s"), *GetName(), *TargetActor->GetName());
 
@@ -858,7 +859,7 @@ void AMonster::ForceRemoveDetection(AActor* Actor)
 
 		if (BlackboardComponent)
 		{
-			BlackboardComponent->ClearValue(TargetActorKey);
+			BlackboardComponent->ClearValue(TargetPlayerKey);
 		}
 
 		// Alternate targeting
@@ -877,7 +878,7 @@ void AMonster::ForceRemoveDetection(AActor* Actor)
 				if (BlackboardComponent)
 				{
 					SetMonsterState(EMonsterState::Chase);
-					BlackboardComponent->SetValueAsObject(TargetActorKey, TargetActor);
+					BlackboardComponent->SetValueAsObject(TargetPlayerKey, TargetActor);
 				}
 				break;
 			}
@@ -996,7 +997,7 @@ void AMonster::SetMonsterState(EMonsterState NewState)
 
 void AMonster::SetMaxSwimSpeed(float Speed)
 {
-	GetCharacterMovement()->MaxSwimSpeed = Speed;
+	AquaticMovementComponent->MaxSpeed = Speed;
 }
 
 int32 AMonster::GetDetectionCount() const

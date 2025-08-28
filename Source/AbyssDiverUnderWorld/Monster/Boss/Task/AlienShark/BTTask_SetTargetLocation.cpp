@@ -1,6 +1,6 @@
 #include "Monster/Boss/Task/AlienShark/BTTask_SetTargetLocation.h"
-#include "Monster/Boss/Boss.h"
-#include "Monster/Boss/EnhancedBossAIController.h"
+#include "Monster/Monster.h"
+#include "Monster/MonsterAIController.h"
 
 UBTTask_SetTargetLocation::UBTTask_SetTargetLocation()
 {
@@ -11,15 +11,15 @@ UBTTask_SetTargetLocation::UBTTask_SetTargetLocation()
 
 EBTNodeResult::Type UBTTask_SetTargetLocation::ExecuteTask(UBehaviorTreeComponent& Comp, uint8* NodeMemory)
 {
-	AEnhancedBossAIController* AIController = Cast<AEnhancedBossAIController>(Comp.GetAIOwner());
-	ABoss* Boss = Cast<ABoss>(Comp.GetAIOwner()->GetCharacter());
+	AMonsterAIController* AIController = Cast<AMonsterAIController>(Comp.GetAIOwner());
+	AMonster* Monster = Cast<AMonster>(Comp.GetAIOwner()->GetCharacter());
 	
-	if (!IsValid(AIController) | !IsValid(Boss)) return EBTNodeResult::Failed;
+	if (!IsValid(AIController) || !IsValid(Monster)) return EBTNodeResult::Failed;
 
 	const FName BlackboardKeyName = GetSelectedBlackboardKey();
 	const FVector TargetLocation = AIController->GetBlackboardComponent()->GetValueAsVector(BlackboardKeyName);
 
-	Boss->SetTargetLocation(TargetLocation);
+	Monster->SetTargetLocation(TargetLocation);
 
 	AIController->GetBlackboardComponent()->SetValueAsObject("TargetPlayer", nullptr);
 	

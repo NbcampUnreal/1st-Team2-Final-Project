@@ -198,7 +198,8 @@ protected:
 	static const FName MonsterStateKey;
 	static const FName InvestigateLocationKey;
 	static const FName PatrolLocationKey;
-	static const FName TargetActorKey;
+	static const FName TargetPlayerKey;
+	static const FName TargetLocationKey;
 
 private:
 	FVector TargetLocation;

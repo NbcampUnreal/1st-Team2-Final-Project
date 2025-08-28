@@ -62,7 +62,7 @@ void AHorrorCreature::Tick(float DeltaTime)
 			SwallowedPlayer->SetActorRelativeLocation(FVector::ZeroVector);
 
 			SetMonsterState(EMonsterState::Flee);
-			BlackboardComponent->ClearValue(TargetActorKey);
+			BlackboardComponent->ClearValue(TargetPlayerKey);
 
 			bSwallowingInProgress = false;
 		}
@@ -110,14 +110,14 @@ void AHorrorCreature::SwallowPlayer(AUnderwaterCharacter* Victim)
 	bSwallowingInProgress = true;
 
 	SetMonsterState(EMonsterState::Flee);
-	BlackboardComponent->ClearValue(TargetActorKey);
+	BlackboardComponent->ClearValue(TargetPlayerKey);
 }
 
 void AHorrorCreature::EjectPlayer(AUnderwaterCharacter* Victim)
 {
 	if (!Victim) return;
 
-	// Perception keeps setting the TargetActor, so it should be turned off.
+	// Perception keeps setting the TargetPlayer, so it should be turned off.
 	TemporarilyDisalbeSightPerception(DisableSightTime);
 
 	Victim->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
@@ -197,7 +197,7 @@ void AHorrorCreature::SightPerceptionOn()
 void AHorrorCreature::SetPatrolStateAfterEject()
 {
 	SetMonsterState(EMonsterState::Patrol);
-	BlackboardComponent->ClearValue(TargetActorKey);
+	BlackboardComponent->ClearValue(TargetPlayerKey);
 }
 
 void AHorrorCreature::DamageToVictim(AUnderwaterCharacter* Victim, float Damage)
@@ -220,7 +220,7 @@ void AHorrorCreature::InitializeAggroVariable()
 	
 	AIController->SetbIsLosingTarget(false);
 	bIsChasing = false;
-	TargetActor = nullptr;
+	TargetPlayer = nullptr;
 	BlackboardComponent->ClearValue(InvestigateLocationKey);
 }
 
