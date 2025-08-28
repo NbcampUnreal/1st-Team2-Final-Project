@@ -7,34 +7,10 @@
 #include "Net/UnrealNetwork.h"
 #include "DebuffComponent.h"
 
-
-// Sets default values for this component's properties
 UDebuffComponent::UDebuffComponent()
 {
-	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
-	// off to improve performance if you don't need them.
-	PrimaryComponentTick.bCanEverTick = true;
+	PrimaryComponentTick.bCanEverTick = false;
 
-	// ...
-}
-
-
-// Called when the game starts
-void UDebuffComponent::BeginPlay()
-{
-	Super::BeginPlay();
-
-	// ...
-	
-}
-
-
-// Called every frame
-void UDebuffComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
-{
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-	// ...
 }
 
 void UDebuffComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -43,8 +19,6 @@ void UDebuffComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	GetWorld()->GetTimerManager().ClearTimer(PoisonDebuffTimerHandle);
 	GetWorld()->GetTimerManager().ClearTimer(PoisonClearTimerHandle);
 }
-
-
 
 void UDebuffComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {

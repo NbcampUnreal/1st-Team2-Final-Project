@@ -47,6 +47,7 @@ public:
 
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason);
 
+#pragma region Method
 public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
@@ -61,10 +62,12 @@ public:
 
 	UFUNCTION(Category = "Debuff")
 	EDebuffType GetDebuffState() const { return CurrentDebuffState; }
+#pragma endregion
 
+#pragma region Valiable
 protected:
 	UPROPERTY(Replicated)
 	EDebuffType CurrentDebuffState;
-
+#pragma endregion
 	
 };
