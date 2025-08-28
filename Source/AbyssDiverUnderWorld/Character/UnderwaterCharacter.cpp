@@ -214,6 +214,8 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	RadarReturn2DComponent->SetAlwaysDisplay(true);
 
 	DepthComponent = CreateDefaultSubobject<UDepthComponent>(TEXT("DepthComponent"));
+
+	bIsMovementBlockedByTutorial = false;
 }
 
 void AUnderwaterCharacter::BeginPlay()
@@ -2030,6 +2032,12 @@ void AUnderwaterCharacter::Respawn()
 void AUnderwaterCharacter::Move(const FInputActionValue& InputActionValue)
 {
 	// 캐릭터의 XYZ 축을 기준으로 입력을 받는다.
+
+	if (bIsMovementBlockedByTutorial)
+	{
+		return;
+	}
+
 	const FVector MoveInput = InputActionValue.Get<FVector>();
 
 	if (EnvironmentState == EEnvironmentState::Ground)
@@ -2821,3 +2829,9 @@ class USoundSubsystem* AUnderwaterCharacter::GetSoundSubsystem()
 
 	return SoundSubsystem.Get();
 }
+
+void AUnderwaterCharacter::SetMovementBlockedByTutorial(bool bIsBlocked)
+{
+	bIsMovementBlockedByTutorial = bIsBlocked;
+}
+

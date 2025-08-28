@@ -14,6 +14,7 @@
 
 ATutorialManager::ATutorialManager()
 {
+	UE_LOG(LogTemp, Error, TEXT("!!!!!!!! TUTORIAL MANAGER CONSTRUCTED !!!!!"));
 	PrimaryActorTick.bCanEverTick = true;
 	CurrentStepIndex = 0;
 
