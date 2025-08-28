@@ -93,49 +93,49 @@ void ABoss::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifet
 }
 #pragma endregion
 
-#pragma region 수중생물 AI 자체구현 함수
-
-void ABoss::SetNewTargetLocation()
-{
-	Super::SetNewTargetLocation();
-}
-
-void ABoss::PerformNormalMovement(const float& InDeltaTime)
-{
-	Super::PerformNormalMovement(InDeltaTime);
-}
-
-void ABoss::PerformChasing(const float& InDeltaTime)
-{
-	Super::PerformChasing(InDeltaTime);
-}
-
-#pragma endregion
+//#pragma region 수중생물 AI 자체구현 함수
+//
+//void ABoss::SetNewTargetLocation()
+//{
+//	Super::SetNewTargetLocation();
+//}
+//
+//void ABoss::PerformNormalMovement(const float& InDeltaTime)
+//{
+//	Super::PerformNormalMovement(InDeltaTime);
+//}
+//
+//void ABoss::PerformChasing(const float& InDeltaTime)
+//{
+//	Super::PerformChasing(InDeltaTime);
+//}
+//
+//#pragma endregion
 
 #pragma region 보스 상태 관련 함수
-void ABoss::SetCharacterMovementSetting(const float& InBrakingDecelerationSwimming, const float& InMaxSwimSpeed)
-{
-	if (!IsValid(GetCharacterMovement())) return;
-
-	if (InBrakingDecelerationSwimming < 0.0f || InMaxSwimSpeed <= 0.0f) return;
-
-	GetCharacterMovement()->BrakingDecelerationSwimming = InBrakingDecelerationSwimming;
-	GetCharacterMovement()->MaxSwimSpeed = InMaxSwimSpeed;
-	
-	// AquaticMovementComponent 설정도 동기화
-	if (AquaticMovementComponent)
-	{
-		AquaticMovementComponent->BrakingDeceleration = InBrakingDecelerationSwimming;
-		AquaticMovementComponent->MaxSpeed = InMaxSwimSpeed;
-	}
-}
+//void ABoss::SetCharacterMovementSetting(const float& InBrakingDecelerationSwimming, const float& InMaxSwimSpeed)
+//{
+//	if (!IsValid(GetCharacterMovement())) return;
+//
+//	if (InBrakingDecelerationSwimming < 0.0f || InMaxSwimSpeed <= 0.0f) return;
+//
+//	GetCharacterMovement()->BrakingDecelerationSwimming = InBrakingDecelerationSwimming;
+//	GetCharacterMovement()->MaxSwimSpeed = InMaxSwimSpeed;
+//	
+//	// AquaticMovementComponent 설정도 동기화
+//	if (AquaticMovementComponent)
+//	{
+//		AquaticMovementComponent->BrakingDeceleration = InBrakingDecelerationSwimming;
+//		AquaticMovementComponent->MaxSpeed = InMaxSwimSpeed;
+//	}
+//}
 
 void ABoss::InitCharacterMovementSetting()
 {
-	if (!IsValid(GetCharacterMovement())) return;
-	
-	GetCharacterMovement()->BrakingDecelerationSwimming = OriginDeceleration;
-	GetCharacterMovement()->MaxSwimSpeed = StatComponent->GetMoveSpeed();
+	//if (!IsValid(GetCharacterMovement())) return;
+	//
+	//GetCharacterMovement()->BrakingDecelerationSwimming = OriginDeceleration;
+	//GetCharacterMovement()->MaxSwimSpeed = StatComponent->GetMoveSpeed();
 	
 	// AquaticMovementComponent 설정도 초기화
 	if (AquaticMovementComponent)
@@ -220,7 +220,9 @@ void ABoss::M_PlayBloodEffect_Implementation(const FVector& Location, const FRot
 
 void ABoss::OnDeath()
 {
-	M_OnDeath();
+	Super::OnDeath();
+
+	/*M_OnDeath();
 	
 	DeathToRaderOff();
 
@@ -228,7 +230,7 @@ void ABoss::OnDeath()
 	{
 		GetController()->StopMovement();
 		GetController()->UnPossess();	
-	}
+	}*/
 }
 #pragma endregion
 
@@ -283,7 +285,7 @@ void ABoss::Attack()
 		ChaseAccumulatedTime = 0.f;
 		AnimInstance->OnMontageEnded.RemoveDynamic(this, &ABoss::OnAttackMontageEnded);
 		AnimInstance->OnMontageEnded.AddDynamic(this, &ABoss::OnAttackMontageEnded);
-		M_PlayAnimation(AttackAnimations[AttackType]);
+		M_PlayMontage(AttackAnimations[AttackType]);
 	}
 
 	bIsAttacking = true;
@@ -297,18 +299,19 @@ void ABoss::OnAttackEnded()
 
 void ABoss::SetMoveSpeed(const float& SpeedMultiplier)
 {
-	GetCharacterMovement()->MaxSwimSpeed = StatComponent->MoveSpeed * SpeedMultiplier;
+	//GetCharacterMovement()->MaxSwimSpeed = StatComponent->MoveSpeed * SpeedMultiplier;
+	AquaticMovementComponent->MaxSpeed = StatComponent->MoveSpeed * SpeedMultiplier;
 }
 
 
-void ABoss::M_PlayAnimation_Implementation(class UAnimMontage* AnimMontage, float InPlayRate, FName StartSectionName)
-{
-	PlayAnimMontage(AnimMontage, InPlayRate, StartSectionName);
-}
+//void ABoss::M_PlayAnimation_Implementation(class UAnimMontage* AnimMontage, float InPlayRate, FName StartSectionName)
+//{
+//	PlayAnimMontage(AnimMontage, InPlayRate, StartSectionName);
+//}
 
 void ABoss::M_OnDeath_Implementation()
 {
-	GetCharacterMovement()->StopMovementImmediately();
+	//GetCharacterMovement()->StopMovementImmediately();
 
 	if (IsValid(AnimInstance))
 	{
@@ -387,32 +390,32 @@ void ABoss::OnBiteCollisionOverlapBegin(UPrimitiveComponent* OverlappedComp, AAc
 	Player->StartCaptureState();
 }
 
-void ABoss::DeathToRaderOff()
-{
-	URadarReturnComponent* RaderComponent = Cast<URadarReturnComponent>(GetComponentByClass(URadarReturnComponent::StaticClass()));
-	if (RaderComponent)
-	{
-		RaderComponent->SetIgnore(true);
-	}
-}
+//void ABoss::DeathToRaderOff()
+//{
+//	URadarReturnComponent* RaderComponent = Cast<URadarReturnComponent>(GetComponentByClass(URadarReturnComponent::StaticClass()));
+//	if (RaderComponent)
+//	{
+//		RaderComponent->SetIgnore(true);
+//	}
+//}
 
-void ABoss::ApplyPhysicsSimulation()
-{
-	switch (BossPhysicsType)
-	{
-		// 물리엔진 비활성화
-		case EBossPhysicsType::None:
-			break;
-
-		// Simulate Physic 적용
-		case EBossPhysicsType::SimulatePhysics:
-			GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-			GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-			GetMesh()->SetEnableGravity(true);
-			GetMesh()->SetSimulatePhysics(true);	
-			break;
-	}
-}
+//void ABoss::ApplyPhysicsSimulation()
+//{
+//	switch (BossPhysicsType)
+//	{
+//		// 물리엔진 비활성화
+//		case EBossPhysicsType::None:
+//			break;
+//
+//		// Simulate Physic 적용
+//		case EBossPhysicsType::SimulatePhysics:
+//			GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+//			GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+//			GetMesh()->SetEnableGravity(true);
+//			GetMesh()->SetSimulatePhysics(true);	
+//			break;
+//	}
+//}
 
 FVector ABoss::GetNextPatrolPoint()
 {

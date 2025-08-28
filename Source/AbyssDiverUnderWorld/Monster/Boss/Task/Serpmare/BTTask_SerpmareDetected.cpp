@@ -51,7 +51,7 @@ void UBTTask_SerpmareDetected::TickTask(UBehaviorTreeComponent& OwnerComp, uint8
 		{
 			if (bIsBigSerpmare)
 			{
-				TaskMemory->Serpmare->M_PlayAnimation(TaskMemory->Serpmare->DisappearAnimation);
+				TaskMemory->Serpmare->M_PlayMontage(TaskMemory->Serpmare->DisappearAnimation);
 				FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 			}
 			else

@@ -42,8 +42,9 @@ EBTNodeResult::Type UBTTask_PlayerChase::ExecuteTask(UBehaviorTreeComponent& Com
 	// 추적 상태에서는 감속을 받지 않고, 이동속도가 증가한다.
 	// 현재 태스크 노드의 인스턴스를 하나만 사용하므로 이 클래스의 변수들을 다른 곳으로 옮길 필요가 있음.
 	// 임시로 BrakingDeceleration을 설정,  0으로 설정하면 이동 자체를 하지 않음.
-	TaskMemory->Boss->SetCharacterMovementSetting(/*ChaseDeceleration*/122.0f ,ChaseMoveSpeed);
-	
+	//TaskMemory->Boss->SetCharacterMovementSetting(/*ChaseDeceleration*/122.0f ,ChaseMoveSpeed);
+	TaskMemory->Boss->SetMaxSwimSpeed(ChaseMoveSpeed);
+
 	return EBTNodeResult::InProgress;
 }
 
