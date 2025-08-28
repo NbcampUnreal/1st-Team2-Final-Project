@@ -40,7 +40,7 @@ public:
 	//FVector GetRandomNavMeshLocation(const FVector& Origin, const float& Radius) const;
 
 	/** 새로운 목표 이동지점을 할당하는 함수 */
-	virtual void SetNewTargetLocation() override;
+	//virtual void SetNewTargetLocation() override;
 
 	/** 상하좌우 방향으로 라인 트레이싱을 한다.
 	 *
@@ -54,7 +54,7 @@ public:
 	 * 
 	 * @param InDeltaTime - 프레임 시간
 	 */
-	virtual void PerformNormalMovement(const float& InDeltaTime) override;
+	//virtual void PerformNormalMovement(const float& InDeltaTime) override;
 
 	/** TargetPlayer를 추적하며 이동하는 함수
 	 * 
@@ -62,7 +62,7 @@ public:
 	 * 
 	 * @param InDeltaTime - 프레임 시간
 	 */
-	void PerformChasing(const float& InDeltaTime);
+	//void PerformChasing(const float& InDeltaTime);
 
 	/** bIsTurning 변수를 true로 설정하고 회전 시작
 	 * 
@@ -98,7 +98,7 @@ public:
 	 * @param InBrakingDecelerationSwimming: 수영 중 감속값
 	 * @param InMaxSwimSpeed: 최대 수영 속도
 	 */
-	void SetCharacterMovementSetting(const float& InBrakingDecelerationSwimming, const float& InMaxSwimSpeed);
+	//void SetCharacterMovementSetting(const float& InBrakingDecelerationSwimming, const float& InMaxSwimSpeed);
 
 	/** 캐릭터의 이동 설정을 초기화하는 함수
 	 * 
@@ -131,7 +131,7 @@ public:
 	void M_PlayBloodEffect_Implementation(const FVector& Location, const FRotator& Rotation);
 	
 	/** 보스의 체력이 0이하로 떨어지는 경우 사망 상태로 전이 */
-	virtual void OnDeath();
+	virtual void OnDeath() override;
 
 	/** 보스를 타겟 방향으로 회전시키는 함수 */
 	virtual void RotationToTarget(AActor* Target);
@@ -150,9 +150,9 @@ public:
 	void SetMoveSpeed(const float& SpeedMultiplier);
 
 	
-	UFUNCTION(NetMulticast, Reliable)
-	virtual void M_PlayAnimation(UAnimMontage* AnimMontage, float InPlayRate = 1, FName StartSectionName = NAME_None);
-	virtual void M_PlayAnimation_Implementation(UAnimMontage* AnimMontage, float InPlayRate = 1, FName StartSectionName = NAME_None);
+	//UFUNCTION(NetMulticast, Reliable)
+	//virtual void M_PlayAnimation(UAnimMontage* AnimMontage, float InPlayRate = 1, FName StartSectionName = NAME_None);
+	////virtual void M_PlayAnimation_Implementation(UAnimMontage* AnimMontage, float InPlayRate = 1, FName StartSectionName = NAME_None);
 
 	//UFUNCTION(NetMulticast, Reliable)
 	//void M_OnDeath();
@@ -173,10 +173,10 @@ public:
 							
 
 	// 몬스터 죽었을 때 레이더에서 Off 되도록
-	UFUNCTION()
-	void DeathToRaderOff();
-protected:
-	void ApplyPhysicsSimulation();
+	//UFUNCTION()
+	//void DeathToRaderOff();
+//protected:
+//	void ApplyPhysicsSimulation();
 	
 private:
 	
