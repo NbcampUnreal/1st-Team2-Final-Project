@@ -997,6 +997,7 @@ void AMonster::SetMonsterState(EMonsterState NewState)
 void AMonster::SetMaxSwimSpeed(float Speed)
 {
 	GetCharacterMovement()->MaxSwimSpeed = Speed;
+	AquaticMovementComponent->MaxSpeed = Speed;
 }
 
 int32 AMonster::GetDetectionCount() const

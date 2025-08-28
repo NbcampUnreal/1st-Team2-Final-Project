@@ -17,7 +17,7 @@ EBTNodeResult::Type UBTTask_PlayAnimMontage::ExecuteTask(UBehaviorTreeComponent&
 	if (!IsValid(Boss) || !IsValid(AnimMontage)) return EBTNodeResult::Failed;
 
 	AccumulatedTime = 0.0f;
-	Boss->M_PlayAnimation(AnimMontage);
+	Boss->M_PlayMontage(AnimMontage);
 	
 	return EBTNodeResult::InProgress;
 }

@@ -79,7 +79,7 @@ void UBTTask_LimadonIdle::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* Nod
 	// 깨물기 실패한 경우 바로 결과 리턴
 	else
 	{
-		TaskMemory->Limadon->M_PlayAnimation(TaskMemory->Limadon->HideAnimation);
+		TaskMemory->Limadon->M_PlayMontage(TaskMemory->Limadon->HideAnimation);
 		TaskMemory->Limadon->BiteVariableInitialize();
 		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 		return;
