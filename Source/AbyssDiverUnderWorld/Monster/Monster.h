@@ -101,6 +101,7 @@ protected:
 
 	void ApplyPhysicsSimulation();
 	void HandleSetting_OnDeath();
+	void ApplyMonsterStateChange(EMonsterState NewState);
 
 #pragma endregion
 
