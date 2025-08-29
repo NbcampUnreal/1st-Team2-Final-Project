@@ -51,11 +51,11 @@ protected:
 private:
 	void AttachToHitActor(USceneComponent* HitComp, const FHitResult& Hit, bool bAttachOnHit);
 
-	void ApplyAdditionalDamage();
+	void ApplyAdditionalDamage(AActor* OvelappedActor);
 
 	void Burst();
 
-	void Addict();
+	void Addict(AActor* OvelappedActor);
 #pragma endregion
 
 #pragma region Variable

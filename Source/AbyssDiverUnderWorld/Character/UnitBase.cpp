@@ -3,6 +3,7 @@
 #include "StatComponent.h"
 #include "Interactable/OtherActors/Radars/RadarReturnComponent.h"
 #include "Interactable/OtherActors/Radars/RadarReturn2DComponent.h"
+#include "Character/PlayerComponent/DebuffComponent.h"
 #include "Subsystems/MissionSubsystem.h"
 
 AUnitBase::AUnitBase()
@@ -13,6 +14,7 @@ AUnitBase::AUnitBase()
 	StatComponent = CreateDefaultSubobject<UStatComponent>(TEXT("StatComponent"));
 	RadarReturnComponent = CreateDefaultSubobject<URadarReturnComponent>(TEXT("RardarReturn"));
 	RadarReturn2DComponent = CreateDefaultSubobject<URadarReturn2DComponent>(TEXT("RadarReturn2D"));
+	DebuffComponent = CreateDefaultSubobject<UDebuffComponent>(TEXT("DebuffComponent"));
 
 	Tags.Add(FName("Radar"));
 }
