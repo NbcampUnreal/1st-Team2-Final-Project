@@ -33,8 +33,8 @@ void ABlowfish::BeginPlay()
 {
 	Super::BeginPlay();
 
-	BiteCollision->OnComponentBeginOverlap.AddDynamic(this, &ABoss::OnMeshOverlapBegin);
-	TailCollision->OnComponentBeginOverlap.AddDynamic(this, &ABoss::OnMeshOverlapBegin);
+	BiteCollision->OnComponentBeginOverlap.AddDynamic(this, &ABlowfish::OnMeshOverlapBegin);
+	TailCollision->OnComponentBeginOverlap.AddDynamic(this, &ABlowfish::OnMeshOverlapBegin);
 }
 
 float ABlowfish::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent,

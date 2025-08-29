@@ -39,6 +39,8 @@ public:
 	virtual void PerformNormalMovement(const float& InDeltaTime);
 	virtual void PerformChasing(const float& InDeltaTime);
 
+	virtual void Attack();
+
 	UFUNCTION(NetMulticast, Reliable)
 	void M_PlayMontage(UAnimMontage* AnimMontage, float InPlayRate = 1, FName StartSectionName = NAME_None);
 	void M_PlayMontage_Implementation(UAnimMontage* AnimMontage, float InPlayRate = 1, FName StartSectionName = NAME_None);
@@ -76,6 +78,10 @@ public:
 	UFUNCTION()
 	void MonsterRaderOff();
 
+	void LaunchPlayer(AUnderwaterCharacter* Player, const float& Power) const;
+
+protected:
+
 	UFUNCTION()
 	void OnAttackCollisionOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
@@ -85,7 +91,14 @@ public:
 	void OnAttackCollisionOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
-protected:
+	UFUNCTION()
+	virtual void OnMeshOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
+		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
+		bool bFromSweep, const FHitResult& SweepResult);
+
+	UFUNCTION()
+	virtual void OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+
 	void ApplyPhysicsSimulation();
 	void HandleSetting_OnDeath();
 
