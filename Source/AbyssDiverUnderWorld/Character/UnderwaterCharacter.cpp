@@ -2414,7 +2414,7 @@ void AUnderwaterCharacter::OnMesh3PMontageEnded(UAnimMontage* Montage, bool bInt
 	OnMesh3PMontageEndDelegate.Broadcast(Montage, bInterrupted);
 }
 
-void AUnderwaterCharacter::RequestPlayEmote(int8 EmoteIndex)
+void AUnderwaterCharacter::RequestPlayEmote(int32 EmoteIndex)
 {
 	// Server, Client 모두 Emote Index를 검증한다.
 	if (EmoteIndex >= EmoteAnimationMontages.Num())
