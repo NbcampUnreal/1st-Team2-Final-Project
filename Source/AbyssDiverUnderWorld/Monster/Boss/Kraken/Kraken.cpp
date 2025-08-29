@@ -51,10 +51,10 @@ void AKraken::BeginPlay()
 		BattleFieldVolume->OnBattleFieldEndOverlapDelegate.AddUObject(this, &AKraken::OnBattleFieldEndOverlap);
 	}
 	
-	BiteAttackCollision->OnComponentBeginOverlap.AddDynamic(this, &ABoss::OnMeshOverlapBegin);
-	TakeDownAttackCollision->OnComponentBeginOverlap.AddDynamic(this, &ABoss::OnMeshOverlapBegin);
-	WieldAttackCollision->OnComponentBeginOverlap.AddDynamic(this, &ABoss::OnMeshOverlapBegin);
-	PickAttackCollision->OnComponentBeginOverlap.AddDynamic(this, &ABoss::OnMeshOverlapBegin);
+	BiteAttackCollision->OnComponentBeginOverlap.AddDynamic(this, &AKraken::OnMeshOverlapBegin);
+	TakeDownAttackCollision->OnComponentBeginOverlap.AddDynamic(this, &AKraken::OnMeshOverlapBegin);
+	WieldAttackCollision->OnComponentBeginOverlap.AddDynamic(this, &AKraken::OnMeshOverlapBegin);
+	PickAttackCollision->OnComponentBeginOverlap.AddDynamic(this, &AKraken::OnMeshOverlapBegin);
 }
 
 void AKraken::OnDeath()

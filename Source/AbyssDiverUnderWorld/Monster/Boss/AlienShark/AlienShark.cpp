@@ -19,5 +19,5 @@ void AAlienShark::BeginPlay()
 {
 	Super::BeginPlay();
 
-	BiteCollision->OnComponentBeginOverlap.AddDynamic(this, &ABoss::OnMeshOverlapBegin);
+	BiteCollision->OnComponentBeginOverlap.AddDynamic(this, &AAlienShark::OnMeshOverlapBegin);
 }

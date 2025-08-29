@@ -27,6 +27,8 @@ ALimadon::ALimadon()
 	StopCaptureHealthCriteria = 1000.0f;
 
 	bReplicates = true;
+
+	bIsBiteAttackSuccess = false;
 }
 
 void ALimadon::BeginPlay()
@@ -34,7 +36,7 @@ void ALimadon::BeginPlay()
 	Super::BeginPlay();
 
 	SetBossState(EBossState::Investigate);
-	BiteAttackCollision->OnComponentBeginOverlap.AddDynamic(this, &ABoss::OnBiteCollisionOverlapBegin);
+	BiteAttackCollision->OnComponentBeginOverlap.AddDynamic(this, &ALimadon::OnBiteCollisionOverlapBegin);
 }
 
 void ALimadon::BiteVariableInitialize()
@@ -81,4 +83,22 @@ void ALimadon::Spit()
 
 	// 변수 초기화
 	BiteVariableInitialize();
+}
+
+void ALimadon::OnBiteCollisionOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	// 이미 Bite 한 대상이 있는 경우 얼리 리턴
+	if (bIsBiteAttackSuccess) return;
+
+	// 공격 대상이 플레이어가 아닌 경우 얼리 리턴
+	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(OtherActor);
+	if (!IsValid(Player)) return;
+
+	// Bite 상태 변수 활성화 
+	bIsBiteAttackSuccess = true;
+
+	// 타겟 설정
+	SetTarget(Player);
+	Player->StartCaptureState();
 }
