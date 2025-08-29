@@ -120,7 +120,7 @@ public:
 	 * @param Player: 밀칠 플레이어
 	 * @param Power: 밀치는 힘
 	 */
-	void LaunchPlayer(AUnderwaterCharacter* Player, const float& Power) const;
+	//void LaunchPlayer(AUnderwaterCharacter* Player, const float& Power) const;
 	
 	/** 데미지를 받을 때 호출하는 함수 */
 	UFUNCTION(BlueprintCallable)
@@ -138,7 +138,7 @@ public:
 	virtual void RotationToTarget(const FVector& InTargetLocation);
 
 	/** 보스의 공격 시 애니메이션 재생*/
-	virtual void Attack();
+	virtual void Attack() override;
 
 	/** 보스의 공격이 끝난 후 타격 판정을 초기화하는 함수
 	 *
@@ -158,26 +158,14 @@ public:
 	//void M_OnDeath();
 	virtual void M_OnDeath_Implementation() override;
 
-	UFUNCTION()
-	void OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+protected:
 
-	UFUNCTION()
-	void OnMeshOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, 
-							UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, 
-							bool bFromSweep, const FHitResult& SweepResult);
+	virtual void OnMeshOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
+		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
+		bool bFromSweep, const FHitResult& SweepResult) override;
 
-	UFUNCTION()
-	void OnBiteCollisionOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, 
-							UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, 
-							bool bFromSweep, const FHitResult& SweepResult);
-							
+	virtual void OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted) override;
 
-	// 몬스터 죽었을 때 레이더에서 Off 되도록
-	//UFUNCTION()
-	//void DeathToRaderOff();
-//protected:
-//	void ApplyPhysicsSimulation();
-	
 private:
 	
 #pragma endregion
@@ -261,7 +249,7 @@ protected:
 
 private:
 	static const FName BossStateKey;
-	uint8 bIsBiteAttackSuccess : 1;
+	
 	//uint8 bIsAttackCollisionOverlappedPlayer : 1;
 	float TurnTimer = 0.0f;
 	float OriginDeceleration;
@@ -278,8 +266,6 @@ public:
 
 	FORCEINLINE UCameraControllerComponent* GetCameraControllerComponent() const { return CameraControllerComponent; };
 
-	FORCEINLINE bool GetIsBiteAttackSuccess() const { return bIsBiteAttackSuccess; }
-	FORCEINLINE void SetIsBiteAttackFalse() { bIsBiteAttackSuccess = false; }
 	FORCEINLINE UAnimInstance* GetAnimInstance() const { return AnimInstance; }
 	FORCEINLINE FVector GetDamagedLocation() const { return DamagedLocation; }
 	FORCEINLINE FVector GetCachedSpawnLocation() const { return CachedSpawnLocation; }

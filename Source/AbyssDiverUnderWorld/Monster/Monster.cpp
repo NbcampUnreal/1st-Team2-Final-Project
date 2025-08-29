@@ -482,6 +482,21 @@ void AMonster::PerformChasing(const float& InDeltaTime)
 #endif
 }
 
+void AMonster::Attack()
+{
+	//const uint8 AttackType = FMath::RandRange(0, AttackAnimations.Num() - 1);
+
+	//if (IsValid(AttackAnimations[AttackType]))
+	//{
+	//	ChaseAccumulatedTime = 0.f;
+	//	AnimInstance->OnMontageEnded.RemoveDynamic(this, &AMonster::OnAttackMontageEnded);
+	//	AnimInstance->OnMontageEnded.AddDynamic(this, &AMonster::OnAttackMontageEnded);
+	//	M_PlayMontage(AttackAnimations[AttackType]);
+	//}
+
+	//bIsAttacking = true;
+}
+
 void AMonster::M_PlayMontage_Implementation(UAnimMontage* AnimMontage, float InPlayRate, FName StartSectionName)
 {
 	PlayAnimMontage(AnimMontage, InPlayRate, StartSectionName);
@@ -590,6 +605,50 @@ void AMonster::HandleSetting_OnDeath()
 		AquaticMovementComponent->SetComponentTickEnabled(false);
 	}
 	ApplyPhysicsSimulation();
+}
+
+void AMonster::OnMeshOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
+	int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	//// 사망 상태면 얼리 리턴
+	//if (BossState == EBossState::Death) return;
+
+	//// 공격 가능한 상태가 아니라면 리턴
+	//if (!bIsAttacking) return;
+
+	//// 공격 대상이 플레이어가 아닌 경우 얼리 리턴
+	//AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(OtherActor);
+	//if (!IsValid(Player)) return;
+
+	//// 해당 플레이어가 이미 공격받은 상태인 경우 얼리 리턴
+	//if (AttackedPlayers.Contains(Player)) return;
+
+	//// 공격받은 대상 리스트에 플레이어 추가
+	//AttackedPlayers.Add(Player);
+
+	//// 해당 플레이어에게 데미지 적용
+	//UGameplayStatics::ApplyDamage(Player, StatComponent->AttackPower, GetController(), this, UDamageType::StaticClass());
+
+	//// 피격당한 플레이어의 카메라 Shake
+	//CameraControllerComponent->ShakePlayerCamera(Player, AttackedCameraShakeScale);
+
+	//// 캐릭터 넉백
+	//LaunchPlayer(Player, LaunchPower);
+}
+
+void AMonster::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted)
+{
+	//if (!IsValid(EnhancedAIController)) return;
+
+	//if (bIsAttackInfinite)
+	//{
+	//	EnhancedAIController->GetBlackboardComponent()->SetValueAsBool("bHasAttacked", false);
+	//}
+	//else
+	//{
+	//	EnhancedAIController->GetBlackboardComponent()->SetValueAsBool("bHasDetectedPlayer", false);
+	//	EnhancedAIController->SetBlackboardPerceptionType(EPerceptionType::Finish);
+	//}
 }
 
 void AMonster::ApplyPhysicsSimulation()
@@ -910,6 +969,27 @@ void AMonster::MonsterRaderOff()
 	{
 		RaderComponent->SetAlwaysIgnore(true);
 	}
+}
+
+void AMonster::LaunchPlayer(AUnderwaterCharacter* Player, const float& Power) const
+{
+	// 플레이어를 밀치는 로직
+	const FVector PushDirection = (Player->GetActorLocation() - GetActorLocation()).GetSafeNormal();
+	const float PushStrength = Power;
+	const FVector PushForce = PushDirection * PushStrength;
+
+	// 물리 시뮬레이션이 아닌 경우 LaunchCharacter 사용
+	Player->LaunchCharacter(PushForce, false, false);
+
+	// 0.5초 후 캐릭터의 원래 움직임 복구
+	FTimerHandle TimerHandle;
+	GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this, Player]()
+		{
+			if (IsValid(Player))
+			{
+				Player->GetCharacterMovement()->SetMovementMode(MOVE_Swimming);
+			}
+		}, 0.5f, false);
 }
 
 void AMonster::SetMonsterState(EMonsterState NewState)

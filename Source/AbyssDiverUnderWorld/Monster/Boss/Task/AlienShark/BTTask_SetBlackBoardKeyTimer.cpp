@@ -1,7 +1,7 @@
 #include "Monster/Boss/Task/AlienShark/BTTask_SetBlackBoardKeyTimer.h"
 #include "AIController.h"
 #include "Monster/Boss/Boss.h"
-#include "Monster/Boss/EnhancedBossAIController.h"
+#include "Monster/MonsterAIController.h"
 
 UBTTask_SetBlackBoardKeyTimer::UBTTask_SetBlackBoardKeyTimer()
 {
@@ -16,7 +16,7 @@ EBTNodeResult::Type UBTTask_SetBlackBoardKeyTimer::ExecuteTask(UBehaviorTreeComp
 	FBTSetBlackBoardKeyTimerTask* TaskMemory = (FBTSetBlackBoardKeyTimerTask*)NodeMemory;
 	if (!TaskMemory) return EBTNodeResult::Failed;
 
-	TaskMemory->AIController = Cast<AEnhancedBossAIController>(Comp.GetAIOwner());
+	TaskMemory->AIController = Cast<AMonsterAIController>(Comp.GetAIOwner());
 	TaskMemory->Boss = Cast<ABoss>(Comp.GetAIOwner()->GetCharacter());
 
 	if (!TaskMemory->Boss.IsValid() || !TaskMemory->AIController.IsValid()) return EBTNodeResult::Failed;

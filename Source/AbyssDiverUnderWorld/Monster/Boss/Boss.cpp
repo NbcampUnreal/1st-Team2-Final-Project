@@ -36,11 +36,12 @@ ABoss::ABoss()
 	MinPatrolDistance = 500.0f;
 	MaxPatrolDistance = 1000.0f;
 	AttackedCameraShakeScale = 1.0f;
-	bIsBiteAttackSuccess = false;
+	
 	BossPhysicsType = EBossPhysicsType::None;
 	DamagedLocation = FVector::ZeroVector;
 	CachedSpawnLocation = FVector::ZeroVector;
 	RotationInterpSpeed = 1.1f;
+
 	bIsAttackInfinite = true;
 	
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
@@ -235,26 +236,26 @@ void ABoss::OnDeath()
 #pragma endregion
 
 #pragma region 보스 유틸 함수
-void ABoss::LaunchPlayer(AUnderwaterCharacter* Player, const float& Power) const
-{
-	// 플레이어를 밀치는 로직
-	const FVector PushDirection = (Player->GetActorLocation() - GetActorLocation()).GetSafeNormal();
-	const float PushStrength = Power;
-	const FVector PushForce = PushDirection * PushStrength;
-	
-	// 물리 시뮬레이션이 아닌 경우 LaunchCharacter 사용
-	Player->LaunchCharacter(PushForce, false, false);
-
-	// 0.5초 후 캐릭터의 원래 움직임 복구
-	FTimerHandle TimerHandle;
-	GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this, Player]()
-	{
-		if (IsValid(Player))
-		{
-			Player->GetCharacterMovement()->SetMovementMode(MOVE_Swimming);	
-		}
-	}, 0.5f, false);
-}
+//void ABoss::LaunchPlayer(AUnderwaterCharacter* Player, const float& Power) const
+//{
+//	// 플레이어를 밀치는 로직
+//	const FVector PushDirection = (Player->GetActorLocation() - GetActorLocation()).GetSafeNormal();
+//	const float PushStrength = Power;
+//	const FVector PushForce = PushDirection * PushStrength;
+//	
+//	// 물리 시뮬레이션이 아닌 경우 LaunchCharacter 사용
+//	Player->LaunchCharacter(PushForce, false, false);
+//
+//	// 0.5초 후 캐릭터의 원래 움직임 복구
+//	FTimerHandle TimerHandle;
+//	GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this, Player]()
+//	{
+//		if (IsValid(Player))
+//		{
+//			Player->GetCharacterMovement()->SetMovementMode(MOVE_Swimming);	
+//		}
+//	}, 0.5f, false);
+//}
 
 void ABoss::RotationToTarget(AActor* Target)
 {
@@ -370,24 +371,6 @@ void ABoss::OnMeshOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* Othe
 
 	// 캐릭터 넉백
 	LaunchPlayer(Player, LaunchPower);
-}
-
-void ABoss::OnBiteCollisionOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
-	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
-{
-	// 이미 Bite 한 대상이 있는 경우 얼리 리턴
-	if (bIsBiteAttackSuccess) return;
-	
-	// 공격 대상이 플레이어가 아닌 경우 얼리 리턴
-	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(OtherActor);
-	if (!IsValid(Player)) return;
-
-	// Bite 상태 변수 활성화 
-	bIsBiteAttackSuccess = true;
-
-	// 타겟 설정
-	SetTarget(Player);
-	Player->StartCaptureState();
 }
 
 //void ABoss::DeathToRaderOff()

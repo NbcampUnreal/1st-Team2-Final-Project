@@ -1,6 +1,6 @@
 #include "Monster/Boss/Task/AlienShark/BTTask_PerformAttack.h"
 #include "AIController.h"
-#include "Monster/Boss/Boss.h"
+#include "Monster/Monster.h"
 #include "Monster/Boss/EnhancedBossAIController.h"
 
 const FName UBTTask_PerformAttack::bCanAttackKey = "bCanAttack";
@@ -19,11 +19,11 @@ EBTNodeResult::Type UBTTask_PerformAttack::ExecuteTask(UBehaviorTreeComponent& C
 	if (!TaskMemory) return EBTNodeResult::Failed;
 
 	TaskMemory->AIController = Cast<AEnhancedBossAIController>(Comp.GetAIOwner());
-	TaskMemory->Boss = Cast<ABoss>(Comp.GetAIOwner()->GetCharacter());
+	TaskMemory->Monster = Cast<AMonster>(Comp.GetAIOwner()->GetCharacter());
 
-	if (!TaskMemory->Boss.IsValid() || !TaskMemory->AIController.IsValid()) return EBTNodeResult::Failed;
+	if (!TaskMemory->Monster.IsValid() || !TaskMemory->AIController.IsValid()) return EBTNodeResult::Failed;
 
-	TaskMemory->Boss->Attack();
+	TaskMemory->Monster->Attack();
 	TaskMemory->AIController->GetBlackboardComponent()->SetValueAsBool(bCanAttackKey, false);
 	
 	return EBTNodeResult::Succeeded;

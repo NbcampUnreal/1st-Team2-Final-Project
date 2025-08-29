@@ -31,6 +31,13 @@ public:
 protected:
 	UFUNCTION(BlueprintCallable)
 	void Spit();
+
+	UFUNCTION()
+	void OnBiteCollisionOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
+		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
+		bool bFromSweep, const FHitResult& SweepResult);
+
+
 	
 public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
@@ -56,14 +63,22 @@ protected:
 	float HideTime;
 
 private:
+
+	uint8 bIsBiteAttackSuccess : 1;
 	uint8 bIsInvestigate : 1;
 	FTimerHandle InvestigateTimerHandle;
 
 public:
+
+	FORCEINLINE bool GetIsBiteAttackSuccess() const { return bIsBiteAttackSuccess; }
+	FORCEINLINE void SetIsBiteAttackFalse() { bIsBiteAttackSuccess = false; }
+
 	FORCEINLINE bool GetIsInvestigate() const { return bIsInvestigate; }
 	FORCEINLINE void SetInvestigateMode()
 	{
 		bIsInvestigate = true;LOG(TEXT("Begin"));
 	}
+
+
 
 };

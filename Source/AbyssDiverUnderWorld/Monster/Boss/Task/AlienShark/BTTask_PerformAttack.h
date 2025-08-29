@@ -6,7 +6,7 @@
 
 struct FBTPerformAttackMemory
 {
-	TWeakObjectPtr<class ABoss> Boss;
+	TWeakObjectPtr<class AMonster> Monster;
 	TWeakObjectPtr<class AEnhancedBossAIController> AIController;
 	float AccumulatedTime = 0.0f;
 };
