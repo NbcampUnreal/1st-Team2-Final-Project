@@ -150,7 +150,7 @@ void AHorrorCreature::EjectPlayer(AUnderwaterCharacter* Victim)
 
 	SwallowedPlayer = nullptr;
 	bCanSwallow = true;
-	ForceRemoveDetection(Victim);
+	RemoveDetection(Victim);
 	InitializeAggroVariable();
 
 	FTimerHandle SetPatrolTimeHandle;

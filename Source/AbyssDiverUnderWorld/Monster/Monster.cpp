@@ -45,7 +45,7 @@ AMonster::AMonster()
 
 	// Set Default PossessSetting
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
-	// Set Collision Channel == Monster
+	// Set Collision Channel == Monster(ECC_GameTraceChannel3)
 	GetCapsuleComponent()->SetCollisionObjectType(ECC_GameTraceChannel3);
 
 	AttackCollision = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Attack Collision"));
@@ -532,16 +532,8 @@ float AMonster::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, 
 			// Delegate Broadcasts for Achievements
 			OnMonsterDead.Broadcast(DamageCauser, this);
 
-			// Disable aggro when dead
-			if (TargetActor)
-			{
-				ForceRemoveDetection(TargetActor);
-			}
-			
-			if (InstigatorPlayer)
-			{
-				ForceRemoveDetection(InstigatorPlayer);
-			}
+			// 사망하면 어그로 해제
+			ForceRemoveDetectionArray();
 		}
 		else
 		{
@@ -558,7 +550,6 @@ float AMonster::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, 
 			if (MonsterState != EMonsterState::Chase && MonsterState != EMonsterState::Flee)
 			{
 				AddDetection(InstigatorPlayer);
-				SetMonsterState(EMonsterState::Chase);
 			}
 		}
 	}
@@ -705,18 +696,18 @@ void AMonster::NotifyLightExposure(float DeltaTime, float TotalExposedTime, cons
 	switch (MonsterState)
 	{
 	case EMonsterState::Patrol:
-		SetMonsterState(EMonsterState::Detected);
+		ApplyMonsterStateChange(EMonsterState::Detected);
 		break;
 
 	case EMonsterState::Detected:
 		if (TotalExposedTime >= ChaseTriggerTime)
 		{
 			AddDetection(PlayerActor);
-			SetMonsterState(EMonsterState::Chase);
+			ApplyMonsterStateChange(EMonsterState::Chase);
 		}
 		else
 		{
-			SetMonsterState(EMonsterState::Investigate);
+			ApplyMonsterStateChange(EMonsterState::Investigate);
 		}
 		break;
 
@@ -731,7 +722,7 @@ void AMonster::NotifyLightExposure(float DeltaTime, float TotalExposedTime, cons
 		}
 		if (TotalExposedTime >= ChaseTriggerTime)
 		{
-			SetMonsterState(EMonsterState::Chase);
+			ApplyMonsterStateChange(EMonsterState::Chase);
 			AddDetection(PlayerActor);
 		}
 		else if (TotalExposedTime < ChaseTriggerTime)
@@ -765,184 +756,131 @@ void AMonster::NotifyLightExposure(float DeltaTime, float TotalExposedTime, cons
 void AMonster::AddDetection(AActor* Actor)
 {
 	if (!IsValid(Actor) || !IsValid(this)) return;
+	if (!HasAuthority()) return;
 
-	int32& Count = DetectionRefCounts.FindOrAdd(Actor);
-	Count++;
-
-	UE_LOG(LogTemp, Log, TEXT("[%s] AddDetection : %s | Count: %d"),
-		*GetName(),
-		*Actor->GetName(),
-		Count
-	);
-
-	// If Target is empty, set
-	if (TargetActor == nullptr || !IsValid(TargetActor))
+	if (!DetectionArray.Contains(Actor))
 	{
-		TargetActor = Actor;
+		DetectionArray.Add(Actor);
+
+		UE_LOG(LogTemp, Log, TEXT("[%s] AddDetection : %s | ArraySize: %d"),
+			*GetName(),
+			*Actor->GetName(),
+			DetectionArray.Num()
+		);
 
 		AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor);
 		if (Player)
 		{
 			Player->OnTargeted(this);
 		}
+	}
+	else return;
+
+	
+	// 만약 TargetActor가 없으면 TargetActor를 해당 Actor(Player)로 설정.
+	if (!TargetActor.IsValid())
+	{
+		TargetActor = Actor;
 
 		if (BlackboardComponent)
 		{
-			BlackboardComponent->SetValueAsObject(TargetPlayerKey, TargetActor);
+			BlackboardComponent->SetValueAsObject(TargetPlayerKey, TargetActor.Get());
+			ApplyMonsterStateChange(EMonsterState::Chase);
 		}
 	}
 }
 
 void AMonster::RemoveDetection(AActor* Actor)
 {
-	if (!IsValid(this)) return;
+	if (!IsValid(this) || !IsValid(Actor)) return;
+	if (!HasAuthority()) return;
 
-	if (!IsValid(Actor))
+	// DetectionArray에 Actor가 없으면 return;
+	if (!DetectionArray.Remove(Actor)) return;
+
+	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor);
+	if (Player)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[%s] RemoveDetection : Invalid Player! Force remove."), *GetName());
-		DetectionRefCounts.Remove(Actor);
-
-		AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor);
-		if (Player)
-		{
-			Player->OnUntargeted(this);
-		}
-
-		return;
+		Player->OnUntargeted(this);
 	}
 
-	int32* CountPtr = DetectionRefCounts.Find(Actor);
-	if (!CountPtr) return;
+	// 만약 현재 설정된 TargetActor가 빠졌다면 다른 타겟 지정해야함
+	const bool bWasTarget = (TargetActor.Get() == Actor);
 
-	(*CountPtr)--;
-
-	UE_LOG(LogTemp, Log, TEXT("[%s] RemoveDetection : %s | New Count: %d"),
-		*GetName(),
-		*Actor->GetName(),
-		*CountPtr
-	);
-
-	if (*CountPtr <= 0)
+	if (bWasTarget)
 	{
-		DetectionRefCounts.Remove(Actor);
-
-		if (TargetActor == Actor)
-		{
-			TargetActor = nullptr;
-
-			AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor);
-			if (Player)
-			{
-				Player->OnUntargeted(this);
-			}
-
-			if (BlackboardComponent)
-			{
-				BlackboardComponent->ClearValue(TargetPlayerKey);
-			}
-
-			// Alternate targeting
-			for (const auto& Pair : DetectionRefCounts)
-			{
-				if (IsValid(Pair.Key))
-				{
-					TargetActor = Pair.Key;
-
-					AUnderwaterCharacter* NextAgrroPlayer = Cast<AUnderwaterCharacter>(Pair.Key);
-					if (NextAgrroPlayer)
-					{
-						NextAgrroPlayer->OnTargeted(this);
-					}
-
-					if (BlackboardComponent)
-					{
-						SetMonsterState(EMonsterState::Chase);
-						BlackboardComponent->SetValueAsObject(TargetPlayerKey, TargetActor);
-					}
-					UE_LOG(LogTemp, Log, TEXT("[%s] New TargetActor: %s"), *GetName(), *TargetActor->GetName());
-
-					break;
-				}
-			}
-		}
-	}
-}
-
-/**
-Quick fix : Because it is a 3D space, RefCount sometimes goes up abnormally when AddDetection is perceived by Perception.
-Therefore, when the TargetActor is lost for more than LoseRadius && MaxAge time after Perception.
-Methods to bring down abnormally high RefCount at once 
-**/
-void AMonster::ForceRemoveDetection(AActor* Actor)
-{
-	if (!IsValid(this)) return;
-
-	if (!IsValid(Actor))
-	{
-		UE_LOG(LogTemp, Warning, TEXT("[%s] RemoveDetection : Invalid Player! Force remove."), *GetName());
-		DetectionRefCounts.Remove(Actor);
-
-		AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor);
-		if (Player)
-		{
-			Player->OnUntargeted(this);
-		}
-
-		return;
-	}
-
-	int32* CountPtr = DetectionRefCounts.Find(Actor);
-	if (CountPtr)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("[ForceRemoveDetection] Actor: %s, OldCount: %d -> 0"),
-			*Actor->GetName(), *CountPtr);
-
-		*CountPtr = 0;
-		DetectionRefCounts.Remove(Actor);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("[ForceRemoveDetection] Actor: %s not found in DetectionRefCounts"),
-			*Actor->GetName());
-	}
-
-	if (TargetActor == Actor)
-	{
+		// 우선 TargetActor 비움.
 		TargetActor = nullptr;
-		
-		AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor);
-		if (Player)
-		{
-			Player->OnUntargeted(this);
-		}
-
 		if (BlackboardComponent)
 		{
 			BlackboardComponent->ClearValue(TargetPlayerKey);
 		}
 
-		// Alternate targeting
-		for (const auto& Pair : DetectionRefCounts)
+		// 후보가 없으면 바로 Patrol (루프 스킵)
+		if (DetectionArray.Num() == 0)
 		{
-			if (IsValid(Pair.Key))
-			{
-				TargetActor = Pair.Key;
-				
-				AUnderwaterCharacter* NextAgrroPlayer = Cast<AUnderwaterCharacter>(Pair.Key);
-				if (NextAgrroPlayer)
-				{
-					NextAgrroPlayer->OnTargeted(this);
-				}
+			ApplyMonsterStateChange(EMonsterState::Patrol);
+			return;
+		}
 
+		// TSet 순회하여 요소(Player)가 남아있으면 해당 플레이어를 TargetActor로 지정
+		for (const TWeakObjectPtr<AActor>& Elem : DetectionArray)
+		{
+			if (AActor* NewTarget = Elem.Get())
+			{
+				TargetActor = NewTarget;
 				if (BlackboardComponent)
 				{
-					SetMonsterState(EMonsterState::Chase);
-					BlackboardComponent->SetValueAsObject(TargetPlayerKey, TargetActor);
+					BlackboardComponent->SetValueAsObject(TargetPlayerKey, TargetActor.Get());
 				}
-				break;
+				return;
 			}
 		}
+
+		// 후보가 있지만 전부 무효일 수도 있음 (TWeakObjectPtr) -> Patrol로 상태 설정
+		ApplyMonsterStateChange(EMonsterState::Patrol);
 	}
+}
+
+void AMonster::ForceRemoveDetectionArray()
+{
+	if (!IsValid(this)) return;
+	if (!HasAuthority()) return;
+
+	// 이미 비어있으면 return;
+	if (DetectionArray.Num() == 0 && !TargetActor.IsValid())
+	{
+		return;
+	}
+
+	// 남아있는 DetectionArray 목록 캐싱 (컨테이너 안전)
+	TArray<AActor*> TempArray;
+	TempArray.Reserve(DetectionArray.Num());
+	for (const TWeakObjectPtr<AActor>& Elem : DetectionArray)
+	{
+		if (AActor* TargetCandidate = Elem.Get())
+		{
+			TempArray.Add(TargetCandidate);
+		}
+	}
+
+	for (AActor* TargetCandidate : TempArray)
+	{
+		if (AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(TargetCandidate))
+		{
+			Player->OnUntargeted(this);
+		}
+	}
+
+	DetectionArray.Reset();
+	TargetActor = nullptr;
+
+	if (BlackboardComponent)
+	{
+		BlackboardComponent->ClearValue(TargetPlayerKey);
+	}
+
+	ApplyMonsterStateChange(EMonsterState::Patrol);
 }
 
 bool AMonster::IsAnimMontagePlaying() const
@@ -1030,8 +968,6 @@ void AMonster::ApplyMonsterStateChange(EMonsterState NewState)
 
 		bIsChasing = true;
 		SetMaxSwimSpeed(ChaseSpeed);
-		BlackboardComponent->ClearValue(InvestigateLocationKey);
-		BlackboardComponent->ClearValue(PatrolLocationKey);
 		MonsterSoundComponent->S_PlayChaseLoopSound();
 		break;
 
@@ -1039,18 +975,12 @@ void AMonster::ApplyMonsterStateChange(EMonsterState NewState)
 
 		bIsChasing = false;
 		SetMaxSwimSpeed(PatrolSpeed);
-		BlackboardComponent->ClearValue(InvestigateLocationKey);
 		MonsterSoundComponent->S_PlayPatrolLoopSound();
-		if (TargetActor != nullptr)
-		{
-			ForceRemoveDetection(TargetActor);
-		}
 		break;
 
 	case EMonsterState::Investigate:
 
 		bIsChasing = false;
-		BlackboardComponent->ClearValue(PatrolLocationKey);
 		SetMaxSwimSpeed(InvestigateSpeed);
 		break;
 
@@ -1073,17 +1003,7 @@ void AMonster::SetMaxSwimSpeed(float Speed)
 
 int32 AMonster::GetDetectionCount() const
 {
-	int32 ValidCount = 0;
-
-	for (const auto& Elem : DetectionRefCounts)
-	{
-		if (Elem.Value > 0 && IsValid(Elem.Key))
-		{
-			++ValidCount;
-		}
-	}
-
-	return ValidCount;
+	return DetectionArray.Num();
 }
 
 

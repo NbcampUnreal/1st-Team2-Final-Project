@@ -27,6 +27,10 @@ protected:
 	virtual void OnPossess(APawn* InPawn) override;
 
 #pragma region Method
+public:
+	void TurnToChaseState();
+	void ReturnToPatrolState();
+	
 protected:
 	void LoadSightDataFromTable();
 	

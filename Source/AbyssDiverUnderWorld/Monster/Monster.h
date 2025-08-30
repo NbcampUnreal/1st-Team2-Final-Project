@@ -67,7 +67,7 @@ public:
 	void RemoveDetection(AActor* Actor);
 	
 	UFUNCTION()
-	void ForceRemoveDetection(AActor* Actor);
+	void ForceRemoveDetectionArray();
 
 	UFUNCTION(BlueprintCallable)
 	bool IsAnimMontagePlaying() const;
@@ -79,6 +79,7 @@ public:
 	void MonsterRaderOff();
 
 	void LaunchPlayer(AUnderwaterCharacter* Player, const float& Power) const;
+	void ApplyMonsterStateChange(EMonsterState NewState);
 
 protected:
 
@@ -101,8 +102,6 @@ protected:
 
 	void ApplyPhysicsSimulation();
 	void HandleSetting_OnDeath();
-	void ApplyMonsterStateChange(EMonsterState NewState);
-
 #pragma endregion
 
 #pragma region Variable
@@ -124,7 +123,7 @@ public:
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly)
 	uint8 bIsChasing : 1;
 	UPROPERTY()
-	TObjectPtr<AActor> TargetActor;
+	TWeakObjectPtr<AActor> TargetActor;
 
 	/** 새로운 물리 기반 수중 이동 컴포넌트 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Monster|Movement")
@@ -190,8 +189,8 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "AI")
 	float FleeSpeed;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	TMap<AActor*, int32> DetectionRefCounts;
+	UPROPERTY(VisibleAnywhere)
+	TSet<TWeakObjectPtr<AActor>> DetectionArray;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	float WanderRadius = 1300.0f;
