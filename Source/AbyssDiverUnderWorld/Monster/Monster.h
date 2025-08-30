@@ -67,7 +67,7 @@ public:
 	void RemoveDetection(AActor* Actor);
 	
 	UFUNCTION()
-	void ForceRemoveDetection(AActor* Actor);
+	void ForceRemoveDetectedPlayers();
 
 	UFUNCTION(BlueprintCallable)
 	bool IsAnimMontagePlaying() const;
@@ -79,6 +79,7 @@ public:
 	void MonsterRaderOff();
 
 	void LaunchPlayer(AUnderwaterCharacter* Player, const float& Power) const;
+	void ApplyMonsterStateChange(EMonsterState NewState);
 
 protected:
 
@@ -101,7 +102,6 @@ protected:
 
 	void ApplyPhysicsSimulation();
 	void HandleSetting_OnDeath();
-
 #pragma endregion
 
 #pragma region Variable
@@ -123,7 +123,7 @@ public:
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly)
 	uint8 bIsChasing : 1;
 	UPROPERTY()
-	TObjectPtr<AActor> TargetActor;
+	TWeakObjectPtr<AActor> TargetActor;
 
 	/** 새로운 물리 기반 수중 이동 컴포넌트 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Monster|Movement")
@@ -189,8 +189,8 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "AI")
 	float FleeSpeed;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	TMap<AActor*, int32> DetectionRefCounts;
+	UPROPERTY(VisibleAnywhere)
+	TSet<TWeakObjectPtr<AActor>> DetectedPlayers;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	float WanderRadius = 1300.0f;
@@ -213,6 +213,7 @@ protected:
 	static const FName PatrolLocationKey;
 	static const FName TargetPlayerKey;
 	static const FName TargetLocationKey;
+	static const FName bIsChasingKey;
 
 private:
 	FVector TargetLocation;
@@ -232,14 +233,13 @@ public:
 	EMonsterState GetMonsterState() { return MonsterState; }
 	virtual void SetMonsterState(EMonsterState NewState);
 	void SetMaxSwimSpeed(float Speed);
-	int32 GetDetectionCount() const;
+	int32 GetDetectionCount() const { return DetectedPlayers.Num();}
 
 	// Virtual function to get collision components for attack range determination externally
 	virtual USphereComponent* GetAttackHitComponent() const { return nullptr; }
 
 	// @ TODO : PerformAttack Task빌드를 위해 임시로 가져온 Getter. Monster에는 AttackCollision이 없음. Boss에만 있다.
 	FORCEINLINE bool GetIsAttackCollisionOverlappedPlayer() const { return bIsAttackCollisionOverlappedPlayer; };
-
 	FORCEINLINE void SetTargetLocation(const FVector& InTargetLocation) { TargetLocation = InTargetLocation; }
 	FORCEINLINE void InitTarget() { TargetPlayer = nullptr; };
 	FORCEINLINE AUnderwaterCharacter* GetCachedTarget() const { return CachedTargetPlayer; };

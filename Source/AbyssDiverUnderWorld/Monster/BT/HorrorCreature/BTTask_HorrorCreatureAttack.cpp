@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Monster/BT/BTTask_HorrorCreatureAttack.h"
+#include "Monster/BT/HorrorCreature/BTTask_HorrorCreatureAttack.h"
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Monster/HorrorCreature/HorrorCreature.h"

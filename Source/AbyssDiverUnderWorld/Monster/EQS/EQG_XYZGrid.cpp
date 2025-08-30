@@ -6,7 +6,7 @@
 #include "EnvironmentQuery/Contexts/EnvQueryContext_Querier.h"
 #include "NavigationSystem.h"
 #include "EnvironmentQuery/Items/EnvQueryItemType_Point.h"
-#include "Monster/Boss/Boss.h"
+#include "Monster/Monster.h"
 #include "Monster/Components/AquaticMovementComponent.h"
 
 
@@ -30,11 +30,11 @@ void UEQG_XYZGrid::GenerateItems(FEnvQueryInstance& QueryInstance) const
    float Spacing = PointSpacing.GetValue();  
    
    // Boss의 LOD 정보를 가져와서 스페이싱 조정
-   if (ABoss* Boss = Cast<ABoss>(QueryInstance.Owner.Get()))
+   if (AMonster* Monster = Cast<AMonster>(QueryInstance.Owner.Get()))
    {
-       if (Boss->AquaticMovementComponent)
+       if (Monster->AquaticMovementComponent)
        {
-           const float LODFactor = Boss->AquaticMovementComponent->CurrentLODFactor;
+           const float LODFactor = Monster->AquaticMovementComponent->CurrentLODFactor;
            // LOD가 0에 가까울수록(멀수록) 스페이싱을 늘림
            // LOD 1.0 = 기본 스페이싱, LOD 0.0 = 3배 스페이싱
            Spacing = Spacing * FMath::Lerp(3.0f, 1.0f, LODFactor);

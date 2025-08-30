@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Monster/BT/BTService_CheckTargetDistance.h"
+#include "Monster/BT/Commons/BTService_CheckTargetDistance.h"
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "GameFramework/Pawn.h"
