@@ -19,7 +19,8 @@ enum class EEquipmentType : uint8
 	DPV = 3,
 	NightVision = 4,
 	Mine = 5,
-	Max = 6 UMETA(Hidden)
+	ToyHammer = 6,
+	Max = 7 UMETA(Hidden)
 };
 
 USTRUCT(BlueprintType)
@@ -57,7 +58,8 @@ enum class EAction : uint8
 	ToggleNVGToggle,
 	ApplyChargeUI,
 	PlaceMine,
-	DetonateMine
+	DetonateMine,
+	SwingHammer
 };
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -147,6 +149,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void DetonateMine();
 	UFUNCTION(BlueprintCallable)
+	void SwingHammer();
+	UFUNCTION(BlueprintCallable)
 	void HandleLeftClick();
 	UFUNCTION(BlueprintCallable)
 	void HandleLeftRelease();
@@ -188,6 +192,8 @@ protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 private:
+
+	void PlaySwingAnimation(AUnderwaterCharacter* Diver);
 	// 보간 완료 확인 함수
 	bool IsInterpolating() const;
 	
@@ -338,6 +344,21 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Recoil")
 	FRecoilConfig ShotgunRecoil;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Hammer")
+	float HammerRange = 140.f;          
+
+	UPROPERTY(EditDefaultsOnly, Category = "Hammer")
+	float HammerRadius = 60.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Hammer")
+	float HammerRateOfSwing = 1.5f;
+
+	UPROPERTY(EditAnywhere, Category = "Hammer")
+	TObjectPtr<UAnimMontage> SwingMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Hammer|Debug")
+	bool bHammerDebug = true;
 
 	float ActiveRecoverySpeed = 0.f;
 	float PendingPitch = 0.f;

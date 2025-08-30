@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -9,56 +7,150 @@
 #include "ADTutorialGameMode.generated.h"
 
 class UDataTable;
+class ALight;
+class APostProcessVolume;
+class AUnderwaterCharacter;
+class UAnimMontage;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADTutorialGameMode : public AGameMode
 {
-    GENERATED_BODY()
+	GENERATED_BODY()
 
-    public:
+	public:
 	AADTutorialGameMode();
 
-	virtual void StartPlay() override;
-	void AdvanceTutorialPhase();
-
-	void PlayerActionTriggered(EPlayerActionTrigger ActionType);
-
-	void OnTypingAnimationFinished();
 protected:
+	virtual void StartPlay() override;
+
+public:
+#pragma region Method
+public:
+	void StartFirstTutorialPhase();
+	void AdvanceTutorialPhase();
+	void OnTypingAnimationFinished();
+	void OnPlayerItemAction(EPlayerActionTrigger ItemActionType);
+	void OnPlayerAttemptedRevive();
+	void DestroyActiveWall();
+	void SpawnNewWall(FName WallTag);
+
+	UFUNCTION()
+	void OnTrackedOwnerDestroyed(AActor* DestroyedActor);
+
+	UFUNCTION(BlueprintCallable)
+	void SpawnDownedNPC();
+
+protected:
+	UFUNCTION(BlueprintImplementableEvent, Category = "Tutorial")
+	void OnPhaseBatteryStart();
+
 	void HandleCurrentPhase();
+	void HidePhaseActors();
+	void OnReviveAnimationFinished();
 
 	void HandlePhase_Movement();
 	void HandlePhase_Sprint();
 	void HandlePhase_Oxygen();
 	void HandlePhase_Radar();
+	void HandlePhase_Dialogue_02();
 	void HandlePhase_Looting();
 	void HandlePhase_Inventory();
 	void HandlePhase_Drone();
 	void HandlePhase_LightToggle();
 	void HandlePhase_Items();
+	void HandlePhase_Dialogue_06();
+	void HandlePhase_Battery();
+	void HandlePhase_Drop();
+	void HandlePhase_Dialogue_05();
 	void HandlePhase_OxygenWarning();
-	void HandlePhase_Revival();
+	void HandlePhase_Revive();
+	void HandlePhase_Die();
+	void HandlePhase_Resurrection();
 	void HandlePhase_Complete();
 
-	UFUNCTION(BlueprintCallable)
-	void SpawnDownedNPC();
+private:
+	void TrackPhaseActor(AActor* Actor);
+	void BindIndicatorToOwner(AActor* OwnerActor, AActor* IndicatorActor);
+#pragma endregion
 
-	UPROPERTY()
-	TObjectPtr<class AADPlayerController> TutorialPlayerController;
+#pragma region Variable
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tutorial|Battery")
+	float BatteryStartPercentOverride = -1.f;
 
-	FTimerHandle StepTimerHandle;
+protected:
+	UPROPERTY(EditAnywhere, Category = "Tutorial|Debug")
+	ETutorialPhase StartPhaseOverride = ETutorialPhase::None;
 
-	UPROPERTY(EditAnywhere, Category = "Tutorial")
+	UPROPERTY(EditAnywhere, Category = "Tutorial|Data")
 	TObjectPtr<UDataTable> TutorialDataTable;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Spawning")
 	TSubclassOf<AActor> LootableOreClass;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Spawning")
-	TSubclassOf<AIndicatingTarget> IndicatingTargetClass; 
+	TSubclassOf<AIndicatingTarget> IndicatingTargetClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Spawning")
+	TSubclassOf<AUnderwaterCharacter> GroggyNPCClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Spawning")
+	TSubclassOf<AActor> CurrentWallClass;
 
 	UPROPERTY(EditAnywhere, Category = "Tutorial|Spawning")
 	FName OreSpawnTag;
 
+	UPROPERTY(EditAnywhere, Category = "Tutorial|Spawning")
+	FName DialogueTargetSpawnTag;
+
+	UPROPERTY(EditAnywhere, Category = "Tutorial|Spawning")
+	FName GroggyNPCSpawnTag;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Tutorial Settings | Icons")
+	TObjectPtr<UTexture2D> LootingOreIcon;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Tutorial Settings | Icons")
+	TObjectPtr<UTexture2D> DialogueIndicatorIcon;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Tutorial Settings | Icons")
+	TObjectPtr<UTexture2D> DroneIndicatorIcon;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Animation")
+	TObjectPtr<UAnimMontage> TutorialReviveMontage;
+
+	UPROPERTY()
+	TWeakObjectPtr<AUnderwaterCharacter> TutorialNPC;
+
+	FTimerHandle TutorialStartTimerHandle;
+	FTimerHandle GroggyAnimationTimerHandle;
+
+	uint8 bBatteryGaugeStarted : 1;
+
+private:
+	UPROPERTY()
+	TObjectPtr<class AADPlayerController> TutorialPlayerController;
+
+	UPROPERTY()
+	TArray<TObjectPtr<AActor>> ActorsToShowThisPhase;
+
+	UPROPERTY()
+	TArray<TObjectPtr<ALight>> DisabledLights;
+
+	UPROPERTY()
+	TObjectPtr<AActor> ActiveCurrentWall;
+
+	UPROPERTY()
+	TObjectPtr<APostProcessVolume> TutorialPPV = nullptr;
+
+	TMap<TWeakObjectPtr<AActor>, TWeakObjectPtr<AActor>> OwnerToIndicator;
+
 	bool bIsTypingFinishedForCurrentPhase = false;
+	int32 ItemsPhaseProgress;
+#pragma endregion
+
+#pragma region Getter, Setter
+public:
+	UFUNCTION(BlueprintPure, Category = "Tutorial")
+	bool IsTypingFinishedForCurrentPhase() const;
+#pragma endregion
 };

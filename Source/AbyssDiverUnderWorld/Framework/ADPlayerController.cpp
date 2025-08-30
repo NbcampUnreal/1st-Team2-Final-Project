@@ -27,26 +27,14 @@
 #include "Character/PlayerComponent/ShieldComponent.h"
 #include "Engine/World.h"
 #include "Subsystems/SoundSubsystem.h"
-#include "Subsystems/ADDexSubsystem.h"
 
 #include "UI/HoldInteractionWidget.h"
 
 #include "Framework/ADTutorialGameMode.h"
 #include "Framework/ADTutorialGameState.h"
+#include "Character/UnderwaterCharacter.h"
 
 #include "Kismet/GameplayStatics.h"
-
-static UEnhancedInputLocalPlayerSubsystem* GetEISubsystem(APlayerController* PC)
-{
-	if (!PC)
-		return nullptr;
-	if (ULocalPlayer* LocalPlayer = PC->GetLocalPlayer())
-	{
-		return LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>();
-	}
-	return nullptr;
-}
-
 
 AADPlayerController::AADPlayerController()
 {
@@ -71,10 +59,8 @@ void AADPlayerController::BeginPlay()
 	{
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = GetLocalPlayer()->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
 		{
-			Subsystem->AddMappingContext(DefaultMappingContext, Priority_Default);
+			Subsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
-
-		InitObserveCameraDefaults();
 	}
 }
 
@@ -97,9 +83,9 @@ void AADPlayerController::SetPawn(APawn* InPawn)
 
 	Super::SetPawn(InPawn);
 
-	if (AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(GetPawn()))
+	if (AUnderwaterCharacter* PossessedCharacter = Cast<AUnderwaterCharacter>(InPawn))
 	{
-		if (UADInteractionComponent* InteractionComponent = UnderwaterCharacter->GetInteractionComponent())
+		if (UADInteractionComponent* InteractionComponent = PossessedCharacter->GetInteractionComponent())
 		{
 			if (InteractionWidgetClass && IsLocalController())
 			{
@@ -122,6 +108,8 @@ void AADPlayerController::SetPawn(APawn* InPawn)
 			}
 		}
 	}
+
+
 }
 
 void AADPlayerController::PostNetInit()
@@ -129,10 +117,14 @@ void AADPlayerController::PostNetInit()
 	Super::PostNetInit();
 	LOGVN(Log, TEXT("PostNetInit"));
 	OnPostNetInit();
-	InitObserveCameraDefaults();
 
-	ToggleObserveIMC(false);
-
+	if (IsLocalController())
+	{
+		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = GetLocalPlayer()->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
+		{
+			Subsystem->AddMappingContext(DefaultMappingContext, 0);
+		}
+	}
 }
 
 void AADPlayerController::PostSeamlessTravel()
@@ -142,10 +134,6 @@ void AADPlayerController::PostSeamlessTravel()
 	Super::PostSeamlessTravel();
 
 	OnPostSeamlessTravel();
-
-	InitObserveCameraDefaults();
-	ToggleObserveIMC(false);
-
 }
 
 void AADPlayerController::C_OnPreClientTravel_Implementation()
@@ -314,27 +302,6 @@ void AADPlayerController::SetActiveRadarWidget(bool bShouldActivate)
 	PlayerHUDComponent->SetActiveRadarWidget(bShouldActivate);
 }
 
-void AADPlayerController::S_UnlockMonster_Implementation(FName MonsterId)
-{
-	if (!HasAuthority()) return;
-
-	if (UADDexSubsystem* Dex = GetGameInstance()->GetSubsystem<UADDexSubsystem>())
-	{
-		const bool bNew = Dex->UnlockMonster(MonsterId);
-		if (bNew)
-		{
-			const TArray<uint8>& Bits = Dex->GetDexBitsSnapshot();
-
-			if (AADInGameState* GS = GetWorld()->GetGameState<AADInGameState>())
-			{
-				GS->M_UnlockMonster(MonsterId, Bits);
-			}
-		}
-
-	}
-
-}
-
 void AADPlayerController::BeginSpectatingState()
 {
 	UE_LOG(LogAbyssDiverSpectate, Display, TEXT("Begin Spectating State for %s, GetPawn : %s"), *GetName(), GetPawn() ? *GetPawn()->GetName() : TEXT("None"));
@@ -386,43 +353,6 @@ void AADPlayerController::SetupInputComponent()
 		{
 			EnhancedInput->BindAction(InventoryAction, ETriggerEvent::Started, this, &AADPlayerController::ShowInventory);
 			EnhancedInput->BindAction(InventoryAction, ETriggerEvent::Completed, this, &AADPlayerController::HideInventory);
-			EnhancedInput->BindAction(InventoryAction, ETriggerEvent::Triggered, this, &AADPlayerController::OnInventoryTriggered);
-		}
-		if (SprintAction)
-		{
-			EnhancedInput->BindAction(SprintAction, ETriggerEvent::Triggered, this, &AADPlayerController::OnSprintTriggered);
-		}
-		if (RadarAction)
-		{
-			EnhancedInput->BindAction(RadarAction, ETriggerEvent::Triggered, this, &AADPlayerController::OnRadarTriggered);
-		}
-		if (LightToggleAction)
-		{
-			EnhancedInput->BindAction(LightToggleAction, ETriggerEvent::Triggered, this, &AADPlayerController::OnLightToggleTriggered);
-		}
-		if (LootingAction)
-		{
-			EnhancedInput->BindAction(LootingAction, ETriggerEvent::Triggered, this, &AADPlayerController::OnLootingTriggered);
-		}
-		if (DroneAction)
-		{
-			EnhancedInput->BindAction(DroneAction, ETriggerEvent::Triggered, this, &AADPlayerController::OnDroneTriggered);
-		}
-		if (ItemsAction)
-		{
-			EnhancedInput->BindAction(ItemsAction, ETriggerEvent::Triggered, this, &AADPlayerController::OnItemsTriggered);
-		}
-		if (ReviveAction)
-		{
-			EnhancedInput->BindAction(ReviveAction, ETriggerEvent::Triggered, this, &AADPlayerController::OnReviveTriggered);
-		}
-		if (ObserveToggleAction)
-		{
-			EnhancedInput->BindAction(ObserveToggleAction, ETriggerEvent::Started, this, &AADPlayerController::ObserveToggle);
-		}
-		if (ObserveCaptureAction)
-		{
-			EnhancedInput->BindAction(ObserveCaptureAction, ETriggerEvent::Started, this, &AADPlayerController::ObserveCapture);
 		}
 	}
 }
@@ -548,171 +478,4 @@ void AADPlayerController::OnCameraBlankEnd()
 	
 }
 
-void AADPlayerController::OnInventoryTriggered(const FInputActionValue& Value)
-{
-	CheckTutorialObjective(Value, InventoryAction);
-}
 
-void AADPlayerController::OnSprintTriggered(const FInputActionValue& Value)
-{
-	CheckTutorialObjective(Value, SprintAction);
-}
-
-void AADPlayerController::OnRadarTriggered(const FInputActionValue& Value)
-{
-	CheckTutorialObjective(Value, RadarAction);
-}
-
-void AADPlayerController::OnLightToggleTriggered(const FInputActionValue& Value)
-{
-	CheckTutorialObjective(Value, LightToggleAction);
-}
-
-void AADPlayerController::OnLootingTriggered(const FInputActionValue& Value)
-{
-	CheckTutorialObjective(Value, LootingAction);
-}
-
-void AADPlayerController::OnDroneTriggered(const FInputActionValue& Value)
-{
-	CheckTutorialObjective(Value, DroneAction);
-}
-
-void AADPlayerController::OnItemsTriggered(const FInputActionValue& Value)
-{
-	CheckTutorialObjective(Value, ItemsAction);
-}
-
-void AADPlayerController::OnReviveTriggered(const FInputActionValue& Value)
-{
-	CheckTutorialObjective(Value, ReviveAction);
-}
-
-void AADPlayerController::CheckTutorialObjective(const FInputActionValue& Value, UInputAction* SourceAction)
-{
-	AADTutorialGameState* TutorialGS = GetWorld() ? GetWorld()->GetGameState<AADTutorialGameState>() : nullptr;
-	if (!TutorialGS) return;
-
-	ETutorialPhase CurrentPhase = TutorialGS->GetCurrentPhase();
-	bool bObjectiveMet = false;
-
-	if (CurrentPhase == ETutorialPhase::Step2_Sprint && SourceAction == SprintAction)
-	{
-		bObjectiveMet = true;
-	}
-	else if (CurrentPhase == ETutorialPhase::Step4_Radar && SourceAction == RadarAction)
-	{
-		bObjectiveMet = true;
-	}
-	//else if (CurrentPhase == ETutorialPhase::Step5_Looting && SourceAction == LootingAction)
-	//{
-	//	bObjectiveMet = true;
-	//}
-	else if (CurrentPhase == ETutorialPhase::Step6_Inventory && SourceAction == InventoryAction)
-	{
-		bObjectiveMet = true;
-	}
-	else if (CurrentPhase == ETutorialPhase::Step7_Drone && SourceAction == DroneAction)
-	{
-		bObjectiveMet = true;
-	}
-	else if (CurrentPhase == ETutorialPhase::Step8_LightToggle && SourceAction == LightToggleAction)
-	{
-		bObjectiveMet = true;
-	}
-	else if (CurrentPhase == ETutorialPhase::Step9_Items && SourceAction == ItemsAction)
-	{
-		bObjectiveMet = true;
-	}
-	else if (CurrentPhase == ETutorialPhase::Step11_Revival && SourceAction == ReviveAction)
-	{
-		bObjectiveMet = true;
-	}
-
-	if (bObjectiveMet)
-	{
-		Server_RequestAdvanceTutorialPhase();
-	}
-}
-
-void AADPlayerController::ObserveToggle(const FInputActionValue& Value)
-{
-	bObserveMode = !bObserveMode;
-	ApplyObserveVisuals(bObserveMode);
-	ToggleObserveIMC(bObserveMode);
-
-	if (AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(GetPawn()))
-	{
-		UnderwaterCharacter->OnObserveModeChanged(bObserveMode);
-	}
-
-}
-
-void AADPlayerController::ObserveCapture(const FInputActionValue& Value)
-{
-	if (!bObserveMode)
-		return;
-
-	if (AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(GetPawn()))
-	{
-		UnderwaterCharacter->TryUnlockObservedTarget();
-	}
-}
-
-void AADPlayerController::ApplyObserveVisuals(bool bEnable)
-{
-	//살짝 확대, 축소
-	if (PlayerCameraManager)
-	{
-		const float TargetFOV = bEnable ? ObserveFOV : DefaultFOV;
-		PlayerCameraManager->SetFOV(TargetFOV);
-	}
-
-	//커서/입력모드
-
-
-}
-
-void AADPlayerController::ToggleObserveIMC(bool bIsObserving)
-{
-	if (auto* EnhancedInputSubsystem = GetEISubsystem(this))
-	{
-		if (bIsObserving)
-		{
-			if (DefaultMappingContext)
-				EnhancedInputSubsystem->RemoveMappingContext(DefaultMappingContext);
-			if (IMC_Observe)
-				EnhancedInputSubsystem->AddMappingContext(IMC_Observe, Priority_Observe);
-		}
-		else
-		{
-			if (IMC_Observe)
-				EnhancedInputSubsystem->RemoveMappingContext(IMC_Observe);
-			if (DefaultMappingContext)
-				EnhancedInputSubsystem->AddMappingContext(DefaultMappingContext, Priority_Default);
-		}
-	}
-}
-
-void AADPlayerController::InitObserveCameraDefaults()
-{
-	if (!IsLocalController()) return;
-
-	if (PlayerCameraManager)
-	{
-		// BeginPlay 때마다 하드코딩 90이 아닌, 실제 현재값을 캐시
-		DefaultFOV = PlayerCameraManager->GetFOVAngle();
-
-		// 현재 모드에 맞게 즉시 반영(옵션)
-		ApplyObserveVisuals(bObserveMode);
-	}
-
-}
-
-void AADPlayerController::Server_RequestAdvanceTutorialPhase_Implementation()
-{
-	if (AADTutorialGameMode* TutorialGM = GetWorld()->GetAuthGameMode<AADTutorialGameMode>())
-	{
-		TutorialGM->AdvanceTutorialPhase();
-	}
-}

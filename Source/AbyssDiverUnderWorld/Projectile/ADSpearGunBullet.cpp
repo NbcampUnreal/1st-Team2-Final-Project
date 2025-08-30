@@ -17,6 +17,7 @@
 #include "NiagaraSystem.h"
 #include "AbyssDiverUnderWorld.h"
 #include "Character/UnderwaterCharacter.h"
+#include "Character/PlayerComponent/DebuffComponent.h"
 
 AADSpearGunBullet::AADSpearGunBullet() : 
 	StaticMesh(nullptr),
@@ -114,7 +115,7 @@ void AADSpearGunBullet::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AAct
             );
             AttachToHitActor(OtherComp, SweepResult, true);
             M_AdjustTransform(GetActorTransform()); //위치 보정
-            ApplyAdditionalDamage();
+            ApplyAdditionalDamage(OtherActor);
         }
     }
 
@@ -178,7 +179,7 @@ void AADSpearGunBullet::AttachToHitActor(USceneComponent* HitComp, const FHitRes
     }
 }
 
-void AADSpearGunBullet::ApplyAdditionalDamage()
+void AADSpearGunBullet::ApplyAdditionalDamage(AActor* OvelappedActor)
 {
     FTimerHandle BurstTimerHandle;
     float TimerDuration = 2.5f; // 폭탄이 터지는 시간
@@ -194,7 +195,7 @@ void AADSpearGunBullet::ApplyAdditionalDamage()
         break;
     case ESpearGunType::Poison:
         LOGP(Warning, TEXT("PoisonBullet"));
-        Addict();
+        Addict(OvelappedActor);
         break;
     default:
         break;
@@ -279,11 +280,37 @@ void AADSpearGunBullet::Burst()
     }
 }
 
-void AADSpearGunBullet::Addict()
+void AADSpearGunBullet::Addict(AActor* OvelappedActor)
 {
-    //TODO : 디버프 컴포넌트 함수 호출
     if (HasAuthority())
-    {
+	{
+        if (DTSubsystem)
+        {
+            FFADProjectileDataRow* PoisonProjectileInfo = DTSubsystem->GetProjectileData(static_cast<uint8>(ESpearGunType::Poison));
+            if (PoisonProjectileInfo)
+            {
+                float PoisonDamage = PoisonProjectileInfo->AdditionalDamage;
+
+                AUnitBase* HitCharacter = Cast<AUnitBase>(OvelappedActor);
+		        if (HitCharacter)
+		        {
+			        if (UDebuffComponent* DebuffComp = HitCharacter->FindComponentByClass<UDebuffComponent>())
+			        {
+				        DebuffComp->SetDebuffState(FDebuffInfo(EDebuffType::Poison, PoisonDamage));
+				        LOGP(Warning, TEXT("Apply Poison Debuff to %s"), *HitCharacter->GetName());
+			        }
+			        else
+			        {
+				        LOGP(Warning, TEXT("No DebuffComponent found on %s"), *HitCharacter->GetName());
+			        }
+		        }
+		        else
+		        {
+			        LOGP(Warning, TEXT("Hit Actor is not AUnderwaterCharacter"));
+		        }
+            }
+        }
+
 	    UNiagaraSystem* PoisonEffect = nullptr;
         if (DTSubsystem)
         {

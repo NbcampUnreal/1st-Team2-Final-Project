@@ -23,6 +23,7 @@
 #include "NiagaraSystem.h"
 #include "Subsystems/SoundSubsystem.h"
 #include "Framework/ADGameInstance.h"
+#include "Framework/ADTutorialGameMode.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Interactable/EquipableComponent/EquipRenderComponent.h"
@@ -519,6 +520,7 @@ void UADInventoryComponent::OnRep_CurrentEquipItem()
 		case EEquipmentType::DPV:			Socket = DPVSocketName;     break;
 		case EEquipmentType::Shotgun:		Socket = ShotgunSocketName; break;
 		case EEquipmentType::Mine:			Socket = MineSocketName;    break;
+		case EEquipmentType::ToyHammer:     Socket = HammerSocketName;  break;
 		default:														break;
 		}
 
@@ -568,6 +570,10 @@ void UADInventoryComponent::RemoveBySlotIndex(uint8 SlotIndex, EItemType ItemTyp
 		if (bIsDropAction)
 		{
 			DropItem(Item);
+			if (AADTutorialGameMode* GM = GetWorld()->GetAuthGameMode<AADTutorialGameMode>())
+			{
+				GM->OnPlayerItemAction(EPlayerActionTrigger::Drop);
+			}
 		}
 		InventoryList.UpdateQuantity(InventoryIndex, INDEX_NONE);
 
@@ -692,27 +698,21 @@ void UADInventoryComponent::CheckItemsForBattery()
 	}
 }
 
-void UADInventoryComponent::PlayEquipAnimation(AUnderwaterCharacter* Character, bool bIsHarpoon)
+void UADInventoryComponent::PlayEquipAnimation(AUnderwaterCharacter* Character, EEquipmentType InType)
 {
-	if (!HarpoonDrawMontage || !DPVDrawMontage)
-		return;
+	if (!Character) return;
 
-	LOGVN(Warning, TEXT("Play EquipAnimation!!"));
+	UAnimMontage* Montage = GetDrawMontageByType(InType);
+	if (!Montage) return; // 해당 타입 몽타주가 없으면 스킵
+
 	FAnimSyncState SyncState;
 	SyncState.bEnableRightHandIK = true;
 	SyncState.bEnableLeftHandIK = false;
 	SyncState.bEnableFootIK = true;
 	SyncState.bIsStrafing = false;
 
-	UAnimMontage* Montage = bIsHarpoon ? HarpoonDrawMontage : DPVDrawMontage;
-
 	Character->M_StopAllMontagesOnBothMesh(0.f);
-	Character->M_PlayMontageOnBothMesh(
-		Montage,
-		1.0f,
-		NAME_None,
-		SyncState
-	);
+	Character->M_PlayMontageOnBothMesh(Montage, 1.0f, NAME_None, SyncState);
 }
 
 int8 UADInventoryComponent::GetTypeInventoryEmptyIndex(EItemType ItemType)
@@ -866,7 +866,7 @@ void UADInventoryComponent::Equip(FItemData& ItemData, int8 SlotIndex)
 		}
 		if (!bHasNoAnimation)
 		{
-			PlayEquipAnimation(UnderwaterCharacter, bIsWeapon);
+			PlayEquipAnimation(UnderwaterCharacter, EquipmentType);
 		}
 	}
 }
@@ -1042,6 +1042,20 @@ USoundSubsystem* UADInventoryComponent::GetSoundSubsystem()
 		return SoundSubsystem;
 	}
 	return nullptr;
+}
+
+UAnimMontage* UADInventoryComponent::GetDrawMontageByType(EEquipmentType InType) const
+{
+	switch (InType)
+	{
+	case EEquipmentType::HarpoonGun: return HarpoonDrawMontage;
+	case EEquipmentType::FlareGun:   return HarpoonDrawMontage;
+	case EEquipmentType::Shotgun:    return HarpoonDrawMontage;
+	case EEquipmentType::DPV:        return DPVDrawMontage;
+	case EEquipmentType::Mine:       return DPVDrawMontage;
+	case EEquipmentType::ToyHammer:  return HammerDrawMontage;  
+	default:                         return nullptr;
+	}
 }
 
 
