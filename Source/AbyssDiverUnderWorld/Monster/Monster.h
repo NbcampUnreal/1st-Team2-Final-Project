@@ -213,6 +213,7 @@ protected:
 	static const FName PatrolLocationKey;
 	static const FName TargetPlayerKey;
 	static const FName TargetLocationKey;
+	static const FName bIsChasingKey;
 
 private:
 	FVector TargetLocation;

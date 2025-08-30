@@ -20,6 +20,7 @@ const FName AMonster::InvestigateLocationKey = "InvestigateLocation";
 const FName AMonster::PatrolLocationKey = "PatrolLocation";
 const FName AMonster::TargetPlayerKey = "TargetPlayer";
 const FName AMonster::TargetLocationKey = "TargetLocation";
+const FName AMonster::bIsChasingKey = "bIsChasing";
 
 AMonster::AMonster()
 {
@@ -968,6 +969,7 @@ void AMonster::ApplyMonsterStateChange(EMonsterState NewState)
 
 		bIsChasing = true;
 		SetMaxSwimSpeed(ChaseSpeed);
+		BlackboardComponent->SetValueAsBool(bIsChasingKey, true);
 		MonsterSoundComponent->S_PlayChaseLoopSound();
 		break;
 
@@ -975,18 +977,17 @@ void AMonster::ApplyMonsterStateChange(EMonsterState NewState)
 
 		bIsChasing = false;
 		SetMaxSwimSpeed(PatrolSpeed);
+		BlackboardComponent->SetValueAsBool(bIsChasingKey, false);
 		MonsterSoundComponent->S_PlayPatrolLoopSound();
 		break;
 
 	case EMonsterState::Investigate:
 
-		bIsChasing = false;
 		SetMaxSwimSpeed(InvestigateSpeed);
 		break;
 
 	case EMonsterState::Flee:
 
-		bIsChasing = false;
 		SetMaxSwimSpeed(FleeSpeed);
 		MonsterSoundComponent->S_PlayFleeLoopSound();
 		break;

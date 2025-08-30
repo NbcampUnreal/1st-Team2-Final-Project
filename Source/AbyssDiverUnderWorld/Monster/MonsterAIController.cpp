@@ -70,29 +70,6 @@ void AMonsterAIController::OnPossess(APawn* InPawn)
 	Monster = Cast<AMonster>(GetPawn());
 }
 
-void AMonsterAIController::TurnToChaseState()
-{
-	// Count가 0이상, Chase상태라면 Patorl 상태로 전환
-	if (Monster->GetDetectionCount() > 0 &&
-		Monster->GetMonsterState() != EMonsterState::Chase)
-	{
-		Monster->ApplyMonsterStateChange(EMonsterState::Chase);
-		Monster->bIsChasing = true;
-	}
-}
-
-void AMonsterAIController::ReturnToPatrolState()
-{
-	// 어그로 Count가 0 And Chase상태라면 Patorl 상태로 전환
-	if (Monster->GetDetectionCount() == 0 &&
-		Monster->GetMonsterState() == EMonsterState::Chase)
-	{
-		Monster->ApplyMonsterStateChange(EMonsterState::Patrol);
-		Monster->bIsChasing = false;
-		LOG(TEXT("Monster State -> Patrol"));
-	}
-}
-
 void AMonsterAIController::LoadSightDataFromTable()
 {
 	if (SightDataTable == nullptr)
@@ -131,18 +108,10 @@ void AMonsterAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus 
 		if (Stimulus.WasSuccessfullySensed() && Monster->GetMonsterState() != EMonsterState::Flee)
 		{
 			Monster->AddDetection(Actor);
-
-			if (Monster->GetDetectionCount() == 1)
-			{
-				TurnToChaseState();
-				BlackboardComponent->SetValueAsBool(bIsChasingKey, true);
-				BlackboardComponent->SetValueAsObject(TargetPlayerKey, Player);
-			}
 		}
 		else
 		{
 			Monster->RemoveDetection(Actor);
-			ReturnToPatrolState();
 		}
 	}
 }
