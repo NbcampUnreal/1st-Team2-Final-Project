@@ -1517,8 +1517,8 @@ void AUnderwaterCharacter::AdjustSpeed()
 	
 	EffectiveSpeed = CalculateEffectiveSpeed();
 
-	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Adjust Speed : %s, EffectiveSpeed = %f / Authority : %s"),
-		*GetName(), EffectiveSpeed, HasAuthority() ? TEXT("True") : TEXT("False"));
+	// UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Adjust Speed : %s, EffectiveSpeed = %f / Authority : %s"),
+	// 	*GetName(), EffectiveSpeed, HasAuthority() ? TEXT("True") : TEXT("False"));
 	
 	if (EnvironmentState == EEnvironmentState::Underwater)
 	{
