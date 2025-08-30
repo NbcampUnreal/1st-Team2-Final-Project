@@ -2,6 +2,7 @@
 
 #include "AbyssDiverUnderWorld.h"
 #include "Subsystems/SoundSubsystem.h"
+#include "DataRow/MonsterDexRow.h"
 
 #include "Kismet/GameplayStatics.h"
 
@@ -11,6 +12,7 @@ UADGameInstance::UADGameInstance(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
 }
+
 
 void UADGameInstance::Init()
 {

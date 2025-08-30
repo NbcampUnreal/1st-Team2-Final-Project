@@ -46,6 +46,7 @@ public:
 
 	FShopItemMeshTransformRow* GetShopItemMeshTransformData(int32 ItemId) const;
 
+	UDataTable* GetMonsterDexTable() const;
 private:
 
 	void ParseUpgradeDataTable(class UADGameInstance* GameInstance);

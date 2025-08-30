@@ -148,6 +148,21 @@ private:
     UPROPERTY()
     TObjectPtr<class URadar2DWidget> Radar2DWidget;
 
+	UPROPERTY(EditDefaultsOnly, Category="UI")
+	TSubclassOf<class UObserveOverlayWidget> ObserveOverlayWidgetClass;
+
+    UPROPERTY()
+	TObjectPtr<class UObserveOverlayWidget> ObserveOverlayWidget;
+
+    UPROPERTY(EditDefaultsOnly, Category="UI")
+	TSubclassOf<class UObservedTargetWidget> ObservedTargetWidgetClass;
+
+	UPROPERTY()
+    TObjectPtr<class UObservedTargetWidget> ObservedTargetWidget;
+
+
+
+
 #pragma endregion
 
 #pragma region Getter Setter
@@ -158,6 +173,15 @@ public:
 
     UMissionsOnHUDWidget* GetMissionsOnHudWidget() const;
     USoundSubsystem* GetSoundSubsystem();
+
+    // 공개 API (캐릭터에서 호출)
+    void SetObserveModeActive(bool bActive);
+    void ShowObservedTargetName(const FText& TargetName);
+    void HideObservedTargetWidget();
+    void SetObservedRingVisible(bool bVisible);
+    void SetObservedRingScreenPos(const FVector2D& ScreenPos);
+    void SetObservedRingProgress(float Progress01);
+    void PlayObservedAcquirePulseIfNew(bool bNewTarget);
 
 #pragma endregion
 };

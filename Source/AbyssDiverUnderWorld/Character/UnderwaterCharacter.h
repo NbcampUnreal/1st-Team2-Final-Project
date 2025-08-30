@@ -1,6 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
-
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "InputActionValue.h"
@@ -108,6 +106,7 @@ protected:
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode = 0) override;
 	virtual void Destroyed() override;
+
 
 	/** IA를 Enhanced Input Component에 연결 */
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
@@ -281,6 +280,18 @@ public:
 	/** 관전 당하는 것이 끝났을 때 호출되는 함수 */
 	void OnEndSpectated();
 	
+	void OnObserveModeChanged(bool bObserveMode);
+
+	void TryUnlockObservedTarget();
+
+	UFUNCTION(Client, Reliable)
+	void C_UnlockFeedback(bool bSuccess, FName MonsterId);
+	void C_UnlockFeedback_Implementation(bool bSuccess, FName MonsterId);
+
+	UFUNCTION()
+	void UpdateObserveFocus();
+	void StartObserveFocusTimer();
+	void StopObserveFocusTimer();
 protected:
 
 	/** Stat Component의 기본 속도가 변경됬을 때 호출된다. */
@@ -509,12 +520,14 @@ protected:
 	/** 3번 감정 표현 실행 */
 	void PerformEmote3(const FInputActionValue& InputActionValue);
 
+
 	/** 3인칭 디버그 카메라 활성화 설정 */
 	void SetDebugCameraMode(bool bDebugCameraEnable);
 
 	/** 디버그 카메라 모드 토글. 1인칭, 3인칭을 전환한다. */
 	UFUNCTION(CallInEditor)
 	void ToggleDebugCameraMode();
+
 
 	/** 1인칭 메시 몽타주 시작 시 호출되는 함수 */
 	UFUNCTION()
@@ -618,6 +631,8 @@ protected:
 	/** 현재 DepthZone에 따른 산소 소비율을 반환한다. */
 	float GetOxygenConsumeRate(EDepthZone DepthZone) const;
 	
+
+
 private:
 
 	/** Montage 콜백을 등록 */
@@ -725,6 +740,9 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = "Mining")
 	/** 현재 3p에 장착된 Tool 인스턴스 */
 	TObjectPtr<AActor> SpawnedTool3P;
+
+	UPROPERTY()
+	TObjectPtr<AActor> CurrentObservedActor;
 
 private:
 
@@ -878,6 +896,9 @@ private:
 
 	/** 그로기에서 사망 전이 Timer */
 	FTimerHandle GroggyTimer;
+
+	/** 관찰모드 Timer **/
+	FTimerHandle ObserveFocusTimer;
 
 	/** 그로기 상태에서의 LookSensitivity. Groggy 상태에 진입할 때마다 LookSensitivity를 이 값으로 설정한다. */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Groggy")
@@ -1088,6 +1109,7 @@ private:
 	/** 감정 표현 3번 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> EmoteAction3;
+
 
 	/** 게임에 사용될 1인칭 Camera Component의 Spring Arm. 회전 Smoothing을 위해 사용한다. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))

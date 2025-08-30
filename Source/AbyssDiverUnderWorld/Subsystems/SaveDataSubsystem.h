@@ -52,6 +52,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "SaveDataSubsystem")
 	void DisplayAllSaves();
 
+	bool SaveDexBits(const TArray<uint8>& InBits);
+
+	bool LoadDexBits(TArray<uint8>& OutBits);
+
 
 	FOnSaveCompletedDelegate OnSaveCompletedDelegate;
 	FOnLoadCompletedDelegate OnLoadCompletedDelegate;
@@ -95,6 +99,8 @@ protected:
 
 	static const FString SavedSessionInfoSlotName;
 	static const FString SaveSlotNamePrefix;
+
+	FString DexSaveSlot = TEXT("DexBitsSave");
 
 #pragma endregion
 

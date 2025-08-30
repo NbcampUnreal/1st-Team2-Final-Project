@@ -3,6 +3,8 @@
 #include "Subsystems/DataTableSubsystem.h"
 #include "Subsystems/SoundSubsystem.h"
 #include "Subsystems/MissionSubsystem.h"
+#include "Subsystems/SaveDataSubsystem.h"
+#include "Subsystems/ADDexSubsystem.h"
 #include "Net/UnrealNetwork.h"
 #include "AbyssDiverUnderWorld.h"
 #include "DataRow/PhaseGoalRow.h"
@@ -184,6 +186,7 @@ void AADInGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME(AADInGameState, CurrentDroneSeller);
 	DOREPLIFETIME(AADInGameState, ActivatedMissionList);
 	DOREPLIFETIME(AADInGameState, DestinationTarget);
+	DOREPLIFETIME(AADInGameState, RepDexBits);
 }
 
 void AADInGameState::PostNetInit()
@@ -354,6 +357,14 @@ void AADInGameState::OnPlayerMinedCountChanged(AADPlayerState* PlayerState, int3
 	}
 }
 
+void AADInGameState::OnRep_DexBits()
+{
+	if (UADDexSubsystem* Dex = GetGameInstance()->GetSubsystem<UADDexSubsystem>())
+	{
+		Dex->ApplyDexBitsSnapshot(RepDexBits);
+	}
+}
+
 void AADInGameState::M_BroadcastTopMinerChanged_Implementation(AADPlayerState* NewTopMiner, int32 NewMiningAmount)
 {
 	TopMiner = NewTopMiner;
@@ -361,6 +372,25 @@ void AADInGameState::M_BroadcastTopMinerChanged_Implementation(AADPlayerState* N
 	OnTopMinerChangedDelegate.Broadcast(TopMiner, TopMiningAmount);
 
 	LOGV(Log, TEXT("Broadcast Top Miner Changed: %s, Amount: %d"), *TopMiner->GetPlayerName(), TopMiningAmount);
+}
+
+void AADInGameState::M_UnlockMonster_Implementation(FName MonsterId, const TArray<uint8>& FullBits)
+{
+	if (UADDexSubsystem* Dex = GetGameInstance()->GetSubsystem<UADDexSubsystem>())
+	{
+		// 1) 증분 반영(중복 호출 시 내부에서 무시됨)
+		Dex->UnlockMonster(MonsterId);  // 클라에서는 저장 금지 가드로 SaveDexData() 미실행
+
+		// 2) 서버가 준 최신 스냅샷 적용(방어적 동일화)
+		Dex->ApplyDexBitsSnapshot(FullBits);
+	}
+
+	// 서버는 RepDexBits 최신화하여 late-join 동기화 준비
+	if (HasAuthority())
+	{
+		RepDexBits = FullBits;
+		ForceNetUpdate();
+	}
 }
 
 void AADInGameState::AddPlayerState(APlayerState* PlayerState)

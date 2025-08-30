@@ -1,6 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "UnderwaterCharacter.h"
 
 #include "AbyssDiverUnderWorld.h"
@@ -44,6 +41,8 @@
 #include "PlayerComponent/RagdollReplicationComponent.h"
 #include "Subsystems/SoundSubsystem.h"
 #include "Character/PlayerComponent/PlayerHUDComponent.h"
+#include "Interface/Inspectable.h"
+#include "Subsystems/ADDexSubsystem.h"
 
 DEFINE_LOG_CATEGORY(LogAbyssDiverCharacter);
 
@@ -279,6 +278,7 @@ void AUnderwaterCharacter::BeginPlay()
 	InteractableComponent->SetInteractable(false);
 	AdjustSpeed();
 }
+
 
 void AUnderwaterCharacter::InitFromPlayerState(AADPlayerState* ADPlayerState)
 {
@@ -2313,6 +2313,7 @@ void AUnderwaterCharacter::ToggleDebugCameraMode()
 	SetDebugCameraMode(bUseDebugCamera);
 }
 
+
 void AUnderwaterCharacter::OnMesh1PMontageStarted(UAnimMontage* Montage)
 {
 	OnMesh1PMontageStartedDelegate.Broadcast(Montage);
@@ -2594,6 +2595,152 @@ float AUnderwaterCharacter::GetOxygenConsumeRate(EDepthZone DepthZone) const
 	{
 		return SafeZoneOxygenConsumeRate;
 	}
+}
+
+void AUnderwaterCharacter::OnObserveModeChanged(bool bObserveMode)
+{
+	if(!IsLocallyControlled())
+		return;
+
+
+
+	if (bObserveMode)
+	{
+		// 즉시 1회 갱신 후 주기 실행
+		UpdateObserveFocus();
+		StartObserveFocusTimer();
+	}
+	else
+	{
+		StopObserveFocusTimer();
+		// HUD 숨기기 등 정리
+		if (AADPlayerController* PC = Cast<AADPlayerController>(Controller))
+		{
+			if (UPlayerHUDComponent* HUD = PC->GetPlayerHUDComponent())
+			{
+				//HUD->ShowObserveTargetName(TEXT("")); // 또는 Hide
+			}
+		}
+	}
+}
+
+void AUnderwaterCharacter::TryUnlockObservedTarget()
+{
+	if (!IsLocallyControlled())
+		return;
+
+	FVector CameraLocation;
+	FRotator CameraRotation;
+	Controller->GetPlayerViewPoint(CameraLocation, CameraRotation);
+
+	FVector Start = CameraLocation;
+	FVector End = Start + CameraRotation.Vector() * 10000.0f;
+
+	FHitResult HitResult;
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(ObserveTrace), true, this);
+	if (GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_GameTraceChannel1, Params))
+	{
+		AActor* HitActor = HitResult.GetActor();
+		if (!HitActor)
+			return;
+
+		FName MonsterId = NAME_None;
+		if (HitActor->GetClass()->ImplementsInterface(UInspectable::StaticClass()))
+		{
+			MonsterId = IInspectable::Execute_GetMonsterId(HitActor);
+		}
+
+		if (MonsterId != NAME_None)
+		{
+			if (AADPlayerController* ADPC = Cast<AADPlayerController>(Controller))
+			{
+				ADPC->S_UnlockMonster(MonsterId);
+
+				C_UnlockFeedback(true, MonsterId);
+			}
+		}
+	}
+}
+
+void AUnderwaterCharacter::C_UnlockFeedback_Implementation(bool bSuccess, FName MonsterId)
+{
+	if (bSuccess)
+	{
+		// TODO: UI/사운드/이펙트
+		UE_LOG(LogTemp, Log, TEXT("Unlocked Monster: %s"), *MonsterId.ToString());
+	}
+	else
+	{
+		// TODO: 실패 피드백 (거리 초과 등)
+	}
+}
+
+void AUnderwaterCharacter::UpdateObserveFocus()
+{
+	if (!IsLocallyControlled()) return;
+	if (!Controller) return;
+
+	// 화면 중앙 라인트레이스
+	FVector CamLoc; FRotator CamRot;
+	Controller->GetPlayerViewPoint(CamLoc, CamRot);
+
+	const FVector Start = CamLoc;
+	const FVector End = Start + CamRot.Vector() * 10000.f;
+
+	FHitResult HR;
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(ObserveTrace), /*bTraceComplex*/true, this);
+	// 필요시 Params.bReturnPhysicalMaterial = false; 등 추가 최적화
+	const bool bHit = GetWorld()->LineTraceSingleByChannel(HR, Start, End, ECC_GameTraceChannel1, Params);
+
+	FString Label;
+	if (bHit)
+	{
+		if (AActor* Hit = HR.GetActor())
+		{
+			if (Hit->GetClass()->ImplementsInterface(UInspectable::StaticClass()))
+			{
+				const FName MonsterId = IInspectable::Execute_GetMonsterId(Hit);
+				UADDexSubsystem* DexSubsystem = GetGameInstance()->GetSubsystem<UADDexSubsystem>();
+				bool bUnlocked = false;
+
+				if (DexSubsystem)
+				{
+					bUnlocked = DexSubsystem->IsUnlocked(MonsterId);
+				}
+				Label = bUnlocked ? MonsterId.ToString() : TEXT("???");
+			}
+		}
+	}
+
+	// 변화가 있을 때만 HUD 갱신(깜빡임/비용 절약)
+	static FString LastLabel;
+	if (Label != LastLabel)
+	{
+		LastLabel = Label;
+		if (AADPlayerController* PC = Cast<AADPlayerController>(Controller))
+		{
+			if (UPlayerHUDComponent* HUD = PC->GetPlayerHUDComponent())
+			{
+				//HUD->ShowObserveTargetName(Label); // 빈 문자열이면 숨기도록 구현
+			}
+		}
+	}
+}
+
+void AUnderwaterCharacter::StartObserveFocusTimer()
+{
+	GetWorldTimerManager().SetTimer(
+		ObserveFocusTimer,
+		this,
+		&AUnderwaterCharacter::UpdateObserveFocus,
+		/*bLoop=*/true
+	);
+}
+
+
+void AUnderwaterCharacter::StopObserveFocusTimer()
+{
+	GetWorldTimerManager().ClearTimer(ObserveFocusTimer);
 }
 
 void AUnderwaterCharacter::BindToCharacter(AUnderwaterCharacter* BoundCharacter)

@@ -21,6 +21,7 @@ public:
 
 public:
 	UADGameInstance(const FObjectInitializer& ObjectInitializer);
+	
 
 protected:
 
@@ -68,6 +69,10 @@ public:
 
 	int32 ClearCount;
 	
+
+	UPROPERTY(EditDefaultsOnly, Category = "ADGameInstance")
+	TObjectPtr<UDataTable> MonsterDexTable;
+
 	UPROPERTY(EditDefaultsOnly, Category = "ADGameInstance", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.FADItemDataRow"))
 	TObjectPtr<UDataTable> ItemDataTable;
 	UPROPERTY(EditDefaultsOnly, Category = "ADGameInstance", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.FADProjectileDataRow"))
@@ -153,6 +158,8 @@ private:
 
 #pragma region Getters / Setters
 public:
+	UFUNCTION(BlueprintPure, Category = "ADGameInstance")
+	UDataTable* GetMosterDexTable() const { return MonsterDexTable; }
 
 	UFUNCTION(BlueprintPure, Category = "ADGameInstance")
 	const float GetCurrentMasterVolume() const;

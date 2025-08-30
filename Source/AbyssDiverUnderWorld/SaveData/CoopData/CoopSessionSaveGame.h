@@ -72,6 +72,9 @@ public:
 
 	UPROPERTY()
 	FString SaveDataName = "";
+
+	UPROPERTY()
+	TArray<uint8> DexBits;
 };
 
 /**

@@ -118,6 +118,10 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SendDataToGameInstance();
 
+	UFUNCTION(NetMulticast, Reliable)
+	void M_UnlockMonster(FName MonsterId, const TArray<uint8>& FullBits);
+	void M_UnlockMonster_Implementation(FName MonsterId, const TArray<uint8>& FullBits);
+
 	FString GetMapDisplayName() const;
 
 	void RefreshActivatedMissionList();
@@ -130,6 +134,9 @@ public:
 
 	virtual void RemovePlayerState(APlayerState* PlayerState) override;
 	
+
+	
+
 protected:
 
 	virtual void OnRep_ReplicatedHasBegunPlay() override;
@@ -148,6 +155,10 @@ protected:
 
 	void OnPlayerMinedCountChanged(AADPlayerState* PlayerState, int32 NewAmount);
 
+	UFUNCTION()
+	void OnRep_DexBits();
+	
+
 	/** 최고 채굴자가 변경되었을 때 호출되는 함수
 	 * NewTopMiner, NewMiningAmount를 동시에 전파하기 위해 Replicate를 사용하지 않고 Multicast 함수를 사용한다.
 	 */ 
@@ -155,6 +166,7 @@ protected:
 	void M_BroadcastTopMinerChanged(AADPlayerState* NewTopMiner, int32 NewMiningAmount);
 	void M_BroadcastTopMinerChanged_Implementation(AADPlayerState* NewTopMiner, int32 NewMiningAmount);
 	
+
 private:
 
 	void ReceiveDataFromGameInstance();
@@ -202,6 +214,9 @@ protected:
 
 	/** 최고 채굴자의 채굴량. M_BroadcastTopMinerChanged를 통해서 동기화된다. */
 	int32 TopMiningAmount = 0;
+
+	UPROPERTY(ReplicatedUsing = OnRep_DexBits)
+	TArray<uint8> RepDexBits;
 
 private:
 

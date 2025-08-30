@@ -18,6 +18,8 @@
 #include "UI/CrosshairWidget.h"
 #include "UI/SpectatorHUDWidget.h"
 #include "UI/RadarWidgets/Radar2DWidget.h"
+#include "UI/ObservedTargetWidget.h"
+#include "UI/ObserveOverlayWidget.h"
 
 #include "Interactable/OtherActors/ADDroneSeller.h"
 #include "Subsystems/SoundSubsystem.h"
@@ -561,4 +563,62 @@ USoundSubsystem* UPlayerHUDComponent::GetSoundSubsystem()
 	}
 
 	return SoundSubsystem;
+}
+
+void UPlayerHUDComponent::SetObserveModeActive(bool bActive)
+{
+	APlayerController* PC = Cast<APlayerController>(GetOwner());
+	if (!PC || !PC->IsLocalController()) return;
+
+	if (!ObserveOverlayWidget && ObserveOverlayWidgetClass)
+	{
+		ObserveOverlayWidget = CreateWidget<UObserveOverlayWidget>(PC, ObserveOverlayWidgetClass);
+		if (ObserveOverlayWidget) ObserveOverlayWidget->AddToViewport(8);
+	}
+	if (ObserveOverlayWidget) ObserveOverlayWidget->SetObserveModeActive(bActive);
+
+	if (!ObservedTargetWidget && ObservedTargetWidgetClass)
+	{
+		ObservedTargetWidget = CreateWidget<UObservedTargetWidget>(PC, ObservedTargetWidgetClass);
+		if (ObserveOverlayWidget && ObservedTargetWidget)
+		{
+			ObserveOverlayWidget->AttachObservedTargetWidget(ObservedTargetWidget);
+			ObservedTargetWidget->SetObservedTargetVisible(false);
+		}
+	}
+	if (!bActive) HideObservedTargetWidget();
+}
+
+void UPlayerHUDComponent::ShowObservedTargetName(const FText& Name)
+{
+	if (ObservedTargetWidget)
+	{
+		const bool bVisible = !Name.IsEmptyOrWhitespace();
+		ObservedTargetWidget->SetTargetName(Name);
+		ObservedTargetWidget->SetObservedTargetVisible(bVisible);
+	}
+}
+void UPlayerHUDComponent::HideObservedTargetWidget()
+{
+	if (ObservedTargetWidget) ObservedTargetWidget->SetObservedTargetVisible(false);
+}
+
+void UPlayerHUDComponent::SetObservedRingVisible(bool b) 
+{
+	if (ObserveOverlayWidget) ObserveOverlayWidget->SetRingVisible(b); 
+}
+
+void UPlayerHUDComponent::SetObservedRingScreenPos(const FVector2D& S) 
+{ 
+	if (ObserveOverlayWidget) ObserveOverlayWidget->SetRingScreenPos(S); 
+}
+
+void UPlayerHUDComponent::SetObservedRingProgress(float P) 
+{
+	if (ObserveOverlayWidget) ObserveOverlayWidget->SetRingProgress(P); 
+}
+
+void UPlayerHUDComponent::PlayObservedAcquirePulseIfNew(bool bNew) 
+{
+	if (bNew && ObserveOverlayWidget) ObserveOverlayWidget->PlayAcquirePulse(); 
 }

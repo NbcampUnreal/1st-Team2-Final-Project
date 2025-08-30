@@ -10,6 +10,7 @@
 #include "Delegates/DelegateCombinations.h"
 #include "Monster/MonsterSoundComponent.h"
 #include "Monster/EMonsterState.h"
+#include "Interface/Inspectable.h"
 #include "Monster.generated.h"
 
 class ASplinePathActor;
@@ -19,7 +20,7 @@ class UNiagaraSystem;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnMonsterDeadSignature, AActor*, Killer, AMonster*, DeadMonster);
 
 UCLASS()
-class ABYSSDIVERUNDERWORLD_API AMonster : public AUnitBase
+class ABYSSDIVERUNDERWORLD_API AMonster : public AUnitBase, public IInspectable
 {
 	GENERATED_BODY()
 
@@ -130,7 +131,11 @@ protected:
 	static const FName InvestigateLocationKey;
 	static const FName PatrolLocationKey;
 	static const FName TargetActorKey;
-	
+
+	//interface
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Monster")
+    FName MonsterId;
+
 #pragma endregion
 
 #pragma region Getter. Setter
@@ -143,6 +148,7 @@ public:
 	void SetMaxSwimSpeed(float Speed);
 	int32 GetDetectionCount() const;
 
+	virtual FName GetMonsterId_Implementation() const override;
 
 	// Virtual function to get collision components for attack range determination externally
 	virtual USphereComponent* GetAttackHitComponent() const { return nullptr; }

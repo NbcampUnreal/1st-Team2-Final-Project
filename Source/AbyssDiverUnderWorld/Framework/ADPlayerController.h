@@ -104,6 +104,11 @@ public:
 	UFUNCTION(Server, Reliable)
 	void Server_RequestAdvanceTutorialPhase();
 
+	UFUNCTION(Server, Reliable)
+	void S_UnlockMonster(FName MonsterId);
+	void S_UnlockMonster_Implementation(FName MonsterId);
+
+
 protected:
 
 	/** 관전 상태가 시작될 때 호출되는 함수 */
@@ -153,7 +158,14 @@ protected:
 	void OnReviveTriggered(const FInputActionValue& Value);
 
 	void CheckTutorialObjective(const FInputActionValue& Value, UInputAction* SourceAction);
+	
+	void ObserveToggle(const FInputActionValue& Value);
+	void ObserveCapture(const FInputActionValue& Value);
 
+	void ApplyObserveVisuals(bool bEnable);
+	void ToggleObserveIMC(bool bEnable);
+
+	void InitObserveCameraDefaults();
 #pragma endregion
 	
 #pragma region Variable
@@ -172,8 +184,20 @@ public:
 	FOnTargetViewChanged OnTargetViewChanged;
 	
 private:
+	uint8 bObserveMode : 1 = false;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputMappingContext> DefaultMappingContext;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputMappingContext> IMC_Observe;
+
+
+	// 우선순위
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	int32 Priority_Default = 10;
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	int32 Priority_Observe = 20;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputAction> InventoryAction;
@@ -217,6 +241,18 @@ private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputAction> ReviveAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputAction> ObserveToggleAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputAction> ObserveCaptureAction;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Observe|Camera")
+	float DefaultFOV;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Observe|Camera")
+	float ObserveFOV = 75.f;
 #pragma endregion 
 
 #pragma region Getters / Setters

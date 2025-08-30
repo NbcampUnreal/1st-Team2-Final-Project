@@ -141,6 +141,16 @@ FShopItemMeshTransformRow* UDataTableSubsystem::GetShopItemMeshTransformData(int
 	return ShopItemMeshTransformTableMap[ItemId];
 }
 
+UDataTable* UDataTableSubsystem::GetMonsterDexTable() const
+{
+	if (UADGameInstance* GameInstance = Cast<UADGameInstance>(GetGameInstance()))
+	{
+		return GameInstance->MonsterDexTable;
+	}
+
+	return nullptr;
+}
+
 void UDataTableSubsystem::ParseUpgradeDataTable(UADGameInstance* GameInstance)
 {
 	if (GameInstance == nullptr || GameInstance->UpgradeDataTable == nullptr)

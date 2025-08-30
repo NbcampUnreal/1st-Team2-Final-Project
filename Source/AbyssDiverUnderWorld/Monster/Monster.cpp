@@ -697,5 +697,10 @@ int32 AMonster::GetDetectionCount() const
 	return ValidCount;
 }
 
+FName AMonster::GetMonsterId_Implementation() const
+{
+	return MonsterId;
+}
+
 
 

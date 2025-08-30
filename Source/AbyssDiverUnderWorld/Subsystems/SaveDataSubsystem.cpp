@@ -4,6 +4,7 @@
 
 #include "SaveData/CoopData/CoopSessionSaveGame.h"
 #include "SaveData/CoopData/SavedSessionInfoSaveGame.h"
+#include "SaveData/CoopData/DexBitsSaveGame.h"
 
 #include "Framework/ADCampGameMode.h"
 #include "Framework/ADGameInstance.h"
@@ -13,6 +14,7 @@
 #include "Inventory/ADInventoryComponent.h"
 #include "Character/UpgradeComponent.h"
 #include "Subsystems/MissionSubsystem.h"
+#include "Subsystems/ADDexSubsystem.h"
 
 #include "Kismet/GameplayStatics.h"
 
@@ -131,6 +133,13 @@ void USaveDataSubsystem::AsyncSaveCurrentGame(const FString& SaveGameName, bool 
 		GS->GetTotalTeamCredit(),
 		SaveGameName
 	);
+
+	if (UADDexSubsystem* Dex = GetGameInstance()->GetSubsystem<UADDexSubsystem>())
+	{
+		SessionData.DexBits = Dex->GetDexBitsSnapshot(); // TArray<uint8> 반환
+	}
+
+
 
 	UCoopSessionSaveGame* SessionSaveGame = Cast<UCoopSessionSaveGame>(UGameplayStatics::CreateSaveGameObject(UCoopSessionSaveGame::StaticClass()));
 	if (SessionSaveGame == nullptr)
@@ -352,6 +361,31 @@ void USaveDataSubsystem::DisplayAllSaves()
 	}
 
 	LOGV(Warning, TEXT("========End ActualSlot==========="));
+}
+
+bool USaveDataSubsystem::SaveDexBits(const TArray<uint8>& InBits)
+{
+	UDexBitsSaveGame* SaveObject = Cast<UDexBitsSaveGame>(UGameplayStatics::CreateSaveGameObject(UDexBitsSaveGame::StaticClass()));
+	if (!SaveObject)
+		return false;
+
+	SaveObject->SavedBits = InBits;
+	return UGameplayStatics::SaveGameToSlot(SaveObject, DexSaveSlot, 0);
+}
+
+bool USaveDataSubsystem::LoadDexBits(TArray<uint8>& OutBits)
+{
+	if (UGameplayStatics::DoesSaveGameExist(DexSaveSlot, 0) == false)
+	{
+		return false;
+	}
+
+	UDexBitsSaveGame* LoadedSaveObject = Cast<UDexBitsSaveGame>(UGameplayStatics::LoadGameFromSlot(DexSaveSlot, 0));
+	if (!LoadedSaveObject)
+		return false;
+
+	OutBits = LoadedSaveObject->SavedBits;
+	return true;
 }
 
 void USaveDataSubsystem::OnSaveSessionGame(const FString& SlotName, const int32 UserIndex, bool bIsSucceeded)
