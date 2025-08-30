@@ -94,11 +94,10 @@ void AMonster::BeginPlay()
 	if (IsValid(AIController))
 	{
 		BlackboardComponent = AIController->GetBlackboardComponent();
-		SetMonsterState(EMonsterState::Patrol);
-
 		if (BlackboardComponent)
 		{
 			BlackboardComponent->SetValueAsVector(TargetLocationKey, GetActorLocation());
+			ApplyMonsterStateChange(EMonsterState::Patrol);
 		}
 	}
 
@@ -688,7 +687,7 @@ void AMonster::UnPossessAI()
 	}
 }
 
-// 조명에 따른 상태변화 함수
+// 랜턴이 비춰지는 시간에 따른 상태변화 함수
 void AMonster::NotifyLightExposure(float DeltaTime, float TotalExposedTime, const FVector& PlayerLocation, AActor* PlayerActor)
 {
 	if (!HasAuthority()) return;
@@ -710,6 +709,7 @@ void AMonster::NotifyLightExposure(float DeltaTime, float TotalExposedTime, cons
 
 	case EMonsterState::Investigate:
 	{
+		// 조명을 비추는 곳(플레이어 위치)를 BB에 업데이트
 		if (BlackboardComponent)
 		{
 			BlackboardComponent->SetValueAsVector(InvestigateLocationKey, PlayerLocation);
@@ -724,7 +724,7 @@ void AMonster::NotifyLightExposure(float DeltaTime, float TotalExposedTime, cons
 		break;
 	}
 	case EMonsterState::Chase:
-		if (TargetActor != PlayerActor)
+		if (TotalExposedTime >= ChaseTriggerTime)
 		{
 			AddDetection(PlayerActor);
 		}
@@ -795,7 +795,7 @@ void AMonster::RemoveDetection(AActor* Actor)
 	if (bWasTarget)
 	{
 		// 우선 TargetActor 비움.
-		TargetActor = nullptr;
+		InitTarget();
 		if (BlackboardComponent)
 		{
 			BlackboardComponent->ClearValue(TargetPlayerKey);
@@ -858,8 +858,7 @@ void AMonster::ForceRemoveDetectedPlayers()
 	}
 
 	DetectedPlayers.Reset();
-	TargetActor = nullptr;
-
+	InitTarget();
 	if (BlackboardComponent)
 	{
 		BlackboardComponent->ClearValue(TargetPlayerKey);
@@ -952,7 +951,7 @@ void AMonster::ApplyMonsterStateChange(EMonsterState NewState)
 	case EMonsterState::Chase:
 
 		bIsChasing = true;
-		SetMaxSwimSpeed(ChaseSpeed);
+		// 추적 속도는 이미 PerformChasing에서 변경하고 있음
 		BlackboardComponent->SetValueAsBool(bIsChasingKey, true);
 		MonsterSoundComponent->S_PlayChaseLoopSound();
 		break;

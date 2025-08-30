@@ -55,17 +55,6 @@ void UBTTask_PerformChasing::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* 
 		return;
 	}
 	
-
-	// 플레이어가 NavMesh 밖으로 벗어난 경우 ...
-	//if (!TaskMemory->Monster->IsLocationOnNavMesh(Player->GetActorLocation()))
-	//{
-	//	LOG(TEXT("PerformChasing: Player is not on NavMesh"));
-	//	TaskMemory->AIController->GetBlackboardComponent()->SetValueAsBool(bIsHidingKey, true);
-	//	FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
-	//	return;
-	//}
-
-
 	// 추적 시간이 경과한 경우 ...
 	TaskMemory->AccumulatedTime += DeltaSeconds;
 	if (TaskMemory->AccumulatedTime > TaskMemory->ChasingTime)
@@ -104,6 +93,7 @@ void UBTTask_PerformChasing::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* 
 			}
 		}
 
+
 		if (!bIsPlayerInSight)
 		{
 			if (Player->IsHideInSeaweed())
@@ -114,7 +104,7 @@ void UBTTask_PerformChasing::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* 
 			}
 		}
 	}
-	
+
 	TaskMemory->Monster->PerformChasing(DeltaSeconds);
 }
 
