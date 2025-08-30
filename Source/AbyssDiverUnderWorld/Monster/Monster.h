@@ -67,7 +67,7 @@ public:
 	void RemoveDetection(AActor* Actor);
 	
 	UFUNCTION()
-	void ForceRemoveDetectionArray();
+	void ForceRemoveDetectedPlayers();
 
 	UFUNCTION(BlueprintCallable)
 	bool IsAnimMontagePlaying() const;
@@ -190,7 +190,7 @@ protected:
 	float FleeSpeed;
 
 	UPROPERTY(VisibleAnywhere)
-	TSet<TWeakObjectPtr<AActor>> DetectionArray;
+	TSet<TWeakObjectPtr<AActor>> DetectedPlayers;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	float WanderRadius = 1300.0f;
@@ -233,14 +233,13 @@ public:
 	EMonsterState GetMonsterState() { return MonsterState; }
 	virtual void SetMonsterState(EMonsterState NewState);
 	void SetMaxSwimSpeed(float Speed);
-	int32 GetDetectionCount() const;
+	int32 GetDetectionCount() const { return DetectedPlayers.Num();}
 
 	// Virtual function to get collision components for attack range determination externally
 	virtual USphereComponent* GetAttackHitComponent() const { return nullptr; }
 
 	// @ TODO : PerformAttack Task빌드를 위해 임시로 가져온 Getter. Monster에는 AttackCollision이 없음. Boss에만 있다.
 	FORCEINLINE bool GetIsAttackCollisionOverlappedPlayer() const { return bIsAttackCollisionOverlappedPlayer; };
-
 	FORCEINLINE void SetTargetLocation(const FVector& InTargetLocation) { TargetLocation = InTargetLocation; }
 	FORCEINLINE void InitTarget() { TargetPlayer = nullptr; };
 	FORCEINLINE AUnderwaterCharacter* GetCachedTarget() const { return CachedTargetPlayer; };

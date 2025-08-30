@@ -532,9 +532,6 @@ float AMonster::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, 
 			OnDeath();
 			// Delegate Broadcasts for Achievements
 			OnMonsterDead.Broadcast(DamageCauser, this);
-
-			// 사망하면 어그로 해제
-			ForceRemoveDetectionArray();
 		}
 		else
 		{
@@ -548,10 +545,7 @@ float AMonster::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, 
 			}
 			
 			// If aggro is not on TargetPlayer, set aggro
-			if (MonsterState != EMonsterState::Chase && MonsterState != EMonsterState::Flee)
-			{
-				AddDetection(InstigatorPlayer);
-			}
+			AddDetection(InstigatorPlayer);
 		}
 	}
 	return Damage;
@@ -561,12 +555,20 @@ void AMonster::OnDeath()
 {
 	if (MonsterSoundComponent)
 	{
-		// Stop Existing LoopSound
+		// 모든 사운드 해제
 		MonsterSoundComponent->M_StopAllLoopSound();
 	}
 
-	UnPossessAI();
+	// 사망하면 모든 어그로 해제
+	ForceRemoveDetectedPlayers();
+
+	// 렉돌 활성화 및 AquaticMovementComponent Tick 비활성화
+	HandleSetting_OnDeath();
+
+	// 모든 몽타주 재생 정지
 	M_OnDeath();
+
+	UnPossessAI();
 	MonsterRaderOff();
 
 	FTimerHandle DestroyTimerHandle;
@@ -577,8 +579,7 @@ void AMonster::OnDeath()
 		);
 	}
 
-	HandleSetting_OnDeath();
-	SetMonsterState(EMonsterState::Death);
+	ApplyMonsterStateChange(EMonsterState::Death);
 }
 
 void AMonster::M_OnDeath_Implementation()
@@ -687,6 +688,7 @@ void AMonster::UnPossessAI()
 	}
 }
 
+// 조명에 따른 상태변화 함수
 void AMonster::NotifyLightExposure(float DeltaTime, float TotalExposedTime, const FVector& PlayerLocation, AActor* PlayerActor)
 {
 	if (!HasAuthority()) return;
@@ -697,45 +699,27 @@ void AMonster::NotifyLightExposure(float DeltaTime, float TotalExposedTime, cons
 	switch (MonsterState)
 	{
 	case EMonsterState::Patrol:
+		// 조명 비추자 마자 Detected로 상태 변화
 		ApplyMonsterStateChange(EMonsterState::Detected);
 		break;
 
 	case EMonsterState::Detected:
-		if (TotalExposedTime >= ChaseTriggerTime)
-		{
-			AddDetection(PlayerActor);
-			ApplyMonsterStateChange(EMonsterState::Chase);
-		}
-		else
-		{
-			ApplyMonsterStateChange(EMonsterState::Investigate);
-		}
+		// 사실상 찰나임 (Detected Animation을 재생하기 위한 상태)
+		ApplyMonsterStateChange(EMonsterState::Investigate);
 		break;
 
 	case EMonsterState::Investigate:
 	{
-		if (AIController)
+		if (BlackboardComponent)
 		{
-			if (BlackboardComponent)
-			{
-				BlackboardComponent->SetValueAsVector(InvestigateLocationKey, PlayerLocation);
-			}
+			BlackboardComponent->SetValueAsVector(InvestigateLocationKey, PlayerLocation);
 		}
+
+		// 일정 시간 이상 조명이 비춰질 경우 실행
 		if (TotalExposedTime >= ChaseTriggerTime)
 		{
 			ApplyMonsterStateChange(EMonsterState::Chase);
 			AddDetection(PlayerActor);
-		}
-		else if (TotalExposedTime < ChaseTriggerTime)
-		{
-			if (TargetActor == nullptr)
-			{
-				SetMonsterState(EMonsterState::Investigate);
-			}
-			else
-			{
-				SetMonsterState(EMonsterState::Chase);
-			}
 		}
 		break;
 	}
@@ -759,14 +743,14 @@ void AMonster::AddDetection(AActor* Actor)
 	if (!IsValid(Actor) || !IsValid(this)) return;
 	if (!HasAuthority()) return;
 
-	if (!DetectionArray.Contains(Actor))
+	if (!DetectedPlayers.Contains(Actor))
 	{
-		DetectionArray.Add(Actor);
+		DetectedPlayers.Add(Actor);
 
 		UE_LOG(LogTemp, Log, TEXT("[%s] AddDetection : %s | ArraySize: %d"),
 			*GetName(),
 			*Actor->GetName(),
-			DetectionArray.Num()
+			DetectedPlayers.Num()
 		);
 
 		AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor);
@@ -796,8 +780,8 @@ void AMonster::RemoveDetection(AActor* Actor)
 	if (!IsValid(this) || !IsValid(Actor)) return;
 	if (!HasAuthority()) return;
 
-	// DetectionArray에 Actor가 없으면 return;
-	if (!DetectionArray.Remove(Actor)) return;
+	// DetectedPlayers에 Actor가 없으면 return;
+	if (!DetectedPlayers.Remove(Actor)) return;
 
 	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor);
 	if (Player)
@@ -818,14 +802,14 @@ void AMonster::RemoveDetection(AActor* Actor)
 		}
 
 		// 후보가 없으면 바로 Patrol (루프 스킵)
-		if (DetectionArray.Num() == 0)
+		if (DetectedPlayers.Num() == 0)
 		{
 			ApplyMonsterStateChange(EMonsterState::Patrol);
 			return;
 		}
 
 		// TSet 순회하여 요소(Player)가 남아있으면 해당 플레이어를 TargetActor로 지정
-		for (const TWeakObjectPtr<AActor>& Elem : DetectionArray)
+		for (const TWeakObjectPtr<AActor>& Elem : DetectedPlayers)
 		{
 			if (AActor* NewTarget = Elem.Get())
 			{
@@ -843,21 +827,21 @@ void AMonster::RemoveDetection(AActor* Actor)
 	}
 }
 
-void AMonster::ForceRemoveDetectionArray()
+void AMonster::ForceRemoveDetectedPlayers()
 {
 	if (!IsValid(this)) return;
 	if (!HasAuthority()) return;
 
 	// 이미 비어있으면 return;
-	if (DetectionArray.Num() == 0 && !TargetActor.IsValid())
+	if (DetectedPlayers.Num() == 0 && !TargetActor.IsValid())
 	{
 		return;
 	}
 
-	// 남아있는 DetectionArray 목록 캐싱 (컨테이너 안전)
+	// 남아있는 DetectedPlayers 목록 캐싱 (컨테이너 안전)
 	TArray<AActor*> TempArray;
-	TempArray.Reserve(DetectionArray.Num());
-	for (const TWeakObjectPtr<AActor>& Elem : DetectionArray)
+	TempArray.Reserve(DetectedPlayers.Num());
+	for (const TWeakObjectPtr<AActor>& Elem : DetectedPlayers)
 	{
 		if (AActor* TargetCandidate = Elem.Get())
 		{
@@ -873,7 +857,7 @@ void AMonster::ForceRemoveDetectionArray()
 		}
 	}
 
-	DetectionArray.Reset();
+	DetectedPlayers.Reset();
 	TargetActor = nullptr;
 
 	if (BlackboardComponent)
@@ -1002,10 +986,6 @@ void AMonster::SetMaxSwimSpeed(float Speed)
 	AquaticMovementComponent->MaxSpeed = Speed;
 }
 
-int32 AMonster::GetDetectionCount() const
-{
-	return DetectionArray.Num();
-}
 
 
 
