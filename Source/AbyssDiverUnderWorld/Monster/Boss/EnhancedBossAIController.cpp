@@ -4,7 +4,7 @@
 #include "EngineUtils.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Character/UnderwaterCharacter.h"
-#include "Enum/EPerceptionType.h"
+#include "Monster/EPerceptionType.h"
 #include "Gimmic/Volume/ObstacleVolume.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Hearing.h"
@@ -13,7 +13,6 @@
 #include "Perception/AISense_Sight.h"
 
 const FName AEnhancedBossAIController::bHasSeenPlayerKey = "bHasSeenPlayer";
-const FName AEnhancedBossAIController::PerceptionTypeKey = "EPerceptionType";
 const FName AEnhancedBossAIController::bHasDetectedPlayerKey = "bHasDetectedPlayer";
 const FName AEnhancedBossAIController::bIsChasingKey = "bIsChasing";
 const FName AEnhancedBossAIController::bHasAttackedKey = "bHasAttacked";
@@ -41,12 +40,6 @@ void AEnhancedBossAIController::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	if (IsValid(AIPerceptionComponent))
-	{
-		AIPerceptionComponent->OnTargetPerceptionUpdated.AddDynamic(this, &AEnhancedBossAIController::OnTargetPerceptionUpdatedHandler);
-	}
-
-	
 	// BeginPlay에서 모든 EnhancedAIController가 모든 AObstacleVolume을 찾아 이벤트를 바인딩한다.
 	// BeginPlay 호출 시에 약간의 프레임 드랍이 발생할 우려가 있지만 일회성 호출이므로 예외로 처리한다.
 	// Tick에서 플레이어가 Overlapped 되었는지 확인하는 방법에 비해 메모리 효율적이다.
@@ -58,11 +51,6 @@ void AEnhancedBossAIController::BeginPlay()
 void AEnhancedBossAIController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
-}
-
-void AEnhancedBossAIController::SetBlackboardPerceptionType(EPerceptionType InPerceptionType)
-{
-	BlackboardComponent->SetValueAsEnum(PerceptionTypeKey, static_cast<uint8>(InPerceptionType));
 }
 
 void AEnhancedBossAIController::InitVariables()
@@ -82,14 +70,14 @@ void AEnhancedBossAIController::InitVariables()
 	SetBlackboardPerceptionType(EPerceptionType::None);
 }
 
-void AEnhancedBossAIController::OnTargetPerceptionUpdatedHandler(AActor* Actor, FAIStimulus Stimulus)
+void AEnhancedBossAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
 	// 감지한 대상이 플레이어가 아니거나 사망 상태인 경우 리턴
 	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor);
 	if (!IsValid(Player) || Player->IsDeath() || Player->IsGroggy()) return;
 
 	LOG(TEXT("OnTargetPerceptionUpdatedHandler : %s"), *Player->GetName());
-	
+
 	// --------------------- 시각 자극 ---------------------
 	// 플레이어가 시야각에 들어오는 경우
 	if (bIsPerceptionSight && Stimulus.Type == UAISense::GetSenseID<UAISense_Sight>())
@@ -99,7 +87,7 @@ void AEnhancedBossAIController::OnTargetPerceptionUpdatedHandler(AActor* Actor, 
 		{
 			if (Player != Boss->GetTarget()) return;
 		}
-		
+
 		if (Stimulus.WasSuccessfullySensed())
 		{
 			OnSightPerceptionSuccess(Player);
@@ -119,7 +107,7 @@ void AEnhancedBossAIController::OnTargetPerceptionUpdatedHandler(AActor* Actor, 
 			OnDamagePerceptionSuccess(Player);
 		}
 	}
-	
+
 	// --------------------- 청각 자극 ---------------------
 	// 플레이어가 피를 흘리는 경우
 	else if (bIsPerceptionHearing && Stimulus.Type == UAISense::GetSenseID<UAISense_Hearing>())
@@ -128,9 +116,9 @@ void AEnhancedBossAIController::OnTargetPerceptionUpdatedHandler(AActor* Actor, 
 		AUnderwaterCharacter* ChasingPlayer = Cast<AUnderwaterCharacter>(GetBlackboardComponent()->GetValueAsObject(TargetPlayerKey));
 		if (IsValid(ChasingPlayer))
 		{
-			if (Player == ChasingPlayer) return;	
+			if (Player == ChasingPlayer) return;
 		}
-		
+
 		if (Stimulus.WasSuccessfullySensed())
 		{
 			OnHearingPerceptionSuccess(Player);

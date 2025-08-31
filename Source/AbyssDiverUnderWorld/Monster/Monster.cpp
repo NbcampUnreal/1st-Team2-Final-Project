@@ -14,6 +14,7 @@
 #include "Interactable/OtherActors/Radars/RadarReturn2DComponent.h"
 #include "Monster/Components/AquaticMovementComponent.h"
 #include "Monster/Components/TickControlComponent.h"
+#include "Monster/EPerceptionType.h"
 
 const FName AMonster::MonsterStateKey = "MonsterState";
 const FName AMonster::InvestigateLocationKey = "InvestigateLocation";
@@ -94,11 +95,10 @@ void AMonster::BeginPlay()
 	if (IsValid(AIController))
 	{
 		BlackboardComponent = AIController->GetBlackboardComponent();
-		SetMonsterState(EMonsterState::Patrol);
-
 		if (BlackboardComponent)
 		{
 			BlackboardComponent->SetValueAsVector(TargetLocationKey, GetActorLocation());
+			ApplyMonsterStateChange(EMonsterState::Patrol);
 		}
 	}
 
@@ -335,6 +335,11 @@ void AMonster::PerformNormalMovement(const float& InDeltaTime)
 		if (DistanceToDesiredTarget < 500 || DesiredTargetLocation.IsZero())
 		{
 			SetNewTargetLocation();
+
+			if (MonsterState == EMonsterState::Investigate)
+			{
+				ApplyMonsterStateChange(EMonsterState::Patrol);
+			}
 		}
 
 		// 목표점이 너무 멀면 재설정
@@ -485,17 +490,17 @@ void AMonster::PerformChasing(const float& InDeltaTime)
 
 void AMonster::Attack()
 {
-	//const uint8 AttackType = FMath::RandRange(0, AttackAnimations.Num() - 1);
+	const uint8 AttackType = FMath::RandRange(0, AttackAnimations.Num() - 1);
 
-	//if (IsValid(AttackAnimations[AttackType]))
-	//{
-	//	ChaseAccumulatedTime = 0.f;
-	//	AnimInstance->OnMontageEnded.RemoveDynamic(this, &AMonster::OnAttackMontageEnded);
-	//	AnimInstance->OnMontageEnded.AddDynamic(this, &AMonster::OnAttackMontageEnded);
-	//	M_PlayMontage(AttackAnimations[AttackType]);
-	//}
+	if (IsValid(AttackAnimations[AttackType]))
+	{
+		// ChaseAccumulatedTime = 0.f; PlayerChase Task에서 사용
+		AnimInstance->OnMontageEnded.RemoveDynamic(this, &AMonster::OnAttackMontageEnded);
+		AnimInstance->OnMontageEnded.AddDynamic(this, &AMonster::OnAttackMontageEnded);
+		M_PlayMontage(AttackAnimations[AttackType]);
+	}
 
-	//bIsAttacking = true;
+	bIsAttacking = true;
 }
 
 void AMonster::M_PlayMontage_Implementation(UAnimMontage* AnimMontage, float InPlayRate, FName StartSectionName)
@@ -553,6 +558,8 @@ float AMonster::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, 
 
 void AMonster::OnDeath()
 {
+	ApplyMonsterStateChange(EMonsterState::Death);
+
 	if (MonsterSoundComponent)
 	{
 		// 모든 사운드 해제
@@ -578,8 +585,6 @@ void AMonster::OnDeath()
 			DestroyTimerHandle, this, &AMonster::DelayDestroyed, 30.0f, false
 		);
 	}
-
-	ApplyMonsterStateChange(EMonsterState::Death);
 }
 
 void AMonster::M_OnDeath_Implementation()
@@ -631,17 +636,17 @@ void AMonster::OnMeshOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* O
 
 void AMonster::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
-	//if (!IsValid(EnhancedAIController)) return;
+	if (!IsValid(AIController)) return;
 
-	//if (bIsAttackInfinite)
-	//{
-	//	EnhancedAIController->GetBlackboardComponent()->SetValueAsBool("bHasAttacked", false);
-	//}
-	//else
-	//{
-	//	EnhancedAIController->GetBlackboardComponent()->SetValueAsBool("bHasDetectedPlayer", false);
-	//	EnhancedAIController->SetBlackboardPerceptionType(EPerceptionType::Finish);
-	//}
+	if (bIsAttackInfinite)
+	{
+		AIController->GetBlackboardComponent()->SetValueAsBool("bHasAttacked", false);
+	}
+	else
+	{
+		AIController->GetBlackboardComponent()->SetValueAsBool("bHasDetectedPlayer", false);
+		AIController->SetBlackboardPerceptionType(EPerceptionType::Finish);
+	}
 }
 
 void AMonster::ApplyPhysicsSimulation()
@@ -658,27 +663,6 @@ void AMonster::ApplyPhysicsSimulation()
 	}
 }
 
-void AMonster::PlayAttackMontage()
-{
-	if (!HasAuthority()) return;
-
-	if (!AnimInstance) return;
-
-	// If any montage is playing, prevent duplicate playback
-	if (AnimInstance->IsAnyMontagePlaying()) return;
-	
-	const uint8 AttackType = FMath::RandRange(0, AttackAnimations.Num() - 1);
-
-	UAnimMontage* SelectedMontage = AttackAnimations[AttackType];
-
-	if (IsValid(SelectedMontage))
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Playing Attack Montage: %s"), *SelectedMontage->GetName());
-		M_PlayMontage(SelectedMontage);
-		CurrentAttackAnim = SelectedMontage;
-	}
-}
-
 void AMonster::UnPossessAI()
 {
 	if (IsValid(AIController))
@@ -688,7 +672,7 @@ void AMonster::UnPossessAI()
 	}
 }
 
-// 조명에 따른 상태변화 함수
+// 랜턴이 비춰지는 시간에 따른 상태변화 함수
 void AMonster::NotifyLightExposure(float DeltaTime, float TotalExposedTime, const FVector& PlayerLocation, AActor* PlayerActor)
 {
 	if (!HasAuthority()) return;
@@ -710,11 +694,9 @@ void AMonster::NotifyLightExposure(float DeltaTime, float TotalExposedTime, cons
 
 	case EMonsterState::Investigate:
 	{
-		if (BlackboardComponent)
-		{
-			BlackboardComponent->SetValueAsVector(InvestigateLocationKey, PlayerLocation);
-		}
-
+		// 조명을 비추는 곳(플레이어 위치)을 최종목표지점으로 업데이트
+		DesiredTargetLocation = PlayerLocation;
+		
 		// 일정 시간 이상 조명이 비춰질 경우 실행
 		if (TotalExposedTime >= ChaseTriggerTime)
 		{
@@ -724,7 +706,7 @@ void AMonster::NotifyLightExposure(float DeltaTime, float TotalExposedTime, cons
 		break;
 	}
 	case EMonsterState::Chase:
-		if (TargetActor != PlayerActor)
+		if (TotalExposedTime >= ChaseTriggerTime)
 		{
 			AddDetection(PlayerActor);
 		}
@@ -783,6 +765,11 @@ void AMonster::RemoveDetection(AActor* Actor)
 	// DetectedPlayers에 Actor가 없으면 return;
 	if (!DetectedPlayers.Remove(Actor)) return;
 
+	UE_LOG(LogTemp, Log, TEXT("[%s] RemoveDetection : %s | ArraySize: %d"),
+		*GetName(),
+		*Actor->GetName(),
+		DetectedPlayers.Num())
+
 	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor);
 	if (Player)
 	{
@@ -795,7 +782,7 @@ void AMonster::RemoveDetection(AActor* Actor)
 	if (bWasTarget)
 	{
 		// 우선 TargetActor 비움.
-		TargetActor = nullptr;
+		InitTarget();
 		if (BlackboardComponent)
 		{
 			BlackboardComponent->ClearValue(TargetPlayerKey);
@@ -858,8 +845,7 @@ void AMonster::ForceRemoveDetectedPlayers()
 	}
 
 	DetectedPlayers.Reset();
-	TargetActor = nullptr;
-
+	InitTarget();
 	if (BlackboardComponent)
 	{
 		BlackboardComponent->ClearValue(TargetPlayerKey);
@@ -952,7 +938,7 @@ void AMonster::ApplyMonsterStateChange(EMonsterState NewState)
 	case EMonsterState::Chase:
 
 		bIsChasing = true;
-		SetMaxSwimSpeed(ChaseSpeed);
+		// 추적 속도는 이미 PerformChasing에서 변경하고 있음
 		BlackboardComponent->SetValueAsBool(bIsChasingKey, true);
 		MonsterSoundComponent->S_PlayChaseLoopSound();
 		break;

@@ -56,7 +56,6 @@ public:
 	void M_OnDeath();
 	virtual void M_OnDeath_Implementation();
 
-	virtual void PlayAttackMontage();
 	void UnPossessAI();
 	virtual void NotifyLightExposure(float DeltaTime, float TotalExposedTime, const FVector& PlayerLocation, AActor* PlayerActor);
 	
@@ -137,6 +136,10 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Monster|Collision")
 	TObjectPtr<UCapsuleComponent> AttackCollision;
+
+	// 연속공격 가능 플래그
+	UPROPERTY(EditDefaultsOnly, Category = "Monster|Stat")
+	uint8 bIsAttackInfinite : 1;
 
 protected:
 
