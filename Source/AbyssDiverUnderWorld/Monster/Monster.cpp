@@ -334,6 +334,11 @@ void AMonster::PerformNormalMovement(const float& InDeltaTime)
 		if (DistanceToDesiredTarget < 500 || DesiredTargetLocation.IsZero())
 		{
 			SetNewTargetLocation();
+
+			if (MonsterState == EMonsterState::Investigate)
+			{
+				ApplyMonsterStateChange(EMonsterState::Patrol);
+			}
 		}
 
 		// 목표점이 너무 멀면 재설정
@@ -552,6 +557,8 @@ float AMonster::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, 
 
 void AMonster::OnDeath()
 {
+	ApplyMonsterStateChange(EMonsterState::Death);
+
 	if (MonsterSoundComponent)
 	{
 		// 모든 사운드 해제
@@ -577,8 +584,6 @@ void AMonster::OnDeath()
 			DestroyTimerHandle, this, &AMonster::DelayDestroyed, 30.0f, false
 		);
 	}
-
-	ApplyMonsterStateChange(EMonsterState::Death);
 }
 
 void AMonster::M_OnDeath_Implementation()
@@ -709,12 +714,9 @@ void AMonster::NotifyLightExposure(float DeltaTime, float TotalExposedTime, cons
 
 	case EMonsterState::Investigate:
 	{
-		// 조명을 비추는 곳(플레이어 위치)를 BB에 업데이트
-		if (BlackboardComponent)
-		{
-			BlackboardComponent->SetValueAsVector(InvestigateLocationKey, PlayerLocation);
-		}
-
+		// 조명을 비추는 곳(플레이어 위치)을 최종목표지점으로 업데이트
+		DesiredTargetLocation = PlayerLocation;
+		
 		// 일정 시간 이상 조명이 비춰질 경우 실행
 		if (TotalExposedTime >= ChaseTriggerTime)
 		{
@@ -782,6 +784,11 @@ void AMonster::RemoveDetection(AActor* Actor)
 
 	// DetectedPlayers에 Actor가 없으면 return;
 	if (!DetectedPlayers.Remove(Actor)) return;
+
+	UE_LOG(LogTemp, Log, TEXT("[%s] RemoveDetection : %s | ArraySize: %d"),
+		*GetName(),
+		*Actor->GetName(),
+		DetectedPlayers.Num())
 
 	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor);
 	if (Player)

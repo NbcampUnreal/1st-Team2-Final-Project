@@ -25,7 +25,7 @@ EBTNodeResult::Type UBTTask_PerformAttack::ExecuteTask(UBehaviorTreeComponent& C
 
 	if (!TaskMemory->Monster.IsValid() || !TaskMemory->AIController.IsValid()) return EBTNodeResult::Failed;
 
-	TaskMemory->Monster->Attack();
+	TaskMemory->Monster->PlayAttackMontage();
 	TaskMemory->AIController->GetBlackboardComponent()->SetValueAsBool(bCanAttackKey, false);
 	
 	return EBTNodeResult::Succeeded;

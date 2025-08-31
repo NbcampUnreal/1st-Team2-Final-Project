@@ -84,7 +84,7 @@ void UBTTask_ChaseByState::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* No
 
 		for (const FAIStimulus& Stimulus : PerceptionInfo.LastSensedStimuli)
 		{
-			if (Stimulus.Type == UAISense::GetSenseID<UAISenseConfig_Sight>() &&
+			if (Stimulus.Type == UAISense::GetSenseID<UAISense_Sight>() &&
 				Stimulus.WasSuccessfullySensed())
 			{
 				bIsPlayerInSight = true;
