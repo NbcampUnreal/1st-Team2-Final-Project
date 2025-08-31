@@ -141,9 +141,5 @@ void UUnderwaterAnimInstance::UpdateLeanAngle()
 	}
 
 	ModifyYaw = FMath::FInterpTo(ModifyYaw, TargetRoll, GetWorld()->GetDeltaSeconds(), InterpSpeed);
-	if (bIsStrafing)
-	{
-		ModifyYaw = StrafeYaw;
-	}
 	// UE_LOG(LogTemp,Display,TEXT("ModifyRoll : %f"), ModifyRoll);
 }
