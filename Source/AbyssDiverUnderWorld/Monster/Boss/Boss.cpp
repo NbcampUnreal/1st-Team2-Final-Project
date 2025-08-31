@@ -18,7 +18,7 @@
 #include "Net/UnrealNetwork.h"
 #include "NavigationSystem.h"
 #include "NiagaraFunctionLibrary.h"
-#include "Enum/EPerceptionType.h"
+#include "Monster/EPerceptionType.h"
 #include "Framework/ADPlayerController.h"
 #include "Perception/AISense_Damage.h"
 #include "Interactable/OtherActors/Radars/RadarReturnComponent.h"

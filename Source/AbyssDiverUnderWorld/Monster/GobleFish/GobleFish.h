@@ -22,7 +22,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void FireProjectile();
 
-	virtual void PlayAttackMontage() override;
+	virtual void Attack() override;
 #pragma endregion
 
 #pragma region Variable

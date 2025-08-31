@@ -1,7 +1,7 @@
 #include "Monster/BT/Commons/BTTask_ChangePerceptionType.h"
 
 #include "Monster/Boss/Boss.h"
-#include "Monster/Boss/Enum/EPerceptionType.h"
+#include "Monster/EPerceptionType.h"
 
 UBTTask_ChangePerceptionType::UBTTask_ChangePerceptionType()
 {

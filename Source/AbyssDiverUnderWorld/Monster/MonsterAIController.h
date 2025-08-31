@@ -12,6 +12,7 @@
 #include "Navigation/PathFollowingComponent.h"
 #include "MonsterAIController.generated.h"
 
+enum class EPerceptionType : uint8;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AMonsterAIController : public AAIController
@@ -71,12 +72,13 @@ private:
 
 	static const FName bIsChasingKey;
 	static const FName TargetPlayerKey;
+	static const FName PerceptionTypeKey;
 
 #pragma endregion
 
 #pragma region Getter, Setter
 public:
 	void SetbIsLosingTarget(bool IsLosingTargetValue);
-
+	void SetBlackboardPerceptionType(EPerceptionType InPerceptionType);
 #pragma endregion
 };

@@ -5,7 +5,7 @@
 
 #include "Monster/Boss/Boss.h"
 #include "Monster/Boss/ENum/EBossState.h"
-#include "Monster/Boss/Enum/EPerceptionType.h"
+#include "Monster/EPerceptionType.h"
 
 #include "GameFramework/CharacterMovementComponent.h"
 

@@ -15,6 +15,7 @@
 
 const FName AMonsterAIController::TargetPlayerKey = "TargetPlayer";
 const FName AMonsterAIController::bIsChasingKey = "bIsChasing";
+const FName AMonsterAIController::PerceptionTypeKey = "EPerceptionType";
 
 AMonsterAIController::AMonsterAIController()
 {
@@ -41,10 +42,9 @@ void AMonsterAIController::BeginPlay()
 	Super::BeginPlay();
 	LoadSightDataFromTable();
 
-	UAIPerceptionComponent* Perception = FindComponentByClass<UAIPerceptionComponent>();
-	if (Perception)
+	if (AIPerceptionComponent)
 	{
-		Perception->OnTargetPerceptionUpdated.AddDynamic(this, &AMonsterAIController::OnTargetPerceptionUpdated);
+		AIPerceptionComponent->OnTargetPerceptionUpdated.AddDynamic(this, &AMonsterAIController::OnTargetPerceptionUpdated);
 	}
 }
 
@@ -124,3 +124,7 @@ void AMonsterAIController::SetbIsLosingTarget(bool IsLosingTargetValue)
 	}
 }
 
+void AMonsterAIController::SetBlackboardPerceptionType(EPerceptionType InPerceptionType)
+{
+	BlackboardComponent->SetValueAsEnum(PerceptionTypeKey, static_cast<uint8>(InPerceptionType));
+}

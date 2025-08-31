@@ -213,9 +213,6 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Stat")
 	float FourDirectionTraceDistance = 300.0f;
 	
-	UPROPERTY(EditDefaultsOnly, Category = "Boss|Stat")
-	uint8 bIsAttackInfinite : 1;
-	
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Camera")
 	TObjectPtr<UCameraControllerComponent> CameraControllerComponent;
 

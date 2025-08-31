@@ -36,7 +36,7 @@ EBTNodeResult::Type UBTTask_HorrorCreatureAttack::ExecuteTask(UBehaviorTreeCompo
 	{
 		if (AnimInst && AttackMontage && AnimInst->Montage_IsPlaying(AttackMontage))
 		{
-			// Already playing attack montage ¡æ Prevent duplicate execution
+			// Already playing attack montage ï¿½ï¿½ Prevent duplicate execution
 			return EBTNodeResult::Failed;
 		}
 	}
@@ -45,9 +45,9 @@ EBTNodeResult::Type UBTTask_HorrorCreatureAttack::ExecuteTask(UBehaviorTreeCompo
 	if (Monster->HasAuthority())
 	{
 		// Sync to Client
-		Monster->PlayAttackMontage();
+		Monster->Attack();
 
-		// Detect end of montage ¡æ End BTTask
+		// Detect end of montage ï¿½ï¿½ End BTTask
 		if (AnimInst)
 		{
 			// Defence logic. Delegate duplication prevention.

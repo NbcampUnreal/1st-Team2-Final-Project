@@ -44,7 +44,7 @@ void AGobleFish::FireProjectile()
 	}
 }
 
-void AGobleFish::PlayAttackMontage()
+void AGobleFish::Attack()
 {
 	// Initialize at Monster class BeginPlay
 	if (!AIController) return;
@@ -82,3 +82,4 @@ void AGobleFish::PlayAttackMontage()
 	}
 	else return;
 }
+

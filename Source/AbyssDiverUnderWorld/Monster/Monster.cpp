@@ -14,6 +14,7 @@
 #include "Interactable/OtherActors/Radars/RadarReturn2DComponent.h"
 #include "Monster/Components/AquaticMovementComponent.h"
 #include "Monster/Components/TickControlComponent.h"
+#include "Monster/EPerceptionType.h"
 
 const FName AMonster::MonsterStateKey = "MonsterState";
 const FName AMonster::InvestigateLocationKey = "InvestigateLocation";
@@ -489,17 +490,17 @@ void AMonster::PerformChasing(const float& InDeltaTime)
 
 void AMonster::Attack()
 {
-	//const uint8 AttackType = FMath::RandRange(0, AttackAnimations.Num() - 1);
+	const uint8 AttackType = FMath::RandRange(0, AttackAnimations.Num() - 1);
 
-	//if (IsValid(AttackAnimations[AttackType]))
-	//{
-	//	ChaseAccumulatedTime = 0.f;
-	//	AnimInstance->OnMontageEnded.RemoveDynamic(this, &AMonster::OnAttackMontageEnded);
-	//	AnimInstance->OnMontageEnded.AddDynamic(this, &AMonster::OnAttackMontageEnded);
-	//	M_PlayMontage(AttackAnimations[AttackType]);
-	//}
+	if (IsValid(AttackAnimations[AttackType]))
+	{
+		// ChaseAccumulatedTime = 0.f; PlayerChase Task에서 사용
+		AnimInstance->OnMontageEnded.RemoveDynamic(this, &AMonster::OnAttackMontageEnded);
+		AnimInstance->OnMontageEnded.AddDynamic(this, &AMonster::OnAttackMontageEnded);
+		M_PlayMontage(AttackAnimations[AttackType]);
+	}
 
-	//bIsAttacking = true;
+	bIsAttacking = true;
 }
 
 void AMonster::M_PlayMontage_Implementation(UAnimMontage* AnimMontage, float InPlayRate, FName StartSectionName)
@@ -635,17 +636,17 @@ void AMonster::OnMeshOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* O
 
 void AMonster::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
-	//if (!IsValid(EnhancedAIController)) return;
+	if (!IsValid(AIController)) return;
 
-	//if (bIsAttackInfinite)
-	//{
-	//	EnhancedAIController->GetBlackboardComponent()->SetValueAsBool("bHasAttacked", false);
-	//}
-	//else
-	//{
-	//	EnhancedAIController->GetBlackboardComponent()->SetValueAsBool("bHasDetectedPlayer", false);
-	//	EnhancedAIController->SetBlackboardPerceptionType(EPerceptionType::Finish);
-	//}
+	if (bIsAttackInfinite)
+	{
+		AIController->GetBlackboardComponent()->SetValueAsBool("bHasAttacked", false);
+	}
+	else
+	{
+		AIController->GetBlackboardComponent()->SetValueAsBool("bHasDetectedPlayer", false);
+		AIController->SetBlackboardPerceptionType(EPerceptionType::Finish);
+	}
 }
 
 void AMonster::ApplyPhysicsSimulation()
@@ -659,27 +660,6 @@ void AMonster::ApplyPhysicsSimulation()
 		MeshComp->SetCollisionProfileName(TEXT("Ragdoll"));
 		MeshComp->SetEnableGravity(true);
 		MeshComp->SetSimulatePhysics(true);
-	}
-}
-
-void AMonster::PlayAttackMontage()
-{
-	if (!HasAuthority()) return;
-
-	if (!AnimInstance) return;
-
-	// If any montage is playing, prevent duplicate playback
-	if (AnimInstance->IsAnyMontagePlaying()) return;
-	
-	const uint8 AttackType = FMath::RandRange(0, AttackAnimations.Num() - 1);
-
-	UAnimMontage* SelectedMontage = AttackAnimations[AttackType];
-
-	if (IsValid(SelectedMontage))
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Playing Attack Montage: %s"), *SelectedMontage->GetName());
-		M_PlayMontage(SelectedMontage);
-		CurrentAttackAnim = SelectedMontage;
 	}
 }
 
