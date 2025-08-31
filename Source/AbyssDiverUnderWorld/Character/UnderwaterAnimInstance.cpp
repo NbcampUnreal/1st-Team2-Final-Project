@@ -90,6 +90,8 @@ void UUnderwaterAnimInstance::UpdateVariables()
 	Direction = Velocity.Size2D() > KINDA_SMALL_NUMBER ? 
 		UKismetAnimationLibrary::CalculateDirection(Velocity, UnderwaterCharacter->GetActorRotation())
 		: 0.0f;
+
+	bIsStrafing = GetCurveValue(TEXT("IsStrafing")) > 0.5f;
 }
 
 void UUnderwaterAnimInstance::UpdateLeanAngle()
@@ -139,5 +141,9 @@ void UUnderwaterAnimInstance::UpdateLeanAngle()
 	}
 
 	ModifyYaw = FMath::FInterpTo(ModifyYaw, TargetRoll, GetWorld()->GetDeltaSeconds(), InterpSpeed);
+	if (bIsStrafing)
+	{
+		ModifyYaw = StrafeYaw;
+	}
 	// UE_LOG(LogTemp,Display,TEXT("ModifyRoll : %f"), ModifyRoll);
 }

@@ -37,6 +37,12 @@ protected:
 	
 #pragma region Variable
 
+public:
+	
+	/** Strafing 적용 여부. Strafing Mode일 경우 직립 상태로만 이동한다. */
+	UPROPERTY(BlueprintReadWrite)
+	uint8 bIsStrafing : 1;
+	
 protected:
 	
 	/** Character 약참조 */
@@ -99,10 +105,6 @@ protected:
 	UPROPERTY(BlueprintReadOnly)
 	uint8 bIsDead : 1;
 
-	/** Strafing 적용 여부. Strafing Mode일 경우 직립 상태로만 이동한다. */
-	UPROPERTY(BlueprintReadOnly)
-	uint8 bIsStrafing : 1;
-
 	/** 모델의 경우 언리얼의 XYZ 좌표계와 다르기 때문에 Pitch에 적용할 경우 Yaw에 적용된다. */
 	UPROPERTY(BlueprintReadOnly)
 	float ModifyPitch;
@@ -110,6 +112,9 @@ protected:
 	/** 모델의 경우 언리얼의 XYZ 좌표계와 다르기 때문에 Yaw에 적용할 경우 Pitch에 적용된다. */
 	UPROPERTY(BlueprintReadOnly)
 	float ModifyYaw;
+
+	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly)
+	float StrafeYaw = 15.0f;
 	
 	/** Lean을 적용할 최소 속도, 크롤로 움직일 시점부터 Lean을 적용해야 한다. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
