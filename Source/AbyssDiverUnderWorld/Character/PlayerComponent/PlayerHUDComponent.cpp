@@ -562,3 +562,8 @@ USoundSubsystem* UPlayerHUDComponent::GetSoundSubsystem()
 
 	return SoundSubsystem;
 }
+
+UPlayerStatusWidget* UPlayerHUDComponent::GetPlayerStatusWidget()
+{
+	return PlayerStatusWidget;
+}

@@ -11,8 +11,10 @@
 #include "Projectile/ADSpearGunBullet.h"
 #include "UI/WarningWidget.h"
 #include "UI/NoticeWidget.h"
+#include "UI/DepthWidget.h"
 #include "Framework/ADPlayerState.h"
 #include "Framework/ADInGameState.h"
+#include "Character/UnderwaterCharacter.h"
 
 const FName UPlayerStatusWidget::OnNextPhaseAnimFinishedName = TEXT("OnNextPhaseAnimFinished");
 const int32 UPlayerStatusWidget::MaxPhaseNumber = 3;
@@ -275,6 +277,27 @@ void UPlayerStatusWidget::SetCurrentPhaseOverlayVisible(bool bShouldVisible)
 void UPlayerStatusWidget::SetSpearGunTypeImage(int8 TypeNum)
 {
     SpearGunTypeImage->SetBrushFromTexture(SpearGunTypeImages[TypeNum], true);
+}
+
+void UPlayerStatusWidget::OnChangedEnvironment(bool bIsUnderwater)
+{
+    if (!DepthWidget) return;
+    if (bIsUnderwater)
+    {
+        DepthWidget->PlayOpenCloseAnim(true);
+        DepthWidget->SetVisibility(ESlateVisibility::Visible);
+        LOGV(Warning, TEXT("Underwater Visible"));
+    }
+    else
+    {
+        DepthWidget->PlayOpenCloseAnim(false);
+        FTimerHandle AnimationDelayTimerHandle;
+        float AnimationDelay = DepthWidget->GetCloseAnimLength();
+        GetWorld()->GetTimerManager().SetTimer(AnimationDelayTimerHandle, [this]() { 
+            DepthWidget->SetVisibility(ESlateVisibility::Hidden);
+            LOGV(Warning, TEXT("Ground Hidden"));
+        }, AnimationDelay, false);
+    }
 }
 
 void UPlayerStatusWidget::OnNextPhaseAnimFinished()
