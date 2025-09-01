@@ -39,7 +39,7 @@ void UNameWidgetComponent::BeginPlay()
 
 	if (UUserWidget* UserWidget = GetUserWidgetObject())
 	{
-		UserWidget->SetVisibility(bIsVisible ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+		UserWidget->SetVisibility(bIsEnabled ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 	}
 }
 
