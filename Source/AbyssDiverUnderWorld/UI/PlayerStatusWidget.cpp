@@ -13,6 +13,8 @@
 #include "UI/NoticeWidget.h"
 #include "Framework/ADPlayerState.h"
 #include "Framework/ADInGameState.h"
+#include "Kismet/GameplayStatics.h"
+#include "Framework/ADTutorialGameMode.h"
 
 const FName UPlayerStatusWidget::OnNextPhaseAnimFinishedName = TEXT("OnNextPhaseAnimFinished");
 const int32 UPlayerStatusWidget::MaxPhaseNumber = 3;
@@ -230,6 +232,11 @@ void UPlayerStatusWidget::SetMoneyProgressBar(float InPercent)
 
 void UPlayerStatusWidget::PlayNextPhaseAnim(int32 NextPhaseNumber)
 {
+    if (Cast<AADTutorialGameMode>(UGameplayStatics::GetGameMode(GetWorld())))
+    {
+        return;
+    }
+
     // 나중에 테이블로 텍스트 정리할수도?
     if (NextPhaseNumber > MaxPhaseNumber)
     {
