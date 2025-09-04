@@ -283,8 +283,12 @@ public:
 	/** 관전 당하는 것이 끝났을 때 호출되는 함수 */
 	void OnEndSpectated();
 
-	/** 감정 표현 재생 요청 */
-	void RequestPlayEmote(int8 EmoteIndex);
+	/** 감정 표현 재생 요청
+	 * EmoteIndex : 0 ~ n - 1 (EmoteAnimationMontages 배열의 인덱스)
+	 * Emote 재생이 가능할 경우에만 재생.
+	 */
+	UFUNCTION(BlueprintCallable)
+	void RequestPlayEmote(int32 EmoteIndex);
 	
 protected:
 

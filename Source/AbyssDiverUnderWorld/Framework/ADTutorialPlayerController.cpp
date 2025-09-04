@@ -91,11 +91,6 @@ void AADTutorialPlayerController::CheckTutorialObjective(const FInputActionValue
 	ETutorialPhase CurrentPhase = TutorialGS->GetCurrentPhase();
 	bool bObjectiveMet = false;
 
-	if (SourceAction == InteractAction && (CurrentPhase == ETutorialPhase::Step7_Drone || CurrentPhase == ETutorialPhase::Step15_Resurrection))
-	{
-		bObjectiveMet = true;
-	}
-
 	if (bObjectiveMet)
 	{
 		if (AADTutorialGameMode* GM = GetWorld()->GetAuthGameMode<AADTutorialGameMode>())
@@ -129,18 +124,20 @@ void AADTutorialPlayerController::OnInteractStarted(const FInputActionValue& Val
 	if (!IsValid(CachedTutorialManager)) return;
 
 	AADTutorialGameState* GS = GetWorld()->GetGameState<AADTutorialGameState>();
-	if (GS && CachedTutorialManager->IsGaugeObjectiveActive())
+	if (GS)
 	{
-		ETutorialPhase CurrentPhase = GS->GetCurrentPhase();
-		if (CurrentPhase == ETutorialPhase::Step13_Revive)
+		const ETutorialPhase Current = GS->GetCurrentPhase();
+
+		if (Current == ETutorialPhase::Step13_Revive
+			|| Current == ETutorialPhase::Step14_Die
+			|| Current == ETutorialPhase::Step11_Drop)
 		{
 			CachedTutorialManager->NotifyInteractionStart();
+			return; 
 		}
 	}
-	else
-	{
-		CheckTutorialObjective(Value, InteractAction);
-	}
+
+	CheckTutorialObjective(Value, InteractAction);
 }
 
 void AADTutorialPlayerController::OnInteractCompleted(const FInputActionValue& Value)
