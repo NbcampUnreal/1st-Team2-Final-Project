@@ -3,8 +3,9 @@
 #include "AbyssDiverUnderWorld.h"
 
 #include "Monster/Boss/Boss.h"
-#include "Monster/Boss/ENum/EBossState.h"
+//#include "Monster/Boss/ENum/EBossState.h"
 #include "Monster/EPerceptionType.h"
+#include "Monster/MonsterAIController.h"
 
 UBTTask_Damaged::UBTTask_Damaged()
 {
@@ -22,12 +23,12 @@ EBTNodeResult::Type UBTTask_Damaged::ExecuteTask(UBehaviorTreeComponent& Comp, u
 	FBTDamagedTaskMemory* TaskMemory = (FBTDamagedTaskMemory*)NodeMemory;
 	if (!TaskMemory) return EBTNodeResult::Failed;
 
-	TaskMemory->AIController = Cast<AEnhancedBossAIController>(Comp.GetAIOwner());
+	TaskMemory->AIController = Cast<AMonsterAIController>(Comp.GetAIOwner());
 	TaskMemory->Boss = Cast<ABoss>(Comp.GetAIOwner()->GetCharacter());
 	
 	if (!TaskMemory->Boss.IsValid() || !TaskMemory->AIController.IsValid()) return EBTNodeResult::Failed;
 
-	TaskMemory->Boss->SetBossState(EBossState::Idle);
+	TaskMemory->Boss->SetMonsterState(EMonsterState::Idle);
 	
 	TaskMemory->AccumulatedTime = 0.0f;
 	TaskMemory->FinishTaskInterval = FMath::RandRange(MinRotationTime, MaxRotationTime);

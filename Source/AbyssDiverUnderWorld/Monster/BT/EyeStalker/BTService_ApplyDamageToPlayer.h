@@ -2,12 +2,13 @@
 
 #include "CoreMinimal.h"
 #include "BehaviorTree/Services/BTService_BlackboardBase.h"
+
 #include "BTService_ApplyDamageToPlayer.generated.h"
 
 struct FApplyDamageToPlayerMemory
 {
-	TWeakObjectPtr<class ABoss> Boss;
-	TWeakObjectPtr<class AEyeStalkerAIController> AIController;
+	TWeakObjectPtr<class AMonster> Monster;
+	TWeakObjectPtr<class AMonsterAIController> AIController;
 	uint8 bIsDamageApplied : 1 = false;
 };
 

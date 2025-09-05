@@ -2,16 +2,16 @@
 
 #include "CoreMinimal.h"
 #include "BehaviorTree/Tasks/BTTask_BlackboardBase.h"
-#include "Monster/Boss/EnhancedBossAIController.h"
+
 #include "BTTask_EnhancedAttack.generated.h"
 
 struct FBTEnhancedAttackTaskMemory
 {
 	/** 빙의한 AIController에 대한 참조 */
-	TWeakObjectPtr<AEnhancedBossAIController> AIController;
+	TWeakObjectPtr<class AMonsterAIController> AIController;
 
 	/** AIController의 주체에 대한 참조 */
-	TWeakObjectPtr<ABoss> Boss;
+	TWeakObjectPtr<class AMonster> Monster;
 
 	/** 노드에 할당된 블랙보드 키 이름 */
 	FName BlackboardKeyName;

@@ -3,7 +3,9 @@
 // AquaticMovementComponent.cpp
 
 #include "Monster/Components/AquaticMovementComponent.h"
-#include "GameFramework/Character.h"
+
+#include "Character/UnderwaterCharacter.h"
+
 #include "Components/SkeletalMeshComponent.h"
 #include "DrawDebugHelpers.h"
 #include "Kismet/GameplayStatics.h"
@@ -38,9 +40,16 @@ void UAquaticMovementComponent::BeginPlay()
     Super::BeginPlay();
 
     OwnerCharacter = Cast<ACharacter>(GetOwner());
+    if (OwnerCharacter->HasAuthority() == false)
+    {
+        SetComponentTickEnabled(false);
+	    return;
+    }
+
     if (OwnerCharacter)
     {
         InitComponent(OwnerCharacter);
+        AvoidanceTraceParams.AddIgnoredActor(OwnerCharacter);
     }
 
     LocalPlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
@@ -317,8 +326,13 @@ FVector UAquaticMovementComponent::CalculateAvoidanceForce()
         FVector RayStart = CurrentLocation;
         FVector RayEnd = RayStart + RayDirection * ObstacleDetectionRange;
 
-        if (GetWorld()->LineTraceSingleByChannel(Hit, RayStart, RayEnd, ECC_WorldStatic))
+        if (GetWorld()->LineTraceSingleByChannel(Hit, RayStart, RayEnd, ECC_WorldStatic, AvoidanceTraceParams))
         {
+            if(Hit.GetActor()->IsA<AUnderwaterCharacter>())
+            {
+                continue; // 플레이어 캐릭터는 무시
+			}
+
             float Distance = Hit.Distance;
             float BaseAvoidanceStrength = 1.0f - (Distance / ObstacleDetectionRange);
             
@@ -883,6 +897,12 @@ void UAquaticMovementComponent::StopMovement()
     TargetLocation = FVector::ZeroVector;
 
     // 부드러운 정지를 위해 현재 속도는 감속을 통해 줄어들도록 함
+}
+
+void UAquaticMovementComponent::StopMovementImmediately()
+{
+    StopMovement();
+    CurrentVelocity = FVector::ZeroVector;
 }
 
 void UAquaticMovementComponent::ClearAvoidanceLocations()

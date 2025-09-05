@@ -4,7 +4,7 @@
 #include "Character/UnderwaterCharacter.h"
 
 #include "Monster/Boss/Boss.h"
-#include "Monster/Boss/ENum/EBossState.h"
+//#include "Monster/Boss/ENum/EBossState.h"
 
 // ----- 기능 -----
 // 1. AI의 이동을 멈춘다.
@@ -36,7 +36,7 @@ EBTNodeResult::Type UBTTask_PlayerDetected::ExecuteTask(UBehaviorTreeComponent& 
 	
 	if (!TaskMemory->Boss.IsValid() || !TaskMemory->AIController.IsValid()) return EBTNodeResult::Failed;
 	
-	TaskMemory->Boss->SetBossState(EBossState::Idle);
+	TaskMemory->Boss->SetMonsterState(EMonsterState::Idle);
 	
 	TaskMemory->AccumulatedTime = 0.f;
 	

@@ -1,8 +1,8 @@
 #include "Monster/BT/EyeStalker/BTService_ApplyDamageToPlayer.h"
 
-#include "Monster/Boss/Boss.h"
-#include "Monster/Boss/EnhancedBossAIController.h"
-#include "Monster/Boss/EyeStalker/EyeStalkerAIController.h"
+#include "Monster/Monster.h"
+//#include "Monster/Boss/EnhancedBossAIController.h"
+#include "Monster/MonsterAIController.h"
 
 #include "Character/UnderwaterCharacter.h"
 
@@ -24,10 +24,10 @@ void UBTService_ApplyDamageToPlayer::OnBecomeRelevant(UBehaviorTreeComponent& Ow
 	FApplyDamageToPlayerMemory* TaskMemory = (FApplyDamageToPlayerMemory*)NodeMemory;
 	if (!TaskMemory) return;
 
-	TaskMemory->AIController = Cast<AEyeStalkerAIController>(OwnerComp.GetAIOwner());
-	TaskMemory->Boss = Cast<ABoss>(OwnerComp.GetAIOwner()->GetCharacter());
+	TaskMemory->AIController = Cast<AMonsterAIController>(OwnerComp.GetAIOwner());
+	TaskMemory->Monster = Cast<AMonster>(OwnerComp.GetAIOwner()->GetCharacter());
 
-	if (!TaskMemory->AIController.IsValid() || !TaskMemory->Boss.IsValid()) return;
+	if (!TaskMemory->AIController.IsValid() || !TaskMemory->Monster.IsValid()) return;
 
 	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(TaskMemory->AIController->GetBlackboardComponent()->GetValueAsObject("TargetPlayer"));
 	if (!IsValid(Player) || !Player->IsAlive()) return;
@@ -53,7 +53,7 @@ void UBTService_ApplyDamageToPlayer::TickNode(UBehaviorTreeComponent& OwnerComp,
 		Player,
 		AttackPower,
 		TaskMemory->AIController.Get(),
-		TaskMemory->Boss.Get(),
+		TaskMemory->Monster.Get(),
 		UDamageType::StaticClass()
 	);
 }

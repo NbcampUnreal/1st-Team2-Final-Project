@@ -4,13 +4,13 @@
 #include "BehaviorTree/Tasks/BTTask_BlackboardBase.h"
 #include "BTTask_LimadonIdle.generated.h"
 
-class ABossAIController;
+class AMonsterAIController;
 class ALimadon;
 
 struct FBTLimadonIdleTaskMemory
 {
 	TWeakObjectPtr<ALimadon> Limadon;
-	TWeakObjectPtr<ABossAIController> AIController;
+	TWeakObjectPtr<AMonsterAIController> AIController;
 	FTimerHandle DamageHandle;
 	float AccumulatedTime;
 };
