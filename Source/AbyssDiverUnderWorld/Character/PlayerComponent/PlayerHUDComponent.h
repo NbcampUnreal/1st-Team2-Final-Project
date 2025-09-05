@@ -158,6 +158,7 @@ public:
 
     UMissionsOnHUDWidget* GetMissionsOnHudWidget() const;
     USoundSubsystem* GetSoundSubsystem();
+    UPlayerStatusWidget* GetPlayerStatusWidget() ;
 
 #pragma endregion
 };
