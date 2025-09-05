@@ -1,6 +1,6 @@
 #include "Monster/BT/EyeStalker/BTTask_EyeStalkerDetected.h"
 
-#include "Monster/Boss/Effect/PostProcessSettingComponent.h"
+#include "Monster/Effect/PostProcessSettingComponent.h"
 #include "Monster/Boss/EyeStalker/EyeStalker.h"
 #include "Monster/Boss/EyeStalker/EyeStalkerAIController.h"
 

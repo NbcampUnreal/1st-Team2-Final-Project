@@ -1,19 +1,21 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Animation/AnimNotifies/AnimNotify.h"
-#include "AnimNotify_BossAttack.generated.h"
+#include "AnimNotify_MonsterDefaultAttack.generated.h"
 
 class UCapsuleComponent;
 
 UCLASS()
-class ABYSSDIVERUNDERWORLD_API UAnimNotify_BossAttack : public UAnimNotify
+class ABYSSDIVERUNDERWORLD_API UAnimNotify_MonsterDefaultAttack : public UAnimNotify
 {
 	GENERATED_BODY()
-
-public:
-	UAnimNotify_BossAttack();
 	
+public:
+	UAnimNotify_MonsterDefaultAttack();
+
 public:
 	virtual void Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, const FAnimNotifyEventReference& EventReference) override;
 

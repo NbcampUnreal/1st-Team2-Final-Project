@@ -9,7 +9,6 @@
 #include "Character/StatComponent.h"
 #include "Character/UnderwaterCharacter.h"
 #include "Components/CapsuleComponent.h"
-#include "Effect/CameraControllerComponent.h"
 #include "Engine/DamageEvents.h"
 #include "Engine/TargetPoint.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -45,8 +44,6 @@ ABoss::ABoss()
 	bIsAttackInfinite = true;
 	
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
-
-	CameraControllerComponent = CreateDefaultSubobject<UCameraControllerComponent>("Camera Controller Component");
 
 	//// 새로운 물리 기반 수중 이동 컴포넌트 초기화
 	//AquaticMovementComponent = CreateDefaultSubobject<UAquaticMovementComponent>("Aquatic Movement Component");
@@ -294,8 +291,7 @@ void ABoss::Attack()
 
 void ABoss::OnAttackEnded()
 {
-	bIsAttacking = false; 
-	AttackedPlayers.Empty();
+	Super::OnAttackEnded();
 }
 
 void ABoss::SetMoveSpeed(const float& SpeedMultiplier)
@@ -328,50 +324,6 @@ void ABoss::M_OnDeath_Implementation()
 	// 피직스 에셋 물리엔진 적용
 	FTimerHandle TimerHandle;
 	GetWorldTimerManager().SetTimer(TimerHandle, this, &ABoss::ApplyPhysicsSimulation, 0.5f, false);
-}
-
-void ABoss::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted)
-{
-	if (!IsValid(EnhancedAIController)) return;
-	
-	if (bIsAttackInfinite)
-	{
-		EnhancedAIController->GetBlackboardComponent()->SetValueAsBool("bHasAttacked", false);
-	}
-	else
-	{
-		EnhancedAIController->GetBlackboardComponent()->SetValueAsBool("bHasDetectedPlayer", false);
-		EnhancedAIController->SetBlackboardPerceptionType(EPerceptionType::Finish);	
-	}
-}
-
-void ABoss::OnMeshOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
-                               int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
-{
-	// 사망 상태면 얼리 리턴
-	if (MonsterState == EMonsterState::Death) return;
-
-	// 공격 가능한 상태가 아니라면 리턴
-	if (!bIsAttacking) return;
-	
-	// 공격 대상이 플레이어가 아닌 경우 얼리 리턴
-	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(OtherActor);
-	if (!IsValid(Player)) return;
-
-	// 해당 플레이어가 이미 공격받은 상태인 경우 얼리 리턴
-	if (AttackedPlayers.Contains(Player)) return;
-
-	// 공격받은 대상 리스트에 플레이어 추가
-	AttackedPlayers.Add(Player);
-
-	// 해당 플레이어에게 데미지 적용
-	UGameplayStatics::ApplyDamage(Player, StatComponent->AttackPower, GetController(), this, UDamageType::StaticClass());
-
-	// 피격당한 플레이어의 카메라 Shake
-	CameraControllerComponent->ShakePlayerCamera(Player, AttackedCameraShakeScale);
-
-	// 캐릭터 넉백
-	LaunchPlayer(Player, LaunchPower);
 }
 
 //void ABoss::DeathToRaderOff()

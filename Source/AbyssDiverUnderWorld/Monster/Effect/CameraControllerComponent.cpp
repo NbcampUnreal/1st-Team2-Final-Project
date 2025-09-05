@@ -1,4 +1,4 @@
-#include "Monster/Boss/Effect/CameraControllerComponent.h"
+#include "Monster/Effect/CameraControllerComponent.h"
 #include "Character/UnderwaterCharacter.h"
 #include "Kismet/GameplayStatics.h"
 

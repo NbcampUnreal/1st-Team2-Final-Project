@@ -1,6 +1,6 @@
 #include "Monster/Boss/EyeStalker/EyeStalkerAIController.h"
 
-#include "Monster/Boss/Effect/PostProcessSettingComponent.h"
+#include "Monster/Effect/PostProcessSettingComponent.h"
 #include "Character/UnderwaterCharacter.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISense_Sight.h"
