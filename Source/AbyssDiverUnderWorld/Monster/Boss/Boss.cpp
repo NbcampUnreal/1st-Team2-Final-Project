@@ -2,7 +2,6 @@
 #include "AbyssDiverUnderWorld.h"
 #include "EngineUtils.h"
 #include "EnhancedBossAIController.h"
-#include "NavigationPath.h"
 #include "Enum/EBossPhysicsType.h"
 #include "Enum/EBossState.h"
 #include "BehaviorTree/BlackboardComponent.h"
@@ -13,12 +12,11 @@
 #include "Engine/TargetPoint.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
-#include "Navigation/PathFollowingComponent.h"
 #include "Net/UnrealNetwork.h"
-#include "NavigationSystem.h"
 #include "NiagaraFunctionLibrary.h"
 #include "Monster/EPerceptionType.h"
 #include "Framework/ADPlayerController.h"
+#include "Container/BlackboardKeys.h"
 #include "Perception/AISense_Damage.h"
 #include "Interactable/OtherActors/Radars/RadarReturnComponent.h"
 #include "Monster/Components/AquaticMovementComponent.h"
@@ -71,7 +69,7 @@ void ABoss::BeginPlay()
 	// 블랙보드의 TargetLocation 초기화 (Invalid 방지)
 	if (EnhancedAIController && EnhancedAIController->GetBlackboardComponent())
 	{
-		EnhancedAIController->GetBlackboardComponent()->SetValueAsVector("TargetLocation", GetActorLocation());
+		EnhancedAIController->GetBlackboardComponent()->SetValueAsVector(BlackboardKeys::TargetLocationKey, GetActorLocation());
 	}
 
 	GetCharacterMovement()->MaxSwimSpeed = StatComponent->GetMoveSpeed();

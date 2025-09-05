@@ -4,13 +4,11 @@
 #include "Character/UnderwaterCharacter.h"
 
 #include "Monster/Monster.h"
-//#include "Monster/Boss/ENum/EBossState.h"
 #include "Monster/EPerceptionType.h"
+#include "Container/BlackboardKeys.h"
 #include "Monster/Boss/EnhancedBossAIController.h"
 
 #include "GameFramework/CharacterMovementComponent.h"
-
-const FName UBTTask_PlayerChase::bIsPlayerHiddenKey = "bIsPlayerHidden";
 
 UBTTask_PlayerChase::UBTTask_PlayerChase()
 {
@@ -98,7 +96,7 @@ void UBTTask_PlayerChase::TickTask(UBehaviorTreeComponent& Comp, uint8* NodeMemo
 			// 플레이어가 해초 더미 속에 숨은 경우
 			if (Player->IsHideInSeaweed())
 			{
-				TaskMemory->AIController->GetBlackboardComponent()->SetValueAsBool(bIsPlayerHiddenKey, true);
+				TaskMemory->AIController->GetBlackboardComponent()->SetValueAsBool(BlackboardKeys::bIsPlayerHiddenKey, true);
 				LOG(TEXT("Player is hiding in seaweed, stopping chase."));
 			}	
 		}

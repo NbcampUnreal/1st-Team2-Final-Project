@@ -3,6 +3,8 @@
 
 #include "Monster/BT/Commons/BTTask_ChaseByState.h"
 
+#include "Container/BlackboardKeys.h"
+
 #include "Monster/Monster.h"
 #include "Monster/MonsterAIController.h"
 
@@ -10,11 +12,6 @@
 
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISense_Sight.h"
-
-const FName UBTTask_ChaseByState::MonsterStateKey = "MonsterState";
-const FName UBTTask_ChaseByState::bCanAttackKey = "bCanAttack";
-const FName UBTTask_ChaseByState::bIsPlayerHiddenKey = "bIsPlayerHidden";
-const FName UBTTask_ChaseByState::TargetPlayerKey = "TargetPlayer";
 
 UBTTask_ChaseByState::UBTTask_ChaseByState()
 {
@@ -47,7 +44,7 @@ void UBTTask_ChaseByState::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* No
 	FBTChaseByStateTaskMemory* TaskMemory = (FBTChaseByStateTaskMemory*)NodeMemory;
 	if (!TaskMemory) return;
 
-	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(TaskMemory->AIController->GetBlackboardComponent()->GetValueAsObject(TargetPlayerKey));
+	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(TaskMemory->AIController->GetBlackboardComponent()->GetValueAsObject(BlackboardKeys::TargetPlayerKey));
 
 	// 타겟 플레이어가 유효하지 않는 경우
 	if (!IsValid(Player))
@@ -70,7 +67,7 @@ void UBTTask_ChaseByState::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* No
 	if (!TaskMemory->bHasAttacked && TaskMemory->Monster->GetIsAttackCollisionOverlappedPlayer())
 	{
 		TaskMemory->bHasAttacked = true;
-		TaskMemory->AIController->GetBlackboardComponent()->SetValueAsBool(bCanAttackKey, true);
+		TaskMemory->AIController->GetBlackboardComponent()->SetValueAsBool(BlackboardKeys::bCanAttackKey, true);
 	}
 
 	// 추적 중인 플레이어가 시야에서 벗어났는지 확인.
@@ -96,7 +93,7 @@ void UBTTask_ChaseByState::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* No
 		{
 			if (Player->IsHideInSeaweed())
 			{
-				TaskMemory->AIController->GetBlackboardComponent()->SetValueAsBool(bIsPlayerHiddenKey, true);
+				TaskMemory->AIController->GetBlackboardComponent()->SetValueAsBool(BlackboardKeys::bIsPlayerHiddenKey, true);
 				TaskMemory->Monster->RemoveDetection(Player);
 				FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 				return;

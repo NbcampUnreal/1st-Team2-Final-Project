@@ -9,15 +9,9 @@
 #include "Monster/Monster.h"
 #include "Monster/Components/AquaticMovementComponent.h"
 #include "GenericTeamAgentInterface.h"
-#include "Navigation/PathFollowingComponent.h"
-#include "NavigationSystem.h"
 #include "Monster/HorrorCreature/HorrorCreature.h"
 #include "AbyssDiverUnderWorld.h"
-
-const FName AMonsterAIController::TargetPlayerKey = "TargetPlayer";
-const FName AMonsterAIController::bIsChasingKey = "bIsChasing";
-const FName AMonsterAIController::PerceptionTypeKey = "EPerceptionType";
-const FName AMonsterAIController::MonsterStateKey = "MonsterState";
+#include "Container/BlackboardKeys.h"
 
 AMonsterAIController::AMonsterAIController()
 {
@@ -153,10 +147,10 @@ void AMonsterAIController::SetbIsLosingTarget(bool IsLosingTargetValue)
 
 void AMonsterAIController::SetBlackboardPerceptionType(EPerceptionType InPerceptionType)
 {
-	BlackboardComponent->SetValueAsEnum(PerceptionTypeKey, static_cast<uint8>(InPerceptionType));
+	BlackboardComponent->SetValueAsEnum(BlackboardKeys::PerceptionTypeKey, static_cast<uint8>(InPerceptionType));
 }
 
 bool AMonsterAIController::IsStateSame(EMonsterState State)
 {
-	return (GetBlackboardComponent()->GetValueAsEnum(MonsterStateKey) == static_cast<uint8>(State));
+	return (GetBlackboardComponent()->GetValueAsEnum(BlackboardKeys::MonsterStateKey) == static_cast<uint8>(State));
 }

@@ -12,22 +12,13 @@
 #include "Character/UnderwaterCharacter.h"
 #include "Components/CapsuleComponent.h"
 #include "Monster/Effect/CameraControllerComponent.h"
+#include "Container/BlackboardKeys.h"
 #include "Kismet/GameplayStatics.h"
 #include "Interactable/OtherActors/Radars/RadarReturn2DComponent.h"
 
 #include "Monster/Components/AquaticMovementComponent.h"
 #include "Monster/Components/TickControlComponent.h"
 #include "Monster/EPerceptionType.h"
-
-
-#include "BehaviorTree/Blackboard/BlackboardKeyType_Object.h"
-
-const FName AMonster::MonsterStateKey = "MonsterState";
-const FName AMonster::InvestigateLocationKey = "InvestigateLocation";
-const FName AMonster::PatrolLocationKey = "PatrolLocation";
-const FName AMonster::TargetPlayerKey = "TargetPlayer";
-const FName AMonster::TargetLocationKey = "TargetLocation";
-const FName AMonster::bIsChasingKey = "bIsChasing";
 
 AMonster::AMonster()
 {
@@ -106,7 +97,7 @@ void AMonster::BeginPlay()
 		BlackboardComponent = AIController->GetBlackboardComponent();
 		if (BlackboardComponent)
 		{
-			BlackboardComponent->SetValueAsVector(TargetLocationKey, GetActorLocation());
+			BlackboardComponent->SetValueAsVector(BlackboardKeys::TargetLocationKey, GetActorLocation());
 			ApplyMonsterStateChange(EMonsterState::Patrol);
 		}
 	}
@@ -172,7 +163,7 @@ void AMonster::SetNewTargetLocation()
 	// TargetPlayer 존재 여부 확인
 	const bool bHasTargetPlayer = AIController &&
 		AIController->GetBlackboardComponent() &&
-		AIController->GetBlackboardComponent()->GetValueAsObject(TargetPlayerKey) != nullptr;
+		AIController->GetBlackboardComponent()->GetValueAsObject(BlackboardKeys::TargetPlayerKey) != nullptr;
 
 	// 순찰 시 회전 제한, 그러나 배회를 위해 전방향도 가능
 	const float MaxHorizontalAngle = 180.0f;//bHasTargetPlayer ? 90.0f : 60.0f;
@@ -227,7 +218,7 @@ void AMonster::SetNewTargetLocation()
 			// 블랙보드의 TargetLocation 업데이트
 			if (AIController && AIController->GetBlackboardComponent())
 			{
-				AIController->GetBlackboardComponent()->SetValueAsVector(TargetLocationKey, DesiredTargetLocation);
+				AIController->GetBlackboardComponent()->SetValueAsVector(BlackboardKeys::TargetLocationKey, DesiredTargetLocation);
 			}
 
 #if WITH_EDITOR
@@ -277,7 +268,7 @@ void AMonster::SetNewTargetLocation()
 			// 블랙보드의 TargetLocation 업데이트
 			if (AIController && AIController->GetBlackboardComponent())
 			{
-				AIController->GetBlackboardComponent()->SetValueAsVector(TargetLocationKey, DesiredTargetLocation);
+				AIController->GetBlackboardComponent()->SetValueAsVector(BlackboardKeys::TargetLocationKey, DesiredTargetLocation);
 			}
 
 #if WITH_EDITOR
@@ -305,7 +296,7 @@ void AMonster::SetNewTargetLocation()
 	// 블랙보드의 TargetLocation 업데이트
 	if (AIController && AIController->GetBlackboardComponent())
 	{
-		AIController->GetBlackboardComponent()->SetValueAsVector(TargetLocationKey, DesiredTargetLocation);
+		AIController->GetBlackboardComponent()->SetValueAsVector(BlackboardKeys::TargetLocationKey, DesiredTargetLocation);
 	}
 
 	DrawDebugSphere(GetWorld(), DesiredTargetLocation, 50.0f, 12, FColor::Red, false, 3.0f, 0, 5.0f);
@@ -387,7 +378,7 @@ void AMonster::PerformNormalMovement(const float& InDeltaTime)
 		// 블랙보드의 TargetLocation을 보간된 값으로 업데이트
 		if (AIController && AIController->GetBlackboardComponent())
 		{
-			AIController->GetBlackboardComponent()->SetValueAsVector(TargetLocationKey, InterpolatedTargetLocation);
+			AIController->GetBlackboardComponent()->SetValueAsVector(BlackboardKeys::TargetLocationKey, InterpolatedTargetLocation);
 		}
 
 #if WITH_EDITOR
@@ -479,7 +470,7 @@ void AMonster::PerformChasing(const float& InDeltaTime)
 	// 블랙보드의 TargetLocation을 보간된 값으로 업데이트 (추적 시에는 플레이어 위치)
 	if (AIController && AIController->GetBlackboardComponent())
 	{
-		AIController->GetBlackboardComponent()->SetValueAsVector(TargetLocationKey, InterpolatedTargetLocation);
+		AIController->GetBlackboardComponent()->SetValueAsVector(BlackboardKeys::TargetLocationKey, InterpolatedTargetLocation);
 	}
 
 	// 추적 속도 설정
@@ -782,7 +773,7 @@ void AMonster::AddDetection(AActor* Actor)
 
 		if (BlackboardComponent)
 		{
-			BlackboardComponent->SetValueAsObject(TargetPlayerKey, TargetPlayer.Get());
+			BlackboardComponent->SetValueAsObject(BlackboardKeys::TargetPlayerKey, TargetPlayer.Get());
 			ApplyMonsterStateChange(EMonsterState::Chase);
 		}
 	}
@@ -821,7 +812,7 @@ void AMonster::RemoveDetection(AActor* Actor)
 
 		if (BlackboardComponent)
 		{
-			BlackboardComponent->ClearValue(TargetPlayerKey);
+			BlackboardComponent->ClearValue(BlackboardKeys::TargetPlayerKey);
 		}
 
 		// 후보가 없으면 바로 Patrol (루프 스킵)
@@ -845,7 +836,7 @@ void AMonster::RemoveDetection(AActor* Actor)
 
 				if (BlackboardComponent)
 				{
-					BlackboardComponent->SetValueAsObject(TargetPlayerKey, TargetPlayer.Get());
+					BlackboardComponent->SetValueAsObject(BlackboardKeys::TargetPlayerKey, TargetPlayer.Get());
 				}
 				return;
 			}
@@ -890,7 +881,7 @@ void AMonster::ForceRemoveDetectedPlayers()
 	InitTarget();
 	if (BlackboardComponent)
 	{
-		BlackboardComponent->ClearValue(TargetPlayerKey);
+		BlackboardComponent->ClearValue(BlackboardKeys::TargetPlayerKey);
 	}
 
 	//ApplyMonsterStateChange(EMonsterState::Patrol);
@@ -952,7 +943,7 @@ void AMonster::SetMonsterState(EMonsterState NewState)
 
 	if (UBlackboardComponent* BB = AIController->GetBlackboardComponent())
 	{
-		BB->SetValueAsEnum(MonsterStateKey, static_cast<uint8>(NewState));
+		BB->SetValueAsEnum(BlackboardKeys::MonsterStateKey, static_cast<uint8>(NewState));
 	}
 }
 
@@ -981,7 +972,7 @@ void AMonster::ApplyMonsterStateChange(EMonsterState NewState)
 
 		bIsChasing = true;
 		// 추적 속도는 이미 PerformChasing에서 변경하고 있음
-		BlackboardComponent->SetValueAsBool(bIsChasingKey, true);
+		BlackboardComponent->SetValueAsBool(BlackboardKeys::bIsChasingKey, true);
 		MonsterSoundComponent->S_PlayChaseLoopSound();
 		break;
 
@@ -989,7 +980,7 @@ void AMonster::ApplyMonsterStateChange(EMonsterState NewState)
 
 		bIsChasing = false;
 		SetMaxSwimSpeed(PatrolSpeed);
-		BlackboardComponent->SetValueAsBool(bIsChasingKey, false);
+		BlackboardComponent->SetValueAsBool(BlackboardKeys::bIsChasingKey, false);
 		MonsterSoundComponent->S_PlayPatrolLoopSound();
 		ForceRemoveDetectedPlayers();
 		break;
