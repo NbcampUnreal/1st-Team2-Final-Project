@@ -115,10 +115,17 @@ void ABlowfish::Explosion()
 		}
 	}
 	
+	if (HasAuthority() == false)
+	{
+		return;
+	}
+
+	
 	// 복어 위치를 기준으로 ExplosionRadius 범위내에 있는 액터에게 ExplosionDamage를 가함
 	// ECC_WorldStatic으로 프리셋이 설정된 액터에 가려진 경우 데미지를 받지 않음
 	UGameplayStatics::ApplyRadialDamage(GetWorld(), ExplosionDamage, GetActorLocation(), ExplosionRadius,
 		UDamageType::StaticClass(), TArray<AActor*>(), this, GetController(), false, ECollisionChannel::ECC_WorldStatic);
 	
-	Destroy(true);
+	//Destroy(true);
+	OnDeath();
 }

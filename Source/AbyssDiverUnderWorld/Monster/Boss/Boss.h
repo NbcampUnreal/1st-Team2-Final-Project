@@ -138,7 +138,7 @@ public:
 	virtual void RotationToTarget(const FVector& InTargetLocation);
 
 	/** 보스의 공격 시 애니메이션 재생*/
-	virtual void Attack() override;
+	//virtual void Attack() override;
 	virtual void OnAttackEnded() override;
 
 	/** 보스의 공격이 끝난 후 타격 판정을 초기화하는 함수

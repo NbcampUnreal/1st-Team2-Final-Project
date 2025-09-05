@@ -17,12 +17,21 @@ class ABYSSDIVERUNDERWORLD_API AGobleFish : public AMonster
 public:
 	AGobleFish();
 
+protected:
+
+	virtual void BeginPlay() override;
+
 #pragma region Method
 public:
 	UFUNCTION(BlueprintCallable)
 	void FireProjectile();
 
 	virtual void Attack() override;
+
+protected:
+
+	virtual void OnDeath() override;
+
 #pragma endregion
 
 #pragma region Variable
