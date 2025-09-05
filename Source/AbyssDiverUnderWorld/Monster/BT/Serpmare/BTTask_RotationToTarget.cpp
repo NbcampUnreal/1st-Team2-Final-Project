@@ -1,6 +1,6 @@
 #include "Monster/BT/Serpmare/BTTask_RotationToTarget.h"
 
-#include "Monster/Boss/Boss.h"
+#include "Monster/Monster.h"
 #include "Character/UnderwaterCharacter.h"
 
 #include "AIController.h"
@@ -19,10 +19,10 @@ EBTNodeResult::Type UBTTask_RotationToTarget::ExecuteTask(UBehaviorTreeComponent
 	FBTRotationToTargetTask* TaskMemory = (FBTRotationToTargetTask*)NodeMemory;
 	if (!TaskMemory) return EBTNodeResult::Failed;
 
-	TaskMemory->AIController = Cast<ABossAIController>(Comp.GetAIOwner());
-	TaskMemory->Boss = Cast<ABoss>(Comp.GetAIOwner()->GetCharacter());
+	TaskMemory->AIController = Cast<AAIController>(Comp.GetAIOwner());
+	TaskMemory->Monster = Cast<AMonster>(Comp.GetAIOwner()->GetCharacter());
 
-	if (!TaskMemory->Boss.IsValid() || !TaskMemory->AIController.IsValid()) return EBTNodeResult::Failed;
+	if (!TaskMemory->Monster.IsValid() || !TaskMemory->AIController.IsValid()) return EBTNodeResult::Failed;
 
 	BlackboardKeyName = GetSelectedBlackboardKey();
 	
@@ -40,15 +40,15 @@ void UBTTask_RotationToTarget::TickTask(UBehaviorTreeComponent& OwnerComp, uint8
 	if (!IsValid(Player)) return;
 
 	const FVector PlayerLocation = Player->GetActorLocation();
-	const FVector CurrentLocation = TaskMemory->Boss->GetActorLocation();
+	const FVector CurrentLocation = TaskMemory->Monster->GetActorLocation();
 
-	const FRotator CurrentRotation = TaskMemory->Boss->GetActorRotation();
+	const FRotator CurrentRotation = TaskMemory->Monster->GetActorRotation();
 	FRotator TargetRotation = (PlayerLocation - CurrentLocation).GetSafeNormal().Rotation();
 	TargetRotation.Roll = 0.0f;
 	TargetRotation.Pitch = 0.0f;
 	
 	const FRotator NewRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, DeltaSeconds, RotationInterpSpeed);
 	
-	TaskMemory->Boss->SetActorRotation(NewRotation);
+	TaskMemory->Monster->SetActorRotation(NewRotation);
 	
 }

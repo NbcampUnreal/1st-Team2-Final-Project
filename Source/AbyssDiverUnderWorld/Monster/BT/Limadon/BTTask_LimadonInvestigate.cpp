@@ -2,7 +2,7 @@
 
 #include "AbyssDiverUnderWorld.h"
 
-#include "Monster/Boss/Enum/EBossState.h"
+//#include "Monster/Boss/Enum/EBossState.h"
 #include "Monster/Boss/Limadon/Limadon.h"
 
 UBTTask_LimadonInvestigate::UBTTask_LimadonInvestigate()
@@ -17,7 +17,7 @@ EBTNodeResult::Type UBTTask_LimadonInvestigate::ExecuteTask(UBehaviorTreeCompone
 	FBTLimadonInvestigateTaskMemory* TaskMemory = (FBTLimadonInvestigateTaskMemory*)NodeMemory;
 	if (!TaskMemory) return EBTNodeResult::Failed;
 
-	TaskMemory->AIController = Cast<ABossAIController>(OwnerComp.GetAIOwner());
+	TaskMemory->AIController = Cast<AMonsterAIController>(OwnerComp.GetAIOwner());
 	TaskMemory->Limadon = Cast<ALimadon>(TaskMemory->AIController->GetCharacter());
 
 	if (!TaskMemory->Limadon.IsValid() || !TaskMemory->AIController.IsValid()) return EBTNodeResult::Failed;
@@ -32,7 +32,7 @@ void UBTTask_LimadonInvestigate::TickTask(UBehaviorTreeComponent& OwnerComp, uin
 	FBTLimadonInvestigateTaskMemory* TaskMemory = (FBTLimadonInvestigateTaskMemory*)NodeMemory;
 	if (!TaskMemory) return;
 	
-	TaskMemory->AIController = Cast<ABossAIController>(OwnerComp.GetAIOwner());
+	TaskMemory->AIController = Cast<AMonsterAIController>(OwnerComp.GetAIOwner());
 	TaskMemory->Limadon = Cast<ALimadon>(TaskMemory->AIController->GetCharacter());
 	
 	if (!TaskMemory->Limadon.IsValid() || !TaskMemory->AIController.IsValid()) return;
@@ -43,7 +43,7 @@ void UBTTask_LimadonInvestigate::TickTask(UBehaviorTreeComponent& OwnerComp, uin
 	// 공격 반경에 플레이어가 들어오면 공격 상태로 전이
 	if (TaskMemory->Limadon->GetIsAttackCollisionOverlappedPlayer())
 	{
-		TaskMemory->Limadon->SetBossState(EBossState::Attack);
+		TaskMemory->Limadon->SetMonsterState(EMonsterState::Attack);
 		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 	}
 }

@@ -97,6 +97,9 @@ public:
 
     UFUNCTION(BlueprintCallable, Category = "Aquatic Movement")
     void StopMovement();
+
+    UFUNCTION(BlueprintCallable, Category = "Aquatic Movement")
+    void StopMovementImmediately();
     
     UFUNCTION(BlueprintCallable, Category = "Aquatic Movement")
     bool HasReachedTarget() const { return !bHasTarget; }
@@ -308,6 +311,8 @@ protected:
     int32 CurrentWallFollowDirection; // 현재 벽면 타기 방향 (-1, 0, 1)
     float LastWallDetectionTime; // 마지막 벽 감지 시간
     FVector LastWallNormal; // 마지막 벽 법선
+
+	FCollisionQueryParams AvoidanceTraceParams;
 
 private:
     // === 스플라인 보간 ===

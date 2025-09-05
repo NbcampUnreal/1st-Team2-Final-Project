@@ -1,7 +1,7 @@
 #include "Monster/BT/Commons/BTTask_PerformNormalMovement.h"
 
 #include "Monster/Monster.h"
-#include "Monster/Boss/EnhancedBossAIController.h"
+#include "Monster/MonsterAIController.h"
 
 #include "AIController.h"
 

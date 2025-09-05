@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "BehaviorTree/Tasks/BTTask_BlackboardBase.h"
+
 #include "BTTask_EyeStalkerDetected.generated.h"
 
 struct FEyeStalkerDetectedMemory

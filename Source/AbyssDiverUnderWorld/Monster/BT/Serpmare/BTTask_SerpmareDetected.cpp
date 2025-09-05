@@ -1,7 +1,8 @@
 #include "Monster/BT/Serpmare/BTTask_SerpmareDetected.h"
 
-#include "Monster/Boss/Enum/EBossState.h"
+//#include "Monster/Boss/Enum/EBossState.h"
 #include "Monster/Boss/Serpmare/Serpmare.h"
+#include "Monster/MonsterAIController.h"
 
 UBTTask_SerpmareDetected::UBTTask_SerpmareDetected()
 {
@@ -19,7 +20,7 @@ EBTNodeResult::Type UBTTask_SerpmareDetected::ExecuteTask(UBehaviorTreeComponent
 	FBTSerpmareDetectedTaskMemory* TaskMemory = (FBTSerpmareDetectedTaskMemory*)NodeMemory;
 	if (!TaskMemory) return EBTNodeResult::Failed;
 
-	TaskMemory->AIController = Cast<ABossAIController>(OwnerComp.GetAIOwner());
+	TaskMemory->AIController = Cast<AMonsterAIController>(OwnerComp.GetAIOwner());
 	TaskMemory->Serpmare = Cast<ASerpmare>(OwnerComp.GetAIOwner()->GetCharacter());
 	
 	if (!TaskMemory->AIController.IsValid() || !TaskMemory->Serpmare.IsValid()) return EBTNodeResult::Failed;
@@ -41,7 +42,7 @@ void UBTTask_SerpmareDetected::TickTask(UBehaviorTreeComponent& OwnerComp, uint8
 	{
 		if (TaskMemory->Serpmare->GetCanAttack())
 		{
-			TaskMemory->Serpmare->SetBossState(EBossState::Attack);
+			TaskMemory->Serpmare->SetMonsterState(EMonsterState::Attack);
 			FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 		}
 	}
@@ -57,7 +58,7 @@ void UBTTask_SerpmareDetected::TickTask(UBehaviorTreeComponent& OwnerComp, uint8
 			}
 			else
 			{
-				TaskMemory->Serpmare->SetBossState(EBossState::Idle);
+				TaskMemory->Serpmare->SetMonsterState(EMonsterState::Idle);
 				FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);	
 			}
 		}

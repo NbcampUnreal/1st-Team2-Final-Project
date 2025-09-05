@@ -1,6 +1,8 @@
 #include "Monster/BT/Commons/BTTask_SetMovePointAroundMonster.h"
 
-#include "Monster/Boss/Boss.h"
+#include "Monster/Monster.h"
+
+#include "AIController.h"
 
 // ----- 기능 -----
 // 1. AI 주변의 이동 가능한 위치 추출
@@ -16,14 +18,14 @@ UBTTask_SetMovePointAroundMonster::UBTTask_SetMovePointAroundMonster()
 
 EBTNodeResult::Type UBTTask_SetMovePointAroundMonster::ExecuteTask(UBehaviorTreeComponent& Comp, uint8* NodeMemory)
 {
-	AEnhancedBossAIController* AIController = Cast<AEnhancedBossAIController>(Comp.GetAIOwner());
+	AAIController* AIController = Cast<AAIController>(Comp.GetAIOwner());
 	if (!IsValid(AIController)) return EBTNodeResult::Failed;
 	
-	ABoss* Boss = Cast<ABoss>(AIController->GetCharacter());
+	AMonster* Boss = Cast<AMonster>(AIController->GetCharacter());
 	if (!IsValid(Boss)) return EBTNodeResult::Failed;
 
 	const FName BlackboardKeyName = GetSelectedBlackboardKey();
-	AIController->GetBlackboardComponent()->SetValueAsVector(BlackboardKeyName, Boss->GetNextPatrolPoint());
+	AIController->GetBlackboardComponent()->SetValueAsVector(BlackboardKeyName, Boss->GetActorLocation());
 	
 	return EBTNodeResult::Succeeded;
 }

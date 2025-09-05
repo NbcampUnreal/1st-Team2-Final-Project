@@ -59,7 +59,7 @@ void AKraken::BeginPlay()
 
 void AKraken::OnDeath()
 {
-	if (BossState == EBossState::Death) return;
+	if (MonsterState == EMonsterState::Death) return;
 	SetEmissiveTransition();
 	
 	Super::OnDeath();

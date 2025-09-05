@@ -1,6 +1,6 @@
 #include "Monster/BT/Commons/BTTask_BloodDetected.h"
 #include "Monster/Boss/Boss.h"
-#include "Monster/Boss/ENum/EBossState.h"
+//#include "Monster/Boss/ENum/EBossState.h"
 
 // ----- 기능 -----
 // 1. AI의 이동 정지
@@ -28,7 +28,8 @@ EBTNodeResult::Type UBTTask_BloodDetected::ExecuteTask(UBehaviorTreeComponent& C
 	ABoss* Boss = Cast<ABoss>(AIController->GetCharacter());
 	if (!IsValid(Boss)) return EBTNodeResult::Failed;
 	
-	Boss->SetBossState(EBossState::Idle);
+	//Boss->SetBossState(EBossState::Idle);
+	Boss->SetMonsterState(EMonsterState::Idle);
 	
 	AccumulatedTime = 0;
 	

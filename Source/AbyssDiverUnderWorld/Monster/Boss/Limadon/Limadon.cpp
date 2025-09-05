@@ -7,7 +7,7 @@
 
 ALimadon::ALimadon()
 {
-	BossState = EBossState::Investigate;
+	MonsterState = EMonsterState::Investigate;
 	bIsInvestigate = true;
 	HideTime = 30.0f;
 
@@ -35,7 +35,7 @@ void ALimadon::BeginPlay()
 {
 	Super::BeginPlay();
 
-	SetBossState(EBossState::Investigate);
+	SetMonsterState(EMonsterState::Investigate);
 	BiteAttackCollision->OnComponentBeginOverlap.AddDynamic(this, &ALimadon::OnBiteCollisionOverlapBegin);
 }
 

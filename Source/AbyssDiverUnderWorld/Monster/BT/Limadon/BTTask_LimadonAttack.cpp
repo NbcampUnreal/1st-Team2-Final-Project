@@ -1,12 +1,12 @@
 #include "Monster/BT/Limadon/BTTask_LimadonAttack.h"
 
-#include "Monster/Boss/Boss.h"
-#include "Monster/Boss/Enum/EBossState.h"
+#include "Monster/Monster.h"
+//#include "Monster/Boss/Enum/EBossState.h"
 #include "Monster/Boss/Limadon/Limadon.h"
 
 #include "BehaviorTree/BlackboardComponent.h"
 
-const FName UBTTask_LimadonAttack::BossStateKey = "BossState";
+//const FName UBTTask_LimadonAttack::BossStateKey = "BossState";
 
 UBTTask_LimadonAttack::UBTTask_LimadonAttack()
 {
@@ -20,7 +20,7 @@ EBTNodeResult::Type UBTTask_LimadonAttack::ExecuteTask(UBehaviorTreeComponent& O
 	FBTLimadonAttackTaskMemory* TaskMemory = (FBTLimadonAttackTaskMemory*)NodeMemory;
 	if (!TaskMemory) return EBTNodeResult::Failed;
 
-	TaskMemory->AIController = Cast<ABossAIController>(OwnerComp.GetAIOwner());
+	TaskMemory->AIController = Cast<AMonsterAIController>(OwnerComp.GetAIOwner());
 	TaskMemory->Limadon = Cast<ALimadon>(TaskMemory->AIController->GetCharacter());
 	
 	if (!TaskMemory->Limadon.IsValid() || !TaskMemory->AIController.IsValid()) return EBTNodeResult::Failed;
@@ -37,12 +37,12 @@ void UBTTask_LimadonAttack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* N
 	FBTLimadonAttackTaskMemory* TaskMemory = (FBTLimadonAttackTaskMemory*)NodeMemory;
 	if (!TaskMemory) return;
 
-	TaskMemory->AIController = Cast<ABossAIController>(OwnerComp.GetAIOwner());
+	TaskMemory->AIController = Cast<AMonsterAIController>(OwnerComp.GetAIOwner());
 	TaskMemory->Limadon = Cast<ALimadon>(TaskMemory->AIController->GetCharacter());
 	
 	if (!TaskMemory->Limadon.IsValid() || !TaskMemory->AIController.IsValid()) return;
 
-	if (!TaskMemory->AIController->IsStateSame(EBossState::Attack))
+	if (!TaskMemory->AIController->IsStateSame(EMonsterState::Attack))
 	{
 		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 		return;

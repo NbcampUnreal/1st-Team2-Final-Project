@@ -4,13 +4,13 @@
 #include "BehaviorTree/Tasks/BTTask_BlackboardBase.h"
 #include "BTTask_SerpmareAttack.generated.h"
 
-class ABoss;
-class ABossAIController;
+class ASerpmare;
+class AMonsterAIController;
 
 struct FBTSerpmareAttackTaskMemory
 {
-	TWeakObjectPtr<ABoss> Serpmare;
-	TWeakObjectPtr<ABossAIController> AIController;
+	TWeakObjectPtr<ASerpmare> Serpmare;
+	TWeakObjectPtr<AMonsterAIController> AIController;
 };
 
 UCLASS()

@@ -13,6 +13,7 @@
 #include "MonsterAIController.generated.h"
 
 enum class EPerceptionType : uint8;
+enum class EMonsterState : uint8;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AMonsterAIController : public AAIController
@@ -21,6 +22,11 @@ class ABYSSDIVERUNDERWORLD_API AMonsterAIController : public AAIController
 	
 public:
 	AMonsterAIController();
+
+public:
+
+	void MoveToActorWithRadius(AActor* TargetActor);
+	void MoveToLocationWithRadius(const FVector& Location);
 
 protected:
 	virtual void BeginPlay() override;
@@ -66,6 +72,12 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "AI|SightData")
 	FName MonsterID;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Radius")
+	float MoveToActorAcceptanceRadius;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Radius")
+	float MoveToLocationAcceptanceRadius;
+
 private:
 	uint8 bIsLosingTarget : 1;
 	float LostTargetTime;
@@ -73,6 +85,7 @@ private:
 	static const FName bIsChasingKey;
 	static const FName TargetPlayerKey;
 	static const FName PerceptionTypeKey;
+	static const FName MonsterStateKey;
 
 #pragma endregion
 
@@ -80,5 +93,7 @@ private:
 public:
 	void SetbIsLosingTarget(bool IsLosingTargetValue);
 	void SetBlackboardPerceptionType(EPerceptionType InPerceptionType);
+
+	bool IsStateSame(EMonsterState State);
 #pragma endregion
 };

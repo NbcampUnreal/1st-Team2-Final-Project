@@ -1,9 +1,8 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Monster/MonsterAIController.h"
+
 #include "GobleFishAIController.generated.h"
 
 /**
@@ -15,5 +14,10 @@ class ABYSSDIVERUNDERWORLD_API AGobleFishAIController : public AMonsterAIControl
 	GENERATED_BODY()
 	
 public:
+
 	AGobleFishAIController();
+
+protected:
+
+	virtual void OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus) override; // Perception Callback Method
 };
