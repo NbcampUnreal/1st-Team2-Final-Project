@@ -5,7 +5,7 @@
 #include "SeaObserver.generated.h"
 
 UCLASS()
-class ABYSSDIVERUNDERWORLD_API ASeaObserver : public ABoss
+class ABYSSDIVERUNDERWORLD_API ASeaObserver : public AMonster
 {
 	GENERATED_BODY()
 
