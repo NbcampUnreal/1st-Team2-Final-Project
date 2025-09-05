@@ -241,13 +241,6 @@ protected:
 	uint8 bIsTurning : 1 = false;
 	uint8 bIsAttacking : 1 = false;
 
-	static const FName MonsterStateKey;
-	static const FName InvestigateLocationKey;
-	static const FName PatrolLocationKey;
-	static const FName TargetPlayerKey;
-	static const FName TargetLocationKey;
-	static const FName bIsChasingKey;
-
 private:
 	FVector TargetLocation;
 	FVector DesiredTargetLocation; // 새로운 목표 위치 (보간 전)

@@ -23,7 +23,4 @@ private:
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& Comp, uint8* NodeMemory) override;
 	virtual uint16 GetInstanceMemorySize() const override { return sizeof(FBTPerformAttackMemory); }
 
-private:
-	static const FName bCanAttackKey;
-	
 };

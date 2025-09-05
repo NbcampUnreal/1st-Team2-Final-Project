@@ -82,11 +82,6 @@ private:
 	uint8 bIsLosingTarget : 1;
 	float LostTargetTime;
 
-	static const FName bIsChasingKey;
-	static const FName TargetPlayerKey;
-	static const FName PerceptionTypeKey;
-	static const FName MonsterStateKey;
-
 #pragma endregion
 
 #pragma region Getter, Setter

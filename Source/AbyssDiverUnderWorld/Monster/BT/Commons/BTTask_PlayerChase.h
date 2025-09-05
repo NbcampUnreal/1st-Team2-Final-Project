@@ -45,6 +45,4 @@ private:
 	float MinChaseTime;
 
 	//EPathFollowingRequestResult::Type Result;
-	
-	static const FName bIsPlayerHiddenKey;
 };

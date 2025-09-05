@@ -1,6 +1,7 @@
 #include "Monster/BT/Commons/BTTask_SimpleChasePlayer.h"
 
 #include "AbyssDiverUnderWorld.h"
+#include "Container/BlackboardKeys.h"
 
 #include "Monster/Monster.h"
 #include "Character/UnderwaterCharacter.h"
@@ -38,7 +39,7 @@ void UBTTask_SimpleChasePlayer::TickTask(UBehaviorTreeComponent& OwnerComp, uint
 		return;
 	}
 
-	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(AIController->GetBlackboardComponent()->GetValueAsObject("TargetPlayer"));
+	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(AIController->GetBlackboardComponent()->GetValueAsObject(BlackboardKeys::TargetPlayerKey));
 	if (Player == nullptr)
 	{
 		LOGV(Error, TEXT("Player IS Not Valid"));

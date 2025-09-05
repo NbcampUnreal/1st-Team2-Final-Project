@@ -1,4 +1,5 @@
 #include "Monster/Boss/EyeStalker/EyeStalkerAIController.h"
+#include "Container/BlackboardKeys.h"
 
 #include "Monster/Effect/PostProcessSettingComponent.h"
 #include "Character/UnderwaterCharacter.h"
@@ -22,7 +23,7 @@ void AEyeStalkerAIController::OnPossess(APawn* InPawn)
 
 void AEyeStalkerAIController::InitTargetPlayer()
 {
-	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(GetBlackboardComponent()->GetValueAsObject("TargetPlayer"));
+	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(GetBlackboardComponent()->GetValueAsObject(BlackboardKeys::TargetPlayerKey));
 	if (!IsValid(Player)) return;
 
 	UPostProcessSettingComponent* PostProcessSettingComponent = Player->GetPostProcessSettingComponent();
@@ -31,7 +32,7 @@ void AEyeStalkerAIController::InitTargetPlayer()
 	Player->SetIsAttackedByEyeStalker(false);
 	PostProcessSettingComponent->C_DeactivateVignetteEffect();
 	
-	GetBlackboardComponent()->SetValueAsObject("TargetPlayer", nullptr);
+	GetBlackboardComponent()->SetValueAsObject(BlackboardKeys::TargetPlayerKey, nullptr);
 	GetBlackboardComponent()->SetValueAsBool("bIsAttacking", false);
 	GetBlackboardComponent()->SetValueAsBool("bHasDetected", false);
 }
@@ -48,7 +49,7 @@ void AEyeStalkerAIController::OnSightPerceptionSuccess(AUnderwaterCharacter* Pla
 {
 	if (TargetPlayers.Num() == 0)
 	{
-		GetBlackboardComponent()->SetValueAsObject("TargetPlayer", Player);
+		GetBlackboardComponent()->SetValueAsObject(BlackboardKeys::TargetPlayerKey, Player);
 	}
 
 	if (!TargetPlayers.Contains(Player))
@@ -59,7 +60,7 @@ void AEyeStalkerAIController::OnSightPerceptionSuccess(AUnderwaterCharacter* Pla
 
 void AEyeStalkerAIController::OnSightPerceptionFail(AUnderwaterCharacter* Player)
 {
-	AUnderwaterCharacter* TargetPlayer = Cast<AUnderwaterCharacter>(GetBlackboardComponent()->GetValueAsObject("TargetPlayer"));
+	AUnderwaterCharacter* TargetPlayer = Cast<AUnderwaterCharacter>(GetBlackboardComponent()->GetValueAsObject(BlackboardKeys::TargetPlayerKey));
 
 	if (IsValid(TargetPlayer) && TargetPlayer == Player)
 	{
@@ -116,7 +117,7 @@ void AEyeStalkerAIController::SetRandomTargetPlayer()
 		else
 		{
 			// 선택된 플레이어를 블랙보드에 설정
-			GetBlackboardComponent()->SetValueAsObject("TargetPlayer", SelectedPlayer);
+			GetBlackboardComponent()->SetValueAsObject(BlackboardKeys::TargetPlayerKey, SelectedPlayer);
 			break;	
 		}
 	}

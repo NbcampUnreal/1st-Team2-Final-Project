@@ -1,11 +1,11 @@
 #include "Monster/BT/Commons/BTTask_PerformAttack.h"
 
+#include "Container/BlackboardKeys.h"
+
 #include "Monster/Monster.h"
 #include "Monster/MonsterAIController.h"
 
 #include "AIController.h"
-
-const FName UBTTask_PerformAttack::bCanAttackKey = "bCanAttack";
 
 UBTTask_PerformAttack::UBTTask_PerformAttack()
 {
@@ -26,7 +26,7 @@ EBTNodeResult::Type UBTTask_PerformAttack::ExecuteTask(UBehaviorTreeComponent& C
 	if (!TaskMemory->Monster.IsValid() || !TaskMemory->AIController.IsValid()) return EBTNodeResult::Failed;
 
 	TaskMemory->Monster->Attack();
-	TaskMemory->AIController->GetBlackboardComponent()->SetValueAsBool(bCanAttackKey, false);
+	TaskMemory->AIController->GetBlackboardComponent()->SetValueAsBool(BlackboardKeys::bCanAttackKey, false);
 	
 	return EBTNodeResult::Succeeded;
 }

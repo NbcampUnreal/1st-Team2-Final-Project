@@ -68,17 +68,6 @@ private:
 	FTimerHandle DamageStateTransitionTimerHandle;
 	FTimerHandle BloodDetectedTimerHandle;
 
-	static const FName bHasSeenPlayerKey;
-	static const FName bHasDetectedPlayerKey;
-	static const FName bIsChasingKey;
-	static const FName bHasAttackedKey;
-	static const FName bIsPlayerHiddenKey;
-	static const FName BloodOccurredLocationKey;
-	static const FName TargetPlayerKey;
-	static const FName bIsChasingPlayerKey;
-	static const FName bIsDetectBloodKey;
-	static const FName bIsChasingBloodKey;
-
 public:
 	FORCEINLINE bool GetIsDetectedPlayer() const { return bIsDetectedPlayer; }
 	FORCEINLINE bool GetIsDetectedBlood() const { return bIsDamagedByPlayer; }

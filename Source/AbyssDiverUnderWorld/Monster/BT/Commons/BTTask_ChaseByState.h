@@ -39,9 +39,4 @@ private:
 	
 	UPROPERTY(EditAnywhere)
 	uint8 MinChasingTime = 10;
-
-	static const FName MonsterStateKey;
-	static const FName bCanAttackKey;
-	static const FName bIsPlayerHiddenKey;
-	static const FName TargetPlayerKey;
 };
