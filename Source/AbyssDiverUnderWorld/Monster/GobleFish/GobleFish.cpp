@@ -13,6 +13,17 @@ AGobleFish::AGobleFish()
 	GobleFishHitSphere->InitSphereRadius(20.0f);
 	GobleFishHitSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	GobleFishHitSphere->SetHiddenInGame(true);
+
+	GobleFishHitSphere->ComponentTags.Add(TEXT("GobleFishHitSphere"));
+}
+
+void AGobleFish::BeginPlay()
+{
+	Super::BeginPlay();
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	GetMesh()->OnComponentBeginOverlap.AddDynamic(this, &AGobleFish::OnMeshOverlapBegin);
+	GobleFishHitSphere->OnComponentBeginOverlap.AddDynamic(this, &AGobleFish::OnMeshOverlapBegin);
 }
 
 void AGobleFish::FireProjectile()
@@ -78,6 +89,8 @@ void AGobleFish::Attack()
 				M_PlayMontage(AttackAnimations[AttackType]);
 			}
 		}
+
+		bIsAttacking = true;
 	}
 	else if (BlackboardComponent->GetValueAsBool("bInRangedRange"))
 	{
@@ -92,5 +105,13 @@ void AGobleFish::Attack()
 		}
 	}
 	else return;
+}
+
+void AGobleFish::OnDeath()
+{
+	GetMesh()->OnComponentBeginOverlap.RemoveAll(this);
+	GobleFishHitSphere->OnComponentBeginOverlap.RemoveAll(this);
+
+	Super::OnDeath();
 }
 

@@ -501,6 +501,11 @@ void AMonster::Attack()
 {
 	const uint8 AttackType = FMath::RandRange(0, AttackAnimations.Num() - 1);
 
+	if (!AnimInstance) return;
+
+	// If any montage is playing, prevent duplicate playback
+	if (AnimInstance->IsAnyMontagePlaying()) return;
+
 	if (IsValid(AttackAnimations[AttackType]))
 	{
 		// ChaseAccumulatedTime = 0.f; PlayerChase Task에서 사용
@@ -667,7 +672,7 @@ void AMonster::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 void AMonster::ApplyPhysicsSimulation()
 {
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	GetAttackHitComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	//GetAttackHitComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	
 	USkeletalMeshComponent* MeshComp = GetMesh();
 	if (MeshComp)
@@ -693,6 +698,19 @@ void AMonster::NotifyLightExposure(float DeltaTime, float TotalExposedTime, cons
 	if (!HasAuthority()) return;
 	if (!IsValid(this)) return;
 	if (AIController == nullptr) return;
+
+	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(PlayerActor);
+	if (Player == nullptr)
+	{
+		LOGV(Error, TEXT("NotifyLightExposure: Player is not valid"));
+		return;
+	}
+
+	if (Player->IsHideInSeaweed())
+	{
+		LOGV(Log, TEXT("NotifyLightExposure: Player is hiding in seaweed, ignoring light exposure"));
+		return;
+	}
 
 	UE_LOG(LogTemp, Warning, TEXT("TotalExposedTime : %.2f"), TotalExposedTime);
 	switch (MonsterState)
@@ -875,7 +893,7 @@ void AMonster::ForceRemoveDetectedPlayers()
 		BlackboardComponent->ClearValue(TargetPlayerKey);
 	}
 
-	ApplyMonsterStateChange(EMonsterState::Patrol);
+	//ApplyMonsterStateChange(EMonsterState::Patrol);
 }
 
 bool AMonster::IsAnimMontagePlaying() const
@@ -932,7 +950,7 @@ void AMonster::SetMonsterState(EMonsterState NewState)
 	
 	MonsterState = NewState;
 
-	if (UBlackboardComponent* BB = Cast<AAIController>(GetController())->GetBlackboardComponent())
+	if (UBlackboardComponent* BB = AIController->GetBlackboardComponent())
 	{
 		BB->SetValueAsEnum(MonsterStateKey, static_cast<uint8>(NewState));
 	}
@@ -973,6 +991,7 @@ void AMonster::ApplyMonsterStateChange(EMonsterState NewState)
 		SetMaxSwimSpeed(PatrolSpeed);
 		BlackboardComponent->SetValueAsBool(bIsChasingKey, false);
 		MonsterSoundComponent->S_PlayPatrolLoopSound();
+		ForceRemoveDetectedPlayers();
 		break;
 
 	case EMonsterState::Investigate:
