@@ -2,8 +2,11 @@
 
 
 #include "Monster/HorrorCreature/HorrorCreature.h"
+#include "Container/BlackboardKeys.h"
+
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Character/UnderwaterCharacter.h"
+
 #include "Monster/HorrorCreature/HorrorCreatureAIController.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -62,7 +65,7 @@ void AHorrorCreature::Tick(float DeltaTime)
 			SwallowedPlayer->SetActorRelativeLocation(FVector::ZeroVector);
 
 			SetMonsterState(EMonsterState::Flee);
-			BlackboardComponent->ClearValue(TargetPlayerKey);
+			BlackboardComponent->ClearValue(BlackboardKeys::TargetPlayerKey);
 
 			bSwallowingInProgress = false;
 		}
@@ -110,7 +113,7 @@ void AHorrorCreature::SwallowPlayer(AUnderwaterCharacter* Victim)
 	bSwallowingInProgress = true;
 
 	SetMonsterState(EMonsterState::Flee);
-	BlackboardComponent->ClearValue(TargetPlayerKey);
+	BlackboardComponent->ClearValue(BlackboardKeys::TargetPlayerKey);
 }
 
 void AHorrorCreature::EjectPlayer(AUnderwaterCharacter* Victim)
@@ -197,7 +200,7 @@ void AHorrorCreature::SightPerceptionOn()
 void AHorrorCreature::SetPatrolStateAfterEject()
 {
 	SetMonsterState(EMonsterState::Patrol);
-	BlackboardComponent->ClearValue(TargetPlayerKey);
+	BlackboardComponent->ClearValue(BlackboardKeys::TargetPlayerKey);
 }
 
 void AHorrorCreature::DamageToVictim(AUnderwaterCharacter* Victim, float Damage)
@@ -221,7 +224,7 @@ void AHorrorCreature::InitializeAggroVariable()
 	AIController->SetbIsLosingTarget(false);
 	bIsChasing = false;
 	TargetPlayer = nullptr;
-	BlackboardComponent->ClearValue(InvestigateLocationKey);
+	BlackboardComponent->ClearValue(BlackboardKeys::InvestigateLocationKey);
 }
 
 
