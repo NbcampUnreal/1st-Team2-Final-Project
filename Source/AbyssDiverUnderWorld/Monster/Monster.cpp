@@ -20,9 +20,6 @@
 #include "Monster/Components/TickControlComponent.h"
 #include "Monster/EPerceptionType.h"
 
-
-#include "BehaviorTree/Blackboard/BlackboardKeyType_Object.h"
-
 AMonster::AMonster()
 {
 	PrimaryActorTick.bCanEverTick = true;
