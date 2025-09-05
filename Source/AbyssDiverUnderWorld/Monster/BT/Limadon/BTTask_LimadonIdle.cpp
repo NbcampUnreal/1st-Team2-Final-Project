@@ -1,6 +1,6 @@
 #include "Monster/BT/Limadon/BTTask_LimadonIdle.h"
 
-#include "Monster/Boss/Enum/EBossState.h"
+//#include "Monster/Boss/Enum/EBossState.h"
 #include "Monster/Boss/Limadon/Limadon.h"
 
 #include "Character/StatComponent.h"
@@ -22,7 +22,7 @@ EBTNodeResult::Type UBTTask_LimadonIdle::ExecuteTask(UBehaviorTreeComponent& Own
 	FBTLimadonIdleTaskMemory* TaskMemory = (FBTLimadonIdleTaskMemory*)NodeMemory;
 	if (!TaskMemory) return EBTNodeResult::Failed;
 	
-	TaskMemory->AIController = Cast<ABossAIController>(OwnerComp.GetAIOwner());
+	TaskMemory->AIController = Cast<AMonsterAIController>(OwnerComp.GetAIOwner());
 	TaskMemory->Limadon = Cast<ALimadon>(TaskMemory->AIController->GetCharacter());
 	
 	if (!TaskMemory->Limadon.IsValid() || !TaskMemory->AIController.IsValid()) return EBTNodeResult::Failed;
@@ -43,7 +43,7 @@ void UBTTask_LimadonIdle::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* Nod
 	FBTLimadonIdleTaskMemory* TaskMemory = (FBTLimadonIdleTaskMemory*)NodeMemory;
 	if (!TaskMemory) return;
 	
-	TaskMemory->AIController = Cast<ABossAIController>(OwnerComp.GetAIOwner());
+	TaskMemory->AIController = Cast<AMonsterAIController>(OwnerComp.GetAIOwner());
 	TaskMemory->Limadon = Cast<ALimadon>(TaskMemory->AIController->GetCharacter());
 	
 	if (!TaskMemory->Limadon.IsValid() || !TaskMemory->AIController.IsValid()) return;
@@ -51,7 +51,7 @@ void UBTTask_LimadonIdle::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* Nod
 	// Limadon 체력이 일정 밑으로 떨어진 경우 플레이어 뱉음
 	if (TaskMemory->Limadon->GetStatComponent()->CurrentHealth <= TaskMemory->Limadon->StopCaptureHealthCriteria)
 	{
-		TaskMemory->Limadon->SetBossState(EBossState::Detected);
+		TaskMemory->Limadon->SetMonsterState(EMonsterState::Detected);
 		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 		return;
 	}
@@ -69,7 +69,7 @@ void UBTTask_LimadonIdle::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* Nod
 			// 공격 중인 타겟이 사망한 경우 Detected 상태로 전이 (Spit)
 			if (TaskMemory->Limadon->GetTarget()->GetStatComponent()->CurrentHealth <= 0)
 			{
-				TaskMemory->Limadon->SetBossState(EBossState::Detected);
+				TaskMemory->Limadon->SetMonsterState(EMonsterState::Detected);
 				FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 				return;
 			}	

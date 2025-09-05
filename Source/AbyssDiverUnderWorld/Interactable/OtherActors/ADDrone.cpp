@@ -25,6 +25,8 @@
 #include "Engine/TargetPoint.h"
 #include "UI/InteractPopupWidget.h"
 
+#include "Framework/ADTutorialGameMode.h"   
+
 DEFINE_LOG_CATEGORY(DroneLog);
 
 AADDrone::AADDrone()
@@ -121,6 +123,19 @@ void AADDrone::Destroyed()
 
 void AADDrone::Interact_Implementation(AActor* InstigatorActor)
 {
+	UE_LOG(LogTemp, Warning, TEXT("ADDrone::Interact_Implementation -- 함수가 성공적으로 호출됨!"));
+	if (AADTutorialGameMode* TutorialMode = GetWorld()->GetAuthGameMode<AADTutorialGameMode>())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("ADDrone - 튜토리얼 게임 모드를 찾음. 부활 시퀀스 호출!"));
+		TutorialMode->TriggerResurrectionSequence();
+		return;
+	}
+	else
+	{
+		AGameModeBase* CurrentGameMode = GetWorld()->GetAuthGameMode();
+		UE_LOG(LogTemp, Error, TEXT("ADDrone - 튜토리얼 게임 모드 변환 실패! 현재 게임 모드: %s"), *GetNameSafe(CurrentGameMode));
+	}
+
 	if (!HasAuthority() || !bIsActive || !IsValid(CurrentSeller) || bIsFlying) return;
 
 	APlayerController* PC = Cast<APlayerController>(InstigatorActor->GetInstigatorController());
@@ -245,6 +260,16 @@ void AADDrone::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetime
 
 void AADDrone::ExecuteConfirmedInteraction()
 {
+	if (AADTutorialGameMode* TutorialGameMode = GetWorld()->GetAuthGameMode<AADTutorialGameMode>())
+	{
+		UE_LOG(LogTemp, Log, TEXT("Drone Interaction: Tutorial Mode Detected. Calling TriggerResurrectionSequence."));
+
+		TutorialGameMode->TriggerResurrectionSequence();
+
+		return;
+	}
+
+
 	if (!CurrentSeller->GetSubmittedPlayerIndexes().IsEmpty())
 	{
 		if (AADInGameMode* GameMode = GetWorld()->GetAuthGameMode<AADInGameMode>())

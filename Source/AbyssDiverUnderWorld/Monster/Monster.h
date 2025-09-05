@@ -80,6 +80,8 @@ public:
 	void LaunchPlayer(AUnderwaterCharacter* Player, const float& Power) const;
 	void ApplyMonsterStateChange(EMonsterState NewState);
 
+	void InitCharacterMovementSetting();
+
 protected:
 
 	UFUNCTION()
@@ -140,6 +142,10 @@ public:
 	// 연속공격 가능 플래그
 	UPROPERTY(EditDefaultsOnly, Category = "Monster|Stat")
 	uint8 bIsAttackInfinite : 1;
+
+	float ChaseAccumulatedTime = 0.0f;
+
+	float OriginDeceleration;
 
 protected:
 

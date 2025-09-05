@@ -2,16 +2,16 @@
 
 #include "CoreMinimal.h"
 #include "BehaviorTree/Tasks/BTTask_BlackboardBase.h"
-#include "Monster/Boss/EnhancedBossAIController.h"
+
 #include "BTTask_PlayerChase.generated.h"
 
 struct FBTPlayerChaseTaskMemory
 {
 	/** 빙의한 AIController에 대한 참조 */
-	TWeakObjectPtr<AEnhancedBossAIController> AIController;
+	TWeakObjectPtr<class AMonsterAIController> AIController;
 
 	/** AIController의 주체에 대한 참조 */
-	TWeakObjectPtr<ABoss> Boss;
+	TWeakObjectPtr<class AMonster> Monster;
 
 	/** Chase 작업이 끝나는 시간 */
 	float FinishTaskInterval;
@@ -44,7 +44,7 @@ private:
 	UPROPERTY(EditAnywhere)
 	float MinChaseTime;
 
-	EPathFollowingRequestResult::Type Result;
+	//EPathFollowingRequestResult::Type Result;
 	
 	static const FName bIsPlayerHiddenKey;
 };

@@ -19,6 +19,9 @@
 
 #include "Net/UnrealNetwork.h"
 
+#include "Framework/ADTutorialGameMode.h"
+#include "Framework/ADTutorialGameState.h"
+
 AADDroneSeller::AADDroneSeller()
 {
 	PrimaryActorTick.bCanEverTick = false;
@@ -78,16 +81,52 @@ void AADDroneSeller::Destroyed()
 
 void AADDroneSeller::Interact_Implementation(AActor* InstigatorActor)
 {
-	LOGD(Log, TEXT("Not Active"));
+	AADTutorialGameMode* TutorialMode = GetWorld()->GetAuthGameMode<AADTutorialGameMode>();
+
+	if (TutorialMode)
+	{
+		if (AADTutorialGameState* TutorialGS = TutorialMode->GetGameState<AADTutorialGameState>())
+		{
+			if (TutorialGS->GetCurrentPhase() == ETutorialPhase::Step15_Resurrection)
+			{
+				AUnderwaterCharacter* PlayerCharacter = Cast<AUnderwaterCharacter>(InstigatorActor);
+				AUnderwaterCharacter* NpcToRevive = TutorialMode->GetTutorialNPC();
+
+				if (PlayerCharacter && NpcToRevive)
+				{
+					if (PlayerCharacter->GetBoundCharacters().Contains(NpcToRevive))
+					{
+						TutorialMode->NotifyBodySubmitted(PlayerCharacter);
+						UE_LOG(LogTemp, Log, TEXT("튜토리얼: NPC 시체를 성공적으로 반납했습니다."));
+					}
+					else
+					{
+						UE_LOG(LogTemp, Warning, TEXT("튜토리얼: NPC 시체를 먼저 들어야 합니다."));
+					}
+				}
+				return;
+			}
+		}
+	}
+
 	if (!HasAuthority() || !bIsActive) return;
 
-	SubmitPlayer(InstigatorActor);
-	
 	int32 Gained = SellAllExchangeableItems(InstigatorActor);
 	if (Gained <= 0)
 	{
-		LOGD(Log, TEXT("Gained < 0"));
+		LOGD(Log, TEXT("Gained <= 0"));
 		return;
+	}
+
+	if (TutorialMode)
+	{
+		if (AADTutorialGameState* TutorialGS = TutorialMode->GetGameState<AADTutorialGameState>())
+		{
+			if (TutorialGS->GetCurrentPhase() == ETutorialPhase::Step7_Drone)
+			{
+				TutorialMode->AdvanceTutorialPhase();
+			}
+		}
 	}
 
 	SetCurrentMoney(CurrentMoney + Gained);
@@ -110,7 +149,6 @@ void AADDroneSeller::Interact_Implementation(AActor* InstigatorActor)
 		GetSoundSubsystem()->PlayAt(ESFX::SubmitOre, GetActorLocation());
 	}
 }
-
 
 
 void AADDroneSeller::DisableSelling()
@@ -300,6 +338,11 @@ UMissionSubsystem* AADDroneSeller::GetMissionSubsystem()
 {
 	MissionSubsystem = GetGameInstance()->GetSubsystem<UMissionSubsystem>();
 	return MissionSubsystem;
+}
+
+void AADDroneSeller::SetCurrentDrone(AADDrone* InDrone)
+{
+	CurrentDrone = InDrone;
 }
 
 void AADDroneSeller::SetLightColor(FLinearColor NewColor)

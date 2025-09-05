@@ -2,16 +2,16 @@
 
 #include "CoreMinimal.h"
 #include "BehaviorTree/Tasks/BTTask_BlackboardBase.h"
-#include "Monster/Boss/EnhancedBossAIController.h"
+
 #include "BTTask_EnhancedIdle.generated.h"
 
 struct FBTIdleTaskMemory
 {
 	/** 빙의한 AIController에 대한 참조 */
-	TWeakObjectPtr<AEnhancedBossAIController> AIController;
+	TWeakObjectPtr<class AMonsterAIController> AIController;
 
 	/** AIController의 주체에 대한 참조 */
-	TWeakObjectPtr<ABoss> Boss;
+	TWeakObjectPtr<class AMonster> Monster;
 	
 	/** 현재까지 경과된 시간 */
 	float AccumulatedTime;

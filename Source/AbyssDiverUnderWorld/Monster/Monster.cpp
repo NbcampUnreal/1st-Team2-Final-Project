@@ -16,6 +16,8 @@
 #include "Monster/Components/TickControlComponent.h"
 #include "Monster/EPerceptionType.h"
 
+#include "BehaviorTree/Blackboard/BlackboardKeyType_Object.h"
+
 const FName AMonster::MonsterStateKey = "MonsterState";
 const FName AMonster::InvestigateLocationKey = "InvestigateLocation";
 const FName AMonster::PatrolLocationKey = "PatrolLocation";
@@ -743,7 +745,6 @@ void AMonster::AddDetection(AActor* Actor)
 	}
 	else return;
 
-	
 	// 만약 TargetActor가 없으면 TargetActor를 해당 Actor(Player)로 설정.
 	if (!TargetActor.IsValid())
 	{
@@ -782,7 +783,9 @@ void AMonster::RemoveDetection(AActor* Actor)
 	if (bWasTarget)
 	{
 		// 우선 TargetActor 비움.
-		InitTarget();
+		//InitTarget();
+		TargetActor.Reset();
+
 		if (BlackboardComponent)
 		{
 			BlackboardComponent->ClearValue(TargetPlayerKey);
@@ -964,6 +967,21 @@ void AMonster::ApplyMonsterStateChange(EMonsterState NewState)
 
 	default:
 		break;
+	}
+}
+
+void AMonster::InitCharacterMovementSetting()
+{
+	//if (!IsValid(GetCharacterMovement())) return;
+	//
+	//GetCharacterMovement()->BrakingDecelerationSwimming = OriginDeceleration;
+	//GetCharacterMovement()->MaxSwimSpeed = StatComponent->GetMoveSpeed();
+
+	// AquaticMovementComponent 설정도 초기화
+	if (AquaticMovementComponent)
+	{
+		AquaticMovementComponent->BrakingDeceleration = OriginDeceleration;
+		AquaticMovementComponent->MaxSpeed = StatComponent->GetMoveSpeed();
 	}
 }
 

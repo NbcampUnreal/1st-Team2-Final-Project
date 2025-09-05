@@ -2,15 +2,16 @@
 
 #include "CoreMinimal.h"
 #include "BehaviorTree/Tasks/BTTask_BlackboardBase.h"
+
 #include "BTTask_LimadonInvestigate.generated.h"
 
-class ABossAIController;
+class AMonsterAIController;
 class ALimadon;
 
 struct FBTLimadonInvestigateTaskMemory
 {
 	TWeakObjectPtr<ALimadon> Limadon;
-	TWeakObjectPtr<ABossAIController> AIController;
+	TWeakObjectPtr<AMonsterAIController> AIController;
 };
 
 UCLASS()

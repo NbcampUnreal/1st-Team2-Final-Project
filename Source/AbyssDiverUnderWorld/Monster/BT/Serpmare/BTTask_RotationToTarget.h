@@ -2,12 +2,13 @@
 
 #include "CoreMinimal.h"
 #include "BehaviorTree/Tasks/BTTask_BlackboardBase.h"
+
 #include "BTTask_RotationToTarget.generated.h"
 
 struct FBTRotationToTargetTask
 {
-	TWeakObjectPtr<class ABossAIController> AIController;
-	TWeakObjectPtr<class ABoss> Boss;
+	TWeakObjectPtr<class AAIController> AIController;
+	TWeakObjectPtr<class AMonster> Monster;
 };
 
 UCLASS()

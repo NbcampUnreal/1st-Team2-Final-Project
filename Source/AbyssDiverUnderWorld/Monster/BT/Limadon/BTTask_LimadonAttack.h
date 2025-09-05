@@ -4,13 +4,13 @@
 #include "BehaviorTree/Tasks/BTTask_BlackboardBase.h"
 #include "BTTask_LimadonAttack.generated.h"
 
-class ABossAIController;
+class AMonsterAIController;
 class ALimadon;
 
 struct FBTLimadonAttackTaskMemory
 {
 	TWeakObjectPtr<ALimadon> Limadon;
-	TWeakObjectPtr<ABossAIController> AIController;
+	TWeakObjectPtr<AMonsterAIController> AIController;
 };
 
 UCLASS()
@@ -27,6 +27,6 @@ private:
 	virtual uint16 GetInstanceMemorySize() const override { return sizeof(FBTLimadonAttackTaskMemory); }
 
 private:
-	static const FName BossStateKey;
+	//static const FName BossStateKey;
 	
 };

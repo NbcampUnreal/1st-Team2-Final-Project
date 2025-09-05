@@ -15,7 +15,7 @@ public:
 public:
 	virtual void BeginPlay() override;
 
-protected:
+public:
 	virtual void Attack() override;
 
 private:

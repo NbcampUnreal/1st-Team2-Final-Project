@@ -1,7 +1,7 @@
 #include "Monster/BT/Commons/BTTask_PerformChasing.h"
 
-#include "Monster/Boss/Boss.h"
-#include "Monster/Boss/EnhancedBossAIController.h"
+#include "Monster/Monster.h"
+#include "Monster/MonsterAIController.h"
 #include "Monster/EPerceptionType.h"
 
 #include "Character/UnderwaterCharacter.h"

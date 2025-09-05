@@ -2,9 +2,10 @@
 
 #include "AbyssDiverUnderWorld.h"
 
-#include "Monster/Boss/Boss.h"
-#include "Monster/Boss/EnhancedBossAIController.h"
-#include "Monster/Boss/ENum/EBossState.h"
+#include "Monster/Monster.h"
+//#include "Monster/Boss/EnhancedBossAIController.h"
+//#include "Monster/Boss/ENum/EBossState.h"
+#include "Monster/Components/AquaticMovementComponent.h"
 
 #include "GameFramework/CharacterMovementComponent.h"
 
@@ -23,18 +24,19 @@ EBTNodeResult::Type UBTTask_EnhancedIdle::ExecuteTask(UBehaviorTreeComponent& Co
 	FBTIdleTaskMemory* TaskMemory = (FBTIdleTaskMemory*)NodeMemory;
 	if (!TaskMemory) return EBTNodeResult::Failed;
 
-	TaskMemory->AIController = Cast<AEnhancedBossAIController>(Comp.GetAIOwner());
-	TaskMemory->Boss = Cast<ABoss>(Comp.GetAIOwner()->GetCharacter());
+	TaskMemory->AIController = Cast<AMonsterAIController>(Comp.GetAIOwner());
+	TaskMemory->Monster = Cast<AMonster>(Comp.GetAIOwner()->GetCharacter());
 	
-	if (!TaskMemory->Boss.IsValid() || !TaskMemory->AIController.IsValid()) return EBTNodeResult::Failed;
+	if (!TaskMemory->Monster.IsValid() || !TaskMemory->AIController.IsValid()) return EBTNodeResult::Failed;
 	
-	TaskMemory->Boss->SetBossState(EBossState::Idle);
+	TaskMemory->Monster->SetMonsterState(EMonsterState::Idle);
 	TaskMemory->AccumulatedTime = 0.f;
 	TaskMemory->IdleFinishTime = FMath::RandRange(IdleFinishMinInterval, IdleFinishMaxInterval);
 
-	TaskMemory->AIController->StopMovement();
-	TaskMemory->Boss->GetCharacterMovement()->Velocity = FVector::ZeroVector;
-	
+	//TaskMemory->AIController->StopMovement();
+	//TaskMemory->Monster->GetCharacterMovement()->Velocity = FVector::ZeroVector;
+	TaskMemory->Monster->AquaticMovementComponent->StopMovement();
+
 	return EBTNodeResult::InProgress;
 }
 

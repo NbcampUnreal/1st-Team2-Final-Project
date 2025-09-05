@@ -3,12 +3,13 @@
 #include "CoreMinimal.h"
 #include "AbyssDiverUnderWorld.h"
 #include "BehaviorTree/Tasks/BTTask_BlackboardBase.h"
+
 #include "BTTask_SerpmareDetected.generated.h"
 
 struct FBTSerpmareDetectedTaskMemory
 {
 	TWeakObjectPtr<class ASerpmare> Serpmare;
-	TWeakObjectPtr<class ABossAIController> AIController;
+	TWeakObjectPtr<class AMonsterAIController> AIController;
 	float AccumulatedDetectTime;
 };
 
