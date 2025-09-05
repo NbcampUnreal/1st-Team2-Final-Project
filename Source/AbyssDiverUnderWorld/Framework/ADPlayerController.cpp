@@ -33,6 +33,7 @@
 #include "Framework/ADTutorialGameMode.h"
 #include "Framework/ADTutorialGameState.h"
 #include "Character/UnderwaterCharacter.h"
+#include "Engine/PawnIterator.h"
 
 #include "Kismet/GameplayStatics.h"
 
@@ -49,6 +50,8 @@ AADPlayerController::AADPlayerController()
 	}
 
 	PlayerHUDComponent = CreateDefaultSubobject<UPlayerHUDComponent>(TEXT("PlayerHUDComponent"));
+
+	bIsNameWidgetEnabled = true;
 }
 
 void AADPlayerController::BeginPlay()
@@ -407,6 +410,44 @@ void AADPlayerController::GainShield(int Amount)
 	else
 	{
 		S_GainShield(Amount);
+	}
+}
+
+void AADPlayerController::ToggleNameWidget()
+{
+	if (bIsNameWidgetEnabled)
+	{
+		HideNameWidgets();
+	}
+	else
+	{
+		ShowNameWidgets();
+	}
+}
+
+void AADPlayerController::ShowNameWidgets()
+{
+	bIsNameWidgetEnabled = true;
+
+	SetAllNameWidgetsEnabled(bIsNameWidgetEnabled);	
+}
+
+void AADPlayerController::HideNameWidgets()
+{
+	bIsNameWidgetEnabled = false;
+
+	SetAllNameWidgetsEnabled(bIsNameWidgetEnabled);
+}
+
+void AADPlayerController::SetAllNameWidgetsEnabled(bool bNewEnabled)
+{
+	// 모든 플레이어의 NameWidgetComponent를 찾아서 가시 상태 설정
+	if (UWorld* World = GetWorld())
+	{
+		for (AUnderwaterCharacter* TargetCharacter : TActorRange<AUnderwaterCharacter>(World))
+		{
+			TargetCharacter->SetNameWidgetEnabled(bNewEnabled);
+		}
 	}
 }
 

@@ -283,17 +283,16 @@ void AUnderwaterCharacter::BeginPlay()
 	AdjustSpeed();
 }
 
-void AUnderwaterCharacter::InitFromPlayerState(AADPlayerState* ADPlayerState)
+void AUnderwaterCharacter::InitPlayerStatus(AADPlayerState* ADPlayerState)
 {
 	if (ADPlayerState == nullptr)
 	{
 		return;
 	}
 
-	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("[%s] InitFromPlayerState/ NickName : %s / PlayerIndex : %d"),
+	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("[%s] InitPlayerStatus/ NickName : %s / PlayerIndex : %d"),
 		HasAuthority() ? TEXT("Server") : TEXT("Client"), *ADPlayerState->GetPlayerNickname(), ADPlayerState->GetPlayerIndex());
 
-	// @ToDo: 패키징에서 데이터를 제대로 받지 못하는 문제가 있다. 패키징하기 전에 수정할 것
 	PlayerIndex = ADPlayerState->GetPlayerIndex();
 	
 	if (UADInventoryComponent* Inventory = ADPlayerState->GetInventory())
@@ -394,13 +393,12 @@ void AUnderwaterCharacter::PossessedBy(AController* NewController)
 	
 	if (AADPlayerState* ADPlayerState = GetPlayerState<AADPlayerState>())
 	{
-		InitFromPlayerState(ADPlayerState);
+		InitPlayerStatus(ADPlayerState);
+
 		NameWidgetComponent->SetNameText(ADPlayerState->GetPlayerNickname());
 		UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Set Player Nick Name On Possess : %s"), *ADPlayerState->GetPlayerNickname());
-		if (!IsLocallyControlled())
-		{
-			NameWidgetComponent->SetEnable(true);
-		}
+		
+		InitNameWidgetEnabled();
 
 		// Possess는 Authority 상황에서 호출되므로 Server 로직만 작성하면 된다.
 		if (ADPlayerState->HasBeenDead())
@@ -450,21 +448,14 @@ void AUnderwaterCharacter::OnRep_PlayerState()
 	);
 	
 	// UnPossess 상황에서 Error 로그가 발생하지 않도록 수정
-	if (APlayerState* CurrentPlayerState = GetPlayerState<AADPlayerState>())
+	if (AADPlayerState* CurrentPlayerState = GetPlayerState<AADPlayerState>())
 	{
 		if (AADPlayerState* ADPlayerState = Cast<AADPlayerState>(CurrentPlayerState))
 		{
-			InitFromPlayerState(ADPlayerState);
+			InitPlayerStatus(ADPlayerState);
 			NameWidgetComponent->SetNameText(ADPlayerState->GetPlayerNickname());
 			UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Set Player Nick Name On Rep : %s"), *ADPlayerState->GetPlayerNickname());
-			if (!IsLocallyControlled())
-			{
-				NameWidgetComponent->SetEnable(true);
-			}
-		}
-		else
-		{
-			LOGVN(Error, TEXT("Player State Init failed : %d"), GetUniqueID());
+			InitNameWidgetEnabled();
 		}
 		if (IsLocallyControlled())
 		{
@@ -2436,6 +2427,13 @@ void AUnderwaterCharacter::RequestPlayEmote(int32 EmoteIndex)
 	}
 }
 
+void AUnderwaterCharacter::SetNameWidgetEnabled(bool bNewVisibility)
+{
+	const bool bIsPlayerOrSpectated = IsLocallyControlled() || IsLocallyViewed();
+	const bool bShouldEnableNameWidget = !bIsPlayerOrSpectated && bNewVisibility;
+	NameWidgetComponent->SetEnable(bShouldEnableNameWidget);
+}
+
 void AUnderwaterCharacter::S_PlayEmote_Implementation(uint8 EmoteIndex)
 {
 	RequestPlayEmote(EmoteIndex);
@@ -2672,6 +2670,16 @@ float AUnderwaterCharacter::GetOxygenConsumeRate(EDepthZone DepthZone) const
 	else
 	{
 		return SafeZoneOxygenConsumeRate;
+	}
+}
+
+void AUnderwaterCharacter::InitNameWidgetEnabled()
+{
+	// Player Controller의 Name Widget Enable 설정을 확인
+	if (AADPlayerController* LocalPlayer = Cast<AADPlayerController>(UGameplayStatics::GetPlayerController(this, 0)))
+	{
+		const bool bNameWidgetEnabled = LocalPlayer->IsNameWidgetEnabled();
+		SetNameWidgetEnabled(bNameWidgetEnabled);
 	}
 }
 
