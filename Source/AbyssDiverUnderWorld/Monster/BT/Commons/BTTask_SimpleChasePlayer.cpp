@@ -3,6 +3,7 @@
 #include "AbyssDiverUnderWorld.h"
 
 #include "Monster/Monster.h"
+#include "Character/UnderwaterCharacter.h"
 
 #include "BehaviorTree/BehaviorTreeComponent.h"
 #include "BehaviorTree/BlackboardComponent.h"
@@ -28,10 +29,27 @@ void UBTTask_SimpleChasePlayer::TickTask(UBehaviorTreeComponent& OwnerComp, uint
 {
 	Super::TickTask(OwnerComp, NodeMemory, DeltaSeconds);
 
-	AMonster* Monster = Cast<AMonster>(OwnerComp.GetAIOwner()->GetPawn());
+	AAIController* AIController = OwnerComp.GetAIOwner();
+	AMonster* Monster = Cast<AMonster>(AIController->GetPawn());
 	if (Monster == nullptr)
 	{
 		LOGV(Error, TEXT("UBTTask_SimpleChasePlayer::TickTask : Monster is nullptr"));
+		FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
+		return;
+	}
+
+	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(AIController->GetBlackboardComponent()->GetValueAsObject("TargetPlayer"));
+	if (Player == nullptr)
+	{
+		LOGV(Error, TEXT("Player IS Not Valid"));
+		FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
+		return;
+	}
+
+	if (Player->IsHideInSeaweed())
+	{
+		//AIController->GetBlackboardComponent()->SetValueAsBool("bIsPlayerHidden", true);
+		Monster->RemoveDetection(Player);
 		FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
 		return;
 	}

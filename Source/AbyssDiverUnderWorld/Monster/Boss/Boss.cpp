@@ -274,20 +274,25 @@ void ABoss::RotationToTarget(const FVector& InTargetLocation)
 	SetActorRotation(NewRotation);
 }
 
-void ABoss::Attack()
-{
-	const uint8 AttackType = FMath::RandRange(0, AttackAnimations.Num() - 1);
-	
-	if (IsValid(AttackAnimations[AttackType]))
-	{
-		ChaseAccumulatedTime = 0.f;
-		AnimInstance->OnMontageEnded.RemoveDynamic(this, &ABoss::OnAttackMontageEnded);
-		AnimInstance->OnMontageEnded.AddDynamic(this, &ABoss::OnAttackMontageEnded);
-		M_PlayMontage(AttackAnimations[AttackType]);
-	}
-
-	bIsAttacking = true;
-}
+//void ABoss::Attack()
+//{
+//	const uint8 AttackType = FMath::RandRange(0, AttackAnimations.Num() - 1);
+//	
+//	if (!AnimInstance) return;
+//
+//	// If any montage is playing, prevent duplicate playback
+//	if (AnimInstance->IsAnyMontagePlaying()) return;
+//
+//	if (IsValid(AttackAnimations[AttackType]))
+//	{
+//		ChaseAccumulatedTime = 0.f;
+//		AnimInstance->OnMontageEnded.RemoveDynamic(this, &ABoss::OnAttackMontageEnded);
+//		AnimInstance->OnMontageEnded.AddDynamic(this, &ABoss::OnAttackMontageEnded);
+//		M_PlayMontage(AttackAnimations[AttackType]);
+//	}
+//
+//	bIsAttacking = true;
+//}
 
 void ABoss::OnAttackEnded()
 {

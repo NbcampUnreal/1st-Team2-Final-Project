@@ -33,7 +33,7 @@ void UAnimNotify_MonsterDefaultAttack::Notify(USkeletalMeshComponent* MeshComp, 
 	// 태그로 콜리전 가져오기
 	else
 	{
-		UCapsuleComponent* AttackCollision = Monster->FindComponentByTag<UCapsuleComponent>(CollisionTag);
+		UShapeComponent* AttackCollision = Monster->FindComponentByTag<UShapeComponent>(CollisionTag);
 		if (!IsValid(AttackCollision)) return;
 
 		// 오버랩 판정 시작
