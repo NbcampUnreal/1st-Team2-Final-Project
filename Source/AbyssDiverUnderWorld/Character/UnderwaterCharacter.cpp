@@ -12,7 +12,7 @@
 #include "StatComponent.h"
 #include "UpgradeComponent.h"
 #include "AbyssDiverUnderWorld/Interactable/Item/Component/ADInteractionComponent.h"
-#include "Monster/Boss/Effect/PostProcessSettingComponent.h"
+#include "Monster/Effect/PostProcessSettingComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/PawnNoiseEmitterComponent.h"

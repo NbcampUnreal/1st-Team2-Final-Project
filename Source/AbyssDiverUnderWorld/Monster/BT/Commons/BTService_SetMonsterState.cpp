@@ -36,13 +36,13 @@ void UBTService_SetMonsterState::TickNode(UBehaviorTreeComponent& OwnerComp, uin
 	{
 	case EMonsterState::Chase:
 	{
-		if (Monster->TargetActor == nullptr)
+		if (Monster->GetTarget() == nullptr)
 		{
 			Monster->SetMonsterState(EMonsterState::Patrol);
 		}
 		else
 		{
-			AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Monster->TargetActor);
+			AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Monster->GetTarget());
 			if (Player)
 			{
 				if (Player->GetCharacterState() == ECharacterState::Death)

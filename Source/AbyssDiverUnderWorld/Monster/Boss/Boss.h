@@ -10,7 +10,7 @@
 class AEnhancedBossAIController;
 class UNiagaraSystem;
 enum class EBossPhysicsType : uint8;
-class UCameraControllerComponent;
+
 class ATargetPoint;
 class AUnderwaterCharacter;
 class UAquaticMovementComponent;
@@ -139,12 +139,12 @@ public:
 
 	/** 보스의 공격 시 애니메이션 재생*/
 	virtual void Attack() override;
+	virtual void OnAttackEnded() override;
 
 	/** 보스의 공격이 끝난 후 타격 판정을 초기화하는 함수
 	 *
 	 * AnimNotify_BossAttack 호출 후 일정 시간 후 호출
 	 */
-	virtual void OnAttackEnded();
 
 	/** 보스의 이동속도를 설정하는 함수 */
 	void SetMoveSpeed(const float& SpeedMultiplier);
@@ -158,13 +158,6 @@ public:
 	//void M_OnDeath();
 	virtual void M_OnDeath_Implementation() override;
 
-protected:
-
-	virtual void OnMeshOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
-		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
-		bool bFromSweep, const FHitResult& SweepResult) override;
-
-	virtual void OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted) override;
 
 private:
 	
@@ -184,12 +177,6 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
 	float MaxPatrolDistance;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
-	float LaunchPower;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
-	float AttackedCameraShakeScale;
-	
 	//UPROPERTY(VisibleAnywhere)
 	//TObjectPtr<UAnimInstance> AnimInstance;
 
@@ -212,20 +199,6 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Stat")
 	float FourDirectionTraceDistance = 300.0f;
-	
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Camera")
-	TObjectPtr<UCameraControllerComponent> CameraControllerComponent;
-
-	
-
-	/** 공격 받은 플레이어 리스트
-	 * 
-	 * 중복 공격을 방지하기 위한 용도
-	 * 
-	 * 공격이 끝난 후 리스트는 초기화됨
-	 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Attack")
-	TArray<TObjectPtr<AUnderwaterCharacter>> AttackedPlayers;
 
 	//UPROPERTY(Replicated, BlueprintReadWrite)
 	//EMonsterState BossState;
@@ -260,8 +233,6 @@ private:
 public:
 	/** Target Getter, Setter */
 	//FORCEINLINE bool GetIsAttackCollisionOverlappedPlayer() const { return bIsAttackCollisionOverlappedPlayer; };
-
-	FORCEINLINE UCameraControllerComponent* GetCameraControllerComponent() const { return CameraControllerComponent; };
 
 	FORCEINLINE UAnimInstance* GetAnimInstance() const { return AnimInstance; }
 	FORCEINLINE FVector GetDamagedLocation() const { return DamagedLocation; }

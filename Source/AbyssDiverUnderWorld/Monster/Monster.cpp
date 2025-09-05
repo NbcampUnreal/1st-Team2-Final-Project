@@ -11,10 +11,14 @@
 #include "NiagaraFunctionLibrary.h"
 #include "Character/UnderwaterCharacter.h"
 #include "Components/CapsuleComponent.h"
+#include "Monster/Effect/CameraControllerComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "Interactable/OtherActors/Radars/RadarReturn2DComponent.h"
+
 #include "Monster/Components/AquaticMovementComponent.h"
 #include "Monster/Components/TickControlComponent.h"
 #include "Monster/EPerceptionType.h"
+
 
 #include "BehaviorTree/Blackboard/BlackboardKeyType_Object.h"
 
@@ -34,7 +38,7 @@ AMonster::AMonster()
 	BlackboardComponent = nullptr;
 	AIController = nullptr;
 	AnimInstance = nullptr;
-	TargetActor = nullptr;
+	TargetPlayer = nullptr;
 	ChaseTriggerTime = 1.8f;
 	ChaseSpeed = 400.0f;
 	PatrolSpeed = 200.0f;
@@ -58,6 +62,9 @@ AMonster::AMonster()
 	AttackCollision->SetCapsuleRadius(80.0f);
 	AttackCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	AttackCollision->ComponentTags.Add(TEXT("Attack Collision"));
+
+	// 공격 시 카메라 쉐이킹을 위한 컴포넌트
+	CameraControllerComponent = CreateDefaultSubobject<UCameraControllerComponent>("Camera Controller Component");
 
 	//RadarReturnComponent->FactionTags.Init(TEXT("Hostile"), 1);
 
@@ -117,8 +124,8 @@ void AMonster::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLi
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(AMonster, MonsterState);
-	DOREPLIFETIME(AMonster, bIsChasing);
+	// DOREPLIFETIME(AMonster, MonsterState);
+	// DOREPLIFETIME(AMonster, bIsChasing);
 }
 
 void AMonster::OnAttackCollisionOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
@@ -505,6 +512,12 @@ void AMonster::Attack()
 	bIsAttacking = true;
 }
 
+void AMonster::OnAttackEnded()
+{
+	bIsAttacking = false;
+	AttackedPlayers.Empty();
+}
+
 void AMonster::M_PlayMontage_Implementation(UAnimMontage* AnimMontage, float InPlayRate, FName StartSectionName)
 {
 	PlayAnimMontage(AnimMontage, InPlayRate, StartSectionName);
@@ -610,30 +623,30 @@ void AMonster::HandleSetting_OnDeath()
 void AMonster::OnMeshOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
 	int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	//// 사망 상태면 얼리 리턴
-	//if (BossState == EBossState::Death) return;
+	// 사망 상태면 얼리 리턴
+	if (MonsterState == EMonsterState::Death) return;
 
-	//// 공격 가능한 상태가 아니라면 리턴
-	//if (!bIsAttacking) return;
+	// 공격 가능한 상태가 아니라면 리턴
+	if (!bIsAttacking) return;
 
-	//// 공격 대상이 플레이어가 아닌 경우 얼리 리턴
-	//AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(OtherActor);
-	//if (!IsValid(Player)) return;
+	// 공격 대상이 플레이어가 아닌 경우 얼리 리턴
+	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(OtherActor);
+	if (!IsValid(Player)) return;
 
-	//// 해당 플레이어가 이미 공격받은 상태인 경우 얼리 리턴
-	//if (AttackedPlayers.Contains(Player)) return;
+	// 해당 플레이어가 이미 공격받은 상태인 경우 얼리 리턴
+	if (AttackedPlayers.Contains(Player)) return;
 
-	//// 공격받은 대상 리스트에 플레이어 추가
-	//AttackedPlayers.Add(Player);
+	// 공격받은 대상 리스트에 플레이어 추가
+	AttackedPlayers.Add(Player);
 
-	//// 해당 플레이어에게 데미지 적용
-	//UGameplayStatics::ApplyDamage(Player, StatComponent->AttackPower, GetController(), this, UDamageType::StaticClass());
+	// 해당 플레이어에게 데미지 적용
+	UGameplayStatics::ApplyDamage(Player, StatComponent->AttackPower, GetController(), this, UDamageType::StaticClass());
 
-	//// 피격당한 플레이어의 카메라 Shake
-	//CameraControllerComponent->ShakePlayerCamera(Player, AttackedCameraShakeScale);
+	// 피격당한 플레이어의 카메라 Shake
+	CameraControllerComponent->ShakePlayerCamera(Player, AttackedCameraShakeScale);
 
-	//// 캐릭터 넉백
-	//LaunchPlayer(Player, LaunchPower);
+	// 캐릭터 넉백
+	LaunchPlayer(Player, LaunchPower);
 }
 
 void AMonster::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted)
@@ -727,6 +740,9 @@ void AMonster::AddDetection(AActor* Actor)
 	if (!IsValid(Actor) || !IsValid(this)) return;
 	if (!HasAuthority()) return;
 
+	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor);
+	if (!Player) return;
+
 	if (!DetectedPlayers.Contains(Actor))
 	{
 		DetectedPlayers.Add(Actor);
@@ -737,22 +753,18 @@ void AMonster::AddDetection(AActor* Actor)
 			DetectedPlayers.Num()
 		);
 
-		AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor);
-		if (Player)
-		{
-			Player->OnTargeted(this);
-		}
+		Player->OnTargeted(this);
 	}
 	else return;
 
-	// 만약 TargetActor가 없으면 TargetActor를 해당 Actor(Player)로 설정.
-	if (!TargetActor.IsValid())
+	// 만약 TargetPlayer가 없으면 TargetPlayer를 해당 Actor(Player)로 설정.
+	if (!TargetPlayer.IsValid())
 	{
-		TargetActor = Actor;
+		TargetPlayer = Player;
 
 		if (BlackboardComponent)
 		{
-			BlackboardComponent->SetValueAsObject(TargetPlayerKey, TargetActor.Get());
+			BlackboardComponent->SetValueAsObject(TargetPlayerKey, TargetPlayer.Get());
 			ApplyMonsterStateChange(EMonsterState::Chase);
 		}
 	}
@@ -772,19 +784,22 @@ void AMonster::RemoveDetection(AActor* Actor)
 		DetectedPlayers.Num())
 
 	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor);
-	if (Player)
+	if (!Player)
 	{
-		Player->OnUntargeted(this);
+		LOG(TEXT("Player가 유효하지 않음"));
+		return;
 	}
 
-	// 만약 현재 설정된 TargetActor가 빠졌다면 다른 타겟 지정해야함
-	const bool bWasTarget = (TargetActor.Get() == Actor);
+	Player->OnUntargeted(this);
+
+	// 만약 현재 설정된 TargetPlayer가 빠졌다면 다른 타겟 지정해야함
+	const bool bWasTarget = (TargetPlayer.Get() == Actor);
 
 	if (bWasTarget)
 	{
-		// 우선 TargetActor 비움.
+		// 우선 TargetPlayer 비움.
 		//InitTarget();
-		TargetActor.Reset();
+		TargetPlayer.Reset();
 
 		if (BlackboardComponent)
 		{
@@ -798,15 +813,21 @@ void AMonster::RemoveDetection(AActor* Actor)
 			return;
 		}
 
-		// TSet 순회하여 요소(Player)가 남아있으면 해당 플레이어를 TargetActor로 지정
+		// TSet 순회하여 요소(Player)가 남아있으면 해당 플레이어를 TargetPlayer로 지정
 		for (const TWeakObjectPtr<AActor>& Elem : DetectedPlayers)
 		{
 			if (AActor* NewTarget = Elem.Get())
 			{
-				TargetActor = NewTarget;
+				AUnderwaterCharacter* DetectedPlayer = Cast<AUnderwaterCharacter>(NewTarget);
+				
+				if (DetectedPlayer)
+				{
+					TargetPlayer = DetectedPlayer;
+				}
+
 				if (BlackboardComponent)
 				{
-					BlackboardComponent->SetValueAsObject(TargetPlayerKey, TargetActor.Get());
+					BlackboardComponent->SetValueAsObject(TargetPlayerKey, TargetPlayer.Get());
 				}
 				return;
 			}
@@ -823,7 +844,7 @@ void AMonster::ForceRemoveDetectedPlayers()
 	if (!HasAuthority()) return;
 
 	// 이미 비어있으면 return;
-	if (DetectedPlayers.Num() == 0 && !TargetActor.IsValid())
+	if (DetectedPlayers.Num() == 0 && !TargetPlayer.IsValid())
 	{
 		return;
 	}
@@ -988,6 +1009,11 @@ void AMonster::InitCharacterMovementSetting()
 void AMonster::SetMaxSwimSpeed(float Speed)
 {
 	AquaticMovementComponent->MaxSpeed = Speed;
+}
+
+void AMonster::SetTarget(AUnderwaterCharacter* Target)
+{
+	TargetPlayer = Target;
 }
 
 

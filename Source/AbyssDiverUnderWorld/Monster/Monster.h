@@ -16,6 +16,7 @@ class ASplinePathActor;
 class USphereComponent;
 class UNiagaraSystem;
 class UAquaticMovementComponent;
+class UCameraControllerComponent;
 class AUnderwaterCharacter;
 class UTickControlComponent;
 
@@ -40,6 +41,8 @@ public:
 	virtual void PerformChasing(const float& InDeltaTime);
 
 	virtual void Attack();
+
+	virtual void OnAttackEnded();
 
 	UFUNCTION(NetMulticast, Reliable)
 	void M_PlayMontage(UAnimMontage* AnimMontage, float InPlayRate = 1, FName StartSectionName = NAME_None);
@@ -83,16 +86,18 @@ public:
 	void InitCharacterMovementSetting();
 
 protected:
-
+	// Attack Collision 에 Player가 들어오면 공격 가능 플래그 On
 	UFUNCTION()
 	void OnAttackCollisionOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
 		bool bFromSweep, const FHitResult& SweepResult);
 
+	// Attack Collision 에 Player가 빠지면 공격 가능 플래그 Off
 	UFUNCTION()
 	void OnAttackCollisionOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
+	// 실제로 Player를 공격하기 위한 Mesh Collision
 	UFUNCTION()
 	virtual void OnMeshOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
@@ -107,31 +112,34 @@ protected:
 
 #pragma region Variable
 public:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement|Stat")
 	float ChasingRotationSpeedMultiplier = 1.5f;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement|Stat")
 	float ChasingMovementSpeedMultiplier = 2.2f;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement|Stat")
 	float MovementInterpSpeed = 1.0f;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Stat")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement|Stat")
 	float RotationInterpSpeed = 1.1f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Attack|Stat")
+	float LaunchPower;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Attack|Stat")
+	float AttackedCameraShakeScale;
 
 	UPROPERTY(BlueprintAssignable, Category = "Event")
 	FOnMonsterDeadSignature OnMonsterDead;
-	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly)
+
+	// UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	uint8 bIsChasing : 1;
-	UPROPERTY()
-	TWeakObjectPtr<AActor> TargetActor;
 
 	/** 새로운 물리 기반 수중 이동 컴포넌트 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Monster|Movement")
 	TObjectPtr<UAquaticMovementComponent> AquaticMovementComponent;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Monster|Target")
-	TObjectPtr<AUnderwaterCharacter> TargetPlayer;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Monster|Target")
 	TObjectPtr<AUnderwaterCharacter> CachedTargetPlayer;
@@ -162,13 +170,17 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI|SoundComponent")
 	TObjectPtr<UMonsterSoundComponent> MonsterSoundComponent;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI|Camera")
+	TObjectPtr<UCameraControllerComponent> CameraControllerComponent;
+
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UAnimInstance> AnimInstance;
 
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UAnimMontage> CurrentAttackAnim;
 
-	UPROPERTY(Replicated, BlueprintReadWrite)
+	// UPROPERTY(Replicated, BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite)
 	EMonsterState MonsterState;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AI|AttackAnimation")
@@ -200,6 +212,18 @@ protected:
 
 	UPROPERTY(VisibleAnywhere)
 	TSet<TWeakObjectPtr<AActor>> DetectedPlayers;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Monster|Target")
+	TWeakObjectPtr<AUnderwaterCharacter> TargetPlayer;
+
+	/** 공격 받은 플레이어 리스트
+	 *
+	 * 중복 공격을 방지하기 위한 용도
+	 *
+	 * 공격이 끝난 후 리스트는 초기화됨
+	 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Monster|Attack")
+	TArray<TObjectPtr<AUnderwaterCharacter>> AttackedPlayers;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	float WanderRadius = 1300.0f;
@@ -250,10 +274,11 @@ public:
 	// @ TODO : PerformAttack Task빌드를 위해 임시로 가져온 Getter. Monster에는 AttackCollision이 없음. Boss에만 있다.
 	FORCEINLINE bool GetIsAttackCollisionOverlappedPlayer() const { return bIsAttackCollisionOverlappedPlayer; };
 	FORCEINLINE void SetTargetLocation(const FVector& InTargetLocation) { TargetLocation = InTargetLocation; }
+	FORCEINLINE UCameraControllerComponent* GetCameraControllerComponent() const { return CameraControllerComponent; };
 	FORCEINLINE void InitTarget() { TargetPlayer = nullptr; };
 	FORCEINLINE AUnderwaterCharacter* GetCachedTarget() const { return CachedTargetPlayer; };
 	FORCEINLINE void SetCachedTarget(AUnderwaterCharacter* Target) { CachedTargetPlayer = Target; };
 	FORCEINLINE void InitCachedTarget() { CachedTargetPlayer = nullptr; };
-	FORCEINLINE AUnderwaterCharacter* GetTarget() const { return TargetPlayer; };
-	FORCEINLINE void SetTarget(AUnderwaterCharacter* Target) { TargetPlayer = Target; };
+	FORCEINLINE AUnderwaterCharacter* GetTarget() const { return TargetPlayer.Get(); };
+	void SetTarget(AUnderwaterCharacter* Target);
 };
