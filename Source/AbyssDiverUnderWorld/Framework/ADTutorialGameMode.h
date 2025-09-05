@@ -1,9 +1,12 @@
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameMode.h"
 #include "Tutorial/TutorialEnums.h"
+#include "Sound/SoundMix.h"
 #include "Interactable/OtherActors/TargetIndicators/IndicatingTarget.h"
+#include "Character/PlayerComponent/OxygenComponent.h"
+#include "Engine/TargetPoint.h"
 #include "ADTutorialGameMode.generated.h"
 
 class UDataTable;
@@ -11,146 +14,207 @@ class ALight;
 class APostProcessVolume;
 class AUnderwaterCharacter;
 class UAnimMontage;
+class AADDroneSeller;
+class AADDrone;
+class AADPlayerController;
+class UTexture2D;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADTutorialGameMode : public AGameMode
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
-	public:
-	AADTutorialGameMode();
+public: 
+    AADTutorialGameMode();
 
-protected:
-	virtual void StartPlay() override;
+protected: 
+    virtual void StartPlay() override;
 
-public:
 #pragma region Method
 public:
-	void StartFirstTutorialPhase();
-	void AdvanceTutorialPhase();
-	void OnTypingAnimationFinished();
-	void OnPlayerItemAction(EPlayerActionTrigger ItemActionType);
-	void OnPlayerAttemptedRevive();
-	void DestroyActiveWall();
-	void SpawnNewWall(FName WallTag);
+    UFUNCTION(Server, Reliable)
+    void NotifyBodySubmitted(AUnderwaterCharacter* SubmittingPlayer);
 
-	UFUNCTION()
-	void OnTrackedOwnerDestroyed(AActor* DestroyedActor);
+    // 튜토리얼 흐름
+    void StartFirstTutorialPhase();
+    void AdvanceTutorialPhase();
+    void OnTypingAnimationFinished();
+    void OnPlayerItemAction(EPlayerActionTrigger ItemActionType);
 
-	UFUNCTION(BlueprintCallable)
-	void SpawnDownedNPC();
+    // 벽
+    void DestroyActiveWall();
+    void SpawnNewWall(FName WallTag);
 
+    // 기타
+    void TriggerResurrectionSequence();
+
+    // 접근자
+    UFUNCTION(BlueprintPure, Category = "Tutorial")
+    bool IsTypingFinishedForCurrentPhase() const;
+
+    AUnderwaterCharacter* GetTutorialNPC() const;
+
+    // 리스폰/부활
+    void ReviveSinglePlayerAtDrone(int8 PlayerIndex, const AADDrone* Drone);
+    bool TutorialTryGetRandomTaggedTargetPointTransform(const FName& Tag, FTransform& OutTM) const;
+    FTransform GetBestTutorialRespawnTransform(const class AADDrone* Drone) const;
 protected:
-	UFUNCTION(BlueprintImplementableEvent, Category = "Tutorial")
-	void OnPhaseBatteryStart();
+    // Phase 핸들러
+    void HandleCurrentPhase();
+    void HandlePhase_Movement();
+    void HandlePhase_Sprint();
+    void HandlePhase_Oxygen();
+    void HandlePhase_Radar();
+    void HandlePhase_Dialogue_02();
+    void HandlePhase_Looting();
+    void HandlePhase_Inventory();
+    void HandlePhase_Drone();
+    void HandlePhase_LightToggle();
+    void HandlePhase_Items();
+    void HandlePhase_Dialogue_06();
+    void HandlePhase_Battery();
+    void HandlePhase_Drop();
+    void HandlePhase_Dialogue_05();
+    void HandlePhase_OxygenWarning();
+    void HandlePhase_Revive();
+    void HandlePhase_Die();
+    void HandlePhase_Resurrection();
+    void HandlePhase_Complete();
 
-	void HandleCurrentPhase();
-	void HidePhaseActors();
-	void OnReviveAnimationFinished();
+    UFUNCTION(BlueprintImplementableEvent, Category = "Tutorial")
+    void OnPhaseBatteryStart();
 
-	void HandlePhase_Movement();
-	void HandlePhase_Sprint();
-	void HandlePhase_Oxygen();
-	void HandlePhase_Radar();
-	void HandlePhase_Dialogue_02();
-	void HandlePhase_Looting();
-	void HandlePhase_Inventory();
-	void HandlePhase_Drone();
-	void HandlePhase_LightToggle();
-	void HandlePhase_Items();
-	void HandlePhase_Dialogue_06();
-	void HandlePhase_Battery();
-	void HandlePhase_Drop();
-	void HandlePhase_Dialogue_05();
-	void HandlePhase_OxygenWarning();
-	void HandlePhase_Revive();
-	void HandlePhase_Die();
-	void HandlePhase_Resurrection();
-	void HandlePhase_Complete();
+    UFUNCTION()
+    void OnTutorialNPCStateChanged(AUnderwaterCharacter* Character,
+        ECharacterState OldCharacterState,
+        ECharacterState NewCharacterState);
+
+    // 리스폰 보조
+    class AADTutorialPlayerController* FindTutorialPlayerControllerByIndex(int8 PlayerIndex) const;
+    void RestartTutorialPlayerFromIndex(int8 PlayerIndex, const FVector& SpawnLocation);
+    FVector GetTutorialRandomLocation(const FVector& Center, float Distance) const;
 
 private:
-	void TrackPhaseActor(AActor* Actor);
-	void BindIndicatorToOwner(AActor* OwnerActor, AActor* IndicatorActor);
+    void HidePhaseActors();
+    void TrackPhaseActor(AActor* Actor);
+    void BindIndicatorToOwner(AActor* OwnerActor, AActor* IndicatorActor);
+
+    UFUNCTION()
+    void OnTrackedOwnerDestroyed(AActor* DestroyedActor);
+
+    void SpawnTutorialDronePair(TObjectPtr<AADDroneSeller>& OutSeller, TObjectPtr<AADDrone>& OutDrone);
+    FTransform GetResurrectionSpawnTransform() const;
+
+    void ReviveTutorialNPCAtDrone(AADDrone* Drone);
+
+    ATargetPoint* FindTargetPointByTag(const FName& Tag) const;
+
+    FTransform ChooseTutorialRespawnTransform(const AADDrone* Drone) const;
 #pragma endregion
 
 #pragma region Variable
 public:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tutorial|Battery")
-	float BatteryStartPercentOverride = -1.f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tutorial|Battery")
+    float BatteryStartPercentOverride = -1.f;
 
 protected:
-	UPROPERTY(EditAnywhere, Category = "Tutorial|Debug")
-	ETutorialPhase StartPhaseOverride = ETutorialPhase::None;
+    UPROPERTY(EditAnywhere, Category = "Tutorial|Debug")
+    ETutorialPhase StartPhaseOverride = ETutorialPhase::None;
 
-	UPROPERTY(EditAnywhere, Category = "Tutorial|Data")
-	TObjectPtr<UDataTable> TutorialDataTable;
+    // Spawning
+    UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Spawning")
+    TSubclassOf<AActor> LootableOreClass;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Spawning")
-	TSubclassOf<AActor> LootableOreClass;
+    UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Spawning")
+    TSubclassOf<AIndicatingTarget> IndicatingTargetClass;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Spawning")
-	TSubclassOf<AIndicatingTarget> IndicatingTargetClass;
+    UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Spawning")
+    TSubclassOf<AUnderwaterCharacter> GroggyNPCClass;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Spawning")
-	TSubclassOf<AUnderwaterCharacter> GroggyNPCClass;
+    UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Spawning")
+    TSubclassOf<AActor> CurrentWallClass;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Spawning")
-	TSubclassOf<AActor> CurrentWallClass;
+    UPROPERTY(EditAnywhere, Category = "Tutorial|Spawning")
+    FName OreSpawnTag;
 
-	UPROPERTY(EditAnywhere, Category = "Tutorial|Spawning")
-	FName OreSpawnTag;
+    UPROPERTY(EditAnywhere, Category = "Tutorial|Spawning")
+    FName DialogueTargetSpawnTag;
 
-	UPROPERTY(EditAnywhere, Category = "Tutorial|Spawning")
-	FName DialogueTargetSpawnTag;
+    UPROPERTY(EditAnywhere, Category = "Tutorial|Spawning")
+    FName GroggyNPCSpawnTag;
 
-	UPROPERTY(EditAnywhere, Category = "Tutorial|Spawning")
-	FName GroggyNPCSpawnTag;
+    // Icons
+    UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Settings|Icons")
+    TObjectPtr<UTexture2D> LootingOreIcon;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Tutorial Settings | Icons")
-	TObjectPtr<UTexture2D> LootingOreIcon;
+    UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Settings|Icons")
+    TObjectPtr<UTexture2D> DialogueIndicatorIcon;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Tutorial Settings | Icons")
-	TObjectPtr<UTexture2D> DialogueIndicatorIcon;
+    UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Settings|Icons")
+    TObjectPtr<UTexture2D> DroneIndicatorIcon;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Tutorial Settings | Icons")
-	TObjectPtr<UTexture2D> DroneIndicatorIcon;
+    // Timing
+    UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Timing")
+    float EmoteToNextPhaseDelay = 2.0f;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Animation")
-	TObjectPtr<UAnimMontage> TutorialReviveMontage;
+    // Sound
+    UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Sound")
+    TObjectPtr<USoundMix> MuteDroneSoundMix;
 
-	UPROPERTY()
-	TWeakObjectPtr<AUnderwaterCharacter> TutorialNPC;
+    // Drone
+    UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Drone")
+    TSubclassOf<AADDroneSeller> TutorialDroneSellerClass;
 
-	FTimerHandle TutorialStartTimerHandle;
-	FTimerHandle GroggyAnimationTimerHandle;
+    UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Drone")
+    TSubclassOf<AADDrone> TutorialDroneClass;
 
-	uint8 bBatteryGaugeStarted : 1;
+    UPROPERTY(EditAnywhere, Category = "Tutorial|Drone")
+    FName ResurrectionDroneSpawnTag;
+
+    // Respawn
+    UPROPERTY(EditAnywhere, Category = "Tutorial|Respawn")
+    FName FixedRespawnPointTag = FName("RespawnPoint");
+
+
 
 private:
-	UPROPERTY()
-	TObjectPtr<class AADPlayerController> TutorialPlayerController;
+    UPROPERTY()
+    TWeakObjectPtr<AUnderwaterCharacter> TutorialNPC;
 
-	UPROPERTY()
-	TArray<TObjectPtr<AActor>> ActorsToShowThisPhase;
+    // 컨트롤러/액터 캐시
+    UPROPERTY()
+    TObjectPtr<AADPlayerController> TutorialPlayerController;
 
-	UPROPERTY()
-	TArray<TObjectPtr<ALight>> DisabledLights;
+    UPROPERTY()
+    TArray<TObjectPtr<AActor>> ActorsToShowThisPhase;
 
-	UPROPERTY()
-	TObjectPtr<AActor> ActiveCurrentWall;
+    UPROPERTY()
+    TArray<TObjectPtr<ALight>> DisabledLights;
 
-	UPROPERTY()
-	TObjectPtr<APostProcessVolume> TutorialPPV = nullptr;
+    UPROPERTY()
+    TObjectPtr<AActor> ActiveCurrentWall;
 
-	TMap<TWeakObjectPtr<AActor>, TWeakObjectPtr<AActor>> OwnerToIndicator;
+    UPROPERTY()
+    TObjectPtr<APostProcessVolume> TutorialPPV;
 
-	bool bIsTypingFinishedForCurrentPhase = false;
-	int32 ItemsPhaseProgress;
-#pragma endregion
+    // 드론/셀러
+    UPROPERTY()
+    TObjectPtr<AADDroneSeller> Tutorial_ActiveSeller;
 
-#pragma region Getter, Setter
-public:
-	UFUNCTION(BlueprintPure, Category = "Tutorial")
-	bool IsTypingFinishedForCurrentPhase() const;
+    UPROPERTY()
+    TObjectPtr<AADDrone> Tutorial_ActiveDrone;
+
+    TMap<TWeakObjectPtr<AActor>, TWeakObjectPtr<AActor>> OwnerToIndicator;
+
+    // 타이머
+    FTimerHandle TutorialStartTimerHandle;
+    FTimerHandle EmoteToNextTimerHandle;
+
+    // 플래그/상태
+    uint8 bBatteryGaugeStarted : 1;
+    uint8 bIsTypingFinishedForCurrentPhase : 1;
+    uint8 bIsBodySubmittedInResurrectionPhase : 1;
+
+    int32 ItemsPhaseProgress = 0;
 #pragma endregion
 };
