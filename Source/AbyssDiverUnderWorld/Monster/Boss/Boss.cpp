@@ -18,13 +18,13 @@
 #include "Net/UnrealNetwork.h"
 #include "NavigationSystem.h"
 #include "NiagaraFunctionLibrary.h"
-#include "Enum/EPerceptionType.h"
+#include "Monster/EPerceptionType.h"
 #include "Framework/ADPlayerController.h"
 #include "Perception/AISense_Damage.h"
 #include "Interactable/OtherActors/Radars/RadarReturnComponent.h"
 #include "Monster/Components/AquaticMovementComponent.h"
 
-const FName ABoss::BossStateKey = "BossState";
+//const FName ABoss::BossStateKey = "BossState";
 
 #pragma region 초기화 함수
 ABoss::ABoss()
@@ -86,12 +86,12 @@ void ABoss::BeginPlay()
 	Params.AddIgnoredActor(this);
 }
 
-void ABoss::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-	DOREPLIFETIME(ABoss, BossState);
-}
+//void ABoss::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+//{
+//	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+//
+//	DOREPLIFETIME(ABoss, BossState);
+//}
 #pragma endregion
 
 //#pragma region 수중생물 AI 자체구현 함수
@@ -131,31 +131,31 @@ void ABoss::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifet
 //	}
 //}
 
-void ABoss::InitCharacterMovementSetting()
-{
-	//if (!IsValid(GetCharacterMovement())) return;
-	//
-	//GetCharacterMovement()->BrakingDecelerationSwimming = OriginDeceleration;
-	//GetCharacterMovement()->MaxSwimSpeed = StatComponent->GetMoveSpeed();
-	
-	// AquaticMovementComponent 설정도 초기화
-	if (AquaticMovementComponent)
-	{
-		AquaticMovementComponent->BrakingDeceleration = OriginDeceleration;
-		AquaticMovementComponent->MaxSpeed = StatComponent->GetMoveSpeed();
-	}
-}
+//void ABoss::InitCharacterMovementSetting()
+//{
+//	//if (!IsValid(GetCharacterMovement())) return;
+//	//
+//	//GetCharacterMovement()->BrakingDecelerationSwimming = OriginDeceleration;
+//	//GetCharacterMovement()->MaxSwimSpeed = StatComponent->GetMoveSpeed();
+//	
+//	// AquaticMovementComponent 설정도 초기화
+//	if (AquaticMovementComponent)
+//	{
+//		AquaticMovementComponent->BrakingDeceleration = OriginDeceleration;
+//		AquaticMovementComponent->MaxSpeed = StatComponent->GetMoveSpeed();
+//	}
+//}
 
-void ABoss::SetBossState(EBossState State)
-{
-	if (!HasAuthority()) return;
-	
-	if (AAIController* AIC = Cast<AAIController>(GetController()))
-	{
-		BossState = State;
-		AIC->GetBlackboardComponent()->SetValueAsEnum(BossStateKey, static_cast<uint8>(BossState));	
-	}
-}
+//void ABoss::SetBossState(EBossState State)
+//{
+//	if (!HasAuthority()) return;
+//	
+//	if (AAIController* AIC = Cast<AAIController>(GetController()))
+//	{
+//		//BossState = State;
+//		//AIC->GetBlackboardComponent()->SetValueAsEnum(BossStateKey, static_cast<uint8>(BossState));	
+//	}
+//}
 #pragma endregion
 
 #pragma region  TakeDamage, Death
@@ -163,7 +163,7 @@ float ABoss::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
                         AActor* DamageCauser)
 {
 	// 사망 상태면 얼리 리턴
-	if (BossState == EBossState::Death) return 0.0f;
+	if (MonsterState == EMonsterState::Death) return 0.0f;
 	
 	const float Damage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 	
@@ -322,7 +322,8 @@ void ABoss::M_OnDeath_Implementation()
 	
 	
 	// 사망 상태로 전이
-	SetBossState(EBossState::Death);
+	//SetBossState(EBossState::Death);
+	SetMonsterState(EMonsterState::Death);
 	
 	// 피직스 에셋 물리엔진 적용
 	FTimerHandle TimerHandle;
@@ -348,7 +349,7 @@ void ABoss::OnMeshOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* Othe
                                int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	// 사망 상태면 얼리 리턴
-	if (BossState == EBossState::Death) return;
+	if (MonsterState == EMonsterState::Death) return;
 
 	// 공격 가능한 상태가 아니라면 리턴
 	if (!bIsAttacking) return;

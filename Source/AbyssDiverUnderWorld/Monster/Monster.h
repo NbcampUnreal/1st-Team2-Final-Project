@@ -56,7 +56,6 @@ public:
 	void M_OnDeath();
 	virtual void M_OnDeath_Implementation();
 
-	virtual void PlayAttackMontage();
 	void UnPossessAI();
 	virtual void NotifyLightExposure(float DeltaTime, float TotalExposedTime, const FVector& PlayerLocation, AActor* PlayerActor);
 	
@@ -80,6 +79,8 @@ public:
 
 	void LaunchPlayer(AUnderwaterCharacter* Player, const float& Power) const;
 	void ApplyMonsterStateChange(EMonsterState NewState);
+
+	void InitCharacterMovementSetting();
 
 protected:
 
@@ -137,6 +138,14 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Monster|Collision")
 	TObjectPtr<UCapsuleComponent> AttackCollision;
+
+	// 연속공격 가능 플래그
+	UPROPERTY(EditDefaultsOnly, Category = "Monster|Stat")
+	uint8 bIsAttackInfinite : 1;
+
+	float ChaseAccumulatedTime = 0.0f;
+
+	float OriginDeceleration;
 
 protected:
 

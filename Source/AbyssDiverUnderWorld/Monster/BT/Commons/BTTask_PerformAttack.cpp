@@ -1,7 +1,7 @@
 #include "Monster/BT/Commons/BTTask_PerformAttack.h"
 
 #include "Monster/Monster.h"
-#include "Monster/Boss/EnhancedBossAIController.h"
+#include "Monster/MonsterAIController.h"
 
 #include "AIController.h"
 
@@ -20,7 +20,7 @@ EBTNodeResult::Type UBTTask_PerformAttack::ExecuteTask(UBehaviorTreeComponent& C
 	FBTPerformAttackMemory* TaskMemory = (FBTPerformAttackMemory*) NodeMemory;
 	if (!TaskMemory) return EBTNodeResult::Failed;
 
-	TaskMemory->AIController = Cast<AEnhancedBossAIController>(Comp.GetAIOwner());
+	TaskMemory->AIController = Cast<AMonsterAIController>(Comp.GetAIOwner());
 	TaskMemory->Monster = Cast<AMonster>(Comp.GetAIOwner()->GetCharacter());
 
 	if (!TaskMemory->Monster.IsValid() || !TaskMemory->AIController.IsValid()) return EBTNodeResult::Failed;

@@ -8,13 +8,14 @@
 
 class UAISenseConfig_Hearing;
 class UAISenseConfig_Damage;
-enum class EBossState : uint8;
 class AUnderwaterCharacter;
 class ABoss;
 struct FAIStimulus;
 class UAISenseConfig_Sight;
 class UPawnSensingComponent;
 class UBehaviorTreeComponent;
+
+enum class EMonsterState : uint8;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API ABossAIController : public AMonsterAIController
@@ -32,9 +33,9 @@ protected:
 public:
 	void SetSightRadius(float InRadius);
 	void SetVisionAngle(float Angle);
-	bool IsStateSame(EBossState State);
-	void MoveToActorWithRadius(AActor* TargetActor);
-	void MoveToLocationWithRadius(const FVector& Location);
+	//bool IsStateSame(EMonsterState State);
+	//void MoveToActorWithRadius(AActor* TargetActor);
+	//void MoveToLocationWithRadius(const FVector& Location);
 
 private:
 #pragma endregion
@@ -71,11 +72,11 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Sight")
 	float DetectedStateInterval;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Radius")
-	float MoveToActorAcceptanceRadius;
+	//UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Radius")
+	//float MoveToActorAcceptanceRadius;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Radius")
-	float MoveToLocationAcceptanceRadius;
+	//UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Radius")
+	//float MoveToLocationAcceptanceRadius;
 
 	UPROPERTY()
 	TObjectPtr<ABoss> Boss;
@@ -83,7 +84,7 @@ protected:
 	FTimerHandle DetectedStateTimerHandle;
 	
 private:
-	static const FName BossStateKey;
+	
 	
 #pragma endregion
 

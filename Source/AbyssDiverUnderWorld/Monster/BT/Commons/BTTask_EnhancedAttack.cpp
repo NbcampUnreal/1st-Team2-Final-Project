@@ -1,7 +1,7 @@
 #include "Monster/BT/Commons/BTTask_EnhancedAttack.h"
 #include "AbyssDiverUnderWorld.h"
-#include "Monster/Boss/Boss.h"
-#include "Monster/Boss/Enum/EPerceptionType.h"
+#include "Monster/Monster.h"
+#include "Monster/EPerceptionType.h"
 
 // ----- 기능 -----
 // 1. 몬스터의 AnimInstance 추출
@@ -24,10 +24,10 @@ EBTNodeResult::Type UBTTask_EnhancedAttack::ExecuteTask(UBehaviorTreeComponent& 
 	FBTEnhancedAttackTaskMemory* TaskMemory = (FBTEnhancedAttackTaskMemory*)NodeMemory;
 	if (!TaskMemory) return EBTNodeResult::Failed;
 
-	TaskMemory->AIController = Cast<AEnhancedBossAIController>(Comp.GetAIOwner());
-	TaskMemory->Boss = Cast<ABoss>(Comp.GetAIOwner()->GetCharacter());
+	TaskMemory->AIController = Cast<AMonsterAIController>(Comp.GetAIOwner());
+	TaskMemory->Monster = Cast<AMonster>(Comp.GetAIOwner()->GetCharacter());
 	
-	if (!TaskMemory->Boss.IsValid() || !TaskMemory->AIController.IsValid()) return EBTNodeResult::Failed;
+	if (!TaskMemory->Monster.IsValid() || !TaskMemory->AIController.IsValid()) return EBTNodeResult::Failed;
 	
 	TaskMemory->BlackboardKeyName = GetSelectedBlackboardKey();
 	
@@ -43,9 +43,9 @@ void UBTTask_EnhancedAttack::TickTask(UBehaviorTreeComponent& Comp, uint8* NodeM
 	
 	if (TaskMemory->AIController->GetBlackboardComponent()->GetValueAsBool(TaskMemory->BlackboardKeyName)) return;
 	
-	if (TaskMemory->Boss->GetIsAttackCollisionOverlappedPlayer())
+	if (TaskMemory->Monster->GetIsAttackCollisionOverlappedPlayer())
 	{
-		TaskMemory->Boss->Attack();
+		TaskMemory->Monster->Attack();
 		TaskMemory->AIController->GetBlackboardComponent()->SetValueAsBool(TaskMemory->BlackboardKeyName, true);
 	}
 }

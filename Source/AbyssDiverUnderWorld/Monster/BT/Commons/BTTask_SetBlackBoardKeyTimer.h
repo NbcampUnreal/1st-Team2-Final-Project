@@ -6,7 +6,7 @@
 
 struct FBTSetBlackBoardKeyTimerTask
 {
-	TWeakObjectPtr<class ABoss> Boss;
+	TWeakObjectPtr<class AMonster> Monster;
 	TWeakObjectPtr<class AMonsterAIController> AIController;
 	float AccumulatedTime = 0.0f;
 };

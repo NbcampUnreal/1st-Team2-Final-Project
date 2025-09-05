@@ -25,7 +25,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
-	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+	//virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 
 #pragma region Method
 public:
@@ -104,7 +104,7 @@ public:
 	 * 
 	 * 기본값으로 설정된 수영 중 감속값과 최대 수영 속도로 초기화한다.
 	 */
-	void InitCharacterMovementSetting();
+	/*void InitCharacterMovementSetting();*/
 
 	/** NavMesh 기반으로 랜덤 위치를 찾는 함수
 	 * @return NavMesh 상의 랜덤 위치 반환
@@ -114,7 +114,7 @@ public:
 	/** 보스의 상태를 초기화하는 함수
 	 * @param State: 초기화할 상태
 	 */
-	void SetBossState(EBossState State);
+	//void SetBossState(EBossState State);
 
 	/** 플레이어를 밀치는 함수
 	 * @param Player: 밀칠 플레이어
@@ -196,8 +196,8 @@ public:
 	//UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Boss|Animation")
 	//TArray<TObjectPtr<UAnimMontage>> AttackAnimations;
 
-	UPROPERTY()
-	float ChaseAccumulatedTime = 0.0f;
+	//UPROPERTY()
+	//float ChaseAccumulatedTime = 0.0f;
 	
 	/** 새로운 물리 기반 수중 이동 컴포넌트 */
 	//UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Movement")
@@ -213,9 +213,6 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Stat")
 	float FourDirectionTraceDistance = 300.0f;
 	
-	UPROPERTY(EditDefaultsOnly, Category = "Boss|Stat")
-	uint8 bIsAttackInfinite : 1;
-	
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Camera")
 	TObjectPtr<UCameraControllerComponent> CameraControllerComponent;
 
@@ -230,8 +227,8 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Boss|Attack")
 	TArray<TObjectPtr<AUnderwaterCharacter>> AttackedPlayers;
 
-	UPROPERTY(Replicated, BlueprintReadWrite)
-	EBossState BossState;
+	//UPROPERTY(Replicated, BlueprintReadWrite)
+	//EMonsterState BossState;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	uint8 bEnableDownTrace : 1 = true;
@@ -248,11 +245,11 @@ protected:
 	FCollisionQueryParams Params;
 
 private:
-	static const FName BossStateKey;
+	//static const FName BossStateKey;
 	
 	//uint8 bIsAttackCollisionOverlappedPlayer : 1;
 	float TurnTimer = 0.0f;
-	float OriginDeceleration;
+	/*float OriginDeceleration;*/
 	float SphereOverlapRadius = 100.0f;
 	FVector CachedSpawnLocation;
 	FVector TurnDirection;

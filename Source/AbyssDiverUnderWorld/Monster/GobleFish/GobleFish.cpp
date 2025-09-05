@@ -1,6 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "Monster/GobleFish/GobleFish.h"
 #include "Monster/GobleFish/GFProjectile.h"
 #include "BehaviorTree/BlackboardComponent.h"
@@ -20,11 +17,24 @@ AGobleFish::AGobleFish()
 
 void AGobleFish::FireProjectile()
 {
-	if (!ProjectileClass) return;
+	if (!ProjectileClass)
+	{
+		LOGV(Error, TEXT("ProjectileClass is not set in GobleFish"));
+		return;
+	}
 
-	if (!AIController || !BlackboardComponent) return;
-	AActor* LockOnActor = Cast<AActor>(BlackboardComponent->GetValueAsObject("TargetActor"));
-	if (!LockOnActor) return;
+	if (!AIController || !BlackboardComponent)
+	{
+		LOGV(Error, TEXT("AIController or BlackboardComponent is nullptr in GobleFish"));
+		return;
+	}
+
+	AActor* LockOnActor = Cast<AActor>(BlackboardComponent->GetValueAsObject(/*"TargetActor"*/"TargetPlayer"));
+	if (!LockOnActor)
+	{
+		LOGV(Error, TEXT("LockOnActor is nullptr in GobleFish"));
+		return;
+	}
 
 	FVector FireLocation = GetMesh()->GetSocketLocation("ProjectileSocket");
 	FVector TargetActorLocation = LockOnActor->GetActorLocation();
@@ -36,15 +46,16 @@ void AGobleFish::FireProjectile()
 	SpawnParams.Instigator = GetInstigator(); // return APawn*
 
 	AGFProjectile* Projectile = GetWorld()->SpawnActor<AGFProjectile>(ProjectileClass, FireLocation, FireRotation, SpawnParams);
-
-	if (Projectile)
+	if (Projectile == nullptr)
 	{
-		LOG(TEXT("Projectile Spawn Success!!!"))
-		Projectile->FireDirection(ProjectileDirection);
+		LOG(TEXT("Projectile Spawn Failed!!!"));
+		return;
 	}
+
+	Projectile->FireDirection(ProjectileDirection);
 }
 
-void AGobleFish::PlayAttackMontage()
+void AGobleFish::Attack()
 {
 	// Initialize at Monster class BeginPlay
 	if (!AIController) return;
@@ -82,3 +93,4 @@ void AGobleFish::PlayAttackMontage()
 	}
 	else return;
 }
+

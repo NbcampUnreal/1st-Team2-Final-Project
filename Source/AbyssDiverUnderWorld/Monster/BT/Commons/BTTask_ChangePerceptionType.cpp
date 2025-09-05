@@ -1,7 +1,8 @@
 #include "Monster/BT/Commons/BTTask_ChangePerceptionType.h"
 
-#include "Monster/Boss/Boss.h"
-#include "Monster/Boss/Enum/EPerceptionType.h"
+#include "Monster/Monster.h"
+#include "Monster/EPerceptionType.h"
+#include "Monster/MonsterAIController.h"
 
 UBTTask_ChangePerceptionType::UBTTask_ChangePerceptionType()
 {
@@ -14,11 +15,11 @@ UBTTask_ChangePerceptionType::UBTTask_ChangePerceptionType()
 
 EBTNodeResult::Type UBTTask_ChangePerceptionType::ExecuteTask(UBehaviorTreeComponent& Comp, uint8* NodeMemory)
 {
-	AEnhancedBossAIController* AIController = Cast<AEnhancedBossAIController>(Comp.GetAIOwner());
+	AMonsterAIController* AIController = Cast<AMonsterAIController>(Comp.GetAIOwner());
 	if (!IsValid(AIController)) return EBTNodeResult::Failed;
 
-	ABoss* Boss = Cast<ABoss>(AIController->GetCharacter());
-	if (!IsValid(Boss)) return EBTNodeResult::Failed;
+	AMonster* Monster = Cast<AMonster>(AIController->GetCharacter());
+	if (!IsValid(Monster)) return EBTNodeResult::Failed;
 
 	AIController->SetBlackboardPerceptionType(PerceptionType);	
 	

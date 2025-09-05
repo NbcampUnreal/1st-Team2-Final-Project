@@ -5,6 +5,7 @@
 
 ATentacle::ATentacle()
 {
+	PrimaryActorTick.bCanEverTick = false;
 	TentacleHitSphere = CreateDefaultSubobject<USphereComponent>(TEXT("TentacleHitSphere"));
 	TentacleHitSphere->SetupAttachment(GetMesh(), TEXT("AttackSocket"));
 	TentacleHitSphere->InitSphereRadius(20.0f);

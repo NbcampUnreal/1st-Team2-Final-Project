@@ -1,6 +1,6 @@
 #include "Monster/BT/Bosses/Kraken/BTTask_BossPatrolMove.h"
 #include "Monster/Boss/Boss.h"
-#include "Monster/Boss/Enum/EBossState.h"
+//#include "Monster/Boss/Enum/EBossState.h"
 
 UBTTask_BossPatrolMove::UBTTask_BossPatrolMove()
 {
@@ -40,7 +40,7 @@ void UBTTask_BossPatrolMove::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* 
 	// 현재 Patrol Point로 이동 완료한 경우 Idle 상태로 전이
 	if (AIController->GetPathFollowingComponent()->GetStatus() == EPathFollowingStatus::Idle)
 	{
-		Boss->SetBossState(EBossState::Idle);
+		Boss->SetMonsterState(EMonsterState::Idle);
 		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 		return;
 	}

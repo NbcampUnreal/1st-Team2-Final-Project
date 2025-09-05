@@ -15,8 +15,6 @@
 #include "BehaviorTree/BehaviorTree.h"
 #include "BehaviorTree/BlackboardComponent.h"
 
-const FName ABossAIController::BossStateKey = "BossState";
-
 ABossAIController::ABossAIController()
 {
 	PrimaryActorTick.bCanEverTick = false;
@@ -100,30 +98,30 @@ void ABossAIController::SetVisionAngle(float Angle)
 	AIPerceptionComponent->ConfigureSense(*SightConfigInstance);
 }
 
-bool ABossAIController::IsStateSame(EBossState State)
-{
-	return (GetBlackboardComponent()->GetValueAsEnum(BossStateKey) == static_cast<uint8>(State));
-}
+//bool ABossAIController::IsStateSame(EMonsterState State)
+//{
+//	return (GetBlackboardComponent()->GetValueAsEnum(MonsterStateKey) == static_cast<uint8>(State));
+//}
 
-void ABossAIController::MoveToActorWithRadius(AActor* TargetActor)
-{
-	if (IsValid(TargetActor) == false)
-	{
-		LOGV(Error, TEXT("TargetActor is not valid"));
-		return;
-	}
-
-	MoveToLocationWithRadius(TargetActor->GetActorLocation());
-}
-
-void ABossAIController::MoveToLocationWithRadius(const FVector& Location)
-{
-	ABoss* BossCharacter = Cast<ABoss>(GetPawn());
-	if (IsValid(BossCharacter) == false)
-	{
-		LOGV(Error, TEXT("BossCharacter is not valid"));
-		return;
-	}
-
-	BossCharacter->AquaticMovementComponent->SetTargetLocation(Location, MoveToActorAcceptanceRadius);
-}
+//void ABossAIController::MoveToActorWithRadius(AActor* TargetActor)
+//{
+//	if (IsValid(TargetActor) == false)
+//	{
+//		LOGV(Error, TEXT("TargetActor is not valid"));
+//		return;
+//	}
+//
+//	MoveToLocationWithRadius(TargetActor->GetActorLocation());
+//}
+//
+//void ABossAIController::MoveToLocationWithRadius(const FVector& Location)
+//{
+//	ABoss* BossCharacter = Cast<ABoss>(GetPawn());
+//	if (IsValid(BossCharacter) == false)
+//	{
+//		LOGV(Error, TEXT("BossCharacter is not valid"));
+//		return;
+//	}
+//
+//	BossCharacter->AquaticMovementComponent->SetTargetLocation(Location, MoveToActorAcceptanceRadius);
+//}

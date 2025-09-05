@@ -10,5 +10,6 @@ void UAnimNotify_ChangeBossState::Notify(USkeletalMeshComponent* MeshComp, UAnim
 	ABoss* Boss = Cast<ABoss>(MeshComp->GetOwner());
 	if (!IsValid(Boss)) return;
 
-	Boss->SetBossState(BossState);
+	//Boss->SetBossState(BossState);
+	Boss->SetMonsterState(MonsterState);
 }

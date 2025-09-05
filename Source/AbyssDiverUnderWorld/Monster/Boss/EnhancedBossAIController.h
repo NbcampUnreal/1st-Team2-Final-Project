@@ -5,7 +5,6 @@
 #include "Monster/Boss/BossAIController.h"
 #include "EnhancedBossAIController.generated.h"
 
-enum class EPerceptionType : uint8;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AEnhancedBossAIController : public ABossAIController
@@ -20,12 +19,10 @@ public:
 	virtual void OnPossess(APawn* InPawn) override;
 
 public:
-	void SetBlackboardPerceptionType(EPerceptionType InPerceptionType);
 	void InitVariables();
 
 protected:
-	UFUNCTION()
-	void OnTargetPerceptionUpdatedHandler(AActor* Actor, FAIStimulus Stimulus);
+	virtual void OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus) override;
 
 	virtual void OnSightPerceptionSuccess(AUnderwaterCharacter* Player);
 	virtual void OnSightPerceptionFail();
@@ -72,7 +69,6 @@ private:
 	FTimerHandle BloodDetectedTimerHandle;
 
 	static const FName bHasSeenPlayerKey;
-	static const FName PerceptionTypeKey;
 	static const FName bHasDetectedPlayerKey;
 	static const FName bIsChasingKey;
 	static const FName bHasAttackedKey;

@@ -2,15 +2,16 @@
 
 #include "CoreMinimal.h"
 #include "BehaviorTree/Tasks/BTTask_BlackboardBase.h"
+
 #include "BTTask_SerpmareIdle.generated.h"
 
 class ASerpmare;
-class ABossAIController;
+class AMonsterAIController;
 
 struct FBTSerpmareIdleTaskMemory
 {
 	TWeakObjectPtr<ASerpmare> Serpmare;
-	TWeakObjectPtr<ABossAIController> AIController;
+	TWeakObjectPtr<AMonsterAIController> AIController;
 };
 
 UCLASS()

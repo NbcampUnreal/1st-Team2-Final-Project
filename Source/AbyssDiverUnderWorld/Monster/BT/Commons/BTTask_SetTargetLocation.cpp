@@ -2,6 +2,7 @@
 
 #include "Monster/Monster.h"
 #include "Monster/MonsterAIController.h"
+#include "Monster/Components/AquaticMovementComponent.h"
 
 UBTTask_SetTargetLocation::UBTTask_SetTargetLocation()
 {
@@ -20,9 +21,9 @@ EBTNodeResult::Type UBTTask_SetTargetLocation::ExecuteTask(UBehaviorTreeComponen
 	const FName BlackboardKeyName = GetSelectedBlackboardKey();
 	const FVector TargetLocation = AIController->GetBlackboardComponent()->GetValueAsVector(BlackboardKeyName);
 
-	Monster->SetTargetLocation(TargetLocation);
+	Monster->AquaticMovementComponent->SetTargetLocation(TargetLocation);
 
-	AIController->GetBlackboardComponent()->SetValueAsObject("TargetPlayer", nullptr);
+	//AIController->GetBlackboardComponent()->SetValueAsObject("TargetPlayer", nullptr);
 	
 	return EBTNodeResult::Succeeded;
 }

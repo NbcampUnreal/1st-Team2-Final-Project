@@ -4,7 +4,7 @@
 
 #include "Character/UnderwaterCharacter.h"
 #include "Monster/Boss/Boss.h"
-#include "Monster/Boss/Enum/EBossState.h"
+//#include "Monster/Boss/Enum/EBossState.h"
 
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Navigation/PathFollowingComponent.h"

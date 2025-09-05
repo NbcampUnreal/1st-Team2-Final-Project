@@ -7,6 +7,7 @@
 #include "AbyssDiverUnderWorld.h"
 #include "Monster/EMonsterState.h"
 #include "Monster/Monster.h"
+#include "Monster/Components/AquaticMovementComponent.h"
 #include "GenericTeamAgentInterface.h"
 #include "Navigation/PathFollowingComponent.h"
 #include "NavigationSystem.h"
@@ -15,10 +16,12 @@
 
 const FName AMonsterAIController::TargetPlayerKey = "TargetPlayer";
 const FName AMonsterAIController::bIsChasingKey = "bIsChasing";
+const FName AMonsterAIController::PerceptionTypeKey = "EPerceptionType";
+const FName AMonsterAIController::MonsterStateKey = "MonsterState";
 
 AMonsterAIController::AMonsterAIController()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 
 	BehaviorTreeComponent = CreateDefaultSubobject<UBehaviorTreeComponent>(TEXT("BehaviorTreeComponent"));
 	AIPerceptionComponent = CreateDefaultSubobject<UAIPerceptionComponent>(TEXT("PerceptionComponent"));
@@ -36,15 +39,37 @@ AMonsterAIController::AMonsterAIController()
 	bIsLosingTarget = false;
 }
 
+void AMonsterAIController::MoveToActorWithRadius(AActor* TargetActor)
+{
+	if (IsValid(TargetActor) == false)
+	{
+		LOGV(Error, TEXT("TargetActor is not valid"));
+		return;
+	}
+
+	MoveToLocationWithRadius(TargetActor->GetActorLocation());
+}
+
+void AMonsterAIController::MoveToLocationWithRadius(const FVector& Location)
+{
+	AMonster* MonsterCharacter = Cast<AMonster>(GetPawn());
+	if (IsValid(MonsterCharacter) == false)
+	{
+		LOGV(Error, TEXT("MonsterCharacter is not valid"));
+		return;
+	}
+
+	MonsterCharacter->AquaticMovementComponent->SetTargetLocation(Location, MoveToActorAcceptanceRadius);
+}
+
 void AMonsterAIController::BeginPlay()
 {
 	Super::BeginPlay();
 	LoadSightDataFromTable();
 
-	UAIPerceptionComponent* Perception = FindComponentByClass<UAIPerceptionComponent>();
-	if (Perception)
+	if (AIPerceptionComponent)
 	{
-		Perception->OnTargetPerceptionUpdated.AddDynamic(this, &AMonsterAIController::OnTargetPerceptionUpdated);
+		AIPerceptionComponent->OnTargetPerceptionUpdated.AddDynamic(this, &AMonsterAIController::OnTargetPerceptionUpdated);
 	}
 }
 
@@ -103,17 +128,19 @@ void AMonsterAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus 
 	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor);
 	if (!IsValid(Player) || Player->IsDeath() || Player->IsGroggy()) return;
 
-	if (Actor->IsA(AUnderwaterCharacter::StaticClass()))
+	if (Stimulus.WasSuccessfullySensed() && Monster->GetMonsterState() != EMonsterState::Flee)
 	{
-		if (Stimulus.WasSuccessfullySensed() && Monster->GetMonsterState() != EMonsterState::Flee)
-		{
-			Monster->AddDetection(Actor);
-		}
-		else
-		{
-			Monster->RemoveDetection(Actor);
-		}
+		Monster->AddDetection(Actor);
 	}
+	else
+	{
+		Monster->RemoveDetection(Actor);
+	}
+
+	/*if (Actor->IsA(AUnderwaterCharacter::StaticClass()))
+	{
+		
+	}*/
 }
 
 void AMonsterAIController::SetbIsLosingTarget(bool IsLosingTargetValue)
@@ -124,3 +151,12 @@ void AMonsterAIController::SetbIsLosingTarget(bool IsLosingTargetValue)
 	}
 }
 
+void AMonsterAIController::SetBlackboardPerceptionType(EPerceptionType InPerceptionType)
+{
+	BlackboardComponent->SetValueAsEnum(PerceptionTypeKey, static_cast<uint8>(InPerceptionType));
+}
+
+bool AMonsterAIController::IsStateSame(EMonsterState State)
+{
+	return (GetBlackboardComponent()->GetValueAsEnum(MonsterStateKey) == static_cast<uint8>(State));
+}

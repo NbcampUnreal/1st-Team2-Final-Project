@@ -1,10 +1,11 @@
 #include "Monster/BT/Serpmare/BTTask_GetOverlappedPlayer.h"
 
-#include "Monster/Boss/Boss.h"
+#include "Monster/Monster.h"
 #include "Character/UnderwaterCharacter.h"
 
 #include "Components/CapsuleComponent.h"
 #include "BehaviorTree/BlackboardComponent.h"
+#include "AIController.h" 
 
 UBTTask_GetOverlappedPlayer::UBTTask_GetOverlappedPlayer()
 {
@@ -16,15 +17,15 @@ UBTTask_GetOverlappedPlayer::UBTTask_GetOverlappedPlayer()
 
 EBTNodeResult::Type UBTTask_GetOverlappedPlayer::ExecuteTask(UBehaviorTreeComponent& Comp, uint8* NodeMemory)
 {
-	ABossAIController* AIController = Cast<ABossAIController>(Comp.GetAIOwner());
-	ABoss* Boss = Cast<ABoss>(Comp.GetAIOwner()->GetCharacter());
+	AAIController* AIController = Cast<AAIController>(Comp.GetAIOwner());
+	AMonster* Monster = Cast<AMonster>(Comp.GetAIOwner()->GetCharacter());
 	
-	if (!IsValid(AIController) || !IsValid(Boss)) return EBTNodeResult::Failed;
+	if (!IsValid(AIController) || !IsValid(Monster)) return EBTNodeResult::Failed;
 
 	const FName BlackboardKeyName = GetSelectedBlackboardKey();
 
 	TArray<AActor*> OverlappedActors;
-	Boss->AttackCollision->GetOverlappingActors(OverlappedActors);
+	Monster->AttackCollision->GetOverlappingActors(OverlappedActors);
 
 	for (AActor* OverlappedActor : OverlappedActors)
 	{
