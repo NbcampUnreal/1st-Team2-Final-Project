@@ -31,7 +31,7 @@ EBTNodeResult::Type UBTTask_EjectVictim::ExecuteTask(UBehaviorTreeComponent& Own
 	UBlackboardComponent* BB = TaskMemory->AIController->GetBlackboardComponent();
 	if (BB)
 	{
-		TaskMemory->FleeLocation = BB->GetValueAsVector(BlackboardKeys::FleeLocationKey);
+		TaskMemory->FleeLocation = BB->GetValueAsVector(BlackboardKeys::HorrorCreature::FleeLocationKey);
 	}
 
 	return EBTNodeResult::InProgress;
