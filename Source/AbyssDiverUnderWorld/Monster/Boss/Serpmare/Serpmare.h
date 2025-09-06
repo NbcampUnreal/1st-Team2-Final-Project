@@ -1,22 +1,30 @@
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "Monster/Boss/Boss.h"
 #include "Serpmare.generated.h"
 
 UCLASS()
-class ABYSSDIVERUNDERWORLD_API ASerpmare : public ABoss
+class ABYSSDIVERUNDERWORLD_API ASerpmare : public AMonster
 {
 	GENERATED_BODY()
 
 public:
 	ASerpmare();
 
-public:
+protected:
+
 	virtual void BeginPlay() override;
 
 public:
+
 	virtual void Attack() override;
+
+protected:
+
+	virtual void AddDetection(AActor* Actor) override;
+
+	virtual void RemoveDetection(AActor* Actor) override;
 
 private:
 	void InitAttackInterval();

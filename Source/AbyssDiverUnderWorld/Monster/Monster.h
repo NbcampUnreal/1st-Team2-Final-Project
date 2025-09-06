@@ -63,10 +63,10 @@ public:
 	virtual void NotifyLightExposure(float DeltaTime, float TotalExposedTime, const FVector& PlayerLocation, AActor* PlayerActor);
 	
 	UFUNCTION()
-	void AddDetection(AActor* Actor);
+	virtual void AddDetection(AActor* Actor);
 	
 	UFUNCTION()
-	void RemoveDetection(AActor* Actor);
+	virtual void RemoveDetection(AActor* Actor);
 	
 	UFUNCTION()
 	void ForceRemoveDetectedPlayers();
