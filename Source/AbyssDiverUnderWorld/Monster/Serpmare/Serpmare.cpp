@@ -25,8 +25,6 @@ void ASerpmare::Attack()
 	const uint8 AttackType = FMath::RandRange(0, AttackAnimations.Num() - 1);
 	if (IsValid(AttackAnimations[AttackType]))
 	{
-		AnimInstance->OnMontageEnded.RemoveDynamic(this, &ASerpmare::OnAttackMontageEnded);
-		AnimInstance->OnMontageEnded.AddDynamic(this, &ASerpmare::OnAttackMontageEnded);
 		M_PlayMontage(AttackAnimations[AttackType]);
 	}
 
