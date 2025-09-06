@@ -1,7 +1,7 @@
 #include "Monster/BT/Serpmare/BTTask_SerpmareAttack.h"
 
 //#include "Monster/Boss/Enum/EBossState.h"
-#include "Monster/Boss/Serpmare/Serpmare.h"
+#include "Monster/Serpmare/Serpmare.h"
 #include "Monster/MonsterAIController.h"
 
 #include "BehaviorTree/BlackboardComponent.h"

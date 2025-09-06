@@ -4,8 +4,8 @@
 #include "Character/UnderwaterCharacter.h"
 #include "Container/BlackboardKeys.h"
 
-#include "Monster/Boss/EyeStalker/EyeStalker.h"
-#include "Monster/Boss/EyeStalker/EyeStalkerAIController.h"
+#include "Monster/EyeStalker/EyeStalker.h"
+#include "Monster/EyeStalker/EyeStalkerAIController.h"
 
 UBTTask_EyeStalkerIdle::UBTTask_EyeStalkerIdle()
 {

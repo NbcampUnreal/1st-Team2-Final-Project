@@ -1,10 +1,13 @@
-#include "Monster/Boss/EyeStalker/EyeStalkerAIController.h"
-#include "Container/BlackboardKeys.h"
+#include "Monster/EyeStalker/EyeStalkerAIController.h"
 
 #include "Monster/Effect/PostProcessSettingComponent.h"
+#include "Container/BlackboardKeys.h"
+
 #include "Character/UnderwaterCharacter.h"
+
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISense_Sight.h"
+#include "BehaviorTree/BlackboardComponent.h"
 
 void AEyeStalkerAIController::BeginPlay()
 {
