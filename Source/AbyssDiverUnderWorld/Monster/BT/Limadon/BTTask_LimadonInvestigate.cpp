@@ -3,7 +3,7 @@
 #include "AbyssDiverUnderWorld.h"
 
 //#include "Monster/Boss/Enum/EBossState.h"
-#include "Monster/Boss/Limadon/Limadon.h"
+#include "Monster/Limadon/Limadon.h"
 
 UBTTask_LimadonInvestigate::UBTTask_LimadonInvestigate()
 {

@@ -2,7 +2,7 @@
 
 #include "Monster/Monster.h"
 //#include "Monster/Boss/Enum/EBossState.h"
-#include "Monster/Boss/Limadon/Limadon.h"
+#include "Monster/Limadon/Limadon.h"
 
 #include "BehaviorTree/BlackboardComponent.h"
 

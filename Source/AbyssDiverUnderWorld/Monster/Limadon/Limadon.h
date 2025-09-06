@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "AbyssDiverUnderWorld.h"
-#include "Monster/Boss/Boss.h"
+#include "Monster/Monster.h"
 #include "Limadon.generated.h"
 
 UCLASS()

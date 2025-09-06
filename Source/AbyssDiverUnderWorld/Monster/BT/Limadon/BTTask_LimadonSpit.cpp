@@ -1,6 +1,6 @@
 #include "Monster/BT/Limadon/BTTask_LimadonSpit.h"
 
-#include "Monster/Boss/Limadon/Limadon.h"
+#include "Monster/Limadon/Limadon.h"
 #include "Character/UnderwaterCharacter.h"
 
 #include "BehaviorTree/BlackboardComponent.h"

@@ -1,4 +1,4 @@
-﻿#include "Monster/Boss/Serpmare/Serpmare.h"
+﻿#include "Monster/Serpmare/Serpmare.h"
 
 #include "Character/UnderwaterCharacter.h"
 

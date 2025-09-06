@@ -1,4 +1,4 @@
-#include "Monster/Boss/EyeStalker/EyeStalker.h"
+#include "Monster/EyeStalker/EyeStalker.h"
 
 AEyeStalker::AEyeStalker()
 {

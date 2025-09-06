@@ -3,8 +3,8 @@
 #include "Monster/Effect/PostProcessSettingComponent.h"
 #include "Monster/Effect/VignetteVolume.h"
 
-#include "Monster/Boss/EyeStalker/EyeStalker.h"
-#include "Monster/Boss/EyeStalker/EyeStalkerAIController.h"
+#include "Monster/EyeStalker/EyeStalker.h"
+#include "Monster/EyeStalker/EyeStalkerAIController.h"
 
 #include "Character/UnderwaterCharacter.h"
 #include "Container/BlackboardKeys.h"

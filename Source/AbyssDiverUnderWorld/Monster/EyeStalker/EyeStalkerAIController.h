@@ -1,7 +1,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Monster/Boss/EnhancedBossAIController.h"
+#include "Monster/MonsterAIController.h"
+
 #include "EyeStalkerAIController.generated.h"
 
 UCLASS()

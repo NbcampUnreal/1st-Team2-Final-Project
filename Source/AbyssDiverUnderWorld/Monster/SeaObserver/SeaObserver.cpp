@@ -1,4 +1,4 @@
-#include "Monster/Boss/SeaObserver/SeaObserver.h"
+#include "Monster/SeaObserver/SeaObserver.h"
 #include "Components/CapsuleComponent.h"
 
 ASeaObserver::ASeaObserver()
