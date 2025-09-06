@@ -58,7 +58,7 @@ void AHorrorCreature::Tick(float DeltaTime)
 	if (MonsterState == EMonsterState::Flee)
 	{
 		// DesireLocation을 FleeLocation으로 업데이트
-		SetDesireTargetLocation(BlackboardComponent->GetValueAsVector(BlackboardKeys::FleeLocationKey));
+		SetDesireTargetLocation(BlackboardComponent->GetValueAsVector(BlackboardKeys::HorrorCreature::FleeLocationKey));
 	}
 }
 
@@ -133,7 +133,7 @@ void AHorrorCreature::SwallowPlayer(AUnderwaterCharacter* Victim)
 
 	if (BlackboardComponent)
 	{
-		BlackboardComponent->SetValueAsBool(BlackboardKeys::bIsPlayerSwallowKey, true);
+		BlackboardComponent->SetValueAsBool(BlackboardKeys::HorrorCreature::bIsPlayerSwallowKey, true);
 	}
 }
 
@@ -153,7 +153,7 @@ void AHorrorCreature::EjectPlayer(AUnderwaterCharacter* Victim)
 	SwallowedPlayer = nullptr;
 	bCanSwallow = true;
 
-	BlackboardComponent->SetValueAsBool(BlackboardKeys::bIsPlayerSwallowKey, false);
+	BlackboardComponent->SetValueAsBool(BlackboardKeys::HorrorCreature::bIsPlayerSwallowKey, false);
 	
 	FTimerHandle SetPatrolTimeHandle;
 	GetWorld()->GetTimerManager().SetTimer(

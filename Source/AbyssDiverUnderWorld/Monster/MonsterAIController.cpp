@@ -81,8 +81,8 @@ void AMonsterAIController::OnPossess(APawn* InPawn)
 		RunBehaviorTree(BehaviorTree);
 		LOG(TEXT("AIController Possess"));
 
-		// Initialize BlackboardKey (TargetActor)
-		BlackboardComponent->ClearValue("TargetActor");
+		// Initialize BlackboardKey (TargetPlayer)
+		BlackboardComponent->ClearValue(BlackboardKeys::TargetPlayerKey);
 	}
 
 	Monster = Cast<AMonster>(GetPawn());
@@ -104,7 +104,7 @@ void AMonsterAIController::LoadSightDataFromTable()
 		SightConfig->SightRadius = SightRow->SightRadius;
 		SightConfig->LoseSightRadius = SightRow->LoseSightRadius;
 		SightConfig->PeripheralVisionAngleDegrees = SightRow->PeripheralVisionAngleDegrees;
-		SightConfig->SetMaxAge(SightRow->SenseInterval);
+		SightConfig->PointOfViewBackwardOffset = SightRow->PointOfViewBackwardOffset;
 
 		AIPerceptionComponent->ConfigureSense(*SightConfig);
 	}

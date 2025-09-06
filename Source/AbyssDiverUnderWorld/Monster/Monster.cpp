@@ -98,6 +98,7 @@ void AMonster::BeginPlay()
 		if (BlackboardComponent)
 		{
 			BlackboardComponent->SetValueAsVector(BlackboardKeys::TargetLocationKey, GetActorLocation());
+			ApplyMonsterStateChange(EMonsterState::Idle);
 		}
 	}
 
