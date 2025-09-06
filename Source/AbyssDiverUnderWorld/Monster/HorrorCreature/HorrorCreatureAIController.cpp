@@ -18,7 +18,7 @@ void AHorrorCreatureAIController::OnTargetPerceptionUpdated(AActor* Actor, FAISt
 	AHorrorCreature* HorrorMonster = Cast<AHorrorCreature>(Monster);
 	if (HorrorMonster && HorrorMonster->GetSwallowedPlayer())
 	{
-		// Ignore detection when swallowed
+		// 만약 삼킨 상태라면 리턴
 		return;
 	}
 

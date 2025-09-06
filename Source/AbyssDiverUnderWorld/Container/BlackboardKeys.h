@@ -10,6 +10,7 @@ namespace BlackboardKeys
 	inline const FName TargetPlayerKey = TEXT("TargetPlayer");
 
 	inline const FName InvestigateLocationKey = TEXT("InvestigateLocation");
+	inline const FName FleeLocationKey = TEXT("FleeLocation");
 	inline const FName BloodOccurredLocationKey = TEXT("BloodOccurredLocation");
 	inline const FName PatrolLocationKey = TEXT("PatrolLocation");
 	inline const FName TargetLocationKey = TEXT("TargetLocation");
@@ -23,6 +24,7 @@ namespace BlackboardKeys
 	inline const FName bHasAttackedKey = TEXT("bHasAttacked");
 	inline const FName bHasSeenPlayerKey = TEXT("bHasSeenPlayer");
 	inline const FName bHasDetectedPlayerKey = TEXT("bHasDetectedPlayer");
+	inline const FName bIsPlayerSwallowKey = TEXT("bIsPlayerSwallow");
 
 	namespace AlienShark
 	{

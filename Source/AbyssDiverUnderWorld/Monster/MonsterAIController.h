@@ -78,15 +78,10 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Radius")
 	float MoveToLocationAcceptanceRadius;
 
-private:
-	uint8 bIsLosingTarget : 1;
-	float LostTargetTime;
-
 #pragma endregion
 
 #pragma region Getter, Setter
 public:
-	void SetbIsLosingTarget(bool IsLosingTargetValue);
 	void SetBlackboardPerceptionType(EPerceptionType InPerceptionType);
 
 	bool IsStateSame(EMonsterState State);
