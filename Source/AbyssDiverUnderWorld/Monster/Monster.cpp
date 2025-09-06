@@ -524,7 +524,7 @@ float AMonster::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, 
 
 	if (IsValid(StatComponent))
 	{
-		FVector BloodLoc = GetActorLocation() + FVector(0, 0, 20.f);
+		FVector BloodLoc = GetMesh()->GetComponentLocation() + FVector(0, 0, 20.f);
 		FRotator BloodRot = GetActorRotation();
 		M_SpawnBloodEffect(BloodLoc, BloodRot);
 		
@@ -629,21 +629,6 @@ void AMonster::OnMeshOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* O
 
 	// 캐릭터 넉백
 	LaunchPlayer(Player, LaunchPower);
-}
-
-void AMonster::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted)
-{
-	if (!IsValid(AIController)) return;
-
-	if (bIsAttackInfinite)
-	{
-		AIController->GetBlackboardComponent()->SetValueAsBool(BlackboardKeys::bHasAttackedKey, false);
-	}
-	else
-	{
-		AIController->GetBlackboardComponent()->SetValueAsBool(BlackboardKeys::bHasDetectedPlayerKey, false);
-		AIController->SetBlackboardPerceptionType(EPerceptionType::Finish);
-	}
 }
 
 void AMonster::ApplyPhysicsSimulation()
