@@ -73,16 +73,9 @@ void AMonster::BeginPlay()
 	TickControlComponent->RegisterComponent(GetMesh());
 	TickControlComponent->AddIgnoreActor(this);
 
-	// AquaticMovementComponent 초기화
 	if (AquaticMovementComponent)
 	{
 		AquaticMovementComponent->InitComponent(this);
-
-		// Boss의 기본 이동 속도 설정 (컴포넌트 변수를 무시하고 CharcterMovementComponent의 값을 사용하려면 주석 제거)
-		//AquaticMovementComponent->MaxSpeed = GetCharacterMovement()->MaxSwimSpeed;
-		//AquaticMovementComponent->Acceleration = 200.0f;
-		//AquaticMovementComponent->TurnSpeed = RotationInterpSpeed * 30.0f; // 도/초 단위로 변환
-		//AquaticMovementComponent->BrakingDeceleration = GetCharacterMovement()->BrakingDecelerationSwimming;
 	}
 
 	CurrentMoveSpeed = StatComponent->MoveSpeed;
@@ -113,9 +106,6 @@ void AMonster::BeginPlay()
 void AMonster::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-	// DOREPLIFETIME(AMonster, MonsterState);
-	// DOREPLIFETIME(AMonster, bIsChasing);
 }
 
 void AMonster::OnAttackCollisionOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
@@ -493,14 +483,10 @@ void AMonster::Attack()
 
 	if (!AnimInstance) return;
 
-	// If any montage is playing, prevent duplicate playback
 	if (AnimInstance->IsAnyMontagePlaying()) return;
 
 	if (IsValid(AttackAnimations[AttackType]))
 	{
-		// ChaseAccumulatedTime = 0.f; PlayerChase Task에서 사용
-		AnimInstance->OnMontageEnded.RemoveDynamic(this, &AMonster::OnAttackMontageEnded);
-		AnimInstance->OnMontageEnded.AddDynamic(this, &AMonster::OnAttackMontageEnded);
 		M_PlayMontage(AttackAnimations[AttackType]);
 	}
 
@@ -662,7 +648,6 @@ void AMonster::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 void AMonster::ApplyPhysicsSimulation()
 {
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	//GetAttackHitComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	
 	USkeletalMeshComponent* MeshComp = GetMesh();
 	if (MeshComp)
@@ -882,8 +867,6 @@ void AMonster::ForceRemoveDetectedPlayers()
 	{
 		BlackboardComponent->ClearValue(BlackboardKeys::TargetPlayerKey);
 	}
-
-	//ApplyMonsterStateChange(EMonsterState::Patrol);
 }
 
 bool AMonster::IsAnimMontagePlaying() const
@@ -1003,12 +986,6 @@ void AMonster::ApplyMonsterStateChange(EMonsterState NewState)
 
 void AMonster::InitCharacterMovementSetting()
 {
-	//if (!IsValid(GetCharacterMovement())) return;
-	//
-	//GetCharacterMovement()->BrakingDecelerationSwimming = OriginDeceleration;
-	//GetCharacterMovement()->MaxSwimSpeed = StatComponent->GetMoveSpeed();
-
-	// AquaticMovementComponent 설정도 초기화
 	if (AquaticMovementComponent)
 	{
 		AquaticMovementComponent->BrakingDeceleration = OriginDeceleration;

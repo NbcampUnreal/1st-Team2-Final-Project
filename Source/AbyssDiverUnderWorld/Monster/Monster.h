@@ -104,9 +104,6 @@ protected:
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
 		bool bFromSweep, const FHitResult& SweepResult);
 
-	UFUNCTION()
-	virtual void OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted);
-
 	void ApplyPhysicsSimulation();
 	void HandleSetting_OnDeath();
 #pragma endregion
