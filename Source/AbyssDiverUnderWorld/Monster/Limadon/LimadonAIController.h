@@ -1,12 +1,20 @@
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
-#include "Monster/Boss/BossAIController.h"
+#include "Monster/MonsterAIController.h"
 #include "LimadonAIController.generated.h"
 
 UCLASS()
-class ABYSSDIVERUNDERWORLD_API ALimadonAIController : public ABossAIController
+class ABYSSDIVERUNDERWORLD_API ALimadonAIController : public AMonsterAIController
 {
 	GENERATED_BODY()
+
+public:
+
+	ALimadonAIController();
+
+protected:
+
+	virtual void OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus) override;
 	
 };
