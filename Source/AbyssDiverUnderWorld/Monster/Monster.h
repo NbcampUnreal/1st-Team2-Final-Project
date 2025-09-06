@@ -52,6 +52,7 @@ public:
 	void M_SpawnBloodEffect(FVector Location, FRotator Rotation);
 	void M_SpawnBloodEffect_Implementation(FVector Location, FRotator Rotation);
 
+	UFUNCTION(BlueprintCallable)
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 	
 	virtual void OnDeath();
