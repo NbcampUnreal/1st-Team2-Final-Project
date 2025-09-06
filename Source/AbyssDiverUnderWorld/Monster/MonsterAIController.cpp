@@ -83,7 +83,7 @@ void AMonsterAIController::OnPossess(APawn* InPawn)
 		LOG(TEXT("AIController Possess"));
 
 		// Initialize BlackboardKey (TargetActor)
-		BlackboardComponent->ClearValue("TargetActor");
+		BlackboardComponent->ClearValue(BlackboardKeys::TargetPlayerKey);
 	}
 
 	Monster = Cast<AMonster>(GetPawn());
@@ -130,11 +130,6 @@ void AMonsterAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus 
 	{
 		Monster->RemoveDetection(Actor);
 	}
-
-	/*if (Actor->IsA(AUnderwaterCharacter::StaticClass()))
-	{
-		
-	}*/
 }
 
 void AMonsterAIController::SetbIsLosingTarget(bool IsLosingTargetValue)

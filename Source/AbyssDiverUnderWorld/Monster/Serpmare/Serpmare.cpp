@@ -25,7 +25,6 @@ void ASerpmare::Attack()
 	const uint8 AttackType = FMath::RandRange(0, AttackAnimations.Num() - 1);
 	if (IsValid(AttackAnimations[AttackType]))
 	{
-		// ChaseAccumulatedTime = 0.f; PlayerChase Task에서 사용
 		AnimInstance->OnMontageEnded.RemoveDynamic(this, &ASerpmare::OnAttackMontageEnded);
 		AnimInstance->OnMontageEnded.AddDynamic(this, &ASerpmare::OnAttackMontageEnded);
 		M_PlayMontage(AttackAnimations[AttackType]);
@@ -92,8 +91,6 @@ void ASerpmare::RemoveDetection(AActor* Actor)
 	const bool bWasTarget = (TargetPlayer.Get() == Actor);
 	if (bWasTarget)
 	{
-		// 우선 TargetPlayer 비움.
-		//InitTarget();
 		TargetPlayer.Reset();
 	}
 

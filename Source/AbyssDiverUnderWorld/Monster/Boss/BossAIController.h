@@ -31,11 +31,9 @@ protected:
 
 #pragma region Method
 public:
+
 	void SetSightRadius(float InRadius);
 	void SetVisionAngle(float Angle);
-	//bool IsStateSame(EMonsterState State);
-	//void MoveToActorWithRadius(AActor* TargetActor);
-	//void MoveToLocationWithRadius(const FVector& Location);
 
 private:
 #pragma endregion
@@ -49,19 +47,6 @@ public:
 	float ChasingVisionAngle;
 
 protected:
-	/*
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI|Blackboard")
-	TObjectPtr<UBlackboardComponent> BlackboardComponent;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|BehaviorTree")
-	TObjectPtr<UBehaviorTree> BehaviorTree;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI|Perception")
-	TObjectPtr<UAIPerceptionComponent> AIPerceptionComponent;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Perception")
-	TObjectPtr<UAISenseConfig_Sight> SightConfig;
-	*/
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Perception")
 	TObjectPtr<UAISenseConfig_Damage> DamageConfig;
@@ -72,24 +57,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Sight")
 	float DetectedStateInterval;
 
-	//UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Radius")
-	//float MoveToActorAcceptanceRadius;
-
-	//UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Radius")
-	//float MoveToLocationAcceptanceRadius;
-
 	UPROPERTY()
 	TObjectPtr<ABoss> Boss;
 
 	FTimerHandle DetectedStateTimerHandle;
-	
-private:
-	
-	
-#pragma endregion
 
-#pragma region Getter, Setter
-
-#pragma endregion
-	
 };

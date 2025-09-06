@@ -43,14 +43,12 @@ ABoss::ABoss()
 	
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 
-	//// 새로운 물리 기반 수중 이동 컴포넌트 초기화
-	//AquaticMovementComponent = CreateDefaultSubobject<UAquaticMovementComponent>("Aquatic Movement Component");
-
 	static ConstructorHelpers::FObjectFinder<UNiagaraSystem> BloodNiagara(TEXT("/Game/SurvivalFX/Particles/Hit/PS_Hit_Blood_Big"));
 	if (BloodNiagara.Succeeded())
 	{
 		BloodEffect = BloodNiagara.Object;
 	}
+
 	bReplicates = true;
 
 	RadarReturnComponent->FactionTags.Init(TEXT("Hostile"), 1);
@@ -81,79 +79,10 @@ void ABoss::BeginPlay()
 	Params.AddIgnoredActor(this);
 }
 
-//void ABoss::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
-//{
-//	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-//
-//	DOREPLIFETIME(ABoss, BossState);
-//}
-#pragma endregion
-
-//#pragma region 수중생물 AI 자체구현 함수
-//
-//void ABoss::SetNewTargetLocation()
-//{
-//	Super::SetNewTargetLocation();
-//}
-//
-//void ABoss::PerformNormalMovement(const float& InDeltaTime)
-//{
-//	Super::PerformNormalMovement(InDeltaTime);
-//}
-//
-//void ABoss::PerformChasing(const float& InDeltaTime)
-//{
-//	Super::PerformChasing(InDeltaTime);
-//}
-//
-//#pragma endregion
-
-#pragma region 보스 상태 관련 함수
-//void ABoss::SetCharacterMovementSetting(const float& InBrakingDecelerationSwimming, const float& InMaxSwimSpeed)
-//{
-//	if (!IsValid(GetCharacterMovement())) return;
-//
-//	if (InBrakingDecelerationSwimming < 0.0f || InMaxSwimSpeed <= 0.0f) return;
-//
-//	GetCharacterMovement()->BrakingDecelerationSwimming = InBrakingDecelerationSwimming;
-//	GetCharacterMovement()->MaxSwimSpeed = InMaxSwimSpeed;
-//	
-//	// AquaticMovementComponent 설정도 동기화
-//	if (AquaticMovementComponent)
-//	{
-//		AquaticMovementComponent->BrakingDeceleration = InBrakingDecelerationSwimming;
-//		AquaticMovementComponent->MaxSpeed = InMaxSwimSpeed;
-//	}
-//}
-
-//void ABoss::InitCharacterMovementSetting()
-//{
-//	//if (!IsValid(GetCharacterMovement())) return;
-//	//
-//	//GetCharacterMovement()->BrakingDecelerationSwimming = OriginDeceleration;
-//	//GetCharacterMovement()->MaxSwimSpeed = StatComponent->GetMoveSpeed();
-//	
-//	// AquaticMovementComponent 설정도 초기화
-//	if (AquaticMovementComponent)
-//	{
-//		AquaticMovementComponent->BrakingDeceleration = OriginDeceleration;
-//		AquaticMovementComponent->MaxSpeed = StatComponent->GetMoveSpeed();
-//	}
-//}
-
-//void ABoss::SetBossState(EBossState State)
-//{
-//	if (!HasAuthority()) return;
-//	
-//	if (AAIController* AIC = Cast<AAIController>(GetController()))
-//	{
-//		//BossState = State;
-//		//AIC->GetBlackboardComponent()->SetValueAsEnum(BossStateKey, static_cast<uint8>(BossState));	
-//	}
-//}
 #pragma endregion
 
 #pragma region  TakeDamage, Death
+
 float ABoss::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator,
                         AActor* DamageCauser)
 {
@@ -214,43 +143,9 @@ void ABoss::M_PlayBloodEffect_Implementation(const FVector& Location, const FRot
 	}
 }
 
-void ABoss::OnDeath()
-{
-	Super::OnDeath();
-
-	/*M_OnDeath();
-	
-	DeathToRaderOff();
-
-	if (IsValid(GetController()))
-	{
-		GetController()->StopMovement();
-		GetController()->UnPossess();	
-	}*/
-}
 #pragma endregion
 
 #pragma region 보스 유틸 함수
-//void ABoss::LaunchPlayer(AUnderwaterCharacter* Player, const float& Power) const
-//{
-//	// 플레이어를 밀치는 로직
-//	const FVector PushDirection = (Player->GetActorLocation() - GetActorLocation()).GetSafeNormal();
-//	const float PushStrength = Power;
-//	const FVector PushForce = PushDirection * PushStrength;
-//	
-//	// 물리 시뮬레이션이 아닌 경우 LaunchCharacter 사용
-//	Player->LaunchCharacter(PushForce, false, false);
-//
-//	// 0.5초 후 캐릭터의 원래 움직임 복구
-//	FTimerHandle TimerHandle;
-//	GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this, Player]()
-//	{
-//		if (IsValid(Player))
-//		{
-//			Player->GetCharacterMovement()->SetMovementMode(MOVE_Swimming);	
-//		}
-//	}, 0.5f, false);
-//}
 
 void ABoss::RotationToTarget(AActor* Target)
 {
@@ -272,56 +167,19 @@ void ABoss::RotationToTarget(const FVector& InTargetLocation)
 	SetActorRotation(NewRotation);
 }
 
-//void ABoss::Attack()
-//{
-//	const uint8 AttackType = FMath::RandRange(0, AttackAnimations.Num() - 1);
-//	
-//	if (!AnimInstance) return;
-//
-//	// If any montage is playing, prevent duplicate playback
-//	if (AnimInstance->IsAnyMontagePlaying()) return;
-//
-//	if (IsValid(AttackAnimations[AttackType]))
-//	{
-//		ChaseAccumulatedTime = 0.f;
-//		AnimInstance->OnMontageEnded.RemoveDynamic(this, &ABoss::OnAttackMontageEnded);
-//		AnimInstance->OnMontageEnded.AddDynamic(this, &ABoss::OnAttackMontageEnded);
-//		M_PlayMontage(AttackAnimations[AttackType]);
-//	}
-//
-//	bIsAttacking = true;
-//}
-
-void ABoss::OnAttackEnded()
-{
-	Super::OnAttackEnded();
-}
-
 void ABoss::SetMoveSpeed(const float& SpeedMultiplier)
 {
-	//GetCharacterMovement()->MaxSwimSpeed = StatComponent->MoveSpeed * SpeedMultiplier;
 	AquaticMovementComponent->MaxSpeed = StatComponent->MoveSpeed * SpeedMultiplier;
 }
 
-
-//void ABoss::M_PlayAnimation_Implementation(class UAnimMontage* AnimMontage, float InPlayRate, FName StartSectionName)
-//{
-//	PlayAnimMontage(AnimMontage, InPlayRate, StartSectionName);
-//}
-
 void ABoss::M_OnDeath_Implementation()
 {
-	//GetCharacterMovement()->StopMovementImmediately();
-
 	if (IsValid(AnimInstance))
 	{
 		// 모든 애니메이션 출력 정지
 		AnimInstance->StopAllMontages(0.5f);
 	}
-	
-	
-	// 사망 상태로 전이
-	//SetBossState(EBossState::Death);
+
 	SetMonsterState(EMonsterState::Death);
 	
 	// 피직스 에셋 물리엔진 적용
@@ -329,35 +187,4 @@ void ABoss::M_OnDeath_Implementation()
 	GetWorldTimerManager().SetTimer(TimerHandle, this, &ABoss::ApplyPhysicsSimulation, 0.5f, false);
 }
 
-//void ABoss::DeathToRaderOff()
-//{
-//	URadarReturnComponent* RaderComponent = Cast<URadarReturnComponent>(GetComponentByClass(URadarReturnComponent::StaticClass()));
-//	if (RaderComponent)
-//	{
-//		RaderComponent->SetIgnore(true);
-//	}
-//}
-
-//void ABoss::ApplyPhysicsSimulation()
-//{
-//	switch (BossPhysicsType)
-//	{
-//		// 물리엔진 비활성화
-//		case EBossPhysicsType::None:
-//			break;
-//
-//		// Simulate Physic 적용
-//		case EBossPhysicsType::SimulatePhysics:
-//			GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-//			GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-//			GetMesh()->SetEnableGravity(true);
-//			GetMesh()->SetSimulatePhysics(true);	
-//			break;
-//	}
-//}
-
-FVector ABoss::GetNextPatrolPoint()
-{
-	return GetActorLocation();
-}
 #pragma endregion
