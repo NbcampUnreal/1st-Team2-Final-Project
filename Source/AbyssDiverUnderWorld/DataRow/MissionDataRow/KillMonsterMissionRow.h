@@ -7,7 +7,23 @@
 UENUM(BlueprintType)
 enum class EKillMonsterMission : uint8
 {
-	Mission1
+	KillMission1,
+	KillMission2,
+	KillMission3,
+	KillMission4,
+	KillMission5,
+	KillMission6,
+	KillMission7,
+	KillMission8,
+	KillMission9,
+	KillMission10,
+	KillMission11,
+	KillMission12,
+	KillMission13,
+	KillMission14,
+	KillMission15,
+	KillMission16,
+	MAX UMETA(Hidden)
 };
 
 enum class EUnitId : uint8;

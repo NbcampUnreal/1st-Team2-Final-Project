@@ -7,7 +7,12 @@
 UENUM(BlueprintType)
 enum class EInteractionMission : uint8
 {
-	InteractionMission1
+	InteractionMission1,
+	InteractionMission2,
+	InteractionMission3,
+	InteractionMission4,
+	InteractionMission5,
+	MAX UMETA(Hidden)
 };
 
 USTRUCT(BlueprintType)

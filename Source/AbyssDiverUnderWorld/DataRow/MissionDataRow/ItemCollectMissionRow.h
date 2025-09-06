@@ -7,7 +7,12 @@
 UENUM(BlueprintType)
 enum class EItemCollectMission : uint8
 {
-	ItemMission1
+	ItemMission1,
+	ItemMission2,
+	ItemMission3,
+	ItemMission4,
+	ItemMission5,
+	MAX UMETA(Hidden)
 };
 
 USTRUCT(BlueprintType)

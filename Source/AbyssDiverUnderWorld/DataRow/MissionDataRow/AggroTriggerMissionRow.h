@@ -7,7 +7,12 @@
 UENUM(BlueprintType)
 enum class EAggroTriggerMission : uint8
 {
-	AggroMission1
+	AggroMission1,
+	AggroMission2,
+	AggroMission3,
+	AggroMission4,
+	AggroMission5,
+	MAX UMETA(Hidden)
 };
 
 USTRUCT(BlueprintType)

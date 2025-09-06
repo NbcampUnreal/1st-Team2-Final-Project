@@ -7,7 +7,12 @@
 UENUM(BlueprintType)
 enum class EItemUseMission : uint8
 {
-	ItemMission1
+	ItemMission1,
+	ItemMission2,
+	ItemMission3,
+	ItemMission4,
+	ItemMission5,
+	MAX UMETA(Hidden)
 };
 
 USTRUCT(BlueprintType)
@@ -22,4 +27,7 @@ struct FItemUseMissionRow : public FMissionBaseRow
 
 	UPROPERTY(EditDefaultsOnly, Category = "ItemUseMission")
 	EItemUseMission Mission;
+
+	UPROPERTY(EditDefaultsOnly, Category = "ItemUseMission")
+	uint8 ItemId;
 };

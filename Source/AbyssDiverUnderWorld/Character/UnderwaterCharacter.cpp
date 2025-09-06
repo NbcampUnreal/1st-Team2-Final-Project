@@ -2388,7 +2388,7 @@ void AUnderwaterCharacter::SetDebugCameraMode(bool bDebugCameraEnable)
 
 void AUnderwaterCharacter::ToggleDebugCameraMode()
 {
-	bUseDebugCamera = !bUseDebugCamera;
+	bUseDebugCamera = ~bUseDebugCamera;
 	SetDebugCameraMode(bUseDebugCamera);
 }
 
@@ -2733,7 +2733,7 @@ void AUnderwaterCharacter::TryUnlockObservedTarget()
 		{
 			if (AADPlayerController* ADPC = Cast<AADPlayerController>(Controller))
 			{
-				ADPC->S_UnlockMonster(MonsterId);
+
 
 				C_UnlockFeedback(true, MonsterId);
 			}

@@ -6,8 +6,16 @@
 #include "UI/MissionData.h"
 #include "Framework/ADTutorialSaveGame.h"
 #include "Framework/SettingsManager.h"
-#include "../UI/LoadingScreenWidget.h" 
+#include "../UI/LoadingScreenWidget.h"
 #include "ADGameInstance.generated.h"
+
+struct FMissionBaseRow;
+struct FAggroTriggerMissionRow;
+struct FKillMonsterMissionRow;
+struct FItemCollectMissionRow;
+struct FItemUseMissionRow;
+struct FInteractionMissionRow;
+
 
 enum class EMapName : uint8;
 
@@ -53,6 +61,25 @@ public:
 	// 0~1의 값
 	UFUNCTION(BlueprintCallable, Category = "ADGameInstance")
 	void ChangeAmbientVolume(const float& NewVolume);
+
+	// 헬퍼 함수
+	UFUNCTION(BlueprintCallable, Category = "Mission|Query")
+	void GetMissionsForLevel(
+		ELevelName LevelName,
+		TArray<FInteractionMissionRow>& OutInteractions,
+		TArray<FItemUseMissionRow>& OutItemUses,
+		TArray<FItemCollectMissionRow>& OutCollections,
+		TArray<FKillMonsterMissionRow>& OutKills,
+		TArray<FAggroTriggerMissionRow>& OutAggros) const;
+
+	UFUNCTION(BlueprintCallable, Category = "Mission|Query")
+	void GetRandomMissionsForLevel(
+		ELevelName LevelName, int32 MaxCountPerType,
+		TArray<FInteractionMissionRow>& OutInteractions,
+		TArray<FItemUseMissionRow>& OutItemUses,
+		TArray<FItemCollectMissionRow>& OutCollections,
+		TArray<FKillMonsterMissionRow>& OutKills,
+		TArray<FAggroTriggerMissionRow>& OutAggros) const;
 
 public:
 
