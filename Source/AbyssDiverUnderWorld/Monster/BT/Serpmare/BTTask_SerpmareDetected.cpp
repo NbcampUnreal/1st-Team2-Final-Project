@@ -64,7 +64,7 @@ void UBTTask_SerpmareDetected::TickTask(UBehaviorTreeComponent& OwnerComp, uint8
 		}
 		else
 		{
-			TaskMemory->AccumulatedDetectTime += FMath::Clamp(DeltaSeconds, 0.0f, 0.1f);
+			TaskMemory->AccumulatedDetectTime += DeltaSeconds;
 		}
 	}
 }
