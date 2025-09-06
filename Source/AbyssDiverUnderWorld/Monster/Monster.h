@@ -273,6 +273,7 @@ public:
 	FORCEINLINE AUnderwaterCharacter* GetCachedTarget() const { return CachedTargetPlayer; };
 	FORCEINLINE void SetCachedTarget(AUnderwaterCharacter* Target) { CachedTargetPlayer = Target; };
 	FORCEINLINE void InitCachedTarget() { CachedTargetPlayer = nullptr; };
+	FORCEINLINE void SetDesireTargetLocation(FVector NewLocation) { DesiredTargetLocation = NewLocation; }
 	FORCEINLINE AUnderwaterCharacter* GetTarget() const { return TargetPlayer.Get(); };
 	void SetTarget(AUnderwaterCharacter* Target);
 

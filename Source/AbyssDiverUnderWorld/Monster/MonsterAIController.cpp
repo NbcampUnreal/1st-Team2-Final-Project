@@ -30,7 +30,6 @@ AMonsterAIController::AMonsterAIController()
 
 	AIPerceptionComponent->ConfigureSense(*SightConfig);
 	AIPerceptionComponent->SetDominantSense(SightConfig->GetSenseImplementation());
-	bIsLosingTarget = false;
 }
 
 void AMonsterAIController::MoveToActorWithRadius(AActor* TargetActor)
@@ -135,14 +134,6 @@ void AMonsterAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus 
 	{
 		
 	}*/
-}
-
-void AMonsterAIController::SetbIsLosingTarget(bool IsLosingTargetValue)
-{
-	if (bIsLosingTarget != IsLosingTargetValue)
-	{
-		bIsLosingTarget = IsLosingTargetValue;
-	}
 }
 
 void AMonsterAIController::SetBlackboardPerceptionType(EPerceptionType InPerceptionType)
