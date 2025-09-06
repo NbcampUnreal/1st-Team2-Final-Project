@@ -524,7 +524,7 @@ float AMonster::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, 
 
 	if (IsValid(StatComponent))
 	{
-		FVector BloodLoc = GetActorLocation() + FVector(0, 0, 20.f);
+		FVector BloodLoc = GetMesh()->GetComponentLocation() + FVector(0, 0, 20.f);
 		FRotator BloodRot = GetActorRotation();
 		M_SpawnBloodEffect(BloodLoc, BloodRot);
 		
