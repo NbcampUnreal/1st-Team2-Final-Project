@@ -7,7 +7,7 @@
 
 ALimadon::ALimadon()
 {
-	MonsterState = EMonsterState::Investigate;
+	//MonsterState = EMonsterState::Investigate;
 	bIsInvestigate = true;
 	HideTime = 30.0f;
 
