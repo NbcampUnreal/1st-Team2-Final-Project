@@ -1,12 +1,12 @@
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "Monster/Boss/Boss.h"
-#include "Components/CapsuleComponent.h"
+
 #include "AlienShark.generated.h"
 
 UCLASS()
-class ABYSSDIVERUNDERWORLD_API AAlienShark : public ABoss
+class ABYSSDIVERUNDERWORLD_API AAlienShark : public AMonster
 {
 	GENERATED_BODY()
 
@@ -15,6 +15,10 @@ public:
 
 public:
 	virtual void BeginPlay() override;
+
+protected:
+
+	virtual void NotifyLightExposure(float DeltaTime, float TotalExposedTime, const FVector& PlayerLocation, AActor* PlayerActor) override;
 	
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Collision")

@@ -35,7 +35,7 @@ void UBTTask_SetBlackBoardKeyTimer::TickTask(UBehaviorTreeComponent& OwnerComp, 
 	FBTSetBlackBoardKeyTimerTask* TaskMemory = (FBTSetBlackBoardKeyTimerTask*)NodeMemory;
 	if (!TaskMemory) return;
 
-	TaskMemory->AccumulatedTime += FMath::Clamp(DeltaSeconds, 0.f, 0.1f);
+	TaskMemory->AccumulatedTime += DeltaSeconds;
 	if (TaskMemory->AccumulatedTime > ChangeBlackboardKeyTime)
 	{
 		TaskMemory->AIController->GetBlackboardComponent()->SetValueAsBool(BlackboardKeyName, bBlackboardKeyValue);
