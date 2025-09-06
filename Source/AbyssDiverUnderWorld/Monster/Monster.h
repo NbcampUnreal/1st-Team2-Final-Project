@@ -52,6 +52,7 @@ public:
 	void M_SpawnBloodEffect(FVector Location, FRotator Rotation);
 	void M_SpawnBloodEffect_Implementation(FVector Location, FRotator Rotation);
 
+	UFUNCTION(BlueprintCallable)
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 	
 	virtual void OnDeath();
@@ -63,10 +64,10 @@ public:
 	virtual void NotifyLightExposure(float DeltaTime, float TotalExposedTime, const FVector& PlayerLocation, AActor* PlayerActor);
 	
 	UFUNCTION()
-	void AddDetection(AActor* Actor);
+	virtual void AddDetection(AActor* Actor);
 	
 	UFUNCTION()
-	void RemoveDetection(AActor* Actor);
+	virtual void RemoveDetection(AActor* Actor);
 	
 	UFUNCTION()
 	void ForceRemoveDetectedPlayers();
@@ -275,4 +276,6 @@ public:
 	FORCEINLINE void SetDesireTargetLocation(FVector NewLocation) { DesiredTargetLocation = NewLocation; }
 	FORCEINLINE AUnderwaterCharacter* GetTarget() const { return TargetPlayer.Get(); };
 	void SetTarget(AUnderwaterCharacter* Target);
+
+	FORCEINLINE const TSet<TWeakObjectPtr<AActor>>& GetDetectedPlayers() const { return DetectedPlayers; }
 };

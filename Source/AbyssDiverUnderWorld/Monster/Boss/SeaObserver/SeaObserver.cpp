@@ -15,9 +15,7 @@ void ASeaObserver::BeginPlay()
 {
 	Super::BeginPlay();
 
-	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	GetMesh()->OnComponentBeginOverlap.AddDynamic(this, &ASeaObserver::OnMeshOverlapBegin);
-
 	BiteCollision->OnComponentBeginOverlap.AddDynamic(this, &ASeaObserver::OnMeshOverlapBegin);
 }
 

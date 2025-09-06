@@ -25,4 +25,15 @@ namespace BlackboardKeys
 	inline const FName bHasSeenPlayerKey = TEXT("bHasSeenPlayer");
 	inline const FName bHasDetectedPlayerKey = TEXT("bHasDetectedPlayer");
 	inline const FName bIsPlayerSwallowKey = TEXT("bIsPlayerSwallow");
+
+	namespace AlienShark
+	{
+		inline const FName bCanChaseKey = TEXT("bCanChase");
+	}
+
+	namespace EyeStalker
+	{
+		inline const FName bIsAttackingKey = TEXT("bIsAttacking");
+		inline const FName bHasDetectedKey = TEXT("bHasDetected");
+	}
 }

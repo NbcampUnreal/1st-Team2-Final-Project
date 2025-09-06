@@ -5,7 +5,7 @@
 #include "Blowfish.generated.h"
 
 UCLASS()
-class ABYSSDIVERUNDERWORLD_API ABlowfish : public ABoss
+class ABYSSDIVERUNDERWORLD_API ABlowfish : public AMonster
 {
 	GENERATED_BODY()
 

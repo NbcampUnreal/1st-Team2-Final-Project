@@ -98,7 +98,6 @@ void AMonster::BeginPlay()
 		if (BlackboardComponent)
 		{
 			BlackboardComponent->SetValueAsVector(BlackboardKeys::TargetLocationKey, GetActorLocation());
-			ApplyMonsterStateChange(EMonsterState::Patrol);
 		}
 	}
 
@@ -946,7 +945,6 @@ void AMonster::SetMonsterState(EMonsterState NewState)
 		BB->SetValueAsEnum(BlackboardKeys::MonsterStateKey, static_cast<uint8>(NewState));
 	}
 }
-
 
 void AMonster::ApplyMonsterStateChange(EMonsterState NewState)
 {

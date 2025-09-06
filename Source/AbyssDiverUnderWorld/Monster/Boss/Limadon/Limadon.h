@@ -6,7 +6,7 @@
 #include "Limadon.generated.h"
 
 UCLASS()
-class ABYSSDIVERUNDERWORLD_API ALimadon : public ABoss
+class ABYSSDIVERUNDERWORLD_API ALimadon : public AMonster
 {
 	GENERATED_BODY()
 
