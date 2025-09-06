@@ -20,6 +20,8 @@ void ASerpmare::BeginPlay()
 
 void ASerpmare::Attack()
 {
+	// Serpmare는 Detection 상태에서도 AM가 발동중이기 때문에 Monster 클래스처럼 Early Return하면 공격을 못 함.
+
 	const uint8 AttackType = FMath::RandRange(0, AttackAnimations.Num() - 1);
 	if (IsValid(AttackAnimations[AttackType]))
 	{
