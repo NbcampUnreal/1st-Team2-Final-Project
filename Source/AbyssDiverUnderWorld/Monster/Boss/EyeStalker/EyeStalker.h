@@ -7,7 +7,7 @@
 class AVignetteVolume;
 
 UCLASS()
-class ABYSSDIVERUNDERWORLD_API AEyeStalker : public ABoss
+class ABYSSDIVERUNDERWORLD_API AEyeStalker : public AMonster
 {
 	GENERATED_BODY()
 

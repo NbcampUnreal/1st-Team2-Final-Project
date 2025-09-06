@@ -5,6 +5,7 @@
 #include "Monster/MonsterAIController.h"
 
 #include "Character/UnderwaterCharacter.h"
+#include "Container/BlackboardKeys.h"
 
 #include "Kismet/GameplayStatics.h"
 
@@ -29,7 +30,7 @@ void UBTService_ApplyDamageToPlayer::OnBecomeRelevant(UBehaviorTreeComponent& Ow
 
 	if (!TaskMemory->AIController.IsValid() || !TaskMemory->Monster.IsValid()) return;
 
-	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(TaskMemory->AIController->GetBlackboardComponent()->GetValueAsObject("TargetPlayer"));
+	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(TaskMemory->AIController->GetBlackboardComponent()->GetValueAsObject(BlackboardKeys::TargetPlayerKey));
 	if (!IsValid(Player) || !Player->IsAlive()) return;
 	
 }
@@ -40,8 +41,8 @@ void UBTService_ApplyDamageToPlayer::TickNode(UBehaviorTreeComponent& OwnerComp,
 
 	FApplyDamageToPlayerMemory* TaskMemory = (FApplyDamageToPlayerMemory*)NodeMemory;
 	if (!TaskMemory) return;
-	
-	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(TaskMemory->AIController->GetBlackboardComponent()->GetValueAsObject("TargetPlayer"));
+
+	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(TaskMemory->AIController->GetBlackboardComponent()->GetValueAsObject(BlackboardKeys::TargetPlayerKey));
 	if (!IsValid(Player) || Player->IsDeath() || Player->IsGroggy()) return;
 
 	if (!TaskMemory->bIsDamageApplied && Player->IsAttackedByEyeStalker()) return;
@@ -64,8 +65,8 @@ void UBTService_ApplyDamageToPlayer::OnCeaseRelevant(UBehaviorTreeComponent& Own
 
 	FApplyDamageToPlayerMemory* TaskMemory = (FApplyDamageToPlayerMemory*)NodeMemory;
 	if (!TaskMemory) return;
-	
-	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(TaskMemory->AIController->GetBlackboardComponent()->GetValueAsObject("TargetPlayer"));
+
+	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(TaskMemory->AIController->GetBlackboardComponent()->GetValueAsObject(BlackboardKeys::TargetPlayerKey));
 	if (!IsValid(Player) || !Player->IsAlive()) return;
 
 	if (!TaskMemory->bIsDamageApplied && Player->IsAttackedByEyeStalker()) return;

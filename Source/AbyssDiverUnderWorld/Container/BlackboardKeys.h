@@ -28,4 +28,10 @@ namespace BlackboardKeys
 	{
 		inline const FName bCanChaseKey = TEXT("bCanChase");
 	}
+
+	namespace EyeStalker
+	{
+		inline const FName bIsAttackingKey = TEXT("bIsAttacking");
+		inline const FName bHasDetectedKey = TEXT("bHasDetected");
+	}
 }

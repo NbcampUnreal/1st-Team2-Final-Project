@@ -5,6 +5,7 @@
 #include "Monster/Boss/EyeStalker/EyeStalkerAIController.h"
 
 #include "Character/UnderwaterCharacter.h"
+#include "Container/BlackboardKeys.h"
 
 UBTTask_EyeStalkerDetected::UBTTask_EyeStalkerDetected()
 {
@@ -27,7 +28,7 @@ EBTNodeResult::Type UBTTask_EyeStalkerDetected::ExecuteTask(UBehaviorTreeCompone
 	// 측정 시간 초기화
 	TaskMemory->AccumulatedTime = 0.0f;
 
-	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(TaskMemory->AIController->GetBlackboardComponent()->GetValueAsObject("TargetPlayer"));
+	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(TaskMemory->AIController->GetBlackboardComponent()->GetValueAsObject(BlackboardKeys::TargetPlayerKey));
 	if (!IsValid(Player)) return EBTNodeResult::Failed;
 
 	UPostProcessSettingComponent* PostProcessSettingComponent = Player->GetPostProcessSettingComponent();
@@ -52,11 +53,11 @@ void UBTTask_EyeStalkerDetected::TickTask(UBehaviorTreeComponent& OwnerComp, uin
 	if (!TaskMemory) return;
 	
 	// 타겟이 유효하지 않거나 사망 상태인 경우 탐지 중단
-	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(TaskMemory->AIController->GetBlackboardComponent()->GetValueAsObject("TargetPlayer"));
+	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(TaskMemory->AIController->GetBlackboardComponent()->GetValueAsObject(BlackboardKeys::TargetPlayerKey));
 	if (!IsValid(Player) || Player->IsDeath() || Player->IsGroggy())
 	{
 		TaskMemory->AIController->InitTargetPlayer();
-		TaskMemory->AIController->GetBlackboardComponent()->SetValueAsBool("bHasDetected", false);
+		TaskMemory->AIController->GetBlackboardComponent()->SetValueAsBool(BlackboardKeys::EyeStalker::bHasDetectedKey, false);
 		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 		return;
 	}
@@ -82,12 +83,12 @@ void UBTTask_EyeStalkerDetected::TickTask(UBehaviorTreeComponent& OwnerComp, uin
 	{
 		if (bIsMoving)
 		{
-			TaskMemory->AIController->GetBlackboardComponent()->SetValueAsBool("bIsAttacking", true);
+			TaskMemory->AIController->GetBlackboardComponent()->SetValueAsBool(BlackboardKeys::EyeStalker::bIsAttackingKey, true);
 		}
 		else
 		{
 			TaskMemory->AIController->InitTargetPlayer();
-			TaskMemory->AIController->GetBlackboardComponent()->SetValueAsBool("bHasDetected", false);
+			TaskMemory->AIController->GetBlackboardComponent()->SetValueAsBool(BlackboardKeys::EyeStalker::bHasDetectedKey, false);
 		}
 		
 		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
