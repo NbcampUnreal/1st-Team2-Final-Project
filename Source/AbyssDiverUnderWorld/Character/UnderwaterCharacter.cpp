@@ -506,7 +506,7 @@ void AUnderwaterCharacter::LaunchCharacter(FVector LaunchVelocity, bool bXYOverr
 
 void AUnderwaterCharacter::SetEnvironmentState(EEnvironmentState State)
 {
-	if (EnvironmentState == State)
+	if (State != EEnvironmentState::Underwater && EnvironmentState == State)
 	{
 		UE_LOG(LogAbyssDiverCharacter, Warning, TEXT("EnvironmentState is already set to %s"), *UEnum::GetValueAsString(State));
 		return;
@@ -517,6 +517,13 @@ void AUnderwaterCharacter::SetEnvironmentState(EEnvironmentState State)
 	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Environment State : %s -> %s"),
 		*UEnum::GetValueAsString(OldState), *UEnum::GetValueAsString(EnvironmentState));
 	
+		AADPlayerController* PC = Cast<AADPlayerController>(GetController());
+		if (!PC) return;
+		UPlayerHUDComponent* HUD = PC->GetPlayerHUDComponent();
+		if (!HUD) return;
+		UPlayerStatusWidget* Widget = HUD->GetPlayerStatusWidget();
+		if (!Widget) return;
+
 	switch (EnvironmentState)
 	{
 	case EEnvironmentState::Underwater:
@@ -526,6 +533,7 @@ void AUnderwaterCharacter::SetEnvironmentState(EEnvironmentState State)
 		Mesh1PSpringArm->bEnableCameraRotationLag = true;
 		OxygenComponent->SetShouldConsumeOxygen(true);
 		bCanUseEquipment = true;
+		Widget->OnChangedEnvironment(true);
 		break;
 	case EEnvironmentState::Ground:
 		GetCharacterMovement()->GravityScale = ExpectedGravityZ / GetWorld()->GetGravityZ();
@@ -535,6 +543,7 @@ void AUnderwaterCharacter::SetEnvironmentState(EEnvironmentState State)
 		OxygenComponent->SetShouldConsumeOxygen(false);
 		bCanUseEquipment = false;
 		UpdateBlurEffect();
+		Widget->OnChangedEnvironment(false);
 		break;
 	default:
 		UE_LOG(AbyssDiver, Error, TEXT("Invalid Character State"));

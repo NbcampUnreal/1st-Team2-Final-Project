@@ -14,6 +14,7 @@ enum class ESpearGunType : uint8;
 class UWarningWidget;
 class UNoticeWidget;
 class UDepthWidget;
+enum class EEnvironmentState : uint8;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API UPlayerStatusWidget : public UUserWidget
@@ -64,6 +65,7 @@ public:
 
 	void SetSpearGunTypeImage(int8 TypeNum);
 
+	void OnChangedEnvironment(bool bIsUnderwater);
 
 private:
 
