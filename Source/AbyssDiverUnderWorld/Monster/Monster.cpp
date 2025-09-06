@@ -631,21 +631,6 @@ void AMonster::OnMeshOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* O
 	LaunchPlayer(Player, LaunchPower);
 }
 
-void AMonster::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted)
-{
-	if (!IsValid(AIController)) return;
-
-	if (bIsAttackInfinite)
-	{
-		AIController->GetBlackboardComponent()->SetValueAsBool(BlackboardKeys::bHasAttackedKey, false);
-	}
-	else
-	{
-		AIController->GetBlackboardComponent()->SetValueAsBool(BlackboardKeys::bHasDetectedPlayerKey, false);
-		AIController->SetBlackboardPerceptionType(EPerceptionType::Finish);
-	}
-}
-
 void AMonster::ApplyPhysicsSimulation()
 {
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);

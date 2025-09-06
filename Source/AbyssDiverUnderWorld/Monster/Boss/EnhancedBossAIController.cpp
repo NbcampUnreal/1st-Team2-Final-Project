@@ -53,10 +53,10 @@ void AEnhancedBossAIController::InitVariables()
 
 	// 블랙보드 값 초기화
 	BlackboardComponent->SetValueAsBool(BlackboardKeys::bIsChasingKey, false);
-	BlackboardComponent->SetValueAsBool(BlackboardKeys::bHasDetectedPlayerKey, false);
-	BlackboardComponent->SetValueAsBool(BlackboardKeys::bHasAttackedKey, false);
-	BlackboardComponent->SetValueAsBool(BlackboardKeys::bIsPlayerHiddenKey, false);
-	BlackboardComponent->SetValueAsBool(BlackboardKeys::bHasSeenPlayerKey, false);
+	//BlackboardComponent->SetValueAsBool(BlackboardKeys::bHasDetectedPlayerKey, false);
+	//BlackboardComponent->SetValueAsBool(BlackboardKeys::bHasAttackedKey, false);
+	//BlackboardComponent->SetValueAsBool(BlackboardKeys::bIsPlayerHiddenKey, false);
+	//BlackboardComponent->SetValueAsBool(BlackboardKeys::bHasSeenPlayerKey, false);
 	SetBlackboardPerceptionType(EPerceptionType::None);
 }
 
@@ -130,7 +130,7 @@ void AEnhancedBossAIController::OnSightPerceptionSuccess(AUnderwaterCharacter* P
 		// 현재 설정된 타겟이 없는 경우에만 블랙보드 값을 설정한다.
 		if (!IsValid(BlackboardComponent->GetValueAsObject(BlackboardKeys::TargetPlayerKey)))
 		{
-			BlackboardComponent->SetValueAsBool(BlackboardKeys::bIsPlayerHiddenKey, false);
+			//BlackboardComponent->SetValueAsBool(BlackboardKeys::bIsPlayerHiddenKey, false);
 			BlackboardComponent->SetValueAsObject(BlackboardKeys::TargetPlayerKey, Player);	
 		}
 	}
@@ -138,7 +138,7 @@ void AEnhancedBossAIController::OnSightPerceptionSuccess(AUnderwaterCharacter* P
 	{
 		// 블랙보드 키 값 세팅
 		BlackboardComponent->SetValueAsBool(BlackboardKeys::bIsChasingKey, true);
-		BlackboardComponent->SetValueAsBool(BlackboardKeys::bHasSeenPlayerKey, true);
+		//BlackboardComponent->SetValueAsBool(BlackboardKeys::bHasSeenPlayerKey, true);
 		BlackboardComponent->SetValueAsObject(BlackboardKeys::TargetPlayerKey, Player);
 		SetBlackboardPerceptionType(EPerceptionType::Player);
 			
@@ -157,7 +157,7 @@ void AEnhancedBossAIController::OnSightPerceptionFail()
 
 	// 플레이어 사라짐 인지 변수 초기화
 	bIsDisappearPlayer = true;
-	BlackboardComponent->SetValueAsBool(BlackboardKeys::bHasSeenPlayerKey, false);
+	//BlackboardComponent->SetValueAsBool(BlackboardKeys::bHasSeenPlayerKey, false);
 }
 
 void AEnhancedBossAIController::OnHearingPerceptionSuccess(AUnderwaterCharacter* Player)
@@ -171,7 +171,7 @@ void AEnhancedBossAIController::OnHearingPerceptionSuccess(AUnderwaterCharacter*
 	// 유효시간이 지나거나 피를 흘린 주변 위치에 도달했다면 Normal 상태로 복귀한다.
 	
 	const FVector BloodOccurredLocation = Player->GetActorLocation();
-	BlackboardComponent->SetValueAsVector(BlackboardKeys::BloodOccurredLocationKey, BloodOccurredLocation);
+	//BlackboardComponent->SetValueAsVector(BlackboardKeys::BloodOccurredLocationKey, BloodOccurredLocation);
 
 	if (bIsAlienShark)
 	{
@@ -209,7 +209,7 @@ void AEnhancedBossAIController::SetBloodDetectedState()
 {
 	// 피 감지 상태 변수를 활성화한다.
 	// 5초동안 피를 감지하지 못 했다면 상태를 초기화한다.
-	GetBlackboardComponent()->SetValueAsBool(BlackboardKeys::bIsChasingPlayerKey, true);
+	//GetBlackboardComponent()->SetValueAsBool(BlackboardKeys::bIsChasingPlayerKey, true);
 }
 
 
@@ -227,12 +227,12 @@ void AEnhancedBossAIController::OnDamagePerceptionSuccess(AUnderwaterCharacter* 
 	
 	if (bIsAlienShark)
 	{
-		GetBlackboardComponent()->SetValueAsBool(BlackboardKeys::bIsChasingPlayerKey, true);
+		//GetBlackboardComponent()->SetValueAsBool(BlackboardKeys::bIsChasingPlayerKey, true);
 	}
 	else
 	{
 		BlackboardComponent->SetValueAsBool(BlackboardKeys::bIsChasingKey, true);
-		BlackboardComponent->SetValueAsBool(BlackboardKeys::bHasSeenPlayerKey, true);
+		//BlackboardComponent->SetValueAsBool(BlackboardKeys::bHasSeenPlayerKey, true);
 	}
 }
 
@@ -245,8 +245,8 @@ void AEnhancedBossAIController::OnObstacleComponentBeginOverlap(AUnderwaterChara
 	
 	if (Player == OverlappedPlayer)
 	{
-		GetBlackboardComponent()->SetValueAsBool(BlackboardKeys::bIsChasingPlayerKey, false);
-		GetBlackboardComponent()->SetValueAsBool(BlackboardKeys::bIsPlayerHiddenKey, false);
+		//GetBlackboardComponent()->SetValueAsBool(BlackboardKeys::bIsChasingPlayerKey, false);
+		//GetBlackboardComponent()->SetValueAsBool(BlackboardKeys::bIsPlayerHiddenKey, false);
 		GetBlackboardComponent()->SetValueAsObject(BlackboardKeys::TargetPlayerKey, nullptr);
 	}
 	
