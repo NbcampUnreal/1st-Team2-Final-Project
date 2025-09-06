@@ -81,7 +81,6 @@ void AMonsterAIController::OnPossess(APawn* InPawn)
 		RunBehaviorTree(BehaviorTree);
 		LOG(TEXT("AIController Possess"));
 
-		// Initialize BlackboardKey (TargetPlayer)
 		BlackboardComponent->ClearValue(BlackboardKeys::TargetPlayerKey);
 	}
 
@@ -129,11 +128,6 @@ void AMonsterAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus 
 	{
 		Monster->RemoveDetection(Actor);
 	}
-
-	/*if (Actor->IsA(AUnderwaterCharacter::StaticClass()))
-	{
-		
-	}*/
 }
 
 void AMonsterAIController::SetBlackboardPerceptionType(EPerceptionType InPerceptionType)

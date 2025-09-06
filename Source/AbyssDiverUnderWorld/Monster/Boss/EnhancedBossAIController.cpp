@@ -121,9 +121,6 @@ void AEnhancedBossAIController::OnSightPerceptionSuccess(AUnderwaterCharacter* P
 	// 플레이어가 부쉬에 숨은 상태라면 얼리 리턴
 	if (Player->IsHideInSeaweed())	return;
 	
-	// 플레이어가 NavMesh 위에 있지 않다면 얼리 리턴
-	//if (!Boss->IsLocationOnNavMesh(Player->GetActorLocation()))	return;
-
 	LOG(TEXT(" Sight Perception Success !"));
 	
 	// AlienShark와 다른 AI의 동작방식이 다르다.

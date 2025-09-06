@@ -97,31 +97,3 @@ void ABossAIController::SetVisionAngle(float Angle)
 	SightConfigInstance->PeripheralVisionAngleDegrees = Angle;
 	AIPerceptionComponent->ConfigureSense(*SightConfigInstance);
 }
-
-//bool ABossAIController::IsStateSame(EMonsterState State)
-//{
-//	return (GetBlackboardComponent()->GetValueAsEnum(MonsterStateKey) == static_cast<uint8>(State));
-//}
-
-//void ABossAIController::MoveToActorWithRadius(AActor* TargetActor)
-//{
-//	if (IsValid(TargetActor) == false)
-//	{
-//		LOGV(Error, TEXT("TargetActor is not valid"));
-//		return;
-//	}
-//
-//	MoveToLocationWithRadius(TargetActor->GetActorLocation());
-//}
-//
-//void ABossAIController::MoveToLocationWithRadius(const FVector& Location)
-//{
-//	ABoss* BossCharacter = Cast<ABoss>(GetPawn());
-//	if (IsValid(BossCharacter) == false)
-//	{
-//		LOGV(Error, TEXT("BossCharacter is not valid"));
-//		return;
-//	}
-//
-//	BossCharacter->AquaticMovementComponent->SetTargetLocation(Location, MoveToActorAcceptanceRadius);
-//}

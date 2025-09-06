@@ -20,7 +20,7 @@ EBTNodeResult::Type UBTTask_BossPatrolMove::ExecuteTask(UBehaviorTreeComponent& 
 	if (!IsValid(Boss)) return EBTNodeResult::Failed;
 
 	// 다음 이동지점 할당
-	PatrolPoint = Boss->GetNextPatrolPoint();
+	PatrolPoint = Boss->GetActorLocation();
 
 	// 일반 이동속도로 현재 Patrol Point로 보스 이동
 	AIController->MoveToLocationWithRadius(PatrolPoint);

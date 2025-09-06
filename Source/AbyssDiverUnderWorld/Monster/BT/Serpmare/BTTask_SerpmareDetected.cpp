@@ -1,7 +1,7 @@
 #include "Monster/BT/Serpmare/BTTask_SerpmareDetected.h"
 
 //#include "Monster/Boss/Enum/EBossState.h"
-#include "Monster/Boss/Serpmare/Serpmare.h"
+#include "Monster/Serpmare/Serpmare.h"
 #include "Monster/MonsterAIController.h"
 
 UBTTask_SerpmareDetected::UBTTask_SerpmareDetected()
