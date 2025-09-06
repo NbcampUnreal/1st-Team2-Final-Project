@@ -243,15 +243,6 @@ void AUnderwaterCharacter::BeginPlay()
 	EDepthZone InitialDepthZone = DepthComponent->GetDepthZone();
 	OnDepthZoneChanged(InitialDepthZone, InitialDepthZone);
 
-	if (AADPlayerController* PlayerController = Cast<AADPlayerController>(GetController()))
-	{
-		if (UPlayerHUDComponent* HUDComp = PlayerController->GetPlayerHUDComponent())
-		{
-			HUDComp->BindDeptWidgetFunction(DepthComponent);
-		}
-	}
-
-
 	NoiseEmitterComponent = NewObject<UPawnNoiseEmitterComponent>(this);
 	NoiseEmitterComponent->RegisterComponent();
 

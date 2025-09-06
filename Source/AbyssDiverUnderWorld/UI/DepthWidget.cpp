@@ -36,7 +36,7 @@ void UDepthWidget::ApplyZoneChangeToWidget(EDepthZone Old, EDepthZone New)
 
 void UDepthWidget::SetDepthText(float Depth)
 {
-	UE_LOG(LogTemp, Warning, TEXT("OnDepthUpdatedDelegate Is Bound Depth : %.f"), Depth);
+	// UE_LOG(LogTemp, Warning, TEXT("OnDepthUpdatedDelegate Is Bound Depth : %.f"), Depth);
 	float ReverseDepth = -Depth;
 	FString DepthString = FString::Printf(TEXT("%.1fm"), ReverseDepth);
 	DepthText->SetText(FText::FromString(DepthString));
