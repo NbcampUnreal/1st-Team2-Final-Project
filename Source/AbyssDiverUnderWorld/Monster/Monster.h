@@ -274,4 +274,6 @@ public:
 	FORCEINLINE void InitCachedTarget() { CachedTargetPlayer = nullptr; };
 	FORCEINLINE AUnderwaterCharacter* GetTarget() const { return TargetPlayer.Get(); };
 	void SetTarget(AUnderwaterCharacter* Target);
+
+	FORCEINLINE const TSet<TWeakObjectPtr<AActor>>& GetDetectedPlayers() const { return DetectedPlayers; }
 };

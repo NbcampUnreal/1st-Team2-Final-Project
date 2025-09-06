@@ -7,6 +7,7 @@
 #include "Monster/Boss/EyeStalker/EyeStalkerAIController.h"
 
 #include "Character/UnderwaterCharacter.h"
+#include "Container/BlackboardKeys.h"
 
 UBTTask_EyeStalkerAttack::UBTTask_EyeStalkerAttack()
 {
@@ -29,7 +30,7 @@ EBTNodeResult::Type UBTTask_EyeStalkerAttack::ExecuteTask(UBehaviorTreeComponent
 	// 측정 시간 초기화
 	TaskMemory->AccumulatedTime = 0.0f;
 
-	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(TaskMemory->AIController->GetBlackboardComponent()->GetValueAsObject("TargetPlayer"));
+	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(TaskMemory->AIController->GetBlackboardComponent()->GetValueAsObject(BlackboardKeys::TargetPlayerKey));
 	if (!IsValid(Player)) return EBTNodeResult::Failed;
 	
 	// EyeStalker 상태 초기화
@@ -46,8 +47,8 @@ void UBTTask_EyeStalkerAttack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8
 
 	FEyeStalkerAttackMemory* TaskMemory = (FEyeStalkerAttackMemory*)NodeMemory;
 	if (!TaskMemory) return;
-	
-	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(TaskMemory->AIController->GetBlackboardComponent()->GetValueAsObject("TargetPlayer"));
+
+	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(TaskMemory->AIController->GetBlackboardComponent()->GetValueAsObject(BlackboardKeys::TargetPlayerKey));
 	if (!IsValid(Player) || Player->IsDeath() || Player->IsGroggy())
 	{
 		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
@@ -87,8 +88,8 @@ void UBTTask_EyeStalkerAttack::OnTaskFinished(UBehaviorTreeComponent& OwnerComp,
 
 	FEyeStalkerAttackMemory* TaskMemory = (FEyeStalkerAttackMemory*)NodeMemory;
 	if (!TaskMemory) return;
-	
-	TaskMemory->AIController->GetBlackboardComponent()->SetValueAsBool("bIsAttacking", false);
-	TaskMemory->AIController->GetBlackboardComponent()->SetValueAsBool("bHasDetected", false);
+
+	TaskMemory->AIController->GetBlackboardComponent()->SetValueAsBool(BlackboardKeys::EyeStalker::bIsAttackingKey, false);
+	TaskMemory->AIController->GetBlackboardComponent()->SetValueAsBool(BlackboardKeys::EyeStalker::bHasDetectedKey, false);
 	TaskMemory->AIController->InitTargetPlayer();
 }
