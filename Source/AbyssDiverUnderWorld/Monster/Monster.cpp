@@ -327,7 +327,7 @@ void AMonster::PerformNormalMovement(const float& InDeltaTime)
 	// TargetPlayer가 없을 때만 연속 이동 적용
 	const bool bHasTargetPlayer = AIController &&
 		AIController->GetBlackboardComponent() &&
-		AIController->GetBlackboardComponent()->GetValueAsObject("TargetPlayer") != nullptr;
+		AIController->GetBlackboardComponent()->GetValueAsObject(BlackboardKeys::TargetPlayerKey) != nullptr;
 
 	if (!bHasTargetPlayer)
 	{
@@ -651,11 +651,11 @@ void AMonster::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 
 	if (bIsAttackInfinite)
 	{
-		AIController->GetBlackboardComponent()->SetValueAsBool("bHasAttacked", false);
+		AIController->GetBlackboardComponent()->SetValueAsBool(BlackboardKeys::bHasAttackedKey, false);
 	}
 	else
 	{
-		AIController->GetBlackboardComponent()->SetValueAsBool("bHasDetectedPlayer", false);
+		AIController->GetBlackboardComponent()->SetValueAsBool(BlackboardKeys::bHasDetectedPlayerKey, false);
 		AIController->SetBlackboardPerceptionType(EPerceptionType::Finish);
 	}
 }
@@ -971,7 +971,7 @@ void AMonster::ApplyMonsterStateChange(EMonsterState NewState)
 	case EMonsterState::Chase:
 
 		bIsChasing = true;
-		// 추적 속도는 이미 PerformChasing에서 변경하고 있음
+		// 추적 속도는 이미 Monster::PerformChasing에서 변경하고 있음
 		BlackboardComponent->SetValueAsBool(BlackboardKeys::bIsChasingKey, true);
 		MonsterSoundComponent->S_PlayChaseLoopSound();
 		break;
@@ -992,8 +992,10 @@ void AMonster::ApplyMonsterStateChange(EMonsterState NewState)
 
 	case EMonsterState::Flee:
 
+		bIsChasing = false;
 		SetMaxSwimSpeed(FleeSpeed);
 		MonsterSoundComponent->S_PlayFleeLoopSound();
+		BlackboardComponent->SetValueAsBool(BlackboardKeys::bIsChasingKey, false);
 		break;
 
 	default:

@@ -4,59 +4,57 @@
 #include "Monster/BT/HorrorCreature/BTTask_EjectVictim.h"
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
+#include "Container/BlackboardKeys.h"
 #include "Monster/HorrorCreature/HorrorCreature.h"
 
 UBTTask_EjectVictim::UBTTask_EjectVictim()
 {
 	NodeName = "Eject Victim";
-	bCreateNodeInstance = true;
+	bCreateNodeInstance = false;
 	bNotifyTick = true;
-
-	ElapsedTime = 0.0f;
-	MaxEjectDelay = 5.0f;
 }
 
 EBTNodeResult::Type UBTTask_EjectVictim::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
-	ElapsedTime = 0.0f;
+	FBTEjectVictimTaskMemory* TaskMemory = (FBTEjectVictimTaskMemory*)NodeMemory;
+	if (!TaskMemory) return EBTNodeResult::Failed;
 
-	AAIController* AIController = OwnerComp.GetAIOwner();
-	if (!AIController) return EBTNodeResult::Failed;
+	TaskMemory->AIController = Cast<AMonsterAIController>(OwnerComp.GetAIOwner());
+	TaskMemory->Monster = Cast<AMonster>(OwnerComp.GetAIOwner()->GetCharacter());
+	
+	if (!TaskMemory->AIController.IsValid() || !TaskMemory->Monster.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("EjectVictim_Task : AIController or Monster is InValid"));
+		return EBTNodeResult::Failed;
+	}
 
-	APawn* AIPawn = AIController->GetPawn();
-	if (!AIPawn) return EBTNodeResult::Failed;
+	UBlackboardComponent* BB = TaskMemory->AIController->GetBlackboardComponent();
+	if (BB)
+	{
+		TaskMemory->FleeLocation = BB->GetValueAsVector(BlackboardKeys::FleeLocationKey);
+	}
 
 	return EBTNodeResult::InProgress;
 }
 
 void UBTTask_EjectVictim::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
 {
-	AAIController* AIController = OwnerComp.GetAIOwner();
-	APawn* AIPawn = AIController ? AIController->GetPawn() : nullptr;
-	if (!AIPawn)
+	FBTEjectVictimTaskMemory* TaskMemory = (FBTEjectVictimTaskMemory*)NodeMemory;
+	if (!TaskMemory) return;
+
+	FVector MonsterLocation = TaskMemory->Monster->GetActorLocation();
+	float Distance = FVector::Dist(MonsterLocation, TaskMemory->FleeLocation);
+
+	TaskMemory->ElapsedTime += DeltaSeconds;
+	UE_LOG(LogTemp, Log, TEXT("[EjectVictim] ElapsedTime: %.2f"), TaskMemory->ElapsedTime);
+
+	if (Distance <= EjectTriggerDistance || TaskMemory->ElapsedTime >= MaxEjectDelay)
 	{
-		FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
-		return;
-	}
-
-	FVector FleeLocation = OwnerComp.GetBlackboardComponent()->GetValueAsVector(FleeLocationKey.SelectedKeyName);
-	float Distance = FVector::Dist(AIPawn->GetActorLocation(), FleeLocation);
-
-	ElapsedTime += DeltaSeconds;
-	UE_LOG(LogTemp, Log, TEXT("[EjectVictim] ElapsedTime: %.2f"), ElapsedTime);
-
-	if (Distance <= EjectTriggerDistance || ElapsedTime >= MaxEjectDelay)
-	{
-		EjectPlayerIfPossible(AIPawn);
+		AHorrorCreature* HorrorCreature = Cast<AHorrorCreature>(TaskMemory->Monster);
+		if (HorrorCreature && HorrorCreature->GetSwallowedPlayer())
+		{
+			HorrorCreature->EjectPlayer(HorrorCreature->GetSwallowedPlayer());
+		}
 		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
-	}
-}
-
-void UBTTask_EjectVictim::EjectPlayerIfPossible(APawn* AIPawn)
-{
-	AHorrorCreature* Creature = Cast<AHorrorCreature>(AIPawn);
-	if (Creature && Creature->GetSwallowedPlayer())
-	{
-		Creature->EjectPlayer(Creature->GetSwallowedPlayer());
 	}
 }

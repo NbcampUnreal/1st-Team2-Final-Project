@@ -22,9 +22,6 @@ AHorrorCreature::AHorrorCreature()
 	InvestigateSpeed = 500.0f;
 	FleeSpeed = 2000.0f;
 	SwallowedPlayer = nullptr;
-	bCanSwallow = true;
-	LanchStrength = 150.0f;
-	DisableSightTime = 1.5f;
 	FleeTime = 4.5f;
 	SwallowDamage = 900.0f;
 
@@ -50,25 +47,41 @@ void AHorrorCreature::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	// 먹는 순간만 활성화 되도록
 	if (bSwallowingInProgress && SwallowedPlayer && IsValid(SwallowedPlayer))
 	{
-		SwallowLerpAlpha += DeltaTime * 1.5f;
-		const float Alpha = FMath::Clamp(SwallowLerpAlpha, 0.f, 1.f);
-		const FVector NewLoc = FMath::Lerp(SwallowStartLocation, SwallowTargetLocation, Alpha);
+		// 먹을 때 플레이어 위치 입으로 빨려가도록 해주는 함수
+		UpdateVictimLocation(DeltaTime);
+	}
 
-		SwallowedPlayer->SetActorLocation(NewLoc);
+	// 도망가는 중에만 활성화 되도록
+	if (MonsterState == EMonsterState::Flee)
+	{
+		// DesireLocation을 FleeLocation으로 업데이트
+		SetDesireTargetLocation(BlackboardComponent->GetValueAsVector(BlackboardKeys::FleeLocationKey));
+	}
+}
 
-		if (Alpha >= 1.f)
-		{
-			// Attach
-			SwallowedPlayer->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepWorldTransform, TEXT("MouthSocket"));
-			SwallowedPlayer->SetActorRelativeLocation(FVector::ZeroVector);
+void AHorrorCreature::UpdateVictimLocation(float DeltaTime)
+{
+	// 보간 SwallowSpeed 초기값 1.5 (삼키는 속도)
+	SwallowLerpAlpha += DeltaTime * SwallowSpeed;
 
-			SetMonsterState(EMonsterState::Flee);
-			BlackboardComponent->ClearValue(BlackboardKeys::TargetPlayerKey);
+	// 오버슈트 방지 (몬스터 입을 넘는 위치 방지)
+	const float Alpha = FMath::Clamp(SwallowLerpAlpha, 0.f, 1.f);
+	const FVector NewLoc = FMath::Lerp(VictimLocation, CreatureMouthLocation, Alpha);
 
-			bSwallowingInProgress = false;
-		}
+	SwallowedPlayer->SetActorLocation(NewLoc);
+
+	// 몬스터의 입 위치에 도달했다면
+	if (Alpha >= 1.f)
+	{
+		// Attach
+		SwallowedPlayer->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepWorldTransform, TEXT("MouthSocket"));
+		SwallowedPlayer->SetActorRelativeLocation(FVector::ZeroVector);
+
+		// 틱 비활성화
+		bSwallowingInProgress = false;
 	}
 }
 
@@ -93,6 +106,7 @@ void AHorrorCreature::OnSwallowTriggerOverlap(
 	}
 }
 
+// 플레이어를 삼켰을 때 실행되는 함수
 void AHorrorCreature::SwallowPlayer(AUnderwaterCharacter* Victim)
 {
 	if (!HasAuthority() || !Victim || SwallowedPlayer) return;
@@ -101,35 +115,66 @@ void AHorrorCreature::SwallowPlayer(AUnderwaterCharacter* Victim)
 
 	SwallowedPlayer = Victim;
 	bCanSwallow = false;
-
-	DamageToVictim(Victim, SwallowDamage);
-
-	Victim->StartCaptureState();
-
-	// Set the Victim movement start position
-	SwallowStartLocation = Victim->GetActorLocation();
-	SwallowTargetLocation = GetMesh()->GetSocketLocation("MouthSocket");
-	SwallowLerpAlpha = 0.f;
 	bSwallowingInProgress = true;
 
-	SetMonsterState(EMonsterState::Flee);
-	BlackboardComponent->ClearValue(BlackboardKeys::TargetPlayerKey);
+	// 데미지 처리
+	DamageToVictim(Victim, SwallowDamage);
+
+	// 플레이어의 시야 어둡게
+	Victim->StartCaptureState();
+
+	// 플레이어 위치, 크리처 입 위치 설정
+	VictimLocation = Victim->GetActorLocation();
+	CreatureMouthLocation = GetMesh()->GetSocketLocation("MouthSocket");
+	SwallowLerpAlpha = 0.f;
+
+	// Flee (도망가는) 상태로 변경
+	ApplyMonsterStateChange(EMonsterState::Flee);
+
+	if (BlackboardComponent)
+	{
+		BlackboardComponent->SetValueAsBool(BlackboardKeys::bIsPlayerSwallowKey, true);
+	}
 }
 
 void AHorrorCreature::EjectPlayer(AUnderwaterCharacter* Victim)
 {
 	if (!Victim) return;
 
-	// Perception keeps setting the TargetPlayer, so it should be turned off.
+	// 뱉자마자 플레이어를 인식하지 못하도록 일시적으로 Perception을 끔 (초기값 : 2초)
 	TemporarilyDisalbeSightPerception(DisableSightTime);
+	
+	// 뱉은 플레이어 정상화 함수
+	EjectedVictimNormalize(Victim);
 
+	// 어그로 초기화
+	ForceRemoveDetectedPlayers();
+
+	SwallowedPlayer = nullptr;
+	bCanSwallow = true;
+
+	BlackboardComponent->SetValueAsBool(BlackboardKeys::bIsPlayerSwallowKey, false);
+	
+	FTimerHandle SetPatrolTimeHandle;
+	GetWorld()->GetTimerManager().SetTimer(
+		SetPatrolTimeHandle,
+		this,
+		&AHorrorCreature::SetPatrolStateAfterEject,
+		FleeTime,
+		false
+	);
+}
+
+void AHorrorCreature::EjectedVictimNormalize(AUnderwaterCharacter* Victim)
+{
+	// 플레이어 뱉고, 어두워진 화면 제거
 	Victim->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 	Victim->SetActorRotation(FRotator(0.f, Victim->GetActorRotation().Yaw, 0.f));
 	Victim->StopCaptureState();
-	
-	// Launch the player upward and forward from the mouth
+
+	// 플레이어를 입으로부터 앞으로 Lanch
 	FVector LaunchDirection = GetActorForwardVector();
-	FVector LaunchVelocity = LaunchDirection * LanchStrength; // adjust strength as needed
+	FVector LaunchVelocity = LaunchDirection * LanchStrength;
 	Victim->LaunchCharacter(LaunchVelocity, false, false);
 
 	if (EjectMontage)
@@ -137,7 +182,7 @@ void AHorrorCreature::EjectPlayer(AUnderwaterCharacter* Victim)
 		M_PlayMontage(EjectMontage);
 	}
 
-	// SwimMode On
+	// 플레이어 수영모드 On
 	GetWorld()->GetTimerManager().SetTimer(
 		TimerHandle_SetSwimMode,
 		[Victim]()
@@ -150,20 +195,6 @@ void AHorrorCreature::EjectPlayer(AUnderwaterCharacter* Victim)
 		0.5f,
 		false
 	);
-
-	SwallowedPlayer = nullptr;
-	bCanSwallow = true;
-	RemoveDetection(Victim);
-	InitializeAggroVariable();
-
-	FTimerHandle SetPatrolTimeHandle;
-	GetWorld()->GetTimerManager().SetTimer(
-		SetPatrolTimeHandle,
-		this,
-		&AHorrorCreature::SetPatrolStateAfterEject,
-		FleeTime,
-		false
-	);
 }
 
 void AHorrorCreature::NotifyLightExposure(float DeltaTime, float TotalExposedTime, const FVector& PlayerLocation, AActor* PlayerActor)
@@ -173,12 +204,14 @@ void AHorrorCreature::NotifyLightExposure(float DeltaTime, float TotalExposedTim
 	Super::NotifyLightExposure(DeltaTime, TotalExposedTime, PlayerLocation, PlayerActor);
 }
 
+// 일시적으로 Sight Perception을 끄는 함수
 void AHorrorCreature::TemporarilyDisalbeSightPerception(float Duration)
 {
 	if (!CachedPerceptionComponent) return;
 
 	CachedPerceptionComponent->SetSenseEnabled(UAISense_Sight::StaticClass(), false);
 
+	// Duration (초기값 : 1.5초) 만큼 있다가 다시 Perception On
 	FTimerHandle EnableSightHandle;
 	GetWorld()->GetTimerManager().SetTimer(
 		EnableSightHandle,
@@ -199,8 +232,7 @@ void AHorrorCreature::SightPerceptionOn()
 
 void AHorrorCreature::SetPatrolStateAfterEject()
 {
-	SetMonsterState(EMonsterState::Patrol);
-	BlackboardComponent->ClearValue(BlackboardKeys::TargetPlayerKey);
+	ApplyMonsterStateChange(EMonsterState::Patrol);
 }
 
 void AHorrorCreature::DamageToVictim(AUnderwaterCharacter* Victim, float Damage)
@@ -217,14 +249,14 @@ void AHorrorCreature::DamageToVictim(AUnderwaterCharacter* Victim, float Damage)
 	}
 }
 	
-void AHorrorCreature::InitializeAggroVariable()
-{
-	if (!AIController || !IsValid(this) || !BlackboardComponent) return;
-	
-	AIController->SetbIsLosingTarget(false);
-	bIsChasing = false;
-	TargetPlayer = nullptr;
-	BlackboardComponent->ClearValue(BlackboardKeys::InvestigateLocationKey);
-}
+// void AHorrorCreature::InitializeAggroVariable()
+// {
+// 	if (!AIController || !IsValid(this) || !BlackboardComponent) return;
+// 
+// 	bIsChasing = false;
+// 	TargetPlayer = nullptr;
+// 	BlackboardComponent->ClearValue(BlackboardKeys::InvestigateLocationKey);
+// }
+
 
 
