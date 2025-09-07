@@ -289,9 +289,16 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable)
 	void RequestPlayEmote(int32 EmoteIndex);
-	
-protected:
 
+	/** Name Widget 가시성 설정
+	 * false일 경우 항상 숨김 처리가 된다.
+	 * true일 경우 캐릭터 정책에 따라서 Name Widget의 가시성이 결정된다.
+	 * Locally Controlled Character의 Name Widget은 항상 숨김 처리된다.
+	 * Spectated Character의 Name Widget은 항상 숨김 처리된다.
+	 */
+	void SetNameWidgetEnabled(bool bNewVisibility);
+
+protected:
 	/** Stat Component의 기본 속도가 변경됬을 때 호출된다. */
 	UFUNCTION()
 	void OnMoveSpeedChanged(float NewMoveSpeed);
@@ -360,9 +367,9 @@ protected:
 	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "OnEnvironmentStateChanged"))
 	void K2_OnEnvironmentStateChanged(EEnvironmentState OldEnvironmentState, EEnvironmentState NewEnvironmentState);
 
-	/** Player State 정보를 초기화 */
-	void InitFromPlayerState(class AADPlayerState* ADPlayerState);
-	
+	/** Player State를 기반으로 Player Status 초기화 */
+	void InitPlayerStatus(class AADPlayerState* ADPlayerState);
+
 	/** Upgrade Component의 정보를 바탕으로 초기화 */
 	void ApplyUpgradeFactor(class UUpgradeComponent* UpgradeComponent);
 	
@@ -633,18 +640,28 @@ protected:
 
 	/** 현재 DepthZone에 따른 산소 소비율을 반환한다. */
 	float GetOxygenConsumeRate(EDepthZone DepthZone) const;
-	
-private:
 
+	// 현재는 Debug 기능을 위해서 간략하게 구현되었다.
+	// 추후에 유저 조작으로 NameWidget을 숨김처리하거나 하는 기능이 추가되면
+	// Name Widget에서 Callback 을 통해서 구현한다.
+	// 현재 방식상으로는 호출 비용이 크다.
+	
+	/** 현재 상태에 따라 Name Widget의 가시성을 설정한다.
+	 * Local Player가 아니고 PC에서 Name Widget 가시성이 참일 경우에만 Name Widget이 보인다.
+	 */
+	void InitNameWidgetEnabled();
+
+private:
 	/** Montage 콜백을 등록 */
 	void SetupMontageCallbacks();
-	
+
 #pragma endregion
 
 #pragma region Variable
 
 public:
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDeath);
+
 	/** 캐릭터가 사망했을 때 호출되는 델리게이트 */
 	UPROPERTY(BlueprintAssignable)
 	FOnDeath OnDeathDelegate;

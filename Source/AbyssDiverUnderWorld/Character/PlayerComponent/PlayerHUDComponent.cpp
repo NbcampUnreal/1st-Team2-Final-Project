@@ -34,11 +34,42 @@ UPlayerHUDComponent::UPlayerHUDComponent()
 	PrimaryComponentTick.bCanEverTick = false;
 }
 
+void UPlayerHUDComponent::BindGameState()
+{
+	AADInGameState* GS = Cast<AADInGameState>(GetWorld()->GetGameState());
+	if (GS == nullptr)
+	{
+		LOGV(Warning, TEXT("GS == nullptr"));
+		return;
+	}
+
+	AADDroneSeller* CurrentDroneSeller = GS->GetCurrentDroneSeller();
+	if (CurrentDroneSeller == nullptr)
+	{
+		LOGV(Warning, TEXT("CurrentDroneSeller == nullptr, Server? : %d"), GetOwner()->GetNetMode() != ENetMode::NM_Client);
+		return;
+	}
+
+	PlayerStatusWidget->SetDroneTargetText(CurrentDroneSeller->GetTargetMoney());
+	PlayerStatusWidget->SetDroneCurrentText(CurrentDroneSeller->GetCurrentMoney());
+	PlayerStatusWidget->SetMoneyProgressBar(CurrentDroneSeller->GetMoneyRatio());
+
+	CurrentDroneSeller->OnCurrentMoneyChangedDelegate.RemoveAll(PlayerStatusWidget);
+	CurrentDroneSeller->OnCurrentMoneyChangedDelegate.AddUObject(PlayerStatusWidget, &UPlayerStatusWidget::SetDroneCurrentText);
+
+	CurrentDroneSeller->OnTargetMoneyChangedDelegate.RemoveAll(PlayerStatusWidget);
+	CurrentDroneSeller->OnTargetMoneyChangedDelegate.AddUObject(PlayerStatusWidget, &UPlayerStatusWidget::SetDroneTargetText);
+
+	CurrentDroneSeller->OnMoneyRatioChangedDelegate.RemoveAll(PlayerStatusWidget);
+	CurrentDroneSeller->OnMoneyRatioChangedDelegate.AddUObject(PlayerStatusWidget, &UPlayerStatusWidget::SetMoneyProgressBar);
+}
+
 void UPlayerHUDComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
 	AADPlayerController* PlayerController = Cast<AADPlayerController>(GetOwner());
+	AUnderwaterCharacter* Character = Cast<AUnderwaterCharacter>(PlayerController->GetPawn());
 
 	if (!PlayerController || !PlayerController->IsLocalController())
 	{
@@ -48,7 +79,7 @@ void UPlayerHUDComponent::BeginPlay()
 	PlayerController->OnPossessedPawnChanged.AddDynamic(this, &UPlayerHUDComponent::OnPossessedPawnChanged);
 	PlayerController->OnSpectateChanged.AddDynamic(this, &UPlayerHUDComponent::OnSpectatingStateChanged);
 	
-	// 메인 HUD 생성
+	// Test HUD 생성
 	if (HudWidgetClass)
 	{
 		HudWidget = CreateWidget<UPlayerHUDWidget>(PlayerController, HudWidgetClass);
@@ -60,6 +91,7 @@ void UPlayerHUDComponent::BeginPlay()
 	}
 	SetTestHUDVisibility(false);
 
+	// Crosshair Widget 생성
 	if (CrosshairWidgetClass)
 	{
 		CrosshairWidget = CreateWidget<UCrosshairWidget>(PlayerController, CrosshairWidgetClass);
@@ -70,7 +102,7 @@ void UPlayerHUDComponent::BeginPlay()
 		}
 	}
 
-	// 상태 UI 생성
+	// Player Status UI 생성
 	if (PlayerStatusWidgetClass)
 	{
 		PlayerStatusWidget = CreateWidget<UPlayerStatusWidget>(PlayerController, PlayerStatusWidgetClass);
@@ -78,6 +110,36 @@ void UPlayerHUDComponent::BeginPlay()
 		{
 			PlayerStatusWidget->AddToViewport();
 			PlayerStatusWidget->SetCompassObjectWidgetVisible(true);
+		}
+	}
+
+	// Bind Character Components
+	if (Character) 
+	{
+		// 스탯 컴포넌트
+		if (UStatComponent* StatComponent = Character->FindComponentByClass<UStatComponent>())
+		{
+			StatComponent->OnHealthChanged.AddDynamic(this, &UPlayerHUDComponent::UpdateHealthHUD);
+			UpdateHealthHUD(StatComponent->GetCurrentHealth(), StatComponent->GetMaxHealth());
+		}
+
+		// 산소
+		if (UOxygenComponent* OxygenComp = Character->FindComponentByClass<UOxygenComponent>())
+		{
+			OxygenComp->OnOxygenLevelChanged.AddDynamic(this, &UPlayerHUDComponent::UpdateOxygenHUD);
+			UpdateOxygenHUD(OxygenComp->GetOxygenLevel(), OxygenComp->GetMaxOxygenLevel());
+		}
+
+		// 스태미나
+		if (UStaminaComponent* StaminaComp = Character->FindComponentByClass<UStaminaComponent>())
+		{
+			StaminaComp->OnStaminaChanged.AddDynamic(this, &UPlayerHUDComponent::UpdateStaminaHUD);
+			UpdateStaminaHUD(StaminaComp->GetStamina(), StaminaComp->GetMaxStamina());
+		}
+
+		if (UDepthComponent* DepthComp = Character->FindComponentByClass<UDepthComponent>())
+		{
+			BindDeptWidgetFunction(DepthComp);
 		}
 	}
 
@@ -99,34 +161,6 @@ void UPlayerHUDComponent::BeginPlay()
 		SetActiveRadarWidget(false);
 	}
 
-
-	if (APawn* Pawn = PlayerController->GetPawn())
-	{
-		if (AUnderwaterCharacter* UWCharacter = Cast<AUnderwaterCharacter>(Pawn)) 
-		{
-			// 스탯 컴포넌트
-			if (UStatComponent* StatComponent = UWCharacter->FindComponentByClass<UStatComponent>())
-			{
-				StatComponent->OnHealthChanged.AddDynamic(this, &UPlayerHUDComponent::UpdateHealthHUD);
-				UpdateHealthHUD(StatComponent->GetCurrentHealth(), StatComponent->GetMaxHealth());
-			}
-
-			// 산소
-			if (UOxygenComponent* OxygenComp = UWCharacter->FindComponentByClass<UOxygenComponent>())
-			{
-				OxygenComp->OnOxygenLevelChanged.AddDynamic(this, &UPlayerHUDComponent::UpdateOxygenHUD);
-				UpdateOxygenHUD(OxygenComp->GetOxygenLevel(), OxygenComp->GetMaxOxygenLevel());
-			}
-
-			// 스태미나
-			if (UStaminaComponent* StaminaComp = UWCharacter->FindComponentByClass<UStaminaComponent>())
-			{
-				StaminaComp->OnStaminaChanged.AddDynamic(this, &UPlayerHUDComponent::UpdateStaminaHUD);
-				UpdateStaminaHUD(StaminaComp->GetStamina(), StaminaComp->GetMaxStamina());
-			}
-		}
-	}
-
 	if (SpectatorHUDWidgetClass)
 	{
 		SpectatorHUDWidget = CreateWidget<USpectatorHUDWidget>(PlayerController, SpectatorHUDWidgetClass);
@@ -135,35 +169,8 @@ void UPlayerHUDComponent::BeginPlay()
 			SpectatorHUDWidget->BindWidget(PlayerController);
 		}
 	}
-	
-	AADInGameState* GS = Cast<AADInGameState>(GetWorld()->GetGameState());
-	if (GS == nullptr)
-	{
-		LOGV(Warning, TEXT("GS == nullptr"));
-		return;
-	}
-	
 
-	AADDroneSeller* CurrentDroneSeller = GS->GetCurrentDroneSeller();
-	if (CurrentDroneSeller == nullptr)
-	{
-		LOGV(Warning, TEXT("CurrentDroneSeller == nullptr, Server? : %d"), GetOwner()->GetNetMode() != ENetMode::NM_Client);
-		return;
-	}
-
-
-	PlayerStatusWidget->SetDroneTargetText(CurrentDroneSeller->GetTargetMoney());
-	PlayerStatusWidget->SetDroneCurrentText(CurrentDroneSeller->GetCurrentMoney());
-	PlayerStatusWidget->SetMoneyProgressBar(CurrentDroneSeller->GetMoneyRatio());
-
-	CurrentDroneSeller->OnCurrentMoneyChangedDelegate.RemoveAll(PlayerStatusWidget);
-	CurrentDroneSeller->OnCurrentMoneyChangedDelegate.AddUObject(PlayerStatusWidget, &UPlayerStatusWidget::SetDroneCurrentText);
-
-	CurrentDroneSeller->OnTargetMoneyChangedDelegate.RemoveAll(PlayerStatusWidget);
-	CurrentDroneSeller->OnTargetMoneyChangedDelegate.AddUObject(PlayerStatusWidget, &UPlayerStatusWidget::SetDroneTargetText);
-
-	CurrentDroneSeller->OnMoneyRatioChangedDelegate.RemoveAll(PlayerStatusWidget);
-	CurrentDroneSeller->OnMoneyRatioChangedDelegate.AddUObject(PlayerStatusWidget, &UPlayerStatusWidget::SetMoneyProgressBar);
+	BindGameState();
 }
 
 void UPlayerHUDComponent::C_ShowResultScreen_Implementation()
@@ -401,6 +408,11 @@ void UPlayerHUDComponent::SetupHudWidgetToNewPawn(APawn* NewPawn, APlayerControl
 			StaminaComp->OnStaminaChanged.AddDynamic(this, &UPlayerHUDComponent::UpdateStaminaHUD);
 			UpdateStaminaHUD(StaminaComp->GetStamina(), StaminaComp->GetMaxStamina());
 		}
+
+		if (UDepthComponent* DepthComp = UWCharacter->FindComponentByClass<UDepthComponent>())
+		{
+			BindDeptWidgetFunction(DepthComp);
+		}
 	}
 }
 
@@ -561,4 +573,9 @@ USoundSubsystem* UPlayerHUDComponent::GetSoundSubsystem()
 	}
 
 	return SoundSubsystem;
+}
+
+UPlayerStatusWidget* UPlayerHUDComponent::GetPlayerStatusWidget()
+{
+	return PlayerStatusWidget;
 }

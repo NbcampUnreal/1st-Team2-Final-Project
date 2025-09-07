@@ -24,13 +24,6 @@ void AADExchangeableItem::BeginPlay()
 		DynamicMaterial->SetScalarParameterValue(TEXT("GlowPower"), MinGlow);
 	}
 
-	GetWorld()->GetTimerManager().SetTimer(
-		PulseTimerHandle,
-		this,
-		&AADExchangeableItem::UpdateGlow,
-		0.03f,
-		true
-	);
 }
 
 void AADExchangeableItem::OnRep_TotalPrice()
