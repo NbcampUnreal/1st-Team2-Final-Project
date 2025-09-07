@@ -302,6 +302,10 @@ protected:
     UPROPERTY()
     class APlayerController* LocalPlayerController;
 
+    UPROPERTY()
+    TSet<TObjectPtr<AActor>> IgnoredActors;
+    FCollisionQueryParams AvoidanceTraceParams;
+
     float LastRecordTime;
     FVector LastRecordedLocation;
     float AverageBoneDistance;
@@ -312,14 +316,15 @@ protected:
     float LastWallDetectionTime; // 마지막 벽 감지 시간
     FVector LastWallNormal; // 마지막 벽 법선
 
-	FCollisionQueryParams AvoidanceTraceParams;
-
 private:
+
     // === 스플라인 보간 ===
 
     FVector CatmullRomSpline(const FVector& P0, const FVector& P1, const FVector& P2, const FVector& P3, float T) const;
 
     // === 디버그 ===
-
+    // Avoidance 관련 디버그는 단순 Hit 체크만 하기 때문에 실제로 무시되는 대상도 빨간색으로 표시될 수 있다.
     void DrawDebugVisualization();
+
+    void AddIgnoredActorFromAvoidance(AActor* Actor);
 };
