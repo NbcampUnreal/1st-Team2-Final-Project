@@ -96,6 +96,9 @@ protected:
 
     /** 관전 HUD 위젯을 숨긴다. */
     void HideSpectatorHUDWidget();
+
+    /** Game State와 UI 바인딩 */
+    void BindGameState();
     
 private:
 #pragma endregion
@@ -158,6 +161,7 @@ public:
 
     UMissionsOnHUDWidget* GetMissionsOnHudWidget() const;
     USoundSubsystem* GetSoundSubsystem();
+    UPlayerStatusWidget* GetPlayerStatusWidget() ;
 
 #pragma endregion
 };

@@ -119,7 +119,7 @@ void UInventorySlotWidget::SetItemData(FItemData ItemInfo, int32 Index, UADInven
 		QuantityText->SetVisibility(ESlateVisibility::Collapsed);
 		break;
 	case EItemType::Exchangable:
-		QuantityText->SetText(FText::FromString(FString::Printf(TEXT("%dkg"), ItemInfo.Mass)));
+		QuantityText->SetText(FText::FromString(FString::Printf(TEXT("%dcr"), ItemInfo.Price)));
 		break;
 	default:
 		QuantityText->SetText(FText::FromString(FString::Printf(TEXT("%d"), ItemInfo.Quantity)));

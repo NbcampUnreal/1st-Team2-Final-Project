@@ -49,7 +49,7 @@ void UAquaticMovementComponent::BeginPlay()
     if (OwnerCharacter)
     {
         InitComponent(OwnerCharacter);
-        AvoidanceTraceParams.AddIgnoredActor(OwnerCharacter);
+		AddIgnoredActorFromAvoidance(OwnerCharacter);
     }
 
     LocalPlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
@@ -330,6 +330,8 @@ FVector UAquaticMovementComponent::CalculateAvoidanceForce()
         {
             if(Hit.GetActor()->IsA<AUnderwaterCharacter>())
             {
+				AddIgnoredActorFromAvoidance(Hit.GetActor());
+                LOGV(Log, TEXT("Avoidance Ignored Character : %s"), *Hit.GetActor()->GetName());
                 continue; // 플레이어 캐릭터는 무시
 			}
 
@@ -1390,4 +1392,15 @@ void UAquaticMovementComponent::DrawDebugVisualization()
         DrawDebugString(GetWorld(), OwnerCharacter->GetActorLocation() + FVector(0, 0, 100),
             DebugText, nullptr, FColor::White, 0.0f, true);
     }
+}
+
+void UAquaticMovementComponent::AddIgnoredActorFromAvoidance(AActor* Actor)
+{
+    if (IsValid(Actor) == false || IgnoredActors.Contains(Actor))
+    {
+        return;
+	}
+
+    IgnoredActors.Add(Actor);
+	AvoidanceTraceParams.AddIgnoredActor(Actor);
 }
