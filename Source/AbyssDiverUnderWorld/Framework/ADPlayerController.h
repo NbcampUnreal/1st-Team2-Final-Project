@@ -127,10 +127,28 @@ protected:
 	UFUNCTION(Exec)
 	void GainShield(int Amount);
 
+	/** 이름 위젯의 표시 상태를 토글 */
+	UFUNCTION(Exec)
+	void ToggleNameWidget();
+
+	/** 이름 위젯을 표시하도록 설정 */
+	UFUNCTION(Exec)
+	void ShowNameWidgets();
+
+	/** 이름 위젯을 숨기도록 설정 */
+	UFUNCTION(Exec)
+	void HideNameWidgets();
+
 	UFUNCTION(Server, Reliable)
 	void S_GainShield(int Amount);
 	
 	void OnCameraBlankEnd();
+
+private:
+	
+	/** 이름 위젯 가시 상태 설정 */
+	void SetAllNameWidgetsEnabled(bool bNewEnabled);
+
 #pragma endregion
 	
 #pragma region Variable
@@ -175,6 +193,10 @@ private:
 
 	/** Camera Blank Timer Handle */
 	FTimerHandle CameraBlankTimerHandle;
+
+	/** Name Widget 가시성 표시 여부. 비활성화되면 모든 Name Widget이 숨김 처리된다. */
+	uint8 bIsNameWidgetEnabled : 1;
+	
 #pragma endregion 
 
 #pragma region Getters / Setters
@@ -182,6 +204,9 @@ private:
 public:
 
 	UPlayerHUDComponent* GetPlayerHUDComponent() const { return PlayerHUDComponent; }
+
+	/** Name Widget이 활성화 여부를 반환 */
+	FORCEINLINE bool IsNameWidgetEnabled() const { return bIsNameWidgetEnabled; }
 
 #pragma endregion
 
