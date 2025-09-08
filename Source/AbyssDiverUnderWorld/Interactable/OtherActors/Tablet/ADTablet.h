@@ -79,7 +79,7 @@ private:
 public:
 	virtual UADInteractableComponent* GetInteractableComponent() const override { return InteractableComp; }
 	virtual bool IsHoldMode() const override { return false; }
-	virtual FString GetInteractionDescription() const override { return TEXT("Pick up!"); }
+	virtual FString GetInteractionDescription() const override;
 
 private:
 	USoundSubsystem* GetSoundSubsystem();

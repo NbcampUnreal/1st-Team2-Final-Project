@@ -3,6 +3,7 @@
 
 #include "StaminaComponent.h"
 
+#include "Character/UnderwaterCharacter.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Net/UnrealNetwork.h"
@@ -28,7 +29,7 @@ void UStaminaComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	OwnerCharacter = Cast<ACharacter>(GetOwner());
+	OwnerCharacter = Cast<AUnderwaterCharacter>(GetOwner());
 }
 
 void UStaminaComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -49,7 +50,7 @@ void UStaminaComponent::TickComponent(float DeltaTime, enum ELevelTick TickType,
 		return;
 	}
 
-	if (bIsSprinting && IsCharacterMoving())
+	if (bIsSprinting && IsCharacterSprinting())
 	{
 		ConsumeStamina(DeltaTime);
 		TimeSinceLastSprint = 0.0f;
@@ -116,7 +117,7 @@ void UStaminaComponent::StopSprint()
 	OnSprintStateChanged.Broadcast(bIsSprinting);
 }
 
-bool UStaminaComponent::IsCharacterMoving() const
+bool UStaminaComponent::IsCharacterSprinting() const
 {
 	if (!OwnerCharacter)
 	{
@@ -141,7 +142,7 @@ bool UStaminaComponent::IsCharacterMoving() const
 	// 가령, 캐릭터가 벽을 향해 달릴 경우 달리는 모션이 나오지 않기 때문에 스태미너를 소모해서는 안 된다.
 	const bool bHasVelocity = MovementComponent->Velocity.SizeSquared() > KINDA_SMALL_NUMBER;
 
-	return bIsMoving && bInputMove && bHasVelocity;
+	return bIsMoving && bInputMove && bHasVelocity && OwnerCharacter->CanSprint();
 }
 
 void UStaminaComponent::OnRep_StaminaStatusChanged()

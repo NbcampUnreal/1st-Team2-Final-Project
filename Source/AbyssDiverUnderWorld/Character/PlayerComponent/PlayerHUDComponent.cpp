@@ -1,132 +1,48 @@
 ﻿#include "PlayerHUDComponent.h"
 
 #include "AbyssDiverUnderWorld.h"
+
 #include "Character/PlayerHUDWidget.h"
 #include "Character/UnderwaterCharacter.h"
 #include "Character/PlayerComponent/OxygenComponent.h"
 #include "Character/PlayerComponent/StaminaComponent.h"
 #include "Character/StatComponent.h"
+
 #include "Framework/ADInGameState.h"
 #include "Framework/ADPlayerState.h"
+#include "Framework/ADPlayerController.h"
+
 #include "UI/ResultScreen.h"
 #include "UI/PlayerStatusWidget.h"
 #include "UI/MissionsOnHUDWidget.h"
-#include "GameFramework/PlayerController.h"
+#include "UI/CrosshairWidget.h"
+#include "UI/SpectatorHUDWidget.h"
+#include "UI/RadarWidgets/Radar2DWidget.h"
+
+#include "Interactable/OtherActors/ADDroneSeller.h"
+#include "Subsystems/SoundSubsystem.h"
+
 #include "EngineUtils.h"
 #include "Components/CanvasPanel.h"
-#include "Framework/ADPlayerController.h"
-#include "UI/CrosshairWidget.h"
-#include "Interactable/OtherActors/ADDroneSeller.h"
-#include "UI/SpectatorHUDWidget.h"
-#include "Subsystems/SoundSubsystem.h"
 #include "Kismet/GameplayStatics.h"
+#include "Inventory/ADInventoryComponent.h"
+#include "Character/PlayerComponent/DepthComponent.h"
+#include "UI/DepthWidget.h"
 
 UPlayerHUDComponent::UPlayerHUDComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
 }
 
-void UPlayerHUDComponent::BeginPlay()
+void UPlayerHUDComponent::BindGameState()
 {
-	Super::BeginPlay();
-
-	AADPlayerController* PlayerController = Cast<AADPlayerController>(GetOwner());
-	if (!PlayerController || !PlayerController->IsLocalController())
-	{
-		return;
-	}
-
-	PlayerController->OnPossessedPawnChanged.AddDynamic(this, &UPlayerHUDComponent::OnPossessedPawnChanged);
-	PlayerController->OnSpectateChanged.AddDynamic(this, &UPlayerHUDComponent::OnSpectatingStateChanged);
-	
-	// 메인 HUD 생성
-	if (HudWidgetClass)
-	{
-		HudWidget = CreateWidget<UPlayerHUDWidget>(PlayerController, HudWidgetClass);
-		if (HudWidget)
-		{
-			HudWidget->AddToViewport();
-			HudWidget->BindWidget(PlayerController->GetPawn());
-		}
-	}
-	SetTestHUDVisibility(false);
-
-	if (CrosshairWidgetClass)
-	{
-		CrosshairWidget = CreateWidget<UCrosshairWidget>(PlayerController, CrosshairWidgetClass);
-		if (CrosshairWidget)
-		{
-			CrosshairWidget->AddToViewport();
-			CrosshairWidget->BindWidget(PlayerController->GetPawn());
-		}
-	}
-
-	// 상태 UI 생성
-	if (PlayerStatusWidgetClass)
-	{
-		PlayerStatusWidget = CreateWidget<UPlayerStatusWidget>(PlayerController, PlayerStatusWidgetClass);
-		if (PlayerStatusWidget)
-		{
-			PlayerStatusWidget->AddToViewport();
-			PlayerStatusWidget->SetCompassObjectWidgetVisible(true);
-		}
-	}
-
-	if (ResultScreenWidgetClass)
-	{
-		ResultScreenWidget = CreateWidget<UResultScreen>(PlayerController, ResultScreenWidgetClass);
-	}
-
-	if (MissionsOnHUDWidgetClass)
-	{
-		MissionsOnHUDWidget = CreateWidget<UMissionsOnHUDWidget>(PlayerController, MissionsOnHUDWidgetClass);
-		MissionsOnHUDWidget->AddToViewport();
-	}
-
-	// 올바른 수정
-	if (APawn* Pawn = PlayerController->GetPawn())
-	{
-		if (AUnderwaterCharacter* UWCharacter = Cast<AUnderwaterCharacter>(Pawn)) 
-		{
-			// 스탯 컴포넌트
-			if (UStatComponent* StatComponent = UWCharacter->FindComponentByClass<UStatComponent>())
-			{
-				StatComponent->OnHealthChanged.AddDynamic(this, &UPlayerHUDComponent::UpdateHealthHUD);
-				UpdateHealthHUD(StatComponent->GetCurrentHealth(), StatComponent->GetMaxHealth());
-			}
-
-			// 산소
-			if (UOxygenComponent* OxygenComp = UWCharacter->FindComponentByClass<UOxygenComponent>())
-			{
-				OxygenComp->OnOxygenLevelChanged.AddDynamic(this, &UPlayerHUDComponent::UpdateOxygenHUD);
-				UpdateOxygenHUD(OxygenComp->GetOxygenLevel(), OxygenComp->GetMaxOxygenLevel());
-			}
-
-			// 스태미나
-			if (UStaminaComponent* StaminaComp = UWCharacter->FindComponentByClass<UStaminaComponent>())
-			{
-				StaminaComp->OnStaminaChanged.AddDynamic(this, &UPlayerHUDComponent::UpdateStaminaHUD);
-				UpdateStaminaHUD(StaminaComp->GetStamina(), StaminaComp->GetMaxStamina());
-			}
-		}
-	}
-
-	if (SpectatorHUDWidgetClass)
-	{
-		SpectatorHUDWidget = CreateWidget<USpectatorHUDWidget>(PlayerController, SpectatorHUDWidgetClass);
-		if (SpectatorHUDWidget)
-		{
-			SpectatorHUDWidget->BindWidget(PlayerController);
-		}
-	}
-	
 	AADInGameState* GS = Cast<AADInGameState>(GetWorld()->GetGameState());
 	if (GS == nullptr)
 	{
 		LOGV(Warning, TEXT("GS == nullptr"));
 		return;
 	}
-	
+
 	AADDroneSeller* CurrentDroneSeller = GS->GetCurrentDroneSeller();
 	if (CurrentDroneSeller == nullptr)
 	{
@@ -146,6 +62,115 @@ void UPlayerHUDComponent::BeginPlay()
 
 	CurrentDroneSeller->OnMoneyRatioChangedDelegate.RemoveAll(PlayerStatusWidget);
 	CurrentDroneSeller->OnMoneyRatioChangedDelegate.AddUObject(PlayerStatusWidget, &UPlayerStatusWidget::SetMoneyProgressBar);
+}
+
+void UPlayerHUDComponent::BeginPlay()
+{
+	Super::BeginPlay();
+
+	AADPlayerController* PlayerController = Cast<AADPlayerController>(GetOwner());
+	AUnderwaterCharacter* Character = Cast<AUnderwaterCharacter>(PlayerController->GetPawn());
+
+	if (!PlayerController || !PlayerController->IsLocalController())
+	{
+		return;
+	}
+
+	PlayerController->OnPossessedPawnChanged.AddDynamic(this, &UPlayerHUDComponent::OnPossessedPawnChanged);
+	PlayerController->OnSpectateChanged.AddDynamic(this, &UPlayerHUDComponent::OnSpectatingStateChanged);
+	
+	// Test HUD 생성
+	if (HudWidgetClass)
+	{
+		HudWidget = CreateWidget<UPlayerHUDWidget>(PlayerController, HudWidgetClass);
+		if (HudWidget)
+		{
+			HudWidget->AddToViewport();
+			HudWidget->BindWidget(PlayerController->GetPawn());
+		}
+	}
+	SetTestHUDVisibility(false);
+
+	// Crosshair Widget 생성
+	if (CrosshairWidgetClass)
+	{
+		CrosshairWidget = CreateWidget<UCrosshairWidget>(PlayerController, CrosshairWidgetClass);
+		if (CrosshairWidget)
+		{
+			CrosshairWidget->AddToViewport();
+			CrosshairWidget->BindWidget(PlayerController->GetPawn());
+		}
+	}
+
+	// Player Status UI 생성
+	if (PlayerStatusWidgetClass)
+	{
+		PlayerStatusWidget = CreateWidget<UPlayerStatusWidget>(PlayerController, PlayerStatusWidgetClass);
+		if (PlayerStatusWidget)
+		{
+			PlayerStatusWidget->AddToViewport();
+			PlayerStatusWidget->SetCompassObjectWidgetVisible(true);
+		}
+	}
+
+	// Bind Character Components
+	if (Character) 
+	{
+		// 스탯 컴포넌트
+		if (UStatComponent* StatComponent = Character->FindComponentByClass<UStatComponent>())
+		{
+			StatComponent->OnHealthChanged.AddDynamic(this, &UPlayerHUDComponent::UpdateHealthHUD);
+			UpdateHealthHUD(StatComponent->GetCurrentHealth(), StatComponent->GetMaxHealth());
+		}
+
+		// 산소
+		if (UOxygenComponent* OxygenComp = Character->FindComponentByClass<UOxygenComponent>())
+		{
+			OxygenComp->OnOxygenLevelChanged.AddDynamic(this, &UPlayerHUDComponent::UpdateOxygenHUD);
+			UpdateOxygenHUD(OxygenComp->GetOxygenLevel(), OxygenComp->GetMaxOxygenLevel());
+		}
+
+		// 스태미나
+		if (UStaminaComponent* StaminaComp = Character->FindComponentByClass<UStaminaComponent>())
+		{
+			StaminaComp->OnStaminaChanged.AddDynamic(this, &UPlayerHUDComponent::UpdateStaminaHUD);
+			UpdateStaminaHUD(StaminaComp->GetStamina(), StaminaComp->GetMaxStamina());
+		}
+
+		if (UDepthComponent* DepthComp = Character->FindComponentByClass<UDepthComponent>())
+		{
+			BindDeptWidgetFunction(DepthComp);
+		}
+	}
+
+	if (ResultScreenWidgetClass)
+	{
+		ResultScreenWidget = CreateWidget<UResultScreen>(PlayerController, ResultScreenWidgetClass);
+	}
+
+	if (MissionsOnHUDWidgetClass)
+	{
+		MissionsOnHUDWidget = CreateWidget<UMissionsOnHUDWidget>(PlayerController, MissionsOnHUDWidgetClass);
+		MissionsOnHUDWidget->AddToViewport();
+	}
+
+	if (Radar2DWidgetClass)
+	{
+		Radar2DWidget = CreateWidget<URadar2DWidget>(PlayerController, Radar2DWidgetClass);
+		Radar2DWidget->AddToViewport(-1);
+		SetActiveRadarWidget(false);
+	}
+
+	if (SpectatorHUDWidgetClass)
+	{
+		SpectatorHUDWidget = CreateWidget<USpectatorHUDWidget>(PlayerController, SpectatorHUDWidgetClass);
+		if (SpectatorHUDWidget)
+		{
+			SpectatorHUDWidget->BindWidget(PlayerController);
+		}
+	}
+
+	BindGameState();
 }
 
 void UPlayerHUDComponent::C_ShowResultScreen_Implementation()
@@ -223,6 +248,14 @@ void UPlayerHUDComponent::SetCurrentPhaseOverlayVisible(bool bShouldVisible)
 	}
 
 	PlayerStatusWidget->SetCurrentPhaseOverlayVisible(bShouldVisible);
+}
+
+void UPlayerHUDComponent::BindDeptWidgetFunction(UDepthComponent* DepthComp)
+{
+	UDepthWidget* DepthWidget = PlayerStatusWidget->GetDepthWidget();
+	if (!DepthWidget || !DepthComp) return;
+	DepthComp->OnDepthZoneChangedDelegate.AddDynamic(DepthWidget, &UDepthWidget::ApplyZoneChangeToWidget);
+	DepthComp->OnDepthUpdatedDelegate.AddDynamic(DepthWidget, &UDepthWidget::SetDepthText);
 }
 
 void UPlayerHUDComponent::C_SetSpearGunTypeImage_Implementation(int8 TypeNum)
@@ -341,6 +374,20 @@ void UPlayerHUDComponent::SetupHudWidgetToNewPawn(APawn* NewPawn, APlayerControl
 		MissionsOnHUDWidget->AddToViewport();
 	}
 
+	if (!IsValid(Radar2DWidget) && Radar2DWidgetClass)
+	{
+		Radar2DWidget = CreateWidget<URadar2DWidget>(PlayerController, Radar2DWidgetClass);
+	}
+
+	if (Radar2DWidget)
+	{
+		if (Radar2DWidget->IsInViewport() == false)
+		{
+			Radar2DWidget->AddToViewport(-1);
+			SetActiveRadarWidget(false);
+		}
+	}
+
 	if (AUnderwaterCharacter* UWCharacter = Cast<AUnderwaterCharacter>(NewPawn))
 	{
 		if (UOxygenComponent* OxygenComp = UWCharacter->GetOxygenComponent())
@@ -360,6 +407,11 @@ void UPlayerHUDComponent::SetupHudWidgetToNewPawn(APawn* NewPawn, APlayerControl
 		{
 			StaminaComp->OnStaminaChanged.AddDynamic(this, &UPlayerHUDComponent::UpdateStaminaHUD);
 			UpdateStaminaHUD(StaminaComp->GetStamina(), StaminaComp->GetMaxStamina());
+		}
+
+		if (UDepthComponent* DepthComp = UWCharacter->FindComponentByClass<UDepthComponent>())
+		{
+			BindDeptWidgetFunction(DepthComp);
 		}
 	}
 }
@@ -390,6 +442,23 @@ void UPlayerHUDComponent::ShowHudWidget()
 	if (PlayerController && Pawn)
 	{
 		SetupHudWidgetToNewPawn(Pawn, PlayerController);
+	}
+}
+
+void UPlayerHUDComponent::SetActiveRadarWidget(bool bShouldActivate)
+{
+	if (IsValid(Radar2DWidget) == false || Radar2DWidget->IsValidLowLevel() == false)
+	{
+		return;
+	}
+
+	if (bShouldActivate)
+	{
+		Radar2DWidget->SetVisibility(ESlateVisibility::HitTestInvisible);
+	}
+	else
+	{
+		Radar2DWidget->SetVisibility(ESlateVisibility::Hidden);
 	}
 }
 
@@ -456,6 +525,13 @@ void UPlayerHUDComponent::UpdateHealthHUD(int32 CurrentHealth, int32 MaxHealth)
 	}
 }
 
+void UPlayerHUDComponent::OnShieldUseFailed()
+{
+	LOGV(Error, TEXT("OnShieldUseFailed Succeeded"));
+	if (PlayerStatusWidget)
+		PlayerStatusWidget->NoticeInfo(TEXT("Shield가 가득 찼습니다!"), FVector2D(0.0f, -160.0f));
+}
+
 void UPlayerHUDComponent::UpdateStaminaHUD(float Stamina, float MaxStamina)
 {
 	if (PlayerStatusWidget)
@@ -497,4 +573,9 @@ USoundSubsystem* UPlayerHUDComponent::GetSoundSubsystem()
 	}
 
 	return SoundSubsystem;
+}
+
+UPlayerStatusWidget* UPlayerHUDComponent::GetPlayerStatusWidget()
+{
+	return PlayerStatusWidget;
 }

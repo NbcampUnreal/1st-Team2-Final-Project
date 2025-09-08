@@ -3,8 +3,10 @@
 #include "CoreMinimal.h"
 #include "InputActionValue.h"
 #include "GameFramework/PlayerController.h"
-
+#include "InputAction.h"
+#include "Tutorial/TutorialEnums.h"
 #include "ADPlayerController.generated.h"
+
 
 enum class ESFX : uint8;
 enum class EMapName : uint8;
@@ -14,7 +16,7 @@ UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADPlayerController : public APlayerController
 {
 	GENERATED_BODY()
-
+public:
 	AADPlayerController();
 	
 protected:
@@ -97,7 +99,8 @@ public:
 	UFUNCTION(Server, Reliable)
 	void S_KillPlayer();
 	void S_KillPlayer_Implementation();
-	
+
+	void SetActiveRadarWidget(bool bShouldActivate);
 protected:
 
 	/** 관전 상태가 시작될 때 호출되는 함수 */
@@ -124,10 +127,27 @@ protected:
 	UFUNCTION(Exec)
 	void GainShield(int Amount);
 
+	/** 이름 위젯의 표시 상태를 토글 */
+	UFUNCTION(Exec)
+	void ToggleNameWidget();
+
+	/** 이름 위젯을 표시하도록 설정 */
+	UFUNCTION(Exec)
+	void ShowNameWidgets();
+
+	/** 이름 위젯을 숨기도록 설정 */
+	UFUNCTION(Exec)
+	void HideNameWidgets();
+
 	UFUNCTION(Server, Reliable)
 	void S_GainShield(int Amount);
 	
 	void OnCameraBlankEnd();
+
+private:
+	
+	/** 이름 위젯 가시 상태 설정 */
+	void SetAllNameWidgetsEnabled(bool bNewEnabled);
 
 #pragma endregion
 	
@@ -145,13 +165,15 @@ public:
 	/** View Target가 변경될 때 호출되는 Delegate. SetViewTarget를 주석을 확인할 것 */
 	UPROPERTY(BlueprintAssignable, Category = "ViewTarget")
 	FOnTargetViewChanged OnTargetViewChanged;
-	
-private:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<class UInputMappingContext> DefaultMappingContext;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputAction> InventoryAction;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputAction> InteractAction;
+private:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputMappingContext> DefaultMappingContext;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HUD", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UPlayerHUDComponent> PlayerHUDComponent;
@@ -172,6 +194,9 @@ private:
 	/** Camera Blank Timer Handle */
 	FTimerHandle CameraBlankTimerHandle;
 
+	/** Name Widget 가시성 표시 여부. 비활성화되면 모든 Name Widget이 숨김 처리된다. */
+	uint8 bIsNameWidgetEnabled : 1;
+	
 #pragma endregion 
 
 #pragma region Getters / Setters
@@ -179,6 +204,9 @@ private:
 public:
 
 	UPlayerHUDComponent* GetPlayerHUDComponent() const { return PlayerHUDComponent; }
+
+	/** Name Widget이 활성화 여부를 반환 */
+	FORCEINLINE bool IsNameWidgetEnabled() const { return bIsNameWidgetEnabled; }
 
 #pragma endregion
 

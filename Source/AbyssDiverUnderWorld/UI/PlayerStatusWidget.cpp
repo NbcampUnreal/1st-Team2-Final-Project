@@ -7,7 +7,16 @@
 #include "Components/Overlay.h"
 #include "Animation/WidgetAnimation.h"
 #include "Components/Image.h"
+#include "Components/CanvasPanelSlot.h"
 #include "Projectile/ADSpearGunBullet.h"
+#include "UI/WarningWidget.h"
+#include "UI/NoticeWidget.h"
+#include "UI/DepthWidget.h"
+#include "Framework/ADPlayerState.h"
+#include "Framework/ADInGameState.h"
+#include "Character/UnderwaterCharacter.h"
+#include "Framework/ADTutorialGameMode.h"
+#include "Kismet/GameplayStatics.h"
 
 const FName UPlayerStatusWidget::OnNextPhaseAnimFinishedName = TEXT("OnNextPhaseAnimFinished");
 const int32 UPlayerStatusWidget::MaxPhaseNumber = 3;
@@ -27,6 +36,20 @@ void UPlayerStatusWidget::NativeConstruct()
     Super::NativeConstruct();
 
     SetSpearVisibility(false); 
+
+	FTimerHandle DelayBindTimerHandle;
+	float DelayTime = 1.0f; 
+    FTimerHandle TimerHandle;
+    GetWorld()->GetTimerManager().SetTimer(DelayBindTimerHandle, [this]()
+        {
+            AADInGameState* GS = Cast<AADInGameState>(GetWorld()->GetGameState());
+            if (GS)
+            {
+                GS->OnTopMinerChangedDelegate.AddUFunction(this, FName("SetTopName"));
+            }
+        }, DelayTime, false);
+
+
 
     if (IsValid(NextPhaseAnim) == false)
     {
@@ -116,8 +139,37 @@ void UPlayerStatusWidget::SetOxygenPercent(float InPercent)
         Style.FillImage.OutlineSettings.CornerRadii = FVector4(TopRadius, TopRadius, 0.0f, 0.0f);
         Style.FillImage.OutlineSettings.RoundingType = ESlateBrushRoundingType::FixedRadius;
 
+
+        float WarningOxygenValue = 0.5f;
+
+        if (ClampedPercent <= WarningOxygenValue)
+        {
+
+            float GreenBlueValue = FMath::Clamp(ClampedPercent- 0.1f, 0.0f, WarningOxygenValue - 0.1f) / WarningOxygenValue - 0.1f;
+            Style.FillImage.TintColor = FSlateColor(FLinearColor(1.0f, GreenBlueValue, GreenBlueValue, 1.0f));
+        }
+        else
+        {
+            Style.FillImage.TintColor = FSlateColor(FLinearColor(1.0f, 1.0f, 1.0f, 1.0f));
+        }
+
+        if (ClampedPercent <= (WarningOxygenValue - 0.2f))
+        {
+            if (!OxygenWarningWidget->GetbShowWarning())
+            {
+                OxygenWarningWidget->SetbShowWarning(true);
+            }
+        }
+        else
+        {
+            if (OxygenWarningWidget->GetbShowWarning())
+            {
+                OxygenWarningWidget->SetbShowWarning(false);
+                //DynMat->SetScalarParameterValue(FName("Period"), 0);
+            }
+        }
+
         OxygenBar->SetWidgetStyle(Style);
-        //SetPercent(FMath::Clamp(InPercent, 0.0f, 1.0f));
     }
     else
     {
@@ -127,9 +179,8 @@ void UPlayerStatusWidget::SetOxygenPercent(float InPercent)
 
 void UPlayerStatusWidget::SetHealthPercent(float InPercent)
 {
-    if (HealthBar)
+    if (DynamicMaterial)
     {
-        //HealthBar->SetPercent(FMath::Clamp(InPercent, 0.0f, 1.0f));
         DynamicMaterial->SetScalarParameterValue("Range", 1-FMath::Clamp(InPercent, 0.0f, 1.0f));
     }
     else
@@ -140,15 +191,6 @@ void UPlayerStatusWidget::SetHealthPercent(float InPercent)
 
 void UPlayerStatusWidget::SetStaminaPercent(float InPercent)
 {
-    //if (StaminaBar)
-    //{
-    //    const float Clamped = FMath::Clamp(InPercent, 0.0f, 1.0f);
-    //    StaminaBar->SetPercent(Clamped);
-    //}
-    //else
-    //{
-    //    LOGV(Error, TEXT("StaminaBar is nullptr!"));
-    //}
     if (OxygenBar)
     {
         OxygenBar->SetPercent(FMath::Clamp(InPercent, 0.0f, 1.0f));
@@ -165,6 +207,7 @@ void UPlayerStatusWidget::SetDroneCurrentText(int32 Current)
     if (CurrentMoneyText && CurrentMoneyText->IsValidLowLevel())
     {
         CurrentMoneyText->SetText(FText::FromString(FString::Printf(TEXT("%d"), Current)));
+        PlayAnimation(IncreaseMoney);
     }
 }
 
@@ -175,7 +218,7 @@ void UPlayerStatusWidget::SetDroneTargetText(int32 Target)
     {
         TargetMoneyText->SetText(FText::FromString(FString::Printf(TEXT("%d"), Target)));
     }
-}
+} 
 
 void UPlayerStatusWidget::SetMoneyProgressBar(float InPercent)
 {
@@ -191,6 +234,11 @@ void UPlayerStatusWidget::SetMoneyProgressBar(float InPercent)
 
 void UPlayerStatusWidget::PlayNextPhaseAnim(int32 NextPhaseNumber)
 {
+    if (Cast<AADTutorialGameMode>(UGameplayStatics::GetGameMode(GetWorld())))
+    {
+        return;
+    }
+
     // 나중에 테이블로 텍스트 정리할수도?
     if (NextPhaseNumber > MaxPhaseNumber)
     {
@@ -238,6 +286,27 @@ void UPlayerStatusWidget::SetSpearGunTypeImage(int8 TypeNum)
     SpearGunTypeImage->SetBrushFromTexture(SpearGunTypeImages[TypeNum], true);
 }
 
+void UPlayerStatusWidget::OnChangedEnvironment(bool bIsUnderwater)
+{
+    if (!DepthWidget) return;
+    if (bIsUnderwater)
+    {
+        DepthWidget->PlayOpenCloseAnim(true);
+        DepthWidget->SetVisibility(ESlateVisibility::Visible);
+        LOGV(Warning, TEXT("Underwater Visible"));
+    }
+    else
+    {
+        DepthWidget->PlayOpenCloseAnim(false);
+        FTimerHandle AnimationDelayTimerHandle;
+        float AnimationDelay = DepthWidget->GetCloseAnimLength();
+        GetWorld()->GetTimerManager().SetTimer(AnimationDelayTimerHandle, [this]() { 
+            DepthWidget->SetVisibility(ESlateVisibility::Hidden);
+            LOGV(Warning, TEXT("Ground Hidden"));
+        }, AnimationDelay, false);
+    }
+}
+
 void UPlayerStatusWidget::OnNextPhaseAnimFinished()
 {
     LOGV(Warning, TEXT("NextPhaseAnim Finished"));
@@ -263,6 +332,35 @@ bool UPlayerStatusWidget::TryPlayAnim(UWidgetAnimation* Anim)
     PlayAnimation(Anim);
 
     return true;
+}
+
+void UPlayerStatusWidget::ShowPhaseWarning(bool bShouldVisible)
+{
+    if(PhaseWarningWidget)
+        PhaseWarningWidget->SetbShowWarning(bShouldVisible);
+}
+
+void UPlayerStatusWidget::NoticeInfo(const FString& Info, const FVector2D& Position)
+{
+    if (NoticeWidget && NoticeWidget->Slot)
+    {
+        if (UCanvasPanelSlot* CanvasSlot = Cast<UCanvasPanelSlot>(NoticeWidget->Slot))
+        {
+            CanvasSlot->SetPosition(Position);
+        }
+        NoticeWidget->SetNoticeText(Info);
+        NoticeWidget->ShowNotice();
+    }
+}
+
+void UPlayerStatusWidget::SetTopName(AADPlayerState* PS, int32 MinedAmount)
+{
+        TopName->SetText(FText::FromString(PS->GetPlayerNickname()));
+        TopNameCopy->SetText(FText::FromString(PS->GetPlayerNickname()));
+
+        FString TopAmountString = FString::Printf(TEXT("%dCr"), MinedAmount);
+        TopAmount->SetText(FText::FromString(TopAmountString));
+        PlayAnimation(ChangeTopPlayer);
 }
 
 void UPlayerStatusWidget::SetSpearVisibility(bool bVisible)

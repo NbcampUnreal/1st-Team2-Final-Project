@@ -27,6 +27,11 @@ void AIndicatingTarget::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (TargetIcon && BillboardSprite)
+	{
+		BillboardSprite->SetSprite(TargetIcon);
+	}
+
 	if (SwitchActor)
 	{
 		if (SwitchActor->OnDestroyed.IsAlreadyBound(this, &AIndicatingTarget::OnSwitchActorDestroyed))
@@ -77,6 +82,25 @@ void AIndicatingTarget::OnSwitchActorDestroyed(AActor* DestroyedActor)
 void AIndicatingTarget::OnOwnerActorDestroyed(AActor* DestroyedActor)
 {
 	OnOwnerActorDestroyedDelegate.Broadcast(TargetOrder);
+}
+
+void AIndicatingTarget::SetupIndicator(AActor* NewOwner, UTexture2D* NewIcon)
+{
+	OwnerActor = NewOwner;
+	TargetIcon = NewIcon;
+
+	if (TargetIcon && BillboardSprite)
+	{
+		BillboardSprite->SetSprite(TargetIcon);
+	}
+
+	if (OwnerActor)
+	{
+		if (!OwnerActor->OnDestroyed.IsAlreadyBound(this, &AIndicatingTarget::OnOwnerActorDestroyed))
+		{
+			OwnerActor->OnDestroyed.AddDynamic(this, &AIndicatingTarget::OnOwnerActorDestroyed);
+		}
+	}
 }
 
 int32 AIndicatingTarget::GetTargetOrder() const

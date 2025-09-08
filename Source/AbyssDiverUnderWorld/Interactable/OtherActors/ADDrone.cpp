@@ -1,25 +1,31 @@
 ﻿#include "Interactable/OtherActors/ADDrone.h"
 
+#include "Inventory/ADInventoryComponent.h"
+#include "ADDroneSeller.h"
+#include "Gimmic/Spawn/SpawnManager.h"
+#include "DataRow/PhaseBGMRow.h"
+
 #include "Interactable/Item/Component/ADInteractableComponent.h"
 #include "Interactable/OtherActors/Portals/PortalToSubmarine.h"
 
 #include "FrameWork/ADInGameState.h"
 #include "Framework/ADGameInstance.h"
 #include "Framework/ADPlayerController.h"
+#include "Framework/ADInGameMode.h"
 
-#include "Inventory/ADInventoryComponent.h"
-#include "ADDroneSeller.h"
+#include "Character/PlayerComponent/PlayerHUDComponent.h"
 #include "Character/UnderwaterCharacter.h"
-#include "Gimmic/Spawn/SpawnManager.h"
+
 #include "Subsystems/SoundSubsystem.h"
 #include "Subsystems/ADWorldSubsystem.h"
-#include "DataRow/PhaseBGMRow.h"
-#include "Character/PlayerComponent/PlayerHUDComponent.h"
-#include "Framework/ADInGameMode.h"
+#include "Subsystems/Localizations/LocalizationSubsystem.h"
 
 #include "Net/UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/TargetPoint.h"
+#include "UI/InteractPopupWidget.h"
+
+#include "Framework/ADTutorialGameMode.h"   
 
 DEFINE_LOG_CATEGORY(DroneLog);
 
@@ -34,6 +40,12 @@ AADDrone::AADDrone()
 	bIsFlying = false;
 	bIsHold = false;
 	ReviveDistance = 1000.f;
+
+	ConstructorHelpers::FClassFinder<UInteractPopupWidget> PopupFinder(TEXT("/Game/_AbyssDiver/Blueprints/UI/InteractableUI/WBP_InteractPopupWidget"));
+	if (PopupFinder.Succeeded())
+	{
+		PopupWidgetClass = PopupFinder.Class;
+	}
 }
 
 void AADDrone::BeginPlay()
@@ -111,54 +123,47 @@ void AADDrone::Destroyed()
 
 void AADDrone::Interact_Implementation(AActor* InstigatorActor)
 {
+	UE_LOG(LogTemp, Warning, TEXT("ADDrone::Interact_Implementation -- 함수가 성공적으로 호출됨!"));
+	if (AADTutorialGameMode* TutorialMode = GetWorld()->GetAuthGameMode<AADTutorialGameMode>())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("ADDrone - 튜토리얼 게임 모드를 찾음. 부활 시퀀스 호출!"));
+		TutorialMode->TriggerResurrectionSequence();
+		return;
+	}
+	else
+	{
+		AGameModeBase* CurrentGameMode = GetWorld()->GetAuthGameMode();
+		UE_LOG(LogTemp, Error, TEXT("ADDrone - 튜토리얼 게임 모드 변환 실패! 현재 게임 모드: %s"), *GetNameSafe(CurrentGameMode));
+	}
+
 	if (!HasAuthority() || !bIsActive || !IsValid(CurrentSeller) || bIsFlying) return;
 
-	if (!CurrentSeller->GetSubmittedPlayerIndexes().IsEmpty())
-	{
-		if (AADInGameMode* GameMode = GetWorld()->GetAuthGameMode<AADInGameMode>())
-		{
-			GameMode->RevivePlayersAroundDroneAtRespawnLocation(CurrentSeller->GetSubmittedPlayerIndexes(), this);
-			CurrentSeller->GetSubmittedPlayerIndexes().Empty();
-		}
-	}
-	
-	// 차액 계산
-	int32 Diff = CurrentSeller->GetCurrentMoney() - CurrentSeller->GetTargetMoney();
+	APlayerController* PC = Cast<APlayerController>(InstigatorActor->GetInstigatorController());
+	if(!PC) return;
 
-	if (Diff > 0)
+	if (PopupWidgetClass)
 	{
-		if (AADInGameState* GS = GetWorld()->GetGameState<AADInGameState>())
+		UInteractPopupWidget* Popup = CreateWidget<UInteractPopupWidget>(PC, PopupWidgetClass);
+		if (Popup)
 		{
-			GS->AddTeamCredit(Diff);
-			GS->IncrementPhase();
-			if (NextSeller)
-			{
-				NextSeller->Activate();
-				GS->SetCurrentDroneSeller(NextSeller);
-				GS->SetDestinationTarget(NextSeller);
-			}
-			else
-			{
-				GS->SetCurrentDroneSeller(nullptr);
-				GS->SetDestinationTarget(UGameplayStatics::GetActorOfClass(GetWorld(), APortalToSubmarine::StaticClass()));
-			}
+			Popup->AddToViewport();
+			PC->bShowMouseCursor = true;
+			
+			FInputModeUIOnly InputMode;
+			InputMode.SetWidgetToFocus(Popup->TakeWidget());
+			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+			PC->SetInputMode(InputMode);
+
+			Popup->OnPopupConfirmed.BindLambda([this, PC]() {
+					this->ExecuteConfirmedInteraction();
+					PC->bShowMouseCursor = false;
+					PC->SetInputMode(FInputModeGameOnly());
+			});
+			Popup->OnPopupCanceled.BindLambda([this, PC]() {
+				PC->bShowMouseCursor = false;
+				PC->SetInputMode(FInputModeGameOnly());
+				});
 		}
-	}
-	CurrentSeller->DisableSelling();
-	StartRising();
-	bIsFlying = true;
-	if (SpawnManager && NextSeller)
-	{
-		SpawnManager->SpawnByGroup();
-		LOGD(Log, TEXT("Monster Spawns"));
-	}
-	// 다음 BGM 실행
-	if (HasAuthority())
-	{
-		LOGN(TEXT("No PhaseSound, DronePhaseNumber : %d"), DronePhaseNumber);
-		LOGN(TEXT("No PhaseSound, DroneName : %s"), *GetName());
-		M_PlayPhaseBGM(DronePhaseNumber + 1);
-		LOGD(Log,TEXT("Next Phase : PhaseSound"));
 	}
 }
 
@@ -253,6 +258,67 @@ void AADDrone::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetime
 	DOREPLIFETIME(AADDrone, bIsFlying);
 }
 
+void AADDrone::ExecuteConfirmedInteraction()
+{
+	if (AADTutorialGameMode* TutorialGameMode = GetWorld()->GetAuthGameMode<AADTutorialGameMode>())
+	{
+		UE_LOG(LogTemp, Log, TEXT("Drone Interaction: Tutorial Mode Detected. Calling TriggerResurrectionSequence."));
+
+		TutorialGameMode->TriggerResurrectionSequence();
+
+		return;
+	}
+
+
+	if (!CurrentSeller->GetSubmittedPlayerIndexes().IsEmpty())
+	{
+		if (AADInGameMode* GameMode = GetWorld()->GetAuthGameMode<AADInGameMode>())
+		{
+			GameMode->RevivePlayersAroundDroneAtRespawnLocation(CurrentSeller->GetSubmittedPlayerIndexes(), this);
+			CurrentSeller->GetSubmittedPlayerIndexes().Empty();
+		}
+	}
+
+	// 차액 계산
+	int32 Diff = CurrentSeller->GetCurrentMoney() - CurrentSeller->GetTargetMoney();
+
+	if (Diff > 0)
+	{
+		if (AADInGameState* GS = GetWorld()->GetGameState<AADInGameState>())
+		{
+			GS->AddTeamCredit(Diff);
+			GS->IncrementPhase();
+			if (NextSeller)
+			{
+				NextSeller->Activate();
+				GS->SetCurrentDroneSeller(NextSeller);
+				GS->SetDestinationTarget(NextSeller);
+			}
+			else
+			{
+				GS->SetCurrentDroneSeller(nullptr);
+				GS->SetDestinationTarget(UGameplayStatics::GetActorOfClass(GetWorld(), APortalToSubmarine::StaticClass()));
+			}
+		}
+	}
+	CurrentSeller->DisableSelling();
+	StartRising();
+	bIsFlying = true;
+	if (SpawnManager && NextSeller)
+	{
+		SpawnManager->SpawnByGroup();
+		LOGD(Log, TEXT("Monster Spawns"));
+	}
+	// 다음 BGM 실행
+	if (HasAuthority())
+	{
+		LOGN(TEXT("No PhaseSound, DronePhaseNumber : %d"), DronePhaseNumber);
+		LOGN(TEXT("No PhaseSound, DroneName : %s"), *GetName());
+		M_PlayPhaseBGM(DronePhaseNumber + 1);
+		LOGD(Log, TEXT("Next Phase : PhaseSound"));
+	}
+}
+
 UADInteractableComponent* AADDrone::GetInteractableComponent() const
 {
 	return InteractableComp;
@@ -265,7 +331,14 @@ bool AADDrone::IsHoldMode() const
 
 FString AADDrone::GetInteractionDescription() const
 {
-	return TEXT("Send Drone!");
+	ULocalizationSubsystem* LocalizationSubsystem = GetGameInstance()->GetSubsystem<ULocalizationSubsystem>();
+	if (IsValid(LocalizationSubsystem) == false)
+	{
+		LOGV(Error, TEXT("Cant Get LocalizationSubsystem"));
+		return "";
+	}
+
+	return LocalizationSubsystem->GetLocalizedText(ST_InteractionDescription::TableKey, ST_InteractionDescription::Drone_SendDrone).ToString();
 }
 
 const TArray<ATargetPoint*>& AADDrone::GetPlayerRespawnLocations() const

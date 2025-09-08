@@ -1,10 +1,12 @@
 #include "Interactable/OtherActors/LevelTraveler/LevelTraveler.h"
 
 #include "AbyssDiverUnderWorld.h"
-#include "Framework/ADInGameMode.h"
-#include "Framework/ADCampGameMode.h"
 #include "Character/UnderwaterCharacter.h"
 #include "Interactable/OtherActors/ADDrone.h"
+#include "Subsystems/Localizations/LocalizationSubsystem.h"
+
+#include "Framework/ADInGameMode.h"
+#include "Framework/ADCampGameMode.h"
 
 ALevelTraveler::ALevelTraveler()
 {
@@ -77,5 +79,12 @@ bool ALevelTraveler::IsHoldMode() const
 
 FString ALevelTraveler::GetInteractionDescription() const
 {
-	return TEXT("Go to Next Level!");
+	ULocalizationSubsystem* LocalizationSubsystem = GetGameInstance()->GetSubsystem<ULocalizationSubsystem>();
+	if (IsValid(LocalizationSubsystem) == false)
+	{
+		LOGV(Error, TEXT("Cant Get LocalizationSubsystem"));
+		return "";
+	}
+
+	return LocalizationSubsystem->GetLocalizedText(ST_InteractionDescription::TableKey, ST_InteractionDescription::LevelTraveler_ReturnToCamp).ToString();
 }

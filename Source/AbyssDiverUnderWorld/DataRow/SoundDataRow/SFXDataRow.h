@@ -46,6 +46,8 @@ enum class ESFX : uint8
 	ShopDoorOpen,
 	ShopDoorClose,
 	WhaleSound,
+	FireShotgun,
+	ExplodeMine,
 	Max UMETA(Hidden)
 };
 

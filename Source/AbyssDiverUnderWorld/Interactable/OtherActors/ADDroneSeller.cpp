@@ -1,16 +1,26 @@
 ﻿#include "Interactable/OtherActors/ADDroneSeller.h"
+
 #include "Inventory/ADInventoryComponent.h"
-#include "Framework/ADInGameState.h"
 #include "ADDrone.h"
-#include "Character/UnderwaterCharacter.h"
-#include "Character/PlayerComponent/OxygenComponent.h"
-#include "Net/UnrealNetwork.h"
-#include "Interactable/Item/Component/ADInteractableComponent.h"
+
+#include "Framework/ADInGameState.h"
 #include "Framework/ADPlayerState.h"
 #include "Framework/ADGameInstance.h"
 #include "Framework/ADPlayerController.h"
+
+#include "Character/UnderwaterCharacter.h"
+#include "Character/PlayerComponent/OxygenComponent.h"
+
+#include "Interactable/Item/Component/ADInteractableComponent.h"
+
 #include "Subsystems/SoundSubsystem.h"
 #include "Subsystems/MissionSubsystem.h"
+#include "Subsystems/Localizations/LocalizationSubsystem.h"
+
+#include "Net/UnrealNetwork.h"
+
+#include "Framework/ADTutorialGameMode.h"
+#include "Framework/ADTutorialGameState.h"
 
 AADDroneSeller::AADDroneSeller()
 {
@@ -71,19 +81,56 @@ void AADDroneSeller::Destroyed()
 
 void AADDroneSeller::Interact_Implementation(AActor* InstigatorActor)
 {
-	LOGD(Log, TEXT("Not Active"));
+	AADTutorialGameMode* TutorialMode = GetWorld()->GetAuthGameMode<AADTutorialGameMode>();
+
+	if (TutorialMode)
+	{
+		if (AADTutorialGameState* TutorialGS = TutorialMode->GetGameState<AADTutorialGameState>())
+		{
+			if (TutorialGS->GetCurrentPhase() == ETutorialPhase::Step15_Resurrection)
+			{
+				AUnderwaterCharacter* PlayerCharacter = Cast<AUnderwaterCharacter>(InstigatorActor);
+				AUnderwaterCharacter* NpcToRevive = TutorialMode->GetTutorialNPC();
+
+				if (PlayerCharacter && NpcToRevive)
+				{
+					if (PlayerCharacter->GetBoundCharacters().Contains(NpcToRevive))
+					{
+						TutorialMode->NotifyBodySubmitted(PlayerCharacter);
+						UE_LOG(LogTemp, Log, TEXT("튜토리얼: NPC 시체를 성공적으로 반납했습니다."));
+					}
+					else
+					{
+						UE_LOG(LogTemp, Warning, TEXT("튜토리얼: NPC 시체를 먼저 들어야 합니다."));
+					}
+				}
+				return;
+			}
+		}
+	}
+
 	if (!HasAuthority() || !bIsActive) return;
 
-	SubmitPlayer(InstigatorActor);
-	
 	int32 Gained = SellAllExchangeableItems(InstigatorActor);
 	if (Gained <= 0)
 	{
-		LOGD(Log, TEXT("Gained < 0"));
+		LOGD(Log, TEXT("Gained <= 0"));
 		return;
 	}
 
-	SetCurrentMoeny(CurrentMoney + Gained);
+	if (TutorialMode)
+	{
+		if (AADTutorialGameState* TutorialGS = TutorialMode->GetGameState<AADTutorialGameState>())
+		{
+			if (TutorialGS->GetCurrentPhase() == ETutorialPhase::Step7_Drone)
+			{
+				TutorialMode->AdvanceTutorialPhase();
+			}
+		}
+	}
+
+	SetCurrentMoney(CurrentMoney + Gained);
+	UpdatePlayerState(InstigatorActor, Gained);
 
 	LOGD(Log, TEXT("→ 누적 금액: %d / %d"), CurrentMoney, TargetMoney);
 
@@ -102,7 +149,6 @@ void AADDroneSeller::Interact_Implementation(AActor* InstigatorActor)
 		GetSoundSubsystem()->PlayAt(ESFX::SubmitOre, GetActorLocation());
 	}
 }
-
 
 
 void AADDroneSeller::DisableSelling()
@@ -232,6 +278,30 @@ void AADDroneSeller::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME(AADDroneSeller, MoneyRatio);
 }
 
+void AADDroneSeller::UpdatePlayerState(AActor* Actor, int32 GainedValue)
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+	
+	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor);
+	if (Player == nullptr)
+	{
+		return;
+	}
+
+	if (AADPlayerState* PlayerState = Player->GetPlayerState<AADPlayerState>())
+	{
+		LOGV(Log, TEXT("PlayerState is valid, GainedValue: %d"), GainedValue);
+		PlayerState->AddOreCollectedValue(GainedValue);
+	}
+	else
+	{
+		LOGD(Log, TEXT("PlayerState is not valid"));
+	}
+}
+
 UADInteractableComponent* AADDroneSeller::GetInteractableComponent() const
 {
 	return InteractableComp;
@@ -244,7 +314,14 @@ bool AADDroneSeller::IsHoldMode() const
 
 FString AADDroneSeller::GetInteractionDescription() const
 {
-	return TEXT("Submit Ore!");
+	ULocalizationSubsystem* LocalizationSubsystem = GetGameInstance()->GetSubsystem<ULocalizationSubsystem>();
+	if (IsValid(LocalizationSubsystem) == false)
+	{
+		LOGV(Error, TEXT("Cant Get LocalizationSubsystem"));
+		return "";
+	}
+
+	return LocalizationSubsystem->GetLocalizedText(ST_InteractionDescription::TableKey, ST_InteractionDescription::DroneSeller_SubmitOre).ToString();
 }
 
 USoundSubsystem* AADDroneSeller::GetSoundSubsystem()
@@ -261,6 +338,11 @@ UMissionSubsystem* AADDroneSeller::GetMissionSubsystem()
 {
 	MissionSubsystem = GetGameInstance()->GetSubsystem<UMissionSubsystem>();
 	return MissionSubsystem;
+}
+
+void AADDroneSeller::SetCurrentDrone(AADDrone* InDrone)
+{
+	CurrentDrone = InDrone;
 }
 
 void AADDroneSeller::SetLightColor(FLinearColor NewColor)

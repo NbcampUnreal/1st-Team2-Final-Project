@@ -6,6 +6,8 @@
 #include "UnitBase.generated.h"
 
 class URadarReturnComponent;
+class URadarReturn2DComponent;
+class UDebuffComponent;
 
 UENUM(BlueprintType)
 enum class EUnitId : uint8
@@ -40,6 +42,8 @@ protected:
 	virtual void Destroyed() override;
 	
 #pragma region Method
+
+protected:
 	
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 	
@@ -47,11 +51,19 @@ protected:
 
 #pragma region Variable
 
+protected:
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category="Stat")
 	TObjectPtr<class UStatComponent> StatComponent;
 
-	UPROPERTY(EditAnywhere, Category = "Radar Settings")
+	UPROPERTY(VisibleAnywhere, Category = "Radar Settings")
 	TObjectPtr<URadarReturnComponent> RadarReturnComponent;
+
+	UPROPERTY(EditAnywhere, Category = "Radar Settings")
+	TObjectPtr<URadarReturn2DComponent> RadarReturn2DComponent;
+
+	UPROPERTY(EditAnywhere, Category = "Debuff")
+	TObjectPtr<UDebuffComponent> DebuffComponent;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Id")
 	EUnitId UnitId;

@@ -56,10 +56,13 @@ public:
 
 	/** InstigatorActor가 소유하고 있는 Bound Player를 제출한다. */
 	void SubmitPlayer(AActor* InstigatorActor);
-
 protected:
 	int32 SellAllExchangeableItems(AActor* InstigatorActor);
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	/** 제출한 Player의 State를 갱신 */
+	void UpdatePlayerState(AActor* Actor, int32 GainedValue);
+	
 private:
 #pragma endregion
 
@@ -123,9 +126,11 @@ public:
 	/** 현재 드론에 제출된 시체 플레이어의 Index 배열을 반환한다. */
 	FORCEINLINE TArray<int8>& GetSubmittedPlayerIndexes() { return SubmittedPlayerIndexes; }
 	
+	UFUNCTION(BlueprintCallable, Category = "Drone")
+	void SetCurrentDrone(AADDrone* InDrone);
 private:
 
-	void SetCurrentMoeny(const int32& NewCurrentMoney)
+	void SetCurrentMoney(const int32& NewCurrentMoney)
 	{
 		if (HasAuthority() == false)
 		{
@@ -133,7 +138,7 @@ private:
 		}
 
 		CurrentMoney = NewCurrentMoney;
-		MoneyRatio = CurrentMoney / TargetMoney;
+		MoneyRatio = (float)CurrentMoney / TargetMoney;
 		OnRep_CurrentMoney();
 	}
 	

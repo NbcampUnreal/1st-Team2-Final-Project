@@ -11,3 +11,11 @@ enum class ELocomotionMode : uint8
 	None UMETA(DisplayName = "None"),
 	Jumping UMETA(DisplayName = "Jumping"),
 };
+
+UENUM(BlueprintType)
+enum class EMoveDirection : uint8
+{
+	Other UMETA(DisplayName = "Other"),
+	Forward UMETA(DisplayName = "Forward"),
+	Backward UMETA(DisplayName = "Backward"),
+};

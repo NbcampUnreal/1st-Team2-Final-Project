@@ -95,10 +95,13 @@ private:
 
 	TSubclassOf<class AADSpearGunBullet> SpearBulletClass;
 	TSubclassOf<class AADFlareGunBullet> FlareBulletClass;
+	TSubclassOf<class AADShotgunBullet> ShotgunBulletClass;
 	UPROPERTY()
 	TObjectPtr<AGenericPool> SpearGunBulletPool = nullptr;
 	UPROPERTY()
 	TObjectPtr<AGenericPool> FlareGunBulletPool = nullptr;
+	UPROPERTY()
+	TObjectPtr<AGenericPool> ShotgunBulletPool = nullptr;
 	UPROPERTY()
 	TObjectPtr<USoundSubsystem> SoundSubsystem;
 
@@ -107,10 +110,13 @@ private:
 
 	TArray<EPlayerAliveInfo> PlayerAliveInfos;
 
+	uint8 bWasGameOver : 1 = false;
+
 #pragma endregion
 
 public:
 	FORCEINLINE AGenericPool* GetSpearGenericPool() const { return SpearGunBulletPool; }
 	FORCEINLINE AGenericPool* GetFlareGenericPool() const { return FlareGunBulletPool; }
+	FORCEINLINE AGenericPool* GetShotgunGenericPool() const { return ShotgunBulletPool; }
 	USoundSubsystem* GetSoundSubsystem();
 };

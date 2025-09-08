@@ -30,6 +30,13 @@
 
 #include "UI/HoldInteractionWidget.h"
 
+#include "Framework/ADTutorialGameMode.h"
+#include "Framework/ADTutorialGameState.h"
+#include "Character/UnderwaterCharacter.h"
+#include "Engine/PawnIterator.h"
+
+#include "Kismet/GameplayStatics.h"
+
 AADPlayerController::AADPlayerController()
 {
 	static ConstructorHelpers::FObjectFinder<UInputMappingContext> MappingContextAsset(TEXT("/Game/_AbyssDiver/Input/IMC_Player.IMC_Player"));
@@ -43,6 +50,8 @@ AADPlayerController::AADPlayerController()
 	}
 
 	PlayerHUDComponent = CreateDefaultSubobject<UPlayerHUDComponent>(TEXT("PlayerHUDComponent"));
+
+	bIsNameWidgetEnabled = true;
 }
 
 void AADPlayerController::BeginPlay()
@@ -77,9 +86,9 @@ void AADPlayerController::SetPawn(APawn* InPawn)
 
 	Super::SetPawn(InPawn);
 
-	if (AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(GetPawn()))
+	if (AUnderwaterCharacter* PossessedCharacter = Cast<AUnderwaterCharacter>(InPawn))
 	{
-		if (UADInteractionComponent* InteractionComponent = UnderwaterCharacter->GetInteractionComponent())
+		if (UADInteractionComponent* InteractionComponent = PossessedCharacter->GetInteractionComponent())
 		{
 			if (InteractionWidgetClass && IsLocalController())
 			{
@@ -102,6 +111,8 @@ void AADPlayerController::SetPawn(APawn* InPawn)
 			}
 		}
 	}
+
+
 }
 
 void AADPlayerController::PostNetInit()
@@ -283,6 +294,17 @@ void AADPlayerController::S_KillPlayer_Implementation()
 	KillPlayer();
 }
 
+void AADPlayerController::SetActiveRadarWidget(bool bShouldActivate)
+{
+	if (IsValid(PlayerHUDComponent) == false || PlayerHUDComponent->IsBeingDestroyed() || PlayerHUDComponent->IsValidLowLevel() == false)
+	{
+		LOGV(Error, TEXT("PlayerHUDComponent Is Not Valid"));
+		return;
+	}
+
+	PlayerHUDComponent->SetActiveRadarWidget(bShouldActivate);
+}
+
 void AADPlayerController::BeginSpectatingState()
 {
 	UE_LOG(LogAbyssDiverSpectate, Display, TEXT("Begin Spectating State for %s, GetPawn : %s"), *GetName(), GetPawn() ? *GetPawn()->GetName() : TEXT("None"));
@@ -332,18 +354,8 @@ void AADPlayerController::SetupInputComponent()
 	{
 		if (InventoryAction)
 		{
-			EnhancedInput->BindAction(
-				InventoryAction,
-				ETriggerEvent::Started,
-				this,
-				&AADPlayerController::ShowInventory
-			);
-			EnhancedInput->BindAction(
-				InventoryAction,
-				ETriggerEvent::Completed,
-				this,
-				&AADPlayerController::HideInventory
-			);
+			EnhancedInput->BindAction(InventoryAction, ETriggerEvent::Started, this, &AADPlayerController::ShowInventory);
+			EnhancedInput->BindAction(InventoryAction, ETriggerEvent::Completed, this, &AADPlayerController::HideInventory);
 		}
 	}
 }
@@ -398,6 +410,44 @@ void AADPlayerController::GainShield(int Amount)
 	else
 	{
 		S_GainShield(Amount);
+	}
+}
+
+void AADPlayerController::ToggleNameWidget()
+{
+	if (bIsNameWidgetEnabled)
+	{
+		HideNameWidgets();
+	}
+	else
+	{
+		ShowNameWidgets();
+	}
+}
+
+void AADPlayerController::ShowNameWidgets()
+{
+	bIsNameWidgetEnabled = true;
+
+	SetAllNameWidgetsEnabled(bIsNameWidgetEnabled);	
+}
+
+void AADPlayerController::HideNameWidgets()
+{
+	bIsNameWidgetEnabled = false;
+
+	SetAllNameWidgetsEnabled(bIsNameWidgetEnabled);
+}
+
+void AADPlayerController::SetAllNameWidgetsEnabled(bool bNewEnabled)
+{
+	// 모든 플레이어의 NameWidgetComponent를 찾아서 가시 상태 설정
+	if (UWorld* World = GetWorld())
+	{
+		for (AUnderwaterCharacter* TargetCharacter : TActorRange<AUnderwaterCharacter>(World))
+		{
+			TargetCharacter->SetNameWidgetEnabled(bNewEnabled);
+		}
 	}
 }
 
@@ -468,3 +518,5 @@ void AADPlayerController::OnCameraBlankEnd()
 {
 	
 }
+
+
