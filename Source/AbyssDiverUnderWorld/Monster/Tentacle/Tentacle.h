@@ -15,6 +15,9 @@ class ABYSSDIVERUNDERWORLD_API ATentacle : public AMonster
 public:
 	ATentacle();
 
+protected:
+	virtual void BeginPlay() override;
+
 #pragma region Variable
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI|Attack", meta = (AllowPrivateAccess = "true"))

@@ -7,11 +7,13 @@
 #include "UnitBase.h"
 #include "Interface/IADInteractable.h"
 #include "AbyssDiverUnderWorld.h"
+#include "LocomotionMode.h"
 #include "StatComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "UnderwaterCharacter.generated.h"
 
 #if UE_BUILD_SHIPPING
+enum class EMoveDirection : uint8;
 	#define LOG_ABYSS_DIVER_COMPILE_VERBOSITY Error
 #else
 	#define LOG_ABYSS_DIVER_COMPILE_VERBOSITY All
@@ -280,9 +282,23 @@ public:
 
 	/** 관전 당하는 것이 끝났을 때 호출되는 함수 */
 	void OnEndSpectated();
-	
-protected:
 
+	/** 감정 표현 재생 요청
+	 * EmoteIndex : 0 ~ n - 1 (EmoteAnimationMontages 배열의 인덱스)
+	 * Emote 재생이 가능할 경우에만 재생.
+	 */
+	UFUNCTION(BlueprintCallable)
+	void RequestPlayEmote(int32 EmoteIndex);
+
+	/** Name Widget 가시성 설정
+	 * false일 경우 항상 숨김 처리가 된다.
+	 * true일 경우 캐릭터 정책에 따라서 Name Widget의 가시성이 결정된다.
+	 * Locally Controlled Character의 Name Widget은 항상 숨김 처리된다.
+	 * Spectated Character의 Name Widget은 항상 숨김 처리된다.
+	 */
+	void SetNameWidgetEnabled(bool bNewVisibility);
+
+protected:
 	/** Stat Component의 기본 속도가 변경됬을 때 호출된다. */
 	UFUNCTION()
 	void OnMoveSpeedChanged(float NewMoveSpeed);
@@ -308,9 +324,6 @@ protected:
 	UFUNCTION(NetMulticast, Reliable)
 	void M_UpdateAnimSyncState(FAnimSyncState NewAnimSyncState);
 	void M_UpdateAnimSyncState_Implementation(FAnimSyncState NewAnimSyncState);
-	
-	/** 캐릭터 상태를 설정한다. Server에서만 실행 가능하다. */
-	void SetCharacterState(ECharacterState NewCharacterState);
 
 	/** Server에서 설정한 Multicast를 전파한다. 전파 중에 다시 상태를 전이하면 안 된다. */
 	UFUNCTION(NetMulticast, Reliable)
@@ -354,9 +367,9 @@ protected:
 	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "OnEnvironmentStateChanged"))
 	void K2_OnEnvironmentStateChanged(EEnvironmentState OldEnvironmentState, EEnvironmentState NewEnvironmentState);
 
-	/** Player State 정보를 초기화 */
-	void InitFromPlayerState(class AADPlayerState* ADPlayerState);
-	
+	/** Player State를 기반으로 Player Status 초기화 */
+	void InitPlayerStatus(class AADPlayerState* ADPlayerState);
+
 	/** Upgrade Component의 정보를 바탕으로 초기화 */
 	void ApplyUpgradeFactor(class UUpgradeComponent* UpgradeComponent);
 	
@@ -397,8 +410,12 @@ protected:
 
 	/** 캐릭터가 사망을 완료했을 때 호출되는 함수. 관전으로 변경된다. */
 	void EndDeath();
-	
-	float GetSwimEffectiveSpeed() const;
+
+	/** 현재 소지 중인 교환 가능 아이템들을 모두 드랍한다. */
+	void DropAllExchangeableItems();
+
+	/** 현재 캐릭터의 이동 속도를 계산한다. */
+	float CalculateEffectiveSpeed() const;
 
 	/** 현재 상태 속도 갱신.(무게, Sprint) */
 	UFUNCTION()
@@ -436,11 +453,19 @@ protected:
 	void Move(const FInputActionValue& InputActionValue);
 
 	/** 수중 이동 함수. Forward : Camera 방향으로 이동, Right : Forward 기준을 바탕으로 왼쪽, 오른쪽 수평 이동, Up : 위쪽 수직 이동 */
-	void MoveUnderwater(FVector MoveInput);
+	void MoveUnderwater(const FVector& MoveInput);
 
 	/** 지상 이동 함수 */
-	void MoveGround(FVector MoveInput);
+	void MoveGround(const FVector& MoveInput);
 
+	/** 이동 방향을 업데이트 한다. 현재 방향이 변경되었을 경우 true를 반환하고 아닐 경우 false를 반환한다. */
+	bool UpdateMoveDirection(const FVector& MoveInput);
+
+	/** 현재 이동 방향을 Server에 보고한다. */
+	UFUNCTION(Server, Reliable)
+	void S_ReportMoveDirection(EMoveDirection NewMoveDirection);
+	void S_ReportMoveDirection_Implementation(EMoveDirection NewMoveDirection);
+	
 	/** 점프 입력 시작 함수. 지상에서만 작동한다. */
 	void JumpInputStart(const FInputActionValue& InputActionValue);
 
@@ -532,8 +557,6 @@ protected:
 	UFUNCTION()
 	virtual void OnMesh3PMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 
-	/** 감정 표현 재생 요청 */
-	void RequestPlayEmote(int8 EmoteIndex);
 
 	/** Server에 감정 표현 재생 요청 */
 	UFUNCTION(Server, Reliable)
@@ -617,18 +640,28 @@ protected:
 
 	/** 현재 DepthZone에 따른 산소 소비율을 반환한다. */
 	float GetOxygenConsumeRate(EDepthZone DepthZone) const;
-	
-private:
 
+	// 현재는 Debug 기능을 위해서 간략하게 구현되었다.
+	// 추후에 유저 조작으로 NameWidget을 숨김처리하거나 하는 기능이 추가되면
+	// Name Widget에서 Callback 을 통해서 구현한다.
+	// 현재 방식상으로는 호출 비용이 크다.
+	
+	/** 현재 상태에 따라 Name Widget의 가시성을 설정한다.
+	 * Local Player가 아니고 PC에서 Name Widget 가시성이 참일 경우에만 Name Widget이 보인다.
+	 */
+	void InitNameWidgetEnabled();
+
+private:
 	/** Montage 콜백을 등록 */
 	void SetupMontageCallbacks();
-	
+
 #pragma endregion
 
 #pragma region Variable
 
 public:
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDeath);
+
 	/** 캐릭터가 사망했을 때 호출되는 델리게이트 */
 	UPROPERTY(BlueprintAssignable)
 	FOnDeath OnDeathDelegate;
@@ -962,6 +995,10 @@ private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Weight", meta = (AllowPrivateAccess = "true", ClampMin = "0.0", ClampMax = "1.0"))
 	float OverloadSpeedFactor;
 
+	/** 후방 이동 시의 속도 비율. 0.7일 경우 70%의 속도로 이동한다. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Move", meta = (AllowPrivateAccess = "true", ClampMin = "0.0", ClampMax = "1.0"))
+	float BackwardMoveSpeedFactor = 0.7f;
+	
 	/** 캐릭터의 효과가 적용된 최종 속도 */
 	UPROPERTY(Transient, BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float EffectiveSpeed;
@@ -976,6 +1013,12 @@ private:
 
 	/** Upgrade가 적용된 최종 속도. Ground, Water을 전환할 때 속도를 갱신하기 위해 속도를 저장한다. 초기값은 StatComponent의 값을 참조한다. */
 	float BaseSwimSpeed;
+
+	/** 캐릭터의 현재 이동 방향 */
+	EMoveDirection MoveDirection = EMoveDirection::Other;
+
+	/** Upgrade 추가 이동 속도 */ 
+	float UpgradeSwimSpeed = 0.0f;
 
 	// @ToDo: Multiplier를 통합 적용
 	// @ToDo: DPV 상황 추가
@@ -1229,6 +1272,8 @@ private:
 
 	TWeakObjectPtr<class USoundSubsystem> SoundSubsystem;
 	
+	uint8 bIsMovementBlockedByTutorial : 1;
+	
 #pragma endregion
 
 #pragma region Getter Setter
@@ -1294,6 +1339,9 @@ public:
 	/** 캐릭터가 현재 살아있는지 여부를 반환. 살아 있으면 타겟팅될 수 있다. 사망이 아닌 상태를 의미한다. */
 	UFUNCTION(BlueprintCallable)
 	bool IsAlive() const;
+
+	/** 캐릭터 상태를 설정한다. Server에서만 실행 가능하다. */
+	void SetCharacterState(ECharacterState NewCharacterState);
 
 	/** 캐릭터의 남은 그로기 시간을 반환 */
 	UFUNCTION(BlueprintCallable)
@@ -1371,6 +1419,23 @@ public:
 	/** 깊이 컴포넌트를 반환 */
 	FORCEINLINE UDepthComponent* GetDepthComponent() const { return DepthComponent; }
 
+	FORCEINLINE UInputAction* GetSprintAction() const { return SprintAction; }
+	FORCEINLINE UInputAction* GetRadarAction() const { return RadarAction; }
+	FORCEINLINE UInputAction* GetInteractAction() const { return InteractionAction; }
+	FORCEINLINE UInputAction* GetLightToggleAction() const { return LightAction; }
+	FORCEINLINE UInputAction* GetReloadAction() const { return ReloadAction; } 
+	FORCEINLINE UInputAction* GetSelectInventorySlot1() const { return EquipSlot1Action; }
+	FORCEINLINE UInputAction* GetSelectInventorySlot2() const { return EquipSlot2Action; }
+	FORCEINLINE UInputAction* GetSelectInventorySlot3() const { return EquipSlot3Action; }
+
+	void SetMovementBlockedByTutorial(bool bIsBlocked);
+	
+	/** 현재 캐릭터의 이동 방향을 반환. Server와 Client가 동기화되어 있다. */
+	FORCEINLINE EMoveDirection GetMoveDirection() const { return MoveDirection; }
+
+	/** 현재 캐릭터가 스프린트를 할 수 있는지 여부를 반환. 전방 이동이 있을 경우에만 스프린트를 할 수 있다. Server / Client 복제됨 */
+	bool CanSprint() const;
+	
 protected:
 
 	class USoundSubsystem* GetSoundSubsystem();

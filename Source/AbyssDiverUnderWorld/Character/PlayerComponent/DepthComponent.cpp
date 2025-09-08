@@ -88,6 +88,7 @@ void UDepthComponent::BeginPlay()
 	DepthZone = DetermineZone(GetOwner()->GetActorLocation().Z);
 }
 
+
 EDepthZone UDepthComponent::DetermineZone(float CurrentZ) const
 {
 	if (bUseDangerZone && CurrentZ < DangerZoneZ)
@@ -107,6 +108,7 @@ void UDepthComponent::UpdateZone()
 	// 현재 Actor의 깊이를 계산한다.
 	float CurrentZ = GetOwner()->GetActorLocation().Z;
 	EDepthZone NewDepthZone = bIsActive ? DetermineZone(CurrentZ) : EDepthZone::SafeZone;
+	OnDepthUpdatedDelegate.Broadcast(GetDepth());
 
 	if (NewDepthZone != DepthZone)
 	{
@@ -117,7 +119,6 @@ void UDepthComponent::UpdateZone()
 			*GetOwner()->GetName());
 		EDepthZone OldDepthZone = DepthZone;
 		DepthZone = NewDepthZone;
-
 		OnDepthZoneChangedDelegate.Broadcast(OldDepthZone, NewDepthZone);
 	}
 }

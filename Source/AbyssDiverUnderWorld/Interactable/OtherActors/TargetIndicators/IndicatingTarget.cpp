@@ -27,6 +27,11 @@ void AIndicatingTarget::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (TargetIcon && BillboardSprite)
+	{
+		BillboardSprite->SetSprite(TargetIcon);
+	}
+
 	if (SwitchActor)
 	{
 		if (SwitchActor->OnDestroyed.IsAlreadyBound(this, &AIndicatingTarget::OnSwitchActorDestroyed))
@@ -83,6 +88,11 @@ void AIndicatingTarget::SetupIndicator(AActor* NewOwner, UTexture2D* NewIcon)
 {
 	OwnerActor = NewOwner;
 	TargetIcon = NewIcon;
+
+	if (TargetIcon && BillboardSprite)
+	{
+		BillboardSprite->SetSprite(TargetIcon);
+	}
 
 	if (OwnerActor)
 	{

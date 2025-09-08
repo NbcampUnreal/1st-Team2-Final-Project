@@ -30,7 +30,9 @@ void UAnimNotifyState_LaserBeam::NotifyBegin(USkeletalMeshComponent* MeshComp, U
     if (IsFirstPersonMesh(MeshComp))
     {
         // 1P: 카메라 뷰에서 라인트레이스
-        AController* Controller = Owner->GetInstigatorController();
+        // Spectated 상태에서는 Owner의 Player Controller를 구할 수 없다.
+        // Client에서의 PC를 통해서 View Point를 계산한다.
+        AController* Controller = Owner->GetWorld()->GetFirstPlayerController();
         if (!Controller)
             return;
         Controller->GetPlayerViewPoint(CamLoc, CamRot);
@@ -161,7 +163,8 @@ bool UAnimNotifyState_LaserBeam::IsVisibleMesh(const USkeletalMeshComponent* Mes
     if (!UnderwaterCharacter)
         return false;
 
-    const bool bLocal = UnderwaterCharacter->IsLocallyControlled();
+    // 플레이어가 직접 조작 중이거나, 관전 중일 때 1인칭 메쉬를 보여준다.
+    const bool bLocal = UnderwaterCharacter->IsLocallyControlled() || UnderwaterCharacter->IsLocallyViewed();
     return (bLocal && IsFirstPersonMesh(MeshComp)) || (!bLocal && !IsFirstPersonMesh(MeshComp));
 }
 

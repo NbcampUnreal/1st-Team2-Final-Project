@@ -7,6 +7,7 @@
 
 enum class EMissionType : uint8;
 class USoundSubsystem;
+class UDepthComponent;
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class ABYSSDIVERUNDERWORLD_API UPlayerHUDComponent : public UActorComponent
@@ -71,6 +72,8 @@ public:
     void PlayNextPhaseAnim(int32 NextPhaseNumber);
     void SetCurrentPhaseOverlayVisible(bool bShouldVisible);
 
+    void BindDeptWidgetFunction(UDepthComponent* DepthComp);
+
     /** HUD 위젯을 숨긴다. */
     void HideHudWidget();
 
@@ -93,6 +96,9 @@ protected:
 
     /** 관전 HUD 위젯을 숨긴다. */
     void HideSpectatorHUDWidget();
+
+    /** Game State와 UI 바인딩 */
+    void BindGameState();
     
 private:
 #pragma endregion
@@ -155,6 +161,7 @@ public:
 
     UMissionsOnHUDWidget* GetMissionsOnHudWidget() const;
     USoundSubsystem* GetSoundSubsystem();
+    UPlayerStatusWidget* GetPlayerStatusWidget() ;
 
 #pragma endregion
 };

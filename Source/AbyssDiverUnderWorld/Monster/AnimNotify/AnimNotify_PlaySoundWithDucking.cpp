@@ -3,7 +3,7 @@
 
 #include "Monster/AnimNotify/AnimNotify_PlaySoundWithDucking.h"
 #include "Kismet/GameplayStatics.h"
-#include "Monster/MonsterSoundComponent.h"
+#include "Monster/Components/MonsterSoundComponent.h"
 
 void UAnimNotify_PlaySoundWithDucking::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, const FAnimNotifyEventReference& EventReference)
 {
