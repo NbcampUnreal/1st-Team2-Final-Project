@@ -1,6 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "Monster/GobleFish/GobleFish.h"
 #include "Monster/GobleFish/GFProjectile.h"
 #include "BehaviorTree/BlackboardComponent.h"
@@ -16,19 +13,43 @@ AGobleFish::AGobleFish()
 	GobleFishHitSphere->InitSphereRadius(20.0f);
 	GobleFishHitSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	GobleFishHitSphere->SetHiddenInGame(true);
+
+	GobleFishHitSphere->ComponentTags.Add(TEXT("GobleFishHitSphere"));
+}
+
+void AGobleFish::BeginPlay()
+{
+	Super::BeginPlay();
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	GetMesh()->OnComponentBeginOverlap.AddDynamic(this, &AGobleFish::OnMeshOverlapBegin);
+	GobleFishHitSphere->OnComponentBeginOverlap.AddDynamic(this, &AGobleFish::OnMeshOverlapBegin);
 }
 
 void AGobleFish::FireProjectile()
 {
-	if (!ProjectileClass) return;
+	if (!ProjectileClass)
+	{
+		LOGV(Error, TEXT("ProjectileClass is not set in GobleFish"));
+		return;
+	}
 
-	if (!AIController || !BlackboardComponent) return;
-	AActor* LockOnActor = Cast<AActor>(BlackboardComponent->GetValueAsObject("TargetActor"));
-	if (!LockOnActor) return;
+	if (!AIController || !BlackboardComponent)
+	{
+		LOGV(Error, TEXT("AIController or BlackboardComponent is nullptr in GobleFish"));
+		return;
+	}
+
+	AActor* LockOnActor = Cast<AActor>(BlackboardComponent->GetValueAsObject(/*"TargetActor"*/"TargetPlayer"));
+	if (!LockOnActor)
+	{
+		LOGV(Error, TEXT("LockOnActor is nullptr in GobleFish"));
+		return;
+	}
 
 	FVector FireLocation = GetMesh()->GetSocketLocation("ProjectileSocket");
-	FVector TargetLocation = LockOnActor->GetActorLocation();
-	FVector ProjectileDirection = (TargetLocation - FireLocation).GetSafeNormal();
+	FVector TargetActorLocation = LockOnActor->GetActorLocation();
+	FVector ProjectileDirection = (TargetActorLocation - FireLocation).GetSafeNormal();
 	FRotator FireRotation = ProjectileDirection.Rotation();
 
 	FActorSpawnParameters SpawnParams;
@@ -36,15 +57,16 @@ void AGobleFish::FireProjectile()
 	SpawnParams.Instigator = GetInstigator(); // return APawn*
 
 	AGFProjectile* Projectile = GetWorld()->SpawnActor<AGFProjectile>(ProjectileClass, FireLocation, FireRotation, SpawnParams);
-
-	if (Projectile)
+	if (Projectile == nullptr)
 	{
-		LOG(TEXT("Projectile Spawn Success!!!"))
-		Projectile->FireDirection(ProjectileDirection);
+		LOG(TEXT("Projectile Spawn Failed!!!"));
+		return;
 	}
+
+	Projectile->FireDirection(ProjectileDirection);
 }
 
-void AGobleFish::PlayAttackMontage()
+void AGobleFish::Attack()
 {
 	// Initialize at Monster class BeginPlay
 	if (!AIController) return;
@@ -67,6 +89,8 @@ void AGobleFish::PlayAttackMontage()
 				M_PlayMontage(AttackAnimations[AttackType]);
 			}
 		}
+
+		bIsAttacking = true;
 	}
 	else if (BlackboardComponent->GetValueAsBool("bInRangedRange"))
 	{
@@ -82,3 +106,12 @@ void AGobleFish::PlayAttackMontage()
 	}
 	else return;
 }
+
+void AGobleFish::OnDeath()
+{
+	GetMesh()->OnComponentBeginOverlap.RemoveAll(this);
+	GobleFishHitSphere->OnComponentBeginOverlap.RemoveAll(this);
+
+	Super::OnDeath();
+}
+

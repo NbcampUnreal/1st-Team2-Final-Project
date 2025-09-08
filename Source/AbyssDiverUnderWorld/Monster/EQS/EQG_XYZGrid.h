@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -19,9 +19,24 @@ public:
 
 	
 protected:
+
 	virtual void GenerateItems(FEnvQueryInstance& QueryInstance) const override;
 
-#pragma region Variable
+
+protected:
+
+	bool IsLocationBlocked(UWorld* World, const FVector& Location, float TestSphereRadius,
+		const FCollisionQueryParams& QueryParams) const;
+
+	bool CanMoveBetweenPoints(UWorld* World, const FVector& From, const FVector& To,
+		const FCollisionQueryParams& QueryParams) const;
+
+	void AddNeighborToQueue(const FIntVector& NeighborGrid, const FVector& NeighborLocation,
+		const FVector& CurrentLocation, UWorld* World,
+		const FCollisionQueryParams& QueryParams,
+		TSet<FIntVector>& OutVisitedCells, TQueue<FIntVector>& OutCellQueue) const;
+
+#pragma region Variables
 	// Location creation criteria
 	UPROPERTY(EditDefaultsOnly, Category = Generator)
 	TSubclassOf<UEnvQueryContext> GenerateAround;
@@ -36,5 +51,11 @@ protected:
 	// Point spacing
 	UPROPERTY(EditDefaultsOnly, Category = Generator)
 	FAIDataProviderFloatValue PointSpacing;
+
+	// 아이템을 특정 자리에 생성할지 말지 결정 할 때 장애물 체크 반경
+	UPROPERTY(EditDefaultsOnly, Category = Generator)
+	float ObstacleCheckRadius = 30.0f;
+
+#pragma endregion
 };
 
