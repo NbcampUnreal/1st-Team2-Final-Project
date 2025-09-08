@@ -18,7 +18,7 @@ void UAnimNotify_MonsterMeleeAttack::Notify(USkeletalMeshComponent* MeshComp, UA
 	USphereComponent* HitComponent = Monster ? Monster->GetAttackHitComponent() : nullptr;
 	if (!HitComponent || !Monster) return;
 
-	const UStatComponent* StatComponent = Monster->FindComponentByClass<UStatComponent>();
+	const UStatComponent* StatComponent = Monster->GetStatComponent();
 	if (!StatComponent) return;
 
 	// Overlap
@@ -43,5 +43,4 @@ void UAnimNotify_MonsterMeleeAttack::Notify(USkeletalMeshComponent* MeshComp, UA
 		if (Player->GetCharacterState() == ECharacterState::Death) return;
 		UGameplayStatics::ApplyDamage(HitActor, StatComponent->AttackPower, Monster->GetController(), Monster, nullptr);
 	}
-	
 }

@@ -12,7 +12,7 @@
 #include "Framework/ADPlayerState.h"
 #include "Interactable/Item/ADUseItem.h"
 #include "Interactable/Item/UseFunction/UseStrategy.h"
-#include "Actions/PawnActionsComponent.h"
+//#include "Actions/PawnActionsComponent.h"
 #include "GameFramework/Character.h"
 #include "Interactable/Item/Component/EquipUseComponent.h"
 #include "UI/ChargeBatteryWidget.h"
@@ -37,8 +37,8 @@ UADInventoryComponent::UADInventoryComponent() :
 	TotalPrice(0),
 	CurrentEquipmentSlotIndex(INDEX_NONE),
 	CurrentEquipmentInstance(nullptr),
-	WeightMax(100),
 	ToggleWidgetInstance(nullptr),
+	WeightMax(100),
 	bCanUseItem(true),
 	DataTableSubsystem(nullptr),
 	ChargeBatteryWidget(nullptr)
