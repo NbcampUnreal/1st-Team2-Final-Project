@@ -62,10 +62,6 @@ AMonster::AMonster()
 
 	// 새로운 물리 기반 수중 이동 컴포넌트 초기화
 	AquaticMovementComponent = CreateDefaultSubobject<UAquaticMovementComponent>("Aquatic Movement Component");
-	// 기존 이동 컴포넌트는 사용하지 않음
-	GetCharacterMovement()->PrimaryComponentTick.bCanEverTick = false;
-	GetCharacterMovement()->SetActive(false);
-	GetCharacterMovement()->SetComponentTickEnabled(false);
 
 	// 틱 최적화용 컴포넌트 초기화
 	TickControlComponent = CreateDefaultSubobject<UTickControlComponent>(TEXT("Tick Control Component"));
