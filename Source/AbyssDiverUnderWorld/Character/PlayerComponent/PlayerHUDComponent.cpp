@@ -143,6 +143,7 @@ void UPlayerHUDComponent::BeginPlay()
 		}
 
 		Character->OnEnvironmentStateChangedDelegate.AddDynamic(this, &UPlayerHUDComponent::UpdateEnvironmentState);
+		UpdateEnvironmentState(Character->GetEnvironmentState(), Character->GetEnvironmentState());
 	}
 
 	if (ResultScreenWidgetClass)
@@ -417,6 +418,7 @@ void UPlayerHUDComponent::SetupHudWidgetToNewPawn(APawn* NewPawn, APlayerControl
 		}
 
 		UWCharacter->OnEnvironmentStateChangedDelegate.AddDynamic(this, &UPlayerHUDComponent::UpdateEnvironmentState);
+		UpdateEnvironmentState(UWCharacter->GetEnvironmentState(), UWCharacter->GetEnvironmentState());
 	}
 }
 
