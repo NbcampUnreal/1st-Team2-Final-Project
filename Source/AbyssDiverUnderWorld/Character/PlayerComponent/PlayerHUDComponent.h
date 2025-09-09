@@ -61,6 +61,10 @@ public:
     UFUNCTION()
     void UpdateStaminaHUD(float CurrentStamina, float MaxStamina);
 
+    /** 환경 상태가 변환될 때 호출되는 함수 */
+    UFUNCTION()
+    void UpdateEnvironmentState(EEnvironmentState OldEnvironmentState, EEnvironmentState NewEnvironmentState);
+
     UFUNCTION()
     void UpdateHealthHUD(int32 CurrentHealth, int32 MaxHealth);
 

@@ -141,6 +141,8 @@ void UPlayerHUDComponent::BeginPlay()
 		{
 			BindDeptWidgetFunction(DepthComp);
 		}
+
+		Character->OnEnvironmentStateChangedDelegate.AddDynamic(this, &UPlayerHUDComponent::UpdateEnvironmentState);
 	}
 
 	if (ResultScreenWidgetClass)
@@ -413,6 +415,8 @@ void UPlayerHUDComponent::SetupHudWidgetToNewPawn(APawn* NewPawn, APlayerControl
 		{
 			BindDeptWidgetFunction(DepthComp);
 		}
+
+		UWCharacter->OnEnvironmentStateChangedDelegate.AddDynamic(this, &UPlayerHUDComponent::UpdateEnvironmentState);
 	}
 }
 
@@ -538,6 +542,15 @@ void UPlayerHUDComponent::UpdateStaminaHUD(float Stamina, float MaxStamina)
 	{
 		const float Ratio = MaxStamina > 0 ? Stamina / MaxStamina : 0.f;
 		PlayerStatusWidget->SetStaminaPercent(Ratio);
+	}
+}
+
+void UPlayerHUDComponent::UpdateEnvironmentState(EEnvironmentState OldEnvironmentState,	EEnvironmentState NewEnvironmentState)
+{
+	const bool bIsUnderwater = (NewEnvironmentState == EEnvironmentState::Underwater);
+	if (PlayerStatusWidget)
+	{
+		PlayerStatusWidget->OnChangedEnvironment(bIsUnderwater);
 	}
 }
 
