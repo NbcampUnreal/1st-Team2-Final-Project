@@ -1,8 +1,21 @@
 #include "Monster/EyeStalker/EyeStalker.h"
 
+#include "Monster/Components/AquaticMovementComponent.h"
+#include "Monster/Components/TickControlComponent.h"
+
 AEyeStalker::AEyeStalker()
 {
 	PrimaryActorTick.bCanEverTick = false;
+}
+
+void AEyeStalker::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (AquaticMovementComponent)
+	{
+		TickControlComponent->UnregisterComponent(AquaticMovementComponent);
+	}
 }
 
 void AEyeStalker::M_SetEyeOpenness_Implementation(float Openness)

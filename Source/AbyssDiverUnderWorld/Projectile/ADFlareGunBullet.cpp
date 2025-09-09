@@ -7,6 +7,7 @@ AADFlareGunBullet::AADFlareGunBullet()
 {
 	FlareMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("FlareMesh"));
 	FlareMesh->SetupAttachment(RootComponent);
+	FlareMesh->PrimaryComponentTick.bCanEverTick = false;
 
 	FlareLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("FlareLight"));
 	FlareLight->SetupAttachment(RootComponent);
@@ -44,4 +45,22 @@ void AADFlareGunBullet::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AAct
 	//AttachToComponent(OtherComp, FAttachmentTransformRules::KeepWorldTransform, SweepResult.BoneName);
 
 	
+}
+
+void AADFlareGunBullet::Activate()
+{
+	Super::Activate();
+
+	FlareMesh->PrimaryComponentTick.bCanEverTick = true;
+	FlareMesh->SetComponentTickEnabled(true);
+	FlareMesh->PrimaryComponentTick.bStartWithTickEnabled = true;
+}
+
+void AADFlareGunBullet::Deactivate()
+{
+	Super::Deactivate();
+
+	FlareMesh->PrimaryComponentTick.bCanEverTick = false;
+	FlareMesh->SetComponentTickEnabled(false);
+	FlareMesh->PrimaryComponentTick.bStartWithTickEnabled = false;
 }

@@ -1,5 +1,8 @@
 ﻿#include "Monster/Serpmare/Serpmare.h"
 
+#include "Monster/Components/AquaticMovementComponent.h"
+#include "Monster/Components/TickControlComponent.h"
+
 #include "Character/UnderwaterCharacter.h"
 
 ASerpmare::ASerpmare()
@@ -16,6 +19,14 @@ void ASerpmare::BeginPlay()
 	Super::BeginPlay();
 	GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	GetMesh()->OnComponentBeginOverlap.AddDynamic(this, &ASerpmare::OnMeshOverlapBegin);
+
+	TickControlComponent->RegisterComponent(LowerBodyMesh);
+	TickControlComponent->RegisterComponent(WeakPointMesh);
+
+	if (AquaticMovementComponent)
+	{
+		TickControlComponent->UnregisterComponent(AquaticMovementComponent);
+	}
 }
 
 void ASerpmare::Attack()

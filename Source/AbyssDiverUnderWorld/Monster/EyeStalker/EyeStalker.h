@@ -15,6 +15,10 @@ class ABYSSDIVERUNDERWORLD_API AEyeStalker : public AMonster
 public:
 	AEyeStalker();
 
+protected:
+
+	virtual void BeginPlay() override;
+
 public:
 	UFUNCTION(NetMulticast, Reliable)
 	void M_SetEyeOpenness(float Openness);

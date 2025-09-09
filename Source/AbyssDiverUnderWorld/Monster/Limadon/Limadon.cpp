@@ -1,8 +1,13 @@
 #include "Monster/Limadon/Limadon.h"
+
 #include "AbyssDiverUnderWorld.h"
-#include "Monster/Boss/Enum/EBossState.h"
+
+#include "Monster/Components/AquaticMovementComponent.h"
+#include "Monster/Components/TickControlComponent.h"
+
 #include "Character/StatComponent.h"
 #include "Character/UnderwaterCharacter.h"
+
 #include "Components/CapsuleComponent.h"
 
 ALimadon::ALimadon()
@@ -22,7 +27,7 @@ ALimadon::ALimadon()
 
 	RightSphereMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Right Sphere Mesh"));
 	RightSphereMesh->SetupAttachment(GetMesh());
-	
+
 	StopCaptureHealthCriteria = 1000.0f;
 
 	bReplicates = true;
@@ -36,6 +41,14 @@ void ALimadon::BeginPlay()
 
 	SetMonsterState(EMonsterState::Investigate);
 	BiteAttackCollision->OnComponentBeginOverlap.AddDynamic(this, &ALimadon::OnBiteCollisionOverlapBegin);
+
+	TickControlComponent->RegisterComponent(LeftSphereMesh);
+	TickControlComponent->RegisterComponent(RightSphereMesh);
+
+	if (AquaticMovementComponent)
+	{
+		TickControlComponent->UnregisterComponent(AquaticMovementComponent);
+	}
 }
 
 void ALimadon::BiteVariableInitialize()
