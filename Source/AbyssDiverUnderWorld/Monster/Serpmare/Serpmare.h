@@ -21,8 +21,6 @@ public:
 
 	virtual void Attack() override;
 
-protected:
-
 	virtual void AddDetection(AActor* Actor) override;
 
 	virtual void RemoveDetection(AActor* Actor) override;

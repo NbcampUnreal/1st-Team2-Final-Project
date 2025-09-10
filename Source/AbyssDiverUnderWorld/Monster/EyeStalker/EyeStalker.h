@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "Monster/Monster.h"
@@ -18,6 +18,11 @@ public:
 protected:
 
 	virtual void BeginPlay() override;
+
+public:
+
+	virtual void AddDetection(AActor* Actor);
+	virtual void RemoveDetection(AActor* Actor);
 
 public:
 	UFUNCTION(NetMulticast, Reliable)

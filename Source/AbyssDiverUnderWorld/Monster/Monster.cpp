@@ -397,7 +397,7 @@ void AMonster::PerformChasing(const float& InDeltaTime)
 		return;
 	}
 
-	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(AIController->GetBlackboardComponent()->GetValueAsObject("TargetPlayer"));
+	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(AIController->GetBlackboardComponent()->GetValueAsObject(BlackboardKeys::TargetPlayerKey));
 	if (!IsValid(Player))
 	{
 		LOG(TEXT("PerformChasing: Player is not valid"));
@@ -746,7 +746,8 @@ void AMonster::AddDetection(AActor* Actor)
 
 		if (BlackboardComponent)
 		{
-			BlackboardComponent->SetValueAsObject(BlackboardKeys::TargetPlayerKey, TargetPlayer.Get());
+			//BlackboardComponent->SetValueAsObject(BlackboardKeys::TargetPlayerKey, TargetPlayer.Get());
+			SetTarget(TargetPlayer.Get());
 			ApplyMonsterStateChange(EMonsterState::Chase);
 		}
 	}
@@ -785,7 +786,8 @@ void AMonster::RemoveDetection(AActor* Actor)
 
 		if (BlackboardComponent)
 		{
-			BlackboardComponent->ClearValue(BlackboardKeys::TargetPlayerKey);
+			//BlackboardComponent->ClearValue(BlackboardKeys::TargetPlayerKey);
+			SetTarget(nullptr);
 		}
 
 		// 후보가 없으면 바로 Patrol (루프 스킵)
@@ -809,7 +811,8 @@ void AMonster::RemoveDetection(AActor* Actor)
 
 				if (BlackboardComponent)
 				{
-					BlackboardComponent->SetValueAsObject(BlackboardKeys::TargetPlayerKey, TargetPlayer.Get());
+					//BlackboardComponent->SetValueAsObject(BlackboardKeys::TargetPlayerKey, TargetPlayer.Get());
+					SetTarget(TargetPlayer.Get());
 				}
 				return;
 			}
@@ -854,7 +857,8 @@ void AMonster::ForceRemoveDetectedPlayers()
 	InitTarget();
 	if (BlackboardComponent)
 	{
-		BlackboardComponent->ClearValue(BlackboardKeys::TargetPlayerKey);
+		//BlackboardComponent->ClearValue(BlackboardKeys::TargetPlayerKey);
+		SetTarget(nullptr);
 	}
 }
 
@@ -990,6 +994,7 @@ void AMonster::SetMaxSwimSpeed(float Speed)
 void AMonster::SetTarget(AUnderwaterCharacter* Target)
 {
 	TargetPlayer = Target;
+	AIController->GetBlackboardComponent()->SetValueAsObject(BlackboardKeys::TargetPlayerKey, Target);
 }
 
 
