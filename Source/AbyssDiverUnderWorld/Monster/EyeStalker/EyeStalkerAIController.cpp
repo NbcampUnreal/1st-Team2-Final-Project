@@ -23,6 +23,8 @@ void AEyeStalkerAIController::InitTargetPlayer()
 	if (!IsValid(PostProcessSettingComponent)) return;
 
 	Player->SetIsAttackedByEyeStalker(false);
+	Player->OnUntargeted(GetPawn());
+
 	PostProcessSettingComponent->C_DeactivateVignetteEffect();
 	
 	GetBlackboardComponent()->SetValueAsObject(BlackboardKeys::TargetPlayerKey, nullptr);

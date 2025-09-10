@@ -32,7 +32,7 @@ EBTNodeResult::Type UBTTask_GetOverlappedPlayer::ExecuteTask(UBehaviorTreeCompon
 		AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(OverlappedActor);
 		if (IsValid(Player))
 		{
-			AIController->GetBlackboardComponent()->SetValueAsObject(BlackboardKeyName, Player);
+			Monster->SetTarget(Player);
 			break;
 		}
 	}

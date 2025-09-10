@@ -111,6 +111,7 @@ void ALimadon::OnBiteCollisionOverlapBegin(UPrimitiveComponent* OverlappedComp, 
 	bIsBiteAttackSuccess = true;
 
 	// 타겟 설정
-	SetTarget(Player);
+	/*SetTarget(Player);*/
+	AddDetection(Player);
 	Player->StartCaptureState();
 }
