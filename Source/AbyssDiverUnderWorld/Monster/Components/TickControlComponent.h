@@ -101,13 +101,13 @@ protected:
     // 거리별 설정
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TickControlComponentSettings|Distance Settings", meta = (AllowPrivateAccess = "true"))
-    float NearDistance = 1500.0f;
+    float NearDistance = 2500.0f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TickControlComponentSettings|Distance Settings", meta = (AllowPrivateAccess = "true"))
-    float MediumDistance = 5000.0f;
+    float MediumDistance = 7000.0f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TickControlComponentSettings|Distance Settings", meta = (AllowPrivateAccess = "true"))
-    float FarDistance = 9000.0f;
+    float FarDistance = 10000.0f;
 
     // 시야 내 틱 간격 (초)
 
@@ -135,7 +135,7 @@ protected:
     float Occluded_FarTickInterval = 2.0f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TickControlComponentSettings|Occluded Tick Rates", meta = (AllowPrivateAccess = "true"))
-    float Occluded_VeryFarTickInterval = 2.5f;
+    float Occluded_VeryFarTickInterval = 1000.0f;
 
     // 시야 밖 틱 간격 (초)
 
@@ -143,7 +143,7 @@ protected:
     float OutOfView_NearTickInterval = 0.0f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TickControlComponentSettings|Out of View Tick Rates", meta = (AllowPrivateAccess = "true"))
-    float OutOfView_MediumTickInterval = 1000.0f;
+    float OutOfView_MediumTickInterval = 1.0f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TickControlComponentSettings|Out of View Tick Rates", meta = (AllowPrivateAccess = "true"))
     float OutOfView_FarTickInterval = 2000.0f;
@@ -165,7 +165,7 @@ protected:
     uint8 bEnableVisibilityCheck : 1 = true;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TickControlComponentSettings|Visibility Settings", meta = (AllowPrivateAccess = "true"))
-    float VisibilityCheckDistance = 10000.0f;
+    float VisibilityCheckDistance = 12000.0f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TickControlComponentSettings|Visibility Settings", meta = (AllowPrivateAccess = "true"))
     TArray<TEnumAsByte<EObjectTypeQuery>> VisibilityBlockingObjects;
