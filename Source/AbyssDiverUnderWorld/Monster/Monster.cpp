@@ -1,24 +1,25 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+﻿#include "Monster/Monster.h"
 
-
-#include "Monster/Monster.h"
-#include "Components/SplineComponent.h"
-#include "Character/StatComponent.h"
-#include "BehaviorTree/BlackboardComponent.h"
-#include "Net/UnrealNetwork.h"
-#include "GameFramework/CharacterMovementComponent.h"
 #include "AbyssDiverUnderWorld.h"
-#include "NiagaraFunctionLibrary.h"
-#include "Character/UnderwaterCharacter.h"
-#include "Components/CapsuleComponent.h"
-#include "Monster/Effect/CameraControllerComponent.h"
-#include "Container/BlackboardKeys.h"
-#include "Kismet/GameplayStatics.h"
-#include "Interactable/OtherActors/Radars/RadarReturn2DComponent.h"
 
 #include "Monster/Components/AquaticMovementComponent.h"
 #include "Monster/Components/TickControlComponent.h"
 #include "Monster/EPerceptionType.h"
+#include "Monster/Effect/CameraControllerComponent.h"
+
+#include "Character/UnderwaterCharacter.h"
+#include "Character/StatComponent.h"
+
+#include "Container/BlackboardKeys.h"
+#include "Interactable/OtherActors/Radars/RadarReturn2DComponent.h"
+
+#include "Components/CapsuleComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "NiagaraFunctionLibrary.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "Net/UnrealNetwork.h"
+#include "BehaviorTree/BlackboardComponent.h"
+#include "Components/SplineComponent.h"
 
 AMonster::AMonster()
 {
@@ -64,6 +65,7 @@ AMonster::AMonster()
 
 	// 틱 최적화용 컴포넌트 초기화
 	TickControlComponent = CreateDefaultSubobject<UTickControlComponent>(TEXT("Tick Control Component"));
+
 }
 
 void AMonster::BeginPlay()
@@ -76,6 +78,7 @@ void AMonster::BeginPlay()
 	if (AquaticMovementComponent)
 	{
 		AquaticMovementComponent->InitComponent(this);
+		TickControlComponent->RegisterComponent(AquaticMovementComponent);
 	}
 
 	CurrentMoveSpeed = StatComponent->MoveSpeed;

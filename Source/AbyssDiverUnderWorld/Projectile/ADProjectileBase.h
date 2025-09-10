@@ -32,8 +32,8 @@ public:
 	void M_EffectActivate(bool bActivate);
 	void M_EffectActivate_Implementation(bool bActivate);
 
-	void Activate() override;
-	void Deactivate() override;
+	virtual void Activate() override;
+	virtual void Deactivate() override;
 
 	void InitializeTransform(const FVector& Location, const FRotator& Rotation);
 	virtual void InitializeSpeed(const FVector& ShootDirection, const uint32 Speed);

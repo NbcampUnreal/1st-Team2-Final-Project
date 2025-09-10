@@ -28,6 +28,7 @@ class ABYSSDIVERUNDERWORLD_API AADSpearGunBullet : public AADProjectileBase
 
 #pragma region Method
 public:
+	virtual void Activate() override;
 	virtual void Deactivate() override;
 protected:
 	virtual void BeginPlay() override;

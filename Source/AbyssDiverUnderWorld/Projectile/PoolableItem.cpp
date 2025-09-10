@@ -21,6 +21,8 @@ void APoolableItem::Activate()
 	SetActorHiddenInGame(false);
 	SetActorEnableCollision(true);
 	SetActorTickEnabled(true);
+
+	OnPoolableItemActivate();
 }
 
 void APoolableItem::Deactivate()
@@ -32,6 +34,8 @@ void APoolableItem::Deactivate()
 	SetActorHiddenInGame(true);
 	SetActorEnableCollision(false);
 	SetActorTickEnabled(false);
+
+	OnPoolableItemDeactivated();
 }
 
 void APoolableItem::SetProjectileId(int8 Id)
