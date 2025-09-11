@@ -6,6 +6,8 @@
 #include "Blueprint/UserWidget.h"
 #include "ResultScreenSlot.generated.h"
 
+class UTextBlock;
+
 enum class EAliveInfo
 {
 	Alive,
@@ -69,15 +71,15 @@ public:
 
 private:
 	UPROPERTY(meta = (BindWidget))
-	class UTextBlock* PlayerNickNameText;
+	TObjectPtr<UTextBlock> PlayerNickNameText;
 	UPROPERTY(meta = (BindWidget))
-	class UTextBlock* PlayerAliveText;
+	TObjectPtr<UTextBlock> PlayerAliveText;
 	UPROPERTY(meta = (BindWidget))
-	class UTextBlock* PlayerCollectionText;
+	TObjectPtr<UTextBlock> PlayerCollectionText;
 	UPROPERTY(meta = (BindWidget))
-	class UTextBlock* PlayerBattleText;
+	TObjectPtr<UTextBlock> PlayerBattleText;
 	UPROPERTY(meta = (BindWidget))
-	class UTextBlock* PlayerSupportText;
+	TObjectPtr<UTextBlock> PlayerSupportText;
 
 #pragma endregion Variables
 };

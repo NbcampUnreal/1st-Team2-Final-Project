@@ -211,9 +211,9 @@ void UPlayerHUDComponent::C_ShowResultScreen_Implementation()
 			AliveInfo = (PS->IsDead()) ? EAliveInfo::Dead : EAliveInfo::Abandoned;
 		}
 
-		int32 dN = (TeamMaxDamage == 0) ? 0 : (PS->GetDamage() / TeamMaxDamage);
-		int32 kN = (TeamMaxKill == 0) ? 0 : (PS->GetTotalMonsterKillCount() / TeamMaxKill);
-		int32 aN = (TeamMaxAssist == 0) ? 0 : (PS->GetAssists() / TeamMaxAssist);
+		float damageNomalize = (TeamMaxDamage == 0) ? 0 : (PS->GetDamage() / TeamMaxDamage);
+		float killNomalize = (TeamMaxKill == 0) ? 0 : (PS->GetTotalMonsterKillCount() / TeamMaxKill);
+		float assistNomalize = (TeamMaxAssist == 0) ? 0 : (PS->GetAssists() / TeamMaxAssist);
 
 		int32 BattleContribution = 10000 * (0.6*dN + 0.3*kN + 0.1*aN);
 		int32 SafeContribution = 100 * (PS->GetGroggyRevive() + PS->GetCorpseRecovery() * 3);
