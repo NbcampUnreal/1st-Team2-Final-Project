@@ -22,6 +22,38 @@ void AEyeStalker::BeginPlay()
 	}
 }
 
+float AEyeStalker::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+{
+	float Damage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+	AMonsterAIController* AIC = Cast<AMonsterAIController>(GetController());
+	if (AIC == nullptr)
+	{
+		LOGV(Error, TEXT("AIController Is not valid"));
+		return Damage;
+	}
+
+	AActor* InstigatorPlayer = IsValid(EventInstigator) ? EventInstigator->GetPawn() : nullptr;
+	if (InstigatorPlayer == nullptr)
+	{
+		LOGV(Error, TEXT("Instigator is not valid"));
+		return Damage;
+	}
+
+	// 시야 범위 밖일 경우 데미지를 받았더라도 어그로 끌리지 않음.
+	if ((InstigatorPlayer->GetActorLocation() - GetActorLocation()).Length() >= AIC->GetSightRadius())
+	{
+		RemoveDetection(DamageCauser);
+	}
+
+	return Damage;
+}
+
+void AEyeStalker::NotifyLightExposure(float DeltaTime, float TotalExposedTime, const FVector& PlayerLocation, AActor* PlayerActor)
+{
+	// EyeStalker는 빛에 반응 하지 않음
+}
+
 void AEyeStalker::AddDetection(AActor* Actor)
 {
 	if (!IsValid(Actor) || !IsValid(this)) return;

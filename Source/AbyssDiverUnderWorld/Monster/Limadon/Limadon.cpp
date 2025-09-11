@@ -51,6 +51,46 @@ void ALimadon::BeginPlay()
 	}
 }
 
+float ALimadon::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+{
+	if (!HasAuthority())
+	{
+		return 0.0f;
+	}
+
+	const float Damage = AUnitBase::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+	if (IsValid(StatComponent))
+	{
+		FVector BloodLoc = GetMesh()->GetComponentLocation() + FVector(0, 0, 20.f);
+		FRotator BloodRot = GetActorRotation();
+		M_SpawnBloodEffect(BloodLoc, BloodRot);
+
+		AActor* InstigatorPlayer = IsValid(EventInstigator) ? EventInstigator->GetPawn() : nullptr;
+		if (StatComponent->GetCurrentHealth() <= 0)
+		{
+			OnDeath();
+			// Delegate Broadcasts for Achievements
+			OnMonsterDead.Broadcast(DamageCauser, this);
+		}
+		else
+		{
+			if (IsValid(HitReactAnimations))
+			{
+				M_PlayMontage(HitReactAnimations);
+			}
+			else if (MonsterSoundComponent)
+			{
+				MonsterSoundComponent->S_PlayHitReactSound();
+			}
+
+			// Limadon은 피해를 입어도 어그로 끌리지 않음
+		}
+	}
+
+	return Damage;
+}
+
 void ALimadon::BiteVariableInitialize()
 {
 	// HideTime 동안 공격 비활성화
@@ -78,6 +118,11 @@ void ALimadon::OnDeath()
 	Spit();
 	
 	Super::OnDeath();
+}
+
+void ALimadon::NotifyLightExposure(float DeltaTime, float TotalExposedTime, const FVector& PlayerLocation, AActor* PlayerActor)
+{
+	// Limadon은 빛에 반응 하지 않음
 }
 
 void ALimadon::Spit()
