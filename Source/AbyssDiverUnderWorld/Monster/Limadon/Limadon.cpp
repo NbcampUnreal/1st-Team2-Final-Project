@@ -58,7 +58,7 @@ float ALimadon::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, 
 		return 0.0f;
 	}
 
-	const float Damage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+	const float Damage = AUnitBase::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
 	if (IsValid(StatComponent))
 	{
