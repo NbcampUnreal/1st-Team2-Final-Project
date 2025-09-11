@@ -211,11 +211,11 @@ void UPlayerHUDComponent::C_ShowResultScreen_Implementation()
 			AliveInfo = (PS->IsDead()) ? EAliveInfo::Dead : EAliveInfo::Abandoned;
 		}
 
-		float damageNomalize = (TeamMaxDamage == 0) ? 0 : (PS->GetDamage() / TeamMaxDamage);
-		float killNomalize = (TeamMaxKill == 0) ? 0 : (PS->GetTotalMonsterKillCount() / TeamMaxKill);
-		float assistNomalize = (TeamMaxAssist == 0) ? 0 : (PS->GetAssists() / TeamMaxAssist);
+		float DamageNomalize = (TeamMaxDamage == 0) ? 0 : ((float)PS->GetDamage() / (float)TeamMaxDamage);
+		float KillNomalize = (TeamMaxKill == 0) ? 0 : ((float)PS->GetTotalMonsterKillCount() / (float)TeamMaxKill);
+		float AssistNomalize = (TeamMaxAssist == 0) ? 0 : ((float)PS->GetAssists() / (float)TeamMaxAssist);
 
-		int32 BattleContribution = 10000 * (0.6*dN + 0.3*kN + 0.1*aN);
+		int32 BattleContribution = 10000 * (0.6* DamageNomalize + 0.3* KillNomalize + 0.1* AssistNomalize);
 		int32 SafeContribution = 100 * (PS->GetGroggyRevive() + PS->GetCorpseRecovery() * 3);
 
 		FResultScreenParams Params
