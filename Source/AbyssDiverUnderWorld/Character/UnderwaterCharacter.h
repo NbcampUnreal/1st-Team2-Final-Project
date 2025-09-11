@@ -741,6 +741,10 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Character|Emote")
 	FOnEmoteStart OnEmoteEndDelegate;
 
+	DECLARE_MULTICAST_DELEGATE(FOnGroggyRevive);
+	/** 그로기에 걸린 팀원 부활 시 호출되는 델리게이트 */
+	FOnGroggyRevive OnGroggyReviveDelegate;
+
 	UPROPERTY(VisibleAnywhere, Category = "Mining")
 	/** 현재 1p에 장착된 Tool 인스턴스 */
 	TObjectPtr<AActor> SpawnedTool;
