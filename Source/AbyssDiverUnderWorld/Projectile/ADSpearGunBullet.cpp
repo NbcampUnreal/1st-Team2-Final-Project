@@ -30,6 +30,7 @@ AADSpearGunBullet::AADSpearGunBullet() :
     StaticMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SkeletalMesh"));
     StaticMesh->SetupAttachment(RootComponent);
     StaticMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision); 
+    StaticMesh->PrimaryComponentTick.bCanEverTick = false;
 
     Damage = 450.0f;
 
@@ -121,6 +122,15 @@ void AADSpearGunBullet::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AAct
 
 }
 
+void AADSpearGunBullet::Activate()
+{
+    Super::Activate();
+
+    // 틱 활성화
+    StaticMesh->PrimaryComponentTick.bCanEverTick = true;
+    StaticMesh->SetComponentTickEnabled(true);
+}
+
 void AADSpearGunBullet::Deactivate()
 {
     Super::Deactivate();
@@ -133,12 +143,17 @@ void AADSpearGunBullet::Deactivate()
     StaticMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     StaticMesh->SetCollisionProfileName("NoCollision");
 
+
     // 부착 해제
     DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
     StaticMesh->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
     StaticMesh->SetRelativeLocation(FVector::ZeroVector);
     StaticMesh->SetRelativeRotation(InitialRotator);
     SetActorScale3D(FVector::OneVector);
+
+    // 틱 비활성화
+    StaticMesh->PrimaryComponentTick.bCanEverTick = false;
+    StaticMesh->SetComponentTickEnabled(false);
 }
 
 void AADSpearGunBullet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

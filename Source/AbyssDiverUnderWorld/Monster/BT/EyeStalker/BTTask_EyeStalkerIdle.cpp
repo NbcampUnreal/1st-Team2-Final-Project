@@ -39,33 +39,29 @@ void UBTTask_EyeStalkerIdle::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* 
 
 	FEyeStalkerIdleMemory* TaskMemory = (FEyeStalkerIdleMemory*)NodeMemory;
 	if (!TaskMemory) return;
-	
-	// TargetPlayers 전체를 대상으로 이동속도 확인
-	//for (AUnderwaterCharacter* TargetPlayer : TaskMemory->AIController->GetTargetPlayers())
-	//{
-	//	if (!IsValid(TargetPlayer) || TargetPlayer->IsDeath() || TargetPlayer->IsGroggy()) continue;
-	//	
-	//	const float PlayerVelocity = TargetPlayer->GetVelocity().Size();
-	//	if (PlayerVelocity >= 5.0f)
-	//	{
-	//		// 이동 중인 플레이어를 타겟으로 설정
-	//		TaskMemory->AIController->GetBlackboardComponent()->SetValueAsObject("TargetPlayer", TargetPlayer);
-	//		TaskMemory->AIController->GetBlackboardComponent()->SetValueAsBool("bHasDetected", true);
-	//		break;
-	//	}
-	//}
 
 	// TargetPlayers 전체를 대상으로 이동속도 확인
 	for (const auto& TargetActor : TaskMemory->EyeStalker->GetDetectedPlayers())
 	{
 		AUnderwaterCharacter* TargetPlayer = Cast<AUnderwaterCharacter>(TargetActor.Get());
-		if (!IsValid(TargetPlayer) || TargetPlayer->IsDeath() || TargetPlayer->IsGroggy()) continue;
+		if (!IsValid(TargetPlayer))
+		{
+			continue;
+		}
+
+		if(TargetPlayer->IsDeath() || TargetPlayer->IsGroggy())
+		{
+			TargetPlayer->OnUntargeted(TaskMemory->EyeStalker.Get());
+			continue;
+		}
 
 		const float PlayerVelocity = TargetPlayer->GetVelocity().Size();
 		if (PlayerVelocity >= 5.0f)
 		{
 			// 이동 중인 플레이어를 타겟으로 설정
-			TaskMemory->AIController->GetBlackboardComponent()->SetValueAsObject(BlackboardKeys::TargetPlayerKey, TargetPlayer);
+			TaskMemory->EyeStalker->SetTarget(TargetPlayer);
+			TargetPlayer->OnTargeted(TaskMemory->EyeStalker.Get());
+
 			TaskMemory->AIController->GetBlackboardComponent()->SetValueAsBool(BlackboardKeys::EyeStalker::bHasDetectedKey, true);
 			break;
 		}

@@ -23,7 +23,5 @@ EBTNodeResult::Type UBTTask_SetTargetLocation::ExecuteTask(UBehaviorTreeComponen
 
 	Monster->AquaticMovementComponent->SetTargetLocation(TargetLocation);
 
-	//AIController->GetBlackboardComponent()->SetValueAsObject("TargetPlayer", nullptr);
-	
 	return EBTNodeResult::Succeeded;
 }

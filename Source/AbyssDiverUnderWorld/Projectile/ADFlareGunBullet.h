@@ -12,16 +12,24 @@ class ABYSSDIVERUNDERWORLD_API AADFlareGunBullet : public AADProjectileBase
 	GENERATED_BODY()
 	
 public:
+
 	AADFlareGunBullet();
 
-#pragma region Method
 public:
 	virtual void BeginPlay() override;
+
+#pragma region Method
+
+public:
+
 	virtual void InitializeSpeed(const FVector& Dir, uint32 Speed) override;
 
 	virtual void OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
 		bool bFromSweep, const FHitResult& SweepResult) override;
+
+	virtual void Activate() override;
+	virtual void Deactivate() override;
 
 protected:
 	
@@ -37,7 +45,7 @@ protected:
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<USphereComponent> FlareSphereCollision;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TObjectPtr<USkeletalMeshComponent> FlareMesh;
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UPointLightComponent> FlareLight;

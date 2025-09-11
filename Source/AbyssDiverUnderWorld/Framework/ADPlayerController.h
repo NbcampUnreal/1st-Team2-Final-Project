@@ -195,6 +195,7 @@ private:
 	FTimerHandle CameraBlankTimerHandle;
 
 	/** Name Widget 가시성 표시 여부. 비활성화되면 모든 Name Widget이 숨김 처리된다. */
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	uint8 bIsNameWidgetEnabled : 1;
 	
 #pragma endregion 

@@ -29,6 +29,14 @@ public:
 	bool GetIsActive() const { return bIsActive; }
 
 protected:
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void OnPoolableItemActivate();
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void OnPoolableItemDeactivated();
+
+protected:
 	UPROPERTY(Replicated)
 	int8 ProjectileId = -1;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Pool")

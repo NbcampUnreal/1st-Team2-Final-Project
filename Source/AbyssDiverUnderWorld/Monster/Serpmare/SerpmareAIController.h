@@ -3,16 +3,19 @@
 #include "CoreMinimal.h"
 #include "Monster/MonsterAIController.h"
 
-#include "LimadonAIController.generated.h"
+#include "SerpmareAIController.generated.h"
 
+/**
+ * 
+ */
 UCLASS()
-class ABYSSDIVERUNDERWORLD_API ALimadonAIController : public AMonsterAIController
+class ABYSSDIVERUNDERWORLD_API ASerpmareAIController : public AMonsterAIController
 {
 	GENERATED_BODY()
 
 public:
 
-	ALimadonAIController();
+	ASerpmareAIController();
 
 protected:
 
