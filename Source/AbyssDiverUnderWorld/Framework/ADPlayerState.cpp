@@ -12,8 +12,12 @@ AADPlayerState::AADPlayerState()
 	, TotalOreMinedCount(0)
 	, SafeReturnCount(0)
 	, PersonalCredit(0)
+	, Damage(0)
 	, MonsterKillCount(0)
+	, Assists(0)
 	, OreMinedCount(0)
+	, GroggyRevive(0)
+	, CorpseRecovery(0)
 	, OreCollectedValue(0)
 	, bIsSafeReturn(false)
 	, PlayerIndex(INDEX_NONE)
@@ -30,6 +34,7 @@ AADPlayerState::AADPlayerState()
 void AADPlayerState::BeginPlay()
 {
 	Super::BeginPlay();
+	
 
 	APlayerController* PC = GetPlayerController();
 	if (PC == nullptr || HasAuthority() == false)
@@ -76,11 +81,15 @@ void AADPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME(AADPlayerState, TotalOreMinedCount);
 	DOREPLIFETIME(AADPlayerState, SafeReturnCount);
 	DOREPLIFETIME(AADPlayerState, PersonalCredit);
+	DOREPLIFETIME(AADPlayerState, Damage);
 	DOREPLIFETIME(AADPlayerState, MonsterKillCount);
+	DOREPLIFETIME(AADPlayerState, Assists);
 	DOREPLIFETIME(AADPlayerState, OreMinedCount);
 	DOREPLIFETIME(AADPlayerState, OreCollectedValue);
 	DOREPLIFETIME(AADPlayerState, bIsSafeReturn);
 	DOREPLIFETIME(AADPlayerState, PlayerIndex);
+	DOREPLIFETIME(AADPlayerState, GroggyRevive);
+	DOREPLIFETIME(AADPlayerState, CorpseRecovery);
 }
 
 void AADPlayerState::CopyProperties(APlayerState* PlayerState)

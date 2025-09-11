@@ -13,6 +13,7 @@
 #include "Framework/ADPlayerController.h"
 
 #include "UI/ResultScreen.h"
+#include "UI/ResultScreenSlot.h"
 #include "UI/PlayerStatusWidget.h"
 #include "UI/MissionsOnHUDWidget.h"
 #include "UI/CrosshairWidget.h"
@@ -175,6 +176,32 @@ void UPlayerHUDComponent::BeginPlay()
 
 void UPlayerHUDComponent::C_ShowResultScreen_Implementation()
 {
+	int32 TeamMaxKill = 0;
+	int32 TeamMaxDamage = 0;
+	int32 TeamMaxAssist = 0;
+
+	for (AADPlayerState* PS : TActorRange<AADPlayerState>(GetWorld()))
+	{
+		if (PS->GetDamage() > TeamMaxDamage)
+		{
+			TeamMaxDamage = PS->GetDamage();
+		}
+		if (PS->GetMonsterKillCount() > TeamMaxKill)
+		{
+			TeamMaxKill = PS->GetMonsterKillCount();
+		}
+		if (PS->GetAssists() > TeamMaxAssist)
+		{
+			TeamMaxAssist = PS->GetAssists();
+		}
+	}
+
+	TArray<FResultScreenParams> ResultParamsArray;
+
+	int32 MaxCollect = 1;
+	int32 MaxCombat = 1;
+	int32 MaxSupport = 1;
+
 	for (AADPlayerState* PS : TActorRange<AADPlayerState>(GetWorld()))
 	{
 		EAliveInfo AliveInfo = EAliveInfo::Alive;
@@ -184,15 +211,73 @@ void UPlayerHUDComponent::C_ShowResultScreen_Implementation()
 			AliveInfo = (PS->IsDead()) ? EAliveInfo::Dead : EAliveInfo::Abandoned;
 		}
 
+		int32 dN = (TeamMaxDamage == 0) ? 0 : (PS->GetDamage() / TeamMaxDamage);
+		int32 kN = (TeamMaxKill == 0) ? 0 : (PS->GetTotalMonsterKillCount() / TeamMaxKill);
+		int32 aN = (TeamMaxAssist == 0) ? 0 : (PS->GetAssists() / TeamMaxAssist);
+
+		int32 BattleContribution = 10000 * (0.6*dN + 0.3*kN + 0.1*aN);
+		int32 SafeContribution = 100 * (PS->GetGroggyRevive() + PS->GetCorpseRecovery() * 3);
+
 		FResultScreenParams Params
 		(
 			PS->GetPlayerNickname(),
-			98,
-			PS->GetOreMinedCount(),
-			AliveInfo
+			AliveInfo,
+			PS->GetOreCollectedValue(), //채집 기여
+			BattleContribution,//전투기여
+			SafeContribution //팀지원
 		);
 
+		MaxCollect = FMath::Max(MaxCollect, Params.CollectionScore);
+		MaxCombat = FMath::Max(MaxCombat, Params.BattleScore);
+		MaxSupport = FMath::Max(MaxSupport, Params.SupportScore);
+
+		ResultParamsArray.Add(Params);
+
+
 		UpdateResultScreen(PS->GetPlayerIndex(), Params);
+	}
+
+	for (FResultScreenParams& Param : ResultParamsArray)
+	{
+		Param.NormalizedCollectScore = (float)Param.CollectionScore / (float)MaxCollect;
+		Param.NormalizedCombatScore = (float)Param.BattleScore / (float)MaxCombat;
+		Param.NormalizedSupportScore = (float)Param.SupportScore / (float)MaxSupport;
+
+		float TotalScore = Param.NormalizedCollectScore + Param.NormalizedCombatScore + Param.NormalizedSupportScore;
+		if (Param.AliveInfo == EAliveInfo::Alive) // 생존 보너스
+		{
+			Param.MVPScore = TotalScore * 1.5f;
+		}
+		else
+		{
+			Param.MVPScore = TotalScore;
+		}
+	}
+
+	ResultParamsArray.Sort([](const FResultScreenParams& A, const FResultScreenParams& B)
+		{
+			if (!FMath::IsNearlyEqual(A.MVPScore, B.MVPScore))
+			{
+				return A.MVPScore > B.MVPScore;
+			}
+
+			// 동점일 경우 우선순위
+			if (A.CollectionScore != B.CollectionScore)
+				return A.CollectionScore > B.CollectionScore;
+
+			if (A.BattleScore != B.BattleScore)
+				return A.BattleScore > B.BattleScore;
+
+			if (A.SupportScore != B.SupportScore)
+				return A.SupportScore > B.SupportScore;
+
+			// 마지막으로 생존자 우선
+			return A.AliveInfo == EAliveInfo::Alive && B.AliveInfo != EAliveInfo::Alive;
+		});
+
+	for (int32 i = 0; i < ResultParamsArray.Num(); ++i)
+	{
+		UpdateResultScreen(i, ResultParamsArray[i]);
 	}
 
 	AADInGameState* GS = Cast<AADInGameState>(GetWorld()->GetGameState());
