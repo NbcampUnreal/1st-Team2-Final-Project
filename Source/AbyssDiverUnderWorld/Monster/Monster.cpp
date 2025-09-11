@@ -530,7 +530,7 @@ float AMonster::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, 
 		FVector BloodLoc = GetMesh()->GetComponentLocation() + FVector(0, 0, 20.f);
 		FRotator BloodRot = GetActorRotation();
 		M_SpawnBloodEffect(BloodLoc, BloodRot);
-		
+
 		AActor* InstigatorPlayer = IsValid(EventInstigator) ? EventInstigator->GetPawn() : nullptr;
 		if (StatComponent->GetCurrentHealth() <= 0)
 		{
@@ -550,9 +550,21 @@ float AMonster::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, 
 			}
 			
 			// If aggro is not on TargetPlayer, set aggro
-			AddDetection(InstigatorPlayer);
+			AMonsterAIController* AIC = Cast<AMonsterAIController>(GetController());
+			if (AIC == nullptr)
+			{
+				LOGV(Error, TEXT("AIController Is not valid"));
+				return Damage;
+			}
+			// 시야 범위나 청각 범위 중 넓은 범위 내에서 데미지를 받았을 경우 어그로 Set
+			float RecogniztionRange = FMath::Max3(AIC->GetSightRadius(), AIC->GetLoseSightRadius(), AIC->GetHearingRadius());
+			if ((InstigatorPlayer->GetActorLocation() - GetActorLocation()).Length() <= RecogniztionRange)
+			{
+				AddDetection(InstigatorPlayer);
+			}
 		}
 	}
+
 	return Damage;
 }
 
@@ -721,6 +733,11 @@ void AMonster::AddDetection(AActor* Actor)
 {
 	if (!IsValid(Actor) || !IsValid(this)) return;
 	if (!HasAuthority()) return;
+
+	if (GetMonsterState() == EMonsterState::Death)
+	{
+		return;
+	}
 
 	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor);
 	if (!Player) return;

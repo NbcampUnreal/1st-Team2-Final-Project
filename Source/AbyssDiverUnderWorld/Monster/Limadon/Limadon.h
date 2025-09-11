@@ -13,13 +13,18 @@ class ABYSSDIVERUNDERWORLD_API ALimadon : public AMonster
 public:
 	ALimadon();
 
-public:
+protected:
 	virtual void BeginPlay() override;
 	
+public:
+	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
+
 public:
 	virtual void Attack() override;
 	virtual void OnDeath() override;
 	
+	virtual void NotifyLightExposure(float DeltaTime, float TotalExposedTime, const FVector& PlayerLocation, AActor* PlayerActor) override;
+
 	void BiteVariableInitialize();
 
 	UFUNCTION(BlueprintImplementableEvent)

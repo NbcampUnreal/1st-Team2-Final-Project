@@ -29,6 +29,48 @@ void ASerpmare::BeginPlay()
 	}
 }
 
+float ASerpmare::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+{
+	if (!HasAuthority())
+	{
+		return 0.0f;
+	}
+
+	const float Damage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+	if (IsValid(StatComponent))
+	{
+		FVector BloodLoc = GetMesh()->GetComponentLocation() + FVector(0, 0, 20.f);
+		FRotator BloodRot = GetActorRotation();
+		M_SpawnBloodEffect(BloodLoc, BloodRot);
+
+
+
+		AActor* InstigatorPlayer = IsValid(EventInstigator) ? EventInstigator->GetPawn() : nullptr;
+		if (StatComponent->GetCurrentHealth() <= 0)
+		{
+			OnDeath();
+			// Delegate Broadcasts for Achievements
+			OnMonsterDead.Broadcast(DamageCauser, this);
+		}
+		else
+		{
+			if (IsValid(HitReactAnimations))
+			{
+				M_PlayMontage(HitReactAnimations);
+			}
+			else if (MonsterSoundComponent)
+			{
+				MonsterSoundComponent->S_PlayHitReactSound();
+			}
+
+			// Serpmare는 피해를 입어도 어그로 끌리지 않음
+		}
+	}
+
+	return Damage;
+}
+
 void ASerpmare::Attack()
 {
 	// Serpmare는 Detection 상태에서도 AM가 발동중이기 때문에 Monster 클래스처럼 Early Return하면 공격을 못 함.
@@ -43,6 +85,11 @@ void ASerpmare::Attack()
 
 	GetWorldTimerManager().SetTimer(AttackIntervalTimer, this, &ASerpmare::InitAttackInterval, AttackInterval, false);
 	bCanAttack = false;
+}
+
+void ASerpmare::NotifyLightExposure(float DeltaTime, float TotalExposedTime, const FVector& PlayerLocation, AActor* PlayerActor)
+{
+	// Serpmare는 빛에 반응 하지 않음
 }
 
 void ASerpmare::AddDetection(AActor* Actor)
