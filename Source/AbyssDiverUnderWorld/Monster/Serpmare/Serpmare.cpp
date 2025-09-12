@@ -44,9 +44,6 @@ float ASerpmare::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent,
 		FRotator BloodRot = GetActorRotation();
 		M_SpawnBloodEffect(BloodLoc, BloodRot);
 
-
-
-		AActor* InstigatorPlayer = IsValid(EventInstigator) ? EventInstigator->GetPawn() : nullptr;
 		if (StatComponent->GetCurrentHealth() <= 0)
 		{
 			OnDeath();
