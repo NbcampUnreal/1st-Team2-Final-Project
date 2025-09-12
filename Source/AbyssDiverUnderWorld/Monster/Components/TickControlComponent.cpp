@@ -1,5 +1,7 @@
 ﻿#include "TickControlComponent.h"
 
+#include "Monster/Components/AquaticMovementComponent.h"
+
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
 
@@ -310,6 +312,13 @@ void UTickControlComponent::UpdateTickRate()
     // 모든 등록된 컴포넌트에 틱 레이트 적용
     for (UActorComponent* Component : TargetComponents)
     {
+        // 임시로 클라이언트일 경우 AuqaticmovementComponent 최적화 하지 않음.
+        AActor* Owner = GetOwner();
+        if (IsValid(Owner) && Owner->HasAuthority() == false && Component->IsA<UAquaticMovementComponent>())
+        {
+            continue;
+        }
+
         SetComponentTickRate(Component, TickInterval);
         
         // 임시로 TickInterval이 1000을 넘으면 틱 자체를 비활성화 하도록 설정
