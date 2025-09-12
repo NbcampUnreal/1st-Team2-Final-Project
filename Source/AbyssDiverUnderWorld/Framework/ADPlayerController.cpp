@@ -36,6 +36,7 @@
 #include "Engine/PawnIterator.h"
 
 #include "Kismet/GameplayStatics.h"
+#include "UI/CrosshairWidget.h"
 
 AADPlayerController::AADPlayerController()
 {
@@ -437,6 +438,38 @@ void AADPlayerController::HideNameWidgets()
 	bIsNameWidgetEnabled = false;
 
 	SetAllNameWidgetsEnabled(bIsNameWidgetEnabled);
+}
+
+void AADPlayerController::ToggleCrosshairWidget()
+{
+	if (bIsCrosshairWidgetVisible)
+	{
+		HideCrosshairWidget();
+	}
+	else
+	{
+		ShowCrosshairWidget();
+	}
+}
+
+void AADPlayerController::ShowCrosshairWidget()
+{
+	bIsCrosshairWidgetVisible = true;
+
+	if (UCrosshairWidget* CrosshairWidget = PlayerHUDComponent->GetCrosshairWidget())
+	{
+		CrosshairWidget->ShowCrosshair();
+	}
+}
+
+void AADPlayerController::HideCrosshairWidget()
+{
+	bIsCrosshairWidgetVisible = false;
+
+	if (UCrosshairWidget* CrosshairWidget = PlayerHUDComponent->GetCrosshairWidget())
+	{
+		CrosshairWidget->HideCrosshair();
+	}
 }
 
 void AADPlayerController::SetAllNameWidgetsEnabled(bool bNewEnabled)
