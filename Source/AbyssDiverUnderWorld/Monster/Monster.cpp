@@ -532,7 +532,7 @@ float AMonster::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, 
 		FRotator BloodRot = GetActorRotation();
 		M_SpawnBloodEffect(BloodLoc, BloodRot);
 
-		AActor* InstigatorPlayer = IsValid(EventInstigator) ? EventInstigator->GetPawn() : nullptr;
+		
 		if (StatComponent->GetCurrentHealth() <= 0)
 		{
 			OnDeath();
@@ -557,6 +557,14 @@ float AMonster::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, 
 				LOGV(Error, TEXT("AIController Is not valid"));
 				return Damage;
 			}
+
+			AActor* InstigatorPlayer = IsValid(EventInstigator) ? EventInstigator->GetPawn() : nullptr;
+			if (InstigatorPlayer == nullptr)
+			{
+				LOGV(Warning, TEXT("InstigatorPlayer is not valid, So Detection Is Failed (%s)"), *GetName());
+				return Damage;
+			}
+
 			// 시야 범위나 청각 범위 중 넓은 범위 내에서 데미지를 받았을 경우 어그로 Set
 			float RecogniztionRange = FMath::Max3(AIC->GetSightRadius(), AIC->GetLoseSightRadius(), AIC->GetHearingRadius());
 			if ((InstigatorPlayer->GetActorLocation() - GetActorLocation()).Length() <= RecogniztionRange)
