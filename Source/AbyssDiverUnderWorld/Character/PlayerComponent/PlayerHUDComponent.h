@@ -88,9 +88,11 @@ public:
 
     UFUNCTION(Client, Reliable)
     void C_ShowConfirmWidget(AActor* RequestInteractableActor);
+    void C_ShowConfirmWidget_Implementation(AActor* RequestInteractableActor);
 
     UFUNCTION(Server, Reliable)
     void S_ReportConfirm(AActor* RequestInteractableActor, bool bConfirmed);
+    void S_ReportConfirm_Implementation(AActor* RequestInteractableActor, bool bConfirmed);
     
 protected:
     
