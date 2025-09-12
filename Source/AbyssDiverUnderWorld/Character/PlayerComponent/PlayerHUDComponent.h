@@ -167,5 +167,8 @@ public:
     USoundSubsystem* GetSoundSubsystem();
     UPlayerStatusWidget* GetPlayerStatusWidget() ;
 
+    /** Crosshair Widget 반환 */
+    UCrosshairWidget* GetCrosshairWidget() const { return CrosshairWidget; }
+
 #pragma endregion
 };
