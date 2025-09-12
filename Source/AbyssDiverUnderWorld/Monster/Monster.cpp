@@ -40,11 +40,7 @@ AMonster::AMonster()
 	bUseControllerRotationYaw = false;
 	
 	USkeletalMeshComponent* MeshComp = GetMesh();
-	if (MeshComp)
-	{
-		MeshComp->SetIsReplicated(true);                  // 메시도 네트워크 복제 (랙돌 적용 하려면 메시 컴포넌트를 replicated 해야 클라에 물리 상태 전달 가능)
-		MeshComp->bEnablePhysicsOnDedicatedServer = true; // 켜줘야 물리 시뮬레이션 데디, 리슨 동작함.
-	}
+
 	bReplicates = true; // 액터 복제 활성화
 	SetReplicatingMovement(true); // 평소엔 캡슐 트랜스폼 복제 (랙돌 시 false로 변경)
 	
