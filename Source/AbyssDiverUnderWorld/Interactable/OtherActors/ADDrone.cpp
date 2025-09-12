@@ -40,12 +40,6 @@ AADDrone::AADDrone()
 	bIsFlying = false;
 	bIsHold = false;
 	ReviveDistance = 1000.f;
-
-	ConstructorHelpers::FClassFinder<UInteractPopupWidget> PopupFinder(TEXT("/Game/_AbyssDiver/Blueprints/UI/InteractableUI/WBP_InteractPopupWidget"));
-	if (PopupFinder.Succeeded())
-	{
-		PopupWidgetClass = PopupFinder.Class;
-	}
 }
 
 void AADDrone::BeginPlay()
@@ -136,28 +130,11 @@ void AADDrone::Interact_Implementation(AActor* InstigatorActor)
 	APlayerController* PC = Cast<APlayerController>(InstigatorActor->GetInstigatorController());
 	if(!PC) return;
 
-	if (PopupWidgetClass)
+	if (AADPlayerController* PlayerController = InstigatorActor->GetInstigatorController<AADPlayerController>())
 	{
-		UInteractPopupWidget* Popup = CreateWidget<UInteractPopupWidget>(PC, PopupWidgetClass);
-		if (Popup)
+		if (UPlayerHUDComponent* PlayerHUDComponent = PlayerController->GetPlayerHUDComponent())
 		{
-			Popup->AddToViewport();
-			PC->bShowMouseCursor = true;
-			
-			FInputModeUIOnly InputMode;
-			InputMode.SetWidgetToFocus(Popup->TakeWidget());
-			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-			PC->SetInputMode(InputMode);
-
-			Popup->OnPopupConfirmed.BindLambda([this, PC]() {
-					this->ExecuteConfirmedInteraction();
-					PC->bShowMouseCursor = false;
-					PC->SetInputMode(FInputModeGameOnly());
-			});
-			Popup->OnPopupCanceled.BindLambda([this, PC]() {
-				PC->bShowMouseCursor = false;
-				PC->SetInputMode(FInputModeGameOnly());
-				});
+			PlayerHUDComponent->C_ShowConfirmWidget(this);
 		}
 	}
 }
@@ -264,6 +241,7 @@ void AADDrone::ExecuteConfirmedInteraction()
 		return;
 	}
 
+	if (!HasAuthority() || !bIsActive || !IsValid(CurrentSeller) || bIsFlying) return;
 
 	if (!CurrentSeller->GetSubmittedPlayerIndexes().IsEmpty())
 	{
