@@ -26,7 +26,7 @@ public:
 	void Initialize(int32 InitMaxHealth, int32 InitCurrentHealth, float InitMoveSpeed, int32 InitAttackPower);
 
 	/** 데미지를 계산. 실제 피해량을 반환한다. */
-	float TakeDamage(const float DamageAmount);
+	float TakeDamage(const float DamageAmount, AActor* Instigator);
 
 	/** 체력을 회복한다. */
 	void RestoreHealth(const float RestoreAmount);

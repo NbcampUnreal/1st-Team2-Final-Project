@@ -1,8 +1,13 @@
 #include "Monster/Limadon/Limadon.h"
+
 #include "AbyssDiverUnderWorld.h"
-#include "Monster/Boss/Enum/EBossState.h"
+
+#include "Monster/Components/AquaticMovementComponent.h"
+#include "Monster/Components/TickControlComponent.h"
+
 #include "Character/StatComponent.h"
 #include "Character/UnderwaterCharacter.h"
+
 #include "Components/CapsuleComponent.h"
 
 ALimadon::ALimadon()
@@ -22,7 +27,7 @@ ALimadon::ALimadon()
 
 	RightSphereMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Right Sphere Mesh"));
 	RightSphereMesh->SetupAttachment(GetMesh());
-	
+
 	StopCaptureHealthCriteria = 1000.0f;
 
 	bReplicates = true;
@@ -36,6 +41,53 @@ void ALimadon::BeginPlay()
 
 	SetMonsterState(EMonsterState::Investigate);
 	BiteAttackCollision->OnComponentBeginOverlap.AddDynamic(this, &ALimadon::OnBiteCollisionOverlapBegin);
+
+	TickControlComponent->RegisterComponent(LeftSphereMesh);
+	TickControlComponent->RegisterComponent(RightSphereMesh);
+
+	if (AquaticMovementComponent)
+	{
+		TickControlComponent->UnregisterComponent(AquaticMovementComponent);
+	}
+}
+
+float ALimadon::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+{
+	if (!HasAuthority())
+	{
+		return 0.0f;
+	}
+
+	const float Damage = AUnitBase::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+	if (IsValid(StatComponent))
+	{
+		FVector BloodLoc = GetMesh()->GetComponentLocation() + FVector(0, 0, 20.f);
+		FRotator BloodRot = GetActorRotation();
+		M_SpawnBloodEffect(BloodLoc, BloodRot);
+
+		if (StatComponent->GetCurrentHealth() <= 0)
+		{
+			OnDeath();
+			// Delegate Broadcasts for Achievements
+			OnMonsterDead.Broadcast(DamageCauser, this);
+		}
+		else
+		{
+			if (IsValid(HitReactAnimations))
+			{
+				M_PlayMontage(HitReactAnimations);
+			}
+			else if (MonsterSoundComponent)
+			{
+				MonsterSoundComponent->S_PlayHitReactSound();
+			}
+
+			// Limadon은 피해를 입어도 어그로 끌리지 않음
+		}
+	}
+
+	return Damage;
 }
 
 void ALimadon::BiteVariableInitialize()
@@ -65,6 +117,11 @@ void ALimadon::OnDeath()
 	Spit();
 	
 	Super::OnDeath();
+}
+
+void ALimadon::NotifyLightExposure(float DeltaTime, float TotalExposedTime, const FVector& PlayerLocation, AActor* PlayerActor)
+{
+	// Limadon은 빛에 반응 하지 않음
 }
 
 void ALimadon::Spit()
@@ -98,6 +155,7 @@ void ALimadon::OnBiteCollisionOverlapBegin(UPrimitiveComponent* OverlappedComp, 
 	bIsBiteAttackSuccess = true;
 
 	// 타겟 설정
-	SetTarget(Player);
+	/*SetTarget(Player);*/
+	AddDetection(Player);
 	Player->StartCaptureState();
 }

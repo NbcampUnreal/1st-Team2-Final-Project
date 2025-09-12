@@ -1,8 +1,11 @@
 #include "Monster/GobleFish/GobleFish.h"
-#include "Monster/GobleFish/GFProjectile.h"
-#include "BehaviorTree/BlackboardComponent.h"
-#include "AIController.h"
+
 #include "AbyssDiverUnderWorld.h"
+#include "Monster/GobleFish/GFProjectile.h"
+#include "Container/BlackboardKeys.h"
+
+#include "AIController.h"
+#include "BehaviorTree/BlackboardComponent.h"
 
 AGobleFish::AGobleFish()
 {
@@ -40,7 +43,7 @@ void AGobleFish::FireProjectile()
 		return;
 	}
 
-	AActor* LockOnActor = Cast<AActor>(BlackboardComponent->GetValueAsObject(/*"TargetActor"*/"TargetPlayer"));
+	AActor* LockOnActor = Cast<AActor>(BlackboardComponent->GetValueAsObject(BlackboardKeys::TargetPlayerKey));
 	if (!LockOnActor)
 	{
 		LOGV(Error, TEXT("LockOnActor is nullptr in GobleFish"));
@@ -78,7 +81,7 @@ void AGobleFish::Attack()
 	if (AnimInst->IsAnyMontagePlaying()) return;
 
 
-	if (BlackboardComponent->GetValueAsBool("bInMeleeRange"))
+	if (BlackboardComponent->GetValueAsBool(BlackboardKeys::GobleFish::bInMeleeRangeKey))
 	{
 		if (AttackAnimations.Num() > 0)
 		{
@@ -92,7 +95,7 @@ void AGobleFish::Attack()
 
 		bIsAttacking = true;
 	}
-	else if (BlackboardComponent->GetValueAsBool("bInRangedRange"))
+	else if (BlackboardComponent->GetValueAsBool(BlackboardKeys::GobleFish::bInRangedRangeKey))
 	{
 		if (RangedAttackAnimations.Num() > 0)
 		{

@@ -249,6 +249,17 @@ void AUnderwaterCharacter::BeginPlay()
 	SpawnFlipperMesh();
 	LanternComponent->SpawnLight(GetMesh1PSpringArm(), LanternLength);
 
+	FTimerHandle DelayBindPlayerStateTimerHandle;
+	float BindPlayerStateDelay = 1.0f;
+
+	GetWorldTimerManager().SetTimer(DelayBindPlayerStateTimerHandle, [this]() {	
+		if (AADPlayerState* PS = Cast<AADPlayerState>(GetPlayerState()))
+		{
+			OnGroggyReviveDelegate.AddUObject(PS, &AADPlayerState::AddOneGroggyRevive);
+		}
+	}, BindPlayerStateDelay, false);
+
+
 	if (HasAuthority())
 	{
 		if (AADInGameMode* GameManager = Cast<AADInGameMode>(UGameplayStatics::GetGameMode(GetWorld())))
@@ -1917,6 +1928,8 @@ void AUnderwaterCharacter::InteractHold_Implementation(AActor* InstigatorActor)
 	
 	if (CharacterState == ECharacterState::Groggy)
 	{
+		AUnderwaterCharacter* UW = Cast<AUnderwaterCharacter>(InstigatorActor);
+		UW->OnGroggyReviveDelegate.Broadcast();
 		RequestRevive();
 	}
 }
@@ -1964,7 +1977,6 @@ void AUnderwaterCharacter::RequestRevive()
 		{
 			return;
 		}
-
 		SetCharacterState(ECharacterState::Normal);
 		const float RecoveryHealth = StatComponent->GetMaxHealth() * RecoveryHealthPercentage;
 		StatComponent->RestoreHealth(RecoveryHealth);
