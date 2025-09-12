@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "Monster/Monster.h"
@@ -14,6 +14,20 @@ class ABYSSDIVERUNDERWORLD_API AEyeStalker : public AMonster
 
 public:
 	AEyeStalker();
+
+protected:
+
+	virtual void BeginPlay() override;
+
+public:
+
+	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
+
+public:
+
+	virtual void NotifyLightExposure(float DeltaTime, float TotalExposedTime, const FVector& PlayerLocation, AActor* PlayerActor) override;
+	virtual void AddDetection(AActor* Actor);
+	virtual void RemoveDetection(AActor* Actor);
 
 public:
 	UFUNCTION(NetMulticast, Reliable)

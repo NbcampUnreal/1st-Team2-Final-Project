@@ -2,9 +2,11 @@
 
 #include "AbyssDiverUnderWorld.h"
 
-//#include "Monster/Boss/Enum/EBossState.h"
 #include "Monster/Serpmare/Serpmare.h"
 #include "Monster/MonsterAIController.h"
+#include "Character/UnderwaterCharacter.h"
+
+#include "Components/CapsuleComponent.h"
 
 UBTTask_SerpmareIdle::UBTTask_SerpmareIdle()
 {
@@ -47,6 +49,19 @@ void UBTTask_SerpmareIdle::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* No
 		{
 			TaskMemory->Serpmare->SetMonsterState(EMonsterState::Detected);
 			FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);	
+		}
+
+		TArray<AActor*> OverlappedActors;
+		TaskMemory->Serpmare->AttackCollision->GetOverlappingActors(OverlappedActors);
+
+		for (AActor* OverlappedActor : OverlappedActors)
+		{
+			AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(OverlappedActor);
+			if (IsValid(Player))
+			{
+				TaskMemory->Serpmare->AddDetection(Player);
+				break;
+			}
 		}
 	}
 }

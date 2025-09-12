@@ -1,7 +1,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Monster/Boss/Boss.h"
+#include "Monster/Monster.h"
+
 #include "Blowfish.generated.h"
 
 UCLASS()

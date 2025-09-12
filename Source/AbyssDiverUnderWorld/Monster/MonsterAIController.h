@@ -85,5 +85,9 @@ public:
 	void SetBlackboardPerceptionType(EPerceptionType InPerceptionType);
 
 	bool IsStateSame(EMonsterState State);
+
+	float GetSightRadius() const;
+	float GetLoseSightRadius() const;
+	float GetHearingRadius() const;
 #pragma endregion
 };

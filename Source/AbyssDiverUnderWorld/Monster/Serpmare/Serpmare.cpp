@@ -1,5 +1,8 @@
 ﻿#include "Monster/Serpmare/Serpmare.h"
 
+#include "Monster/Components/AquaticMovementComponent.h"
+#include "Monster/Components/TickControlComponent.h"
+
 #include "Character/UnderwaterCharacter.h"
 
 ASerpmare::ASerpmare()
@@ -16,6 +19,56 @@ void ASerpmare::BeginPlay()
 	Super::BeginPlay();
 	GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	GetMesh()->OnComponentBeginOverlap.AddDynamic(this, &ASerpmare::OnMeshOverlapBegin);
+
+	TickControlComponent->RegisterComponent(LowerBodyMesh);
+	TickControlComponent->RegisterComponent(WeakPointMesh);
+
+	if (AquaticMovementComponent)
+	{
+		TickControlComponent->UnregisterComponent(AquaticMovementComponent);
+	}
+}
+
+float ASerpmare::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+{
+	if (!HasAuthority())
+	{
+		return 0.0f;
+	}
+
+	const float Damage = AUnitBase::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+	if (IsValid(StatComponent))
+	{
+		FVector BloodLoc = GetMesh()->GetComponentLocation() + FVector(0, 0, 20.f);
+		FRotator BloodRot = GetActorRotation();
+		M_SpawnBloodEffect(BloodLoc, BloodRot);
+
+
+
+		AActor* InstigatorPlayer = IsValid(EventInstigator) ? EventInstigator->GetPawn() : nullptr;
+		if (StatComponent->GetCurrentHealth() <= 0)
+		{
+			OnDeath();
+			// Delegate Broadcasts for Achievements
+			OnMonsterDead.Broadcast(DamageCauser, this);
+		}
+		else
+		{
+			if (IsValid(HitReactAnimations))
+			{
+				M_PlayMontage(HitReactAnimations);
+			}
+			else if (MonsterSoundComponent)
+			{
+				MonsterSoundComponent->S_PlayHitReactSound();
+			}
+
+			// Serpmare는 피해를 입어도 어그로 끌리지 않음
+		}
+	}
+
+	return Damage;
 }
 
 void ASerpmare::Attack()
@@ -32,6 +85,11 @@ void ASerpmare::Attack()
 
 	GetWorldTimerManager().SetTimer(AttackIntervalTimer, this, &ASerpmare::InitAttackInterval, AttackInterval, false);
 	bCanAttack = false;
+}
+
+void ASerpmare::NotifyLightExposure(float DeltaTime, float TotalExposedTime, const FVector& PlayerLocation, AActor* PlayerActor)
+{
+	// Serpmare는 빛에 반응 하지 않음
 }
 
 void ASerpmare::AddDetection(AActor* Actor)

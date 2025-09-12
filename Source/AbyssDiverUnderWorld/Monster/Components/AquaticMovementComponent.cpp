@@ -112,6 +112,8 @@ void UAquaticMovementComponent::TickComponent(float DeltaTime, ELevelTick TickTy
 // === 이동 업데이트 ===
 void UAquaticMovementComponent::UpdateMovement(float DeltaTime)
 {
+    FString ForDebug = FString::Printf(TEXT("UAquaticMovementComponent::UpdateMovement(%s)"), *OwnerCharacter->GetName());
+    TRACE_CPUPROFILER_EVENT_SCOPE_STR_CONDITIONAL(*ForDebug, true);
     // 목표 도달 확인
     if (bHasTarget)
     {
@@ -233,7 +235,7 @@ void UAquaticMovementComponent::UpdateMovement(float DeltaTime)
         {
             FHitResult PredictHit;
             FVector CurrentLocation = OwnerCharacter->GetActorLocation();
-            
+            TRACE_CPUPROFILER_EVENT_SCOPE_TEXT(TEXT("UpdateMovement_CollisionChecks"));
             // 이동 방향으로 미리 체크
             if (GetWorld()->LineTraceSingleByChannel(PredictHit, CurrentLocation, NewLocation + CurrentVelocity.GetSafeNormal() * 50.0f, ECC_WorldStatic))
             {
@@ -260,6 +262,8 @@ void UAquaticMovementComponent::UpdateMovement(float DeltaTime)
 
 FVector UAquaticMovementComponent::CalculateSteeringForce() const
 {
+    FString ForDebug = FString::Printf(TEXT("UAquaticMovementComponent::CalculateSteeringForce(%s)"), *OwnerCharacter->GetName());
+    TRACE_CPUPROFILER_EVENT_SCOPE_STR_CONDITIONAL(*ForDebug, true);
     if (!bHasTarget) return FVector::ZeroVector;
 
     FVector ToTarget = TargetLocation - OwnerCharacter->GetActorLocation();
@@ -296,6 +300,8 @@ FVector UAquaticMovementComponent::CalculateSteeringForce() const
 
 FVector UAquaticMovementComponent::CalculateAvoidanceForce() 
 {
+    FString ForDebug = FString::Printf(TEXT("UAquaticMovementComponent::CalculateAvoidanceForce(%s)"), *OwnerCharacter->GetName());
+    TRACE_CPUPROFILER_EVENT_SCOPE_STR_CONDITIONAL(*ForDebug, true);
     FVector AvoidanceForce = FVector::ZeroVector;
     FVector CurrentLocation = OwnerCharacter->GetActorLocation();
     FVector Forward = OwnerCharacter->GetActorForwardVector();
@@ -481,6 +487,7 @@ FVector UAquaticMovementComponent::CalculateAvoidanceForce()
 // === 경로 관리 ===
 void UAquaticMovementComponent::UpdateTrajectory(float DeltaTime)
 {
+    TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("UAquaticMovementComponent::UpdateTrajectory"));
     // LOD 기반 기록 간격
     float RecordInterval = GetTrajectoryRecordInterval();
 
@@ -1070,6 +1077,7 @@ void UAquaticMovementComponent::GetPositionAndRotationAlongPath(float DistanceFr
 
 void UAquaticMovementComponent::UpdateBoneTrailsDistanceBased(float DeltaTime)
 {
+    TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("UAquaticMovementComponent::UpdateBoneTrailsDistanceBased"));
     if (!CharacterMesh) return;
 
     // 본 간 거리 계산이 안되어 있으면 계산
@@ -1238,6 +1246,7 @@ FTransform UAquaticMovementComponent::GetBoneTrailTransform(const FName& BoneNam
 // === 디버그 시각화 ===
 void UAquaticMovementComponent::DrawDebugVisualization()
 {
+    TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("UAquaticMovementComponent::DrawDebugVisualization"));
     if (!GetWorld()) return;
 
     // 경로 그리기

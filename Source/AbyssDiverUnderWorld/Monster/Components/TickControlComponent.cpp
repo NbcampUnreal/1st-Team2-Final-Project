@@ -311,6 +311,13 @@ void UTickControlComponent::UpdateTickRate()
     for (UActorComponent* Component : TargetComponents)
     {
         SetComponentTickRate(Component, TickInterval);
+        
+        // 임시로 TickInterval이 1000을 넘으면 틱 자체를 비활성화 하도록 설정
+        if (TickInterval > 1000.0f)
+        {
+            Component->SetComponentTickEnabled(false);
+        }
+
     }
 
 	// 모든 등록된 액터에 틱 레이트 적용
