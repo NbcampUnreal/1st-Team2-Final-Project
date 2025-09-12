@@ -42,6 +42,7 @@ void UAquaticMovementComponent::BeginPlay()
     OwnerCharacter = Cast<ACharacter>(GetOwner());
     if (OwnerCharacter->HasAuthority() == false)
     {
+        PrimaryComponentTick.bCanEverTick = false;
         SetComponentTickEnabled(false);
 	    return;
     }
