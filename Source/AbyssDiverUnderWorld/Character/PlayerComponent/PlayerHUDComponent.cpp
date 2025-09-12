@@ -148,7 +148,7 @@ void UPlayerHUDComponent::BeginPlay()
 
 		if (UDepthComponent* DepthComp = Character->FindComponentByClass<UDepthComponent>())
 		{
-			BindDeptWidgetFunction(DepthComp);
+			BindDepthWidgetFunction(DepthComp);
 		}
 
 		Character->OnEnvironmentStateChangedDelegate.AddDynamic(this, &UPlayerHUDComponent::UpdateEnvironmentState);
@@ -346,10 +346,20 @@ void UPlayerHUDComponent::SetCurrentPhaseOverlayVisible(bool bShouldVisible)
 	PlayerStatusWidget->SetCurrentPhaseOverlayVisible(bShouldVisible);
 }
 
-void UPlayerHUDComponent::BindDeptWidgetFunction(UDepthComponent* DepthComp)
+void UPlayerHUDComponent::BindDepthWidgetFunction(UDepthComponent* DepthComp)
 {
 	UDepthWidget* DepthWidget = PlayerStatusWidget->GetDepthWidget();
-	if (!DepthWidget || !DepthComp) return;
+	if (!DepthWidget)
+	{
+		UE_LOG(LogAbyssDiverCharacter, Warning, TEXT("DepthWidget is nullptr"));
+		return;
+	}
+	if (!DepthComp)
+	{
+		UE_LOG(LogAbyssDiverCharacter, Warning, TEXT("DepthComp is nullptr"));
+		return;
+	}
+	
 	DepthComp->OnDepthZoneChangedDelegate.AddDynamic(DepthWidget, &UDepthWidget::ApplyZoneChangeToWidget);
 	DepthComp->OnDepthUpdatedDelegate.AddDynamic(DepthWidget, &UDepthWidget::SetDepthText);
 }
@@ -524,7 +534,7 @@ void UPlayerHUDComponent::SetupHudWidgetToNewPawn(APawn* NewPawn, APlayerControl
 
 		if (UDepthComponent* DepthComp = UWCharacter->FindComponentByClass<UDepthComponent>())
 		{
-			BindDeptWidgetFunction(DepthComp);
+			BindDepthWidgetFunction(DepthComp);
 		}
 
 		UWCharacter->OnEnvironmentStateChangedDelegate.AddDynamic(this, &UPlayerHUDComponent::UpdateEnvironmentState);
