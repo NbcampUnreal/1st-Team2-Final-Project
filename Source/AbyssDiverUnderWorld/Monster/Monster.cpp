@@ -283,6 +283,7 @@ void AMonster::SetNewTargetLocation()
 	if (bDrawDebugLine)
 	{
 		DrawDebugSphere(GetWorld(), DesiredTargetLocation, 50.0f, 12, FColor::Red, false, 3.0f, 0, 5.0f);
+		DrawDebugLine(GetWorld(), CurrentLocation, DesiredTargetLocation, FColor::Red, false, 3.0f, 0, 3.0f);
 	}
 #endif
 
@@ -292,8 +293,8 @@ void AMonster::SetNewTargetLocation()
 		AIController->GetBlackboardComponent()->SetValueAsVector(BlackboardKeys::TargetLocationKey, DesiredTargetLocation);
 	}
 
-	DrawDebugSphere(GetWorld(), DesiredTargetLocation, 50.0f, 12, FColor::Red, false, 3.0f, 0, 5.0f);
-	DrawDebugLine(GetWorld(), CurrentLocation, DesiredTargetLocation, FColor::Red, false, 3.0f, 0, 3.0f);
+	//DrawDebugSphere(GetWorld(), DesiredTargetLocation, 50.0f, 12, FColor::Red, false, 3.0f, 0, 5.0f);
+	
 }
 
 void AMonster::PerformNormalMovement(const float& InDeltaTime)
