@@ -178,7 +178,7 @@ protected:
 	TObjectPtr<UAnimMontage> CurrentAttackAnim;
 
 	// UPROPERTY(Replicated, BlueprintReadWrite)
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(Replicated, BlueprintReadWrite)
 	EMonsterState MonsterState;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AI|AttackAnimation")
