@@ -33,8 +33,8 @@ float AEyeStalker::TakeDamage(float DamageAmount, FDamageEvent const& DamageEven
 		return Damage;
 	}
 
-	AActor* InstigatorPlayer = IsValid(EventInstigator) ? EventInstigator->GetPawn() : nullptr;
-	if (InstigatorPlayer == nullptr)
+	AActor* InstigatorPlayer = IsValid(EventInstigator) ? EventInstigator->GetPawn() : DamageCauser;
+	if (IsValid(InstigatorPlayer)== false)
 	{
 		LOGV(Error, TEXT("Instigator is not valid"));
 		return Damage;

@@ -558,8 +558,8 @@ float AMonster::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, 
 				return Damage;
 			}
 
-			AActor* InstigatorPlayer = IsValid(EventInstigator) ? EventInstigator->GetPawn() : nullptr;
-			if (InstigatorPlayer == nullptr)
+			AActor* InstigatorPlayer = IsValid(EventInstigator) ? EventInstigator->GetPawn() : DamageCauser;
+			if (IsValid(InstigatorPlayer) == false)
 			{
 				LOGV(Warning, TEXT("InstigatorPlayer is not valid, So Detection Is Failed (%s)"), *GetName());
 				return Damage;
