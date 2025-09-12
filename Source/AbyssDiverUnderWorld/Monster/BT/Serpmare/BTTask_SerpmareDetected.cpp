@@ -1,6 +1,5 @@
 #include "Monster/BT/Serpmare/BTTask_SerpmareDetected.h"
 
-//#include "Monster/Boss/Enum/EBossState.h"
 #include "Monster/Serpmare/Serpmare.h"
 #include "Monster/MonsterAIController.h"
 
@@ -61,6 +60,8 @@ void UBTTask_SerpmareDetected::TickTask(UBehaviorTreeComponent& OwnerComp, uint8
 				TaskMemory->Serpmare->SetMonsterState(EMonsterState::Idle);
 				FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);	
 			}
+
+			TaskMemory->Serpmare->ForceRemoveDetectedPlayers();
 		}
 		else
 		{

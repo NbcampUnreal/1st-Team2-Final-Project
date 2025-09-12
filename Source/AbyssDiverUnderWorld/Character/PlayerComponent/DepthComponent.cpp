@@ -45,22 +45,23 @@ void UDepthComponent::GetMapDepthData()
 	UDataTableSubsystem* DataTableSubsystem = GameInstance->GetSubsystem<UDataTableSubsystem>();
 	if (!DataTableSubsystem)
 	{
-		UE_LOG(LogTemp, Error, TEXT("Depth: Failed to get DataTableSubsystem"));
+		UE_LOG(LogAbyssDiverCharacter, Error, TEXT("Depth: Failed to get DataTableSubsystem"));
 		return;
 	}
 
 	UADWorldSubsystem* WorldSubsystem = GetWorld()->GetSubsystem<UADWorldSubsystem>();
 	if (!WorldSubsystem)
 	{
-		UE_LOG(LogTemp, Error, TEXT("Depth: Failed to get WorldSubsystem"));
+		UE_LOG(LogAbyssDiverCharacter, Error, TEXT("Depth: Failed to get WorldSubsystem"));
 		return;
 	}
 	
 	FName MapName = FName(WorldSubsystem->GetCurrentLevelName());
+	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Depth Component: Current MapName = %s"), *MapName.ToString());
 	const FMapDepthRow* MapDepthRow = DataTableSubsystem->GetDepthZoneDataRow(MapName);
 	if (!MapDepthRow)
 	{
-		UE_LOG(LogTemp, Error, TEXT("Failed to get MapDepthRow for %s"), *UEnum::GetValueAsString(GameInstance->SelectedLevelName));
+		UE_LOG(LogAbyssDiverCharacter, Error, TEXT("Failed to get MapDepthRow for %s"), *MapName.ToString());
 		return;
 	}
 

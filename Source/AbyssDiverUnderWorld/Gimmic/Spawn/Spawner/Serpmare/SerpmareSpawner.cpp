@@ -9,13 +9,13 @@
 
 ASerpmareSpawner::ASerpmareSpawner()
 {
-	static ConstructorHelpers::FClassFinder<ASerpmare> BP_MiniSerpmare(TEXT("/Game/_AbyssDiver/Blueprints/Boss/Serpmare/BP_Serpmare"));
+	static ConstructorHelpers::FClassFinder<ASerpmare> BP_MiniSerpmare(TEXT("/Game/_AbyssDiver/Blueprints/Monster/Serpmare/BP_Serpmare"));
 	if (BP_MiniSerpmare.Succeeded())
 	{
 		MiniSerpmareGroup.SerpmareClass = BP_MiniSerpmare.Class;
 	}
 
-	static ConstructorHelpers::FClassFinder<ASerpmare> BP_BigSerpmare(TEXT("/Game/_AbyssDiver/Blueprints/Boss/Serpmare/BP_Big_Serpmare"));
+	static ConstructorHelpers::FClassFinder<ASerpmare> BP_BigSerpmare(TEXT("/Game/_AbyssDiver/Blueprints/Monster/Serpmare/BP_Big_Serpmare"));
 	if (BP_BigSerpmare.Succeeded())
 	{
 		BigSerpmareGroup.SerpmareClass = BP_BigSerpmare.Class;

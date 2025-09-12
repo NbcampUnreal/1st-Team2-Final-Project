@@ -1,4 +1,4 @@
-#include "Monster/Boss/Blowfish/Blowfish.h"
+#include "Monster/Blowfish/Blowfish.h"
 #include "AbyssDiverUnderWorld.h"
 #include "NiagaraFunctionLibrary.h"
 #include "Character/StatComponent.h"
@@ -82,15 +82,15 @@ void ABlowfish::Explosion()
 	GetWorld(), BloodEffect, GetActorLocation(), FRotator::ZeroRotator, FVector(1), true, true );
 	
 	// 폭발 디버그 구체 그리기 (파란색, 1초 동안 표시)
-	DrawDebugSphere(
-		GetWorld(),
-		GetActorLocation(),
-		ExplosionRadius,
-		32,                    // 세그먼트 수 (더 높이면 원형이 매끄러워짐)
-		FColor::Red,           // 색상
-		false,                 // 지속 여부 (true: 영구)
-		1.0f                   // 표시 시간 (초)
-	);
+	//DrawDebugSphere(
+	//	GetWorld(),
+	//	GetActorLocation(),
+	//	ExplosionRadius,
+	//	32,                    // 세그먼트 수 (더 높이면 원형이 매끄러워짐)
+	//	FColor::Red,           // 색상
+	//	false,                 // 지속 여부 (true: 영구)
+	//	1.0f                   // 표시 시간 (초)
+	//);
 
 	TArray<FOverlapResult> Overlaps;
 

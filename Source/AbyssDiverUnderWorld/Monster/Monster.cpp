@@ -1,24 +1,25 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+﻿#include "Monster/Monster.h"
 
-
-#include "Monster/Monster.h"
-#include "Components/SplineComponent.h"
-#include "Character/StatComponent.h"
-#include "BehaviorTree/BlackboardComponent.h"
-#include "Net/UnrealNetwork.h"
-#include "GameFramework/CharacterMovementComponent.h"
 #include "AbyssDiverUnderWorld.h"
-#include "NiagaraFunctionLibrary.h"
-#include "Character/UnderwaterCharacter.h"
-#include "Components/CapsuleComponent.h"
-#include "Monster/Effect/CameraControllerComponent.h"
-#include "Container/BlackboardKeys.h"
-#include "Kismet/GameplayStatics.h"
-#include "Interactable/OtherActors/Radars/RadarReturn2DComponent.h"
 
 #include "Monster/Components/AquaticMovementComponent.h"
 #include "Monster/Components/TickControlComponent.h"
 #include "Monster/EPerceptionType.h"
+#include "Monster/Effect/CameraControllerComponent.h"
+
+#include "Character/UnderwaterCharacter.h"
+#include "Character/StatComponent.h"
+
+#include "Container/BlackboardKeys.h"
+#include "Interactable/OtherActors/Radars/RadarReturn2DComponent.h"
+
+#include "Components/CapsuleComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "NiagaraFunctionLibrary.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "Net/UnrealNetwork.h"
+#include "BehaviorTree/BlackboardComponent.h"
+#include "Components/SplineComponent.h"
 
 AMonster::AMonster()
 {
@@ -64,6 +65,7 @@ AMonster::AMonster()
 
 	// 틱 최적화용 컴포넌트 초기화
 	TickControlComponent = CreateDefaultSubobject<UTickControlComponent>(TEXT("Tick Control Component"));
+
 }
 
 void AMonster::BeginPlay()
@@ -76,6 +78,7 @@ void AMonster::BeginPlay()
 	if (AquaticMovementComponent)
 	{
 		AquaticMovementComponent->InitComponent(this);
+		TickControlComponent->RegisterComponent(AquaticMovementComponent);
 	}
 
 	CurrentMoveSpeed = StatComponent->MoveSpeed;
@@ -280,6 +283,7 @@ void AMonster::SetNewTargetLocation()
 	if (bDrawDebugLine)
 	{
 		DrawDebugSphere(GetWorld(), DesiredTargetLocation, 50.0f, 12, FColor::Red, false, 3.0f, 0, 5.0f);
+		DrawDebugLine(GetWorld(), CurrentLocation, DesiredTargetLocation, FColor::Red, false, 3.0f, 0, 3.0f);
 	}
 #endif
 
@@ -289,8 +293,8 @@ void AMonster::SetNewTargetLocation()
 		AIController->GetBlackboardComponent()->SetValueAsVector(BlackboardKeys::TargetLocationKey, DesiredTargetLocation);
 	}
 
-	DrawDebugSphere(GetWorld(), DesiredTargetLocation, 50.0f, 12, FColor::Red, false, 3.0f, 0, 5.0f);
-	DrawDebugLine(GetWorld(), CurrentLocation, DesiredTargetLocation, FColor::Red, false, 3.0f, 0, 3.0f);
+	//DrawDebugSphere(GetWorld(), DesiredTargetLocation, 50.0f, 12, FColor::Red, false, 3.0f, 0, 5.0f);
+	
 }
 
 void AMonster::PerformNormalMovement(const float& InDeltaTime)
@@ -394,7 +398,7 @@ void AMonster::PerformChasing(const float& InDeltaTime)
 		return;
 	}
 
-	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(AIController->GetBlackboardComponent()->GetValueAsObject("TargetPlayer"));
+	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(AIController->GetBlackboardComponent()->GetValueAsObject(BlackboardKeys::TargetPlayerKey));
 	if (!IsValid(Player))
 	{
 		LOG(TEXT("PerformChasing: Player is not valid"));
@@ -527,8 +531,8 @@ float AMonster::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, 
 		FVector BloodLoc = GetMesh()->GetComponentLocation() + FVector(0, 0, 20.f);
 		FRotator BloodRot = GetActorRotation();
 		M_SpawnBloodEffect(BloodLoc, BloodRot);
+
 		
-		AActor* InstigatorPlayer = IsValid(EventInstigator) ? EventInstigator->GetPawn() : nullptr;
 		if (StatComponent->GetCurrentHealth() <= 0)
 		{
 			OnDeath();
@@ -547,9 +551,29 @@ float AMonster::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, 
 			}
 			
 			// If aggro is not on TargetPlayer, set aggro
-			AddDetection(InstigatorPlayer);
+			AMonsterAIController* AIC = Cast<AMonsterAIController>(GetController());
+			if (AIC == nullptr)
+			{
+				LOGV(Error, TEXT("AIController Is not valid"));
+				return Damage;
+			}
+
+			AActor* InstigatorPlayer = IsValid(EventInstigator) ? EventInstigator->GetPawn() : DamageCauser;
+			if (IsValid(InstigatorPlayer) == false)
+			{
+				LOGV(Warning, TEXT("InstigatorPlayer is not valid, So Detection Is Failed (%s)"), *GetName());
+				return Damage;
+			}
+
+			// 시야 범위나 청각 범위 중 넓은 범위 내에서 데미지를 받았을 경우 어그로 Set
+			float RecogniztionRange = FMath::Max3(AIC->GetSightRadius(), AIC->GetLoseSightRadius(), AIC->GetHearingRadius());
+			if ((InstigatorPlayer->GetActorLocation() - GetActorLocation()).Length() <= RecogniztionRange)
+			{
+				AddDetection(InstigatorPlayer);
+			}
 		}
 	}
+
 	return Damage;
 }
 
@@ -719,6 +743,11 @@ void AMonster::AddDetection(AActor* Actor)
 	if (!IsValid(Actor) || !IsValid(this)) return;
 	if (!HasAuthority()) return;
 
+	if (GetMonsterState() == EMonsterState::Death)
+	{
+		return;
+	}
+
 	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor);
 	if (!Player) return;
 
@@ -743,7 +772,8 @@ void AMonster::AddDetection(AActor* Actor)
 
 		if (BlackboardComponent)
 		{
-			BlackboardComponent->SetValueAsObject(BlackboardKeys::TargetPlayerKey, TargetPlayer.Get());
+			//BlackboardComponent->SetValueAsObject(BlackboardKeys::TargetPlayerKey, TargetPlayer.Get());
+			SetTarget(TargetPlayer.Get());
 			ApplyMonsterStateChange(EMonsterState::Chase);
 		}
 	}
@@ -782,7 +812,8 @@ void AMonster::RemoveDetection(AActor* Actor)
 
 		if (BlackboardComponent)
 		{
-			BlackboardComponent->ClearValue(BlackboardKeys::TargetPlayerKey);
+			//BlackboardComponent->ClearValue(BlackboardKeys::TargetPlayerKey);
+			SetTarget(nullptr);
 		}
 
 		// 후보가 없으면 바로 Patrol (루프 스킵)
@@ -806,7 +837,8 @@ void AMonster::RemoveDetection(AActor* Actor)
 
 				if (BlackboardComponent)
 				{
-					BlackboardComponent->SetValueAsObject(BlackboardKeys::TargetPlayerKey, TargetPlayer.Get());
+					//BlackboardComponent->SetValueAsObject(BlackboardKeys::TargetPlayerKey, TargetPlayer.Get());
+					SetTarget(TargetPlayer.Get());
 				}
 				return;
 			}
@@ -851,7 +883,8 @@ void AMonster::ForceRemoveDetectedPlayers()
 	InitTarget();
 	if (BlackboardComponent)
 	{
-		BlackboardComponent->ClearValue(BlackboardKeys::TargetPlayerKey);
+		//BlackboardComponent->ClearValue(BlackboardKeys::TargetPlayerKey);
+		SetTarget(nullptr);
 	}
 }
 
@@ -987,6 +1020,7 @@ void AMonster::SetMaxSwimSpeed(float Speed)
 void AMonster::SetTarget(AUnderwaterCharacter* Target)
 {
 	TargetPlayer = Target;
+	AIController->GetBlackboardComponent()->SetValueAsObject(BlackboardKeys::TargetPlayerKey, Target);
 }
 
 

@@ -19,9 +19,14 @@ protected:
 
 public:
 
+	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
+
+public:
+
+
 	virtual void Attack() override;
 
-protected:
+	virtual void NotifyLightExposure(float DeltaTime, float TotalExposedTime, const FVector& PlayerLocation, AActor* PlayerActor) override;
 
 	virtual void AddDetection(AActor* Actor) override;
 

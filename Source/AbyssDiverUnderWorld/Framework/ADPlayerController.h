@@ -139,6 +139,18 @@ protected:
 	UFUNCTION(Exec)
 	void HideNameWidgets();
 
+	/** 조준선 위젯의 표시 상태를 토글 */
+	UFUNCTION(Exec)
+	void ToggleCrosshairWidget();
+
+	/** 조준선 위젯을 표시하도록 설정 */
+	UFUNCTION(Exec)
+	void ShowCrosshairWidget();
+
+	/** 조준선 위젯을 숨기도록 설정 */
+	UFUNCTION(Exec)
+	void HideCrosshairWidget();
+
 	UFUNCTION(Server, Reliable)
 	void S_GainShield(int Amount);
 	
@@ -195,7 +207,12 @@ private:
 	FTimerHandle CameraBlankTimerHandle;
 
 	/** Name Widget 가시성 표시 여부. 비활성화되면 모든 Name Widget이 숨김 처리된다. */
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	uint8 bIsNameWidgetEnabled : 1;
+
+	/** 조준선 위젯의 가시성 표시 여부 */
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	uint8 bIsCrosshairWidgetVisible : 1 = true;
 	
 #pragma endregion 
 

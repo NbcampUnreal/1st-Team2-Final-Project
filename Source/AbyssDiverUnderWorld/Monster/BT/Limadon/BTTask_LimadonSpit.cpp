@@ -22,6 +22,7 @@ EBTNodeResult::Type UBTTask_LimadonSpit::ExecuteTask(UBehaviorTreeComponent& Own
 	if (!TaskMemory->Limadon.IsValid() || !TaskMemory->AIController.IsValid()) return EBTNodeResult::Failed;
 	
 	TaskMemory->Limadon->M_PlayMontage(TaskMemory->Limadon->SpitAnimation);
-	
+	TaskMemory->Limadon->ForceRemoveDetectedPlayers();
+
 	return EBTNodeResult::Succeeded;
 }

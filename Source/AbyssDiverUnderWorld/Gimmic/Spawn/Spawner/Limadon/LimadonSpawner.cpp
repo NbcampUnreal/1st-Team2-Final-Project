@@ -15,7 +15,7 @@ ALimadonSpawner::ALimadonSpawner()
 	MaxLimadonSpawnCount = 5;
 	MaxLimadonSpawnDistance = 1300.f;
 	
-	static ConstructorHelpers::FClassFinder<ALimadon> BP_Limadon(TEXT("/Game/_AbyssDiver/Blueprints/Boss/Limadon/BP_Limadon"));
+	static ConstructorHelpers::FClassFinder<ALimadon> BP_Limadon(TEXT("/Game/_AbyssDiver/Blueprints/Monster/Limadon/BP_Limadon"));
 	if (BP_Limadon.Succeeded())
 	{
 		LimadonClass = BP_Limadon.Class;

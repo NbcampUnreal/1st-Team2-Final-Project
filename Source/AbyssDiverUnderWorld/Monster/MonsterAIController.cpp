@@ -2,16 +2,19 @@
 
 
 #include "Monster/MonsterAIController.h"
-#include "BehaviorTree/BlackboardComponent.h"
-#include "Character/UnderwaterCharacter.h"
+
 #include "AbyssDiverUnderWorld.h"
+#include "Character/UnderwaterCharacter.h"
+#include "Container/BlackboardKeys.h"
+
 #include "Monster/EMonsterState.h"
 #include "Monster/Monster.h"
 #include "Monster/Components/AquaticMovementComponent.h"
-#include "GenericTeamAgentInterface.h"
 #include "Monster/HorrorCreature/HorrorCreature.h"
-#include "AbyssDiverUnderWorld.h"
-#include "Container/BlackboardKeys.h"
+
+#include "BehaviorTree/BlackboardComponent.h"
+#include "GenericTeamAgentInterface.h"
+#include "Perception/AISenseConfig_Hearing.h"
 
 AMonsterAIController::AMonsterAIController()
 {
@@ -138,4 +141,58 @@ void AMonsterAIController::SetBlackboardPerceptionType(EPerceptionType InPercept
 bool AMonsterAIController::IsStateSame(EMonsterState State)
 {
 	return (GetBlackboardComponent()->GetValueAsEnum(BlackboardKeys::MonsterStateKey) == static_cast<uint8>(State));
+}
+
+float AMonsterAIController::GetSightRadius() const
+{
+	if (!IsValid(AIPerceptionComponent))
+	{
+		LOGV(Error, TEXT("AIPerceptionComponent is Invalid, return 0.0f"));
+		return 0.0f;
+	}
+
+	const UAISenseConfig_Sight* SightConfigInstance = Cast<UAISenseConfig_Sight>(AIPerceptionComponent->GetSenseConfig(UAISense::GetSenseID(UAISense_Sight::StaticClass())));
+	if (!SightConfigInstance)
+	{
+		LOGV(Error, TEXT("SightConfigInstance is Invalid, return 0.0f"));
+		return 0.0f;
+	}
+
+	return SightConfigInstance->SightRadius;
+}
+
+float AMonsterAIController::GetLoseSightRadius() const
+{
+	if (!IsValid(AIPerceptionComponent))
+	{
+		LOGV(Error, TEXT("AIPerceptionComponent is Invalid, return 0.0f"));
+		return 0.0f;
+	}
+
+	const UAISenseConfig_Sight* SightConfigInstance = Cast<UAISenseConfig_Sight>(AIPerceptionComponent->GetSenseConfig(UAISense::GetSenseID(UAISense_Sight::StaticClass())));
+	if (!SightConfigInstance)
+	{
+		LOGV(Error, TEXT("SightConfigInstance is Invalid, return 0.0f"));
+		return 0.0f;
+	}
+
+	return SightConfigInstance->LoseSightRadius;
+}
+
+float AMonsterAIController::GetHearingRadius() const
+{
+	if (!IsValid(AIPerceptionComponent))
+	{
+		LOGV(Error, TEXT("AIPerceptionComponent is Invalid, return 0.0f"));
+		return 0.0f;
+	}
+
+	const UAISenseConfig_Hearing* HearingConfigInstance = Cast<UAISenseConfig_Hearing>(AIPerceptionComponent->GetSenseConfig(UAISense::GetSenseID(UAISenseConfig_Hearing::StaticClass())));
+	if (!HearingConfigInstance)
+	{
+		LOGV(Log, TEXT("HearingConfigInstance is Invalid, return 0.0f"));
+		return 0.0f;
+	}
+
+	return HearingConfigInstance->HearingRange;
 }
