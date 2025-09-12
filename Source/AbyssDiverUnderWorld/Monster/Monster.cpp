@@ -38,8 +38,15 @@ AMonster::AMonster()
 	bIsChasing = false;
 
 	bUseControllerRotationYaw = false;
-	bReplicates = true;
-	SetReplicatingMovement(true);
+	
+	USkeletalMeshComponent* MeshComp = GetMesh();
+	if (MeshComp)
+	{
+		MeshComp->SetIsReplicated(true);                  // 메시도 네트워크 복제 (랙돌 적용 하려면 메시 컴포넌트를 replicated 해야 클라에 물리 상태 전달 가능)
+		MeshComp->bEnablePhysicsOnDedicatedServer = true; // 켜줘야 물리 시뮬레이션 데디, 리슨 동작함.
+	}
+	bReplicates = true; // 액터 복제 활성화
+	SetReplicatingMovement(true); // 평소엔 캡슐 트랜스폼 복제 (랙돌 시 false로 변경)
 	
 	MonsterSoundComponent = CreateDefaultSubobject<UMonsterSoundComponent>(TEXT("MonsterSoundComponent"));
 
@@ -112,6 +119,7 @@ void AMonster::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLi
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(AMonster, MonsterState);
+	DOREPLIFETIME(AMonster, bIsRagdoll);
 }
 
 void AMonster::OnAttackCollisionOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
@@ -592,9 +600,6 @@ void AMonster::OnDeath()
 	// 사망하면 모든 어그로 해제
 	ForceRemoveDetectedPlayers();
 
-	// 렉돌 활성화 및 AquaticMovementComponent Tick 비활성화
-	HandleSetting_OnDeath();
-
 	// 모든 몽타주 재생 정지
 	M_OnDeath();
 
@@ -604,6 +609,9 @@ void AMonster::OnDeath()
 	FTimerHandle DestroyTimerHandle;
 	if (HasAuthority())
 	{
+		bIsRagdoll = true;   // 상태만 바꾸면 클라에 자동 복제됨
+		OnRep_Ragdoll();     // 서버에서도 즉시 적용
+
 		GetWorldTimerManager().SetTimer(
 			DestroyTimerHandle, this, &AMonster::DelayDestroyed, 30.0f, false
 		);
@@ -626,6 +634,16 @@ void AMonster::HandleSetting_OnDeath()
 		AquaticMovementComponent->SetComponentTickEnabled(false);
 	}
 	ApplyPhysicsSimulation();
+	SetReplicatingMovement(false); // 캡슐 이동 복제 중지
+}
+
+void AMonster::OnRep_Ragdoll()
+{
+	if (bIsRagdoll)
+	{
+		// 렉돌 활성화 및 AquaticMovementComponent Tick 비활성화
+		HandleSetting_OnDeath();
+	}
 }
 
 void AMonster::OnMeshOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
@@ -666,6 +684,7 @@ void AMonster::ApplyPhysicsSimulation()
 	{
 		MeshComp->SetCollisionProfileName(TEXT("Ragdoll"));
 		MeshComp->SetEnableGravity(true);
+		MeshComp->SetAllBodiesSimulatePhysics(true);
 		MeshComp->SetSimulatePhysics(true);
 	}
 }
