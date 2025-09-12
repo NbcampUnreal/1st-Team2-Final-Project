@@ -111,6 +111,8 @@ void AADDroneSeller::Interact_Implementation(AActor* InstigatorActor)
 
 	if (!HasAuthority() || !bIsActive) return;
 
+	SubmitPlayer(InstigatorActor);
+	
 	int32 Gained = SellAllExchangeableItems(InstigatorActor);
 	if (Gained <= 0)
 	{

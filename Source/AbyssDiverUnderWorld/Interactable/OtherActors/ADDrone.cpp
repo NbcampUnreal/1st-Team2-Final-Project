@@ -130,11 +130,6 @@ void AADDrone::Interact_Implementation(AActor* InstigatorActor)
 		TutorialMode->TriggerResurrectionSequence();
 		return;
 	}
-	else
-	{
-		AGameModeBase* CurrentGameMode = GetWorld()->GetAuthGameMode();
-		UE_LOG(LogTemp, Error, TEXT("ADDrone - 튜토리얼 게임 모드 변환 실패! 현재 게임 모드: %s"), *GetNameSafe(CurrentGameMode));
-	}
 
 	if (!HasAuthority() || !bIsActive || !IsValid(CurrentSeller) || bIsFlying) return;
 
