@@ -3,8 +3,7 @@
 #include "CoreMinimal.h"
 #include "MissionEnum.generated.h"
 
-
-ENUM(BlueprintType)
+UENUM(BlueprintType)
 enum class EMissionType : uint8
 {
 	AggroTrigger,

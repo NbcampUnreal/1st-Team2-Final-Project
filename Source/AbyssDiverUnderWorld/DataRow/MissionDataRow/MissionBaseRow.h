@@ -2,48 +2,8 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
+#include "Missions/MissionEnum.h"
 #include "MissionBaseRow.generated.h"
-
-UENUM(BlueprintType)
-enum class EMissionType : uint8
-{
-	AggroTrigger,
-	Interaction,
-	ItemCollection,
-	ItemUse,
-	KillMonster,
-	MAX UMETA(Hidden)
-};
-
-UENUM(BlueprintType)
-enum class EMissionConditionType : uint8
-{
-	AtLeast, // GoalCount 이상일 경우 조건 만족
-	AtMost, // GoalCount 이하일 경우 조건 만족
-	EqualTo, // GoalCount와 같은 경우 조건 만족
-	Custom, // 자율
-};
-
-UENUM(BlueprintType)
-enum class ELevelName : uint8
-{
-	None ,
-	ShallowWaterLevel,
-	DeepWaterLevel,
-};
-
-struct FLevelNameUtils
-{
-	static FName ToMapName(ELevelName Level)
-	{
-		switch (Level)
-		{
-		case ELevelName::ShallowWaterLevel: return FName("ShallowWater");
-		case ELevelName::DeepWaterLevel:    return FName("DeepWater");
-		default: return NAME_None;
-		}
-	}
-};
 
 USTRUCT(BlueprintType)
 struct FMissionBaseRow : public FTableRowBase

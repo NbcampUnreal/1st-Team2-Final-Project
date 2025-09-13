@@ -6,6 +6,13 @@
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 
+//Mission includes
+#include "Missions/AggroTriggerMission.h"
+#include "Missions/InteractionMission.h"
+#include "Missions/ItemCollectionMission.h"
+#include "Missions/ItemUseMission.h"
+#include "Missions/KillMonsterMission.h"
+
 UMissionManagerComponent::UMissionManagerComponent()
 {
     SetIsReplicatedByDefault(true); // 컴포넌트 복제 활성화
@@ -28,11 +35,6 @@ void UMissionManagerComponent::BeginPlay()
         }
     }
 
-    const bool bServer = (GetOwner() && GetOwner()->HasAuthority());
-    if (bServer)
-    {
-        WireHubEvents();
-    }
 }
 
 void UMissionManagerComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -41,7 +43,7 @@ void UMissionManagerComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProper
     DOREPLIFETIME(UMissionManagerComponent, ActiveStates);
 }
 
-void UMissionManagerComponent::S_SubmitMissions_Implementation(const TArray<FMissionData>& Selected)
+void UMissionManagerComponent::ApplySelectedMissions(const TArray<FMissionData>& Selected)
 {
     UnbindAll();
     ActiveMissions.Reset();
@@ -49,27 +51,108 @@ void UMissionManagerComponent::S_SubmitMissions_Implementation(const TArray<FMis
 
     for (const FMissionData& Choice : Selected)
     {
-        if (UMissionBase* M = CreateAndInitMission(Choice))
+        if (UMissionBase* Mission = CreateAndInitMission(Choice))
         {
             // 미션 완료 → 매니저로 콜백
-            M->OnCompleteMissionDelegate.BindUObject(this, &UMissionManagerComponent::HandleMissionComplete);
-            ActiveMissions.Add(M);
+            Mission->OnCompleteMissionDelegate.BindUObject(this, &UMissionManagerComponent::HandleMissionComplete);
+            Mission->OnMissionProgressDelegate.BindUObject(this, &UMissionManagerComponent::HandleMissionProgress); // ★ 추가
+            ActiveMissions.Add(Mission);
 
-            FMissionRuntimeState S;
-            S.MissionType = Choice.MissionType;
-            S.MissionIndex = Choice.MissionIndex;
+            FMissionRuntimeState State;
+            State.MissionType = Choice.MissionType;
+            State.MissionIndex = Choice.MissionIndex;
+            State.Current = 0;
+            State.bCompleted = false;
             // S.Goal = <DT에서 읽어 채우기>;  // MissionSubsystem로부터 읽어 세팅
-            ActiveStates.Add(S);
+            if (const FMissionBaseRow* MissionBaseRow = MissionSubsystem->GetMissionData(Choice.MissionType, Choice.MissionIndex))
+            {
+                State.Goal = MissionBaseRow->GoalCount;
+            }
+
+            ActiveStates.Add(State);
         }
     }
 
-    BindAll();
-    OnRep_Missions(); // 서버에서도 즉시 UI 트리거(선택)
+    OnActiveMissionCountChanged(); // <-- BindAll/UnbindAll 대신 이걸로
 }
 
 void UMissionManagerComponent::OnRep_Missions()
 {
-    // 클라: HUD/Tablet 새로고침 (바인딩한 위젯/컴포넌트에서 읽어 사용)
+#if !UE_BUILD_SHIPPING
+    UE_LOG(LogTemp, Verbose, TEXT("[Client] OnRep_Missions: %d states"), ActiveStates.Num());
+    for (const FMissionRuntimeState& S : ActiveStates)
+    {
+        UE_LOG(LogTemp, Verbose, TEXT("  - Type=%d Index=%d Cur=%d Goal=%d Completed=%s"),
+            static_cast<int32>(S.MissionType),
+            static_cast<int32>(S.MissionIndex),
+            S.Current, S.Goal,
+            S.bCompleted ? TEXT("true") : TEXT("false"));
+    }
+#endif
+
+    // UI에 알림: 위젯/PC/HUD에서 이 BP 이벤트를 받아서 갱신하면 된다.
+    BP_OnMissionStatesUpdated(ActiveStates);
+}
+
+void UMissionManagerComponent::HandleItemCollected(uint8 ItemId, int32 Amount)
+{
+    if (!(GetOwner() && GetOwner()->HasAuthority())) return;
+
+    for (TObjectPtr<UMissionBase>& Mission : ActiveMissions)
+    {
+        if (Mission) { Mission->NotifyItemCollected(ItemId, Amount); } // 가상함수(아래 2장 참고)
+    }
+}
+
+void UMissionManagerComponent::HandleItemUsed(uint8 ItemId, int32 Amount)
+{
+    if (!(GetOwner() && GetOwner()->HasAuthority())) return;
+    for (TObjectPtr<UMissionBase>& Mission : ActiveMissions)
+    {
+        if (Mission) { Mission->NotifyItemUsed(ItemId, Amount); }
+    }
+}
+
+void UMissionManagerComponent::HandleInteracted(FGameplayTag Tag)
+{
+    if (!(GetOwner() && GetOwner()->HasAuthority())) return;
+    for (TObjectPtr<UMissionBase>& Mission : ActiveMissions)
+    {
+        if (Mission) { Mission->NotifyInteracted(Tag); }
+    }
+}
+
+void UMissionManagerComponent::HandleMonsterKilled(FName UnitId)
+{
+    if (!(GetOwner() && GetOwner()->HasAuthority())) return;
+    for (TObjectPtr<UMissionBase>& Mission : ActiveMissions)
+    {
+        if (Mission) { Mission->NotifyMonsterKilled(UnitId); }
+    }
+}
+
+void UMissionManagerComponent::HandleAggro(FGameplayTag Tag)
+{
+    if (!(GetOwner() && GetOwner()->HasAuthority())) return;
+    for (TObjectPtr<UMissionBase>& Mission : ActiveMissions)
+    {
+        if (Mission) { Mission->NotifyAggroTriggered(Tag); }
+    }
+}
+
+void UMissionManagerComponent::HandleMissionProgress(EMissionType MissionType, uint8 MissionIndex, int32 Current, int32 Goal)
+{
+    for (FMissionRuntimeState& State : ActiveStates)
+    {
+        if (State.MissionType == MissionType && State.MissionIndex == MissionIndex)
+        {
+			State.Current = Current;
+            State.Goal = Goal;
+            break;
+        }
+    }
+
+    OnRep_Missions(); 
 }
 
 void UMissionManagerComponent::SetProgress(uint8 Slot, int32 NewCurrent, int32 NewGoal, bool bForceRep)
@@ -80,7 +163,17 @@ void UMissionManagerComponent::SetProgress(uint8 Slot, int32 NewCurrent, int32 N
     if (bForceRep) { OnRep_Missions(); }
 }
 
-void UMissionManagerComponent::HandleMissionComplete(const EMissionType& Type, const uint8& Index)
+void UMissionManagerComponent::OnActiveMissionCountChanged()
+{
+    if (ActiveMissions.Num() > 0)
+        WireHubEvents();
+    else
+    {
+        UnbindAll();
+    }
+}
+
+void UMissionManagerComponent::HandleMissionComplete(EMissionType Type, uint8 Index)
 {
     for (FMissionRuntimeState& S : ActiveStates)
     {
@@ -96,6 +189,7 @@ void UMissionManagerComponent::HandleMissionComplete(const EMissionType& Type, c
 
 UMissionBase* UMissionManagerComponent::CreateAndInitMission(const FMissionData& Choice)
 {
+    check(MissionSubsystem);
     const EMissionType Type = Choice.MissionType;
     const uint8 Index = Choice.MissionIndex;
 
@@ -103,32 +197,77 @@ UMissionBase* UMissionManagerComponent::CreateAndInitMission(const FMissionData&
     {
     case EMissionType::AggroTrigger:
     {
-        // 기존: NewObject<UAggroTriggerMission>(this) + DT에서 AggroMissionParams 구성 + Init
-        // 소스 위치: Subsystem의 switch 블록 참고. 
-        // return NewMission;
-        break;
+        UAggroTriggerMission* Mission = NewObject<UAggroTriggerMission>(this);
+        const FAggroTriggerMissionRow* Row = MissionSubsystem->GetAggroTriggerMissionData(EAggroTriggerMission(Index));
+        if (!Row) return nullptr;
+
+        FAggroMissionInitParams P(
+            Row->MissionType, Row->GoalCount, Row->ConditionType,
+            Row->MissionName, Row->MissionDescription, Row->ExtraValues,
+            Row->bShouldCompleteInstantly
+        );
+        Mission->InitMission(P, EAggroTriggerMission(Index));
+        return CastChecked<UMissionBase>(Mission);
     }
     case EMissionType::KillMonster:
     {
-        // Subsystem 로직 그대로 이식 (DT에서 UnitId/Interval 등 읽어 Init) 
-        break;
+        UKillMonsterMission* Mission = NewObject<UKillMonsterMission>(this);
+        const FKillMonsterMissionRow* Row = MissionSubsystem->GetKillMonsterMissionData(EKillMonsterMission(Index));
+        if (!Row) return nullptr;
+
+        FKillMissionInitParams P(
+            Row->MissionType, Row->GoalCount, Row->ConditionType,
+            Row->MissionName, Row->MissionDescription, Row->ExtraValues,
+            Row->bShouldCompleteInstantly, Row->UnitId,
+            Row->NeededSimultaneousKillCount, Row->KillInterval
+        );
+        Mission->InitMission(P, EKillMonsterMission(Index));
+        return CastChecked<UMissionBase>(Mission);
     }
     case EMissionType::Interaction:
     {
-        // Subsystem 로직 그대로 이식 (InteractionMissionParams) 
-        break;
+        UInteractionMission* Mission = NewObject<UInteractionMission>(this);
+        const FInteractionMissionRow* Row = MissionSubsystem->GetInteractionMissionData(EInteractionMission(Index));
+        if (!Row) return nullptr;
+
+        FInteractiontMissionInitParams P(
+            Row->MissionType, Row->GoalCount, Row->ConditionType,
+            Row->MissionName, Row->MissionDescription, Row->ExtraValues,
+            Row->bShouldCompleteInstantly
+        );
+        Mission->InitMission(P, EInteractionMission(Index));
+        return CastChecked<UMissionBase>(Mission);
     }
     case EMissionType::ItemCollection:
     {
-        // Subsystem 로직 그대로 이식 (ItemCollectMissionParams) 
-        break;
+        UItemCollectionMission* Mission = NewObject<UItemCollectionMission>(this);
+        const FItemCollectMissionRow* Row = MissionSubsystem->GetItemCollectMissionData(EItemCollectMission(Index));
+        if (!Row) return nullptr;
+
+        FItemCollectMissionInitParams P(
+            Row->MissionType, Row->GoalCount, Row->ConditionType,
+            Row->MissionName, Row->MissionDescription, Row->ExtraValues,
+            Row->bShouldCompleteInstantly, Row->ItemId, Row->bIsOreMission
+        );
+        Mission->InitMission(P, EItemCollectMission(Index));
+        return CastChecked<UMissionBase>(Mission);
     }
     case EMissionType::ItemUse:
     {
-        // Subsystem 로직 그대로 이식 (ItemUseMissionParams) 
-        break;
+        UItemUseMission* Mission = NewObject<UItemUseMission>(this);
+        const FItemUseMissionRow* Row = MissionSubsystem->GetItemUseMissionData(EItemUseMission(Index));
+        if (!Row) return nullptr;
+
+        FItemUseMissionInitParams P(
+            Row->MissionType, Row->GoalCount, Row->ConditionType,
+            Row->MissionName, Row->MissionDescription, Row->ExtraValues,
+            Row->bShouldCompleteInstantly
+        );
+        Mission->InitMission(P, EItemUseMission(Index));
+        return CastChecked<UMissionBase>(Mission);
     }
-    default: break;
+    default:
+        break;
     }
     return nullptr;
 }
@@ -144,27 +283,42 @@ void UMissionManagerComponent::BindAll()
 
 
 void UMissionManagerComponent::UnbindAll() {
-    if (!Hub) return;
-    Hub->OnItemCollected.RemoveAll(this);
-    Hub->OnItemUsed.RemoveAll(this);
-    Hub->OnInteracted.RemoveAll(this);
-    Hub->OnMonsterKilled.RemoveAll(this);
-    Hub->OnAggroTriggered.RemoveAll(this);
+    if (!Hub) 
+    {
+        bEventsBound = false;
+        return; 
+    }
+
+    auto SafeRemove = [](auto& Delegate, FDelegateHandle& Handle)
+        {
+            if (Handle.IsValid())
+            {
+                Delegate.Remove(Handle);
+                Handle.Reset();
+            }
+        };
+
+    SafeRemove(Hub->OnItemCollected, Handle_ItemCollected);
+    SafeRemove(Hub->OnItemUsed, Handle_ItemUsed);
+    SafeRemove(Hub->OnInteracted, Handle_Interacted);
+    SafeRemove(Hub->OnMonsterKilled, Handle_MonsterKilled);
+    SafeRemove(Hub->OnAggroTriggered, Handle_Aggro);
+
+    bEventsBound = false;
 }
 void UMissionManagerComponent::WireHubEvents()
 {
-    if (!(GetOwner() && GetOwner()->HasAuthority()) || !Hub) return; 
-    // 예: 아이템 수집 라우팅
-    Hub->OnItemCollected.AddLambda([this](uint8 ItemId, int32 Amount)
-        {
-            for (int32 i = 0; i < ActiveMissions.Num(); ++i)
-            {
-                if (UMissionBase* M = ActiveMissions[i])
-                {
-                    // 각 미션 파생에 Notify 함수 추가해서 호출(예: UItemCollectionMission::NotifyItemCollected)
-                }
-            }
-        });
+    if (bEventsBound) 
+        return;
 
+    if (!(GetOwner() && GetOwner()->HasAuthority()) || !Hub) return; 
+
+    Handle_ItemCollected = Hub->OnItemCollected.AddUObject(this, &UMissionManagerComponent::HandleItemCollected);
+    Handle_ItemUsed = Hub->OnItemUsed.AddUObject(this, &UMissionManagerComponent::HandleItemUsed);
+    Handle_Interacted = Hub->OnInteracted.AddUObject(this, &UMissionManagerComponent::HandleInteracted);
+    Handle_MonsterKilled = Hub->OnMonsterKilled.AddUObject(this, &UMissionManagerComponent::HandleMonsterKilled);
+    Handle_Aggro = Hub->OnAggroTriggered.AddUObject(this, &UMissionManagerComponent::HandleAggro);
+
+    bEventsBound = true;
     // OnItemUsed / OnInteracted / OnMonsterKilled / OnAggroTriggered 도 동일 패턴
 }

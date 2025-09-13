@@ -4,11 +4,14 @@
 #include "Components/ActorComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "UI/MissionData.h"      
+#include "GameplayTags/EquipNativeTags.h"
 #include "MissionManagerComponent.generated.h"
 
 class UMissionBase;
 class UMissionEventHubComponent;
 class UMissionSubsystem; // DT/카탈로그 조회용 (기존 서브시스템)
+
+DE
 
 USTRUCT(BlueprintType)
 struct FMissionRuntimeState
@@ -36,17 +39,50 @@ protected:
 
 
 public:
-    // ① 클라→서버: 태블릿에서 선택된 미션 전달
     UFUNCTION(Server, Reliable)
-    void S_SubmitMissions(const TArray<FMissionData>& Selected);
-	void S_SubmitMissions_Implementation(const TArray<FMissionData>& Selected);
+    void ApplySelectedMissions(const TArray<FMissionData>& Selected);
+	
 
     // ② 클라 HUD가 구독할 얇은 복제 상태
     UPROPERTY(ReplicatedUsing = OnRep_Missions)
     TArray<FMissionRuntimeState> ActiveStates;
 
+    UFUNCTION(BlueprintImplementableEvent, Category = "Mission")
+    void BP_OnMissionStatesUpdated(const TArray<FMissionRuntimeState>& States);
+
     UFUNCTION()
     void OnRep_Missions(); // HUD/Tablet 갱신 트리거
+
+    // 허브 이벤트를 받는 핸들러들
+    UFUNCTION()
+    void HandleItemCollected(uint8 ItemId, int32 Amount);
+    
+    UFUNCTION()
+    void HandleItemUsed(uint8 ItemId, int32 Amount);
+    
+    UFUNCTION()
+    void HandleInteracted(FGameplayTag Tag);
+    
+    UFUNCTION()
+    void HandleMonsterKilled(FName UnitId);
+    
+    UFUNCTION()
+    void HandleAggro(FGameplayTag Tag);
+
+    UFUNCTION()
+    void HandleMissionProgress(EMissionType MissionType, uint8 MissionIndex, int32 Current, int32 Goal);
+
+
+    UPROPERTY(BlueprintAssignable)
+    FOnMissionStatesUpdated OnMissionStatesUpdated;
+
+    // Delegate Handles
+    FDelegateHandle Handle_ItemCollected;
+    FDelegateHandle Handle_ItemUsed;
+    FDelegateHandle Handle_Interacted;
+    FDelegateHandle Handle_MonsterKilled;
+    FDelegateHandle Handle_Aggro;
+
 private:
     // 서버에만 존재하는 실제 미션 객체들
     UPROPERTY(Transient)
@@ -69,11 +105,14 @@ private:
     void WireHubEvents();
 
     // 완료 콜백(UMissionBase의 싱글캐스트 델리게이트가 호출)
-    void HandleMissionComplete(const EMissionType& Type, const uint8& Index);
+    void HandleMissionComplete(EMissionType Type, uint8 Index);
 
     // 진행값 갱신 헬퍼
     void SetProgress(uint8 Slot, int32 NewCurrent, int32 NewGoal, bool bForceRep = false);
 
 
-		
+private:
+    uint8 bEventsBound : 1 = 0;
+
+    void OnActiveMissionCountChanged();
 };

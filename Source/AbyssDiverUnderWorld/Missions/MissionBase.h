@@ -8,19 +8,28 @@
 enum class EMissionType : uint8;
 enum class EMissionConditionType : uint8;
 
-DECLARE_DELEGATE_TwoParams(FOnCompleteMissionDelegate, const EMissionType&, const uint8& MissionIndex);
+DECLARE_DELEGATE_TwoParams(FOnCompleteMissionDelegate, EMissionType, uint8 /*MissionIndex*/);
+DECLARE_DELEGATE_FourParams(FOnMissionProgress, EMissionType, uint8 /*index*/, int32 /*current*/, int32 /* Goal*/);
 
 struct FMissionInitParams
 {
-	FMissionInitParams(const EMissionType& InMissionType, const int32& InGoalCount, const EMissionConditionType& InConditionType, const FString& InMissionName, const FString& InMissionDescription, const TArray<int32>& InExtraValues, bool bInShouldCompleteInstanly)
+	FMissionInitParams(
+		const EMissionType InMissionType,
+		const int32 InGoalCount,
+		const EMissionConditionType InConditionType,
+		const FString InMissionName,
+		const FString InMissionDescription,
+		const TArray<int32> InExtraValues,
+		bool bInCompleteInstantly
+	)
+		: MissionType(InMissionType)
+		, GoalCount(InGoalCount)
+		, ConditionType(InConditionType)
+		, MissionName(MoveTemp(InMissionName))
+		, MissionDescription(MoveTemp(InMissionDescription))
+		, ExtraValues(InExtraValues)
+		, bCompleteInstantly(bInCompleteInstantly)
 	{
-		MissionType = InMissionType;
-		GoalCount = InGoalCount;
-		ConditionType = InConditionType;
-		MissionName = InMissionName;
-		MissionDescription = InMissionDescription;
-		ExtraValues = InExtraValues;
-		bShouldCompleteInstanly = bInShouldCompleteInstanly;
 	}
 
 	EMissionType MissionType;
@@ -29,7 +38,7 @@ struct FMissionInitParams
 	FString MissionName;
 	FString MissionDescription;
 	TArray<int32> ExtraValues;
-	uint8 bShouldCompleteInstanly : 1;
+	uint8 bCompleteInstantly : 1;
 };
 
 /**
@@ -48,12 +57,20 @@ public:
 	virtual void BindDelegates(UObject* TargetForDelegate) PURE_VIRTUAL(UMissionBase::BindDelegates, );
 	virtual void UnbindDelegates(UObject* TargetForDelegate) PURE_VIRTUAL(UMissionBase::UnbindDelegates, );
 
+	void AddProgress(int32 Delta);
+
+	void CompleteMission();
+
 	FOnCompleteMissionDelegate OnCompleteMissionDelegate;
-
+	FOnMissionProgress OnMissionProgressDelegate;
 protected:
-
-	virtual void OnConditionMet();
+	// 파생에서 조건 평가가 필요한 경우만 사용
 	virtual bool IsConditionMet() PURE_VIRTUAL(UMissionBase::IsConditionMet, return false; );
+
+	// 진행 변화 훅
+	virtual void OnMissionProgressChanged(int32 Delta);
+
+	virtual void OnMissionCompleted();
 
 #pragma endregion
 
@@ -67,13 +84,12 @@ protected:
 	int32 CurrentCount;
 
 	EMissionConditionType ConditionType;
-
 	FString MissionName;
 	FString MissionDescription;
 
 	TArray<int32> ExtraValues;
 
-	uint8 bIsCompletedAlready : 1;
+	uint8 bIsCompleted : 1 = 0;
 
 #pragma endregion
 
@@ -86,8 +102,10 @@ public:
 	FORCEINLINE const int32& GetCurrentCount() const { return CurrentCount; }
 	FORCEINLINE const FString& GetMissionName() const { return MissionName; }
 	FORCEINLINE const FString& GetMissionDescription() const { return MissionDescription; }
-	FORCEINLINE const bool IsCompletedAlready() const { return bIsCompletedAlready; }
-	virtual const uint8 GetMissionIndex() const PURE_VIRTUAL(UMissionBase::GetMissionIndex, static uint8 Dummy = 0; return Dummy;);
+	FORCEINLINE bool IsCompleted() const { return bIsCompleted != 0; }
+
+
+	virtual uint8 GetMissionIndex() const PURE_VIRTUAL(UMissionBase::GetMissionIndex, return 0;);
 
 #pragma endregion
 
