@@ -17,10 +17,21 @@ struct FItemUseMissionInitParams : public FMissionInitParams
 		const FString& InMissionName,
 		const FString& InMissionDescription,
 		const TArray<int32>& InExtraValues,
-		bool bInShouldCompleteInstanly
+		const uint8 InTargetItemId,
+		bool bInCompleteInstantly
 	)
-		: FMissionInitParams(InMissionType, InGoalCount, InConditionType, InMissionName, InMissionDescription, InExtraValues, bInShouldCompleteInstanly)
+		: FMissionInitParams
+		(
+			InMissionType,
+			InMissionName,
+			InMissionDescription,
+			InConditionType,
+			InGoalCount,
+			InExtraValues,
+			bInCompleteInstantly
+		)
 	{
+		uint8 TargetItemId = InTargetItemId;
 	}
 
 };
@@ -44,16 +55,18 @@ public:
 	virtual void InitMission(const FMissionInitParams& Params) override;
 	void InitMission(const FItemUseMissionInitParams& Params, const EItemUseMission& NewMissionIndex);
 
-	virtual void BindDelegates(UObject* TargetForDelegate) override;
-	virtual void UnbindDelegates(UObject* TargetForDelegate) override;
+	virtual void NotifyItemUsed(uint8 ItemId, int32 Amount) override;
 
 protected:
 
-	virtual bool IsConditionMet() override;
 
 #pragma endregion
 
 #pragma region Variables
+public:
+	UPROPERTY(EditAnywhere)
+	uint8 TargetItemId = 0;
+
 
 protected:
 
@@ -66,7 +79,7 @@ protected:
 
 public:
 
-	virtual const uint8 GetMissionIndex() const override;
+	virtual uint8 GetMissionIndex() const override;
 
 #pragma endregion
 };

@@ -17,22 +17,23 @@ void UItemUseMission::InitMission(const FItemUseMissionInitParams& Params, const
 	InitMission((const FMissionInitParams&)Params);
 
 	MissionIndex = NewMissionIndex;
+	TargetItemId = Params.TargetItemId;
 }
 
-void UItemUseMission::BindDelegates(UObject* TargetForDelegate)
+
+void UItemUseMission::NotifyItemUsed(uint8 ItemId, int32 Amount)
 {
+	if (IsCompleted()) 
+		return;
+
+	if (ItemId != TargetItemId)
+		return;
+
+	AddProgress(FMath::Max(Amount, 1));
 }
 
-void UItemUseMission::UnbindDelegates(UObject* TargetForDelegate)
-{
-}
 
-bool UItemUseMission::IsConditionMet()
-{
-	return false;
-}
-
-const uint8 UItemUseMission::GetMissionIndex() const
+uint8 UItemUseMission::GetMissionIndex() const
 {
 	return uint8(MissionIndex);
 }

@@ -15,10 +15,6 @@ void UMissionBase::InitMission(const FMissionInitParams& Params)
 
     bIsCompleted = 0; // (구) bIsCompletedAlready와 불일치 수정  :contentReference[oaicite:2]{index=2} :contentReference[oaicite:3]{index=3}
 
-    if (Params.bCompleteInstantly)
-    {
-        CompleteMission();
-    }
 }
 
 void UMissionBase::AddProgress(int32 Delta)
@@ -45,16 +41,15 @@ void UMissionBase::CompleteMission()
     bIsCompleted = 1;
 
     OnMissionCompleted();    
-    OnCompleteMissionDelegate.ExecuteIfBound(MissionType, GetMissionIndex());
 }
 
 
 void UMissionBase::OnMissionProgressChanged(int32 Delta)
 {
-  
 }
 
 void UMissionBase::OnMissionCompleted()
 {
+    OnCompleteMissionDelegate.ExecuteIfBound(MissionType, GetMissionIndex());
 }
 

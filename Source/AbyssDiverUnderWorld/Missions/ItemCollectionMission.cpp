@@ -1,5 +1,4 @@
 #include "Missions/ItemCollectionMission.h"
-
 #include "DataRow/MissionDataRow/ItemCollectMissionRow.h"
 #include "Interactable/OtherActors/ADDroneSeller.h"
 
@@ -27,9 +26,9 @@ void UItemCollectionMission::BindDelegates(UObject* TargetForDelegate)
 {
 	if (bIsOreMission && TargetForDelegate->IsA<AADDroneSeller>())
 	{
-		AADDroneSeller* DroneSeller = Cast<AADDroneSeller>(TargetForDelegate);
+		/*AADDroneSeller* DroneSeller = Cast<AADDroneSeller>(TargetForDelegate);
 		DroneSeller->OnSellOreDelegate.RemoveAll(this);
-		DroneSeller->OnSellOreDelegate.AddUObject(this, &UItemCollectionMission::OnItemCollect);
+		DroneSeller->OnSellOreDelegate.AddUObject(this, &UItemCollectionMission::OnItemCollect);*/
 	}
 }
 
@@ -42,37 +41,15 @@ void UItemCollectionMission::UnbindDelegates(UObject* TargetForDelegate)
 	}
 }
 
-bool UItemCollectionMission::IsConditionMet()
+void UItemCollectionMission::NotifyItemCollected(uint8 ItemId, int32 Amount)
 {
-	return GoalCount <= CurrentCount;
+	if (IsCompleted()) return;
+	if (ItemId != TargetItemId) return;
+
+	AddProgress(FMath::Max(Amount, 1));
 }
 
-void UItemCollectionMission::OnItemCollect(uint8 ItemId, int32 Amount)
-{
-	if (ItemId != TargetItemId)
-	{
-		return;
-	}
-
-	if (bIsOreMission)
-	{
-		int32 Mass = Amount;
-		CurrentCount += Mass;
-	}
-	else
-	{
-		CurrentCount += Amount;
-	}
-
-	if (IsConditionMet() == false)
-	{
-		return;
-	}
-
-	OnConditionMet();
-}
-
-const uint8 UItemCollectionMission::GetMissionIndex() const
+uint8 UItemCollectionMission::GetMissionIndex() const
 {
 	return (uint8)MissionIndex;
 }

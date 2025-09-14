@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Missions/MissionBase.h"
+#include "GameplayTagContainer.h"
 
 #include "InteractionMission.generated.h"
 
@@ -12,17 +13,29 @@ struct FInteractiontMissionInitParams : public FMissionInitParams
 	FInteractiontMissionInitParams
 	(
 		const EMissionType& InMissionType,
-		const int32& InGoalCount,
-		const EMissionConditionType& InConditionType,
 		const FString& InMissionName,
 		const FString& InMissionDescription,
+		const EMissionConditionType& InConditionType,
+		const int32& InGoalCount,
+		const FGameplayTag InTargetInteractionTag,
 		const TArray<int32>& InExtraValues,
-		bool bInShouldCompleteInstanly
+		bool bInCompleteInstantly
 	)
-		: FMissionInitParams(InMissionType, InGoalCount, InConditionType, InMissionName, InMissionDescription, InExtraValues, bInShouldCompleteInstanly)
+		: FMissionInitParams
+		(
+			InMissionType,
+			InMissionName,
+			InMissionDescription,
+			InConditionType,
+			InGoalCount,
+			InExtraValues,
+			bInCompleteInstantly
+		)
 	{
+		TargetInteractionTag = InTargetInteractionTag;
 	}
 
+	FGameplayTag TargetInteractionTag;
 };
 /**
  * 
@@ -42,17 +55,14 @@ public:
 	virtual void InitMission(const FMissionInitParams& Params) override;
 	void InitMission(const FInteractiontMissionInitParams& Params, const EInteractionMission& NewMissionIndex);
 
-	virtual void BindDelegates(UObject* TargetForDelegate) override;
-	virtual void UnbindDelegates(UObject* TargetForDelegate) override;
-
-protected:
-
-	virtual bool IsConditionMet() override;
+	virtual void NotifyInteracted(FGameplayTag Tag) override;
 
 #pragma endregion
 
 #pragma region Variables
-
+public:
+	UPROPERTY(EditAnywhere)
+	FGameplayTag TargetInteractionTag;
 protected:
 
 	EInteractionMission MissionIndex;
@@ -64,7 +74,7 @@ protected:
 
 public:
 
-	virtual const uint8 GetMissionIndex() const override;
+	virtual uint8 GetMissionIndex() const override;
 
 #pragma endregion
 	

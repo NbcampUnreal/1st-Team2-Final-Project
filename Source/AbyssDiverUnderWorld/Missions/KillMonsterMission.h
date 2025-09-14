@@ -20,12 +20,21 @@ struct FKillMissionInitParams : public FMissionInitParams
 		const FString& InMissionName,
 		const FString& InMissionDescription,
 		const TArray<int32>& InExtraValues,
-		bool bInShouldCompleteInstanly,
+		bool bInCompleteInstantly,
 		const EUnitId& InUnitId,
 		uint8 InNeededSimultaneousKillCount,
 		float InKillInterval
 	)
-		: FMissionInitParams(InMissionType, InGoalCount, InConditionType, InMissionName, InMissionDescription, InExtraValues, bInShouldCompleteInstanly)
+		: FMissionInitParams
+		(
+			InMissionType,
+			InMissionName,
+			InMissionDescription,
+			InConditionType,
+			InGoalCount,
+			InExtraValues,
+			bInCompleteInstantly
+		)
 	{
 		UnitId = InUnitId;
 		NeededSimultaneousKillCount = InNeededSimultaneousKillCount;
@@ -56,35 +65,26 @@ public:
 	virtual void InitMission(const FMissionInitParams& Params) override;
 	void InitMission(const FKillMissionInitParams& Params, const EKillMonsterMission& NewMissionIndex);
 
-	virtual void BindDelegates(UObject* TargetForDelegate) override;
-	virtual void UnbindDelegates(UObject* TargetForDelegate) override;
 
-protected:
-
-	UFUNCTION()
-	virtual void OnMonsterDead(AActor* Killer, AMonster* DeadMonster);
-
-	virtual bool IsConditionMet() override;
-
-	virtual void OnDamaged(AActor* DamagedActor, AActor* DamageCauser, const float& ReceivedDamage);
-	virtual void OnDead(AActor* DamageCauser, AActor* DeadActor);
-
-	
+	virtual void NotifyMonsterKilled(EUnitId UnitId) override;
 
 #pragma endregion
 
 #pragma region Variables
+public:
+	UPROPERTY(EditAnywhere)
+	EUnitId TargetUnitId;
+
+	UPROPERTY(EditAnywhere)
+	int8 NeededSimultaneousKillCount = 1;
+	UPROPERTY(EditAnywhere)
+	float KillInterval = 0.1f;
 
 protected:
-
 	EKillMonsterMission MissionIndex;
-	EUnitId UnitId;
-	uint8 NeededSimultaneousKillCount;
-
-	float KillInterval;
 
 	// LastKilledTime, CachedSimultaneousKillCount
-	TArray<TPair<float, uint8>>  PlayerKillInfoArray;
+	TArray<float> KillTimes;
 
 #pragma endregion
 
@@ -93,7 +93,7 @@ protected:
 
 public:
 
-	virtual const uint8 GetMissionIndex() const override;
+	virtual uint8 GetMissionIndex() const override;
 
 private:
 

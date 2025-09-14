@@ -9,7 +9,7 @@ DECLARE_MULTICAST_DELEGATE_OneParam(FOnMonsterKilled, FName /*UnitId*/);
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnItemCollected, uint8 /*ItemId*/, int32 /*Amount*/);
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnItemUsed, uint8 /*ItemId*/, int32 /*Amount*/);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnInteracted, FGameplayTag /*TargetTag*/);
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnAggroTriggered, FGameplayTag /*AggroTag*/);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnAggroTriggered, FGameplayTag /*SourceTag*/);
 
 
 UCLASS( ClassGroup=(Mission), meta=(BlueprintSpawnableComponent) )
@@ -25,11 +25,11 @@ protected:
 
 public:	
 	// 게임 시스템들이 호출할 API
-    void BroadcastMonsterKilled(FName UnitId)            { OnMonsterKilled.Broadcast(UnitId); }
-    void BroadcastItemCollected(uint8 ItemId, int32 Amt) { OnItemCollected.Broadcast(ItemId, Amt); }
-    void BroadcastItemUsed(uint8 ItemId, int32 Amt)      { OnItemUsed.Broadcast(ItemId, Amt); }
-    void BroadcastInteracted(FGameplayTag Tag)           { OnInteracted.Broadcast(Tag); }
-    void BroadcastAggro(FGameplayTag Tag)                { OnAggroTriggered.Broadcast(Tag); }
+    void BroadcastMonsterKilled(FName UnitId);
+    void BroadcastItemCollected(uint8 ItemId, int32 Amt);
+    void BroadcastItemUsed(uint8 ItemId, int32 Amt);
+    void BroadcastInteracted(FGameplayTag Tag);
+    void BroadcastAggro(FGameplayTag SourceTag);
 
     // 미션 매니저가 구독할 델리게이트
     FOnMonsterKilled    OnMonsterKilled;

@@ -19,20 +19,28 @@ void UAggroTriggerMission::InitMission(const FAggroMissionInitParams& Params, co
 	MissionIndex = NewMissionIndex;
 }
 
-void UAggroTriggerMission::BindDelegates(UObject* TargetForDelegate)
+void UAggroTriggerMission::NotifyAggroTriggered(const FGameplayTag& SourceTag)
 {
+    if (IsCompleted()) return;
+
+    bool bMatched = false;
+    if (bUseQuery)
+    {
+        FGameplayTagContainer Owned; Owned.AddTag(SourceTag);
+        bMatched = TargetAggroQuery.Matches(Owned);
+    }
+    else
+    {
+        // 계층 허용: Mission.Aggro.Enemy.Shark c Mission.Aggro.Enemy.*
+        bMatched = SourceTag.MatchesTag(TargetTag);
+        // 정확 일치 원하면 MatchesTagExact(TargetAggroTag)
+    }
+    if (!bMatched) return;
+
+    AddProgress(1);
 }
 
-void UAggroTriggerMission::UnbindDelegates(UObject* TargetForDelegate)
-{
-}
-
-bool UAggroTriggerMission::IsConditionMet()
-{
-	return false;
-}
-
-const uint8 UAggroTriggerMission::GetMissionIndex() const
+uint8 UAggroTriggerMission::GetMissionIndex() const
 {
 	return (uint8)MissionIndex;
 }

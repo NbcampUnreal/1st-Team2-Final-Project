@@ -10,29 +10,29 @@ UInteractionMission::UInteractionMission()
 
 void UInteractionMission::InitMission(const FMissionInitParams& Params)
 {
-	Super::InitMission(Params);
+	Super::InitMission(Params);;
 }
 
 void UInteractionMission::InitMission(const FInteractiontMissionInitParams& Params, const EInteractionMission& NewMissionIndex)
 {
 	InitMission((const FMissionInitParams&)Params);
 	MissionIndex = NewMissionIndex;
+	TargetInteractionTag = Params.TargetInteractionTag;
 }
 
-void UInteractionMission::BindDelegates(UObject* TargetForDelegate)
+
+void UInteractionMission::NotifyInteracted(FGameplayTag Tag)
 {
+	if (IsCompleted()) return;
+
+	if (!Tag.MatchesTag(TargetInteractionTag))
+		return;
+
+	if (GetGoalCount() <= 1) CompleteMission();
+	else AddProgress(1);
 }
 
-void UInteractionMission::UnbindDelegates(UObject* TargetForDelegate)
-{
-}
-
-bool UInteractionMission::IsConditionMet()
-{
-	return false;
-}
-
-const uint8 UInteractionMission::GetMissionIndex() const
+uint8 UInteractionMission::GetMissionIndex() const
 {
 	return (uint8)MissionIndex;
 }

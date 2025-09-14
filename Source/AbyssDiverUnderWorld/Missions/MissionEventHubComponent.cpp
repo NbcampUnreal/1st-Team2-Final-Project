@@ -20,4 +20,44 @@ void UMissionEventHubComponent::BeginPlay()
 	
 }
 
+void UMissionEventHubComponent::BroadcastMonsterKilled(FName UnitId)
+{
+	if (OnMonsterKilled.IsBound())
+	{
+		OnMonsterKilled.Broadcast(UnitId);
+	}
+}
+
+void UMissionEventHubComponent::BroadcastItemCollected(uint8 ItemId, int32 Amt)
+{
+	if (OnItemCollected.IsBound())
+	{
+		OnItemCollected.Broadcast(ItemId, Amt);
+	}
+}
+
+void UMissionEventHubComponent::BroadcastItemUsed(uint8 ItemId, int32 Amt)
+{
+	if (OnItemUsed.IsBound())
+	{
+		OnItemUsed.Broadcast(ItemId, Amt);
+	}
+}
+
+void UMissionEventHubComponent::BroadcastInteracted(FGameplayTag Tag)
+{
+	if (OnInteracted.IsBound())
+	{
+		OnInteracted.Broadcast(Tag);
+	}
+}
+
+void UMissionEventHubComponent::BroadcastAggro(FGameplayTag SourceTag)
+{
+	if (OnAggroTriggered.IsBound())
+	{
+		OnAggroTriggered.Broadcast(SourceTag);
+	}
+}
+
 

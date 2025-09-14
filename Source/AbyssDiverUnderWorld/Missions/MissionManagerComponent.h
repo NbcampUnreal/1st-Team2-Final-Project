@@ -4,6 +4,7 @@
 #include "Components/ActorComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "UI/MissionData.h"      
+#include "GameplayTagContainer.h"
 #include "GameplayTags/EquipNativeTags.h"
 #include "MissionManagerComponent.generated.h"
 
@@ -11,7 +12,7 @@ class UMissionBase;
 class UMissionEventHubComponent;
 class UMissionSubsystem; // DT/카탈로그 조회용 (기존 서브시스템)
 
-DE
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMissionStatesUpdated, const TArray<FMissionRuntimeState>&, States);
 
 USTRUCT(BlueprintType)
 struct FMissionRuntimeState
@@ -39,7 +40,7 @@ protected:
 
 
 public:
-    UFUNCTION(Server, Reliable)
+    UFUNCTION(BlueprintAuthorityOnly)
     void ApplySelectedMissions(const TArray<FMissionData>& Selected);
 	
 
