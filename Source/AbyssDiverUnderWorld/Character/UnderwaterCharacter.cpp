@@ -2807,6 +2807,7 @@ void AUnderwaterCharacter::SetHideInSeaweed(const bool bNewHideInSeaweed)
 	
 	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Set Hide In Seaweed : %s -> %s"), bIsHideInSeaweed ? TEXT("True") : TEXT("False"), bNewHideInSeaweed ? TEXT("True") : TEXT("False"));
 	bIsHideInSeaweed = bNewHideInSeaweed;
+	OnHiddenChangedDelegate.Broadcast(bIsHideInSeaweed);
 }
 
 bool AUnderwaterCharacter::IsOverloaded() const
