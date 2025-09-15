@@ -2800,6 +2800,12 @@ bool AUnderwaterCharacter::IsSprinting() const
 
 void AUnderwaterCharacter::SetHideInSeaweed(const bool bNewHideInSeaweed)
 {
+	if (bIsHideInSeaweed == bNewHideInSeaweed)
+	{
+		return;
+	}
+	
+	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Set Hide In Seaweed : %s -> %s"), bIsHideInSeaweed ? TEXT("True") : TEXT("False"), bNewHideInSeaweed ? TEXT("True") : TEXT("False"));
 	bIsHideInSeaweed = bNewHideInSeaweed;
 }
 
