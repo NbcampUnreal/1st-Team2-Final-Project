@@ -33,7 +33,7 @@ void AADMine::Explode()
 	UGameplayStatics::ApplyRadialDamageWithFalloff(
 		this,
 		BaseDamage,
-		10.f,                 
+		100.f,                 
 		GetActorLocation(),
 		InnerRadius,
 		OuterRadius,
