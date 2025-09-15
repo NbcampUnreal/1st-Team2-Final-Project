@@ -33,6 +33,8 @@ UAquaticMovementComponent::UAquaticMovementComponent()
     CurrentWallFollowDirection = 0;
     LastWallDetectionTime = -1.0f;
     LastWallNormal = FVector::ZeroVector;
+
+    SetIsReplicated(false);
 }
 
 void UAquaticMovementComponent::BeginPlay()
@@ -42,6 +44,8 @@ void UAquaticMovementComponent::BeginPlay()
     OwnerCharacter = Cast<ACharacter>(GetOwner());
     if (OwnerCharacter->HasAuthority() == false)
     {
+        PrimaryComponentTick.bCanEverTick = false;
+        PrimaryComponentTick.bStartWithTickEnabled = false;
         SetComponentTickEnabled(false);
 	    return;
     }
@@ -84,6 +88,17 @@ void UAquaticMovementComponent::InitComponent(ACharacter* InCharacter)
 void UAquaticMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+    if (OwnerCharacter && OwnerCharacter->HasAuthority() == false)
+    {
+        // 왜 안꺼지냐
+        PrimaryComponentTick.bCanEverTick = false;
+        PrimaryComponentTick.bStartWithTickEnabled = false;
+        SetComponentTickEnabled(false);
+        //LOGV(Error, TEXT("Tick (%s)"), *OwnerCharacter->GetName());
+        return;
+    }
+
 
     if (!OwnerCharacter || !CharacterMesh) return;
 

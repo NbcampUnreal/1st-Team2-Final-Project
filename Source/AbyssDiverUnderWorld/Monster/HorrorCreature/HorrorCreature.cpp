@@ -204,6 +204,13 @@ void AHorrorCreature::NotifyLightExposure(float DeltaTime, float TotalExposedTim
 	Super::NotifyLightExposure(DeltaTime, TotalExposedTime, PlayerLocation, PlayerActor);
 }
 
+void AHorrorCreature::OnDeath()
+{
+	Super::OnDeath();
+
+	EjectPlayer(SwallowedPlayer);
+}
+
 // 일시적으로 Sight Perception을 끄는 함수
 void AHorrorCreature::TemporarilyDisalbeSightPerception(float Duration)
 {
