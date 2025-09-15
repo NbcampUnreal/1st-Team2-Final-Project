@@ -40,7 +40,7 @@ void AADMine::Explode()
 		DamageFalloff,
 		nullptr,              
 		Ignore,
-		this);
+		Owner);
 
 	// FX 적용
 	if (ExplosionNiagara)

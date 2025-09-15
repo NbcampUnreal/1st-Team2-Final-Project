@@ -91,8 +91,6 @@ public:
 	TObjectPtr<UADWorldSubsystem> WorldSubsystem;
 	UPROPERTY(EditAnywhere)
 	UDataTable* PhaseBgmTable;
-	UPROPERTY(EditAnywhere)
-	TSubclassOf<UInteractPopupWidget> PopupWidgetClass;
 
 protected:
 

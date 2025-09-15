@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -106,6 +106,10 @@ protected:
 
 	void ApplyPhysicsSimulation();
 	void HandleSetting_OnDeath();
+
+	UFUNCTION()
+	void OnRep_Ragdoll();
+
 #pragma endregion
 
 #pragma region Variable
@@ -177,8 +181,7 @@ protected:
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UAnimMontage> CurrentAttackAnim;
 
-	// UPROPERTY(Replicated, BlueprintReadWrite)
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(Replicated, BlueprintReadWrite)
 	EMonsterState MonsterState;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AI|AttackAnimation")
@@ -246,6 +249,9 @@ private:
 	float TargetLocationInterpSpeed = 2.0f;  // 타겟 위치 보간 속도
 	float PatrolInterpSpeed = 1.5f; // 순찰 시 더 부드러운 보간 속도
 	uint8 bIsAttackCollisionOverlappedPlayer : 1;
+
+	UPROPERTY(ReplicatedUsing = OnRep_Ragdoll)
+	bool bIsRagdoll = false;
 
 #pragma endregion
 

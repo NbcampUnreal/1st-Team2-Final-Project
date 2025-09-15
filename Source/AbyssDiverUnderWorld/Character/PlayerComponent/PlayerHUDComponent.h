@@ -81,10 +81,18 @@ public:
     /** HUD 위젯을 숨긴다. */
     void HideHudWidget();
 
-    /** 위젯을 보이게 한다. */
+    /** HUD 위젯을 보이게 한다. */
     void ShowHudWidget();
 
     void SetActiveRadarWidget(bool bShouldActivate);
+
+    UFUNCTION(Client, Reliable)
+    void C_ShowConfirmWidget(AActor* RequestInteractableActor);
+    void C_ShowConfirmWidget_Implementation(AActor* RequestInteractableActor);
+
+    UFUNCTION(Server, Reliable)
+    void S_ReportConfirm(AActor* RequestInteractableActor, bool bConfirmed);
+    void S_ReportConfirm_Implementation(AActor* RequestInteractableActor, bool bConfirmed);
     
 protected:
     
@@ -155,6 +163,10 @@ private:
     UPROPERTY()
     TObjectPtr<class URadar2DWidget> Radar2DWidget;
 
+    /** Interact Popup Widget Class */
+    UPROPERTY(EditAnywhere)
+    TSubclassOf<class UInteractPopupWidget> PopupWidgetClass;
+    
 #pragma endregion
 
 #pragma region Getter Setter
@@ -166,6 +178,9 @@ public:
     UMissionsOnHUDWidget* GetMissionsOnHudWidget() const;
     USoundSubsystem* GetSoundSubsystem();
     UPlayerStatusWidget* GetPlayerStatusWidget() ;
+
+    /** Crosshair Widget 반환 */
+    UCrosshairWidget* GetCrosshairWidget() const { return CrosshairWidget; }
 
 #pragma endregion
 };
