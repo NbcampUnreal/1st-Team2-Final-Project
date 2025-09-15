@@ -69,21 +69,18 @@ bool ASafeZoneTriggerBox::IsActorInZone(AUnderwaterCharacter* Character)
 	float CapsuleRadius = Capsule->GetScaledCapsuleRadius();
 
 	// Capsule의 Top, Bottom의 World Location
-	FVector Top = CapsuleLocation + FVector::UpVector * CapsuleHalfHeight;
-	FVector Bottom = CapsuleLocation + FVector::DownVector * CapsuleHalfHeight;
+	FVector Top = CapsuleLocation + FVector::UpVector * CapsuleHalfHeight * UpperZoneRatio;
+	FVector Bottom = CapsuleLocation + FVector::DownVector * CapsuleHalfHeight * LowerZoneRatio;
 
 	FBox VolumeBox = TriggerComponent->Bounds.GetBox();
 
-	// Capsule의 Top, Bottom을 기준으로 반지름이 VolumeBox 내부에 있는지 판단
-	auto IsPointInBox = [&](const FVector& Point) -> bool
-	{
-		return VolumeBox.IsInside(Point + FVector::ForwardVector * CapsuleRadius) &&
-			   VolumeBox.IsInside(Point + FVector::BackwardVector * CapsuleRadius) &&
-			   VolumeBox.IsInside(Point + FVector::RightVector * CapsuleRadius) &&
-			   VolumeBox.IsInside(Point + FVector::LeftVector * CapsuleRadius);
-	};
-
-	return IsPointInBox(Top) && IsPointInBox(Bottom);
+	// Capsule의 Top, Bottom, 그리고 Center 에서 반지름만큼 떨어진 4방향이 모두 Volume Box 안에 있는지 체크
+	return VolumeBox.IsInside(Top) &&
+		VolumeBox.IsInside(Bottom) &&
+		VolumeBox.IsInside(CapsuleLocation + FVector::ForwardVector * CapsuleRadius) &&
+		VolumeBox.IsInside(CapsuleLocation + FVector::BackwardVector * CapsuleRadius) &&
+		VolumeBox.IsInside(CapsuleLocation + FVector::RightVector * CapsuleRadius) &&
+		VolumeBox.IsInside(CapsuleLocation + FVector::LeftVector * CapsuleRadius);
 }
 
 void ASafeZoneTriggerBox::UpdateCharactersInZone()
