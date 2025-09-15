@@ -24,24 +24,35 @@ void UKillMonsterMission::InitMission(const FKillMissionInitParams& Params, cons
 
 	MissionIndex = NewMissionIndex;
 
-	TargetUnitId = Params.UnitId;
+	TargetUnitTag = Params.UnitTag;
 	NeededSimultaneousKillCount = Params.NeededSimultaneousKillCount;
 	KillInterval = Params.KillInterval;
 
 	static const int32 PlayerCount = 4;
 }
 
-void UKillMonsterMission::NotifyMonsterKilled(EUnitId UnitId)
+void UKillMonsterMission::NotifyMonsterKilled(FGameplayTag UnitTag)
 {
 	if (IsCompleted())
 		return;
-	if (UnitId != TargetUnitId)
-		return;
+	
+	bool bMatched = false;
+	if (bUseQuery)
+	{
+		FGameplayTagContainer Owned; Owned.AddTag(UnitTag);
+		bMatched = TargetUnitQuery.Matches(Owned);
+	}
+	else
+	{
+		bMatched = UnitTag.MatchesTag(TargetUnitTag); // 정확 일치면 MatchesTagExact
+	}
+	if (!bMatched) return;
 
 	// 단일 킬
 	if (NeededSimultaneousKillCount <= 1 || KillInterval <= 0.f)
 	{
 		AddProgress(1);
+		return;
 	}
 
 	// 동시 킬

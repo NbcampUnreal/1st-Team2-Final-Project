@@ -6,7 +6,6 @@
 #include "KillMonsterMission.generated.h"
 
 enum class EKillMonsterMission : uint8;
-enum class EUnitId : uint8;
 
 class AMonster;
 
@@ -15,13 +14,13 @@ struct FKillMissionInitParams : public FMissionInitParams
 	FKillMissionInitParams
 	(
 		const EMissionType& InMissionType,
-		const int32& InGoalCount,
-		const EMissionConditionType& InConditionType,
 		const FString& InMissionName,
 		const FString& InMissionDescription,
+		const EMissionConditionType& InConditionType,
+		const int32& InGoalCount,
 		const TArray<int32>& InExtraValues,
 		bool bInCompleteInstantly,
-		const EUnitId& InUnitId,
+		const FGameplayTag& InUnitTag,
 		uint8 InNeededSimultaneousKillCount,
 		float InKillInterval
 	)
@@ -36,12 +35,12 @@ struct FKillMissionInitParams : public FMissionInitParams
 			bInCompleteInstantly
 		)
 	{
-		UnitId = InUnitId;
+		UnitTag = InUnitTag;
 		NeededSimultaneousKillCount = InNeededSimultaneousKillCount;
 		KillInterval = InKillInterval;
 	}
 
-	EUnitId UnitId;
+	FGameplayTag UnitTag;
 	uint8 NeededSimultaneousKillCount;
 	float KillInterval;
 };
@@ -66,14 +65,18 @@ public:
 	void InitMission(const FKillMissionInitParams& Params, const EKillMonsterMission& NewMissionIndex);
 
 
-	virtual void NotifyMonsterKilled(EUnitId UnitId) override;
+	virtual void NotifyMonsterKilled(FGameplayTag UnitTag) override;
 
 #pragma endregion
 
 #pragma region Variables
 public:
+	UPROPERTY(EditAnywhere) 
+	FGameplayTag TargetUnitTag;
 	UPROPERTY(EditAnywhere)
-	EUnitId TargetUnitId;
+	FGameplayTagQuery TargetUnitQuery;
+	UPROPERTY(EditAnywhere)
+	uint8 bUseQuery : 1 = 0;
 
 	UPROPERTY(EditAnywhere)
 	int8 NeededSimultaneousKillCount = 1;

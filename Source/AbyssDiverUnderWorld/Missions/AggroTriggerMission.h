@@ -3,7 +3,7 @@
 #include "CoreMinimal.h"
 #include "Missions/MissionBase.h"
 #include "GameplayTagContainer.h"
-
+#include "Character/UnitBase.h"
 #include "AggroTriggerMission.generated.h"
 
 enum class EAggroTriggerMission : uint8;

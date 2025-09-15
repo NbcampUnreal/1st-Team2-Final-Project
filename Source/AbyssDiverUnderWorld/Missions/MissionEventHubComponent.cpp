@@ -20,19 +20,19 @@ void UMissionEventHubComponent::BeginPlay()
 	
 }
 
-void UMissionEventHubComponent::BroadcastMonsterKilled(FName UnitId)
+void UMissionEventHubComponent::BroadcastMonsterKilled(FGameplayTag UnitTag)
 {
 	if (OnMonsterKilled.IsBound())
 	{
-		OnMonsterKilled.Broadcast(UnitId);
+		OnMonsterKilled.Broadcast(UnitTag);
 	}
 }
 
-void UMissionEventHubComponent::BroadcastItemCollected(uint8 ItemId, int32 Amt)
+void UMissionEventHubComponent::BroadcastItemCollected(FGameplayTag ItemTag, int32 Amount)
 {
 	if (OnItemCollected.IsBound())
 	{
-		OnItemCollected.Broadcast(ItemId, Amt);
+		OnItemCollected.Broadcast(ItemTag, Amount);
 	}
 }
 

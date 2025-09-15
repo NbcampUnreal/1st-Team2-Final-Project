@@ -11,6 +11,7 @@
 class UMissionBase;
 class UMissionEventHubComponent;
 class UMissionSubsystem; // DT/카탈로그 조회용 (기존 서브시스템)
+enum class EUnitId : uint8;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMissionStatesUpdated, const TArray<FMissionRuntimeState>&, States);
 
@@ -56,7 +57,7 @@ public:
 
     // 허브 이벤트를 받는 핸들러들
     UFUNCTION()
-    void HandleItemCollected(uint8 ItemId, int32 Amount);
+    void HandleItemCollected(FGameplayTag ItemTag, int32 Amount);
     
     UFUNCTION()
     void HandleItemUsed(uint8 ItemId, int32 Amount);
@@ -65,7 +66,7 @@ public:
     void HandleInteracted(FGameplayTag Tag);
     
     UFUNCTION()
-    void HandleMonsterKilled(FName UnitId);
+    void HandleMonsterKilled(FGameplayTag UnitTag);
     
     UFUNCTION()
     void HandleAggro(FGameplayTag Tag);

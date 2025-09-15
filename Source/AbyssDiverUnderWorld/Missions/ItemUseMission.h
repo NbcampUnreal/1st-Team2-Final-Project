@@ -31,9 +31,10 @@ struct FItemUseMissionInitParams : public FMissionInitParams
 			bInCompleteInstantly
 		)
 	{
-		uint8 TargetItemId = InTargetItemId;
+		TargetItemId = InTargetItemId;
 	}
 
+	uint8 TargetItemId;
 };
 
 /**

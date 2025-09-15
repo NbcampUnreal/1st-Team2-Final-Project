@@ -62,8 +62,8 @@ public:
 
 	void CompleteMission();
 
-	virtual void NotifyMonsterKilled(EUnitId UnitId);
-	virtual void NotifyItemCollected(uint8 ItemId, int32 Amount);
+	virtual void NotifyMonsterKilled(FGameplayTag UnitTag) {}
+	virtual void NotifyItemCollected(FGameplayTag ItemTag, int32 Amount) {}
 	virtual void NotifyItemUsed(uint8 ItemId, int32 Amount);
 	virtual void NotifyInteracted(FGameplayTag Tag);
 	virtual void NotifyAggroTriggered(const FGameplayTag& SourceTag);

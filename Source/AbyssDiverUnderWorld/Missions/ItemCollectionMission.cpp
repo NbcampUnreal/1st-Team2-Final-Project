@@ -18,7 +18,7 @@ void UItemCollectionMission::InitMission(const FItemCollectMissionInitParams& Pa
 
 	MissionIndex = NewMissionIndex;
 
-	TargetItemId = Params.TargetItemId;
+	TargetItemTag = Params.TargetItemTag;
 	bIsOreMission = Params.bIsOreMission;
 }
 
@@ -41,10 +41,10 @@ void UItemCollectionMission::UnbindDelegates(UObject* TargetForDelegate)
 	}
 }
 
-void UItemCollectionMission::NotifyItemCollected(uint8 ItemId, int32 Amount)
+void UItemCollectionMission::NotifyItemCollected(FGameplayTag ItemTag, int32 Amount)
 {
 	if (IsCompleted()) return;
-	if (ItemId != TargetItemId) return;
+	if (!ItemTag.MatchesTag(TargetItemTag)) return; // 정확 일치면 MatchesTagExact
 
 	AddProgress(FMath::Max(Amount, 1));
 }
@@ -54,9 +54,9 @@ uint8 UItemCollectionMission::GetMissionIndex() const
 	return (uint8)MissionIndex;
 }
 
-const uint8 UItemCollectionMission::GetTargetItemId() const
+FGameplayTag UItemCollectionMission::GetTargetItemTag() const
 {
-	return TargetItemId;
+	return TargetItemTag;
 }
 
 const bool UItemCollectionMission::IsOreMission() const

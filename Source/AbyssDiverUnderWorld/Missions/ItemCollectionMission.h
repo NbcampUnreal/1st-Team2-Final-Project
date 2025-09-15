@@ -16,10 +16,10 @@ struct FItemCollectMissionInitParams : public FMissionInitParams
 		const FString& InMissionDescription,
 		const EMissionConditionType& InConditionType,
 		const int32& InGoalCount,
-		uint8 InTargetItemId,
+		FGameplayTag InTargetItemTag,
 		bool bInIsOreMission,
 		const TArray<int32>& InExtraValues,
-		bool bInCompleteInstantly,
+		bool bInCompleteInstantly
 	)
 		: FMissionInitParams
 		(
@@ -32,11 +32,11 @@ struct FItemCollectMissionInitParams : public FMissionInitParams
 			bInCompleteInstantly
 		)
 	{
-		TargetItemId = InTargetItemId;
+		TargetItemTag = InTargetItemTag;
 		bIsOreMission = bInIsOreMission;
 	}
 
-	uint8 TargetItemId;
+	FGameplayTag TargetItemTag;
 	uint8 bIsOreMission : 1;
 };
 
@@ -57,14 +57,14 @@ public:
 	virtual void BindDelegates(UObject* TargetForDelegate) override;
 	virtual void UnbindDelegates(UObject* TargetForDelegate) override;
 
-	virtual void NotifyItemCollected(uint8 ItemId, int32 Amount) override;
+	virtual void NotifyItemCollected(FGameplayTag ItemTag, int32 Amount) override;
 
 #pragma endregion
 
 #pragma region Variables
 public:
 	UPROPERTY(EditAnywhere)
-	uint8 TargetItemId;
+	FGameplayTag TargetItemTag;
 protected:
 
 	EItemCollectMission MissionIndex;
@@ -76,7 +76,7 @@ protected:
 
 public:
 	virtual uint8 GetMissionIndex() const override;
-	const uint8 GetTargetItemId() const;
+	FGameplayTag GetTargetItemTag() const;
 	const bool IsOreMission() const;
 
 #pragma endregion

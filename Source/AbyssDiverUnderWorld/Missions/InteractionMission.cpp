@@ -28,8 +28,7 @@ void UInteractionMission::NotifyInteracted(FGameplayTag Tag)
 	if (!Tag.MatchesTag(TargetInteractionTag))
 		return;
 
-	if (GetGoalCount() <= 1) CompleteMission();
-	else AddProgress(1);
+	AddProgress(1);
 }
 
 uint8 UInteractionMission::GetMissionIndex() const

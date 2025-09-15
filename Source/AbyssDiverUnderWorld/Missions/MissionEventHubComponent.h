@@ -5,8 +5,8 @@
 #include "GameplayTagContainer.h"
 #include "MissionEventHubComponent.generated.h"
 
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnMonsterKilled, FName /*UnitId*/);
-DECLARE_MULTICAST_DELEGATE_TwoParams(FOnItemCollected, uint8 /*ItemId*/, int32 /*Amount*/);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnMonsterKilled, FGameplayTag /*UnitTag*/);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnItemCollected, FGameplayTag /*ItemTag*/, int32 /*Amount*/);
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnItemUsed, uint8 /*ItemId*/, int32 /*Amount*/);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnInteracted, FGameplayTag /*TargetTag*/);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnAggroTriggered, FGameplayTag /*SourceTag*/);
@@ -25,9 +25,9 @@ protected:
 
 public:	
 	// 게임 시스템들이 호출할 API
-    void BroadcastMonsterKilled(FName UnitId);
-    void BroadcastItemCollected(uint8 ItemId, int32 Amt);
-    void BroadcastItemUsed(uint8 ItemId, int32 Amt);
+    void BroadcastMonsterKilled(FGameplayTag UnitTag);
+    void BroadcastItemCollected(FGameplayTag ItemTag, int32 Amount);
+    void BroadcastItemUsed(uint8 ItemId, int32 Amount);
     void BroadcastInteracted(FGameplayTag Tag);
     void BroadcastAggro(FGameplayTag SourceTag);
 

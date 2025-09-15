@@ -5,13 +5,15 @@
 #include "Missions/MissionBase.h"
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
+#include "Character/UnitBase.h"
 
 //Mission includes
-#include "Missions/AggroTriggerMission.h"
-#include "Missions/InteractionMission.h"
-#include "Missions/ItemCollectionMission.h"
-#include "Missions/ItemUseMission.h"
-#include "Missions/KillMonsterMission.h"
+#include "MissionBase.h"
+#include "AggroTriggerMission.h"
+#include "InteractionMission.h"
+#include "ItemCollectionMission.h"
+#include "ItemUseMission.h"
+#include "KillMonsterMission.h"
 
 UMissionManagerComponent::UMissionManagerComponent()
 {
@@ -94,13 +96,13 @@ void UMissionManagerComponent::OnRep_Missions()
     BP_OnMissionStatesUpdated(ActiveStates);
 }
 
-void UMissionManagerComponent::HandleItemCollected(uint8 ItemId, int32 Amount)
+void UMissionManagerComponent::HandleItemCollected(FGameplayTag ItemTag, int32 Amount)
 {
     if (!(GetOwner() && GetOwner()->HasAuthority())) return;
 
     for (TObjectPtr<UMissionBase>& Mission : ActiveMissions)
     {
-        if (Mission) { Mission->NotifyItemCollected(ItemId, Amount); } // 가상함수(아래 2장 참고)
+        if (Mission) { Mission->NotifyItemCollected(ItemTag, Amount); } // 가상함수(아래 2장 참고)
     }
 }
 
@@ -122,12 +124,12 @@ void UMissionManagerComponent::HandleInteracted(FGameplayTag Tag)
     }
 }
 
-void UMissionManagerComponent::HandleMonsterKilled(FName UnitId)
+void UMissionManagerComponent::HandleMonsterKilled(FGameplayTag UnitTag)
 {
     if (!(GetOwner() && GetOwner()->HasAuthority())) return;
     for (TObjectPtr<UMissionBase>& Mission : ActiveMissions)
     {
-        if (Mission) { Mission->NotifyMonsterKilled(UnitId); }
+        if (Mission) { Mission->NotifyMonsterKilled(UnitTag); }
     }
 }
 
@@ -202,12 +204,28 @@ UMissionBase* UMissionManagerComponent::CreateAndInitMission(const FMissionData&
         if (!Row) return nullptr;
 
         FAggroMissionInitParams P(
-            Row->MissionType, Row->GoalCount, Row->ConditionType,
-            Row->MissionName, Row->MissionDescription, Row->ExtraValues,
+            Row->MissionType,
+            Row->GoalCount,
+            Row->ConditionType,
+            Row->MissionName,
+            Row->MissionDescription,
+            Row->ExtraValues,
             Row->bShouldCompleteInstantly
         );
         Mission->InitMission(P, EAggroTriggerMission(Index));
-        return CastChecked<UMissionBase>(Mission);
+
+        // ★ 태그/쿼리는 파라미터가 아니라 미션 멤버에 주입
+        Mission->bUseQuery = Row->bUseQuery;
+        if (Mission->bUseQuery)
+        {
+            Mission->TargetAggroQuery = Row->TargetAggroQuery;
+        }
+        else
+        {
+            Mission->TargetTag = Row->TargetTag;
+        }
+
+        return Mission;
     }
     case EMissionType::KillMonster:
     {
@@ -216,13 +234,19 @@ UMissionBase* UMissionManagerComponent::CreateAndInitMission(const FMissionData&
         if (!Row) return nullptr;
 
         FKillMissionInitParams P(
-            Row->MissionType, Row->GoalCount, Row->ConditionType,
-            Row->MissionName, Row->MissionDescription, Row->ExtraValues,
-            Row->bShouldCompleteInstantly, Row->UnitId,
-            Row->NeededSimultaneousKillCount, Row->KillInterval
+            Row->MissionType,
+            Row->GoalCount,
+            Row->ConditionType,
+            Row->MissionName,
+            Row->MissionDescription,
+            Row->ExtraValues,
+            Row->bShouldCompleteInstantly,
+            Row->UnitId,                       // (태그로 리팩터링 전이라면 그대로)
+            Row->NeededSimultaneousKillCount,
+            Row->KillInterval
         );
         Mission->InitMission(P, EKillMonsterMission(Index));
-        return CastChecked<UMissionBase>(Mission);
+        return Mission;
     }
     case EMissionType::Interaction:
     {
@@ -230,13 +254,19 @@ UMissionBase* UMissionManagerComponent::CreateAndInitMission(const FMissionData&
         const FInteractionMissionRow* Row = MissionSubsystem->GetInteractionMissionData(EInteractionMission(Index));
         if (!Row) return nullptr;
 
+        // ★ 새 시그니처에 맞춰 순서/값 교정 + TargetInteractionTag 전달
         FInteractiontMissionInitParams P(
-            Row->MissionType, Row->GoalCount, Row->ConditionType,
-            Row->MissionName, Row->MissionDescription, Row->ExtraValues,
+            Row->MissionType,
+            Row->MissionName,
+            Row->MissionDescription,
+            Row->ConditionType,
+            Row->GoalCount,
+            Row->TargetInteractionTag,         // ← 중요!
+            Row->ExtraValues,
             Row->bShouldCompleteInstantly
         );
         Mission->InitMission(P, EInteractionMission(Index));
-        return CastChecked<UMissionBase>(Mission);
+        return Mission;
     }
     case EMissionType::ItemCollection:
     {
@@ -245,12 +275,18 @@ UMissionBase* UMissionManagerComponent::CreateAndInitMission(const FMissionData&
         if (!Row) return nullptr;
 
         FItemCollectMissionInitParams P(
-            Row->MissionType, Row->GoalCount, Row->ConditionType,
-            Row->MissionName, Row->MissionDescription, Row->ExtraValues,
-            Row->bShouldCompleteInstantly, Row->ItemId, Row->bIsOreMission
+            Row->MissionType,
+            Row->GoalCount,
+            Row->ConditionType,
+            Row->MissionName,
+            Row->MissionDescription,
+            Row->ExtraValues,
+            Row->bShouldCompleteInstantly,
+            Row->ItemId,
+            Row->bIsOreMission
         );
         Mission->InitMission(P, EItemCollectMission(Index));
-        return CastChecked<UMissionBase>(Mission);
+        return Mission;
     }
     case EMissionType::ItemUse:
     {
@@ -259,18 +295,22 @@ UMissionBase* UMissionManagerComponent::CreateAndInitMission(const FMissionData&
         if (!Row) return nullptr;
 
         FItemUseMissionInitParams P(
-            Row->MissionType, Row->GoalCount, Row->ConditionType,
-            Row->MissionName, Row->MissionDescription, Row->ExtraValues,
-            Row->bShouldCompleteInstantly
+            Row->MissionType,
+            Row->GoalCount,
+            Row->ConditionType,
+            Row->MissionName,
+            Row->MissionDescription,
+            Row->ExtraValues,
+            Row->bShouldCompleteInstantly,
+            Row->ItemId
         );
         Mission->InitMission(P, EItemUseMission(Index));
-        return CastChecked<UMissionBase>(Mission);
+        return Mission;
     }
-    default:
-        break;
     }
     return nullptr;
 }
+
 
 // 아래 3개 함수는 프로젝트 이벤트에 맞게 구현
 void UMissionManagerComponent::BindAll() 
