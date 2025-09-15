@@ -9,7 +9,7 @@ ASafeZoneTriggerBox::ASafeZoneTriggerBox()
 	// Character의 Interaction Volume은 무시하고 Character Capsule Component와만 충돌
 	if (UShapeComponent* TriggerComponent = GetCollisionComponent())
 	{
-		TriggerComponent->SetCollisionResponseToChannel(ECC_GameTraceChannel1, ECR_Ignore);
+		TriggerComponent->SetCollisionResponseToChannel(ABCollisionChannels::ECC_Interaction, ECR_Ignore);
 	}
 }
 
