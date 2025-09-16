@@ -1422,6 +1422,7 @@ public:
 	/** 캐릭터가 현재 Capture State 인지 여부를 반환 */
 	FORCEINLINE bool IsCaptured() const { return bIsCaptured; }
 
+	/** 캐릭터의 소유자 AADPlayerController 반환 */
 	FORCEINLINE AADPlayerController* GetOwnerController() const { return OwnerController; }
 
 	/** 깊이 컴포넌트를 반환 */

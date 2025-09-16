@@ -230,6 +230,17 @@ bool AADPlayerController::IsCameraBlinking() const
 	return GetWorldTimerManager().IsTimerActive(CameraBlankTimerHandle) || (PlayerCameraManager && PlayerCameraManager->bEnableFading);
 }
 
+void AADPlayerController::C_StopCameraBlink_Implementation()
+{
+	// Camera Fade를 중지하고 원래 상태로 복구
+	if (PlayerCameraManager != nullptr)
+	{
+		PlayerCameraManager->StopCameraFade();
+		PlayerCameraManager->SetManualCameraFade(0.0f, FLinearColor::Black, false);				
+	}
+	GetWorldTimerManager().ClearTimer(CameraBlankTimerHandle);
+}
+
 void AADPlayerController::ShowPlayerHUD()
 {
 	if (PlayerHUDComponent)
