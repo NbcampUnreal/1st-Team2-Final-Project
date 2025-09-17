@@ -745,6 +745,10 @@ public:
 	/** 그로기에 걸린 팀원 부활 시 호출되는 델리게이트 */
 	FOnGroggyRevive OnGroggyReviveDelegate;
 
+	DECLARE_MULTICAST_DELEGATE_OneParam(FOnHiddenChanged, bool /* bNewHidden */);
+	/** 캐릭터의 Hidden 상태가 변경되었을 때 호출되는 델리게이트 */
+	FOnHiddenChanged OnHiddenChangedDelegate;
+
 	UPROPERTY(VisibleAnywhere, Category = "Mining")
 	/** 현재 1p에 장착된 Tool 인스턴스 */
 	TObjectPtr<AActor> SpawnedTool;
@@ -1418,6 +1422,7 @@ public:
 	/** 캐릭터가 현재 Capture State 인지 여부를 반환 */
 	FORCEINLINE bool IsCaptured() const { return bIsCaptured; }
 
+	/** 캐릭터의 소유자 AADPlayerController 반환 */
 	FORCEINLINE AADPlayerController* GetOwnerController() const { return OwnerController; }
 
 	/** 깊이 컴포넌트를 반환 */

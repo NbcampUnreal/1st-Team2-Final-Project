@@ -191,6 +191,7 @@ void AADPlayerController::C_StartCameraBlink_Implementation(FColor FadeColor, FV
 {
 	if (PlayerCameraManager != nullptr)
 	{
+		// Camera Fade Out 시작, FadeStartTime이 0.0f 이하일 경우 바로 FadeColor로 지정된 알파 값으로 변경
 		const float BlankFadeStartAlpha = FadeAlpha.X >= 0.0f ? FadeAlpha.X : PlayerCameraManager->FadeAmount;
 		const float BlankFadeEndAlpha = FadeAlpha.Y;
 		if (FadeStartTime > 0.0f)
@@ -202,6 +203,7 @@ void AADPlayerController::C_StartCameraBlink_Implementation(FColor FadeColor, FV
 			PlayerCameraManager->SetManualCameraFade(BlankFadeEndAlpha, FadeColor.ReinterpretAsLinear(), false);
 		}
 
+		// Fade Delay 만큼 대기 후 Fade In 
 		TWeakObjectPtr WeakActor = this;
 		FTimerDelegate TimerDelegate;
 		TimerDelegate.BindWeakLambda(this, [=]()
@@ -223,9 +225,20 @@ void AADPlayerController::C_StartCameraBlink_Implementation(FColor FadeColor, FV
 	}
 }
 
-bool AADPlayerController::IsCameraBlanking() const
+bool AADPlayerController::IsCameraBlinking() const
 {
 	return GetWorldTimerManager().IsTimerActive(CameraBlankTimerHandle) || (PlayerCameraManager && PlayerCameraManager->bEnableFading);
+}
+
+void AADPlayerController::C_StopCameraBlink_Implementation()
+{
+	// Camera Fade를 중지하고 원래 상태로 복구
+	if (PlayerCameraManager != nullptr)
+	{
+		PlayerCameraManager->StopCameraFade();
+		PlayerCameraManager->SetManualCameraFade(0.0f, FLinearColor::Black, false);				
+	}
+	GetWorldTimerManager().ClearTimer(CameraBlankTimerHandle);
 }
 
 void AADPlayerController::ShowPlayerHUD()
