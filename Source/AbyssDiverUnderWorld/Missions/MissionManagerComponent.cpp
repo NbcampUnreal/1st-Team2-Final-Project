@@ -15,6 +15,8 @@
 #include "ItemUseMission.h"
 #include "KillMonsterMission.h"
 
+#define AUTH_GUARD if (!(GetOwner() && GetOwner()->HasAuthority())) return;
+
 UMissionManagerComponent::UMissionManagerComponent()
 {
     SetIsReplicatedByDefault(true); // 컴포넌트 복제 활성화
@@ -96,51 +98,68 @@ void UMissionManagerComponent::OnRep_Missions()
     BP_OnMissionStatesUpdated(ActiveStates);
 }
 
-void UMissionManagerComponent::HandleItemCollected(FGameplayTag ItemTag, int32 Amount)
-{
-    if (!(GetOwner() && GetOwner()->HasAuthority())) return;
-
-    for (TObjectPtr<UMissionBase>& Mission : ActiveMissions)
+void UMissionManagerComponent::HandleMonsterKilled(const FGameplayTagContainer& UnitTags) 
+{ 
+    AUTH_GUARD; 
+    for (UMissionBase* Mission : ActiveMissions)
     {
-        if (Mission) { Mission->NotifyItemCollected(ItemTag, Amount); } // 가상함수(아래 2장 참고)
+        if (Mission)
+        {
+            Mission->NotifyMonsterKilled(UnitTags);
+        }
     }
 }
 
-void UMissionManagerComponent::HandleItemUsed(uint8 ItemId, int32 Amount)
-{
-    if (!(GetOwner() && GetOwner()->HasAuthority())) return;
-    for (TObjectPtr<UMissionBase>& Mission : ActiveMissions)
+void UMissionManagerComponent::HandleItemCollected(const FGameplayTagContainer& ItemTags, int32 Amount) 
+{ 
+    AUTH_GUARD; 
+    for (UMissionBase* Mission : ActiveMissions)
     {
-        if (Mission) { Mission->NotifyItemUsed(ItemId, Amount); }
+        if (Mission)
+        {
+            Mission->NotifyItemCollected(ItemTags, Amount);
+        }
+    }
+
+
+void UMissionManagerComponent::HandleItemUsed(const FGameplayTagContainer& ItemTags, int32 Amount)
+{ 
+    AUTH_GUARD; 
+    for (UMissionBase* Mission : ActiveMissions)
+    {
+        if (Mission)
+        {
+            Mission->NotifyItemUsed(ItemTags, Amount);
+		}
+    }
+
+}
+
+void UMissionManagerComponent::HandleAggro(const FGameplayTagContainer& SourceTags) 
+{ 
+    AUTH_GUARD; 
+    for (UMissionBase* Mission : ActiveMissions)
+    {
+        if (Mission)
+        {
+            Mission->NotifyAggro(SourceTags);
+        }
     }
 }
 
-void UMissionManagerComponent::HandleInteracted(FGameplayTag Tag)
-{
-    if (!(GetOwner() && GetOwner()->HasAuthority())) return;
-    for (TObjectPtr<UMissionBase>& Mission : ActiveMissions)
+void UMissionManagerComponent::HandleInteracted(const FGameplayTagContainer& InteractTags) 
+{ 
+    AUTH_GUARD; 
+    for (UMissionBase* Mission : ActiveMissions)
     {
-        if (Mission) { Mission->NotifyInteracted(Tag); }
+        if (Mission)
+        {
+            Mission->NotifyInteracted(InteractTags);
+		}
     }
+
 }
 
-void UMissionManagerComponent::HandleMonsterKilled(FGameplayTag UnitTag)
-{
-    if (!(GetOwner() && GetOwner()->HasAuthority())) return;
-    for (TObjectPtr<UMissionBase>& Mission : ActiveMissions)
-    {
-        if (Mission) { Mission->NotifyMonsterKilled(UnitTag); }
-    }
-}
-
-void UMissionManagerComponent::HandleAggro(FGameplayTag Tag)
-{
-    if (!(GetOwner() && GetOwner()->HasAuthority())) return;
-    for (TObjectPtr<UMissionBase>& Mission : ActiveMissions)
-    {
-        if (Mission) { Mission->NotifyAggroTriggered(Tag); }
-    }
-}
 
 void UMissionManagerComponent::HandleMissionProgress(EMissionType MissionType, uint8 MissionIndex, int32 Current, int32 Goal)
 {

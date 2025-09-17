@@ -55,21 +55,12 @@ public:
     UFUNCTION()
     void OnRep_Missions(); // HUD/Tablet 갱신 트리거
 
-    // 허브 이벤트를 받는 핸들러들
-    UFUNCTION()
-    void HandleItemCollected(FGameplayTag ItemTag, int32 Amount);
-    
-    UFUNCTION()
-    void HandleItemUsed(uint8 ItemId, int32 Amount);
-    
-    UFUNCTION()
-    void HandleInteracted(FGameplayTag Tag);
-    
-    UFUNCTION()
-    void HandleMonsterKilled(FGameplayTag UnitTag);
-    
-    UFUNCTION()
-    void HandleAggro(FGameplayTag Tag);
+    // Hub -> Manager 콜백
+    void HandleMonsterKilled(const FGameplayTagContainer& UnitTags);
+    void HandleItemCollected(const FGameplayTagContainer& ItemTags, int32 Amount);
+    void HandleItemUsed(const FGameplayTagContainer& ItemTags, int32 Amount);
+    void HandleAggro(const FGameplayTagContainer& SourceTags);
+    void HandleInteracted(const FGameplayTagContainer& InteractTags);
 
     UFUNCTION()
     void HandleMissionProgress(EMissionType MissionType, uint8 MissionIndex, int32 Current, int32 Goal);

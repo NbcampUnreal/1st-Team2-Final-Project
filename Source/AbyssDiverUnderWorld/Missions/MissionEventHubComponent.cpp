@@ -20,44 +20,34 @@ void UMissionEventHubComponent::BeginPlay()
 	
 }
 
-void UMissionEventHubComponent::BroadcastMonsterKilled(FGameplayTag UnitTag)
+void UMissionEventHubComponent::BroadcastMonsterKilled(const FGameplayTagContainer& UnitTags)
 {
 	if (OnMonsterKilled.IsBound())
-	{
-		OnMonsterKilled.Broadcast(UnitTag);
-	}
+		OnMonsterKilled.Broadcast(UnitTags);
 }
 
-void UMissionEventHubComponent::BroadcastItemCollected(FGameplayTag ItemTag, int32 Amount)
+void UMissionEventHubComponent::BroadcastItemCollected(const FGameplayTagContainer& ItemTags, int32 Amount)
 {
 	if (OnItemCollected.IsBound())
-	{
-		OnItemCollected.Broadcast(ItemTag, Amount);
-	}
+		OnItemCollected.Broadcast(ItemTags, Amount);
 }
 
-void UMissionEventHubComponent::BroadcastItemUsed(uint8 ItemId, int32 Amt)
+void UMissionEventHubComponent::BroadcastItemUsed(const FGameplayTagContainer& ItemTags, int32 Amount)
 {
 	if (OnItemUsed.IsBound())
-	{
-		OnItemUsed.Broadcast(ItemId, Amt);
-	}
+		OnItemUsed.Broadcast(ItemTags, Amount);
 }
 
-void UMissionEventHubComponent::BroadcastInteracted(FGameplayTag Tag)
-{
-	if (OnInteracted.IsBound())
-	{
-		OnInteracted.Broadcast(Tag);
-	}
-}
-
-void UMissionEventHubComponent::BroadcastAggro(FGameplayTag SourceTag)
+void UMissionEventHubComponent::BroadcastAggroTriggered(const FGameplayTagContainer& SourceTags)
 {
 	if (OnAggroTriggered.IsBound())
-	{
-		OnAggroTriggered.Broadcast(SourceTag);
-	}
+		OnAggroTriggered.Broadcast(SourceTags);
+}
+
+void UMissionEventHubComponent::BroadcastInteracted(const FGameplayTagContainer& InteractTags)
+{
+	if (OnInteracted.IsBound())
+		OnInteracted.Broadcast(InteractTags);
 }
 
 

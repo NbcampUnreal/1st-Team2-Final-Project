@@ -5,11 +5,11 @@
 #include "GameplayTagContainer.h"
 #include "MissionEventHubComponent.generated.h"
 
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnMonsterKilled, FGameplayTag /*UnitTag*/);
-DECLARE_MULTICAST_DELEGATE_TwoParams(FOnItemCollected, FGameplayTag /*ItemTag*/, int32 /*Amount*/);
-DECLARE_MULTICAST_DELEGATE_TwoParams(FOnItemUsed, uint8 /*ItemId*/, int32 /*Amount*/);
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnInteracted, FGameplayTag /*TargetTag*/);
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnAggroTriggered, FGameplayTag /*SourceTag*/);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnMonsterKilled, const FGameplayTag& /*UnitTag*/);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnItemCollected, const FGameplayTag& /*ItemTag*/, int32 /*Amount*/);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnItemUsed, const FGameplayTag&, int32 /*Amount*/);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnInteracted, const FGameplayTag& /*TargetTag*/);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnAggroTriggered, const FGameplayTag& /*SourceTag*/);
 
 
 UCLASS( ClassGroup=(Mission), meta=(BlueprintSpawnableComponent) )
@@ -25,11 +25,11 @@ protected:
 
 public:	
 	// 게임 시스템들이 호출할 API
-    void BroadcastMonsterKilled(FGameplayTag UnitTag);
-    void BroadcastItemCollected(FGameplayTag ItemTag, int32 Amount);
-    void BroadcastItemUsed(uint8 ItemId, int32 Amount);
-    void BroadcastInteracted(FGameplayTag Tag);
-    void BroadcastAggro(FGameplayTag SourceTag);
+    UFUNCTION(BlueprintCallable) void BroadcastMonsterKilled(const FGameplayTagContainer& UnitTags);
+    UFUNCTION(BlueprintCallable) void BroadcastItemCollected(const FGameplayTagContainer& ItemTags, int32 Amount);
+    UFUNCTION(BlueprintCallable) void BroadcastItemUsed(const FGameplayTagContainer& ItemTags, int32 Amount);
+    UFUNCTION(BlueprintCallable) void BroadcastAggroTriggered(const FGameplayTagContainer& SourceTags);
+    UFUNCTION(BlueprintCallable) void BroadcastInteracted(const FGameplayTagContainer& InteractTags);
 
     // 미션 매니저가 구독할 델리게이트
     FOnMonsterKilled    OnMonsterKilled;
