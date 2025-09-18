@@ -16,17 +16,35 @@ void UItemUseMission::InitMission(const FItemUseMissionInitParams& Params, const
 	InitMission((const FMissionInitParams&)Params);
 
 	MissionIndex = NewMissionIndex;
-	TargetItemId = Params.TargetItemId;
+	
+	bUseQuery = Params.bUseQuery;
+	TargetItemIdTag = Params.TargetItemIdTag;
+	TargetItemTypeTag = Params.TargetItemTypeTag;
+	TargetItemQuery = Params.TargetItemQuery;
 }
 
 
-void UItemUseMission::NotifyItemUsed(uint8 ItemId, int32 Amount)
+void UItemUseMission::NotifyItemUsed(const FGameplayTagContainer& ItamTag, int32 Amount)
 {
 	if (IsCompleted()) 
 		return;
 
-	if (ItemId != TargetItemId)
-		return;
+	bool bMathched = false;
+ 	if (bUseQuery)
+	{
+		bMathched = TargetItemQuery.Matches(ItamTag);
+	}
+	else
+	{
+		if (TargetItemIdTag.IsValid())
+		{
+			bMathched = ItamTag.HasTag(TargetItemIdTag);
+		}
+		else if (TargetItemTypeTag.IsValid())
+		{
+			bMathched = ItamTag.HasTag(TargetItemTypeTag);
+		}
+	}
 
 	AddProgress(FMath::Max(Amount, 1));
 }

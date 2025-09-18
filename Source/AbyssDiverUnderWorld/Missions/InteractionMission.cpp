@@ -17,16 +17,34 @@ void UInteractionMission::InitMission(const FInteractiontMissionInitParams& Para
 {
 	InitMission((const FMissionInitParams&)Params);
 	MissionIndex = NewMissionIndex;
-	TargetInteractionTag = Params.TargetInteractionTag;
+	
+	bUseQuery = Params.bUseQuery;
+	TargetInteractionIdTag = Params.TargetInteractionIdTag;
+	TargetInteractionTypeTag = Params.TargetInteractionTypeTag;
+	TargetInteractionQuery = Params.TargetInteractionQuery;
 }
 
 
-void UInteractionMission::NotifyInteracted(FGameplayTag Tag)
+void UInteractionMission::NotifyInteracted(const FGameplayTagContainer& InteractTags)
 {
 	if (IsCompleted()) return;
 
-	if (!Tag.MatchesTag(TargetInteractionTag))
-		return;
+	bool bMathched = false;
+	if (bUseQuery)
+	{
+		bMathched = TargetInteractionQuery.Matches(InteractTags);
+	}
+	else
+	{
+		if (TargetInteractionIdTag.IsValid())
+		{
+			bMathched = InteractTags.HasTag(TargetInteractionIdTag);
+		}
+		else if (TargetInteractionTypeTag.IsValid())
+		{
+			bMathched = InteractTags.HasTag(TargetInteractionTypeTag);
+		}
+	}
 
 	AddProgress(1);
 }

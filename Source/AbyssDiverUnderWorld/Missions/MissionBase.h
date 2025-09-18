@@ -15,12 +15,12 @@ DECLARE_DELEGATE_FourParams(FOnMissionProgress, EMissionType, uint8 /*index*/, i
 struct FMissionInitParams
 {
 	FMissionInitParams(
-		const EMissionType InMissionType,
-		const FString InMissionName,
-		const FString InMissionDescription,
-		const EMissionConditionType InConditionType,
-		const int32 InGoalCount,
-		const TArray<int32> InExtraValues,
+		const EMissionType& InMissionType,
+		const FString& InMissionName,
+		const FString& InMissionDescription,
+		const EMissionConditionType& InConditionType,
+		const int32& InGoalCount,
+		const TArray<int32>& InExtraValues,
 		bool bInCompleteInstantly
 	)
 		: MissionType(InMissionType)
@@ -62,11 +62,11 @@ public:
 
 	void CompleteMission();
 
-	virtual void NotifyMonsterKilled(FGameplayTag UnitTag) {}
-	virtual void NotifyItemCollected(FGameplayTag ItemTag, int32 Amount) {}
-	virtual void NotifyItemUsed(uint8 ItemId, int32 Amount);
-	virtual void NotifyInteracted(FGameplayTag Tag);
-	virtual void NotifyAggroTriggered(const FGameplayTag& SourceTag);
+	virtual void NotifyMonsterKilled(const FGameplayTagContainer& UnitTags) {}
+	virtual void NotifyItemCollected(const FGameplayTagContainer& ItemTags, int32 Amount) {}
+	virtual void NotifyItemUsed(const FGameplayTagContainer& ItemTags, int32 Amount) {}
+	virtual void NotifyAggroTriggered(const FGameplayTagContainer& SourceTags) {}
+	virtual void NotifyInteracted(const FGameplayTagContainer& InteractTags) {}
 
 	FOnCompleteMissionDelegate OnCompleteMissionDelegate;
 	FOnMissionProgress OnMissionProgressDelegate;

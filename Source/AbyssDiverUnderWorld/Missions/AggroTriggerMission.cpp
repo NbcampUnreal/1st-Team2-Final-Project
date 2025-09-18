@@ -17,25 +17,24 @@ void UAggroTriggerMission::InitMission(const FAggroMissionInitParams& Params, co
 	InitMission((const FMissionInitParams&)Params);
 
 	MissionIndex = NewMissionIndex;
+
+    bUseQuery = Params.bUseQuery;
+    TargetUnitIdTag = Params.TargetUnitIdTag;
+    TargetUnitTypeTag = Params.TargetUnitTypeTag;
+    TargetUnitQuery = Params.TargetUnitQuery;
 }
 
-void UAggroTriggerMission::NotifyAggroTriggered(const FGameplayTag& SourceTag)
+void UAggroTriggerMission::NotifyAggroTriggered(const FGameplayTagContainer& SourceTag)
 {
     if (IsCompleted()) return;
 
     bool bMatched = false;
     if (bUseQuery)
-    {
-        FGameplayTagContainer Owned; Owned.AddTag(SourceTag);
-        bMatched = TargetAggroQuery.Matches(Owned);
-    }
-    else
-    {
-        // 계층 허용: Mission.Aggro.Enemy.Shark c Mission.Aggro.Enemy.*
-        bMatched = SourceTag.MatchesTag(TargetTag);
-        // 정확 일치 원하면 MatchesTagExact(TargetAggroTag)
-    }
-    if (!bMatched) return;
+		bMatched = TargetUnitQuery.Matches(SourceTag);
+	else if (TargetUnitIdTag.IsValid())
+		bMatched = SourceTag.HasTagExact(TargetUnitIdTag);
+	else if (TargetUnitTypeTag.IsValid())
+		bMatched = SourceTag.HasTag(TargetUnitTypeTag);
 
     AddProgress(1);
 }

@@ -20,7 +20,10 @@ struct FKillMissionInitParams : public FMissionInitParams
 		const int32& InGoalCount,
 		const TArray<int32>& InExtraValues,
 		bool bInCompleteInstantly,
-		const FGameplayTag& InUnitTag,
+		bool InUseQuery,
+		const FGameplayTag& InUnitIdTag,
+		const FGameplayTag& InUnitTypeTag,
+		const FGameplayTagQuery& InUnitTagQuery,
 		uint8 InNeededSimultaneousKillCount,
 		float InKillInterval
 	)
@@ -35,12 +38,18 @@ struct FKillMissionInitParams : public FMissionInitParams
 			bInCompleteInstantly
 		)
 	{
-		UnitTag = InUnitTag;
+		bUseQuery = InUseQuery;
+		TargetUnitIdTag = InUnitIdTag;
+		TargetUnitTypeTag = InUnitTypeTag;
+		TargetUnitQuery = InUnitTagQuery;
 		NeededSimultaneousKillCount = InNeededSimultaneousKillCount;
 		KillInterval = InKillInterval;
 	}
+	bool bUseQuery = false;
+	FGameplayTag TargetUnitIdTag;
+	FGameplayTag TargetUnitTypeTag;
+	FGameplayTagQuery TargetUnitQuery;
 
-	FGameplayTag UnitTag;
 	uint8 NeededSimultaneousKillCount;
 	float KillInterval;
 };
@@ -65,18 +74,24 @@ public:
 	void InitMission(const FKillMissionInitParams& Params, const EKillMonsterMission& NewMissionIndex);
 
 
-	virtual void NotifyMonsterKilled(FGameplayTag UnitTag) override;
+	virtual void NotifyMonsterKilled(const FGameplayTagContainer& UnitTags) override;
 
 #pragma endregion
 
 #pragma region Variables
 public:
 	UPROPERTY(EditAnywhere) 
-	FGameplayTag TargetUnitTag;
-	UPROPERTY(EditAnywhere)
-	FGameplayTagQuery TargetUnitQuery;
-	UPROPERTY(EditAnywhere)
-	uint8 bUseQuery : 1 = 0;
+	bool bUseQuery = false;
+	
+	UPROPERTY(EditAnywhere) 
+	FGameplayTag      TargetUnitIdTag;    // Unit.Id.Kraken
+	
+	UPROPERTY(EditAnywhere) 
+	FGameplayTag      TargetUnitTypeTag;  // Unit.Type.Shark
+	
+	UPROPERTY(EditAnywhere) 
+	FGameplayTagQuery TargetUnitQuery;    // ÇÊ¿ä ½Ã
+
 
 	UPROPERTY(EditAnywhere)
 	int8 NeededSimultaneousKillCount = 1;

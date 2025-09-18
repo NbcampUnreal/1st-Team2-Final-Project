@@ -24,53 +24,46 @@ void UKillMonsterMission::InitMission(const FKillMissionInitParams& Params, cons
 
 	MissionIndex = NewMissionIndex;
 
-	TargetUnitTag = Params.UnitTag;
+	bUseQuery = Params.bUseQuery;
+	TargetUnitIdTag = Params.TargetUnitIdTag;
+	TargetUnitTypeTag = Params.TargetUnitTypeTag;
+	TargetUnitQuery = Params.TargetUnitQuery;
 	NeededSimultaneousKillCount = Params.NeededSimultaneousKillCount;
 	KillInterval = Params.KillInterval;
 
 	static const int32 PlayerCount = 4;
 }
 
-void UKillMonsterMission::NotifyMonsterKilled(FGameplayTag UnitTag)
+void UKillMonsterMission::NotifyMonsterKilled(const FGameplayTagContainer& UnitTags)
 {
-	if (IsCompleted())
-		return;
-	
+	if (IsCompleted()) return;
+
 	bool bMatched = false;
 	if (bUseQuery)
-	{
-		FGameplayTagContainer Owned; Owned.AddTag(UnitTag);
-		bMatched = TargetUnitQuery.Matches(Owned);
-	}
-	else
-	{
-		bMatched = UnitTag.MatchesTag(TargetUnitTag); // 정확 일치면 MatchesTagExact
-	}
+		bMatched = TargetUnitQuery.Matches(UnitTags);
+	else if (TargetUnitIdTag.IsValid())
+		bMatched = UnitTags.HasTagExact(TargetUnitIdTag);
+	else if (TargetUnitTypeTag.IsValid())
+		bMatched = UnitTags.HasTag(TargetUnitTypeTag);
+
 	if (!bMatched) return;
 
-	// 단일 킬
 	if (NeededSimultaneousKillCount <= 1 || KillInterval <= 0.f)
 	{
-		AddProgress(1);
-		return;
+		AddProgress(1); return;
 	}
 
-	// 동시 킬
 	const float Now = GetWorld()->GetTimeSeconds();
 	KillTimes.Add(Now);
 
-	// 시간 창 밖 기록 제거
 	while (KillTimes.Num() && (Now - KillTimes[0]) > KillInterval)
-	{
 		KillTimes.RemoveAt(0);
-	}
 
 	if (KillTimes.Num() >= NeededSimultaneousKillCount)
 	{
-		KillTimes.Reset(); // 한 번 충족 후 초기화(디자인에 맞게 조정)
-		AddProgress(1);
+		KillTimes.Reset(); 
+		AddProgress(1); 
 	}
-
 }
 
 

@@ -17,9 +17,12 @@ struct FInteractiontMissionInitParams : public FMissionInitParams
 		const FString& InMissionDescription,
 		const EMissionConditionType& InConditionType,
 		const int32& InGoalCount,
-		const FGameplayTag InTargetInteractionTag,
 		const TArray<int32>& InExtraValues,
-		bool bInCompleteInstantly
+		bool bInCompleteInstantly,
+		bool InUseQuery,
+		const FGameplayTag& InInteractionIdTag,
+		const FGameplayTag& InInteractionTypeTag,
+		const FGameplayTagQuery& InInteractionTagQuery
 	)
 		: FMissionInitParams
 		(
@@ -32,10 +35,16 @@ struct FInteractiontMissionInitParams : public FMissionInitParams
 			bInCompleteInstantly
 		)
 	{
-		TargetInteractionTag = InTargetInteractionTag;
+		bUseQuery = InUseQuery;
+		TargetInteractionIdTag = InInteractionIdTag;
+		TargetInteractionTypeTag = InInteractionTypeTag;
+		TargetInteractionQuery = InInteractionTagQuery;
 	}
 
-	FGameplayTag TargetInteractionTag;
+	bool bUseQuery = false;
+	FGameplayTag TargetInteractionIdTag;
+	FGameplayTag TargetInteractionTypeTag;
+	FGameplayTagQuery TargetInteractionQuery;
 };
 /**
  * 
@@ -55,14 +64,24 @@ public:
 	virtual void InitMission(const FMissionInitParams& Params) override;
 	void InitMission(const FInteractiontMissionInitParams& Params, const EInteractionMission& NewMissionIndex);
 
-	virtual void NotifyInteracted(FGameplayTag Tag) override;
+	virtual void NotifyInteracted(const FGameplayTagContainer& InteractTags) override;
 
 #pragma endregion
 
 #pragma region Variables
 public:
 	UPROPERTY(EditAnywhere)
-	FGameplayTag TargetInteractionTag;
+	bool bUseQuery = false;
+
+	UPROPERTY(EditAnywhere)
+	FGameplayTag      TargetInteractionIdTag;    // Unit.Id.Kraken
+
+	UPROPERTY(EditAnywhere)
+	FGameplayTag      TargetInteractionTypeTag;  // Unit.Type.Shark
+
+	UPROPERTY(EditAnywhere)
+	FGameplayTagQuery TargetInteractionQuery;    // ÇÊ¿ä ½Ã
+
 protected:
 
 	EInteractionMission MissionIndex;

@@ -16,10 +16,12 @@ struct FItemCollectMissionInitParams : public FMissionInitParams
 		const FString& InMissionDescription,
 		const EMissionConditionType& InConditionType,
 		const int32& InGoalCount,
-		FGameplayTag InTargetItemTag,
-		bool bInIsOreMission,
 		const TArray<int32>& InExtraValues,
-		bool bInCompleteInstantly
+		bool bInCompleteInstantly,
+		bool InUseQuery,
+		const FGameplayTag& InItemIdTag,
+		const FGameplayTag& InItemTypeTag,
+		const FGameplayTagQuery& InItemTagQuery
 	)
 		: FMissionInitParams
 		(
@@ -32,12 +34,15 @@ struct FItemCollectMissionInitParams : public FMissionInitParams
 			bInCompleteInstantly
 		)
 	{
-		TargetItemTag = InTargetItemTag;
-		bIsOreMission = bInIsOreMission;
+		bUseQuery = InUseQuery;
+		TargetItemIdTag = InItemIdTag;
+		TargetItemTypeTag = InItemTypeTag;
+		TargetItemQuery = InItemTagQuery;
 	}
-
-	FGameplayTag TargetItemTag;
-	uint8 bIsOreMission : 1;
+	bool bUseQuery = false;
+	FGameplayTag TargetItemIdTag;
+	FGameplayTag TargetItemTypeTag;
+	FGameplayTagQuery TargetItemQuery;
 };
 
 UCLASS()
@@ -57,18 +62,26 @@ public:
 	virtual void BindDelegates(UObject* TargetForDelegate) override;
 	virtual void UnbindDelegates(UObject* TargetForDelegate) override;
 
-	virtual void NotifyItemCollected(FGameplayTag ItemTag, int32 Amount) override;
+	virtual void NotifyItemCollected(const FGameplayTagContainer& ItemTag, int32 Amount) override;
 
 #pragma endregion
 
 #pragma region Variables
 public:
 	UPROPERTY(EditAnywhere)
-	FGameplayTag TargetItemTag;
-protected:
+	bool bUseQuery = false;
 
+	UPROPERTY(EditAnywhere)
+	FGameplayTag      TargetItemIdTag;    // Unit.Id.Kraken
+
+	UPROPERTY(EditAnywhere)
+	FGameplayTag      TargetItemTypeTag;  // Unit.Type.Shark
+
+	UPROPERTY(EditAnywhere)
+	FGameplayTagQuery TargetItemQuery;    // ÇÊ¿ä ½Ã
+
+protected:
 	EItemCollectMission MissionIndex;
-	uint8 bIsOreMission : 1;
 
 #pragma endregion
 
@@ -76,8 +89,6 @@ protected:
 
 public:
 	virtual uint8 GetMissionIndex() const override;
-	FGameplayTag GetTargetItemTag() const;
-	const bool IsOreMission() const;
 
 #pragma endregion
 };

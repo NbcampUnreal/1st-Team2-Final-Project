@@ -110,9 +110,9 @@ void UMissionManagerComponent::HandleMonsterKilled(const FGameplayTagContainer& 
     }
 }
 
-void UMissionManagerComponent::HandleItemCollected(const FGameplayTagContainer& ItemTags, int32 Amount) 
-{ 
-    AUTH_GUARD; 
+void UMissionManagerComponent::HandleItemCollected(const FGameplayTagContainer& ItemTags, int32 Amount)
+{
+    AUTH_GUARD;
     for (UMissionBase* Mission : ActiveMissions)
     {
         if (Mission)
@@ -120,7 +120,7 @@ void UMissionManagerComponent::HandleItemCollected(const FGameplayTagContainer& 
             Mission->NotifyItemCollected(ItemTags, Amount);
         }
     }
-
+}
 
 void UMissionManagerComponent::HandleItemUsed(const FGameplayTagContainer& ItemTags, int32 Amount)
 { 
@@ -142,7 +142,7 @@ void UMissionManagerComponent::HandleAggro(const FGameplayTagContainer& SourceTa
     {
         if (Mission)
         {
-            Mission->NotifyAggro(SourceTags);
+            Mission->NotifyAggroTriggered(SourceTags);
         }
     }
 }
@@ -210,124 +210,7 @@ void UMissionManagerComponent::HandleMissionComplete(EMissionType Type, uint8 In
 
 UMissionBase* UMissionManagerComponent::CreateAndInitMission(const FMissionData& Choice)
 {
-    check(MissionSubsystem);
-    const EMissionType Type = Choice.MissionType;
-    const uint8 Index = Choice.MissionIndex;
-
-    switch (Type)
-    {
-    case EMissionType::AggroTrigger:
-    {
-        UAggroTriggerMission* Mission = NewObject<UAggroTriggerMission>(this);
-        const FAggroTriggerMissionRow* Row = MissionSubsystem->GetAggroTriggerMissionData(EAggroTriggerMission(Index));
-        if (!Row) return nullptr;
-
-        FAggroMissionInitParams P(
-            Row->MissionType,
-            Row->GoalCount,
-            Row->ConditionType,
-            Row->MissionName,
-            Row->MissionDescription,
-            Row->ExtraValues,
-            Row->bShouldCompleteInstantly
-        );
-        Mission->InitMission(P, EAggroTriggerMission(Index));
-
-        // ★ 태그/쿼리는 파라미터가 아니라 미션 멤버에 주입
-        Mission->bUseQuery = Row->bUseQuery;
-        if (Mission->bUseQuery)
-        {
-            Mission->TargetAggroQuery = Row->TargetAggroQuery;
-        }
-        else
-        {
-            Mission->TargetTag = Row->TargetTag;
-        }
-
-        return Mission;
-    }
-    case EMissionType::KillMonster:
-    {
-        UKillMonsterMission* Mission = NewObject<UKillMonsterMission>(this);
-        const FKillMonsterMissionRow* Row = MissionSubsystem->GetKillMonsterMissionData(EKillMonsterMission(Index));
-        if (!Row) return nullptr;
-
-        FKillMissionInitParams P(
-            Row->MissionType,
-            Row->GoalCount,
-            Row->ConditionType,
-            Row->MissionName,
-            Row->MissionDescription,
-            Row->ExtraValues,
-            Row->bShouldCompleteInstantly,
-            Row->UnitId,                       // (태그로 리팩터링 전이라면 그대로)
-            Row->NeededSimultaneousKillCount,
-            Row->KillInterval
-        );
-        Mission->InitMission(P, EKillMonsterMission(Index));
-        return Mission;
-    }
-    case EMissionType::Interaction:
-    {
-        UInteractionMission* Mission = NewObject<UInteractionMission>(this);
-        const FInteractionMissionRow* Row = MissionSubsystem->GetInteractionMissionData(EInteractionMission(Index));
-        if (!Row) return nullptr;
-
-        // ★ 새 시그니처에 맞춰 순서/값 교정 + TargetInteractionTag 전달
-        FInteractiontMissionInitParams P(
-            Row->MissionType,
-            Row->MissionName,
-            Row->MissionDescription,
-            Row->ConditionType,
-            Row->GoalCount,
-            Row->TargetInteractionTag,         // ← 중요!
-            Row->ExtraValues,
-            Row->bShouldCompleteInstantly
-        );
-        Mission->InitMission(P, EInteractionMission(Index));
-        return Mission;
-    }
-    case EMissionType::ItemCollection:
-    {
-        UItemCollectionMission* Mission = NewObject<UItemCollectionMission>(this);
-        const FItemCollectMissionRow* Row = MissionSubsystem->GetItemCollectMissionData(EItemCollectMission(Index));
-        if (!Row) return nullptr;
-
-        FItemCollectMissionInitParams P(
-            Row->MissionType,
-            Row->GoalCount,
-            Row->ConditionType,
-            Row->MissionName,
-            Row->MissionDescription,
-            Row->ExtraValues,
-            Row->bShouldCompleteInstantly,
-            Row->ItemId,
-            Row->bIsOreMission
-        );
-        Mission->InitMission(P, EItemCollectMission(Index));
-        return Mission;
-    }
-    case EMissionType::ItemUse:
-    {
-        UItemUseMission* Mission = NewObject<UItemUseMission>(this);
-        const FItemUseMissionRow* Row = MissionSubsystem->GetItemUseMissionData(EItemUseMission(Index));
-        if (!Row) return nullptr;
-
-        FItemUseMissionInitParams P(
-            Row->MissionType,
-            Row->GoalCount,
-            Row->ConditionType,
-            Row->MissionName,
-            Row->MissionDescription,
-            Row->ExtraValues,
-            Row->bShouldCompleteInstantly,
-            Row->ItemId
-        );
-        Mission->InitMission(P, EItemUseMission(Index));
-        return Mission;
-    }
-    }
-    return nullptr;
+    
 }
 
 

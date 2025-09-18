@@ -17,14 +17,16 @@ void UItemCollectionMission::InitMission(const FItemCollectMissionInitParams& Pa
 	InitMission((const FMissionInitParams&)Params);
 
 	MissionIndex = NewMissionIndex;
-
-	TargetItemTag = Params.TargetItemTag;
-	bIsOreMission = Params.bIsOreMission;
+	
+	bUseQuery = Params.bUseQuery;
+	TargetItemIdTag = Params.TargetItemIdTag;
+	TargetItemTypeTag = Params.TargetItemTypeTag;
+	TargetItemQuery = Params.TargetItemQuery;
 }
 
 void UItemCollectionMission::BindDelegates(UObject* TargetForDelegate)
 {
-	if (bIsOreMission && TargetForDelegate->IsA<AADDroneSeller>())
+	if (TargetForDelegate->IsA<AADDroneSeller>())
 	{
 		/*AADDroneSeller* DroneSeller = Cast<AADDroneSeller>(TargetForDelegate);
 		DroneSeller->OnSellOreDelegate.RemoveAll(this);
@@ -34,17 +36,33 @@ void UItemCollectionMission::BindDelegates(UObject* TargetForDelegate)
 
 void UItemCollectionMission::UnbindDelegates(UObject* TargetForDelegate)
 {
-	if (bIsOreMission && TargetForDelegate->IsA<AADDroneSeller>())
+	if (TargetForDelegate->IsA<AADDroneSeller>())
 	{
 		AADDroneSeller* DroneSeller = Cast<AADDroneSeller>(TargetForDelegate);
 		DroneSeller->OnSellOreDelegate.RemoveAll(this);
 	}
 }
 
-void UItemCollectionMission::NotifyItemCollected(FGameplayTag ItemTag, int32 Amount)
+void UItemCollectionMission::NotifyItemCollected(const FGameplayTagContainer& ItemTag, int32 Amount)
 {
 	if (IsCompleted()) return;
-	if (!ItemTag.MatchesTag(TargetItemTag)) return; // 정확 일치면 MatchesTagExact
+	
+	bool bMathched = false;
+	if (bUseQuery)
+	{
+		bMathched = TargetItemQuery.Matches(ItemTag);
+	}
+	else
+	{
+		if (TargetItemIdTag.IsValid())
+		{
+			bMathched = ItemTag.HasTag(TargetItemIdTag);
+		}
+		else if (TargetItemTypeTag.IsValid())
+		{
+			bMathched = ItemTag.HasTag(TargetItemTypeTag);
+		}
+	}
 
 	AddProgress(FMath::Max(Amount, 1));
 }
@@ -52,14 +70,4 @@ void UItemCollectionMission::NotifyItemCollected(FGameplayTag ItemTag, int32 Amo
 uint8 UItemCollectionMission::GetMissionIndex() const
 {
 	return (uint8)MissionIndex;
-}
-
-FGameplayTag UItemCollectionMission::GetTargetItemTag() const
-{
-	return TargetItemTag;
-}
-
-const bool UItemCollectionMission::IsOreMission() const
-{
-	return bIsOreMission;
 }
