@@ -25,6 +25,8 @@
 #include "Engine/TargetPoint.h"
 #include "UI/InteractPopupWidget.h"
 
+#include "Framework/ADTutorialGameMode.h"   
+
 DEFINE_LOG_CATEGORY(DroneLog);
 
 AADDrone::AADDrone()
@@ -38,12 +40,6 @@ AADDrone::AADDrone()
 	bIsFlying = false;
 	bIsHold = false;
 	ReviveDistance = 1000.f;
-
-	ConstructorHelpers::FClassFinder<UInteractPopupWidget> PopupFinder(TEXT("/Game/_AbyssDiver/Blueprints/UI/InteractableUI/WBP_InteractPopupWidget"));
-	if (PopupFinder.Succeeded())
-	{
-		PopupWidgetClass = PopupFinder.Class;
-	}
 }
 
 void AADDrone::BeginPlay()
@@ -121,33 +117,24 @@ void AADDrone::Destroyed()
 
 void AADDrone::Interact_Implementation(AActor* InstigatorActor)
 {
+	UE_LOG(LogTemp, Warning, TEXT("ADDrone::Interact_Implementation -- 함수가 성공적으로 호출됨!"));
+	if (AADTutorialGameMode* TutorialMode = GetWorld()->GetAuthGameMode<AADTutorialGameMode>())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("ADDrone - 튜토리얼 게임 모드를 찾음. 부활 시퀀스 호출!"));
+		TutorialMode->TriggerResurrectionSequence();
+		return;
+	}
+
 	if (!HasAuthority() || !bIsActive || !IsValid(CurrentSeller) || bIsFlying) return;
 
 	APlayerController* PC = Cast<APlayerController>(InstigatorActor->GetInstigatorController());
 	if(!PC) return;
 
-	if (PopupWidgetClass)
+	if (AADPlayerController* PlayerController = InstigatorActor->GetInstigatorController<AADPlayerController>())
 	{
-		UInteractPopupWidget* Popup = CreateWidget<UInteractPopupWidget>(PC, PopupWidgetClass);
-		if (Popup)
+		if (UPlayerHUDComponent* PlayerHUDComponent = PlayerController->GetPlayerHUDComponent())
 		{
-			Popup->AddToViewport();
-			PC->bShowMouseCursor = true;
-			
-			FInputModeUIOnly InputMode;
-			InputMode.SetWidgetToFocus(Popup->TakeWidget());
-			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-			PC->SetInputMode(InputMode);
-
-			Popup->OnPopupConfirmed.BindLambda([this, PC]() {
-					this->ExecuteConfirmedInteraction();
-					PC->bShowMouseCursor = false;
-					PC->SetInputMode(FInputModeGameOnly());
-			});
-			Popup->OnPopupCanceled.BindLambda([this, PC]() {
-				PC->bShowMouseCursor = false;
-				PC->SetInputMode(FInputModeGameOnly());
-				});
+			PlayerHUDComponent->C_ShowConfirmWidget(this);
 		}
 	}
 }
@@ -245,6 +232,17 @@ void AADDrone::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetime
 
 void AADDrone::ExecuteConfirmedInteraction()
 {
+	if (AADTutorialGameMode* TutorialGameMode = GetWorld()->GetAuthGameMode<AADTutorialGameMode>())
+	{
+		UE_LOG(LogTemp, Log, TEXT("Drone Interaction: Tutorial Mode Detected. Calling TriggerResurrectionSequence."));
+
+		TutorialGameMode->TriggerResurrectionSequence();
+
+		return;
+	}
+
+	if (!HasAuthority() || !bIsActive || !IsValid(CurrentSeller) || bIsFlying) return;
+
 	if (!CurrentSeller->GetSubmittedPlayerIndexes().IsEmpty())
 	{
 		if (AADInGameMode* GameMode = GetWorld()->GetAuthGameMode<AADInGameMode>())

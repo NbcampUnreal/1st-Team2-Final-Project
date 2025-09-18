@@ -4,7 +4,7 @@
 #include "NameWidgetComponent.h"
 
 #include "Kismet/GameplayStatics.h"
-#include "UI/NameWidget.h"
+#include "UI/ADNameWidget.h"
 
 UNameWidgetComponent::UNameWidgetComponent()
 {
@@ -31,7 +31,7 @@ void UNameWidgetComponent::BeginPlay()
 	LocalPlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
 	if (UUserWidget* UserWidget = GetUserWidgetObject())
 	{
-		if (UNameWidget* NameWidget = Cast<UNameWidget>(UserWidget))
+		if (UADNameWidget* NameWidget = Cast<UADNameWidget>(UserWidget))
 		{
 			NameWidget->SetNameText(NameText);
 		}
@@ -149,7 +149,7 @@ void UNameWidgetComponent::SetNameText(const FString& NewName)
 
 	if (UUserWidget* UserWidget = GetUserWidgetObject())
 	{
-		if (UNameWidget* NameWidget = Cast<UNameWidget>(UserWidget))
+		if (UADNameWidget* NameWidget = Cast<UADNameWidget>(UserWidget))
 		{
 			NameWidget->SetNameText(NameText);
 		}

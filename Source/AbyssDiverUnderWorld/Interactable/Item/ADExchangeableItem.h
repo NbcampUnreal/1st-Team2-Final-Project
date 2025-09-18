@@ -63,7 +63,7 @@ protected:
 
 private:
 	UPROPERTY()
-	TObjectPtr<UMaterialInstanceDynamic> DynamicMaterial = nullptr;
+	TWeakObjectPtr<UMaterialInstanceDynamic> DynamicMaterial = nullptr;
 	FTimerHandle PulseTimerHandle;
 	UPROPERTY(EditDefaultsOnly, Category = "Glow")
 	float PulseFrequency = 0.5f;    // 0.5Hz = 2초에 한 사이클

@@ -68,15 +68,22 @@ public:
 	virtual void SetViewTarget(class AActor* NewViewTarget, FViewTargetTransitionParams TransitionParams = FViewTargetTransitionParams()) override;
 
 	/** Camera Blank를 시작한다. FadeAlpha의 X값은 시작 알파 값이고 Y값은 종료 알파 값이다.
-	 * FadeTime 동안 종료 알파 값으로 Fade Out을 한다.
-	 * FadeOut 완료되면 FadeTime 동안 FadeColor로 Fade In을 한다.
+	 * FadeStartTime 동안 종료 알파 값으로 Fade Out을 한다.
+	 * FadeEndDelay 동안 대기한다.
+	 * FadeOut 완료되면 FadeEndTime 동안 FadeColor로 Fade In을 한다.
 	*/
 	UFUNCTION(Reliable, Client)
 	void C_StartCameraBlink(FColor FadeColor, FVector2D FadeAlpha, float FadeStartTime, float FadeEndDelay, float FadeEndTime);
 	void C_StartCameraBlink_Implementation(FColor FadeColor, FVector2D FadeAlpha, float FadeStartTime, float FadeEndDelay, float FadeEndTime);
 
+	/** Camera Blink가 진행 중인지 여부를 반환한다. */
 	UFUNCTION(BlueprintCallable)
-	bool IsCameraBlanking() const;
+	bool IsCameraBlinking() const;
+
+	/** Camera Blink를 즉시 중단한다. Fade In이 진행 중일 경우에도 중단된다. */
+	UFUNCTION(Reliable, Client)
+	void C_StopCameraBlink();
+	void C_StopCameraBlink_Implementation();
 
 	UFUNCTION(Client, Unreliable)
 	void C_PlaySound(ESFX SoundType, float VolumeMultiplier = 1.0f, float PitchMultiplier = 1.0f);
@@ -127,10 +134,40 @@ protected:
 	UFUNCTION(Exec)
 	void GainShield(int Amount);
 
+	/** 이름 위젯의 표시 상태를 토글 */
+	UFUNCTION(Exec)
+	void ToggleNameWidget();
+
+	/** 이름 위젯을 표시하도록 설정 */
+	UFUNCTION(Exec)
+	void ShowNameWidgets();
+
+	/** 이름 위젯을 숨기도록 설정 */
+	UFUNCTION(Exec)
+	void HideNameWidgets();
+
+	/** 조준선 위젯의 표시 상태를 토글 */
+	UFUNCTION(Exec)
+	void ToggleCrosshairWidget();
+
+	/** 조준선 위젯을 표시하도록 설정 */
+	UFUNCTION(Exec)
+	void ShowCrosshairWidget();
+
+	/** 조준선 위젯을 숨기도록 설정 */
+	UFUNCTION(Exec)
+	void HideCrosshairWidget();
+
 	UFUNCTION(Server, Reliable)
 	void S_GainShield(int Amount);
 	
 	void OnCameraBlankEnd();
+
+private:
+	
+	/** 이름 위젯 가시 상태 설정 */
+	void SetAllNameWidgetsEnabled(bool bNewEnabled);
+
 #pragma endregion
 	
 #pragma region Variable
@@ -175,6 +212,15 @@ private:
 
 	/** Camera Blank Timer Handle */
 	FTimerHandle CameraBlankTimerHandle;
+
+	/** Name Widget 가시성 표시 여부. 비활성화되면 모든 Name Widget이 숨김 처리된다. */
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	uint8 bIsNameWidgetEnabled : 1;
+
+	/** 조준선 위젯의 가시성 표시 여부 */
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	uint8 bIsCrosshairWidgetVisible : 1 = true;
+	
 #pragma endregion 
 
 #pragma region Getters / Setters
@@ -182,6 +228,9 @@ private:
 public:
 
 	UPlayerHUDComponent* GetPlayerHUDComponent() const { return PlayerHUDComponent; }
+
+	/** Name Widget이 활성화 여부를 반환 */
+	FORCEINLINE bool IsNameWidgetEnabled() const { return bIsNameWidgetEnabled; }
 
 #pragma endregion
 

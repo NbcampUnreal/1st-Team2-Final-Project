@@ -61,6 +61,10 @@ public:
     UFUNCTION()
     void UpdateStaminaHUD(float CurrentStamina, float MaxStamina);
 
+    /** 환경 상태가 변환될 때 호출되는 함수 */
+    UFUNCTION()
+    void UpdateEnvironmentState(EEnvironmentState OldEnvironmentState, EEnvironmentState NewEnvironmentState);
+
     UFUNCTION()
     void UpdateHealthHUD(int32 CurrentHealth, int32 MaxHealth);
 
@@ -72,15 +76,23 @@ public:
     void PlayNextPhaseAnim(int32 NextPhaseNumber);
     void SetCurrentPhaseOverlayVisible(bool bShouldVisible);
 
-    void BindDeptWidgetFunction(UDepthComponent* DepthComp);
+    void BindDepthWidgetFunction(UDepthComponent* DepthComp);
 
     /** HUD 위젯을 숨긴다. */
     void HideHudWidget();
 
-    /** 위젯을 보이게 한다. */
+    /** HUD 위젯을 보이게 한다. */
     void ShowHudWidget();
 
     void SetActiveRadarWidget(bool bShouldActivate);
+
+    UFUNCTION(Client, Reliable)
+    void C_ShowConfirmWidget(AActor* RequestInteractableActor);
+    void C_ShowConfirmWidget_Implementation(AActor* RequestInteractableActor);
+
+    UFUNCTION(Server, Reliable)
+    void S_ReportConfirm(AActor* RequestInteractableActor, bool bConfirmed);
+    void S_ReportConfirm_Implementation(AActor* RequestInteractableActor, bool bConfirmed);
     
 protected:
     
@@ -96,6 +108,9 @@ protected:
 
     /** 관전 HUD 위젯을 숨긴다. */
     void HideSpectatorHUDWidget();
+
+    /** Game State와 UI 바인딩 */
+    void BindGameState();
     
 private:
 #pragma endregion
@@ -148,6 +163,10 @@ private:
     UPROPERTY()
     TObjectPtr<class URadar2DWidget> Radar2DWidget;
 
+    /** Interact Popup Widget Class */
+    UPROPERTY(EditAnywhere)
+    TSubclassOf<class UInteractPopupWidget> PopupWidgetClass;
+    
 #pragma endregion
 
 #pragma region Getter Setter
@@ -158,6 +177,10 @@ public:
 
     UMissionsOnHUDWidget* GetMissionsOnHudWidget() const;
     USoundSubsystem* GetSoundSubsystem();
+    UPlayerStatusWidget* GetPlayerStatusWidget() ;
+
+    /** Crosshair Widget 반환 */
+    UCrosshairWidget* GetCrosshairWidget() const { return CrosshairWidget; }
 
 #pragma endregion
 };

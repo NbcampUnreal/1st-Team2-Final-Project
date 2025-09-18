@@ -15,6 +15,15 @@
 				"CoreUObject",
 				"AdvancedSessions"
 			]
+		},
+		{
+			"Name": "AbyssDiverUnderWorldEditor",
+			"Type": "UncookedOnly",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"AnimGraph",
+				"BlueprintGraph"
+			]
 		}
 	],
 	"Plugins": [

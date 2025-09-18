@@ -12,7 +12,7 @@
 #include "StatComponent.h"
 #include "UpgradeComponent.h"
 #include "AbyssDiverUnderWorld/Interactable/Item/Component/ADInteractionComponent.h"
-#include "Boss/Effect/PostProcessSettingComponent.h"
+#include "Monster/Effect/PostProcessSettingComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/PawnNoiseEmitterComponent.h"
@@ -243,20 +243,22 @@ void AUnderwaterCharacter::BeginPlay()
 	EDepthZone InitialDepthZone = DepthComponent->GetDepthZone();
 	OnDepthZoneChanged(InitialDepthZone, InitialDepthZone);
 
-	if (AADPlayerController* PlayerController = Cast<AADPlayerController>(GetController()))
-	{
-		if (UPlayerHUDComponent* HUDComp = PlayerController->GetPlayerHUDComponent())
-		{
-			HUDComp->BindDeptWidgetFunction(DepthComponent);
-		}
-	}
-
-
 	NoiseEmitterComponent = NewObject<UPawnNoiseEmitterComponent>(this);
 	NoiseEmitterComponent->RegisterComponent();
 
 	SpawnFlipperMesh();
 	LanternComponent->SpawnLight(GetMesh1PSpringArm(), LanternLength);
+
+	FTimerHandle DelayBindPlayerStateTimerHandle;
+	float BindPlayerStateDelay = 1.0f;
+
+	GetWorldTimerManager().SetTimer(DelayBindPlayerStateTimerHandle, [this]() {	
+		if (AADPlayerState* PS = Cast<AADPlayerState>(GetPlayerState()))
+		{
+			OnGroggyReviveDelegate.AddUObject(PS, &AADPlayerState::AddOneGroggyRevive);
+		}
+	}, BindPlayerStateDelay, false);
+
 
 	if (HasAuthority())
 	{
@@ -283,17 +285,16 @@ void AUnderwaterCharacter::BeginPlay()
 	AdjustSpeed();
 }
 
-void AUnderwaterCharacter::InitFromPlayerState(AADPlayerState* ADPlayerState)
+void AUnderwaterCharacter::InitPlayerStatus(AADPlayerState* ADPlayerState)
 {
 	if (ADPlayerState == nullptr)
 	{
 		return;
 	}
 
-	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("[%s] InitFromPlayerState/ NickName : %s / PlayerIndex : %d"),
+	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("[%s] InitPlayerStatus/ NickName : %s / PlayerIndex : %d"),
 		HasAuthority() ? TEXT("Server") : TEXT("Client"), *ADPlayerState->GetPlayerNickname(), ADPlayerState->GetPlayerIndex());
 
-	// @ToDo: 패키징에서 데이터를 제대로 받지 못하는 문제가 있다. 패키징하기 전에 수정할 것
 	PlayerIndex = ADPlayerState->GetPlayerIndex();
 	
 	if (UADInventoryComponent* Inventory = ADPlayerState->GetInventory())
@@ -394,13 +395,12 @@ void AUnderwaterCharacter::PossessedBy(AController* NewController)
 	
 	if (AADPlayerState* ADPlayerState = GetPlayerState<AADPlayerState>())
 	{
-		InitFromPlayerState(ADPlayerState);
+		InitPlayerStatus(ADPlayerState);
+
 		NameWidgetComponent->SetNameText(ADPlayerState->GetPlayerNickname());
 		UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Set Player Nick Name On Possess : %s"), *ADPlayerState->GetPlayerNickname());
-		if (!IsLocallyControlled())
-		{
-			NameWidgetComponent->SetEnable(true);
-		}
+		
+		InitNameWidgetEnabled();
 
 		// Possess는 Authority 상황에서 호출되므로 Server 로직만 작성하면 된다.
 		if (ADPlayerState->HasBeenDead())
@@ -450,21 +450,14 @@ void AUnderwaterCharacter::OnRep_PlayerState()
 	);
 	
 	// UnPossess 상황에서 Error 로그가 발생하지 않도록 수정
-	if (APlayerState* CurrentPlayerState = GetPlayerState<AADPlayerState>())
+	if (AADPlayerState* CurrentPlayerState = GetPlayerState<AADPlayerState>())
 	{
 		if (AADPlayerState* ADPlayerState = Cast<AADPlayerState>(CurrentPlayerState))
 		{
-			InitFromPlayerState(ADPlayerState);
+			InitPlayerStatus(ADPlayerState);
 			NameWidgetComponent->SetNameText(ADPlayerState->GetPlayerNickname());
 			UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Set Player Nick Name On Rep : %s"), *ADPlayerState->GetPlayerNickname());
-			if (!IsLocallyControlled())
-			{
-				NameWidgetComponent->SetEnable(true);
-			}
-		}
-		else
-		{
-			LOGVN(Error, TEXT("Player State Init failed : %d"), GetUniqueID());
+			InitNameWidgetEnabled();
 		}
 		if (IsLocallyControlled())
 		{
@@ -1313,11 +1306,12 @@ void AUnderwaterCharacter::M_StartCaptureState_Implementation()
 	
 	if (IsLocallyControlled())
 	{
-		if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
+		if (AADPlayerController* PlayerController = Cast<AADPlayerController>(GetController()))
 		{
 			PlayerController->SetIgnoreLookInput(true);
 			PlayerController->SetIgnoreMoveInput(true);
 
+			PlayerController->C_StopCameraBlink();
 			PlayerController->PlayerCameraManager->StartCameraFade(
 				0.0f,
 				1.0f,
@@ -1935,6 +1929,8 @@ void AUnderwaterCharacter::InteractHold_Implementation(AActor* InstigatorActor)
 	
 	if (CharacterState == ECharacterState::Groggy)
 	{
+		AUnderwaterCharacter* UW = Cast<AUnderwaterCharacter>(InstigatorActor);
+		UW->OnGroggyReviveDelegate.Broadcast();
 		RequestRevive();
 	}
 }
@@ -1982,7 +1978,6 @@ void AUnderwaterCharacter::RequestRevive()
 		{
 			return;
 		}
-
 		SetCharacterState(ECharacterState::Normal);
 		const float RecoveryHealth = StatComponent->GetMaxHealth() * RecoveryHealthPercentage;
 		StatComponent->RestoreHealth(RecoveryHealth);
@@ -2436,6 +2431,13 @@ void AUnderwaterCharacter::RequestPlayEmote(int32 EmoteIndex)
 	}
 }
 
+void AUnderwaterCharacter::SetNameWidgetEnabled(bool bNewVisibility)
+{
+	const bool bIsPlayerOrSpectated = IsLocallyControlled() || IsLocallyViewed();
+	const bool bShouldEnableNameWidget = !bIsPlayerOrSpectated && bNewVisibility;
+	NameWidgetComponent->SetEnable(bShouldEnableNameWidget);
+}
+
 void AUnderwaterCharacter::S_PlayEmote_Implementation(uint8 EmoteIndex)
 {
 	RequestPlayEmote(EmoteIndex);
@@ -2675,6 +2677,16 @@ float AUnderwaterCharacter::GetOxygenConsumeRate(EDepthZone DepthZone) const
 	}
 }
 
+void AUnderwaterCharacter::InitNameWidgetEnabled()
+{
+	// Player Controller의 Name Widget Enable 설정을 확인
+	if (AADPlayerController* LocalPlayer = Cast<AADPlayerController>(UGameplayStatics::GetPlayerController(this, 0)))
+	{
+		const bool bNameWidgetEnabled = LocalPlayer->IsNameWidgetEnabled();
+		SetNameWidgetEnabled(bNameWidgetEnabled);
+	}
+}
+
 void AUnderwaterCharacter::BindToCharacter(AUnderwaterCharacter* BoundCharacter)
 {
 	if (BoundCharacter == nullptr)
@@ -2789,7 +2801,14 @@ bool AUnderwaterCharacter::IsSprinting() const
 
 void AUnderwaterCharacter::SetHideInSeaweed(const bool bNewHideInSeaweed)
 {
+	if (bIsHideInSeaweed == bNewHideInSeaweed)
+	{
+		return;
+	}
+	
+	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Set Hide In Seaweed : %s -> %s"), bIsHideInSeaweed ? TEXT("True") : TEXT("False"), bNewHideInSeaweed ? TEXT("True") : TEXT("False"));
 	bIsHideInSeaweed = bNewHideInSeaweed;
+	OnHiddenChangedDelegate.Broadcast(bIsHideInSeaweed);
 }
 
 bool AUnderwaterCharacter::IsOverloaded() const

@@ -33,8 +33,10 @@
 #include "Framework/ADTutorialGameMode.h"
 #include "Framework/ADTutorialGameState.h"
 #include "Character/UnderwaterCharacter.h"
+#include "Engine/PawnIterator.h"
 
 #include "Kismet/GameplayStatics.h"
+#include "UI/CrosshairWidget.h"
 
 AADPlayerController::AADPlayerController()
 {
@@ -49,6 +51,8 @@ AADPlayerController::AADPlayerController()
 	}
 
 	PlayerHUDComponent = CreateDefaultSubobject<UPlayerHUDComponent>(TEXT("PlayerHUDComponent"));
+
+	bIsNameWidgetEnabled = true;
 }
 
 void AADPlayerController::BeginPlay()
@@ -187,6 +191,7 @@ void AADPlayerController::C_StartCameraBlink_Implementation(FColor FadeColor, FV
 {
 	if (PlayerCameraManager != nullptr)
 	{
+		// Camera Fade Out 시작, FadeStartTime이 0.0f 이하일 경우 바로 FadeColor로 지정된 알파 값으로 변경
 		const float BlankFadeStartAlpha = FadeAlpha.X >= 0.0f ? FadeAlpha.X : PlayerCameraManager->FadeAmount;
 		const float BlankFadeEndAlpha = FadeAlpha.Y;
 		if (FadeStartTime > 0.0f)
@@ -198,6 +203,7 @@ void AADPlayerController::C_StartCameraBlink_Implementation(FColor FadeColor, FV
 			PlayerCameraManager->SetManualCameraFade(BlankFadeEndAlpha, FadeColor.ReinterpretAsLinear(), false);
 		}
 
+		// Fade Delay 만큼 대기 후 Fade In 
 		TWeakObjectPtr WeakActor = this;
 		FTimerDelegate TimerDelegate;
 		TimerDelegate.BindWeakLambda(this, [=]()
@@ -219,9 +225,20 @@ void AADPlayerController::C_StartCameraBlink_Implementation(FColor FadeColor, FV
 	}
 }
 
-bool AADPlayerController::IsCameraBlanking() const
+bool AADPlayerController::IsCameraBlinking() const
 {
 	return GetWorldTimerManager().IsTimerActive(CameraBlankTimerHandle) || (PlayerCameraManager && PlayerCameraManager->bEnableFading);
+}
+
+void AADPlayerController::C_StopCameraBlink_Implementation()
+{
+	// Camera Fade를 중지하고 원래 상태로 복구
+	if (PlayerCameraManager != nullptr)
+	{
+		PlayerCameraManager->StopCameraFade();
+		PlayerCameraManager->SetManualCameraFade(0.0f, FLinearColor::Black, false);				
+	}
+	GetWorldTimerManager().ClearTimer(CameraBlankTimerHandle);
 }
 
 void AADPlayerController::ShowPlayerHUD()
@@ -407,6 +424,76 @@ void AADPlayerController::GainShield(int Amount)
 	else
 	{
 		S_GainShield(Amount);
+	}
+}
+
+void AADPlayerController::ToggleNameWidget()
+{
+	if (bIsNameWidgetEnabled)
+	{
+		HideNameWidgets();
+	}
+	else
+	{
+		ShowNameWidgets();
+	}
+}
+
+void AADPlayerController::ShowNameWidgets()
+{
+	bIsNameWidgetEnabled = true;
+
+	SetAllNameWidgetsEnabled(bIsNameWidgetEnabled);	
+}
+
+void AADPlayerController::HideNameWidgets()
+{
+	bIsNameWidgetEnabled = false;
+
+	SetAllNameWidgetsEnabled(bIsNameWidgetEnabled);
+}
+
+void AADPlayerController::ToggleCrosshairWidget()
+{
+	if (bIsCrosshairWidgetVisible)
+	{
+		HideCrosshairWidget();
+	}
+	else
+	{
+		ShowCrosshairWidget();
+	}
+}
+
+void AADPlayerController::ShowCrosshairWidget()
+{
+	bIsCrosshairWidgetVisible = true;
+
+	if (UCrosshairWidget* CrosshairWidget = PlayerHUDComponent->GetCrosshairWidget())
+	{
+		CrosshairWidget->ShowCrosshair();
+	}
+}
+
+void AADPlayerController::HideCrosshairWidget()
+{
+	bIsCrosshairWidgetVisible = false;
+
+	if (UCrosshairWidget* CrosshairWidget = PlayerHUDComponent->GetCrosshairWidget())
+	{
+		CrosshairWidget->HideCrosshair();
+	}
+}
+
+void AADPlayerController::SetAllNameWidgetsEnabled(bool bNewEnabled)
+{
+	// 모든 플레이어의 NameWidgetComponent를 찾아서 가시 상태 설정
+	if (UWorld* World = GetWorld())
+	{
+		for (AUnderwaterCharacter* TargetCharacter : TActorRange<AUnderwaterCharacter>(World))
+		{
+			TargetCharacter->SetNameWidgetEnabled(bNewEnabled);
+		}
 	}
 }
 
