@@ -22,7 +22,7 @@ struct FAggroMissionInitParams : public FMissionInitParams
 		bool InUseQuery,
 		const FGameplayTag& InUnitIdTag,
 		const FGameplayTag& InUnitTypeTag,
-		const FGameplayTagQuery& InUnitTagQuery,
+		const FGameplayTagQuery& InUnitTagQuery
 	)
 		: FMissionInitParams
 		(

@@ -24,24 +24,6 @@ void UItemCollectionMission::InitMission(const FItemCollectMissionInitParams& Pa
 	TargetItemQuery = Params.TargetItemQuery;
 }
 
-void UItemCollectionMission::BindDelegates(UObject* TargetForDelegate)
-{
-	if (TargetForDelegate->IsA<AADDroneSeller>())
-	{
-		/*AADDroneSeller* DroneSeller = Cast<AADDroneSeller>(TargetForDelegate);
-		DroneSeller->OnSellOreDelegate.RemoveAll(this);
-		DroneSeller->OnSellOreDelegate.AddUObject(this, &UItemCollectionMission::OnItemCollect);*/
-	}
-}
-
-void UItemCollectionMission::UnbindDelegates(UObject* TargetForDelegate)
-{
-	if (TargetForDelegate->IsA<AADDroneSeller>())
-	{
-		AADDroneSeller* DroneSeller = Cast<AADDroneSeller>(TargetForDelegate);
-		DroneSeller->OnSellOreDelegate.RemoveAll(this);
-	}
-}
 
 void UItemCollectionMission::NotifyItemCollected(const FGameplayTagContainer& ItemTag, int32 Amount)
 {

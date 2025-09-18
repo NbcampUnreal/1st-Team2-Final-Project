@@ -530,7 +530,7 @@ void AADInGameState::RefreshActivatedMissionList()
 
 	for (const UMissionBase* Mission : Missions)
 	{
-		ActivatedMissionList.AddOrModify(Mission->GetMissionType(), Mission->GetMissionIndex(), Mission->GetCurrentCount(), Mission->IsCompletedAlready());
+		ActivatedMissionList.AddOrModify(Mission->GetMissionType(), Mission->GetMissionIndex(), Mission->GetCurrentCount(), Mission->IsCompleted());
 	}
 
 	OnMissionListRefreshedDelegate.Broadcast();

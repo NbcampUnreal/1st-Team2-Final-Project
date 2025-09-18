@@ -165,148 +165,17 @@ void UMissionSubsystem::UnlockMission(const EKillMonsterMission& Mission)
 
 void UMissionSubsystem::ReceiveMissionDataFromUIData(const TArray<FMissionData>& MissionsFromUI)
 {
-	if (CheckIfGameStateIsValid() == false)
-	{
-		LOGV(Warning, TEXT("GameState Is Invalid"));
-		return;
-	}
-
-	Missions.Reset(MissionsFromUI.Num());
-
-	for (const FMissionData& MissionFromUI : MissionsFromUI)
-	{
-		UMissionBase* NewMission = nullptr;
-		const EMissionType MissionType = MissionFromUI.MissionType;
-		const uint8 MissionIndex = MissionFromUI.MissionIndex;
-
-		switch (MissionType)
-		{
-		case EMissionType::AggroTrigger:
-		{
-			UAggroTriggerMission* NewAggroMission = NewObject<UAggroTriggerMission>(this);
-			const FAggroTriggerMissionRow* AggroMissionData = GetAggroTriggerMissionData(EAggroTriggerMission(MissionIndex));
-			FAggroMissionInitParams AggroMissionParams
-			(
-				AggroMissionData->MissionType,
-				AggroMissionData->GoalCount,
-				AggroMissionData->ConditionType,
-				AggroMissionData->MissionName,
-				AggroMissionData->MissionDescription,
-				AggroMissionData->ExtraValues,
-				AggroMissionData->bShouldCompleteInstantly
-			);
-
-			NewAggroMission->InitMission(AggroMissionParams, (EAggroTriggerMission)MissionIndex);
-			NewMission = CastChecked<UMissionBase>(NewAggroMission);
-			break;
-		}
-		case EMissionType::KillMonster:
-		{
-			UKillMonsterMission* NewKillMission = NewObject<UKillMonsterMission>(this);
-			const FKillMonsterMissionRow* KillMissionData = GetKillMonsterMissionData(EKillMonsterMission(MissionIndex));
-			FKillMissionInitParams KillMissionParams
-			(
-				KillMissionData->MissionType,
-				KillMissionData->GoalCount,
-				KillMissionData->ConditionType,
-				KillMissionData->MissionName,
-				KillMissionData->MissionDescription,
-				KillMissionData->ExtraValues,
-				KillMissionData->bShouldCompleteInstantly,
-				KillMissionData->UnitId,
-				KillMissionData->NeededSimultaneousKillCount,
-				KillMissionData->KillInterval
-			);
-
-			NewKillMission->InitMission(KillMissionParams,(EKillMonsterMission)MissionIndex);
-			NewMission = CastChecked<UMissionBase>(NewKillMission);
-			break;
-		}
-		case EMissionType::Interaction:
-		{
-			UInteractionMission* NewInteractionMission = NewObject<UInteractionMission>(this);
-			const FInteractionMissionRow* InteractionMissionData = GetInteractionMissionData(EInteractionMission(MissionIndex));
-			FInteractiontMissionInitParams InteractionMissionParams
-			(
-				InteractionMissionData->MissionType,
-				InteractionMissionData->GoalCount,
-				InteractionMissionData->ConditionType,
-				InteractionMissionData->MissionName,
-				InteractionMissionData->MissionDescription,
-				InteractionMissionData->ExtraValues,
-				InteractionMissionData->bShouldCompleteInstantly
-			);
-
-			NewInteractionMission->InitMission(InteractionMissionParams, EInteractionMission(MissionIndex));
-			NewMission = CastChecked<UMissionBase>(NewInteractionMission);
-			break;
-		}
-		case EMissionType::ItemCollection:
-		{
-			UItemCollectionMission* NewItemCollectionMission = NewObject<UItemCollectionMission>(this);
-			const FItemCollectMissionRow* ItemCollectionMissionData = GetItemCollectMissionData(EItemCollectMission(MissionIndex));
-			FItemCollectMissionInitParams ItemCollectionMissionParams
-			(
-				ItemCollectionMissionData->MissionType,
-				ItemCollectionMissionData->GoalCount,
-				ItemCollectionMissionData->ConditionType,
-				ItemCollectionMissionData->MissionName,
-				ItemCollectionMissionData->MissionDescription,
-				ItemCollectionMissionData->ExtraValues,
-				ItemCollectionMissionData->bShouldCompleteInstantly,
-				ItemCollectionMissionData->ItemId,
-				ItemCollectionMissionData->bIsOreMission
-			);
-
-			NewItemCollectionMission->InitMission(ItemCollectionMissionParams, EItemCollectMission(MissionIndex));
-			NewMission = CastChecked<UMissionBase>(NewItemCollectionMission);
-			break;
-		}
-		case EMissionType::ItemUse:
-		{
-			UItemUseMission* NewItemUseMission = NewObject<UItemUseMission>(this);
-			const FItemUseMissionRow* ItemUseMissionData = GetItemUseMissionData(EItemUseMission(MissionIndex));
-			FItemUseMissionInitParams ItemUseMissionParams
-			(
-				ItemUseMissionData->MissionType,
-				ItemUseMissionData->GoalCount,
-				ItemUseMissionData->ConditionType,
-				ItemUseMissionData->MissionName,
-				ItemUseMissionData->MissionDescription,
-				ItemUseMissionData->ExtraValues,
-				ItemUseMissionData->bShouldCompleteInstantly
-			);
-
-			NewItemUseMission->InitMission(ItemUseMissionParams, EItemUseMission(MissionIndex));
-			NewMission = CastChecked<UMissionBase>(NewItemUseMission);
-			break;
-		}
-		default:
-			check(false);
-			return;
-		}
-
-		NewMission->OnCompleteMissionDelegate.BindUObject(this, &UMissionSubsystem::OnMissionComplete);
-		Missions.Add(NewMission);
-	}
-
-	InGameState->RefreshActivatedMissionList();
+	
 }
 
 void UMissionSubsystem::RequestBinding(UObject* Requester)
 {
-	for (TObjectPtr<UMissionBase> Mission : Missions)
-	{
-		Mission->BindDelegates(Requester);
-	}
+	
 }
 
 void UMissionSubsystem::RequestUnbinding(UObject* Requester)
 {
-	for (TObjectPtr<UMissionBase> Mission : Missions)
-	{
-		Mission->UnbindDelegates(Requester);
-	}
+	
 }
 
 void UMissionSubsystem::RemoveAllMissions()

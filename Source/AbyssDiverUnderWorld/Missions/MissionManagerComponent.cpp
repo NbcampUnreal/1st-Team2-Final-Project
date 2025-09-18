@@ -210,7 +210,7 @@ void UMissionManagerComponent::HandleMissionComplete(EMissionType Type, uint8 In
 
 UMissionBase* UMissionManagerComponent::CreateAndInitMission(const FMissionData& Choice)
 {
-    
+    return nullptr;
 }
 
 

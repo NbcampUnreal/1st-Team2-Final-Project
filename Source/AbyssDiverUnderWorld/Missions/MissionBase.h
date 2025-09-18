@@ -26,8 +26,8 @@ struct FMissionInitParams
 		: MissionType(InMissionType)
 		, GoalCount(InGoalCount)
 		, ConditionType(InConditionType)
-		, MissionName(MoveTemp(InMissionName))
-		, MissionDescription(MoveTemp(InMissionDescription))
+		, MissionName(InMissionName)
+		, MissionDescription(InMissionDescription)
 		, ExtraValues(InExtraValues)
 		, bCompleteInstantly(bInCompleteInstantly)
 	{
@@ -53,10 +53,7 @@ class ABYSSDIVERUNDERWORLD_API UMissionBase : public UObject
 #pragma region Methods
 
 public:
-
 	virtual void InitMission(const FMissionInitParams& Params);
-	virtual void BindDelegates(UObject* TargetForDelegate);
-	virtual void UnbindDelegates(UObject* TargetForDelegate);
 
 	void AddProgress(int32 Delta);
 

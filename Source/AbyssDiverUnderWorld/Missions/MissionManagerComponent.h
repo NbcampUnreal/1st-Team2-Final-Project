@@ -13,8 +13,6 @@ class UMissionEventHubComponent;
 class UMissionSubsystem; // DT/카탈로그 조회용 (기존 서브시스템)
 enum class EUnitId : uint8;
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMissionStatesUpdated, const TArray<FMissionRuntimeState>&, States);
-
 USTRUCT(BlueprintType)
 struct FMissionRuntimeState
 {
@@ -26,6 +24,8 @@ struct FMissionRuntimeState
 	UPROPERTY() int32  Goal = 0;
 	UPROPERTY() uint8  bCompleted : 1 = 0;
 };
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMissionStatesUpdated, const TArray<FMissionRuntimeState>&, States);
 
 UCLASS( ClassGroup=(Mission), meta=(BlueprintSpawnableComponent) )
 class ABYSSDIVERUNDERWORLD_API UMissionManagerComponent : public UActorComponent

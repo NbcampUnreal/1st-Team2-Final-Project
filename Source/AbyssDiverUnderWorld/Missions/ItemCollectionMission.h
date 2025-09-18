@@ -59,9 +59,6 @@ public:
 	virtual void InitMission(const FMissionInitParams& Params) override;
 	void InitMission(const FItemCollectMissionInitParams& Params, const EItemCollectMission& NewMissionIndex);
 
-	virtual void BindDelegates(UObject* TargetForDelegate) override;
-	virtual void UnbindDelegates(UObject* TargetForDelegate) override;
-
 	virtual void NotifyItemCollected(const FGameplayTagContainer& ItemTag, int32 Amount) override;
 
 #pragma endregion
