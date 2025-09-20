@@ -28,11 +28,19 @@
 #include "Kismet/GameplayStatics.h"
 #include "Inventory/ADInventoryComponent.h"
 #include "Character/PlayerComponent/DepthComponent.h"
+#include "Interactable/OtherActors/ADDrone.h"
 #include "UI/DepthWidget.h"
+#include "UI/InteractPopupWidget.h"
 
 UPlayerHUDComponent::UPlayerHUDComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
+
+	ConstructorHelpers::FClassFinder<UInteractPopupWidget> PopupFinder(TEXT("/Game/_AbyssDiver/Blueprints/UI/InteractableUI/WBP_InteractPopupWidget"));
+	if (PopupFinder.Succeeded())
+	{
+		PopupWidgetClass = PopupFinder.Class;
+	}
 }
 
 void UPlayerHUDComponent::BindGameState()
@@ -140,7 +148,7 @@ void UPlayerHUDComponent::BeginPlay()
 
 		if (UDepthComponent* DepthComp = Character->FindComponentByClass<UDepthComponent>())
 		{
-			BindDeptWidgetFunction(DepthComp);
+			BindDepthWidgetFunction(DepthComp);
 		}
 
 		Character->OnEnvironmentStateChangedDelegate.AddDynamic(this, &UPlayerHUDComponent::UpdateEnvironmentState);
@@ -338,10 +346,20 @@ void UPlayerHUDComponent::SetCurrentPhaseOverlayVisible(bool bShouldVisible)
 	PlayerStatusWidget->SetCurrentPhaseOverlayVisible(bShouldVisible);
 }
 
-void UPlayerHUDComponent::BindDeptWidgetFunction(UDepthComponent* DepthComp)
+void UPlayerHUDComponent::BindDepthWidgetFunction(UDepthComponent* DepthComp)
 {
 	UDepthWidget* DepthWidget = PlayerStatusWidget->GetDepthWidget();
-	if (!DepthWidget || !DepthComp) return;
+	if (!DepthWidget)
+	{
+		UE_LOG(LogAbyssDiverCharacter, Warning, TEXT("DepthWidget is nullptr"));
+		return;
+	}
+	if (!DepthComp)
+	{
+		UE_LOG(LogAbyssDiverCharacter, Warning, TEXT("DepthComp is nullptr"));
+		return;
+	}
+	
 	DepthComp->OnDepthZoneChangedDelegate.AddDynamic(DepthWidget, &UDepthWidget::ApplyZoneChangeToWidget);
 	DepthComp->OnDepthUpdatedDelegate.AddDynamic(DepthWidget, &UDepthWidget::SetDepthText);
 }
@@ -349,6 +367,23 @@ void UPlayerHUDComponent::BindDeptWidgetFunction(UDepthComponent* DepthComp)
 void UPlayerHUDComponent::C_SetSpearGunTypeImage_Implementation(int8 TypeNum)
 {
 	PlayerStatusWidget->SetSpearGunTypeImage(TypeNum);
+}
+
+void UPlayerHUDComponent::S_ReportConfirm_Implementation(AActor* RequestInteractableActor, bool bConfirmed)
+{
+	if (!IsValid(RequestInteractableActor))
+	{
+		return;
+	}
+
+	// 현재는 단일한 Interface가 없기 때문에 Drone과 같은 구체 클래스를 통해서 호출
+	if (AADDrone* Drone = Cast<AADDrone>(RequestInteractableActor))
+	{
+		if (bConfirmed)
+		{
+			Drone->ExecuteConfirmedInteraction();
+		}
+	}
 }
 
 void UPlayerHUDComponent::OnSpectatingStateChanged(bool bIsSpectating)
@@ -499,7 +534,7 @@ void UPlayerHUDComponent::SetupHudWidgetToNewPawn(APawn* NewPawn, APlayerControl
 
 		if (UDepthComponent* DepthComp = UWCharacter->FindComponentByClass<UDepthComponent>())
 		{
-			BindDeptWidgetFunction(DepthComp);
+			BindDepthWidgetFunction(DepthComp);
 		}
 
 		UWCharacter->OnEnvironmentStateChangedDelegate.AddDynamic(this, &UPlayerHUDComponent::UpdateEnvironmentState);
@@ -550,6 +585,49 @@ void UPlayerHUDComponent::SetActiveRadarWidget(bool bShouldActivate)
 	else
 	{
 		Radar2DWidget->SetVisibility(ESlateVisibility::Hidden);
+	}
+}
+
+void UPlayerHUDComponent::C_ShowConfirmWidget_Implementation(AActor* RequestInteractableActor)
+{
+	UE_LOG(LogTemp,Display, TEXT("%s request Confirm Widget"), *RequestInteractableActor->GetName());
+
+	AADPlayerController* PC = Cast<AADPlayerController>(GetOwner());
+	if (!PC || !PC->IsLocalController()) return;
+	
+	if (PopupWidgetClass)
+	{
+		if (UInteractPopupWidget* PopupWidget = CreateWidget<UInteractPopupWidget>(PC, PopupWidgetClass))
+		{
+			PopupWidget->AddToViewport();
+			
+			PC->bShowMouseCursor = true;
+			
+			FInputModeUIOnly InputMode;
+			InputMode.SetWidgetToFocus(PopupWidget->TakeWidget());
+			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+			PC->SetInputMode(InputMode);
+
+			PopupWidget->OnPopupConfirmed.BindLambda([this, PC, RequestInteractableActor]() {
+				if (!IsValid(this) || !IsValid(PC))
+				{
+					return;
+				}
+				
+				this->S_ReportConfirm(RequestInteractableActor, true);
+				PC->bShowMouseCursor = false;
+				PC->SetInputMode(FInputModeGameOnly());
+			});
+			PopupWidget->OnPopupCanceled.BindLambda([this, PC]() {
+				if (!IsValid(this) || !IsValid(PC))
+				{
+					return;
+				}
+				
+				PC->bShowMouseCursor = false;
+				PC->SetInputMode(FInputModeGameOnly());
+			});
+		}
 	}
 }
 

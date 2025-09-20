@@ -38,8 +38,11 @@ AMonster::AMonster()
 	bIsChasing = false;
 
 	bUseControllerRotationYaw = false;
-	bReplicates = true;
-	SetReplicatingMovement(true);
+	
+	USkeletalMeshComponent* MeshComp = GetMesh();
+
+	bReplicates = true; // 액터 복제 활성화
+	SetReplicatingMovement(true); // 평소엔 캡슐 트랜스폼 복제 (랙돌 시 false로 변경)
 	
 	MonsterSoundComponent = CreateDefaultSubobject<UMonsterSoundComponent>(TEXT("MonsterSoundComponent"));
 
@@ -110,6 +113,9 @@ void AMonster::BeginPlay()
 void AMonster::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AMonster, MonsterState);
+	DOREPLIFETIME(AMonster, bIsRagdoll);
 }
 
 void AMonster::OnAttackCollisionOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
@@ -283,6 +289,7 @@ void AMonster::SetNewTargetLocation()
 	if (bDrawDebugLine)
 	{
 		DrawDebugSphere(GetWorld(), DesiredTargetLocation, 50.0f, 12, FColor::Red, false, 3.0f, 0, 5.0f);
+		DrawDebugLine(GetWorld(), CurrentLocation, DesiredTargetLocation, FColor::Red, false, 3.0f, 0, 3.0f);
 	}
 #endif
 
@@ -292,8 +299,8 @@ void AMonster::SetNewTargetLocation()
 		AIController->GetBlackboardComponent()->SetValueAsVector(BlackboardKeys::TargetLocationKey, DesiredTargetLocation);
 	}
 
-	DrawDebugSphere(GetWorld(), DesiredTargetLocation, 50.0f, 12, FColor::Red, false, 3.0f, 0, 5.0f);
-	DrawDebugLine(GetWorld(), CurrentLocation, DesiredTargetLocation, FColor::Red, false, 3.0f, 0, 3.0f);
+	//DrawDebugSphere(GetWorld(), DesiredTargetLocation, 50.0f, 12, FColor::Red, false, 3.0f, 0, 5.0f);
+	
 }
 
 void AMonster::PerformNormalMovement(const float& InDeltaTime)
@@ -531,7 +538,7 @@ float AMonster::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, 
 		FRotator BloodRot = GetActorRotation();
 		M_SpawnBloodEffect(BloodLoc, BloodRot);
 
-		AActor* InstigatorPlayer = IsValid(EventInstigator) ? EventInstigator->GetPawn() : nullptr;
+		
 		if (StatComponent->GetCurrentHealth() <= 0)
 		{
 			OnDeath();
@@ -556,6 +563,14 @@ float AMonster::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, 
 				LOGV(Error, TEXT("AIController Is not valid"));
 				return Damage;
 			}
+
+			AActor* InstigatorPlayer = IsValid(EventInstigator) ? EventInstigator->GetPawn() : DamageCauser;
+			if (IsValid(InstigatorPlayer) == false)
+			{
+				LOGV(Warning, TEXT("InstigatorPlayer is not valid, So Detection Is Failed (%s)"), *GetName());
+				return Damage;
+			}
+
 			// 시야 범위나 청각 범위 중 넓은 범위 내에서 데미지를 받았을 경우 어그로 Set
 			float RecogniztionRange = FMath::Max3(AIC->GetSightRadius(), AIC->GetLoseSightRadius(), AIC->GetHearingRadius());
 			if ((InstigatorPlayer->GetActorLocation() - GetActorLocation()).Length() <= RecogniztionRange)
@@ -581,9 +596,6 @@ void AMonster::OnDeath()
 	// 사망하면 모든 어그로 해제
 	ForceRemoveDetectedPlayers();
 
-	// 렉돌 활성화 및 AquaticMovementComponent Tick 비활성화
-	HandleSetting_OnDeath();
-
 	// 모든 몽타주 재생 정지
 	M_OnDeath();
 
@@ -593,6 +605,9 @@ void AMonster::OnDeath()
 	FTimerHandle DestroyTimerHandle;
 	if (HasAuthority())
 	{
+		bIsRagdoll = true;   // 상태만 바꾸면 클라에 자동 복제됨
+		OnRep_Ragdoll();     // 서버에서도 즉시 적용
+
 		GetWorldTimerManager().SetTimer(
 			DestroyTimerHandle, this, &AMonster::DelayDestroyed, 30.0f, false
 		);
@@ -615,6 +630,16 @@ void AMonster::HandleSetting_OnDeath()
 		AquaticMovementComponent->SetComponentTickEnabled(false);
 	}
 	ApplyPhysicsSimulation();
+	SetReplicatingMovement(false); // 캡슐 이동 복제 중지
+}
+
+void AMonster::OnRep_Ragdoll()
+{
+	if (bIsRagdoll)
+	{
+		// 렉돌 활성화 및 AquaticMovementComponent Tick 비활성화
+		HandleSetting_OnDeath();
+	}
 }
 
 void AMonster::OnMeshOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
@@ -655,6 +680,7 @@ void AMonster::ApplyPhysicsSimulation()
 	{
 		MeshComp->SetCollisionProfileName(TEXT("Ragdoll"));
 		MeshComp->SetEnableGravity(true);
+		MeshComp->SetAllBodiesSimulatePhysics(true);
 		MeshComp->SetSimulatePhysics(true);
 	}
 }

@@ -29,6 +29,8 @@ public:
 
 	virtual void NotifyLightExposure(float DeltaTime, float TotalExposedTime, const FVector& PlayerLocation, AActor* PlayerActor) override;
 
+	virtual void OnDeath() override;
+
 protected:
 	UFUNCTION()
 	void OnSwallowTriggerOverlap(

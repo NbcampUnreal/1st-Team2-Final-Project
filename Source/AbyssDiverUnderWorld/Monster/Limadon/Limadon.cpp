@@ -66,7 +66,6 @@ float ALimadon::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, 
 		FRotator BloodRot = GetActorRotation();
 		M_SpawnBloodEffect(BloodLoc, BloodRot);
 
-		AActor* InstigatorPlayer = IsValid(EventInstigator) ? EventInstigator->GetPawn() : nullptr;
 		if (StatComponent->GetCurrentHealth() <= 0)
 		{
 			OnDeath();
@@ -127,7 +126,11 @@ void ALimadon::NotifyLightExposure(float DeltaTime, float TotalExposedTime, cons
 
 void ALimadon::Spit()
 {
-	if (!IsValid(GetTarget())) return;
+	if (!IsValid(GetTarget()))
+	{
+		LOGV(Error, TEXT("Not Valid Target"));
+		return;
+	}
 
 	// Emissive Color 감소
 	SetEmissiveDown();
@@ -140,6 +143,8 @@ void ALimadon::Spit()
 
 	// 변수 초기화
 	BiteVariableInitialize();
+
+	ForceRemoveDetectedPlayers();
 }
 
 void ALimadon::OnBiteCollisionOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,

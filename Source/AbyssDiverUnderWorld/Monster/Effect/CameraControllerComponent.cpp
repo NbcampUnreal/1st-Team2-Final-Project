@@ -4,13 +4,13 @@
 
 UCameraControllerComponent::UCameraControllerComponent()
 {
-	static ConstructorHelpers::FClassFinder<UCameraShakeBase> BP_RoarCameraShakeBase(TEXT("/Game/_AbyssDiver/Blueprints/Boss/Effect/BP_RoarCameraShakeBase"));
+	static ConstructorHelpers::FClassFinder<UCameraShakeBase> BP_RoarCameraShakeBase(TEXT("/Game/_AbyssDiver/Blueprints/Monster/Effect/BP_RoarCameraShakeBase"));
 	if (BP_RoarCameraShakeBase.Succeeded())
 	{
 		ShortCameraShakeClass = BP_RoarCameraShakeBase.Class;
 	}
 
-	static ConstructorHelpers::FClassFinder<UCameraShakeBase> BP_DamagedCameraShakeBase(TEXT("/Game/_AbyssDiver/Blueprints/Boss/Effect/BP_DamagedCameraShakeBase"));
+	static ConstructorHelpers::FClassFinder<UCameraShakeBase> BP_DamagedCameraShakeBase(TEXT("/Game/_AbyssDiver/Blueprints/Monster/Effect/BP_DamagedCameraShakeBase"));
 	if (BP_DamagedCameraShakeBase.Succeeded())
 	{
 		DamagedCameraShakeClass = BP_DamagedCameraShakeBase.Class;
