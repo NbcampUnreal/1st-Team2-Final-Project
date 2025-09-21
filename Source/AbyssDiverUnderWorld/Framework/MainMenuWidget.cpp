@@ -15,6 +15,9 @@ void UMainMenuWidget::NativeConstruct()
 	if (Button_Join)
 		Button_Join->OnClicked.AddDynamic(this, &UMainMenuWidget::OnJoinClicked);
 
+	if (Button_Tutorial)
+		Button_Tutorial->OnClicked.AddDynamic(this, &UMainMenuWidget::OnTutorialClicked);
+
 	if (Button_Options)
 		Button_Options->OnClicked.AddDynamic(this, &UMainMenuWidget::OnOptionsClicked);
 
@@ -49,6 +52,11 @@ void UMainMenuWidget::OnCreateClicked()
 void UMainMenuWidget::OnJoinClicked()
 {
 	
+}
+
+void UMainMenuWidget::OnTutorialClicked()
+{
+	UGameplayStatics::OpenLevel(this, FName("TutorialPool"));
 }
 
 void UMainMenuWidget::OnOptionsClicked()
@@ -90,21 +98,3 @@ void UMainMenuWidget::OnSessionListWidgetClosed()
 		CreateTeamWidgetInstance = nullptr;
 	}
 }
-
-//void UMainMenuWidget::OnOptionsWidgetClosed()
-//{
-//	if (OptionsWidgetInstance)
-//	{
-//		OptionsWidgetInstance->RemoveFromParent();
-//		OptionsWidgetInstance = nullptr;
-//	}
-//}
-//
-//void UMainMenuWidget::OnCreditsWidgetClosed()
-//{
-//	if (CreditsWidgetInstance)
-//	{
-//		CreditsWidgetInstance->RemoveFromParent();
-//		CreditsWidgetInstance = nullptr;
-//	}
-//}

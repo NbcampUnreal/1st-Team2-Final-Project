@@ -175,7 +175,14 @@ void AADTutorialGameMode::OnTutorialNPCStateChanged(AUnderwaterCharacter* Charac
 void AADTutorialGameMode::HandlePhase_Movement() {}
 void AADTutorialGameMode::HandlePhase_Oxygen() {}
 void AADTutorialGameMode::HandlePhase_Dialogue_05() {}
-void AADTutorialGameMode::HandlePhase_Complete() {}
+void AADTutorialGameMode::HandlePhase_Complete() 
+{
+    //위젯 또는 계단 인터랙션?
+	FTimerHandle OpenMainLevelTimer;
+	float Delay = 10.0f;
+    GetWorldTimerManager().SetTimer(OpenMainLevelTimer, [this]() { UGameplayStatics::OpenLevel(this, FName("MainLevel")); }, Delay, false);
+    
+}
 
 void AADTutorialGameMode::HandlePhase_Sprint()
 {
@@ -461,9 +468,13 @@ void AADTutorialGameMode::HandlePhase_Revive()
 
         if (IndicatingTargetClass)
         {
-            if (AIndicatingTarget* Indicator = GetWorld()->SpawnActor<AIndicatingTarget>(IndicatingTargetClass, SpawnTM))
+            if (AIndicatingTarget* Indicator = GetWorld()->SpawnActor<AIndicatingTarget>(IndicatingTargetClass, SpawnedNPC->GetActorTransform()))
             {
-                BindIndicatorToOwner(SpawnedNPC, Indicator);
+                Indicator->SetupIndicator(SpawnedNPC, NPCIcon);
+                if (ATargetIndicatorManager* TargetMgr = *TActorIterator<ATargetIndicatorManager>(GetWorld()))
+                {
+                    TargetMgr->RegisterNewTarget(Indicator);
+                }
                 TrackPhaseActor(Indicator);
             }
         }
@@ -490,7 +501,18 @@ void AADTutorialGameMode::HandlePhase_Die()
         0.15f,
         false
     );
-
+    if (IndicatingTargetClass)
+    {
+        if (AIndicatingTarget* Indicator = GetWorld()->SpawnActor<AIndicatingTarget>(IndicatingTargetClass, TutorialNPC->GetActorTransform()))
+        {
+            Indicator->SetupIndicator(TutorialNPC.Get(), NPCIcon);
+            if (ATargetIndicatorManager* TargetMgr = *TActorIterator<ATargetIndicatorManager>(GetWorld()))
+            {
+                TargetMgr->RegisterNewTarget(Indicator);
+            }
+            TrackPhaseActor(Indicator);
+        }
+    }
     if (ATutorialManager* Mgr = Cast<ATutorialManager>(UGameplayStatics::GetActorOfClass(GetWorld(), ATutorialManager::StaticClass())))
     {
         Mgr->StartGaugeObjective(EGaugeInteractionType::Tap, 100.f, 50.f, 0.f);
@@ -527,6 +549,7 @@ void AADTutorialGameMode::HandlePhase_Resurrection()
     }
 
     Tutorial_ActiveDrone->SetActorHiddenInGame(false);
+    Tutorial_ActiveSeller->SetActorHiddenInGame(false);
     Tutorial_ActiveDrone->SetActorEnableCollision(true);
     Tutorial_ActiveDrone->Activate();
 
@@ -550,6 +573,7 @@ void AADTutorialGameMode::HandlePhase_Resurrection()
             TrackPhaseActor(Indicator);
         }
     }
+
 }
 
 void AADTutorialGameMode::TriggerResurrectionSequence()
@@ -911,6 +935,19 @@ void AADTutorialGameMode::ReviveTutorialNPCAtDrone(AADDrone* Drone)
         );
 
         UE_LOG(LogTemp, Log, TEXT("NPC를 %s 위치에 스폰했습니다. 곧 Normal 상태로 전환하여 이모트를 재생합니다."), *RespawnTM.GetLocation().ToString());
+
+		if (IndicatingTargetClass)
+		{
+			if (AIndicatingTarget* Indicator = GetWorld()->SpawnActor<AIndicatingTarget>(IndicatingTargetClass, NewNPC->GetActorTransform()))
+			{
+				Indicator->SetupIndicator(NewNPC, NPCIcon);
+				if (ATargetIndicatorManager* TargetMgr = *TActorIterator<ATargetIndicatorManager>(GetWorld()))
+				{
+					TargetMgr->RegisterNewTarget(Indicator);
+				}
+				TrackPhaseActor(Indicator);
+			}
+		}
     }
 }
 

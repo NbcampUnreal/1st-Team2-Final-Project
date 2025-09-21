@@ -38,7 +38,7 @@ void ATutorialManager::BeginPlay()
 		SubtitleWidget = CreateWidget<UTutorialSubtitle>(GetWorld(), TutorialSubtitleClass);
 		if (SubtitleWidget)
 		{
-			SubtitleWidget->AddToViewport(-100);
+			SubtitleWidget->AddToViewport();
 			SubtitleWidget->SetVisibility(ESlateVisibility::Hidden);
 		}
 	}

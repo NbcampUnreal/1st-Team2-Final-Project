@@ -153,6 +153,9 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Settings|Icons")
     TObjectPtr<UTexture2D> DroneIndicatorIcon;
 
+    UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Settings|Icons")
+    TObjectPtr<UTexture2D> NPCIcon;
+
     // Timing
     UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Timing")
     float EmoteToNextPhaseDelay = 2.0f;
