@@ -98,6 +98,11 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "DroneSettings")
 	int32 DronePhaseNumber = 0;
 
+	// 드론에 해당하는 Phase를 나타내는 숫자
+	UPROPERTY(EditAnywhere, Category = "DroneSettings")
+	uint8 bIsBgmOn : 1;
+
+
 	/** 사망 부활 반경 */
 	UPROPERTY(EditAnywhere, Category = "DroneSettings")
 	float ReviveDistance;
