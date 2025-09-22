@@ -33,7 +33,7 @@ void AADMine::Explode()
 	UGameplayStatics::ApplyRadialDamageWithFalloff(
 		this,
 		BaseDamage,
-		10.f,                 
+		100.f,                 
 		GetActorLocation(),
 		InnerRadius,
 		OuterRadius,
@@ -42,19 +42,24 @@ void AADMine::Explode()
 		Ignore,
 		Owner);
 
+	Multicast_PlayExplodeFX();
+
+	SetLifeSpan(0.1f);
+}
+
+void AADMine::M_PlayExplodeSound_Implementation()
+{
+	GetSoundSubsystem()->PlayAt(ESFX::ExplodeMine, GetActorLocation());
+}
+
+void AADMine::Multicast_PlayExplodeFX_Implementation()
+{
 	// FX 적용
 	if (ExplosionNiagara)
 		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 			GetWorld(), ExplosionNiagara, GetActorLocation());
 
 	M_PlayExplodeSound();
-
-	Destroy();
-}
-
-void AADMine::M_PlayExplodeSound_Implementation()
-{
-	GetSoundSubsystem()->PlayAt(ESFX::ExplodeMine, GetActorLocation());
 }
 
 USoundSubsystem* AADMine::GetSoundSubsystem()

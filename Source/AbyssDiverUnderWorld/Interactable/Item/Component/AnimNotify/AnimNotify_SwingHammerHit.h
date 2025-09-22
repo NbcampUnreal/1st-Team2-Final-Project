@@ -11,6 +11,8 @@ class ABYSSDIVERUNDERWORLD_API UAnimNotify_SwingHammerHit : public UAnimNotify
 	
 #pragma region Method
 public:
+    UAnimNotify_SwingHammerHit();
+
     virtual void Notify(USkeletalMeshComponent* MeshComp,
         UAnimSequenceBase* Animation,
         const FAnimNotifyEventReference& EventReference) override;
@@ -40,5 +42,5 @@ public:
 
     // 디버그 유무
     UPROPERTY(EditAnywhere, Category = "Hammer|Debug")
-    bool bDebugDraw = true;
+    bool bDebugDraw = false;
 };
