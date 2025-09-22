@@ -31,6 +31,8 @@ void AADShotgunBullet::HandleHit(AActor* HitActor, const FHitResult& Hit)
 {
 	if (!HitActor || HitActor == this) return;
 
+	Damage = PelletDamage;
+
 	FVector KnockDir = GetVelocity().GetSafeNormal();
 	//KnockDir.Z = 0.f;
 	KnockDir.Normalize();
@@ -67,6 +69,7 @@ void AADShotgunBullet::HandleHit(AActor* HitActor, const FHitResult& Hit)
 			}
 		}
 	}
+	LOG(TEXT("Before Apply Damage : %f"), Damage);
 
 	UGameplayStatics::ApplyPointDamage(
 		HitActor,
@@ -77,6 +80,7 @@ void AADShotgunBullet::HandleHit(AActor* HitActor, const FHitResult& Hit)
 		GetOwner(),
 		UDamageType::StaticClass());
 
-	
+	LOG(TEXT("After Apply Damage : %f"), Damage);
+
 	Deactivate();   // 베이스 클래스 Deactivate() 호출로 풀에 반환
 }
