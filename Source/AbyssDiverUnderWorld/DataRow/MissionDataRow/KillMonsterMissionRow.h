@@ -1,7 +1,7 @@
 #pragma once
 
 #include "MissionBaseRow.h"
-
+#include "Missions/MissionTagUtil.h"
 #include "KillMonsterMissionRow.generated.h"
 
 UENUM(BlueprintType)
@@ -49,4 +49,29 @@ struct FKillMonsterMissionRow : public FMissionBaseRow
 
 	UPROPERTY(EditDefaultsOnly, Category = "KillMonsterMission")
 	float KillInterval;
+
+
+	UPROPERTY(EditDefaultsOnly, Category = "KillMonsterMission|Tag")
+	bool bUseQuery = false;
+
+	UPROPERTY(EditDefaultsOnly, Category = "KillMonsterMission|Tag")
+	FGameplayTagQuery TargetQuery;
+
+	UPROPERTY(VisibleAnywhere, Category = "KillMonsterMission|Tag")
+	FGameplayTag TargetUnitIdTag;
+
+	UPROPERTY(VisibleAnywhere, Category = "KillMonsterMission|Tag")
+	FGameplayTag TargetUnitTypeTag;
+
+	UPROPERTY(EditDefaultsOnly, Category = "KillMonsterMission|Tag")
+	FName UnitTypeTail = NAME_None; // ¿¹: "Shark"
+
+	void BakeTags()
+	{
+		TargetUnitIdTag = UMissionTagUtil::ToUnitIdTag(UnitId);
+		if (UnitTypeTail != NAME_None)
+		{
+			TargetUnitTypeTag = UMissionTagUtil::ToUnitTypeTagByTail(UnitTypeTail);
+		}
+	}
 };

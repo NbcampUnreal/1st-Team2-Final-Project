@@ -1,6 +1,8 @@
 #include "Missions/MissionTagUtil.h"
 #include "GameplayTagsManager.h"
 
+TMap<uint8, FName> UMissionTagUtil::GItemIdToTail;
+
 namespace
 {
 	template<typename TEnum>
@@ -17,7 +19,8 @@ namespace
 #endif
 			return E->GetNameStringByValue((int64)Value);
 		}
-		return TEXT("None");
+		// 폴백: UENUM이 아니거나 StaticEnum 실패 시 숫자로 반환
+    return LexToString(static_cast<int64>(Value));
 	}
 
 	static FGameplayTag RequestUnderRoot(const TCHAR* Root, const FString& Tail)
@@ -59,21 +62,40 @@ bool UMissionTagUtil::IsUnitTypeTag(const FGameplayTag& Tag)
 }
 
 // ---- Item ----
-FGameplayTag UMissionTagUtil::ToItemIdTag(uint8 ItemId)
+FGameplayTag UMissionTagUtil::ToItemIdTagById(uint8 ItemId)
 {
-	return RequestTagChecked(Root_ItemId(), EnumToTailString(ItemId));
+	const FName* Found = GItemIdToTail.Find(ItemId);
+	const FString Tail = Found ? Found->ToString() : LexToString((int32)ItemId);
+	return RequestUnderRoot(Root_ItemId(), Tail);
 }
+
 FGameplayTag UMissionTagUtil::ToItemTypeTagByTail(FName CategoryTail)
 {
 	return RequestTagChecked(Root_ItemType(), CategoryTail.ToString());
 }
+
 bool UMissionTagUtil::IsItemIdTag(const FGameplayTag& Tag)
 {
 	return Tag.IsValid() && Tag.MatchesTag(FGameplayTag::RequestGameplayTag(TEXT("Item.id")));
 }
+
 bool UMissionTagUtil::IsItemTypeTag(const FGameplayTag& Tag)
 {
 	return Tag.IsValid() && Tag.MatchesTag(FGameplayTag::RequestGameplayTag(TEXT("Item.Type")));
+}
+
+void UMissionTagUtil::RegisterItemIdNames(const TArray<FName>& Names)
+{
+	GItemIdToTail.Reset();
+	for (int32 i = 0; i < Names.Num(); ++i)
+	{
+		GItemIdToTail.Add((uint8)i, Names[i]);
+	}
+}
+
+void UMissionTagUtil::SetItemIdName(uint8 ItemId, FName Tail)
+{
+	GItemIdToTail.Add(ItemId, Tail);
 }
 
 // ---- Debug ----

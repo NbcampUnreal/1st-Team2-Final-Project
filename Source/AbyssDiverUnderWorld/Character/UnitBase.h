@@ -2,7 +2,8 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
-
+#include "GameplayTagContainer.h"
+#include "Missions/MissionEventHubComponent.h"
 #include "UnitBase.generated.h"
 
 class URadarReturnComponent;
@@ -36,6 +37,8 @@ public:
 
 	AUnitBase();
 
+	void InitGameplayTags();
+
 protected:
 
 	virtual void BeginPlay() override;
@@ -46,7 +49,8 @@ protected:
 protected:
 	
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
-	
+	virtual void BuildGameplayTags(FGameplayTagContainer& Out) const;
+
 #pragma endregion
 
 #pragma region Variable
@@ -68,9 +72,18 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Id")
 	EUnitId UnitId;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	FGameplayTagContainer GameplayTags;
+
+
+	UPROPERTY(Transient)   // GC 안전하게 보관
+	TObjectPtr<UMissionEventHubComponent> CachedHub;
 #pragma endregion
 
 public:
 	FORCEINLINE UStatComponent* GetStatComponent() const { return StatComponent; }
 	FORCEINLINE const EUnitId& GetUnitId() const { return UnitId; }
+
+private:
+	UMissionEventHubComponent* GetMissionHub();
 };

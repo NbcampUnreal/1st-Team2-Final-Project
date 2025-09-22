@@ -25,6 +25,7 @@
 #include "Framework/ADGameInstance.h"
 #include "Framework/ADTutorialGameMode.h"
 #include "GameFramework/Pawn.h"
+#include "GameFramework/GameStateBase.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Interactable/EquipableComponent/EquipRenderComponent.h"
 #include "Character/PlayerComponent/PlayerHUDComponent.h"
@@ -1058,5 +1059,11 @@ UAnimMontage* UADInventoryComponent::GetDrawMontageByType(EEquipmentType InType)
 	}
 }
 
-
+UMissionEventHubComponent* UADInventoryComponent::GetMissionHub()
+{
+	if (CachedHub) return CachedHub;
+	if (AGameStateBase* GS = UGameplayStatics::GetGameState(this))
+		CachedHub = GS->FindComponentByClass<UMissionEventHubComponent>();
+	return CachedHub;
+}
 

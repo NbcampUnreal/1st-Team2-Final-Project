@@ -2,7 +2,6 @@
 #include "MissionEventHubComponent.h"
 #include "Framework/ADInGameState.h"
 #include "Subsystems/MissionSubsystem.h"
-#include "Missions/MissionBase.h"
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 #include "Character/UnitBase.h"
@@ -16,6 +15,9 @@
 #include "KillMonsterMission.h"
 
 #define AUTH_GUARD if (!(GetOwner() && GetOwner()->HasAuthority())) return;
+#define AUTH_GUARD_PTR if (!(GetOwner() && GetOwner()->HasAuthority())) return nullptr;
+
+
 
 UMissionManagerComponent::UMissionManagerComponent()
 {
@@ -103,7 +105,7 @@ void UMissionManagerComponent::HandleMonsterKilled(const FGameplayTagContainer& 
     AUTH_GUARD; 
     for (UMissionBase* Mission : ActiveMissions)
     {
-        if (Mission)
+        if (Mission && Mission->GetMissionType() == EMissionType::KillMonster)
         {
             Mission->NotifyMonsterKilled(UnitTags);
         }
@@ -115,7 +117,7 @@ void UMissionManagerComponent::HandleItemCollected(const FGameplayTagContainer& 
     AUTH_GUARD;
     for (UMissionBase* Mission : ActiveMissions)
     {
-        if (Mission)
+        if (Mission && Mission->GetMissionType() == EMissionType::ItemCollection)
         {
             Mission->NotifyItemCollected(ItemTags, Amount);
         }
@@ -127,7 +129,7 @@ void UMissionManagerComponent::HandleItemUsed(const FGameplayTagContainer& ItemT
     AUTH_GUARD; 
     for (UMissionBase* Mission : ActiveMissions)
     {
-        if (Mission)
+        if (Mission && Mission->GetMissionType() == EMissionType::ItemUse)
         {
             Mission->NotifyItemUsed(ItemTags, Amount);
 		}
@@ -140,7 +142,7 @@ void UMissionManagerComponent::HandleAggro(const FGameplayTagContainer& SourceTa
     AUTH_GUARD; 
     for (UMissionBase* Mission : ActiveMissions)
     {
-        if (Mission)
+        if (Mission && Mission->GetMissionType() == EMissionType::AggroTrigger)
         {
             Mission->NotifyAggroTriggered(SourceTags);
         }
@@ -152,7 +154,7 @@ void UMissionManagerComponent::HandleInteracted(const FGameplayTagContainer& Int
     AUTH_GUARD; 
     for (UMissionBase* Mission : ActiveMissions)
     {
-        if (Mission)
+        if (Mission && Mission->GetMissionType() == EMissionType::Interaction)
         {
             Mission->NotifyInteracted(InteractTags);
 		}
@@ -184,6 +186,19 @@ void UMissionManagerComponent::SetProgress(uint8 Slot, int32 NewCurrent, int32 N
     if (bForceRep) { OnRep_Missions(); }
 }
 
+UClass* UMissionManagerComponent::PickMissiopnClass(EMissionType Type)
+{
+    switch (Type)
+    {
+    case EMissionType::KillMonster:     return UKillMonsterMission::StaticClass();
+    case EMissionType::ItemCollection:  return UItemCollectionMission::StaticClass();
+    case EMissionType::ItemUse:         return UItemUseMission::StaticClass();
+    case EMissionType::AggroTrigger:    return UAggroTriggerMission::StaticClass();
+    case EMissionType::Interaction:     return UInteractionMission::StaticClass();
+    default:                            return nullptr;
+    }
+}
+
 void UMissionManagerComponent::OnActiveMissionCountChanged()
 {
     if (ActiveMissions.Num() > 0)
@@ -210,7 +225,195 @@ void UMissionManagerComponent::HandleMissionComplete(EMissionType Type, uint8 In
 
 UMissionBase* UMissionManagerComponent::CreateAndInitMission(const FMissionData& Choice)
 {
-    return nullptr;
+    AUTH_GUARD_PTR;
+	if (!MissionSubsystem) return nullptr;
+
+    // DT Row 조회
+    const FMissionBaseRow* BaseRow = MissionSubsystem->GetMissionData(Choice.MissionType, Choice.MissionIndex);
+	if (!BaseRow) 
+        return nullptr;
+
+    //Class 결정
+	UClass* MissionClass = PickMissiopnClass(Choice.MissionType);
+    if (!MissionClass)
+    {
+        UE_LOG(LogTemp, Error, TEXT("[Mission] Unsupported MissionType: %d"), (int32)Choice.MissionType);
+        return nullptr;
+    }
+    //생성
+	UMissionBase* Mission = NewObject<UMissionBase>(this, MissionClass);
+
+    // 4) Row 사본 + Bake + Initialize
+    switch (Choice.MissionType)
+    {
+    case EMissionType::KillMonster:
+    {
+        FKillMonsterMissionRow Row = *static_cast<const FKillMonsterMissionRow*>(BaseRow);
+
+		Row.BakeTags();
+
+        FKillMissionInitParams Params(
+            Row.MissionType,            // EMissionType
+            Row.MissionName,            // FString
+            Row.MissionDescription,     // FString
+            Row.ConditionType,          // EMissionConditionType
+            Row.GoalCount,              // int32
+            Row.ExtraValues,            // TArray<int32>
+            Row.bShouldCompleteInstantly,     // bool
+            Row.bUseQuery,              // bool
+            Row.TargetUnitIdTag,        // FGameplayTag
+            Row.TargetUnitTypeTag,      // FGameplayTag
+            Row.TargetQuery,        // FGameplayTagQuery
+            Row.NeededSimultaneousKillCount, // uint8
+            Row.KillInterval                  // float
+        );
+
+        if (UKillMonsterMission* KillMission = Cast<UKillMonsterMission>(Mission))
+        {
+            KillMission->InitMission(Params, static_cast<EKillMonsterMission>(Choice.MissionIndex));
+        }
+        else
+        {
+            UE_LOG(LogTemp, Error, TEXT("[Mission] MissionClass is not UKillMonsterMission"));
+            return nullptr;
+        }
+        break;
+    }
+
+    case EMissionType::ItemCollection:
+    {
+        FItemCollectMissionRow Row = *static_cast<const FItemCollectMissionRow*>(BaseRow);
+        Row.BakeTags();
+
+        FItemCollectMissionInitParams Params(
+            Row.MissionType, 
+            Row.MissionName,
+            Row.MissionDescription,
+            Row.ConditionType,
+            Row.GoalCount, 
+            Row.ExtraValues,
+            Row.bShouldCompleteInstantly,
+            Row.bUseQuery,
+            Row.TargetItemIdTag,
+            Row.TargetItemTypeTag,
+            Row.TargetQuery
+        );
+
+        if (UItemCollectionMission* ItemMission = Cast<UItemCollectionMission>(Mission))
+        {
+            ItemMission->InitMission(Params, static_cast<EItemCollectMission>(Choice.MissionIndex));
+        }
+        else
+        {
+            UE_LOG(LogTemp, Error, TEXT("[Mission] MissionClass is not UItemCollectionMission"));
+            return nullptr;
+		}
+        break;
+    }
+
+    case EMissionType::ItemUse:
+    {
+        FItemUseMissionRow Row = *static_cast<const FItemUseMissionRow*>(BaseRow);
+        Row.BakeTags();
+
+        FItemUseMissionInitParams Params(
+            Row.MissionType, 
+            Row.MissionName, 
+            Row.MissionDescription,
+            Row.ConditionType, 
+            Row.GoalCount,
+            Row.ExtraValues,
+            Row.bShouldCompleteInstantly,
+            Row.bUseQuery,
+            Row.TargetItemIdTag,
+            Row.TargetItemTypeTag,
+            Row.TargetQuery
+        );
+
+        if (UItemUseMission* ItemUseMission = Cast<UItemUseMission>(Mission))
+        {
+            ItemUseMission->InitMission(Params, static_cast<EItemUseMission>(Choice.MissionIndex));
+        }
+        else
+        {
+            UE_LOG(LogTemp, Error, TEXT("[Mission] MissionClass is not UItemUseMission"));
+            return nullptr;
+		}
+        break;
+    }
+
+    case EMissionType::AggroTrigger:
+    {
+        FAggroTriggerMissionRow Row = *static_cast<const FAggroTriggerMissionRow*>(BaseRow);
+
+        Row.BakeTags();
+
+        FAggroMissionInitParams Params(
+            Row.MissionType,
+            Row.MissionName, 
+            Row.MissionDescription,
+            Row.ConditionType,
+            Row.GoalCount,
+            Row.ExtraValues,
+            Row.bShouldCompleteInstantly,
+            Row.bUseQuery,
+            Row.TargetSourceUnitIdTag,     // 선택 사용(필요 없으면 기본값)
+            Row.TargetSourceUnitTypeTag,
+            Row.TargetQuery
+        );
+
+        if (UAggroTriggerMission* AggroMission = Cast<UAggroTriggerMission>(Mission))
+        {
+            AggroMission->InitMission(Params, static_cast<EAggroTriggerMission>(Choice.MissionIndex));
+        }
+        else
+        {
+            UE_LOG(LogTemp, Error, TEXT("[Mission] MissionClass is not UAggroTriggerMission"));
+            return nullptr;
+        }
+        break;
+    }
+
+    case EMissionType::Interaction:
+    {
+        FInteractionMissionRow Row = *static_cast<const FInteractionMissionRow*>(BaseRow);
+
+        Row.BakeTags();
+
+        FInteractiontMissionInitParams Params(
+            Row.MissionType, 
+            Row.MissionName,
+            Row.MissionDescription,
+            Row.ConditionType, 
+            Row.GoalCount,
+            Row.ExtraValues, 
+            Row.bShouldCompleteInstantly,
+            Row.bUseQuery,
+            Row.TargetInteractUnitIdTag,   // 선택 사용
+            Row.TargetInteractTypeTag,
+            Row.TargetQuery
+        );
+
+        if (UInteractionMission* InteractionMission = Cast<UInteractionMission>(Mission))
+        {
+            InteractionMission->InitMission(Params, static_cast<EInteractionMission>(Choice.MissionIndex));
+        }
+        else
+        {
+            UE_LOG(LogTemp, Error, TEXT("[Mission] MissionClass is not UInteractionMission"));
+        }
+        break;
+    }
+
+    default:
+        checkNoEntry();
+        return nullptr;
+    }
+
+    // 5) 보관 (UPROPERTY로 관리되는 컨테이너여야 GC 안전)
+    ActiveMissions.Add(Mission);
+
+    return Mission;
 }
 
 

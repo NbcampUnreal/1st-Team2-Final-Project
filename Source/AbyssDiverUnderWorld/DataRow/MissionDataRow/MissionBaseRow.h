@@ -51,4 +51,6 @@ struct FMissionBaseRow : public FTableRowBase
 	// HUD에 띄울 간략한 미션 이미지
 	UPROPERTY(EditAnywhere, Category = "MissionBase")
 	TObjectPtr<UTexture2D> MissionImage;
+
+	virtual void BakeTags() {}
 };

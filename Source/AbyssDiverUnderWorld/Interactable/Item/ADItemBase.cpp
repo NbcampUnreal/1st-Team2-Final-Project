@@ -14,9 +14,21 @@
 
 #include "Net/UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"
+#include "GameFramework/GameStateBase.h"  
 #include "GameFramework/ProjectileMovementComponent.h"
+#include "GameplayTagsManager.h"
 
 DEFINE_LOG_CATEGORY(ItemLog);
+
+static FGameplayTag MakeTag(const TCHAR* Root, const FString& Tail)
+{
+	return UGameplayTagsManager::Get().RequestGameplayTag(FName(*FString::Printf(TEXT("%s.%s"), Root, *Tail)), false);
+}
+
+static inline void AddIfValid(FGameplayTagContainer& C, const FGameplayTag& T)
+{
+	if (T.IsValid()) { C.AddTag(T); }
+}
 
 // Sets default values
 AADItemBase::AADItemBase()
@@ -51,6 +63,8 @@ void AADItemBase::BeginPlay()
 	{
 		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
 	}
+
+	InitGameplayTags();
 }
 
 void AADItemBase::Interact_Implementation(AActor* InstigatorActor)
@@ -101,6 +115,20 @@ void AADItemBase::HandlePickup(APawn* InstigatorPawn)
 			Destroy();
 		}
 	}
+
+}
+
+void AADItemBase::InitGameplayTags()
+{
+	GameplayTags.Reset();
+	const FName ItemName = GetItemName();
+	if (!ItemName.IsNone())
+		GameplayTags.AddTag(MakeTag(TEXT("Item.id"), ItemName.ToString()));
+
+	// 타입 자동 추가를 원하면:
+	const FName Tail = GetItemTypeTail();
+	if (!Tail.IsNone())
+		GameplayTags.AddTag(MakeTag(TEXT("Item.Type"), Tail.ToString()));
 }
 
 void AADItemBase::M_PlayPickupSound_Implementation()
@@ -165,4 +193,20 @@ USoundSubsystem* AADItemBase::GetSoundSubsystem()
 		return SoundSubsystem;
 	}
 	return nullptr;
+}
+
+UMissionEventHubComponent* AADItemBase::GetMissionHub()
+{
+	if (CachedHub) return CachedHub;
+
+	// 1) GameState에서 바로 찾기 (권장)
+	if (AGameStateBase* GS = UGameplayStatics::GetGameState(this))
+	{
+		if (!CachedHub)
+		{
+			CachedHub = GS->FindComponentByClass<UMissionEventHubComponent>();
+		}
+	}
+
+	return CachedHub;
 }

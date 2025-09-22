@@ -4,6 +4,8 @@
 #include "GameFramework/Actor.h"
 #include "Interface/IADInteractable.h"
 #include "Container/FStructContainer.h"
+#include "GameplayTagContainer.h"
+#include "Missions/MissionManagerComponent.h"
 #include "ADItemBase.generated.h"
 
 #define LOGI(Verbosity, Format, ...) UE_LOG(ItemLog, Verbosity, TEXT("%s(%s) %s"), ANSI_TO_TCHAR(__FUNCTION__), *FString::FromInt(__LINE__), *FString::Printf(Format, ##__VA_ARGS__));
@@ -32,7 +34,7 @@ public:
 
 	virtual void HandlePickup(APawn* InstigatorPawn);
 
-	
+	void InitGameplayTags();
 
 protected:
 	UFUNCTION(NetMulticast, Reliable)
@@ -48,7 +50,7 @@ private:
 
 #pragma endregion
 
-#pragma region Variable
+#pragma region VariableSizeType
 public:
 	// 드롭 모션 적용을 위한 발사체 컴포넌트
 	UPROPERTY(VisibleAnywhere)
@@ -63,12 +65,22 @@ public:
 
 	// TODO : 인벤토리 컴포넌트 참조
 	// TODO : PickupSound 등 획득 시 효과 추가
+
+
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	FGameplayTagContainer GameplayTags;
+
+
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction")
 	uint8 bIsHold : 1;
 
 	float WaterGravityScale = 0.3f;
 	float WaterDampingFactor = 1.f;
+
+	UPROPERTY(Transient)   // GC 안전하게 보관
+	TObjectPtr<UMissionEventHubComponent> CachedHub;
 
 #pragma endregion
 
@@ -82,8 +94,15 @@ public:
 	FName GetItemName() const { return ItemData.Name; }
 	int32 GetItemPrice() const { return ItemData.Price; }
 
+
+	virtual uint8 GetItemId() const { return 0; }       // ItemId = uint8
+	virtual FName GetItemTypeTail() const { return NAME_None; } // 예: "Consumable", "Ore"
+
+
+
 private:
 	USoundSubsystem* GetSoundSubsystem();
+	UMissionEventHubComponent* GetMissionHub();
 #pragma endregion
 
 };

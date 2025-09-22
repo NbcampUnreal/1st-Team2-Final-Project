@@ -103,7 +103,7 @@ private:
     // 진행값 갱신 헬퍼
     void SetProgress(uint8 Slot, int32 NewCurrent, int32 NewGoal, bool bForceRep = false);
 
-
+    UClass* PickMissiopnClass(EMissionType Type);
 private:
     uint8 bEventsBound : 1 = 0;
 

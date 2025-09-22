@@ -6,6 +6,14 @@
 #include "Character/PlayerComponent/DebuffComponent.h"
 #include "Subsystems/MissionSubsystem.h"
 
+#include "Kismet/GameplayStatics.h"
+#include "GameFramework/GameStateBase.h"
+
+static inline void AddIfValid(FGameplayTagContainer& C, const FGameplayTag& T)
+{
+	if (T.IsValid()) { C.AddTag(T); }
+}
+
 AUnitBase::AUnitBase()
 {
 	PrimaryActorTick.bCanEverTick = false;
@@ -24,6 +32,8 @@ void AUnitBase::BeginPlay()
 	Super::BeginPlay();
 
 	GetGameInstance()->GetSubsystem<UMissionSubsystem>()->RequestBinding(this);
+
+	InitGameplayTags();
 }
 
 void AUnitBase::Destroyed()
@@ -53,4 +63,38 @@ float AUnitBase::TakeDamage(float DamageAmount, struct FDamageEvent const& Damag
 	StatComponent->TakeDamage(Damage);
 	
 	return Damage;
+}
+
+void AUnitBase::InitGameplayTags()
+{
+	GameplayTags.Reset();
+	BuildGameplayTags(GameplayTags);
+}
+
+void AUnitBase::BuildGameplayTags(FGameplayTagContainer& Out) const
+{
+	AddIfValid(Out, UMissionTagUtil::ToUnitIdTag(GetUnitId()));
+	//타입이 지정되면
+
+	/*const FName TypeTail = GetUnitTypeTail();
+	if (TypeTail != NAME_None)
+	{
+		AddIfValid(Out, UMissionTagUtil::ToUnitTypeTagByTail(TypeTail));
+	}*/
+}
+
+UMissionEventHubComponent* AUnitBase::GetMissionHub()
+{
+	if (CachedHub) return CachedHub;
+
+	// 1) GameState에서 바로 찾기 (권장)
+	if (AGameStateBase* GS = UGameplayStatics::GetGameState(this))
+	{
+		if (!CachedHub)
+		{
+			CachedHub = GS->FindComponentByClass<UMissionEventHubComponent>();
+		}
+	}
+
+	return CachedHub;
 }

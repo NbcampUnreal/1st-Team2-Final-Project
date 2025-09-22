@@ -1,7 +1,7 @@
 #pragma once
 
 #include "MissionBaseRow.h"
-
+#include "Missions/MissionTagUtil.h"
 #include "ItemUseMissionRow.generated.h"
 
 UENUM(BlueprintType)
@@ -30,4 +30,29 @@ struct FItemUseMissionRow : public FMissionBaseRow
 
 	UPROPERTY(EditDefaultsOnly, Category = "ItemUseMission")
 	uint8 ItemId;
+
+	UPROPERTY(EditDefaultsOnly, Category = "ItemUseMission|Tag")
+	FName ItemTypeTail = NAME_None;
+
+	UPROPERTY(EditDefaultsOnly, Category = "ItemUseMission|Tag")
+	bool bUseQuery = false;
+
+	UPROPERTY(EditDefaultsOnly, Category = "ItemUseMission|Tag")
+	FGameplayTagQuery TargetQuery;
+
+
+	UPROPERTY(VisibleAnywhere, Category = "ItemUseMission|Tag")
+	FGameplayTag TargetItemIdTag;
+
+	UPROPERTY(VisibleAnywhere, Category = "ItemUseMission|Tag")
+	FGameplayTag TargetItemTypeTag;
+
+	void BakeTags()
+	{
+		TargetItemIdTag = UMissionTagUtil::ToItemIdTagById(ItemId);
+		if (ItemTypeTail != NAME_None)
+		{
+			TargetItemTypeTag = UMissionTagUtil::ToItemTypeTagByTail(ItemTypeTail);
+		}
+	}
 };

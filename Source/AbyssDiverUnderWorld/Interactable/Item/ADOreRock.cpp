@@ -14,6 +14,7 @@
 #include "Framework/ADTutorialGameMode.h"
 #include "Framework/ADTutorialGameState.h"
 #include "Framework/ADGameInstance.h"
+#include "GameFramework/GameStateBase.h"  
 
 #include "DataRow/FADItemDataRow.h"
 #include "DataRow/SoundDataRow/SFXDataRow.h"
@@ -25,10 +26,25 @@
 #include "Kismet/GameplayStatics.h"
 #include "Components/AudioComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
+#include "GameplayTagsManager.h"
+#include "Missions/MissionEventHubComponent.h"
 
 #include "NiagaraSystem.h"  
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
+
+
+
+static inline void AddIfValid(FGameplayTagContainer& C, const FGameplayTag& T)
+{
+	if (T.IsValid()) { C.AddTag(T); }
+}
+
+static inline FGameplayTag MakeTag(const TCHAR* Root, const FString& Tail)
+{
+	const FString Path = FString::Printf(TEXT("%s.%s"), Root, *Tail);
+	return UGameplayTagsManager::Get().RequestGameplayTag(FName(*Path), /*ErrorIfNotFound*/ false);
+}
 
 // Sets default values
 AADOreRock::AADOreRock()
@@ -71,6 +87,11 @@ void AADOreRock::BeginPlay()
 	}
 	InteractableComp->SetAlwaysHighlight(true);
 	
+
+	InitGameplayTags();
+	(void)GetMissionHub();
+
+
 }
 
 void AADOreRock::Destroyed()
@@ -108,6 +129,11 @@ void AADOreRock::InteractHold_Implementation(AActor* InstigatorActor)
 	if (!HasAuthority()) return;
 
 	HandleMineRequest(Cast<APawn>(InstigatorActor));
+
+	if (UMissionEventHubComponent* Hub = GetMissionHub())
+	{
+		Hub->BroadcastItemCollected(GameplayTags,);
+	}
 }
 
 void AADOreRock::OnHoldStart_Implementation(APawn* InstigatorPawn)
@@ -235,6 +261,8 @@ void AADOreRock::HandleMineRequest(APawn* InstigatorPawn)
 			}
 		}
 	}
+
+
 }
 
 void AADOreRock::SpawnDrops()
@@ -347,6 +375,12 @@ int32 AADOreRock::SampleDropMass(int32 MinMass, int32 MaxMass) const
 	return FMath::RoundToInt(FValue);
 }
 
+void AADOreRock::InitGameplayTags()
+{
+	GameplayTags.Reset();
+	AddIfValid(GameplayTags, MakeTag(TEXT("Object.Type"), TEXT("OreRock")));
+}
+
 void AADOreRock::OnRep_CurrentMiningGauge()
 {
 	// TODO: UI update
@@ -453,5 +487,21 @@ USoundSubsystem* AADOreRock::GetSoundSubsystem()
 		return SoundSubsystem;
 	}
 	return nullptr;
+}
+
+UMissionEventHubComponent* AADOreRock::GetMissionHub()
+{
+	if (CachedHub) return CachedHub;
+
+	// 1) GameState에서 바로 찾기 (권장)
+	if (AGameStateBase* GS = UGameplayStatics::GetGameState(this))
+	{
+		if (!CachedHub)
+		{
+			CachedHub = GS->FindComponentByClass<UMissionEventHubComponent>();
+		}
+	}
+
+	return CachedHub;
 }
 

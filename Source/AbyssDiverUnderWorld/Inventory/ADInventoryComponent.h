@@ -6,7 +6,9 @@
 #include "Container/FStructContainer.h"
 #include "Interactable/Item/Component/EquipUseComponent.h"
 #include "Net/Serialization/FastArraySerializer.h"
+#include "Missions/MissionEventHubComponent.h"
 #include "ADInventoryComponent.generated.h"
+
 
 
 enum class EItemType : uint8;
@@ -191,6 +193,9 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Hammer")
 	TObjectPtr<UAnimMontage> HammerDrawMontage;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UMissionEventHubComponent> CachedHub;
 	
 	//UPROPERTY()
 	//TObjectPtr<AUnderwaterCharacter> CachedDiver;
@@ -235,5 +240,6 @@ public:
 private:
 	USoundSubsystem* GetSoundSubsystem();
 	UAnimMontage* GetDrawMontageByType(EEquipmentType InType) const;
+	UMissionEventHubComponent* GetMissionHub();
 #pragma endregion
 };

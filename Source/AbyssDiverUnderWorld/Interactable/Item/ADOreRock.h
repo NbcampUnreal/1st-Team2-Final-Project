@@ -5,6 +5,8 @@
 #include "Interface/IADInteractable.h"
 #include "Engine/StreamableManager.h"
 #include "Engine/AssetManager.h"
+#include "GameplayTagContainer.h"
+#include "Missions/MissionEventHubComponent.h"
 #include "ADOreRock.generated.h"
 
 class AADItemBase;
@@ -63,7 +65,7 @@ public:
 	virtual void OnHoldStop_Implementation(APawn* InstigatorPawn) override;
 
 	void HandleMineRequest(APawn* InstigatorPawn);
-
+	
 	void SpawnDrops();
 
 	void OnAssetLoaded(FDropEntry* Entry, int32 Mass);
@@ -74,11 +76,13 @@ public:
 	// 편향된 무게 한 점을 반환하는 함수
 	int32 SampleDropMass(int32 MinMass, int32 MaxMass) const;
 	
-	
+	void InitGameplayTags();
 
 protected:
 	UFUNCTION()
 	void OnRep_CurrentMiningGauge();
+
+	virtual FName GetObjectTypeTail() const { return TEXT("Ore"); }
 
 private:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -112,6 +116,11 @@ public:
 	TObjectPtr<UNiagaraSystem> RockFragmentsFX;
 	UPROPERTY()
 	TObjectPtr<USoundSubsystem> SoundSubsystem;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	FGameplayTagContainer GameplayTags;
+
+
 
 protected:
 	// 무게 샘플링 강도 (1.0 : 균등, 2.0 : 중간 편향, 클수록 편향이 강해짐)
@@ -151,6 +160,8 @@ private:
 	TArray<TWeakObjectPtr<APawn>> ActiveInstigators;
 	int32 PendingLoadCount = 0;
 
+	UPROPERTY(Transient)   // GC 안전하게 보관
+	TObjectPtr<UMissionEventHubComponent> CachedHub;
 #pragma endregion
 
 #pragma region Getter, Setteer
@@ -160,8 +171,10 @@ public:
 	virtual float GetHoldDuration_Implementation(AActor* InstigatorActor) const override;
 	virtual FString GetInteractionDescription() const override;
 
+
 private:
 	USoundSubsystem* GetSoundSubsystem();
+	UMissionEventHubComponent* GetMissionHub();
 
 #pragma endregion
 };
