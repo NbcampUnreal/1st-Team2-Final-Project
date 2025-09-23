@@ -21,7 +21,7 @@ public:
 	template <typename T>
 	void InitPool(const int8 Size, TSubclassOf<T> SpawnClass)
 	{
-		static_assert(std::is_base_of<APoolableItem, T>::value, "T must be a subclass of APoolableItem"); //Ÿ�� ����
+		static_assert(std::is_base_of<APoolableItem, T>::value, "T must be a subclass of APoolableItem"); //Ÿ�� ����
 		PoolSize = Size;
 		PoolableClass = SpawnClass;
 		DeActivatedBulletCount = PoolSize;
@@ -33,14 +33,14 @@ public:
 				NewActor->SetProjectileId(i);
 				NewActor->Deactivate();
 				ObjectPool.Add(NewActor);
-				LOGOP(Warning, TEXT("Bullet add to BulletPool"), PoolSize);
+				// LOGOP(Warning, TEXT("Bullet add to BulletPool"), PoolSize);
 			}
 			else
 			{
 				LOGOP(Warning, TEXT("Failed to spawn bullet actor."));
 			}
 		}
-		LOGOP(Warning, TEXT("BulletPool is Initialized. PoolSize : %d"), ObjectPool.Num());
+		LOGOP(Warning, TEXT("%s class is Initialized. PoolSize : %d"), *SpawnClass->GetName(), ObjectPool.Num());
 	}
 
 	template <typename T>
@@ -88,5 +88,15 @@ private:
 	int8 PoolSize;
 	
 	int8 DeActivatedBulletCount = 0;
+
+#pragma region Getter Setter
+
+public:
+	/** 풀 크기 반환 */
+	FORCEINLINE int8 GetPoolSize() const { return ObjectPool.Num(); }
+
+	/** 비활성화된 탄환 수 반환 */
+	FORCEINLINE int8 GetDeactivatedCount() const { return DeActivatedBulletCount; }
 	
+#pragma endregion
 };
