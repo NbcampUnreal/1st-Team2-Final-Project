@@ -34,5 +34,7 @@ protected:
 private:
 	UPROPERTY(EditDefaultsOnly, Category = "Knockback")
 	float KnockbackStrength = 1000.f;
+	UPROPERTY(EditDefaultsOnly, Category = "Damage")
+	float PelletDamage = 80.f;
 #pragma endregion
 };

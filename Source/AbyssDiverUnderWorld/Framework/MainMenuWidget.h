@@ -29,6 +29,9 @@ protected:
 	void OnJoinClicked();
 
 	UFUNCTION()
+	void OnTutorialClicked();
+
+	UFUNCTION()
 	void OnOptionsClicked();
 
 	UFUNCTION()
@@ -52,6 +55,9 @@ protected:
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> Button_Join;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UButton> Button_Tutorial;
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> Button_Options;

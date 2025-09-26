@@ -3,10 +3,10 @@
 #include "Character/UnderwaterCharacter.h"
 #include "NiagaraFunctionLibrary.h"
 
-TMap<TObjectPtr<USkeletalMeshComponent>, TWeakObjectPtr<UNiagaraComponent>> UAnimNotifyState_LaserBeam::BeamMap1P;
-TMap<TObjectPtr<USkeletalMeshComponent>, TWeakObjectPtr<UNiagaraComponent>> UAnimNotifyState_LaserBeam::BeamMap3P;
-TMap<TObjectPtr<USkeletalMeshComponent>, TWeakObjectPtr<UNiagaraComponent>> UAnimNotifyState_LaserBeam::HitMap1P;
-TMap<TObjectPtr<USkeletalMeshComponent>, TWeakObjectPtr<UNiagaraComponent>> UAnimNotifyState_LaserBeam::HitMap3P;
+TMap<TWeakObjectPtr<USkeletalMeshComponent>, TWeakObjectPtr<UNiagaraComponent>> UAnimNotifyState_LaserBeam::BeamMap1P;
+TMap<TWeakObjectPtr<USkeletalMeshComponent>, TWeakObjectPtr<UNiagaraComponent>> UAnimNotifyState_LaserBeam::BeamMap3P;
+TMap<TWeakObjectPtr<USkeletalMeshComponent>, TWeakObjectPtr<UNiagaraComponent>> UAnimNotifyState_LaserBeam::HitMap1P;
+TMap<TWeakObjectPtr<USkeletalMeshComponent>, TWeakObjectPtr<UNiagaraComponent>> UAnimNotifyState_LaserBeam::HitMap3P;
 
 void UAnimNotifyState_LaserBeam::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Anim, float TotalDuration, const FAnimNotifyEventReference& EventRef)
 {
@@ -88,8 +88,8 @@ void UAnimNotifyState_LaserBeam::NotifyBegin(USkeletalMeshComponent* MeshComp, U
 
 void UAnimNotifyState_LaserBeam::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Anim, const FAnimNotifyEventReference& EventRef)
 {
-    TMap<TObjectPtr<USkeletalMeshComponent>, TWeakObjectPtr<UNiagaraComponent>>& BeamMap = IsFirstPersonMesh(MeshComp) ? BeamMap1P : BeamMap3P;
-    TMap<TObjectPtr<USkeletalMeshComponent>, TWeakObjectPtr<UNiagaraComponent>>& HitMap = IsFirstPersonMesh(MeshComp) ? HitMap1P : HitMap3P;
+    TMap<TWeakObjectPtr<USkeletalMeshComponent>, TWeakObjectPtr<UNiagaraComponent>>& BeamMap = IsFirstPersonMesh(MeshComp) ? BeamMap1P : BeamMap3P;
+    TMap<TWeakObjectPtr<USkeletalMeshComponent>, TWeakObjectPtr<UNiagaraComponent>>& HitMap = IsFirstPersonMesh(MeshComp) ? HitMap1P : HitMap3P;
 
     if (TWeakObjectPtr<UNiagaraComponent>* BeamPtr = BeamMap.Find(MeshComp))
     {

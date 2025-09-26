@@ -1306,11 +1306,12 @@ void AUnderwaterCharacter::M_StartCaptureState_Implementation()
 	
 	if (IsLocallyControlled())
 	{
-		if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
+		if (AADPlayerController* PlayerController = Cast<AADPlayerController>(GetController()))
 		{
 			PlayerController->SetIgnoreLookInput(true);
 			PlayerController->SetIgnoreMoveInput(true);
 
+			PlayerController->C_StopCameraBlink();
 			PlayerController->PlayerCameraManager->StartCameraFade(
 				0.0f,
 				1.0f,
@@ -2800,7 +2801,14 @@ bool AUnderwaterCharacter::IsSprinting() const
 
 void AUnderwaterCharacter::SetHideInSeaweed(const bool bNewHideInSeaweed)
 {
+	if (bIsHideInSeaweed == bNewHideInSeaweed)
+	{
+		return;
+	}
+	
+	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Set Hide In Seaweed : %s -> %s"), bIsHideInSeaweed ? TEXT("True") : TEXT("False"), bNewHideInSeaweed ? TEXT("True") : TEXT("False"));
 	bIsHideInSeaweed = bNewHideInSeaweed;
+	OnHiddenChangedDelegate.Broadcast(bIsHideInSeaweed);
 }
 
 bool AUnderwaterCharacter::IsOverloaded() const
