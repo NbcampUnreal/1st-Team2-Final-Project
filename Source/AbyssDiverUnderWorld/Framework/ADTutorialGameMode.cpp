@@ -550,6 +550,7 @@ void AADTutorialGameMode::HandlePhase_Resurrection()
     Tutorial_ActiveSeller->SetActorHiddenInGame(false);
     Tutorial_ActiveDrone->SetActorEnableCollision(true);
     Tutorial_ActiveDrone->Activate();
+    Tutorial_ActiveDrone->M_PlayTutorialAlarmSound();
 
     if (UADInteractableComponent* DroneInteractComp = Tutorial_ActiveDrone->GetInteractableComponent())
     {
