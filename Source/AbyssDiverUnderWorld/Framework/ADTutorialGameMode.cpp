@@ -198,7 +198,7 @@ void AADTutorialGameMode::HandlePhase_Radar()
 
     if (ATutorialManager* Mgr = Cast<ATutorialManager>(UGameplayStatics::GetActorOfClass(GetWorld(), ATutorialManager::StaticClass())))
     {
-        Mgr->StartGaugeObjective(EGaugeInteractionType::Tap, 100.f, 10.f, 0.f);
+        Mgr->StartGaugeObjective(EGaugeInteractionType::Tap, 100.f, 100.f, 0.f);
     }
 
     TArray<FName> TagsToShow = { FName("TutorialRock_D2"), FName("TutorialMonster_D2"), FName("TutorialFriendly_D2") };
@@ -271,11 +271,11 @@ void AADTutorialGameMode::HandlePhase_Inventory()
 {
     if (ATutorialManager* Mgr = Cast<ATutorialManager>(UGameplayStatics::GetActorOfClass(GetWorld(), ATutorialManager::StaticClass())))
     {
-        Mgr->StartGaugeObjective(EGaugeInteractionType::Tap, 100.f, 10.f, 0.f);
+        Mgr->StartGaugeObjective(EGaugeInteractionType::Hold, 100.f, 5.f, 100.f);
     }
 }
 
-void AADTutorialGameMode::HandlePhase_Drone()
+void AADTutorialGameMode::HandlePhase_Drone() 
 {
 
     SpawnNewWall(FName("TutorialWall_7"));
@@ -313,6 +313,8 @@ void AADTutorialGameMode::HandlePhase_Drone()
     Drone->SetActorHiddenInGame(false);
     Seller->SetActorHiddenInGame(false);
     Seller->Activate();
+    Drone->Activate();
+    Drone->M_PlayTutorialAlarmSound();
 
     if (UADInteractableComponent* SellerInteractComp = Seller->GetInteractableComponent())
     {
@@ -323,12 +325,8 @@ void AADTutorialGameMode::HandlePhase_Drone()
         DroneInteractComp->SetInteractable(true);
     }
 
-    TrackPhaseActor(Drone);
-    TrackPhaseActor(Seller);
-
     if (IndicatingTargetClass && IsValid(Seller))
     {
-       
         if (AIndicatingTarget* Indicator = GetWorld()->SpawnActor<AIndicatingTarget>(IndicatingTargetClass, Seller->GetActorTransform()))
         {
             Indicator->SetupIndicator(Seller, DroneIndicatorIcon);
@@ -388,7 +386,7 @@ void AADTutorialGameMode::HandlePhase_LightToggle()
 
     if (ATutorialManager* Mgr = Cast<ATutorialManager>(UGameplayStatics::GetActorOfClass(GetWorld(), ATutorialManager::StaticClass())))
     {
-        Mgr->StartGaugeObjective(EGaugeInteractionType::Tap, 100.f, 10.f, 0.f);
+        Mgr->StartGaugeObjective(EGaugeInteractionType::Tap, 100.f, 100.f, 0.f);
     }
 }
 

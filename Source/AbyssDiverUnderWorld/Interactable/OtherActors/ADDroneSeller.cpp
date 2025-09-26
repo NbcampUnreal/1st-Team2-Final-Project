@@ -120,17 +120,6 @@ void AADDroneSeller::Interact_Implementation(AActor* InstigatorActor)
 		return;
 	}
 
-	if (TutorialMode)
-	{
-		if (AADTutorialGameState* TutorialGS = TutorialMode->GetGameState<AADTutorialGameState>())
-		{
-			if (TutorialGS->GetCurrentPhase() == ETutorialPhase::Step7_Drone)
-			{
-				TutorialMode->AdvanceTutorialPhase();
-			}
-		}
-	}
-
 	SetCurrentMoney(CurrentMoney + Gained);
 	UpdatePlayerState(InstigatorActor, Gained);
 
