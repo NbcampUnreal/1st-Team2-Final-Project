@@ -6,6 +6,7 @@
 UENUM(BlueprintType)
 enum class EMissionType : uint8
 {
+	None,
 	AggroTrigger,
 	Interaction,
 	ItemCollection,

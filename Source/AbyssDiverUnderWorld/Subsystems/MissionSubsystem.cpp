@@ -165,22 +165,58 @@ void UMissionSubsystem::UnlockMission(const EKillMonsterMission& Mission)
 
 void UMissionSubsystem::ReceiveMissionDataFromUIData(const TArray<FMissionData>& MissionsFromUI)
 {
-	
+	if (!IsServer())
+		return;
+
+	TArray<FMissionData> Filtered;
+	Filtered.Reserve(MissionsFromUI.Num());
+	for (const FMissionData& Data : MissionsFromUI)
+	{
+		if (GetMissionData(Data.MissionType, Data.MissionIndex))
+		{
+			Filtered.Add(Data);
+		}
+	}
+	PendingSelectedMissions = MoveTemp(Filtered);
+
 }
 
-void UMissionSubsystem::RequestBinding(UObject* Requester)
+void UMissionSubsystem::SetPendingCompletedMissions(const TArray<FCompletedMissionInfo>& InCompletedMissions)
 {
-	
+	if (!IsServer())
+		return;
+
+	PendingCompletedMissions = InCompletedMissions;
 }
 
-void UMissionSubsystem::RequestUnbinding(UObject* Requester)
+void UMissionSubsystem::SetPendingSelectedMissions(const TArray<FMissionData>& InSelectedMissions)
 {
-	
+	if (!IsServer())
+		return;
+
+	PendingSelectedMissions = InSelectedMissions;
 }
 
-void UMissionSubsystem::RemoveAllMissions()
+void UMissionSubsystem::ClearPendingSelectedMissions()
 {
-	Missions.Reset();
+	if (!IsServer())
+		return;
+
+	PendingSelectedMissions.Reset();
+}
+
+void UMissionSubsystem::ClearPendingCompletedMissions()
+{
+	if (!IsServer())
+		return;
+
+	PendingCompletedMissions.Reset();
+}
+
+void UMissionSubsystem::ResetAllPendingMissions()
+{
+	PendingSelectedMissions.Reset();
+	PendingCompletedMissions.Reset();
 }
 
 void UMissionSubsystem::MakeAndAddMissionDataForUI(const FMissionBaseRow* MissionBaseData, const uint8& MissionIndex)
@@ -206,52 +242,11 @@ void UMissionSubsystem::UnlockMissionInternal(FMissionBaseRow* MissionData)
 	MissionData->bIsLocked = false;
 }
 
-bool UMissionSubsystem::CheckIfGameStateIsValid()
-{
-	AADInGameState* GS = Cast<AADInGameState>(UGameplayStatics::GetGameState(GetWorld()));
-	if (GS == nullptr)
-	{
-		return false;
-	}
-
-	InGameState = GS;
-
-	return !!InGameState;
-}
-
-void UMissionSubsystem::OnMissionComplete(const EMissionType& InMissionType, const uint8& InMissionIndex)
-{
-	if (CheckIfGameStateIsValid() == false)
-	{
-		LOGV(Error, TEXT("Invalid GS"));
-		return;
-	}
-
-	// 완료시... 이벤트
-	const FMissionBaseRow* MissionData = GetMissionData(InMissionType, InMissionIndex);
-	
-	if (MissionData->bShouldCompleteInstantly)
-	{
-		LOGV(Warning, TEXT("MissionComplete Instantly, Type : %d, MissionIndex : %d"), InMissionType, InMissionIndex);
-
-	}
-	else
-	{
-		LOGV(Warning, TEXT("Mission Condidion Met, Type : %d, MissionIndex : %d"), InMissionType, InMissionIndex);
-	}
-
-	InGameState->RefreshActivatedMissionList();
-}
-
 const TArray<FMissionData>& UMissionSubsystem::GetMissionDataForUI() const
 {
 	return MissionDataForUI;
 }
 
-const TArray<TObjectPtr<UMissionBase>>& UMissionSubsystem::GetActivatedMissions() const
-{
-	return Missions;
-}
 
 const FAggroTriggerMissionRow* UMissionSubsystem::GetAggroTriggerMissionData(const EAggroTriggerMission& Mission) const
 {

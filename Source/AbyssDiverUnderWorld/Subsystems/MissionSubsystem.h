@@ -9,6 +9,7 @@
 #include "DataRow/MissionDataRow/ItemUseMissionRow.h"
 #include "DataRow/MissionDataRow/KillMonsterMissionRow.h"
 #include "UI/MissionData.h"
+#include "Missions/MissionBase.h"
 
 #include "MissionSubsystem.generated.h"
 
@@ -42,12 +43,30 @@ public:
 	void UnlockMission(const EItemUseMission& Mission);
 	void UnlockMission(const EKillMonsterMission& Mission);
 
+	// BaseCamp UI(클라) → 서버 RPC에서 호출: 선택 결과를 서버 GI Subsystem에 저장
 	void ReceiveMissionDataFromUIData(const TArray<FMissionData>& Missions);
 
-	void RequestBinding(UObject* Requester);
-	void RequestUnbinding(UObject* Requester);
+	// 완료 미션 보관
+	UFUNCTION(BlueprintCallable)
+	void SetPendingCompletedMissions(const TArray<FCompletedMissionInfo>& InCompletedMissions);
 
-	void RemoveAllMissions();
+	UFUNCTION(BlueprintCallable)
+	void SetPendingSelectedMissions(const TArray<FMissionData>& InSelectedMissions);
+
+	UFUNCTION(BlueprintCallable)
+	const TArray<FCompletedMissionInfo>& GetPendingCompletedMissions() { return PendingCompletedMissions; }
+
+	UFUNCTION(BlueprintCallable)
+	const TArray<FMissionData>& GetPendingSelectedMissions() const { return PendingSelectedMissions; };
+
+	UFUNCTION(BlueprintCallable)
+	void ClearPendingSelectedMissions();
+	UFUNCTION(BlueprintCallable)
+	void ClearPendingCompletedMissions();
+
+	// 한 번에 초기화가 필요할 때(선택/완료 전부)
+	UFUNCTION(BlueprintCallable)
+	void ResetAllPendingMissions();
 
 private:
 
@@ -56,19 +75,17 @@ private:
 	bool IsServer() const;
 
 	void UnlockMissionInternal(FMissionBaseRow* MissionsFromUI);
-
-	bool CheckIfGameStateIsValid();
-
-	void OnMissionComplete(const EMissionType& InMissionType, const uint8& InMissionIndex);
-
 #pragma endregion
 
 #pragma region Variables
 
 private:
 
-	UPROPERTY()
-	TArray<TObjectPtr<UMissionBase>> Missions;
+
+
+	// SeamlessTravel 동안 서버에서만 들고 있는 1회용 팀 선택 결과
+	TArray<FMissionData> PendingSelectedMissions;
+	TArray<FCompletedMissionInfo> PendingCompletedMissions;
 
 	TArray<FMissionData> MissionDataForUI;
 
@@ -84,15 +101,12 @@ private:
 	int32 ItemUseMissionCount = 0;
 	int32 KillMonsterMissionCount = 0;
 
-	TObjectPtr<AADInGameState> InGameState;
-
 #pragma endregion
 
 #pragma region Getters / Setters
 public:
 
 	const TArray<FMissionData>& GetMissionDataForUI() const;
-	const TArray<TObjectPtr<UMissionBase>>& GetActivatedMissions() const;
 
 	const FAggroTriggerMissionRow* GetAggroTriggerMissionData(const EAggroTriggerMission& Mission) const;
 	const FInteractionMissionRow* GetInteractionMissionData(const EInteractionMission& Mission) const;

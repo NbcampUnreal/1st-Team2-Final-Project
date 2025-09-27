@@ -33,17 +33,14 @@
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
 
-
+static FGameplayTag MakeTag(const TCHAR* Root, const FString& Tail)
+{
+	return UGameplayTagsManager::Get().RequestGameplayTag(FName(*FString::Printf(TEXT("%s.%s"), Root, *Tail)), false);
+}
 
 static inline void AddIfValid(FGameplayTagContainer& C, const FGameplayTag& T)
 {
 	if (T.IsValid()) { C.AddTag(T); }
-}
-
-static inline FGameplayTag MakeTag(const TCHAR* Root, const FString& Tail)
-{
-	const FString Path = FString::Printf(TEXT("%s.%s"), Root, *Tail);
-	return UGameplayTagsManager::Get().RequestGameplayTag(FName(*Path), /*ErrorIfNotFound*/ false);
 }
 
 // Sets default values
@@ -132,7 +129,7 @@ void AADOreRock::InteractHold_Implementation(AActor* InstigatorActor)
 
 	if (UMissionEventHubComponent* Hub = GetMissionHub())
 	{
-		Hub->BroadcastInteracted(GameplayTags);
+		Hub->BroadcastItemCollected(GameplayTags, 1);
 	}
 }
 

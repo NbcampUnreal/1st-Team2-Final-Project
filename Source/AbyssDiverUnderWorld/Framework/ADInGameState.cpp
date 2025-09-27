@@ -1,10 +1,13 @@
 ﻿#include "Framework/ADInGameState.h"
 #include "ADGameInstance.h"
+
 #include "Subsystems/DataTableSubsystem.h"
 #include "Subsystems/SoundSubsystem.h"
 #include "Subsystems/MissionSubsystem.h"
 #include "Subsystems/SaveDataSubsystem.h"
 #include "Subsystems/ADDexSubsystem.h"
+
+
 #include "Net/UnrealNetwork.h"
 #include "AbyssDiverUnderWorld.h"
 #include "DataRow/PhaseGoalRow.h"
@@ -19,6 +22,10 @@
 #include "Framework/ADPlayerController.h"
 #include "Character/PlayerComponent/PlayerHUDComponent.h"
 #include "UI/MissionsOnHUDWidget.h"
+
+// Mission
+#include "Missions/MissionManagerComponent.h"
+#include "Missions/MissionEventHubComponent.h"
 
 #pragma region FastArraySerializer Methods
 
@@ -131,7 +138,8 @@ AADInGameState::AADInGameState()
 	, MaxPhase(3)
 {
 	bReplicates = true;
-	
+	MissionManager = CreateDefaultSubobject<UMissionManagerComponent>(TEXT("MissionManager"));
+	MissionEventHub = CreateDefaultSubobject<UMissionEventHubComponent>(TEXT("MissionEventHub"));
 }
 
 void AADInGameState::PostInitializeComponents()
@@ -174,6 +182,7 @@ void AADInGameState::BeginPlay()
 	CurrentPhaseChangedDelegate.Broadcast(CurrentPhase);
 
 	StartPhaseUIAnim();
+	ApplyPendingMissionsFromSubsystem();
 }
 
 void AADInGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -469,6 +478,22 @@ void AADInGameState::StartPhaseUIAnim()
 	LOGVN(Error, TEXT("SelectedLevelName : %d"), SelectedLevelName);
 }
 
+void AADInGameState::ApplyPendingMissionsFromSubsystem()
+{
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UMissionSubsystem* Subsys = GI->GetSubsystem<UMissionSubsystem>())
+		{
+			const TArray<FMissionData>& SelectedMissions = Subsys->GetPendingSelectedMissions();
+			if (SelectedMissions.Num() > 0 && ensure(MissionManager))
+			{
+				MissionManager->ApplySelectedMissions(SelectedMissions);  // 바로 호출
+				Subsys->ClearPendingSelectedMissions();
+			}
+		}
+	}
+}
+
 void AADInGameState::SetDestinationTarget(AActor* NewDestinationTarget)
 {
 	if (HasAuthority() == false)
@@ -525,13 +550,7 @@ void AADInGameState::RefreshActivatedMissionList()
 		return;
 	}
 
-	const TArray<UMissionBase*>& Missions = GetGameInstance()->GetSubsystem<UMissionSubsystem>()->GetActivatedMissions();
-	//ActivatedMissionList.Clear(Missions.Num());
-
-	for (const UMissionBase* Mission : Missions)
-	{
-		ActivatedMissionList.AddOrModify(Mission->GetMissionType(), Mission->GetMissionIndex(), Mission->GetCurrentCount(), Mission->IsCompleted());
-	}
+	ActivatedMissionList.Clear(0);
 
 	OnMissionListRefreshedDelegate.Broadcast();
 }

@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
 #include "GameplayTagContainer.h"
+#include "MissionEnum.h"
 #include "MissionBase.generated.h"
 
 enum class EMissionType : uint8;
@@ -42,9 +43,21 @@ struct FMissionInitParams
 	uint8 bCompleteInstantly : 1;
 };
 
-/**
- * 
- */
+USTRUCT(BlueprintType)
+struct FCompletedMissionInfo
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadOnly)
+	EMissionType MissionType = EMissionType::None;
+
+	UPROPERTY(BlueprintReadOnly)
+	int32 MissionIndex = 0;
+
+	// TODO: 추후 보상 규격 확정 시 확장 (e.g., TArray<FRewardEntry> Rewards;)
+};
+
+
 UCLASS(Abstract)
 class ABYSSDIVERUNDERWORLD_API UMissionBase : public UObject
 {

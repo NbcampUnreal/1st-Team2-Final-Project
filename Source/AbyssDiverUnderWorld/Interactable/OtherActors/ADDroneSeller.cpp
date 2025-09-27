@@ -49,7 +49,6 @@ void AADDroneSeller::BeginPlay()
 		return;
 	}
 
-	MissionSubsystem->RequestBinding(this);
 }
 
 void AADDroneSeller::Destroyed()
@@ -71,7 +70,6 @@ void AADDroneSeller::Destroyed()
 		return;
 	}
 
-	MissionSubsystem->RequestUnbinding(this);
 
 	Super::Destroyed();
 }
