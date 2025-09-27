@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Monster/MonsterAIController.h"
@@ -66,6 +66,7 @@ void AMonsterAIController::BeginPlay()
 	if (AIPerceptionComponent)
 	{
 		AIPerceptionComponent->OnTargetPerceptionUpdated.AddDynamic(this, &AMonsterAIController::OnTargetPerceptionUpdated);
+		AIPerceptionComponent->OnTargetPerceptionForgotten.AddDynamic(this, &AMonsterAIController::OnTargetPerceptionForgotten);
 	}
 }
 
@@ -131,6 +132,16 @@ void AMonsterAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus 
 	{
 		Monster->RemoveDetection(Actor);
 	}
+}
+
+void AMonsterAIController::OnTargetPerceptionForgotten(AActor* ForgottenActor)
+{
+	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(ForgottenActor);
+	if (!IsValid(Player)) return;
+
+	// 가끔 Perception이 해제되지 않는 버그가 있는 것 같아서 Forget 기능을 추가
+	// Forget시 해당 액터 감지 해제
+	Monster->RemoveDetection(ForgottenActor);
 }
 
 void AMonsterAIController::SetBlackboardPerceptionType(EPerceptionType InPerceptionType)
