@@ -19,6 +19,7 @@ enum class ESFX_BGM : uint8
 	ShallowBackground,
 	DroneTheme,
 	CampRadio,
+	DroneTutorialAlarm,
 	Max UMETA(Hidden)
 };
 

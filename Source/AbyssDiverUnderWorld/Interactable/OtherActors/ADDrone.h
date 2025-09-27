@@ -41,6 +41,9 @@ public:
 
 	virtual bool CanHighlight_Implementation() const override { return bIsActive; }
 	UFUNCTION(NetMulticast, Unreliable)
+	void M_PlayTutorialAlarmSound();
+	void M_PlayTutorialAlarmSound_Implementation();
+	UFUNCTION(NetMulticast, Unreliable)
 	void M_PlayDroneRisingSound();
 	void M_PlayDroneRisingSound_Implementation();
 	UFUNCTION(NetMulticast, Unreliable)
@@ -115,6 +118,7 @@ private:
 	FTimerHandle DestroyHandle;
 	int32 CachedSoundNumber;
 	int32 DrondeThemeSoundNumber;
+	int32 TutorialAlarmSoundId;
 
 #pragma endregion
 
