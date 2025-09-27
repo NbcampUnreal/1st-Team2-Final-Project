@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "BehaviorTree/Tasks/BTTask_BlackboardBase.h"
@@ -31,6 +31,7 @@ private:
 	UPROPERTY(EditAnywhere)
 	float PauseDetectedTime = 3.0f;
 
-	UPROPERTY(meta = (ClampMin = "0"))
-	uint8 EyeStalkerReferenceCount = 0;
+	// 이동 중이라고 인식할 정도의 스피드, BTService_ApplyDamageToPlayer와 일치시키는 편이 좋다
+	UPROPERTY(EditAnywhere)
+	float RecognizationSpeed = 5.0f;
 };
