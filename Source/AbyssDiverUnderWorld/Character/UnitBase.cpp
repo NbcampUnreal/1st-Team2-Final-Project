@@ -31,8 +31,6 @@ void AUnitBase::BeginPlay()
 {
 	Super::BeginPlay();
 
-	GetGameInstance()->GetSubsystem<UMissionSubsystem>()->RequestBinding(this);
-
 	InitGameplayTags();
 }
 
@@ -49,8 +47,6 @@ void AUnitBase::Destroyed()
 	}
 
 #endif
-
-	GetGameInstance()->GetSubsystem<UMissionSubsystem>()->RequestUnbinding(this);
 
 	Super::Destroyed();
 }

@@ -151,8 +151,6 @@ void AADInGameMode::PostLogin(APlayerController* NewPlayer)
 		return;
 	}
 
-	MissionSubsystem->RemoveAllMissions();
-
 	if (AADPlayerState* ADPlayerState = NewPlayer->GetPlayerState<AADPlayerState>())
 	{
 		ADPlayerState->ResetLevelResults();
@@ -207,8 +205,6 @@ void AADInGameMode::Logout(AController* Exiting)
 		LOGV(Error, TEXT("Fail to get MissionSubsystem"));
 		return;
 	}
-
-	MissionSubsystem->RemoveAllMissions();
 
 
 	int32 LogoutPlayerIndex = PS->GetPlayerIndex();
@@ -292,7 +288,6 @@ void AADInGameMode::TravelToCamp()
 		return;
 	}
 
-	MissionSubsystem->RemoveAllMissions();
 	const float WaitForStopVoice = 1.0f;
 
 	FTimerHandle WaitForVoiceTimerHandle;

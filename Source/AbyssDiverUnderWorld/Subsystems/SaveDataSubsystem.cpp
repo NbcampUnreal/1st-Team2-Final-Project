@@ -683,7 +683,6 @@ void USaveDataSubsystem::RestartWorld()
 		return;
 	}
 
-	MissionSubsystem->RemoveAllMissions();
 
 	AADInGameState* ADInGameState = UGameplayStatics::GetGameMode(World)->GetGameState<AADInGameState>();
 	FString CampMapName = UGameplayStatics::GetCurrentLevelName(World, true);

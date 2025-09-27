@@ -11,6 +11,8 @@ enum class EMapName : uint8;
 enum class EMissionType : uint8;
 
 class AADDroneSeller;
+class UMissionManagerComponent;
+class UMissionEventHubComponent;
 
 struct FActivatedMissionInfoList;
 
@@ -172,6 +174,8 @@ private:
 	void ReceiveDataFromGameInstance();
 	void StartPhaseUIAnim();
 
+	UFUNCTION(BlueprintAuthorityOnly)
+	void ApplyPendingMissionsFromSubsystem();
 #pragma endregion
 
 #pragma region Variable
@@ -183,6 +187,13 @@ public:
 	 */
 	DECLARE_MULTICAST_DELEGATE_TwoParams(FOnTopMinerChangedDelegate, AADPlayerState* /*NewTopMiner*/, int32 /*NewMiningAmount*/);
 	FOnTopMinerChangedDelegate OnTopMinerChangedDelegate;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mission")
+	TObjectPtr<class UMissionManagerComponent> MissionManager;
+
+	// (이미 있다면) 이벤트 허브도 같이
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mission")
+	TObjectPtr<class UMissionEventHubComponent> MissionEventHub;
 
 protected:
 	UPROPERTY(Replicated)

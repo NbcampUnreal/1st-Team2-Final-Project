@@ -60,9 +60,8 @@ void AADCampGameMode::PostLogin(APlayerController* NewPlayer)
 		return;
 	}
 
-	MissionSubsystem->RemoveAllMissions();
-
 	Super::PostLogin(NewPlayer);
+
 
 	if (AADPlayerState* ADPlayerState = NewPlayer->GetPlayerState<AADPlayerState>())
 	{
@@ -101,7 +100,6 @@ void AADCampGameMode::Logout(AController* Exiting)
 		return;
 	}
 
-	MissionSubsystem->RemoveAllMissions();
 }
 
 void AADCampGameMode::InitGameState()
