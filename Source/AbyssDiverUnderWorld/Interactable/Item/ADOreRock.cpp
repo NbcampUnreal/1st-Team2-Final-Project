@@ -132,7 +132,7 @@ void AADOreRock::InteractHold_Implementation(AActor* InstigatorActor)
 
 	if (UMissionEventHubComponent* Hub = GetMissionHub())
 	{
-		Hub->BroadcastItemCollected(GameplayTags,);
+		Hub->BroadcastInteracted(GameplayTags);
 	}
 }
 

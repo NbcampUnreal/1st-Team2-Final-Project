@@ -4,6 +4,8 @@
 #include "UObject/Interface.h"
 
 #include "Interactable/Item/Component/ADInteractableComponent.h"
+#include "Missions/MissionEventHubComponent.h"
+#include "GameplayTagContainer.h"
 #include "IADInteractable.generated.h"
 
 UENUM(BlueprintType)
@@ -35,7 +37,7 @@ public:
 	UFUNCTION(BlueprintNativeEvent, Category = "Interaction")
 	void Interact(AActor* InstigatorActor);
 	virtual void Interact_Implementation(AActor* InstigatorActor);
-	// Ȧ�� ���� �� ȣ���� �Լ�
+
 	UFUNCTION(BlueprintNativeEvent, Category = "Interaction")
 	void InteractHold(AActor* InstigatorActor);
 	virtual void InteractHold_Implementation(AActor* InstigatorActor);

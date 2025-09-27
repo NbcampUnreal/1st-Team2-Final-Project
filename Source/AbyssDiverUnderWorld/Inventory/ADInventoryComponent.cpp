@@ -29,8 +29,15 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Interactable/EquipableComponent/EquipRenderComponent.h"
 #include "Character/PlayerComponent/PlayerHUDComponent.h"
+#include "Missions/MissionBase.h"
 
 DEFINE_LOG_CATEGORY(InventoryLog);
+
+static FORCEINLINE FGameplayTag RequestTag(const TCHAR* Root, const FString& Tail)
+{
+	return UGameplayTagsManager::Get().RequestGameplayTag(
+		FName(*FString::Printf(TEXT("%s.%s"), Root, *Tail)), /*ErrorIfNotFound*/ false);
+}
 
 UADInventoryComponent::UADInventoryComponent() :
 	ToggleWidgetClass(nullptr),
@@ -90,6 +97,7 @@ void UADInventoryComponent::BeginPlay()
 	
 	TryCachedDiver();
 	SetComponentTickEnabled(true);
+
 }
 
 void UADInventoryComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -184,6 +192,13 @@ void UADInventoryComponent::S_UseInventoryItem_Implementation(EItemType ItemType
 						FTimerHandle SpawnEffectDelay;
 						GetWorld()->GetTimerManager().SetTimer(SpawnEffectDelay, this, &UADInventoryComponent::C_SpawnItemEffect, 1.5f, false);
 					}
+					if (UMissionEventHubComponent* Hub = GetMissionHub())
+					{
+						FGameplayTagContainer Tags = MakeItemTags(Item.Name);
+						Hub->BroadcastItemUsed(Tags, 1);
+
+					}
+
 					LOGINVEN(Warning, TEXT("Use Consumable Item %s"), *FoundRow->Name.ToString());
 				}
 				else
@@ -428,9 +443,16 @@ bool UADInventoryComponent::AddInventoryItem(const FItemData& ItemData)
 
 						FItemData NewItem = { FoundRow->Name, FoundRow->Id, ItemData.Quantity, SlotIndex, ItemData.Amount, ItemData.CurrentAmmoInMag, ItemData.ReserveAmmo, ItemData.Mass,ItemData.Price, FoundRow->ItemType, FoundRow->BulletType, FoundRow->Thumbnail };
 						InventoryList.AddItem(NewItem);
+						//자원 아이템일 경우
 						if (ItemData.ItemType == EItemType::Exchangable)
 						{
 							OnInventoryInfoUpdate(NewItem.Mass, NewItem.Price);
+							//Mission Event Hub에 아이템 획득 이벤트 브로드캐스트
+							if (UMissionEventHubComponent* Hub = GetMissionHub())
+							{
+								FGameplayTagContainer Tags = MakeItemTags(NewItem.Name);
+								Hub->BroadcastItemCollected(Tags, NewItem.Mass);
+							}
 						}
 						LOGINVEN(Warning, TEXT("Add New Item %s SlotIndex : %d"), *NewItem.Name.ToString(), SlotIndex);
 					}
@@ -1022,6 +1044,22 @@ void UADInventoryComponent::TryCachedDiver()
 		}
 	}
 }
+
+FGameplayTagContainer UADInventoryComponent::MakeItemTags(const FName ItemName) const
+{
+	FGameplayTagContainer Tags;
+
+	if (!ItemName.IsNone())
+	{
+		const FGameplayTag IdTag = RequestTag(TEXT("Item.id"), ItemName.ToString());
+		if (IdTag.IsValid()) Tags.AddTag(IdTag);
+
+	}
+
+	return Tags;
+}
+
+
 
 void UADInventoryComponent::SetChargeBatteryInstance(UChargeBatteryWidget* BatteryWidget)
 {

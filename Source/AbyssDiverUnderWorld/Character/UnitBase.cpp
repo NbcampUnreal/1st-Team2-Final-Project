@@ -83,18 +83,3 @@ void AUnitBase::BuildGameplayTags(FGameplayTagContainer& Out) const
 	}*/
 }
 
-UMissionEventHubComponent* AUnitBase::GetMissionHub()
-{
-	if (CachedHub) return CachedHub;
-
-	// 1) GameState에서 바로 찾기 (권장)
-	if (AGameStateBase* GS = UGameplayStatics::GetGameState(this))
-	{
-		if (!CachedHub)
-		{
-			CachedHub = GS->FindComponentByClass<UMissionEventHubComponent>();
-		}
-	}
-
-	return CachedHub;
-}

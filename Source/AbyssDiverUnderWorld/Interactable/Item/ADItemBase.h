@@ -67,10 +67,8 @@ public:
 	// TODO : PickupSound 등 획득 시 효과 추가
 
 
-
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	FGameplayTagContainer GameplayTags;
-
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction")

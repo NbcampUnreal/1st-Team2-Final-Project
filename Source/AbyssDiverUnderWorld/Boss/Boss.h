@@ -12,6 +12,7 @@ enum class EBossPhysicsType : uint8;
 class UCameraControllerComponent;
 class ATargetPoint;
 class AUnderwaterCharacter;
+class UMissionEventHubComponent;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API ABoss : public AUnitBase
@@ -304,6 +305,8 @@ private:
 	FVector CachedSpawnLocation;
 	FVector TurnDirection;
 
+	UPROPERTY(Transient)   // GC 안전하게 보관
+	TObjectPtr<UMissionEventHubComponent> CachedHub;
 #pragma endregion
 
 #pragma region Getter, Setter
@@ -328,6 +331,8 @@ public:
 
 	FORCEINLINE void SetTargetLocation(const FVector& InTargetLocation) { TargetLocation = InTargetLocation; }
 
+private:
+		UMissionEventHubComponent* GetMissionHub();
 #pragma endregion
 	
 };

@@ -22,6 +22,10 @@
 #include "Framework/ADPlayerController.h"
 #include "Perception/AISense_Damage.h"
 #include "Interactable/OtherActors/Radars/RadarReturnComponent.h"
+#include "Missions/MissionEventHubComponent.h"
+#include "GameFramework/GameStateBase.h"
+
+
 
 const FName ABoss::BossStateKey = "BossState";
 
@@ -448,6 +452,12 @@ void ABoss::PerformChasing(const float& InDeltaTime)
 	CurrentMoveSpeed = FMath::FInterpTo(CurrentMoveSpeed, AdjustedMoveSpeed, InDeltaTime, MovementInterpSpeed);
 	const FVector NewLocation = CurrentLocation + GetActorForwardVector() * CurrentMoveSpeed * InDeltaTime;
 	SetActorLocation(NewLocation, true);
+
+	//Mission Event Hub에 어그로 이벤트 브로드캐스트
+	if (UMissionEventHubComponent* Hub = GetMissionHub())
+	{
+		Hub->BroadcastAggroTriggered(GameplayTags);
+	}
 }
 
 void ABoss::StartTurn()
@@ -784,6 +794,7 @@ void ABoss::OnDeath()
 		GetController()->StopMovement();
 		GetController()->UnPossess();	
 	}
+
 }
 #pragma endregion
 
@@ -877,6 +888,12 @@ void ABoss::M_OnDeath_Implementation()
 	// 피직스 에셋 물리엔진 적용
 	FTimerHandle TimerHandle;
 	GetWorldTimerManager().SetTimer(TimerHandle, this, &ABoss::ApplyPhysicsSimulation, 0.5f, false);
+
+	//Mission Event Hub에 몬스터 사망 이벤트 브로드캐스트
+	if (UMissionEventHubComponent* Hub = GetMissionHub())
+	{
+		Hub->BroadcastMonsterKilled(GameplayTags);
+	}
 }
 
 void ABoss::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted)
@@ -986,6 +1003,22 @@ void ABoss::ApplyPhysicsSimulation()
 			GetMesh()->SetSimulatePhysics(true);	
 			break;
 	}
+}
+
+UMissionEventHubComponent* ABoss::GetMissionHub()
+{
+	if (CachedHub) return CachedHub;
+
+	// 1) GameState에서 바로 찾기 (권장)
+	if (AGameStateBase* GS = UGameplayStatics::GetGameState(this))
+	{
+		if (!CachedHub)
+		{
+			CachedHub = GS->FindComponentByClass<UMissionEventHubComponent>();
+		}
+	}
+
+	return CachedHub;
 }
 
 FVector ABoss::GetNextPatrolPoint()

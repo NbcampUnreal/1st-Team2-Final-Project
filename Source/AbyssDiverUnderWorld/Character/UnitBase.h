@@ -75,15 +75,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	FGameplayTagContainer GameplayTags;
 
-
-	UPROPERTY(Transient)   // GC 안전하게 보관
-	TObjectPtr<UMissionEventHubComponent> CachedHub;
 #pragma endregion
 
 public:
 	FORCEINLINE UStatComponent* GetStatComponent() const { return StatComponent; }
 	FORCEINLINE const EUnitId& GetUnitId() const { return UnitId; }
 
-private:
-	UMissionEventHubComponent* GetMissionHub();
 };

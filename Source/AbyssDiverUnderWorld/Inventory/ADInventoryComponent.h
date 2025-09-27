@@ -7,6 +7,7 @@
 #include "Interactable/Item/Component/EquipUseComponent.h"
 #include "Net/Serialization/FastArraySerializer.h"
 #include "Missions/MissionEventHubComponent.h"
+#include "GameplayTagContainer.h"
 #include "ADInventoryComponent.generated.h"
 
 
@@ -123,7 +124,6 @@ public:
 	void Equip(FItemData& ItemData, int8 SlotIndex);
 	void UnEquip();
 
-
 	FInventoryUpdateDelegate InventoryUpdateDelegate;
 	FBatteryUpdateDelegate BatteryUpdateDelegate;
 	FInventoryInfoUpdateDelegate InventoryInfoUpdateDelegate;
@@ -143,6 +143,7 @@ private:
 	void PrintLogInventoryData();
 	void TryCachedDiver();
 
+	FGameplayTagContainer MakeItemTags(const FName ItemName) const;
 #pragma endregion
 	
 #pragma region Variable
@@ -151,6 +152,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TSubclassOf<UToggleWidget> ToggleWidgetClass;
 	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	FGameplayTagContainer GameplayTags;
 private:
 	UPROPERTY(ReplicatedUsing = OnRep_InventoryList)
 	FInventoryList InventoryList; // 실제 아이템 데이터 저장
@@ -212,6 +215,7 @@ private:
 	const FName ShotgunSocketName = TEXT("Shotgun");
 	const FName MineSocketName = TEXT("MineController");
 	const FName HammerSocketName = TEXT("ToyHammer");
+
 #pragma endregion
 
 
