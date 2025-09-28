@@ -89,7 +89,7 @@ void UCombatEffectComponent::BindDelegate(AUnderwaterCharacter* UnderwaterCharac
 	}
 
 	// OnTakeAnyDamage를 사용할려면 구조를 바꾸어야 하기 때문에 UnderwaterCharacter에서 구현한 OnDamageTakenDelegate를 이용한다.
-	// 다른 이벤트들과 다르게 OnDamageTakenDelegate는 Serer에서만 작동한다. Client RPC를 이용해야 해서 전달해야 한다.
+	// 다른 이벤트들과 다르게 OnDamageTakenDelegate는 Server에서만 작동한다. Client RPC를 이용해야 해서 전달해야 한다.
 	UnderwaterCharacter->OnDamageTakenDelegate.AddUniqueDynamic(this, &UCombatEffectComponent::OnDamageTaken);
 }
 
@@ -159,10 +159,7 @@ void UCombatEffectComponent::OnDamageTaken(float DamageAmount, float CurrentHeal
 			HitFadeInDuration
 		);
 
-		if (USoundSubsystem* SoundSubsystem = GetSoundSubsystem())
-		{
-			SoundSubsystem->Play2D(DamageTakenSound);
-		}
+		PlayerController->C_PlaySound(DamageTakenSound);
 	}
 }
 
