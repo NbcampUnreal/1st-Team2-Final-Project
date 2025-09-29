@@ -59,6 +59,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effect")
 	TObjectPtr<UNiagaraComponent> TrailEffect;
 
+	/** Projectile이 Activate 된 후 Deactivate 되기 전까지의 최대 지속 시간 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Projectile")
+	float DeactivateDelay = 10.0f;
+	
 	int16 Damage;
 	uint8 bWasHit : 1;
 

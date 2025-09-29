@@ -99,7 +99,6 @@ void AADProjectileBase::Activate()
         ProjectileMovementComp->PrimaryComponentTick.bCanEverTick = true;
         ProjectileMovementComp->SetComponentTickEnabled(true);
 
-        float DeactivateDelay = 10.0f;
 	    GetWorld()->GetTimerManager().SetTimer(LifeTimerHandle, this, &AADProjectileBase::Deactivate, DeactivateDelay, false);
         TrailEffect->SetForceSolo(true);
         TrailEffect->Activate();

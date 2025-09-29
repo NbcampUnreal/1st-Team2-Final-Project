@@ -17,6 +17,8 @@ AADShotgunBullet::AADShotgunBullet()
 	ProjectileMovementComp->InitialSpeed = 2000.f;
 	ProjectileMovementComp->MaxSpeed = 2000.f;
 	ProjectileMovementComp->ProjectileGravityScale = 0.f;
+
+	DeactivateDelay = 0.4f;
 }
 
 void AADShotgunBullet::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -69,7 +71,7 @@ void AADShotgunBullet::HandleHit(AActor* HitActor, const FHitResult& Hit)
 			}
 		}
 	}
-	LOG(TEXT("Before Apply Damage : %f"), Damage);
+	LOG(TEXT("Before Apply Damage : %d"), Damage);
 
 	UGameplayStatics::ApplyPointDamage(
 		HitActor,
@@ -80,7 +82,7 @@ void AADShotgunBullet::HandleHit(AActor* HitActor, const FHitResult& Hit)
 		GetOwner(),
 		UDamageType::StaticClass());
 
-	LOG(TEXT("After Apply Damage : %f"), Damage);
+	LOG(TEXT("After Apply Damage : %d"), Damage);
 
 	Deactivate();   // 베이스 클래스 Deactivate() 호출로 풀에 반환
 }
