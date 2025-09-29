@@ -394,16 +394,14 @@ inline TBullet* UEquipUseComponent::SpawnBulletCommon(const FVector& Loc, const 
 	if (!Pool) return nullptr;
 
 	// 객체 가져오기 ------------------------------------------------------------------
-	TBullet* Bullet = Pool->GetObject<TBullet>();
+	// 객체를 Activate하기 전에 위치, 회전을 설정해서 (0,0,0)에서 충돌이 발생하는 것을 방지
+	TBullet* Bullet = Pool->GetObject<TBullet>(Loc, Rot);
 	if (!Bullet) return nullptr;
 
 	// 소유자‧Instigator 세팅 ----------------------------------------------------------
 	if (APawn* PawnOwner = PC->GetPawn())
 		Bullet->SetInstigator(PawnOwner);
 	Bullet->SetOwner(PC);
-
-	// 위치·회전 초기화 ---------------------------------------------------------------
-	Bullet->InitializeTransform(Loc, Rot);
 
 	return Bullet;
 }

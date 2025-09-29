@@ -44,7 +44,7 @@ public:
 	}
 
 	template <typename T>
-	T* GetObject()
+	T* GetObject(FVector SpawnLocation = FVector::ZeroVector, FRotator SpawnRotation = FRotator::ZeroRotator)
 	{
 		static_assert(std::is_base_of<APoolableItem, T>::value, "T must be a subclass of APoolableItem");
 		for (APoolableItem* Object : ObjectPool)
@@ -56,6 +56,7 @@ public:
 			if (!Object->GetIsActive())
 			{
 				Object->SetObjectPool(this);
+				Object->SetActorLocationAndRotation(SpawnLocation, SpawnRotation);
 				Object->Activate();
 				DeActivatedBulletCount--;
 				LOGOP(Warning, TEXT("Bullet is Activated. Bullet Id : %d"), Object->GetProjectileId());
@@ -65,9 +66,14 @@ public:
 		}
 
 		LOGOP(Warning, TEXT("There are no more bullet. Add a new bullet"));
-		T* NewObject = GetWorld()->SpawnActor<T>(PoolableClass);
+		T* NewObject = GetWorld()->SpawnActor<T>(PoolableClass, SpawnLocation, SpawnRotation);
 		if (NewObject)
 		{
+			NewObject->SetProjectileId(ObjectPool.Num());
+			NewObject->SetObjectPool(this);
+			NewObject->SetActorLocationAndRotation(SpawnLocation, SpawnRotation);
+			NewObject->Activate();
+			LOGOP(Warning, TEXT("Bullet is Activated. Bullet Id : %d"), NewObject->GetProjectileId());
 			ObjectPool.Add(NewObject);
 		}
 		return NewObject;
