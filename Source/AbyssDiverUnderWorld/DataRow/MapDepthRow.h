@@ -10,7 +10,7 @@ enum class EMapName : uint8;
 
 /** 맵의 깊이 구역을 정의하는 열거형 */
 UENUM()
-enum EDepthZone
+enum EDepthZone : uint8
 {
 	SafeZone UMETA(DisplayName = "Safe Zone"),
 	WarningZone UMETA(DisplayName = "Warning Zone"),

@@ -8,7 +8,7 @@
 #include "DepthComponent.generated.h"
 
 
-enum EDepthZone : int;
+enum EDepthZone : uint8;
 
 /**
  * Actor의 깊이를 관리하는 컴포넌트
