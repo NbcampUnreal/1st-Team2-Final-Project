@@ -21,6 +21,7 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Tutorial")
 	FOnPhaseChangedDelegate OnPhaseChanged;
 
+	UFUNCTION(BlueprintPure, Category = "Tutorial")
 	FORCEINLINE ETutorialPhase GetCurrentPhase() const { return CurrentPhase; }
 
 	void SetCurrentPhase(ETutorialPhase NewPhase);
