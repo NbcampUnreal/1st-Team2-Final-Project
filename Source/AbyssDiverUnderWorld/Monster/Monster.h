@@ -121,6 +121,12 @@ public:
 	float ChasingMovementSpeedMultiplier = 2.2f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement|Stat")
+	float FleeMovementSpeedMultiplier = 4.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement|Stat")
+	float InvestigateMovementSpeedMultiplier = 1.5f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement|Stat")
 	float MovementInterpSpeed = 1.0f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement|Stat")
@@ -198,18 +204,6 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "AI")
 	float ChaseTriggerTime;
-
-	UPROPERTY(EditAnywhere, Category = "AI")
-	float ChaseSpeed;
-
-	UPROPERTY(EditAnywhere, Category = "AI")
-	float PatrolSpeed;
-
-	UPROPERTY(EditAnywhere, Category = "AI")
-	float InvestigateSpeed;
-
-	UPROPERTY(EditAnywhere, Category = "AI")
-	float FleeSpeed;
 
 	UPROPERTY(VisibleAnywhere)
 	TSet<TWeakObjectPtr<AActor>> DetectedPlayers;

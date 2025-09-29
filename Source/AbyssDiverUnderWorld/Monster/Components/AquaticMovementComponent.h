@@ -278,7 +278,7 @@ protected:
     UPROPERTY(BlueprintReadOnly, Category = "State")
     uint8 bHasTarget : 1 = false;
 
-    UPROPERTY(BlueprintReadOnly, Category = "State")
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "State")
     float TargetAcceptanceRadius;
 
     // === 경로 데이터 ===

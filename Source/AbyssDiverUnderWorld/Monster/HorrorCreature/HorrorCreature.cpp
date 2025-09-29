@@ -17,10 +17,6 @@ AHorrorCreature::AHorrorCreature()
 
 	// Initialize Variable
 	ChaseTriggerTime = 2.0f;
-	ChaseSpeed = 1400.0f;
-	PatrolSpeed = 200.0f;
-	InvestigateSpeed = 500.0f;
-	FleeSpeed = 2000.0f;
 	SwallowedPlayer = nullptr;
 	FleeTime = 4.5f;
 	SwallowDamage = 900.0f;
