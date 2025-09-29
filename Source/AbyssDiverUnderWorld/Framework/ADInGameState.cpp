@@ -182,6 +182,7 @@ void AADInGameState::BeginPlay()
 	CurrentPhaseChangedDelegate.Broadcast(CurrentPhase);
 
 	StartPhaseUIAnim();
+
 	ApplyPendingMissionsFromSubsystem();
 }
 

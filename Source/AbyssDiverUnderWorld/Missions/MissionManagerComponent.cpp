@@ -178,6 +178,36 @@ void UMissionManagerComponent::HandleMissionProgress(EMissionType MissionType, u
     OnRep_Missions(); 
 }
 
+void UMissionManagerComponent::HandleMissionComplete(EMissionType Type, uint8 Index)
+{
+    for (FMissionRuntimeState& S : ActiveStates)
+    {
+        if (S.MissionType == Type && S.MissionIndex == Index)
+        {
+            S.bCompleted = 1;
+            S.Current = S.Goal;
+            break;
+        }
+    }
+    OnRep_Missions();
+}
+
+void UMissionManagerComponent::GatherCompletedMissions(TArray<FCompletedMissionInfo>& Out) const
+{
+    Out.Reset();
+    for (const UMissionBase* M : ActiveMissions)
+    {
+        if (M && M->IsCompleted())
+        {
+            FCompletedMissionInfo Info;
+            Info.MissionType = M->GetMissionType();
+            Info.MissionIndex = M->GetMissionIndex();
+            // 보상이 있다면 추가하기
+            Out.Add(Info);
+        }
+    }
+}
+
 void UMissionManagerComponent::SetProgress(uint8 Slot, int32 NewCurrent, int32 NewGoal, bool bForceRep)
 {
     if (!ActiveStates.IsValidIndex(Slot)) return;
@@ -207,20 +237,6 @@ void UMissionManagerComponent::OnActiveMissionCountChanged()
     {
         UnbindAll();
     }
-}
-
-void UMissionManagerComponent::HandleMissionComplete(EMissionType Type, uint8 Index)
-{
-    for (FMissionRuntimeState& S : ActiveStates)
-    {
-        if (S.MissionType == Type && S.MissionIndex == Index)
-        {
-            S.bCompleted = 1;
-            S.Current = S.Goal;
-            break;
-        }
-    }
-    OnRep_Missions();
 }
 
 UMissionBase* UMissionManagerComponent::CreateAndInitMission(const FMissionData& Choice)

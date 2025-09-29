@@ -66,6 +66,9 @@ protected:
 	
 	void RestartPlayerFromPlayerIndex(int8 PlayerIndex, const FVector& SpawnLocation);
 
+	void ApplySelectedMissionsFromSubsystem();   // 인게임 시작 시 1회
+	void StoreCompletedMissionsToSubsystem();
+
 private:
 
 	void GameOver();

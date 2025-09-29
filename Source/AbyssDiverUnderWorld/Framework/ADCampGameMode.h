@@ -18,6 +18,8 @@ public:
 
 protected:
 
+	virtual void PostSeamlessTravel() override;
+
 	virtual void PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage) override;
 	virtual void PostLogin(APlayerController* NewPlayer) override;
 	virtual void Logout(AController* Exiting) override;
@@ -39,6 +41,8 @@ public:
 	void GetSomeMoney(int32 SomeValue);
 
 	void TravelToInGameLevel();
+
+	void GrantPendingMissionRewardsFromSubsystem();   // 캠프 시작 시 1회
 
 protected:
 

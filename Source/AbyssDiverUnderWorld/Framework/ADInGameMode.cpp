@@ -121,6 +121,8 @@ void AADInGameMode::BeginPlay()
 	}
 
 	PlayerAliveInfos.Init(EPlayerAliveInfo::Alive, GetNumPlayers());
+	ApplySelectedMissionsFromSubsystem();
+
 }
 
 void AADInGameMode::StartPlay()
@@ -308,6 +310,7 @@ void AADInGameMode::TravelToCamp()
 				}
 
 				ADInGameState->SendDataToGameInstance();
+				StoreCompletedMissionsToSubsystem();
 				//input spot level name
 				FString TravelURL = FString::Printf(TEXT("%s?listen"), *LevelLoad);
 				GetWorld()->ServerTravel(TravelURL);
@@ -416,6 +419,51 @@ AADPlayerController* AADInGameMode::FindPlayerControllerFromIndex(int8 PlayerInd
 	}
 
 	return nullptr;
+}
+
+void AADInGameMode::ApplySelectedMissionsFromSubsystem()
+{
+	if (!HasAuthority()) return;
+
+	UGameInstance* GI = GetGameInstance();
+	if (!GI) return;
+
+	if (UMissionSubsystem* Subsys = GI->GetSubsystem<UMissionSubsystem>())
+	{
+		// InGameState에 붙은 매니저 가져오기
+		if (AADInGameState* GS = GetGameState<AADInGameState>())
+		{
+			if (UMissionManagerComponent* Manager = GS->FindComponentByClass<UMissionManagerComponent>())
+			{
+				const TArray<FMissionData>& Selected = Subsys->GetPendingSelectedMissions();
+				Manager->ApplySelectedMissions(Selected);
+			}
+		}
+		Subsys->ClearPendingSelectedMissions();
+	}
+}
+
+void AADInGameMode::StoreCompletedMissionsToSubsystem()
+{
+	if (!HasAuthority()) return;
+
+	UGameInstance* GI = GetGameInstance();
+	if (!GI) return;
+
+	TArray<FCompletedMissionInfo> Completed;
+
+	if (AADInGameState* GS = GetGameState<AADInGameState>())
+	{
+		if (UMissionManagerComponent* Manager = GS->FindComponentByClass<UMissionManagerComponent>())
+		{
+			Manager->GatherCompletedMissions(Completed);   // IsCompleted 기반 수집
+		}
+	}
+
+	if (UMissionSubsystem* Subsys = GI->GetSubsystem<UMissionSubsystem>())
+	{
+		Subsys->SetPendingCompletedMissions(Completed);
+	}
 }
 
 void AADInGameMode::InitPlayer(APlayerController* PC)

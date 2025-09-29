@@ -33,6 +33,17 @@ void AADCampGameMode::SetSelectedLevel(const EMapName InLevelName)
 	}
 }
 
+
+
+void AADCampGameMode::PostSeamlessTravel()
+{
+	Super::PostSeamlessTravel();
+
+	if (!HasAuthority()) return;
+
+	GrantPendingMissionRewardsFromSubsystem();
+}
+
 void AADCampGameMode::PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage)
 {
 	Super::PreLogin(Options, Address, UniqueId, ErrorMessage);
@@ -186,6 +197,25 @@ void AADCampGameMode::TravelToInGameLevel()
 			}
 
 		}, 2.0f, false);
+}
+
+void AADCampGameMode::GrantPendingMissionRewardsFromSubsystem()
+{
+	UGameInstance* GI = GetGameInstance();
+	if (!GI) return;
+
+	if (UMissionSubsystem* Subsys = GI->GetSubsystem<UMissionSubsystem>())
+	{
+		const TArray<FCompletedMissionInfo>& Completed = Subsys->GetPendingCompletedMissions();
+
+		// TODO: 여기서 MissionType/Index 기반으로 보상 지급
+		for (const FCompletedMissionInfo& Info : Completed)
+		{
+			// 예) UMyRewardService::GrantReward(AllPlayers, Info);
+		}
+
+		Subsys->ClearPendingCompletedMissions();
+	}
 }
 
 bool AADCampGameMode::HasPressedTravel() const

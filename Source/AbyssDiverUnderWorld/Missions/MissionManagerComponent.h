@@ -12,6 +12,7 @@ class UMissionBase;
 class UMissionEventHubComponent;
 class UMissionSubsystem; // DT/카탈로그 조회용 (기존 서브시스템)
 enum class EUnitId : uint8;
+struct FCompletedMissionInfo;
 
 USTRUCT(BlueprintType)
 struct FMissionRuntimeState
@@ -65,6 +66,11 @@ public:
     UFUNCTION()
     void HandleMissionProgress(EMissionType MissionType, uint8 MissionIndex, int32 Current, int32 Goal);
 
+    UFUNCTION()
+    void HandleMissionComplete(EMissionType MissionType, uint8 MissionIndex);
+
+    UFUNCTION()
+    void GatherCompletedMissions(TArray<FCompletedMissionInfo>& Out) const;
 
     UPROPERTY(BlueprintAssignable)
     FOnMissionStatesUpdated OnMissionStatesUpdated;
@@ -96,9 +102,6 @@ private:
     void BindAll();
     void UnbindAll();
     void WireHubEvents();
-
-    // 완료 콜백(UMissionBase의 싱글캐스트 델리게이트가 호출)
-    void HandleMissionComplete(EMissionType Type, uint8 Index);
 
     // 진행값 갱신 헬퍼
     void SetProgress(uint8 Slot, int32 NewCurrent, int32 NewGoal, bool bForceRep = false);

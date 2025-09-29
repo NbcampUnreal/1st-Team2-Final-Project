@@ -38,7 +38,7 @@ static FGameplayTag MakeTag(const TCHAR* Root, const FString& Tail)
 	return UGameplayTagsManager::Get().RequestGameplayTag(FName(*FString::Printf(TEXT("%s.%s"), Root, *Tail)), false);
 }
 
-static inline void AddIfValid(FGameplayTagContainer& C, const FGameplayTag& T)
+static void AddIfValid(FGameplayTagContainer& C, const FGameplayTag& T)
 {
 	if (T.IsValid()) { C.AddTag(T); }
 }

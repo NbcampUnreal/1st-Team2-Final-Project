@@ -112,6 +112,7 @@ protected:
 
 public:
 
+	FORCEINLINE bool HasReachedGoal() const { return CurrentCount >= GoalCount; }
 	FORCEINLINE const EMissionType& GetMissionType() const { return MissionType; }
 	FORCEINLINE const int32& GetGoalCount() const { return GoalCount; }
 	FORCEINLINE const int32& GetCurrentCount() const { return CurrentCount; }
