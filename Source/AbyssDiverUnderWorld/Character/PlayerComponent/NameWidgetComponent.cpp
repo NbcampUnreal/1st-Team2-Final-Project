@@ -21,6 +21,7 @@ UNameWidgetComponent::UNameWidgetComponent()
 	BillboardRotationMode = EBillboardRotationMode::ReverseCameraForward;
 
 	SetCastShadow(false);
+	SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
 void UNameWidgetComponent::BeginPlay()

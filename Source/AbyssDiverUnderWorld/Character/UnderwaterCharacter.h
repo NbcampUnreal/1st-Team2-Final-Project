@@ -22,7 +22,7 @@ enum class EMoveDirection : uint8;
 #define LOG_NETWORK(Category, Verbosity, Format, ...) \
 	UE_LOG(Category, Verbosity, TEXT("[%s] %s %s"), LOG_NETMODEINFO, LOG_CALLINFO, *FString::Printf(Format, ##__VA_ARGS__))
 
-enum EDepthZone : int;
+enum EDepthZone : uint8;
 DECLARE_LOG_CATEGORY_EXTERN(LogAbyssDiverCharacter, Log, LOG_ABYSS_DIVER_COMPILE_VERBOSITY);
 
 // @TODO : Character Status Replicate 문제
