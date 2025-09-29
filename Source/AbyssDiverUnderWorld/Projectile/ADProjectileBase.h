@@ -71,7 +71,7 @@ private:
 #pragma region Getter, Setter
 public:
 	UProjectileMovementComponent* GetProjectileMovementComp() const { return ProjectileMovementComp; }
-	void SetDamage(int8 DamageAmount) { Damage = DamageAmount; };
+	void SetDamage(int16 DamageAmount) { Damage = DamageAmount; };
 
 #pragma endregion
 };
