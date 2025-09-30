@@ -401,6 +401,12 @@ void AADTutorialGameMode::HandlePhase_Drone()
 
 void AADTutorialGameMode::HandlePhase_Dialogue_LightOut()
 {
+
+    if (IsValid(LightOutSound))
+    {
+        UGameplayStatics::PlaySound2D(GetWorld(), LightOutSound);
+    }
+
     DisabledLights.Empty();
     if (APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0))
     {
