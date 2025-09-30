@@ -28,6 +28,7 @@
 #include "GameFramework/Character.h" // (NPC->GetCharacterMovement() 쓸 때 필요)
 #include "Camera/PlayerCameraManager.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Subsystems/SoundSubsystem.h"
 #include "GameFramework/PlayerState.h"
 
 
@@ -401,8 +402,18 @@ void AADTutorialGameMode::HandlePhase_Drone()
 
 void AADTutorialGameMode::HandlePhase_Dialogue_LightOut()
 {
-
-    if (IsValid(LightOutSound))
+    if (UGameInstance* GameInstance = GetGameInstance())
+    {
+        if (USoundSubsystem* SoundSubsystem = GameInstance->GetSubsystem<USoundSubsystem>())
+        {
+            if (IsValid(LightOutSound))
+            {
+                const float NewVolume = SoundSubsystem->GetSFXVolume() * SoundSubsystem->GetMasterVolume();
+                UGameplayStatics::PlaySound2D(GetWorld(), LightOutSound, NewVolume);
+            }
+        }
+    }
+    else if (IsValid(LightOutSound))
     {
         UGameplayStatics::PlaySound2D(GetWorld(), LightOutSound);
     }
