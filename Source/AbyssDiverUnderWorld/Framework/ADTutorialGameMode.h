@@ -173,6 +173,9 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Sound")
     TObjectPtr<USoundMix> MuteDroneSoundMix;
 
+    UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Sound")
+    TObjectPtr<USoundBase> LightOutSound;
+
     // Drone
     UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Drone")
     TSubclassOf<AADDroneSeller> TutorialDroneSellerClass;
