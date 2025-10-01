@@ -103,6 +103,17 @@ void AADDrone::Tick(float DeltaSeconds)
 
 void AADDrone::Destroyed()
 {
+#if WITH_EDITOR
+
+// 게임 중이 아닌 경우 리턴
+UWorld* World = GetWorld();
+if (World == nullptr || World->IsGameWorld() == false)
+{
+	Super::Destroyed();
+	return;
+}
+
+#endif
 	if (bIsBgmOn)
 	{
 		SoundSubsystem->StopAudio(DrondeThemeSoundNumber);
