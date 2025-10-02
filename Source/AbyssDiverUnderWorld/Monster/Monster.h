@@ -44,6 +44,8 @@ public:
 
 	virtual void OnAttackEnded();
 
+	virtual void ReceiveKnockback(const FVector& Force);
+
 	UFUNCTION(NetMulticast, Reliable)
 	void M_PlayMontage(UAnimMontage* AnimMontage, float InPlayRate = 1, FName StartSectionName = NAME_None);
 	void M_PlayMontage_Implementation(UAnimMontage* AnimMontage, float InPlayRate = 1, FName StartSectionName = NAME_None);

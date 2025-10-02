@@ -507,6 +507,14 @@ void AMonster::OnAttackEnded()
 	AttackedPlayers.Empty();
 }
 
+void AMonster::ReceiveKnockback(const FVector& Force)
+{
+	if (UCharacterMovementComponent* MovementComp = GetCharacterMovement())
+	{
+		MovementComp->AddImpulse(Force, true);
+	}
+}
+
 void AMonster::M_PlayMontage_Implementation(UAnimMontage* AnimMontage, float InPlayRate, FName StartSectionName)
 {
 	PlayAnimMontage(AnimMontage, InPlayRate, StartSectionName);
