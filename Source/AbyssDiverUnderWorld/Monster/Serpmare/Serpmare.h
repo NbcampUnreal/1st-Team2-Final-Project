@@ -23,7 +23,6 @@ public:
 
 public:
 
-
 	virtual void Attack() override;
 
 	virtual void NotifyLightExposure(float DeltaTime, float TotalExposedTime, const FVector& PlayerLocation, AActor* PlayerActor) override;
@@ -31,6 +30,8 @@ public:
 	virtual void AddDetection(AActor* Actor) override;
 
 	virtual void RemoveDetection(AActor* Actor) override;
+
+	virtual void ReceiveKnockback(const FVector& Force) override;
 
 private:
 	void InitAttackInterval();

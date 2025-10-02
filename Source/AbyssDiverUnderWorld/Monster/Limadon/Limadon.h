@@ -25,6 +25,8 @@ public:
 	
 	virtual void NotifyLightExposure(float DeltaTime, float TotalExposedTime, const FVector& PlayerLocation, AActor* PlayerActor) override;
 
+	virtual void ReceiveKnockback(const FVector& Force) override;
+
 	void BiteVariableInitialize();
 
 	UFUNCTION(BlueprintImplementableEvent)

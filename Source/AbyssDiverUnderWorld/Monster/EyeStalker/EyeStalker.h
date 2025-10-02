@@ -28,6 +28,7 @@ public:
 	virtual void NotifyLightExposure(float DeltaTime, float TotalExposedTime, const FVector& PlayerLocation, AActor* PlayerActor) override;
 	virtual void AddDetection(AActor* Actor);
 	virtual void RemoveDetection(AActor* Actor);
+	virtual void ReceiveKnockback(const FVector& Force) override;
 
 public:
 	UFUNCTION(NetMulticast, Reliable)
@@ -50,5 +51,10 @@ public:
 	
 	UFUNCTION(BlueprintImplementableEvent)
 	void SetDetectedState(bool bDetected);
+
+protected:
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void OnEyeStalkerDamaged();
 	
 };
