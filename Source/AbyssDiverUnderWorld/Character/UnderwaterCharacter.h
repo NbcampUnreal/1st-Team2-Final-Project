@@ -1,4 +1,6 @@
-﻿#pragma once
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
 
 #include "CoreMinimal.h"
 #include "InputActionValue.h"
@@ -20,7 +22,7 @@ enum class EMoveDirection : uint8;
 #define LOG_NETWORK(Category, Verbosity, Format, ...) \
 	UE_LOG(Category, Verbosity, TEXT("[%s] %s %s"), LOG_NETMODEINFO, LOG_CALLINFO, *FString::Printf(Format, ##__VA_ARGS__))
 
-enum EDepthZone : int;
+enum EDepthZone : uint8;
 DECLARE_LOG_CATEGORY_EXTERN(LogAbyssDiverCharacter, Log, LOG_ABYSS_DIVER_COMPILE_VERBOSITY);
 
 // @TODO : Character Status Replicate 문제
@@ -108,7 +110,6 @@ protected:
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode = 0) override;
 	virtual void Destroyed() override;
-
 
 	/** IA를 Enhanced Input Component에 연결 */
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
@@ -282,23 +283,22 @@ public:
 	/** 관전 당하는 것이 끝났을 때 호출되는 함수 */
 	void OnEndSpectated();
 
-	/** 감정 표현 재생 요청 */
-	void RequestPlayEmote(int8 EmoteIndex);
-	
-	void OnObserveModeChanged(bool bObserveMode);
+	/** 감정 표현 재생 요청
+	 * EmoteIndex : 0 ~ n - 1 (EmoteAnimationMontages 배열의 인덱스)
+	 * Emote 재생이 가능할 경우에만 재생.
+	 */
+	UFUNCTION(BlueprintCallable)
+	void RequestPlayEmote(int32 EmoteIndex);
 
-	void TryUnlockObservedTarget();
+	/** Name Widget 가시성 설정
+	 * false일 경우 항상 숨김 처리가 된다.
+	 * true일 경우 캐릭터 정책에 따라서 Name Widget의 가시성이 결정된다.
+	 * Locally Controlled Character의 Name Widget은 항상 숨김 처리된다.
+	 * Spectated Character의 Name Widget은 항상 숨김 처리된다.
+	 */
+	void SetNameWidgetEnabled(bool bNewVisibility);
 
-	UFUNCTION(Client, Reliable)
-	void C_UnlockFeedback(bool bSuccess, FName MonsterId);
-	void C_UnlockFeedback_Implementation(bool bSuccess, FName MonsterId);
-
-	UFUNCTION()
-	void UpdateObserveFocus();
-	void StartObserveFocusTimer();
-	void StopObserveFocusTimer();
 protected:
-
 	/** Stat Component의 기본 속도가 변경됬을 때 호출된다. */
 	UFUNCTION()
 	void OnMoveSpeedChanged(float NewMoveSpeed);
@@ -367,9 +367,9 @@ protected:
 	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "OnEnvironmentStateChanged"))
 	void K2_OnEnvironmentStateChanged(EEnvironmentState OldEnvironmentState, EEnvironmentState NewEnvironmentState);
 
-	/** Player State 정보를 초기화 */
-	void InitFromPlayerState(class AADPlayerState* ADPlayerState);
-	
+	/** Player State를 기반으로 Player Status 초기화 */
+	void InitPlayerStatus(class AADPlayerState* ADPlayerState);
+
 	/** Upgrade Component의 정보를 바탕으로 초기화 */
 	void ApplyUpgradeFactor(class UUpgradeComponent* UpgradeComponent);
 	
@@ -534,14 +534,12 @@ protected:
 	/** 3번 감정 표현 실행 */
 	void PerformEmote3(const FInputActionValue& InputActionValue);
 
-
 	/** 3인칭 디버그 카메라 활성화 설정 */
 	void SetDebugCameraMode(bool bDebugCameraEnable);
 
 	/** 디버그 카메라 모드 토글. 1인칭, 3인칭을 전환한다. */
 	UFUNCTION(CallInEditor)
 	void ToggleDebugCameraMode();
-
 
 	/** 1인칭 메시 몽타주 시작 시 호출되는 함수 */
 	UFUNCTION()
@@ -642,20 +640,28 @@ protected:
 
 	/** 현재 DepthZone에 따른 산소 소비율을 반환한다. */
 	float GetOxygenConsumeRate(EDepthZone DepthZone) const;
-	
 
+	// 현재는 Debug 기능을 위해서 간략하게 구현되었다.
+	// 추후에 유저 조작으로 NameWidget을 숨김처리하거나 하는 기능이 추가되면
+	// Name Widget에서 Callback 을 통해서 구현한다.
+	// 현재 방식상으로는 호출 비용이 크다.
+	
+	/** 현재 상태에 따라 Name Widget의 가시성을 설정한다.
+	 * Local Player가 아니고 PC에서 Name Widget 가시성이 참일 경우에만 Name Widget이 보인다.
+	 */
+	void InitNameWidgetEnabled();
 
 private:
-
 	/** Montage 콜백을 등록 */
 	void SetupMontageCallbacks();
-	
+
 #pragma endregion
 
 #pragma region Variable
 
 public:
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDeath);
+
 	/** 캐릭터가 사망했을 때 호출되는 델리게이트 */
 	UPROPERTY(BlueprintAssignable)
 	FOnDeath OnDeathDelegate;
@@ -735,6 +741,14 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Character|Emote")
 	FOnEmoteStart OnEmoteEndDelegate;
 
+	DECLARE_MULTICAST_DELEGATE(FOnGroggyRevive);
+	/** 그로기에 걸린 팀원 부활 시 호출되는 델리게이트 */
+	FOnGroggyRevive OnGroggyReviveDelegate;
+
+	DECLARE_MULTICAST_DELEGATE_OneParam(FOnHiddenChanged, bool /* bNewHidden */);
+	/** 캐릭터의 Hidden 상태가 변경되었을 때 호출되는 델리게이트 */
+	FOnHiddenChanged OnHiddenChangedDelegate;
+
 	UPROPERTY(VisibleAnywhere, Category = "Mining")
 	/** 현재 1p에 장착된 Tool 인스턴스 */
 	TObjectPtr<AActor> SpawnedTool;
@@ -752,9 +766,6 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = "Mining")
 	/** 현재 3p에 장착된 Tool 인스턴스 */
 	TObjectPtr<AActor> SpawnedTool3P;
-
-	UPROPERTY()
-	TObjectPtr<AActor> CurrentObservedActor;
 
 private:
 
@@ -908,9 +919,6 @@ private:
 
 	/** 그로기에서 사망 전이 Timer */
 	FTimerHandle GroggyTimer;
-
-	/** 관찰모드 Timer **/
-	FTimerHandle ObserveFocusTimer;
 
 	/** 그로기 상태에서의 LookSensitivity. Groggy 상태에 진입할 때마다 LookSensitivity를 이 값으로 설정한다. */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Groggy")
@@ -1131,7 +1139,6 @@ private:
 	/** 감정 표현 3번 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> EmoteAction3;
-
 
 	/** 게임에 사용될 1인칭 Camera Component의 Spring Arm. 회전 Smoothing을 위해 사용한다. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
@@ -1415,6 +1422,7 @@ public:
 	/** 캐릭터가 현재 Capture State 인지 여부를 반환 */
 	FORCEINLINE bool IsCaptured() const { return bIsCaptured; }
 
+	/** 캐릭터의 소유자 AADPlayerController 반환 */
 	FORCEINLINE AADPlayerController* GetOwnerController() const { return OwnerController; }
 
 	/** 깊이 컴포넌트를 반환 */

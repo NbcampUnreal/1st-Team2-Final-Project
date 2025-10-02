@@ -4,6 +4,8 @@
 #include "UI/DepthWidget.h"
 #include "Components/TextBlock.h"
 #include "Components/Image.h"
+#include "Kismet/GameplayStatics.h"
+#include "Animation/WidgetAnimation.h"
 
 
 void UDepthWidget::ApplyZoneChangeToWidget(EDepthZone Old, EDepthZone New)
@@ -44,4 +46,15 @@ void UDepthWidget::SetDepthText(float Depth)
 void UDepthWidget::SetZoneText(const FString& ZoneName)
 {
 	ZoneText->SetText(FText::FromString(ZoneName));
+}
+
+void UDepthWidget::PlayOpenCloseAnim(bool bIsOpen)
+{
+	if (bIsOpen) PlayAnimation(DepthOpenAnim);
+	else PlayAnimation(DepthCloseAnim);
+}
+
+float UDepthWidget::GetCloseAnimLength() const
+{
+	return DepthCloseAnim->GetEndTime();
 }

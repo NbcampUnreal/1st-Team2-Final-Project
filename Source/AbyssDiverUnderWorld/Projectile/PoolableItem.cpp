@@ -21,17 +21,22 @@ void APoolableItem::Activate()
 	SetActorHiddenInGame(false);
 	SetActorEnableCollision(true);
 	SetActorTickEnabled(true);
+
+	OnPoolableItemActivate();
 }
 
 void APoolableItem::Deactivate()
 {
 	bIsActive = false;
 	SetOwner(nullptr);
-	SetActorLocation(FVector::ZeroVector);
-	SetActorRotation(FRotator::ZeroRotator);
 	SetActorHiddenInGame(true);
 	SetActorEnableCollision(false);
 	SetActorTickEnabled(false);
+	// 비활성화 후에 위치, 회전을 초기화
+	SetActorLocation(FVector::ZeroVector);
+	SetActorRotation(FRotator::ZeroRotator);
+
+	OnPoolableItemDeactivated();
 }
 
 void APoolableItem::SetProjectileId(int8 Id)

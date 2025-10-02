@@ -15,6 +15,7 @@ class ABYSSDIVERUNDERWORLD_API UDepthWidget : public UUserWidget
 {
 	GENERATED_BODY()
 	
+#pragma region Method
 public:
 	UFUNCTION(BlueprintCallable)
 	uint8 GetZoneLevel() { return ZoneLevel; };
@@ -24,6 +25,10 @@ public:
 	void SetDepthText(float Depth);
 	void SetZoneText(const FString& ZoneName);
 
+	void PlayOpenCloseAnim(bool bIsOpen);
+#pragma endregion
+
+#pragma region Variable
 protected:
 	UPROPERTY(meta = (BindWidget), BlueprintReadWrite)
 	TObjectPtr<UImage> DepthBG;
@@ -42,4 +47,13 @@ private:
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UImage> DepthBGSide;
+
+	UPROPERTY(meta = (BindWidgetAnim), Transient)
+	TObjectPtr<UWidgetAnimation> DepthOpenAnim;
+
+	UPROPERTY(meta = (BindWidgetAnim), Transient)
+	TObjectPtr<UWidgetAnimation> DepthCloseAnim;
+#pragma endregion
+public:
+	float GetCloseAnimLength() const;
 };

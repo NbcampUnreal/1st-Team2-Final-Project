@@ -56,7 +56,7 @@ float AUnitBase::TakeDamage(float DamageAmount, struct FDamageEvent const& Damag
 {
 	float Damage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
-	StatComponent->TakeDamage(Damage);
+	StatComponent->TakeDamage(Damage, DamageCauser);
 	
 	return Damage;
 }

@@ -1,18 +1,20 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Monster/MonsterAIController.h"
-#include "BehaviorTree/BlackboardComponent.h"
-#include "Character/UnderwaterCharacter.h"
-#include "Monster/TestPlayerCharacter.h"
+
 #include "AbyssDiverUnderWorld.h"
+#include "Character/UnderwaterCharacter.h"
+#include "Container/BlackboardKeys.h"
+
 #include "Monster/EMonsterState.h"
 #include "Monster/Monster.h"
-#include "GenericTeamAgentInterface.h"
-#include "Navigation/PathFollowingComponent.h"
-#include "NavigationSystem.h"
+#include "Monster/Components/AquaticMovementComponent.h"
 #include "Monster/HorrorCreature/HorrorCreature.h"
-#include "AbyssDiverUnderWorld.h"
+
+#include "BehaviorTree/BlackboardComponent.h"
+#include "GenericTeamAgentInterface.h"
+#include "Perception/AISenseConfig_Hearing.h"
 
 AMonsterAIController::AMonsterAIController()
 {
@@ -31,8 +33,29 @@ AMonsterAIController::AMonsterAIController()
 
 	AIPerceptionComponent->ConfigureSense(*SightConfig);
 	AIPerceptionComponent->SetDominantSense(SightConfig->GetSenseImplementation());
-	bIsLosingTarget = false;
-	FallbackMoveDistance = 300.0f;
+}
+
+void AMonsterAIController::MoveToActorWithRadius(AActor* TargetActor)
+{
+	if (IsValid(TargetActor) == false)
+	{
+		LOGV(Error, TEXT("TargetActor is not valid"));
+		return;
+	}
+
+	MoveToLocationWithRadius(TargetActor->GetActorLocation());
+}
+
+void AMonsterAIController::MoveToLocationWithRadius(const FVector& Location)
+{
+	AMonster* MonsterCharacter = Cast<AMonster>(GetPawn());
+	if (IsValid(MonsterCharacter) == false)
+	{
+		LOGV(Error, TEXT("MonsterCharacter is not valid"));
+		return;
+	}
+
+	MonsterCharacter->AquaticMovementComponent->SetTargetLocation(Location, MoveToActorAcceptanceRadius);
 }
 
 void AMonsterAIController::BeginPlay()
@@ -40,57 +63,16 @@ void AMonsterAIController::BeginPlay()
 	Super::BeginPlay();
 	LoadSightDataFromTable();
 
-	UAIPerceptionComponent* Perception = FindComponentByClass<UAIPerceptionComponent>();
-	if (Perception)
+	if (AIPerceptionComponent)
 	{
-		Perception->OnTargetPerceptionUpdated.AddDynamic(this, &AMonsterAIController::OnTargetPerceptionUpdated);
+		AIPerceptionComponent->OnTargetPerceptionUpdated.AddDynamic(this, &AMonsterAIController::OnTargetPerceptionUpdated);
+		AIPerceptionComponent->OnTargetPerceptionForgotten.AddDynamic(this, &AMonsterAIController::OnTargetPerceptionForgotten);
 	}
 }
 
 void AMonsterAIController::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
-
-	if (!IsValid(Monster) || !SightConfig) return;
-
-	const float CurrentTime = GetWorld()->GetTimeSeconds();
-	const float MaxAge = SightConfig->GetMaxAge();
-
-	TArray<TWeakObjectPtr<AActor>> ToRemove;
-
-	for (const auto& Elem : LostActorsMap)
-	{
-		TWeakObjectPtr<AActor> Target = Elem.Key;
-		float LostTime = Elem.Value;
-
-		if (!Target.IsValid())
-		{
-			ToRemove.Add(Target);
-			continue;
-		}
-
-		float Elapsed = CurrentTime - LostTime;
-		if (Elapsed > MaxAge)
-		{
-			UE_LOG(LogTemp, Log, TEXT("[Elapsed] : %.2f"), Elapsed);
-			Monster->ForceRemoveDetection(Target.Get());
-			ToRemove.Add(Target);
-		}
-	}
-
-	for (TWeakObjectPtr<AActor> Actor : ToRemove)
-	{
-		LostActorsMap.Remove(Actor);
-	}
-
-	// Return to state when all detectors are clear
-	if (Monster->GetDetectionCount() == 0 &&
-		Monster->GetMonsterState() == EMonsterState::Chase)
-	{
-		Monster->SetMonsterState(EMonsterState::Patrol);
-		Monster->bIsChasing = false;
-		LOG(TEXT("Monster State -> Patrol"));
-	}
 }
 
 void AMonsterAIController::OnPossess(APawn* InPawn)
@@ -103,14 +85,10 @@ void AMonsterAIController::OnPossess(APawn* InPawn)
 		RunBehaviorTree(BehaviorTree);
 		LOG(TEXT("AIController Possess"));
 
-		// Initialize BlackboardKey (TargetActor)
-		BlackboardComponent->ClearValue("TargetActor");
+		BlackboardComponent->ClearValue(BlackboardKeys::TargetPlayerKey);
 	}
 
 	Monster = Cast<AMonster>(GetPawn());
-
-	FTimerHandle TimerHandle;
-	GetWorldTimerManager().SetTimer(TimerHandle, this, &AMonsterAIController::InitializePatrolPoint, 0.5f, false);
 }
 
 void AMonsterAIController::LoadSightDataFromTable()
@@ -129,7 +107,7 @@ void AMonsterAIController::LoadSightDataFromTable()
 		SightConfig->SightRadius = SightRow->SightRadius;
 		SightConfig->LoseSightRadius = SightRow->LoseSightRadius;
 		SightConfig->PeripheralVisionAngleDegrees = SightRow->PeripheralVisionAngleDegrees;
-		SightConfig->SetMaxAge(SightRow->SenseInterval);
+		SightConfig->PointOfViewBackwardOffset = SightRow->PointOfViewBackwardOffset;
 
 		AIPerceptionComponent->ConfigureSense(*SightConfig);
 	}
@@ -139,130 +117,93 @@ void AMonsterAIController::LoadSightDataFromTable()
 	}
 }
 
-void AMonsterAIController::InitializePatrolPoint()
-{
-	if (BlackboardComponent)
-	{
-		BlackboardComponent->SetValueAsInt("PatrolIndex", 0);
-	}
-}
-
-
 void AMonsterAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
 	if (!IsValid(Monster)) return;
 
-	if (Actor->IsA(AUnderwaterCharacter::StaticClass()))
+	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor);
+	if (!IsValid(Player) || Player->IsDeath() || Player->IsGroggy()) return;
+
+	if (Stimulus.WasSuccessfullySensed() && Monster->GetMonsterState() != EMonsterState::Flee)
 	{
-		if (AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor))
-		{
-			if (Player->GetCharacterState() == ECharacterState::Death)
-			{
-				return;
-			}
-		}
-
- 		if (Stimulus.WasSuccessfullySensed() && Monster->GetMonsterState() != EMonsterState::Flee)
-		{
-			LostActorsMap.Remove(Actor); // Remove when detected again
-			Monster->AddDetection(Actor);
-
-			if (Monster->GetMonsterState() != EMonsterState::Chase)
-			{
-				Monster->SetMonsterState(EMonsterState::Chase);
-				Monster->bIsChasing = true;
-			}
-		}
-		else
-		{
-			// Lost Perception. but Target Value still remains for MaxAge
-			if (!LostActorsMap.Contains(Actor))
-			{
-				LostActorsMap.Add(Actor, GetWorld()->GetTimeSeconds());
-			}
-		}
-	}
-}
-
-void AMonsterAIController::SetbIsLosingTarget(bool IsLosingTargetValue)
-{
-	if (bIsLosingTarget != IsLosingTargetValue)
-	{
-		bIsLosingTarget = IsLosingTargetValue;
-	}
-}
-
-void AMonsterAIController::HandleMoveFailure()
-{
-	FVector AvoidDirection = ComputeAvoidanceDirection();
-	if (!AvoidDirection.IsNearlyZero())
-	{
-		FVector FallbackLocation = Monster->GetActorLocation() + AvoidDirection * 300.f;
-		if (UNavigationSystemV1* NavSys = UNavigationSystemV1::GetCurrent(GetWorld()))
-		{
-			FNavLocation ProjectedLocation;
-			if (NavSys->ProjectPointToNavigation(FallbackLocation, ProjectedLocation))
-			{
-				MoveToLocation(ProjectedLocation.Location, 100.f);
-			}
-			else
-			{
-				UE_LOG(LogTemp, Warning, TEXT("Fallback location not on NavMesh."));
-			}
-		}
+		Monster->AddDetection(Actor);
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("No valid avoidance direction found!"));
+		Monster->RemoveDetection(Actor);
 	}
 }
 
-FVector AMonsterAIController::ComputeAvoidanceDirection()
+void AMonsterAIController::OnTargetPerceptionForgotten(AActor* ForgottenActor)
 {
-	const FVector Start = Monster->GetActorLocation();
-	const FVector Forward = Monster->GetActorForwardVector();
-	FVector AccumulatedDir = FVector::ZeroVector;
+	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(ForgottenActor);
+	if (!IsValid(Player)) return;
 
-	for (int32 Angle = -60; Angle <= 60; Angle += 30)
-	{
-		FVector Dir = Forward.RotateAngleAxis(Angle, FVector::UpVector);
-		FVector End = Start + Dir * 300.f;
-		FHitResult Hit;
-		if (!GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility))
-		{
-			AccumulatedDir += Dir;
-		}
-	}
-
-	if (AccumulatedDir.IsNearlyZero())
-	{
-		return -Forward; // Fallback: go backward
-	}
-
-	AccumulatedDir.Normalize();
-	return AccumulatedDir;
+	// 가끔 Perception이 해제되지 않는 버그가 있는 것 같아서 Forget 기능을 추가
+	// Forget시 해당 액터 감지 해제
+	Monster->RemoveDetection(ForgottenActor);
 }
 
-void AMonsterAIController::OnMoveCompleted(FAIRequestID RequestID, const FPathFollowingResult& Result)
+void AMonsterAIController::SetBlackboardPerceptionType(EPerceptionType InPerceptionType)
 {
-	Super::OnMoveCompleted(RequestID, Result);
+	BlackboardComponent->SetValueAsEnum(BlackboardKeys::PerceptionTypeKey, static_cast<uint8>(InPerceptionType));
+}
 
-	if (Result.Code != EPathFollowingResult::Success)
+bool AMonsterAIController::IsStateSame(EMonsterState State)
+{
+	return (GetBlackboardComponent()->GetValueAsEnum(BlackboardKeys::MonsterStateKey) == static_cast<uint8>(State));
+}
+
+float AMonsterAIController::GetSightRadius() const
+{
+	if (!IsValid(AIPerceptionComponent))
 	{
-		MoveFailCount++;
-		if (MoveFailCount <= MaxMoveFailRetries)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Move failed. Retry %d/%d"), MoveFailCount, MaxMoveFailRetries);
-			HandleMoveFailure();
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("Move failed too many times. Aborting fallback."));
-			MoveFailCount = 0;
-		}
+		LOGV(Error, TEXT("AIPerceptionComponent is Invalid, return 0.0f"));
+		return 0.0f;
 	}
-	else
+
+	const UAISenseConfig_Sight* SightConfigInstance = Cast<UAISenseConfig_Sight>(AIPerceptionComponent->GetSenseConfig(UAISense::GetSenseID(UAISense_Sight::StaticClass())));
+	if (!SightConfigInstance)
 	{
-		MoveFailCount = 0;
+		LOGV(Error, TEXT("SightConfigInstance is Invalid, return 0.0f"));
+		return 0.0f;
 	}
+
+	return SightConfigInstance->SightRadius;
+}
+
+float AMonsterAIController::GetLoseSightRadius() const
+{
+	if (!IsValid(AIPerceptionComponent))
+	{
+		LOGV(Error, TEXT("AIPerceptionComponent is Invalid, return 0.0f"));
+		return 0.0f;
+	}
+
+	const UAISenseConfig_Sight* SightConfigInstance = Cast<UAISenseConfig_Sight>(AIPerceptionComponent->GetSenseConfig(UAISense::GetSenseID(UAISense_Sight::StaticClass())));
+	if (!SightConfigInstance)
+	{
+		LOGV(Error, TEXT("SightConfigInstance is Invalid, return 0.0f"));
+		return 0.0f;
+	}
+
+	return SightConfigInstance->LoseSightRadius;
+}
+
+float AMonsterAIController::GetHearingRadius() const
+{
+	if (!IsValid(AIPerceptionComponent))
+	{
+		LOGV(Error, TEXT("AIPerceptionComponent is Invalid, return 0.0f"));
+		return 0.0f;
+	}
+
+	const UAISenseConfig_Hearing* HearingConfigInstance = Cast<UAISenseConfig_Hearing>(AIPerceptionComponent->GetSenseConfig(UAISense::GetSenseID(UAISenseConfig_Hearing::StaticClass())));
+	if (!HearingConfigInstance)
+	{
+		LOGV(Log, TEXT("HearingConfigInstance is Invalid, return 0.0f"));
+		return 0.0f;
+	}
+
+	return HearingConfigInstance->HearingRange;
 }

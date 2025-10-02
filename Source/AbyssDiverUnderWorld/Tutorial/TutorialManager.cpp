@@ -14,7 +14,7 @@
 
 ATutorialManager::ATutorialManager()
 {
-	UE_LOG(LogTemp, Error, TEXT("!!!!!!!! TUTORIAL MANAGER CONSTRUCTED !!!!!"));
+	//UE_LOG(LogTemp, Error, TEXT("!!!!!!!! TUTORIAL MANAGER CONSTRUCTED !!!!!"));
 	PrimaryActorTick.bCanEverTick = true;
 	CurrentStepIndex = 0;
 
@@ -38,7 +38,7 @@ void ATutorialManager::BeginPlay()
 		SubtitleWidget = CreateWidget<UTutorialSubtitle>(GetWorld(), TutorialSubtitleClass);
 		if (SubtitleWidget)
 		{
-			SubtitleWidget->AddToViewport(-100);
+			SubtitleWidget->AddToViewport();
 			SubtitleWidget->SetVisibility(ESlateVisibility::Hidden);
 		}
 	}

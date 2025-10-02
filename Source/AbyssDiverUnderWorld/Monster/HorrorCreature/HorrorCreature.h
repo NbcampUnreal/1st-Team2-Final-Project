@@ -29,6 +29,8 @@ public:
 
 	virtual void NotifyLightExposure(float DeltaTime, float TotalExposedTime, const FVector& PlayerLocation, AActor* PlayerActor) override;
 
+	virtual void OnDeath() override;
+
 protected:
 	UFUNCTION()
 	void OnSwallowTriggerOverlap(
@@ -42,45 +44,60 @@ protected:
 
 	UFUNCTION()
 	void TemporarilyDisalbeSightPerception(float Duration);
+
 	UFUNCTION()
 	void SightPerceptionOn();
+
 	UFUNCTION()
 	void SetPatrolStateAfterEject();
+
 	UFUNCTION()
 	void DamageToVictim(AUnderwaterCharacter* Victim, float Damage);
 
-	void InitializeAggroVariable();
+	// void InitializeAggroVariable();
+	void UpdateVictimLocation(float DeltaTime);
+	void EjectedVictimNormalize(AUnderwaterCharacter* Victim);
 #pragma endregion
 
 #pragma region Variable
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI|Attack", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USphereComponent> HorrorCreatureHitSphere;
+
 	UPROPERTY()
 	TObjectPtr<AUnderwaterCharacter> SwallowedPlayer;
+
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<UAnimMontage> EjectMontage;
+
 	UPROPERTY()
 	TObjectPtr<UAIPerceptionComponent> CachedPerceptionComponent;
 
 	FTimerHandle TimerHandle_SetSwimMode;
+
 private:
 	UPROPERTY(EditAnywhere, Category = "Lanch")
-	float LanchStrength;
+	float LanchStrength = 150.0f;
+
 	UPROPERTY(EditAnywhere, Category = "Sight")
-	float DisableSightTime;
+	float DisableSightTime = 2.0f;
+
 	UPROPERTY(EditAnywhere, Category = "Behavior")
 	float FleeTime;
-	UPROPERTY(EditAnywhere, Category = "Sight")
+
+	UPROPERTY(EditAnywhere, Category = "Swallow")
 	float SwallowDamage;
 
+	UPROPERTY(EditAnywhere, Category = "Shallow")
+	float SwallowSpeed = 1.5f;
+
 	// Variable about SwallowPlayer Location Lerp
-	FVector SwallowStartLocation;
-	FVector SwallowTargetLocation;
+	FVector VictimLocation;
+	FVector CreatureMouthLocation;
 	float SwallowLerpAlpha = 0.0f;
 	uint8 bSwallowingInProgress : 1 = false;
 
-	uint8 bCanSwallow : 1;
+	uint8 bCanSwallow : 1 = true;
 #pragma endregion
 
 #pragma region Getter, Setter

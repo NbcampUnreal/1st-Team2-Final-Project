@@ -647,6 +647,25 @@ void AADInGameMode::GetSomeMoney(int32 SomeValue)
 	GS->SetTotalTeamCredit(GS->GetTotalTeamCredit() + SomeValue);
 }
 
+void AADInGameMode::ReportSpawnPoolInfo()
+{
+	auto ReportPoolInfo = [](AGenericPool* GenericPool, const FString& PoolName)
+	{
+		if (GenericPool == nullptr)
+		{
+			UE_LOG(AbyssDiver, Warning, TEXT("%s is nullptr"), *PoolName);
+			return;
+		}
+
+		UE_LOG(AbyssDiver, Display, TEXT("%s : Total : %d, Active : %d, Inactive : %d"),
+			*PoolName, GenericPool->GetPoolSize(), GenericPool->GetPoolSize() - GenericPool->GetDeactivatedCount(), GenericPool->GetDeactivatedCount());
+	};
+
+	ReportPoolInfo(SpearGunBulletPool, TEXT("SpearGunBulletPool"));
+	ReportPoolInfo(FlareGunBulletPool, TEXT("FlareGunBulletPool"));
+	ReportPoolInfo(ShotgunBulletPool, TEXT("ShotgunBulletPool"));
+}
+
 USoundSubsystem* AADInGameMode::GetSoundSubsystem()
 {
 	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))

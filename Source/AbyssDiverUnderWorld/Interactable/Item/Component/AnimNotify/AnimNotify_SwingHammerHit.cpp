@@ -1,6 +1,15 @@
 ﻿#include "Interactable/Item/Component/AnimNotify/AnimNotify_SwingHammerHit.h"
 #include "Kismet/GameplayStatics.h"
 
+UAnimNotify_SwingHammerHit::UAnimNotify_SwingHammerHit()
+{
+#if WITH_EDITOR       // 에디터 빌드에서만
+    bDebugDraw = true;
+#else                
+    bDebugDraw = false;
+#endif
+}
+
 void UAnimNotify_SwingHammerHit::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, const FAnimNotifyEventReference& EventReference)
 {
     if (!MeshComp) return;

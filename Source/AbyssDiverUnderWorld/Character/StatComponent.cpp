@@ -4,6 +4,8 @@
 #include "StatComponent.h"
 
 #include "Net/UnrealNetwork.h"
+#include "Framework/ADPlayerController.h"
+#include "Framework/ADPlayerState.h"
 
 
 UStatComponent::UStatComponent()
@@ -43,11 +45,30 @@ void UStatComponent::Initialize(int32 InitMaxHealth, int32 InitCurrentHealth, fl
 	AttackPower = InitAttackPower;
 }
 
-float UStatComponent::TakeDamage(const float DamageAmount)
+float UStatComponent::TakeDamage(const float DamageAmount, AActor* Instigator)
 {
+	AADPlayerController* PC = Cast<AADPlayerController>(Instigator);
+	 
 	if (GetOwnerRole() != ROLE_Authority || DamageAmount <= 0.0f || CurrentHealth <= 0)
 	{
+		if (PC)
+		{
+			if (AADPlayerState* PS = PC->GetPlayerState<AADPlayerState>())
+			{
+				PS->AddDamage(DamageAmount);
+				PS->AddOneMonsterKillCount();
+			}
+		}
 		return 0.0f;
+	}
+
+	if (PC)
+	{
+		if (AADPlayerState* PS = PC->GetPlayerState<AADPlayerState>())
+		{
+			PS->AddDamage(DamageAmount);
+			PS->AddOneAssists();
+		}
 	}
 
 	const float ActualDamage = FMath::Clamp(DamageAmount, 0.0f, static_cast<float>(CurrentHealth));

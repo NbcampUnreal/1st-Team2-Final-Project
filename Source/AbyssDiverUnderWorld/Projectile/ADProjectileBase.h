@@ -32,8 +32,8 @@ public:
 	void M_EffectActivate(bool bActivate);
 	void M_EffectActivate_Implementation(bool bActivate);
 
-	void Activate() override;
-	void Deactivate() override;
+	virtual void Activate() override;
+	virtual void Deactivate() override;
 
 	void InitializeTransform(const FVector& Location, const FRotator& Rotation);
 	virtual void InitializeSpeed(const FVector& ShootDirection, const uint32 Speed);
@@ -59,6 +59,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effect")
 	TObjectPtr<UNiagaraComponent> TrailEffect;
 
+	/** Projectile이 Activate 된 후 Deactivate 되기 전까지의 최대 지속 시간 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Projectile")
+	float DeactivateDelay = 10.0f;
+	
 	int16 Damage;
 	uint8 bWasHit : 1;
 
@@ -71,7 +75,7 @@ private:
 #pragma region Getter, Setter
 public:
 	UProjectileMovementComponent* GetProjectileMovementComp() const { return ProjectileMovementComp; }
-	void SetDamage(int8 DamageAmount) { Damage = DamageAmount; };
+	void SetDamage(int16 DamageAmount) { Damage = DamageAmount; };
 
 #pragma endregion
 };

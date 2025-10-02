@@ -757,7 +757,6 @@ void UEquipUseComponent::FireShotgun()
 		{
 			/* 속도, 데미지, 수명 등 설정 */
 			Pellet->InitializeSpeed(RandDir, PelletSpeed);       // 짧은 사거리
-			Pellet->SetLifeSpan(PelletLifeSec);                      // 0.5초 후 파괴
 			//Pellet->SetBaseDamage(ShotgunBaseDamage / PelletCount);
 		}
 	}
@@ -982,13 +981,19 @@ void UEquipUseComponent::PlaceMine()
 {
 	if (Amount <= 0 || !MineClass) return;
 	AUnderwaterCharacter* Diver = Cast<AUnderwaterCharacter>(OwningCharacter.Get());
+	if (!Diver) return;
+
+	FActorSpawnParameters Params;
+	Params.Owner = Diver;
+	Params.Instigator = Diver;
+
 	FVector SpawnLoc = Diver->GetActorLocation() + Diver->GetActorForwardVector() * 100.f;
-	AADMine* MineActor = GetWorld()->SpawnActor<AADMine>(MineClass, SpawnLoc, FRotator::ZeroRotator);
+	AADMine* MineActor = GetWorld()->SpawnActor<AADMine>(MineClass, SpawnLoc, FRotator::ZeroRotator, Params);
 	if (MineActor)
 	{
 		PlacedMines.Add(MineActor);
 		Amount = FMath::Max(0, Amount - 1);
-		OnRep_Amount(); // UI 업데이트
+		OnRep_Amount(); 
 	}
 }
 

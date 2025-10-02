@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -12,6 +12,8 @@
 #include "Navigation/PathFollowingComponent.h"
 #include "MonsterAIController.generated.h"
 
+enum class EPerceptionType : uint8;
+enum class EMonsterState : uint8;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AMonsterAIController : public AAIController
@@ -21,6 +23,11 @@ class ABYSSDIVERUNDERWORLD_API AMonsterAIController : public AAIController
 public:
 	AMonsterAIController();
 
+public:
+
+	void MoveToActorWithRadius(AActor* TargetActor);
+	void MoveToLocationWithRadius(const FVector& Location);
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
@@ -29,18 +36,13 @@ protected:
 #pragma region Method
 protected:
 	void LoadSightDataFromTable();
-	void InitializePatrolPoint();
 	
-	// Move Failure Handling
-	UFUNCTION()
-	void HandleMoveFailure();
-
-	FVector ComputeAvoidanceDirection();
-
 	UFUNCTION()
 	virtual void OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus); // Perception Callback Method
-	
-	virtual void OnMoveCompleted(FAIRequestID RequestID, const FPathFollowingResult& Result) override;
+
+	UFUNCTION()
+	virtual void OnTargetPerceptionForgotten(AActor* ForgottenActor);
+
 
 #pragma endregion
 
@@ -73,23 +75,22 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "AI|SightData")
 	FName MonsterID;
 
-	UPROPERTY(EditAnywhere, Category = "AI|MovementFallback")
-	float FallbackMoveDistance;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Radius")
+	float MoveToActorAcceptanceRadius;
 
-	UPROPERTY(EditAnywhere, Category = "AI|MovementFallback")
-	int32 MaxMoveFailRetries = 3;
-
-	int32 MoveFailCount = 0;
-
-private:
-	uint8 bIsLosingTarget : 1;
-	float LostTargetTime;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Radius")
+	float MoveToLocationAcceptanceRadius;
 
 #pragma endregion
 
 #pragma region Getter, Setter
 public:
-	void SetbIsLosingTarget(bool IsLosingTargetValue);
+	void SetBlackboardPerceptionType(EPerceptionType InPerceptionType);
 
+	bool IsStateSame(EMonsterState State);
+
+	float GetSightRadius() const;
+	float GetLoseSightRadius() const;
+	float GetHearingRadius() const;
 #pragma endregion
 };

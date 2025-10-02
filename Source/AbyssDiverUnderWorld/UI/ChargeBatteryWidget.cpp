@@ -150,7 +150,7 @@ void UChargeBatteryWidget::ChargeBatteryAmount()
 
 	const int32 MaxToCompare = (CurrentChargeItem == DPVRow->Name) ? DPVBatteryMax : NVBatteryMax;
 
-	const float ChargeRate = 0.01f;
+	const float ChargeRate = 0.05f;
 	const int32 TickIncrease = FMath::Max(1, FMath::RoundToInt(MaxToCompare * ChargeRate));
 
 	int32 BeforeAmount = 0;

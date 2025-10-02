@@ -30,6 +30,10 @@ public:
 	void M_PlayExplodeSound();
 	void M_PlayExplodeSound_Implementation();
 
+	UFUNCTION(NetMulticast, Unreliable) 
+	void Multicast_PlayExplodeFX();
+	void Multicast_PlayExplodeFX_Implementation();
+
 private:
 	
 #pragma endregion

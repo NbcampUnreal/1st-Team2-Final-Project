@@ -78,7 +78,7 @@ void UDataTableSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 FFADItemDataRow* UDataTableSubsystem::GetItemData(int32 ItemId) const
 {
-	return ItemDataTableArray[ItemId];
+	return ItemDataTableArray.IsValidIndex(ItemId) ? ItemDataTableArray[ItemId] : nullptr;
 }
 
 FFADItemDataRow* UDataTableSubsystem::GetItemDataByName(FName ItemName) const

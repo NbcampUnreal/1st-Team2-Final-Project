@@ -41,6 +41,9 @@ public:
 
 	virtual bool CanHighlight_Implementation() const override { return bIsActive; }
 	UFUNCTION(NetMulticast, Unreliable)
+	void M_PlayTutorialAlarmSound();
+	void M_PlayTutorialAlarmSound_Implementation();
+	UFUNCTION(NetMulticast, Unreliable)
 	void M_PlayDroneRisingSound();
 	void M_PlayDroneRisingSound_Implementation();
 	UFUNCTION(NetMulticast, Unreliable)
@@ -91,14 +94,17 @@ public:
 	TObjectPtr<UADWorldSubsystem> WorldSubsystem;
 	UPROPERTY(EditAnywhere)
 	UDataTable* PhaseBgmTable;
-	UPROPERTY(EditAnywhere)
-	TSubclassOf<UInteractPopupWidget> PopupWidgetClass;
 
 protected:
 
 	// 드론에 해당하는 Phase를 나타내는 숫자
 	UPROPERTY(EditAnywhere, Category = "DroneSettings")
 	int32 DronePhaseNumber = 0;
+
+	// 드론에 해당하는 Phase를 나타내는 숫자
+	UPROPERTY(EditAnywhere, Category = "DroneSettings")
+	uint8 bIsBgmOn : 1;
+
 
 	/** 사망 부활 반경 */
 	UPROPERTY(EditAnywhere, Category = "DroneSettings")
@@ -112,6 +118,7 @@ private:
 	FTimerHandle DestroyHandle;
 	int32 CachedSoundNumber;
 	int32 DrondeThemeSoundNumber;
+	int32 TutorialAlarmSoundId;
 
 #pragma endregion
 
