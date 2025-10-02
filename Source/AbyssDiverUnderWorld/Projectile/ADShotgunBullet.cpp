@@ -17,6 +17,8 @@ AADShotgunBullet::AADShotgunBullet()
 	ProjectileMovementComp->InitialSpeed = 2000.f;
 	ProjectileMovementComp->MaxSpeed = 2000.f;
 	ProjectileMovementComp->ProjectileGravityScale = 0.f;
+
+	DeactivateDelay = 0.4f;
 }
 
 void AADShotgunBullet::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -37,39 +39,20 @@ void AADShotgunBullet::HandleHit(AActor* HitActor, const FHitResult& Hit)
 	//KnockDir.Z = 0.f;
 	KnockDir.Normalize();
 
-	bool bShouldKnockback = false;
-	// 현재는 하드코딩이지만 고정형 몬스터가 많아지면 확장성 있게 변경해야 할 듯함.(보스 몬스터)
-	if (Cast<ASerpmare>(HitActor)) 
+	if (AMonster* Monster = Cast<AMonster>(HitActor))
 	{
-		bShouldKnockback = false;
+		Monster->ReceiveKnockback(KnockDir * KnockbackStrength);
 	}
-	else if (Cast<ABoss>(HitActor) || Cast<AMonster>(HitActor))
+	/* 물리 시뮬레이션 중인 다른 액터라면 Impulse */
+	else if (UPrimitiveComponent* Prim = Cast<UPrimitiveComponent>(Hit.GetComponent()))
 	{
-		bShouldKnockback = true;
+		if (Prim->IsSimulatingPhysics())
+		{
+			Prim->AddImpulseAtLocation(KnockDir * KnockbackStrength, Hit.ImpactPoint);
+		}
 	}
 
-	if (bShouldKnockback)
-	{
-		if (ACharacter* Char = Cast<ACharacter>(HitActor))
-		{
-			/*Char->LaunchCharacter(KnockDir * KnockbackStrength, true, true);*/
-			// LaunchCharacter 대신 AddImpulse 사용
-			if (UCharacterMovementComponent* MovementComp = Char->GetCharacterMovement())
-			{
-				// 임펄스로 밀기 (자연스럽게 감소함)
-				MovementComp->AddImpulse(KnockDir * KnockbackStrength, true);
-			}
-		}
-		/* 물리 시뮬레이션 중인 다른 액터라면 Impulse */
-		else if (UPrimitiveComponent* Prim = Cast<UPrimitiveComponent>(Hit.GetComponent()))
-		{
-			if (Prim->IsSimulatingPhysics())
-			{
-				Prim->AddImpulseAtLocation(KnockDir * KnockbackStrength, Hit.ImpactPoint);
-			}
-		}
-	}
-	LOG(TEXT("Before Apply Damage : %f"), Damage);
+	LOGV(Log, TEXT("Before Apply Damage : %d"), Damage);
 
 	UGameplayStatics::ApplyPointDamage(
 		HitActor,
@@ -80,7 +63,7 @@ void AADShotgunBullet::HandleHit(AActor* HitActor, const FHitResult& Hit)
 		GetOwner(),
 		UDamageType::StaticClass());
 
-	LOG(TEXT("After Apply Damage : %f"), Damage);
+	LOGV(Log, TEXT("After Apply Damage : %d"), Damage);
 
 	Deactivate();   // 베이스 클래스 Deactivate() 호출로 풀에 반환
 }

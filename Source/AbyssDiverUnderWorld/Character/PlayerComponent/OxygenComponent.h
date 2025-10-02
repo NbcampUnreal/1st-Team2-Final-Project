@@ -68,7 +68,8 @@ private:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	
 #pragma region Method
-
+public:
+	void SetTutorialMode(bool bIsTutorial);
 protected:
 	/** 현재 산소량이 변경됬을 떄 호출 */
 	UFUNCTION(BlueprintImplementableEvent, meta=(DisplayName = "OnOxygenLevelChanged"))
@@ -84,7 +85,6 @@ protected:
 
 	UFUNCTION()
 	void OnRep_OxygenStateChanged();
-	
 private:
 	/** 매 틱마다 산소를 소모 */
 	void ConsumeOxygen(float DeltaTime);
@@ -110,6 +110,8 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FOxygenRestored OnOxygenRestored;
 	
+	UPROPERTY(EditAnywhere, Category = "Oxygen|Tutorial")
+	float MinOxygenInTutorial = 1.0f;
 private:
 	/** 산소 시스템 활성화 여부. 비활성화 되면 산소 회복, 소모를 정지한다. 사망 상태 등에서 사용 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat", meta = (AllowPrivateAccess = "true"))
@@ -130,6 +132,7 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Stat", meta=(AllowPrivateAccess = "true", ClampMin="0.0"))
 	float OxygenConsumeRate;
 
+	uint8 bIsInTutorialMode : 1;
 #pragma endregion
 
 #pragma region Getter Setter

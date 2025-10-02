@@ -44,6 +44,8 @@ public:
 
 	virtual void OnAttackEnded();
 
+	virtual void ReceiveKnockback(const FVector& Force);
+
 	UFUNCTION(NetMulticast, Reliable)
 	void M_PlayMontage(UAnimMontage* AnimMontage, float InPlayRate = 1, FName StartSectionName = NAME_None);
 	void M_PlayMontage_Implementation(UAnimMontage* AnimMontage, float InPlayRate = 1, FName StartSectionName = NAME_None);
@@ -119,6 +121,12 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement|Stat")
 	float ChasingMovementSpeedMultiplier = 2.2f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement|Stat")
+	float FleeMovementSpeedMultiplier = 4.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement|Stat")
+	float InvestigateMovementSpeedMultiplier = 1.5f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement|Stat")
 	float MovementInterpSpeed = 1.0f;
@@ -198,18 +206,6 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "AI")
 	float ChaseTriggerTime;
-
-	UPROPERTY(EditAnywhere, Category = "AI")
-	float ChaseSpeed;
-
-	UPROPERTY(EditAnywhere, Category = "AI")
-	float PatrolSpeed;
-
-	UPROPERTY(EditAnywhere, Category = "AI")
-	float InvestigateSpeed;
-
-	UPROPERTY(EditAnywhere, Category = "AI")
-	float FleeSpeed;
 
 	UPROPERTY(VisibleAnywhere)
 	TSet<TWeakObjectPtr<AActor>> DetectedPlayers;

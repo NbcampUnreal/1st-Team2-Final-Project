@@ -26,6 +26,11 @@
 #include "Character/PlayerComponent/RagdollReplicationComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Character.h" // (NPC->GetCharacterMovement() 쓸 때 필요)
+#include "Camera/PlayerCameraManager.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "Subsystems/SoundSubsystem.h"
+#include "GameFramework/PlayerState.h"
+
 
 
 AADTutorialGameMode::AADTutorialGameMode()
@@ -43,6 +48,21 @@ AADTutorialGameMode::AADTutorialGameMode()
 void AADTutorialGameMode::StartPlay()
 {
     Super::StartPlay();
+
+    if (AUnderwaterCharacter* PlayerCharacter = Cast<AUnderwaterCharacter>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0)))
+    {
+        PlayerCharacter->SetMovementBlockedByTutorial(true);
+    }
+
+    AUnderwaterCharacter* PlayerChar = Cast<AUnderwaterCharacter>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
+    if (PlayerChar)
+    {
+        UOxygenComponent* OxygenComp = PlayerChar->FindComponentByClass<UOxygenComponent>();
+        if (OxygenComp)
+        {
+            OxygenComp->SetTutorialMode(true);
+        }
+    }
     SpawnNewWall(FName("TutorialWall_1"));
 
     if (MuteDroneSoundMix)
@@ -133,6 +153,7 @@ void AADTutorialGameMode::HandleCurrentPhase()
         case ETutorialPhase::Step6_Inventory:      HandlePhase_Inventory(); break;
         case ETutorialPhase::Step7_Drone:          HandlePhase_Drone(); break;
         case ETutorialPhase::Dialogue_03:          break;
+        case ETutorialPhase::Dialogue_LightOut:    HandlePhase_Dialogue_LightOut(); break;
         case ETutorialPhase::Step8_LightToggle:    HandlePhase_LightToggle(); break;
         case ETutorialPhase::Step9_Items:          HandlePhase_Items(); break;
         case ETutorialPhase::Dialogue_06:          HandlePhase_Dialogue_06(); break;
@@ -144,6 +165,7 @@ void AADTutorialGameMode::HandleCurrentPhase()
         case ETutorialPhase::Dialogue_04:          break;
         case ETutorialPhase::Step14_Die:           HandlePhase_Die(); break;
         case ETutorialPhase::Step15_Resurrection:  HandlePhase_Resurrection(); break;
+        case ETutorialPhase::Dialogue_07:          break;
         case ETutorialPhase::Complete:             HandlePhase_Complete(); break;
         default: break;
         }
@@ -172,16 +194,40 @@ void AADTutorialGameMode::OnTutorialNPCStateChanged(AUnderwaterCharacter* Charac
     }
 }
 
-void AADTutorialGameMode::HandlePhase_Movement() {}
+void AADTutorialGameMode::HandlePhase_Movement() 
+{
+    if (AUnderwaterCharacter* PlayerCharacter = Cast<AUnderwaterCharacter>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0)))
+    {
+        PlayerCharacter->SetMovementBlockedByTutorial(false);
+    }
+}
 void AADTutorialGameMode::HandlePhase_Oxygen() {}
 void AADTutorialGameMode::HandlePhase_Dialogue_05() {}
 void AADTutorialGameMode::HandlePhase_Complete() 
 {
     //위젯 또는 계단 인터랙션?
-	FTimerHandle OpenMainLevelTimer;
-	float Delay = 10.0f;
-    GetWorldTimerManager().SetTimer(OpenMainLevelTimer, [this]() { UGameplayStatics::OpenLevel(this, FName("MainLevel")); }, Delay, false);
-    
+	//FTimerHandle OpenMainLevelTimer;
+	//float Delay = 10.0f;
+    //GetWorldTimerManager().SetTimer(OpenMainLevelTimer, [this]() { UGameplayStatics::OpenLevel(this, FName("MainLevel")); }, Delay, false);
+
+    TArray<AActor*> FoundLadders;
+    UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("TutorialExitLadder"), FoundLadders);
+
+    if (FoundLadders.Num() > 0 && IsValid(IndicatingTargetClass))
+    {
+        AActor* LadderActor = FoundLadders[0];
+
+        if (AIndicatingTarget* Indicator = GetWorld()->SpawnActor<AIndicatingTarget>(IndicatingTargetClass, LadderActor->GetActorTransform()))
+        {
+            Indicator->SetupIndicator(LadderActor, LadderExitIndicatorIcon);
+
+            if (ATargetIndicatorManager* TargetMgr = *TActorIterator<ATargetIndicatorManager>(GetWorld()))
+            {
+                TargetMgr->RegisterNewTarget(Indicator);
+            }
+            TrackPhaseActor(Indicator);
+        }
+    }
 }
 
 void AADTutorialGameMode::HandlePhase_Sprint()
@@ -222,6 +268,7 @@ void AADTutorialGameMode::HandlePhase_Radar()
 
 void AADTutorialGameMode::HandlePhase_Dialogue_02()
 {
+
     if (!IndicatingTargetClass) return;
 
     TArray<AActor*> SpawnPoints;
@@ -242,6 +289,19 @@ void AADTutorialGameMode::HandlePhase_Dialogue_02()
 
 void AADTutorialGameMode::HandlePhase_Looting()
 {
+    TArray<FName> TagsToDestroy = { FName("TutorialMonster_D2"), FName("TutorialFriendly_D2") };
+    for (const FName& Tag : TagsToDestroy)
+    {
+        TArray<AActor*> FoundActors;
+        UGameplayStatics::GetAllActorsWithTag(GetWorld(), Tag, FoundActors);
+        for (AActor* Actor : FoundActors)
+        {
+            if (IsValid(Actor))
+            {
+                Actor->Destroy();
+            }
+        }
+    }
     if (!LootableOreClass || !IndicatingTargetClass) return;
 
     TArray<AActor*> SpawnPoints;
@@ -340,10 +400,25 @@ void AADTutorialGameMode::HandlePhase_Drone()
     }
 }
 
-void AADTutorialGameMode::HandlePhase_LightToggle()
+void AADTutorialGameMode::HandlePhase_Dialogue_LightOut()
 {
-    DisabledLights.Empty();
+    if (UGameInstance* GameInstance = GetGameInstance())
+    {
+        if (USoundSubsystem* SoundSubsystem = GameInstance->GetSubsystem<USoundSubsystem>())
+        {
+            if (IsValid(LightOutSound))
+            {
+                const float NewVolume = SoundSubsystem->GetSFXVolume() * SoundSubsystem->GetMasterVolume();
+                UGameplayStatics::PlaySound2D(GetWorld(), LightOutSound, NewVolume);
+            }
+        }
+    }
+    else if (IsValid(LightOutSound))
+    {
+        UGameplayStatics::PlaySound2D(GetWorld(), LightOutSound);
+    }
 
+    DisabledLights.Empty();
     if (APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0))
     {
         for (TActorIterator<ALight> It(GetWorld()); It; ++It)
@@ -364,7 +439,6 @@ void AADTutorialGameMode::HandlePhase_LightToggle()
             }
         }
     }
-
     if (!TutorialPPV)
     {
         TutorialPPV = GetWorld()->SpawnActor<APostProcessVolume>();
@@ -383,7 +457,12 @@ void AADTutorialGameMode::HandlePhase_LightToggle()
             S.AutoExposureSpeedDown = 100.f;
         }
     }
+    FTimerHandle DelayTimer;
+    GetWorldTimerManager().SetTimer(DelayTimer, this, &AADTutorialGameMode::AdvanceTutorialPhase, 2.0f, false);
+}
 
+void AADTutorialGameMode::HandlePhase_LightToggle()
+{
     if (ATutorialManager* Mgr = Cast<ATutorialManager>(UGameplayStatics::GetActorOfClass(GetWorld(), ATutorialManager::StaticClass())))
     {
         Mgr->StartGaugeObjective(EGaugeInteractionType::Tap, 100.f, 100.f, 0.f);
@@ -1035,3 +1114,16 @@ FVector AADTutorialGameMode::GetTutorialRandomLocation(const FVector& Center, fl
     return Candidate;
 }
 
+void AADTutorialGameMode::RequestFinishTutorial()
+{
+    APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0);
+    if (PC && PC->PlayerCameraManager)
+    {
+        PC->PlayerCameraManager->StartCameraFade(0.0f, 1.0f, 2.0f, FLinearColor::Black, false, true);
+
+        FTimerHandle LevelChangeTimer;
+        GetWorldTimerManager().SetTimer(LevelChangeTimer, [this]() {
+            UGameplayStatics::OpenLevel(this, FName("MainLevel"));
+            }, 2.0f, false);
+    }
+}

@@ -757,7 +757,6 @@ void UEquipUseComponent::FireShotgun()
 		{
 			/* 속도, 데미지, 수명 등 설정 */
 			Pellet->InitializeSpeed(RandDir, PelletSpeed);       // 짧은 사거리
-			Pellet->SetLifeSpan(PelletLifeSec);                      // 0.5초 후 파괴
 			//Pellet->SetBaseDamage(ShotgunBaseDamage / PelletCount);
 		}
 	}

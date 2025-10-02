@@ -150,6 +150,11 @@ void ASerpmare::RemoveDetection(AActor* Actor)
 	// 기존에 MonsterState를 Patrol로 바꿔주었으나 Serpmare는 BT와 AM 상에서 모든 State를 전환함. 그래서 필요 없음
 }
 
+void ASerpmare::ReceiveKnockback(const FVector& Force)
+{
+	// 넉백 당하지 않음.
+}
+
 void ASerpmare::InitAttackInterval()
 {
 	bCanAttack = true;

@@ -66,35 +66,34 @@ void ABlowfish::M_TriggerExplosion_Implementation()
 
 	// 이동 속도를 ExplosionTriggeredMovementMultiplier만큼 곱한 값으로 증가
 	// 임시 BrakingDeceleration 설정, 기존 0이면 이동 자체를 하지 않음.
-	//SetCharacterMovementSetting(111.0f, StatComponent->GetMoveSpeed() * ExplosionTriggeredMovementMultiplier);
-	SetMaxSwimSpeed(StatComponent->GetMoveSpeed() * ExplosionTriggeredMovementMultiplier);
+	// SetCharacterMovementSetting(111.0f, StatComponent->GetMoveSpeed() * ExplosionTriggeredMovementMultiplier);
+	// 기존 로직 : SetMaxSwimSpeed(StatComponent->GetMoveSpeed() * ExplosionTriggeredMovementMultiplier); 
+	ChasingMovementSpeedMultiplier = ExplosionTriggeredMovementMultiplier;
 
 	// Explosion을 1회성으로 호출하기 위한 bool 값 활성화
 	bIsExplosionTriggered = true;
+
+	// 폭발 카운트다운 사운드
+	UGameplayStatics::SpawnSoundAttached(
+		ExplosionCountdownSound,
+		this->GetRootComponent(),
+		NAME_None,                    
+		FVector::ZeroVector,          
+		EAttachLocation::KeepRelativeOffset,
+		true                          // bStopWhenAttachedToDestroyed
+	);
 
 	// ExplosionDelayTime이 경과 후 폭발 로직 수행
 	GetWorldTimerManager().SetTimer(ExplosionTimerHandle, this, &ABlowfish::Explosion, ExplosionDelayTime, false);
 }
 
 void ABlowfish::Explosion()
-{
-	UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-	GetWorld(), BloodEffect, GetActorLocation(), FRotator::ZeroRotator, FVector(1), true, true );
-	
-	// 폭발 디버그 구체 그리기 (파란색, 1초 동안 표시)
-	//DrawDebugSphere(
-	//	GetWorld(),
-	//	GetActorLocation(),
-	//	ExplosionRadius,
-	//	32,                    // 세그먼트 수 (더 높이면 원형이 매끄러워짐)
-	//	FColor::Red,           // 색상
-	//	false,                 // 지속 여부 (true: 영구)
-	//	1.0f                   // 표시 시간 (초)
-	//);
-
-	TArray<FOverlapResult> Overlaps;
+{	
+	// 폭발 효과 적용
+	ApplyExplosionEffect();
 
 	// 충돌 설정: Pawn 채널 탐지
+	TArray<FOverlapResult> Overlaps;
 	GetWorld()->OverlapMultiByChannel(
 		Overlaps,
 		GetActorLocation(),
@@ -128,4 +127,36 @@ void ABlowfish::Explosion()
 	
 	//Destroy(true);
 	OnDeath();
+}
+
+void ABlowfish::ApplyExplosionEffect()
+{
+	// 터질 때 피 효과 (비주얼)
+	UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+		GetWorld(), BloodEffect, GetActorLocation(), FRotator::ZeroRotator, FVector(1.0f), true, true);
+
+	// 터질 때 폭발 효과 (비주얼)
+	UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+		GetWorld(), ExplosionEffect, GetActorLocation(), FRotator::ZeroRotator, FVector(1.0f), true, true);
+
+	// 터질 때 사운드 효과
+	UGameplayStatics::SpawnSoundAttached(
+		ExplosionSound,
+		this->GetRootComponent(),
+		NAME_None,
+		FVector::ZeroVector,
+		EAttachLocation::KeepRelativeOffset,
+		true                          // bStopWhenAttachedToDestroyed
+	);
+
+	// 폭발 디버그 구체 그리기 (파란색, 1초 동안 표시)
+	//DrawDebugSphere(
+	//	GetWorld(),
+	//	GetActorLocation(),
+	//	ExplosionRadius,
+	//	32,                    // 세그먼트 수 (더 높이면 원형이 매끄러워짐)
+	//	FColor::Red,           // 색상
+	//	false,                 // 지속 여부 (true: 영구)
+	//	1.0f                   // 표시 시간 (초)
+	//);
 }
