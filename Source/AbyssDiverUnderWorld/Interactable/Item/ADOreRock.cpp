@@ -33,12 +33,12 @@
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
 
-static FGameplayTag MakeTag(const TCHAR* Root, const FString& Tail)
+inline static FGameplayTag MakeTag(const TCHAR* Root, const FString& Tail)
 {
 	return UGameplayTagsManager::Get().RequestGameplayTag(FName(*FString::Printf(TEXT("%s.%s"), Root, *Tail)), false);
 }
 
-static void AddIfValid(FGameplayTagContainer& C, const FGameplayTag& T)
+inline static void AddIfValid(FGameplayTagContainer& C, const FGameplayTag& T)
 {
 	if (T.IsValid()) { C.AddTag(T); }
 }

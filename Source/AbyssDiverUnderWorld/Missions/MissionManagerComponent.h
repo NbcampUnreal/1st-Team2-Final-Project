@@ -27,6 +27,7 @@ struct FMissionRuntimeState
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMissionStatesUpdated, const TArray<FMissionRuntimeState>&, States);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnMissionCompletedUI, EMissionType, MissionType, int32, MissionIndex);
 
 UCLASS( ClassGroup=(Mission), meta=(BlueprintSpawnableComponent) )
 class ABYSSDIVERUNDERWORLD_API UMissionManagerComponent : public UActorComponent
@@ -42,9 +43,16 @@ protected:
 
 
 public:
+    UFUNCTION(NetMulticast, Reliable)
+    void Multicast_NotifyMissionCompleted(EMissionType MissionType, int32 MissionIndex);
+	void Multicast_NotifyMissionCompleted_Implementation(EMissionType MissionType, int32 MissionIndex);
+
+
     UFUNCTION(BlueprintAuthorityOnly)
     void ApplySelectedMissions(const TArray<FMissionData>& Selected);
 	
+    UFUNCTION(BlueprintCallable, Category = "AbyssDiver|Mission|UI")
+    void BuildMissionStateSnapshot(TArray<FMissionRuntimeState>& Out) const;
 
     // ② 클라 HUD가 구독할 얇은 복제 상태
     UPROPERTY(ReplicatedUsing = OnRep_Missions)
@@ -74,6 +82,8 @@ public:
 
     UPROPERTY(BlueprintAssignable)
     FOnMissionStatesUpdated OnMissionStatesUpdated;
+    UPROPERTY(BlueprintAssignable, Category = "AbyssDiver|Mission|UI")
+    FOnMissionCompletedUI OnMissionCompletedUI;
 
     // Delegate Handles
     FDelegateHandle Handle_ItemCollected;

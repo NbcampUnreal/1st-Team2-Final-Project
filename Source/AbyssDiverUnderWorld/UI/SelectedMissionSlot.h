@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -17,17 +15,25 @@ class ABYSSDIVERUNDERWORLD_API USelectedMissionSlot : public UUserWidget
 public:
 	void OnMissionFinished();
 	void SetMissionTitle(const FString& Title);
+
+	void SetProgressText(int32 Current, int32 Goal);
+	void SetCompleted(bool bCompleted) { if (bCompleted) { OnMissionFinished(); } }
 #pragma endregion
 
 #pragma region Variable
 protected:
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UTextBlock> TitleText;
+	TObjectPtr<UTextBlock> Text_Title;
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UImage> MissionBG;
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UImage> FinishLineImage;
+#pragma endregion
+
+#pragma region getter, setter
+public:
+
 #pragma endregion
 };

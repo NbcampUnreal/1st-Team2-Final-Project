@@ -2,7 +2,6 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-
 #include "MissionsOnHUDWidget.generated.h"
 
 enum class EMissionType : uint8;
@@ -11,6 +10,9 @@ class UVerticalBox;
 class UMissionEntryOnHUDWidget;
 class UMissionSubsystem;
 class AADInGameState;
+class UMissionManagerComponent;
+
+struct FMissionRuntimeState;
 
 struct FActivatedMissionInfoList;
 /**
@@ -46,6 +48,12 @@ private:
 	void OnMissionChanged(int32 ChangedIndex, const FActivatedMissionInfoList& ChangedValue);
 	void OnMissionRemoved(int32 RemovedIndex, const FActivatedMissionInfoList& RemovedValue);
 
+	UFUNCTION() 
+	void HandleStatesUpdated(const TArray<FMissionRuntimeState>& States);
+	// (완료 즉시 토스트/색 변경 원하면)
+	UFUNCTION() 
+	void HandleMissionCompletedUI(EMissionType Type, int32 Index);
+
 #pragma endregion
 
 #pragma region Variables
@@ -65,6 +73,9 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UMissionSubsystem> MissionSubsystem;
+
+	UPROPERTY()
+	TObjectPtr<UMissionManagerComponent> MissionManager;
 
 	UPROPERTY()
 	TObjectPtr<AADInGameState> InGameState;

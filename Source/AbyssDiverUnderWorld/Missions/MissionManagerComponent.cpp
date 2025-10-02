@@ -27,7 +27,7 @@ UMissionManagerComponent::UMissionManagerComponent()
 void UMissionManagerComponent::BeginPlay()
 {
     Super::BeginPlay();
-
+    
     if (AADInGameState* GS = GetWorld() ? GetWorld()->GetGameState<AADInGameState>() : nullptr)
     {
         Hub = GS->FindComponentByClass<UMissionEventHubComponent>();
@@ -47,6 +47,11 @@ void UMissionManagerComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProper
 {
     Super::GetLifetimeReplicatedProps(OutLifetimeProps);
     DOREPLIFETIME(UMissionManagerComponent, ActiveStates);
+}
+
+void UMissionManagerComponent::Multicast_NotifyMissionCompleted_Implementation(EMissionType MissionType, int32 MissionIndex)
+{
+    OnMissionCompletedUI.Broadcast(MissionType, MissionIndex);
 }
 
 void UMissionManagerComponent::ApplySelectedMissions(const TArray<FMissionData>& Selected)
@@ -82,6 +87,35 @@ void UMissionManagerComponent::ApplySelectedMissions(const TArray<FMissionData>&
     OnActiveMissionCountChanged(); // <-- BindAll/UnbindAll 대신 이걸로
 }
 
+void UMissionManagerComponent::BuildMissionStateSnapshot(TArray<FMissionRuntimeState>& Out) const
+{
+    Out.Reset();
+
+    const bool bServer = (GetOwner() && GetOwner()->HasAuthority());
+
+    if (bServer)
+    {
+        // 서버: 실제 미션 객체에서 현재 상태를 조립
+        for (const UMissionBase* M : ActiveMissions)
+        {
+            if (!M) continue;
+
+            FMissionRuntimeState S;
+            S.MissionType = M->GetMissionType();
+            S.MissionIndex = M->GetMissionIndex();
+            S.Current = M->GetCurrentCount();
+            S.Goal = M->GetGoalCount();
+            S.bCompleted = M->IsCompleted();
+            Out.Add(S);
+        }
+    }
+    else
+    {
+        // 클라: 복제된 요약을 그대로 사용(빠르고 안전)
+        Out.Append(ActiveStates);
+    }
+}
+
 void UMissionManagerComponent::OnRep_Missions()
 {
 #if !UE_BUILD_SHIPPING
@@ -96,8 +130,10 @@ void UMissionManagerComponent::OnRep_Missions()
     }
 #endif
 
-    // UI에 알림: 위젯/PC/HUD에서 이 BP 이벤트를 받아서 갱신하면 된다.
+    // 1) 블루프린트 구현형 이벤트(선택)
     BP_OnMissionStatesUpdated(ActiveStates);
+    // 2) 멀티캐스트(UMG/C++ 위젯에서 바인딩)
+    OnMissionStatesUpdated.Broadcast(ActiveStates);
 }
 
 void UMissionManagerComponent::HandleMonsterKilled(const FGameplayTagContainer& UnitTags) 
@@ -178,18 +214,15 @@ void UMissionManagerComponent::HandleMissionProgress(EMissionType MissionType, u
     OnRep_Missions(); 
 }
 
-void UMissionManagerComponent::HandleMissionComplete(EMissionType Type, uint8 Index)
+void UMissionManagerComponent::HandleMissionComplete(EMissionType MissionType, uint8 MissionIndex)
 {
     for (FMissionRuntimeState& S : ActiveStates)
     {
-        if (S.MissionType == Type && S.MissionIndex == Index)
+        if (S.MissionType == MissionType && S.MissionIndex == MissionIndex)
         {
-            S.bCompleted = 1;
-            S.Current = S.Goal;
-            break;
+            Multicast_NotifyMissionCompleted(MissionType, static_cast<int32>(MissionIndex));
         }
     }
-    OnRep_Missions();
 }
 
 void UMissionManagerComponent::GatherCompletedMissions(TArray<FCompletedMissionInfo>& Out) const

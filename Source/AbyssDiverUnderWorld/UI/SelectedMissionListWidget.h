@@ -8,6 +8,7 @@
 class UVerticalBox;
 class UTextBlock;
 class USelectedMissionSlot;
+class UMissionManagerComponent;
 
 struct FActivatedMissionInfoList;
 
@@ -33,14 +34,18 @@ private:
 
     void Refresh();
 
+    static int32 MakeKey(EMissionType T, int32 I) { return (((int32)T) << 16) | (I & 0xFFFF); }
 protected:
 #pragma region Variable
+
+
     // 위젯 참조
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UVerticalBox> VerticalBox_MissionList;
 
     // 미션 슬롯 위젯 클래스
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mission")
-    TSubclassOf<UUserWidget> SelectedMissionSlotClass;
+    TSubclassOf<USelectedMissionSlot> SelectedMissionSlotClass;
+
 #pragma endregion
 };

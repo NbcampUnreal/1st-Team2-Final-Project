@@ -3,10 +3,10 @@
 #include "UI/MissionData.h"
 #include "Components/Border.h"
 
+
 void UMissionEntryWidget::NativeConstruct()
 {
     Super::NativeConstruct();
-
 
 }
 
@@ -29,7 +29,7 @@ void UMissionEntryWidget::ApplyMissionData()
 {
     if (!Text_MissionTitle || !Text_UnlockHint || !Border_Background || !Border_Outline)
     {
-        UE_LOG(LogTemp, Error, TEXT("❌ [MissionEntryWidget] 필수 위젯 바인딩 실패"));
+        UE_LOG(LogTemp, Error, TEXT(" [MissionEntryWidget] 필수 위젯 바인딩 실패"));
         return;
     }
 
