@@ -130,6 +130,9 @@ protected:
 	TObjectPtr<UOverlay> CurrentPhaseOverlay;
 
 	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UOverlay> PhaseProgressbarOverlay;
+
+	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UTextBlock> CurrentPhaseText;
 
 	UPROPERTY(meta = (BindWidget))
