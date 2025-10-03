@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/GameMode.h"
+#include "Framework/ADInGameMode.h"
 #include "Tutorial/TutorialEnums.h"
 #include "Sound/SoundMix.h"
 #include "Interactable/OtherActors/TargetIndicators/IndicatingTarget.h"
@@ -22,7 +22,7 @@ class UTexture2D;
 class AUnderwaterCharacter;
 
 UCLASS()
-class ABYSSDIVERUNDERWORLD_API AADTutorialGameMode : public AGameMode
+class ABYSSDIVERUNDERWORLD_API AADTutorialGameMode : public AADInGameMode
 {
     GENERATED_BODY()
 
