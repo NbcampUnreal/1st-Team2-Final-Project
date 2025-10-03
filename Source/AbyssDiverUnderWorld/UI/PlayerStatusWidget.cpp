@@ -19,7 +19,6 @@
 #include "Kismet/GameplayStatics.h"
 
 const FName UPlayerStatusWidget::OnNextPhaseAnimFinishedName = TEXT("OnNextPhaseAnimFinished");
-const int32 UPlayerStatusWidget::MaxPhaseNumber = 3;
 
 UPlayerStatusWidget::UPlayerStatusWidget(const FObjectInitializer& ObjectInitializer)
     : Super(ObjectInitializer)
@@ -374,5 +373,10 @@ void UPlayerStatusWidget::SetSpearVisibility(bool bVisible)
 void UPlayerStatusWidget::SetCompassObject(AActor* NewTargetObject)
 {
     CompassTargetObject = NewTargetObject;
+}
+
+void UPlayerStatusWidget::SetMaxPhaseNumber(int32 NewMaxPhaseNumber)
+{
+    MaxPhaseNumber = NewMaxPhaseNumber;
 }
 

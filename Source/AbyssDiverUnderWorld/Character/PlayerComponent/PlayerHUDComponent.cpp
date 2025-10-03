@@ -31,6 +31,7 @@
 #include "Interactable/OtherActors/ADDrone.h"
 #include "UI/DepthWidget.h"
 #include "UI/InteractPopupWidget.h"
+#include "Subsystems/ADWorldSubsystem.h"
 
 UPlayerHUDComponent::UPlayerHUDComponent()
 {
@@ -344,6 +345,11 @@ void UPlayerHUDComponent::SetCurrentPhaseOverlayVisible(bool bShouldVisible)
 	}
 
 	PlayerStatusWidget->SetCurrentPhaseOverlayVisible(bShouldVisible);
+}
+
+void UPlayerHUDComponent::SetMaxPhaseNumber(int32 NewMaxPhaseNumber)
+{
+	PlayerStatusWidget->SetMaxPhaseNumber(NewMaxPhaseNumber);
 }
 
 void UPlayerHUDComponent::BindDepthWidgetFunction(UDepthComponent* DepthComp)
