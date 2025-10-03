@@ -485,7 +485,8 @@ void AUnderwaterCharacter::OnMovementModeChanged(EMovementMode PrevMovementMode,
 {
 	Super::OnMovementModeChanged(PrevMovementMode, PreviousCustomMode);
 
-	UE_LOG(LogAbyssDiverCharacter,Display, TEXT("Movement Changed : %s"), *UEnum::GetValueAsString(GetCharacterMovement()->MovementMode));
+	UE_LOG(LogAbyssDiverCharacter,Display, TEXT("[%s] Movement Changed : %s"),
+		HasAuthority() ? TEXT("Server") : TEXT("Client"), *UEnum::GetValueAsString(GetCharacterMovement()->MovementMode));
 
 	if (EnvironmentState != EEnvironmentState::Underwater)
 	{
@@ -2455,7 +2456,13 @@ void AUnderwaterCharacter::Teleport(const FVector& NewLocation, const FRotator& 
 
 	for (AUnderwaterCharacter* BoundCharacter : BoundCharacters)
 	{
-		BoundCharacter->SetActorLocation(NewLocation, false, nullptr, ETeleportType::TeleportPhysics);
+		BoundCharacter->TeleportTo(NewLocation, BoundCharacter->GetActorRotation(), false, true);
+		if (UPrimitiveComponent* CharacterMesh = BoundCharacter->GetMesh())
+		{
+			CharacterMesh->SetWorldLocation(NewLocation, false, nullptr, ETeleportType::TeleportPhysics);
+			CharacterMesh->SetAllPhysicsLinearVelocity(FVector::ZeroVector);
+			CharacterMesh->SetAllPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
+		}
 	}
 }
 
