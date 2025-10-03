@@ -314,10 +314,12 @@ void UPlayerStatusWidget::OnNextPhaseAnimFinished()
     if (CachedNextPhaseNumber > MaxPhaseNumber)
     {
         SetCurrentPhaseText(TEXT("잠수정으로 돌아가라."));
+        PhaseProgressbarOverlay->SetVisibility(ESlateVisibility::Collapsed);
     }
     else
     {
         SetCurrentPhaseText(FString::Printf(TEXT("Phase%d"), CachedNextPhaseNumber));
+        PhaseProgressbarOverlay->SetVisibility(ESlateVisibility::Visible);
     }
 }
 

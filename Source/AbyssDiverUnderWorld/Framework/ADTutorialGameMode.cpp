@@ -404,11 +404,11 @@ void AADTutorialGameMode::HandlePhase_Dialogue_LightOut()
 {
     if (UGameInstance* GameInstance = GetGameInstance())
     {
-        if (USoundSubsystem* SoundSubsystem = GameInstance->GetSubsystem<USoundSubsystem>())
+        if (USoundSubsystem* TutorialSoundSubsystem = GameInstance->GetSubsystem<USoundSubsystem>())
         {
             if (IsValid(LightOutSound))
             {
-                const float NewVolume = SoundSubsystem->GetSFXVolume() * SoundSubsystem->GetMasterVolume();
+                const float NewVolume = TutorialSoundSubsystem->GetSFXVolume() * TutorialSoundSubsystem->GetMasterVolume();
                 UGameplayStatics::PlaySound2D(GetWorld(), LightOutSound, NewVolume);
             }
         }
