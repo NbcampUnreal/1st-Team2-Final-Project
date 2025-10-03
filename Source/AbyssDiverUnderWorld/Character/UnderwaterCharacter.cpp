@@ -2438,6 +2438,27 @@ void AUnderwaterCharacter::SetNameWidgetEnabled(bool bNewVisibility)
 	NameWidgetComponent->SetEnable(bShouldEnableNameWidget);
 }
 
+void AUnderwaterCharacter::Teleport(const FVector& NewLocation, const FRotator& ViewRotation)
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	SetActorLocation(NewLocation, false, nullptr, ETeleportType::TeleportPhysics);
+	if (UCharacterMovementComponent* MovementComponent = GetCharacterMovement())
+	{
+		MovementComponent->Velocity = FVector::ZeroVector;
+	}
+
+	C_ApplyControlRotation(ViewRotation);
+
+	for (AUnderwaterCharacter* BoundCharacter : BoundCharacters)
+	{
+		BoundCharacter->SetActorLocation(NewLocation, false, nullptr, ETeleportType::TeleportPhysics);
+	}
+}
+
 void AUnderwaterCharacter::S_PlayEmote_Implementation(uint8 EmoteIndex)
 {
 	RequestPlayEmote(EmoteIndex);
@@ -2684,6 +2705,14 @@ void AUnderwaterCharacter::InitNameWidgetEnabled()
 	{
 		const bool bNameWidgetEnabled = LocalPlayer->IsNameWidgetEnabled();
 		SetNameWidgetEnabled(bNameWidgetEnabled);
+	}
+}
+
+void AUnderwaterCharacter::C_ApplyControlRotation_Implementation(const FRotator& NewControlRotation)
+{
+	if (Controller)
+	{
+		Controller->SetControlRotation(NewControlRotation);
 	}
 }
 

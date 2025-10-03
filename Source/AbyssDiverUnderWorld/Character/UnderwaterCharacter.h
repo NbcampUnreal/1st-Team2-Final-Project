@@ -298,6 +298,9 @@ public:
 	 */
 	void SetNameWidgetEnabled(bool bNewVisibility);
 
+	/** 새로운 위치로 순간이동한다. 순간 이동 후에는 속도를 초기화하며 View Rotation을 설정한다. */
+	void Teleport(const FVector& NewLocation, const FRotator& ViewRotation);
+	
 protected:
 	/** Stat Component의 기본 속도가 변경됬을 때 호출된다. */
 	UFUNCTION()
@@ -651,6 +654,11 @@ protected:
 	 */
 	void InitNameWidgetEnabled();
 
+	/** Teleport 후에 Client의 Control Rotation을 설정한다. */
+	UFUNCTION(Reliable, Client)
+	void C_ApplyControlRotation(const FRotator& NewControlRotation);
+	void C_ApplyControlRotation_Implementation(const FRotator& NewControlRotation);
+	
 private:
 	/** Montage 콜백을 등록 */
 	void SetupMontageCallbacks();
