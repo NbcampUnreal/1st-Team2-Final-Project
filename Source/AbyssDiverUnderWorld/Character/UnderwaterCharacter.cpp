@@ -620,7 +620,8 @@ void AUnderwaterCharacter::RequestBind(AUnderwaterCharacter* RequestBinderCharac
 		UE_LOG(LogAbyssDiverCharacter, Error, TEXT("RequestBind called in invalid state or not authority: %s"), *GetName());
 		return;
 	}
-	
+
+	// Request 대상이 이미 Bind되어 있는 경우 UnBind 처리
 	if (BindCharacter == RequestBinderCharacter)
 	{
 		UnBind();

@@ -203,13 +203,16 @@ public:
 	void StopCaptureState();
 
 	/*
-	 * Bind Character : 로프를 묶은 캐릭터
+	 * Bind Character ----- Rope ----- Bound Character 
+	 * Bind Character : 로프를 묶은 캐릭터, Bound Character를 여러개 묶을 수 있다.
 	 * Bound Character : 로프에 묶인 캐릭터
 	 * Bound Character 중심으로 로직을 작성
 	 * Bind Character, Bound Character를 Replicate해서 구현
+	 * Cable Binding Actor : 로프를 시각화하고 물리 제약을 적용하는 Actor
+	 * Cable Binding Actor는 Bound Character가 소유
 	 */
 
-	/** 캐릭터가 로프에 묶이는 요청을 한다. Authority Node에서만 실행되어야 한다. */
+	/** Bind Character가 Binder Character를 로프에 묶이는 요청을 한다. Authority Node에서만 실행되어야 한다. */
 	void RequestBind(AUnderwaterCharacter* RequestBinderCharacter);
 
 	/** Bound Character 함수. 현재 캐릭터를 UnBind 한다. Binder가 시체를 들고 있을 수 없는 상황에서도 호출된다.
@@ -1263,9 +1266,11 @@ private:
 	UPROPERTY(ReplicatedUsing = OnRep_BoundCharacters, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TArray<TObjectPtr<AUnderwaterCharacter>> BoundCharacters;
 
+	/** 시체 로프를 연결할 CableBindingActor 클래스 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<class ACableBindingActor> CableBindingActorClass;
-	
+
+	/** 시체를 연결하는 로프 클래스 엑터, BoundCharacter가 소유하고 있다. */
 	UPROPERTY()
 	TObjectPtr<class ACableBindingActor> CableBindingActor;
 
