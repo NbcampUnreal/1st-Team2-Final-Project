@@ -1,5 +1,8 @@
 #include "CurrentZone.h"
+
 #include "Character/UnderwaterCharacter.h"
+
+#include "Components/ArrowComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "TimerManager.h"
 
@@ -25,6 +28,9 @@ ACurrentZone::ACurrentZone()
     DeepTriggerZone->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
     DeepTriggerZone->SetGenerateOverlapEvents(true);
 
+    ArrowComponent = CreateDefaultSubobject<UArrowComponent>(TEXT("Current Direction Arrow"));
+    ArrowComponent->SetupAttachment(RootComponent);
+
     if (TriggerZone->OnComponentBeginOverlap.IsBound())
     {
         return;
@@ -42,9 +48,14 @@ void ACurrentZone::BeginPlay()
     Super::BeginPlay();
 
     // PushDirection이 0일 경우 대비
-    if (PushDirection.IsNearlyZero())
+    if (PushDirection.IsNearlyZero() && bShouldUseArrowDirection == false)
     {
         PushDirection = FVector(1.f, 0.f, 0.f);
+    }
+
+    if (bShouldUseArrowDirection)
+    {
+        PushDirection = ArrowComponent->GetForwardVector();
     }
 }
 
