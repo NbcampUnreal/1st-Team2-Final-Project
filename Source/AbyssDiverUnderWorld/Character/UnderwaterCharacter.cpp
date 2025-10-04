@@ -488,6 +488,7 @@ void AUnderwaterCharacter::OnMovementModeChanged(EMovementMode PrevMovementMode,
 	UE_LOG(LogAbyssDiverCharacter,Display, TEXT("[%s] Movement Changed : %s"),
 		HasAuthority() ? TEXT("Server") : TEXT("Client"), *UEnum::GetValueAsString(GetCharacterMovement()->MovementMode));
 
+	// 지상에서는 Movement Changed 처리를 하지 않는다.
 	if (EnvironmentState != EEnvironmentState::Underwater)
 	{
 		return;
@@ -2449,6 +2450,7 @@ void AUnderwaterCharacter::Teleport(const FVector& NewLocation, const FRotator& 
 		return;
 	}
 
+	const FVector PrevLocation = GetActorLocation();
 	SetActorLocation(NewLocation, false, nullptr, ETeleportType::TeleportPhysics);
 	if (UCharacterMovementComponent* MovementComponent = GetCharacterMovement())
 	{
@@ -2459,7 +2461,9 @@ void AUnderwaterCharacter::Teleport(const FVector& NewLocation, const FRotator& 
 
 	for (AUnderwaterCharacter* BoundCharacter : BoundCharacters)
 	{
-		BoundCharacter->TeleportTo(NewLocation, BoundCharacter->GetActorRotation(), false, true);
+		FVector Offset = BoundCharacter->GetActorLocation() - PrevLocation;
+		Offset.Y = 0.0f; // Y축은 무시
+		BoundCharacter->TeleportTo(NewLocation + Offset, BoundCharacter->GetActorRotation(), false, true);
 		if (UPrimitiveComponent* CharacterMesh = BoundCharacter->GetMesh())
 		{
 			CharacterMesh->SetWorldLocation(NewLocation, false, nullptr, ETeleportType::TeleportPhysics);
