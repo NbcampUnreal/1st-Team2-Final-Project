@@ -105,7 +105,7 @@ public:
     bool HasReachedTarget() const { return !bHasTarget; }
     
     UFUNCTION(BlueprintCallable, Category = "Aquatic Movement")
-    float GetDistanceToTarget() const;
+    float GetDistanceToTarget();
 
     // === 장애물 회피 ===
 
@@ -152,13 +152,13 @@ protected:
     
     // 거리 기반 시스템
     void UpdateBoneTrailsDistanceBased(float DeltaTime);
-    void GetPositionAndRotationAlongPath(float DistanceFromHead, FVector& OutPosition, FRotator& OutRotation) const;
+    void GetPositionAndRotationAlongPath(float DistanceFromHead, FVector& OutPosition, FRotator& OutRotation);
     
     // === 본 위치 ===
 
-    FVector GetHeadBoneLocation() const;
-    FVector GetTailBoneLocation() const;
-    FVector GetOriginalBoneLocation(int32 BoneArrayIndex) const; // 오프셋 제거된 원래 본 위치
+    FVector GetHeadBoneLocation();
+    FVector GetTailBoneLocation();
+    FVector GetOriginalBoneLocation(int32 BoneArrayIndex); // 오프셋 제거된 원래 본 위치
 
     // === 이동 업데이트 ===
 
@@ -168,8 +168,8 @@ protected:
 
     // === LOD ===
 
-    float GetLODFactor() const;
-    float GetTrajectoryRecordInterval() const;
+    float GetLODFactor();
+    float GetTrajectoryRecordInterval();
 
 public:
     // === 이동 파라미터 ===
@@ -294,13 +294,13 @@ protected:
     // === 캐시 ===
 
     UPROPERTY()
-    class ACharacter* OwnerCharacter;
+    TWeakObjectPtr<ACharacter> OwnerCharacter;
 
     UPROPERTY()
-    class USkeletalMeshComponent* CharacterMesh;
+    TWeakObjectPtr<USkeletalMeshComponent> CharacterMesh;
 
     UPROPERTY()
-    class APlayerController* LocalPlayerController;
+    TWeakObjectPtr<APlayerController> LocalPlayerController;
 
     UPROPERTY()
     TSet<TObjectPtr<AActor>> IgnoredActors;
@@ -327,4 +327,10 @@ private:
     void DrawDebugVisualization();
 
     void AddIgnoredActorFromAvoidance(AActor* Actor);
+
+private:
+
+    ACharacter* GetOwnerCharacter();
+    USkeletalMeshComponent* GetOwnerMesh();
+    APlayerController* GetLocalPlayerController();
 };
