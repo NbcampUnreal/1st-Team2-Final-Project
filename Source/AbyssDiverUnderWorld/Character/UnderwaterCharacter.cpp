@@ -526,8 +526,10 @@ void AUnderwaterCharacter::SetEnvironmentState(EEnvironmentState State)
 	const EEnvironmentState OldState = EnvironmentState;
 	EnvironmentState = State;
 
-	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Environment State : %s -> %s"),
-		*UEnum::GetValueAsString(OldState), *UEnum::GetValueAsString(EnvironmentState));
+	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("[%s] Environment State : %s -> %s"),
+		HasAuthority() ? TEXT("Server") : TEXT("Client"),
+		*UEnum::GetValueAsString(OldState),
+		*UEnum::GetValueAsString(EnvironmentState));
 	
 	switch (EnvironmentState)
 	{

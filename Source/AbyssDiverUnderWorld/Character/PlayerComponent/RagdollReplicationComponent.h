@@ -6,6 +6,7 @@
 #include "Components/ActorComponent.h"
 #include "BonePose.h"
 #include "RagdollTypes.h"
+#include "Interactable/Item/ADUseItem.h"
 #include "RagdollReplicationComponent.generated.h"
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
@@ -51,6 +52,12 @@ protected:
 	 * 캡슐 컴포넌트의 위치를 갱신함으로써 카메라가 래그돌에 동기화 된다.
 	 */
 	void UpdateCapsuleTransform();
+
+	/** 환경 상태가 변경되었을 때 호출되는 함수
+	* 지상 / 수중에 따라 중력을 적용한다. 
+	*/
+	UFUNCTION()
+	void OnEnvironmentChanged(EEnvironmentState OldEnvironmentState, EEnvironmentState NewEnvironmentState);
 
 #pragma endregion
 
