@@ -50,10 +50,11 @@ void UAquaticMovementComponent::BeginPlay()
 	    return;
     }
 
-    if (OwnerCharacter)
+    ACharacter* CachedOwnerCharacter = GetOwnerCharacter();
+    if (CachedOwnerCharacter)
     {
-        InitComponent(OwnerCharacter);
-		AddIgnoredActorFromAvoidance(OwnerCharacter);
+        InitComponent(CachedOwnerCharacter);
+		AddIgnoredActorFromAvoidance(CachedOwnerCharacter);
     }
 
     LocalPlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
@@ -69,7 +70,8 @@ void UAquaticMovementComponent::InitComponent(ACharacter* InCharacter)
     OwnerCharacter = InCharacter;
     CharacterMesh = OwnerCharacter->GetMesh();
 
-    if (!CharacterMesh)
+    USkeletalMeshComponent* CachedMesh = GetOwnerMesh();
+    if (!CachedMesh)
     {
         UE_LOG(LogAquaticMovement, Error, TEXT("Character has no mesh!"));
         return;
@@ -89,7 +91,8 @@ void UAquaticMovementComponent::TickComponent(float DeltaTime, ELevelTick TickTy
 {
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-    if (OwnerCharacter && OwnerCharacter->HasAuthority() == false)
+    ACharacter* CachedOwnerCharacter = GetOwnerCharacter();
+    if (CachedOwnerCharacter && CachedOwnerCharacter->HasAuthority() == false)
     {
         // 왜 안꺼지냐
         PrimaryComponentTick.bCanEverTick = false;
@@ -99,8 +102,8 @@ void UAquaticMovementComponent::TickComponent(float DeltaTime, ELevelTick TickTy
         return;
     }
 
-
-    if (!OwnerCharacter || !CharacterMesh) return;
+    USkeletalMeshComponent* CachedMesh = GetOwnerMesh();
+    if (!CachedOwnerCharacter || !CachedMesh) return;
 
     // LOD 팩터 업데이트
     CurrentLODFactor = GetLODFactor();
@@ -893,9 +896,10 @@ void UAquaticMovementComponent::GetAllBoneOffsets(TArray<FVector>& OutOffsets, T
     }
 }
 
-float UAquaticMovementComponent::GetLODFactor() const
+float UAquaticMovementComponent::GetLODFactor()
 {
-    if (!LocalPlayerController) return 1.0f;
+    APlayerController* CachedLocalPlayerController = GetLocalPlayerController();
+    if (!CachedLocalPlayerController) return 1.0f;
 
     FVector PlayerLocation = LocalPlayerController->GetPawn() ? LocalPlayerController->GetPawn()->GetActorLocation() : FVector::ZeroVector;
     float Distance = (OwnerCharacter->GetActorLocation() - PlayerLocation).Size();
@@ -903,7 +907,7 @@ float UAquaticMovementComponent::GetLODFactor() const
     return FMath::Clamp(1.0f - (Distance - LODDistanceMin) / (LODDistanceMax - LODDistanceMin), 0.0f, 1.0f);
 }
 
-float UAquaticMovementComponent::GetTrajectoryRecordInterval() const
+float UAquaticMovementComponent::GetTrajectoryRecordInterval()
 {
     return FMath::Lerp(LODMinRecordInterval, BaseRecordInterval, CurrentLODFactor);
 }
@@ -934,16 +938,18 @@ void UAquaticMovementComponent::ClearAvoidanceLocations()
     ActiveObstacles.Empty();
 }
 
-float UAquaticMovementComponent::GetDistanceToTarget() const
+float UAquaticMovementComponent::GetDistanceToTarget()
 {
-    if (!bHasTarget || !OwnerCharacter) return 0.0f;
+    ACharacter* CachedOwnerCharacter = GetOwnerCharacter();
+    if (!bHasTarget || !CachedOwnerCharacter) return 0.0f;
     
     return (TargetLocation - OwnerCharacter->GetActorLocation()).Size();
 }
 
 void UAquaticMovementComponent::CalculateAverageBoneDistance()
 {
-    if (!CharacterMesh || TrackedBones.Num() < 2)
+    USkeletalMeshComponent* CachedMesh = GetOwnerMesh();
+    if (!CachedMesh || TrackedBones.Num() < 2)
     {
         AverageBoneDistance = 100.0f; // 기본값
         return;
@@ -988,12 +994,13 @@ void UAquaticMovementComponent::CalculateAverageBoneDistance()
 }
 
 // === 거리 기반 시스템 ===
-void UAquaticMovementComponent::GetPositionAndRotationAlongPath(float DistanceFromHead, FVector& OutPosition, FRotator& OutRotation) const
+void UAquaticMovementComponent::GetPositionAndRotationAlongPath(float DistanceFromHead, FVector& OutPosition, FRotator& OutRotation)
 {
     if (TrajectoryHistory.Num() < 2)
     {
-        OutPosition = OwnerCharacter ? OwnerCharacter->GetActorLocation() : FVector::ZeroVector;
-        OutRotation = OwnerCharacter ? OwnerCharacter->GetActorRotation() : FRotator::ZeroRotator;
+        ACharacter* CachedOwnerCharacter = GetOwnerCharacter();
+        OutPosition = CachedOwnerCharacter ? OwnerCharacter->GetActorLocation() : FVector::ZeroVector;
+        OutRotation = CachedOwnerCharacter ? OwnerCharacter->GetActorRotation() : FRotator::ZeroRotator;
         return;
     }
     
@@ -1093,7 +1100,8 @@ void UAquaticMovementComponent::GetPositionAndRotationAlongPath(float DistanceFr
 void UAquaticMovementComponent::UpdateBoneTrailsDistanceBased(float DeltaTime)
 {
     TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("UAquaticMovementComponent::UpdateBoneTrailsDistanceBased"));
-    if (!CharacterMesh) return;
+    USkeletalMeshComponent* CachedMesh = GetOwnerMesh();
+    if (!CachedMesh) return;
 
     // 본 간 거리 계산이 안되어 있으면 계산
     if (!bBoneDistanceCalculated)
@@ -1181,10 +1189,13 @@ void UAquaticMovementComponent::UpdateBoneTrailsDistanceBased(float DeltaTime)
 }
 
 // === 메시 기반 경로 함수들 ===
-FVector UAquaticMovementComponent::GetOriginalBoneLocation(int32 BoneArrayIndex) const
+FVector UAquaticMovementComponent::GetOriginalBoneLocation(int32 BoneArrayIndex)
 {
-    if (!CharacterMesh || BoneArrayIndex < 0 || BoneArrayIndex >= TrackedBones.Num())
-        return OwnerCharacter ? OwnerCharacter->GetActorLocation() : FVector::ZeroVector;
+    ACharacter* CachedOwnerCharacter = GetOwnerCharacter();
+    USkeletalMeshComponent* CachedMesh = GetOwnerMesh();
+
+    if (!CachedMesh || BoneArrayIndex < 0 || BoneArrayIndex >= TrackedBones.Num())
+        return CachedOwnerCharacter ? OwnerCharacter->GetActorLocation() : FVector::ZeroVector;
     
     const FBoneTrailInfo& BoneInfo = TrackedBones[BoneArrayIndex];
     int32 BoneIndex = CharacterMesh->GetBoneIndex(BoneInfo.BoneName);
@@ -1199,13 +1210,13 @@ FVector UAquaticMovementComponent::GetOriginalBoneLocation(int32 BoneArrayIndex)
     return OwnerCharacter->GetActorLocation();
 }
 
-FVector UAquaticMovementComponent::GetHeadBoneLocation() const
+FVector UAquaticMovementComponent::GetHeadBoneLocation()
 {
     // 오프셋이 제거된 첫 번째 본의 원래 위치
     return GetOriginalBoneLocation(0);
 }
 
-FVector UAquaticMovementComponent::GetTailBoneLocation() const
+FVector UAquaticMovementComponent::GetTailBoneLocation()
 {
     // 오프셋이 제거된 마지막 본의 원래 위치
     return GetOriginalBoneLocation(TrackedBones.Num() - 1);
@@ -1427,4 +1438,58 @@ void UAquaticMovementComponent::AddIgnoredActorFromAvoidance(AActor* Actor)
 
     IgnoredActors.Add(Actor);
 	AvoidanceTraceParams.AddIgnoredActor(Actor);
+}
+
+ACharacter* UAquaticMovementComponent::GetOwnerCharacter()
+{
+    if (OwnerCharacter.IsValid())
+    {
+        return OwnerCharacter.Get();
+    }
+
+    OwnerCharacter = Cast<ACharacter>(GetOwner());
+    if (OwnerCharacter.IsValid())
+    {
+        return OwnerCharacter.Get();
+    }
+
+    return nullptr;
+}
+
+USkeletalMeshComponent* UAquaticMovementComponent::GetOwnerMesh()
+{
+    if (CharacterMesh.IsValid())
+    {
+        return CharacterMesh.Get();
+    }
+
+    ACharacter* CachedOwnerCharacter = GetOwnerCharacter();
+    if (CachedOwnerCharacter == nullptr)
+    {
+        return nullptr;
+    }
+
+    CharacterMesh = CachedOwnerCharacter->GetMesh();
+    if (CharacterMesh.IsValid())
+    {
+        return CharacterMesh.Get();
+    }
+
+    return nullptr;
+}
+
+APlayerController* UAquaticMovementComponent::GetLocalPlayerController()
+{
+    if (LocalPlayerController.IsValid())
+    {
+        return LocalPlayerController.Get();
+    }
+
+    LocalPlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+    if (LocalPlayerController.IsValid())
+    {
+        return LocalPlayerController.Get();
+    }
+
+    return nullptr;
 }
