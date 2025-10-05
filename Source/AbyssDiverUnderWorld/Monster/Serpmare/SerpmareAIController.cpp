@@ -1,14 +1,52 @@
 ﻿#include "Monster/Serpmare/SerpmareAIController.h"
 
+#include "AbyssDiverUnderWorld.h"
+
+#include "Monster/Serpmare/Serpmare.h"
+
+#include "Components/CapsuleComponent.h"
+
 ASerpmareAIController::ASerpmareAIController()
 {
 	// Serpmare는 Perception 사용하지 않음.
-	AIPerceptionComponent->Deactivate();
-	AIPerceptionComponent->SetActive(false);
-	AIPerceptionComponent->PrimaryComponentTick.bCanEverTick = false;
+	//AIPerceptionComponent->Deactivate();
+	//AIPerceptionComponent->SetActive(false);
+	//AIPerceptionComponent->PrimaryComponentTick.bCanEverTick = false;
+}
+
+void ASerpmareAIController::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (SightConfig == nullptr)
+	{
+		LOGV(Error, TEXT("SightConfig == nullptr"));
+		return;
+	}
+
+	ASerpmare* Serpmare = Cast<ASerpmare>(GetPawn());
+	if (Serpmare == nullptr)
+	{
+		LOGV(Error, TEXT("Serpmare == nullptr"));
+		return;
+	}
+
+	UCapsuleComponent* AttackCollision = Serpmare->AttackCollision;
+	if (AttackCollision == nullptr)
+	{
+		LOGV(Error, TEXT("AttackCollision == nullptr"));
+		return;
+	}
+
+	SightConfig->SightRadius = FMath::Max(AttackCollision->GetScaledCapsuleHalfHeight(), AttackCollision->GetScaledCapsuleRadius());
+	SightConfig->LoseSightRadius = SightConfig->SightRadius;
+	SightConfig->PeripheralVisionAngleDegrees = 180.0f;
+	SightConfig->PointOfViewBackwardOffset = 0;
+	SightConfig->SetMaxAge(1.0f);
+	AIPerceptionComponent->ConfigureSense(*SightConfig);
 }
 
 void ASerpmareAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
-	// Serpmare는 Perception 사용하지 않음.
+	Super::OnTargetPerceptionUpdated(Actor, Stimulus);
 }
