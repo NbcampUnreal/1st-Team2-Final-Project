@@ -14,7 +14,6 @@ void UAnimNotify_MonsterDefaultAttack::Notify(USkeletalMeshComponent* MeshComp, 
 {
 	Super::Notify(MeshComp, Animation, EventReference);
 
-	
 	TWeakObjectPtr<AMonster> Monster = Cast<AMonster>(MeshComp->GetOwner());
 	if (Monster.IsValid() == false) return;
 
@@ -22,11 +21,15 @@ void UAnimNotify_MonsterDefaultAttack::Notify(USkeletalMeshComponent* MeshComp, 
 	if (bIsMeshCollision)
 	{
 		// AttackInterval 후 콜리전 비활성화
-		Monster->GetWorldTimerManager().SetTimer(AttackTimer, FTimerDelegate::CreateLambda([this, Monster]
+		Monster->GetWorldTimerManager().SetTimer(AttackTimer, FTimerDelegate::CreateLambda([Monster]
 			{
-				UWorld* World = GetWorld();
+				if (Monster.IsValid() == false)
+				{
+					return;
+				}
 
-				if (Monster.IsValid() == false || IsValid(World) == false || World->IsInSeamlessTravel())
+				UWorld* World = Monster->GetWorld();
+				if (IsValid(World) == false || World->IsInSeamlessTravel())
 				{
 					return;
 				}
@@ -47,9 +50,13 @@ void UAnimNotify_MonsterDefaultAttack::Notify(USkeletalMeshComponent* MeshComp, 
 		// AttackInterval 후 콜리전 비활성화
 		Monster->GetWorldTimerManager().SetTimer(AttackTimer, FTimerDelegate::CreateLambda([this, AttackCollision, Monster]
 			{
-				UWorld* World = GetWorld();
+				if (Monster.IsValid() == false)
+				{
+					return;
+				}
 
-				if (Monster.IsValid() == false || IsValid(World) == false || World->IsInSeamlessTravel())
+				UWorld* World = Monster->GetWorld();
+				if (IsValid(World) == false || World->IsInSeamlessTravel())
 				{
 					return;
 				}
