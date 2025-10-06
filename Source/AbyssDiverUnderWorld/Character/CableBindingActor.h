@@ -45,11 +45,10 @@ public:
 	void DisconnectActors();
 
 protected:
-
-	/** Cable이 연결되어 있는지 확인한다.
+	/** 현재 Cable이 유효한지 확인한다.
 	 * Source Actor와 Target Actor가 모두 유효한지 확인한다.
 	 */
-	void UpdateCable();
+	bool IsConnectionValid() const;
 	
 #pragma endregion
 
