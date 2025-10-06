@@ -197,6 +197,24 @@ void ASerpmare::ReceiveKnockback(const FVector& Force)
 	// 넉백 당하지 않음.
 }
 
+void ASerpmare::OnAttackCollisionOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	LOGV(Error, TEXT("Overlap Begin !(%s)"), *OtherActor->GetName());
+	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(OtherActor);
+	if (!Player) return;
+
+	AddDetection(Player);
+}
+
+void ASerpmare::OnAttackCollisionOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	LOGV(Error, TEXT("Overlap End !(%s)"), *OtherActor->GetName());
+	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(OtherActor);
+	if (!Player) return;
+
+	RemoveDetection(Player);
+}
+
 void ASerpmare::InitAttackInterval()
 {
 	bCanAttack = true;

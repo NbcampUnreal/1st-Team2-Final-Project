@@ -19,6 +19,7 @@ public:
 
 protected:
 
+	virtual void OnPossess(APawn* InPawn) override;
 	virtual void BeginPlay() override;
 
 protected:
