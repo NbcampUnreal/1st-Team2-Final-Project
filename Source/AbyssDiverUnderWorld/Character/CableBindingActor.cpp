@@ -106,10 +106,12 @@ bool ACableBindingActor::IsConnectionValid() const
 	return IsValid(SourceCharacter) && IsValid(TargetCharacter);
 }
 
-	UPrimitiveComponent* SourceComponent = SourceCharacter->GetMesh();
-	FVector TargetLocation = TargetCharacter->GetMesh()->GetBoneLocation("pelvis");
-	// End Location은 Attach 된 Component의 상대 위치로 설정. 따라서 회전을 반영해야 한다.
-	CableComponent->EndLocation = SourceComponent->GetComponentTransform().InverseTransformPosition(TargetLocation);
+void ACableBindingActor::ApplyWorldOffset(FVector Offset)
+{
+	if (CableComponent)
+	{
+		CableComponent->ApplyWorldOffset(Offset, false);
+	}
 }
 
 bool ACableBindingActor::IsConnected() const
