@@ -2462,7 +2462,7 @@ void AUnderwaterCharacter::Teleport(const FVector& NewLocation, const FRotator& 
 	for (AUnderwaterCharacter* BoundCharacter : BoundCharacters)
 	{
 		FVector Offset = BoundCharacter->GetActorLocation() - PrevLocation;
-		Offset.Y = 0.0f; // Y축은 무시
+		Offset.Z = 0.0f; // 높이 차이는 무시
 		FVector TeleportLocation = NewLocation + Offset;
 		BoundCharacter->TeleportTo(TeleportLocation, BoundCharacter->GetActorRotation(), false, true);
 
