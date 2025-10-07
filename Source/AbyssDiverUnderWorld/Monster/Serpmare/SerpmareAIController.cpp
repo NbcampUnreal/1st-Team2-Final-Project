@@ -14,9 +14,9 @@ ASerpmareAIController::ASerpmareAIController()
 	//AIPerceptionComponent->PrimaryComponentTick.bCanEverTick = false;
 }
 
-void ASerpmareAIController::BeginPlay()
+void ASerpmareAIController::OnPossess(APawn* InPawn)
 {
-	Super::BeginPlay();
+	Super::OnPossess(InPawn);
 
 	if (SightConfig == nullptr)
 	{
@@ -24,7 +24,7 @@ void ASerpmareAIController::BeginPlay()
 		return;
 	}
 
-	ASerpmare* Serpmare = Cast<ASerpmare>(GetPawn());
+	ASerpmare* Serpmare = Cast<ASerpmare>(InPawn);
 	if (Serpmare == nullptr)
 	{
 		LOGV(Error, TEXT("Serpmare == nullptr"));
@@ -44,6 +44,13 @@ void ASerpmareAIController::BeginPlay()
 	SightConfig->PointOfViewBackwardOffset = 0;
 	SightConfig->SetMaxAge(1.0f);
 	AIPerceptionComponent->ConfigureSense(*SightConfig);
+}
+
+void ASerpmareAIController::BeginPlay()
+{
+	Super::BeginPlay();
+
+	
 }
 
 void ASerpmareAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
