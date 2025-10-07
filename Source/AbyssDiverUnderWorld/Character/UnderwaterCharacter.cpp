@@ -2466,21 +2466,18 @@ void AUnderwaterCharacter::Teleport(const FVector& NewLocation, const FRotator& 
 		FVector TeleportLocation = NewLocation + Offset;
 		BoundCharacter->TeleportTo(TeleportLocation, BoundCharacter->GetActorRotation(), false, true);
 
-		UPrimitiveComponent* CharacterMesh = BoundCharacter->GetMesh();
-		if (!CharacterMesh)
+		if (UPrimitiveComponent* CharacterMesh = BoundCharacter->GetMesh())
 		{
-			continue;
-		}
-		
-		FVector CharacterMeshOffset = TeleportLocation - CharacterMesh->GetComponentLocation();
-		CharacterMesh->SetWorldLocation(TeleportLocation, false, nullptr, ETeleportType::TeleportPhysics);
-		CharacterMesh->SetAllPhysicsLinearVelocity(FVector::ZeroVector);
-		CharacterMesh->SetAllPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
-		
-		// CableComponent의 Old Position을 갱신해서 Cable이 튀는 현상을 방지한다.
-		if (ACableBindingActor* CableActor = BoundCharacter->CableBindingActor)
-		{
-			CableActor->ApplyWorldOffset(CharacterMeshOffset);
+			FVector CharacterMeshOffset = TeleportLocation - CharacterMesh->GetComponentLocation();
+			CharacterMesh->SetWorldLocation(TeleportLocation, false, nullptr, ETeleportType::TeleportPhysics);
+			CharacterMesh->SetAllPhysicsLinearVelocity(FVector::ZeroVector);
+			CharacterMesh->SetAllPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
+			
+			// CableComponent의 Old Position을 갱신해서 Cable이 튀는 현상을 방지한다.
+			if (ACableBindingActor* CableActor = BoundCharacter->CableBindingActor)
+			{
+				CableActor->ApplyWorldOffset(CharacterMeshOffset);
+			}
 		}
 	}
 }
