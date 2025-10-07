@@ -94,6 +94,11 @@ void ASerpmare::AddDetection(AActor* Actor)
 	if (!IsValid(Actor) || !IsValid(this)) return;
 	if (!HasAuthority()) return;
 
+	if (GetMonsterState() == EMonsterState::Death)
+	{
+		return;
+	}
+
 	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor);
 	if (!Player) return;
 
@@ -114,9 +119,17 @@ void ASerpmare::AddDetection(AActor* Actor)
 		return;
 	}
 
-	// 기존에 MonsterState를 Chase로 바꿔주었으나 Serpmare는 BT와 AM 상에서 모든 State를 전환함. 그래서 필요 없음
-}
+	// 만약 TargetPlayer가 없으면 TargetPlayer를 해당 Actor(Player)로 설정.
+	if (!TargetPlayer.IsValid())
+	{
+		TargetPlayer = Player;
 
+		if (BlackboardComponent)
+		{
+			SetTarget(TargetPlayer.Get());
+		}
+	}
+}
 
 void ASerpmare::RemoveDetection(AActor* Actor)
 {
@@ -145,14 +158,61 @@ void ASerpmare::RemoveDetection(AActor* Actor)
 	if (bWasTarget)
 	{
 		TargetPlayer.Reset();
-	}
 
-	// 기존에 MonsterState를 Patrol로 바꿔주었으나 Serpmare는 BT와 AM 상에서 모든 State를 전환함. 그래서 필요 없음
+		if (BlackboardComponent)
+		{
+			SetTarget(nullptr);
+		}
+
+		if (DetectedPlayers.Num() == 0)
+		{
+			return;
+		}
+
+		// TSet 순회하여 요소(Player)가 남아있으면 해당 플레이어를 TargetPlayer로 지정
+		for (const TWeakObjectPtr<AActor>& Elem : DetectedPlayers)
+		{
+			if (AActor* NewTarget = Elem.Get())
+			{
+				AUnderwaterCharacter* DetectedPlayer = Cast<AUnderwaterCharacter>(NewTarget);
+
+				if (DetectedPlayer)
+				{
+					TargetPlayer = DetectedPlayer;
+				}
+
+				if (BlackboardComponent)
+				{
+					//BlackboardComponent->SetValueAsObject(BlackboardKeys::TargetPlayerKey, TargetPlayer.Get());
+					SetTarget(TargetPlayer.Get());
+				}
+				return;
+			}
+		}
+	}
 }
 
 void ASerpmare::ReceiveKnockback(const FVector& Force)
 {
 	// 넉백 당하지 않음.
+}
+
+void ASerpmare::OnAttackCollisionOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	LOGV(Error, TEXT("Overlap Begin !(%s)"), *OtherActor->GetName());
+	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(OtherActor);
+	if (!Player) return;
+
+	AddDetection(Player);
+}
+
+void ASerpmare::OnAttackCollisionOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	LOGV(Error, TEXT("Overlap End !(%s)"), *OtherActor->GetName());
+	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(OtherActor);
+	if (!Player) return;
+
+	RemoveDetection(Player);
 }
 
 void ASerpmare::InitAttackInterval()
