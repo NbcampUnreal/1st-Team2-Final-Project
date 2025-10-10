@@ -5,14 +5,11 @@
 #include "Interactable/OtherActors/Radars/RadarReturn2DComponent.h"
 #include "Character/PlayerComponent/DebuffComponent.h"
 #include "Subsystems/MissionSubsystem.h"
+#include "Missions/MissionTagUtil.h"
 
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/GameStateBase.h"
 
-static inline void AddIfValid(FGameplayTagContainer& C, const FGameplayTag& T)
-{
-	if (T.IsValid()) { C.AddTag(T); }
-}
 
 AUnitBase::AUnitBase()
 {
@@ -70,12 +67,6 @@ void AUnitBase::InitGameplayTags()
 void AUnitBase::BuildGameplayTags(FGameplayTagContainer& Out) const
 {
 	AddIfValid(Out, UMissionTagUtil::ToUnitIdTag(GetUnitId()));
-	//타입이 지정되면
 
-	/*const FName TypeTail = GetUnitTypeTail();
-	if (TypeTail != NAME_None)
-	{
-		AddIfValid(Out, UMissionTagUtil::ToUnitTypeTagByTail(TypeTail));
-	}*/
 }
 

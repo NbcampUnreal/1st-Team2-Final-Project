@@ -16,19 +16,10 @@
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/GameStateBase.h"  
 #include "GameFramework/ProjectileMovementComponent.h"
-#include "GameplayTagsManager.h"
+#include "Missions/MissionTagUtil.h"
 
 DEFINE_LOG_CATEGORY(ItemLog);
 
-inline static FGameplayTag MakeTag(const TCHAR* Root, const FString& Tail)
-{
-	return UGameplayTagsManager::Get().RequestGameplayTag(FName(*FString::Printf(TEXT("%s.%s"), Root, *Tail)), false);
-}
-
-inline static void AddIfValid(FGameplayTagContainer& C, const FGameplayTag& T)
-{
-	if (T.IsValid()) { C.AddTag(T); }
-}
 
 // Sets default values
 AADItemBase::AADItemBase()

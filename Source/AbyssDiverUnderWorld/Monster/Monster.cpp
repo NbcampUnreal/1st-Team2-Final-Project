@@ -1038,10 +1038,6 @@ void AMonster::SetTarget(AUnderwaterCharacter* Target)
 	AIController->GetBlackboardComponent()->SetValueAsObject(BlackboardKeys::TargetPlayerKey, Target);
 }
 
-FName AMonster::GetMonsterId_Implementation() const
-{
-	return MonsterId;
-}
 
 
 

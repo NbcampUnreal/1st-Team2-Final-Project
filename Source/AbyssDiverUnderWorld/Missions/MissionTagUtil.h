@@ -6,8 +6,18 @@
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
+#include "GameplayTagsManager.h"
 #include "MissionTagUtil.generated.h"
 
+inline static FGameplayTag MakeTag(const TCHAR* Root, const FString& Tail)
+{
+	return UGameplayTagsManager::Get().RequestGameplayTag(FName(*FString::Printf(TEXT("%s.%s"), Root, *Tail)), false);
+}
+
+inline static void AddIfValid(FGameplayTagContainer& C, const FGameplayTag& T)
+{
+	if (T.IsValid()) { C.AddTag(T); }
+}
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API UMissionTagUtil : public UBlueprintFunctionLibrary
@@ -44,6 +54,8 @@ public:
 
 	// 디버그용
 	static FString GetTailFromTag(const FGameplayTag& Tag);
+
+	
 
 private:
 	template<typename TEnum> static FString EnumToTailString(TEnum Value); // (UnitId가 UENUM이면 사용)
