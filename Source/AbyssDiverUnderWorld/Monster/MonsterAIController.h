@@ -29,12 +29,14 @@ public:
 	void MoveToLocationWithRadius(const FVector& Location);
 
 protected:
+
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void OnPossess(APawn* InPawn) override;
 
 #pragma region Method
 protected:
+
 	void LoadSightDataFromTable();
 	
 	UFUNCTION()

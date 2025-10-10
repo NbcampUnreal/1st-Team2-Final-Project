@@ -33,6 +33,17 @@ public:
 
 	virtual void ReceiveKnockback(const FVector& Force) override;
 
+protected:
+
+	// Attack Collision 에 Player가 들어오면 공격 가능 플래그 On
+	virtual void OnAttackCollisionOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
+		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
+		bool bFromSweep, const FHitResult& SweepResult) override;
+
+	// Attack Collision 에 Player가 빠지면 공격 가능 플래그 Off
+	virtual void OnAttackCollisionOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
+		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) override;
+
 private:
 	void InitAttackInterval();
 

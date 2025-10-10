@@ -126,13 +126,13 @@ protected:
     // 가려진 오브젝트 틱 간격 (초)
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TickControlComponentSettings|Occluded Tick Rates", meta = (AllowPrivateAccess = "true"))
-    float Occluded_NearTickInterval = 0.05f;
+    float Occluded_NearTickInterval = 0.0f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TickControlComponentSettings|Occluded Tick Rates", meta = (AllowPrivateAccess = "true"))
-    float Occluded_MediumTickInterval = 0.2f;
+    float Occluded_MediumTickInterval = 0.1f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TickControlComponentSettings|Occluded Tick Rates", meta = (AllowPrivateAccess = "true"))
-    float Occluded_FarTickInterval = 2.0f;
+    float Occluded_FarTickInterval = 2000.0f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TickControlComponentSettings|Occluded Tick Rates", meta = (AllowPrivateAccess = "true"))
     float Occluded_VeryFarTickInterval = 1000.0f;
@@ -140,10 +140,10 @@ protected:
     // 시야 밖 틱 간격 (초)
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TickControlComponentSettings|Out of View Tick Rates", meta = (AllowPrivateAccess = "true"))
-    float OutOfView_NearTickInterval = 0.0f;
+    float OutOfView_NearTickInterval = 0.1f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TickControlComponentSettings|Out of View Tick Rates", meta = (AllowPrivateAccess = "true"))
-    float OutOfView_MediumTickInterval = 1.0f;
+    float OutOfView_MediumTickInterval = 0.1f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TickControlComponentSettings|Out of View Tick Rates", meta = (AllowPrivateAccess = "true"))
     float OutOfView_FarTickInterval = 2000.0f;

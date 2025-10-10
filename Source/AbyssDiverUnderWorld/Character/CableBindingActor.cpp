@@ -36,9 +36,9 @@ void ACableBindingActor::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (IsConnected())
+	if (IsConnected() && !IsConnectionValid())
 	{
-		UpdateCable();
+		DisconnectActors();
 	}
 }
 
@@ -58,11 +58,13 @@ void ACableBindingActor::ConnectActors(AUnderwaterCharacter* NewSourceActor, AUn
 	// Source Component 를 시작점으로 연결하고 Target Component를 끝점으로 연결한다.
 	// - CableComponent : Source Component에 Attach, End Location을 지정
 	// - PhysicsConstraint : Source Character의 World Location을 추적
-	
+
+	// Source Component, Target Component는 Mesh Component에 연결
 	UPrimitiveComponent* SourceComponent = Cast<UPrimitiveComponent>(NewSourceActor->GetMesh());
 	UPrimitiveComponent* TargetComponent = Cast<UPrimitiveComponent>(NewTargetActor->GetMesh());
-	
-	CableComponent->SetAttachEndToComponent(SourceComponent, NAME_None);
+
+	AttachToComponent(SourceComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("pelvis"));
+	CableComponent->SetAttachEndToComponent(TargetComponent, FName("pelvis"));
 	CableComponent->EndLocation = FVector::ZeroVector;
 
 	if (SourceComponent && TargetComponent)
@@ -99,22 +101,17 @@ void ACableBindingActor::DisconnectActors()
 	TargetCharacter = nullptr;
 }
 
-void ACableBindingActor::UpdateCable()
+bool ACableBindingActor::IsConnectionValid() const
 {
-	if (!IsValid(SourceCharacter) || !IsValid(TargetCharacter))
+	return IsValid(SourceCharacter) && IsValid(TargetCharacter);
+}
+
+void ACableBindingActor::ApplyWorldOffset(FVector Offset)
+{
+	if (CableComponent)
 	{
-		// 유효하지 않으면 Cable을 제거한다.
-		DisconnectActors();
-		return;
+		CableComponent->ApplyWorldOffset(Offset, false);
 	}
-
-	// Root Component: CableComponent
-	SetActorLocation(SourceCharacter->GetActorLocation());
-
-	UPrimitiveComponent* SourceComponent = SourceCharacter->GetMesh();
-	FVector TargetLocation = TargetCharacter->GetMesh()->GetBoneLocation("pelvis");
-	// End Location은 Attach 된 Component의 상대 위치로 설정. 따라서 회전을 반영해야 한다.
-	CableComponent->EndLocation = SourceComponent->GetComponentTransform().InverseTransformPosition(TargetLocation);
 }
 
 bool ACableBindingActor::IsConnected() const

@@ -34,6 +34,9 @@ public class AbyssDiverUnderWorld : ModuleRules
             , "CableComponent"
             , "AsyncLoadingScreen"
             , "AnimGraphRuntime"
+            ,"RHI"
+            ,"RenderCore"
+            ,"Renderer"
         });
 		
         PublicIncludePaths.AddRange(new string[] { "AbyssDiverUnderWorld" });

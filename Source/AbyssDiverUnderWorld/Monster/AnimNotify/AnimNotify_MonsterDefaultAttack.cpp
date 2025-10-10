@@ -1,8 +1,7 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "Monster/AnimNotify/AnimNotify_MonsterDefaultAttack.h"
+
 #include "Monster/Monster.h"
+
 #include "Components/CapsuleComponent.h"
 
 UAnimNotify_MonsterDefaultAttack::UAnimNotify_MonsterDefaultAttack()
@@ -15,19 +14,28 @@ void UAnimNotify_MonsterDefaultAttack::Notify(USkeletalMeshComponent* MeshComp, 
 {
 	Super::Notify(MeshComp, Animation, EventReference);
 
-	AMonster* Monster = Cast<AMonster>(MeshComp->GetOwner());
-	if (!IsValid(Monster)) return;
+	TWeakObjectPtr<AMonster> Monster = Cast<AMonster>(MeshComp->GetOwner());
+	if (Monster.IsValid() == false) return;
 
 	// 메시 콜리전 가져오기
 	if (bIsMeshCollision)
 	{
 		// AttackInterval 후 콜리전 비활성화
-		Monster->GetWorldTimerManager().SetTimer(AttackTimer, FTimerDelegate::CreateLambda([=]
+		Monster->GetWorldTimerManager().SetTimer(AttackTimer, FTimerDelegate::CreateLambda([Monster]
 			{
-				if (IsValid(Monster))
+				if (Monster.IsValid() == false)
 				{
-					Monster->OnAttackEnded();
+					return;
 				}
+
+				UWorld* World = Monster->GetWorld();
+				if (IsValid(World) == false || World->IsInSeamlessTravel())
+				{
+					return;
+				}
+
+				Monster->OnAttackEnded();
+
 			}), AttackInterval, false);
 	}
 	// 태그로 콜리전 가져오기
@@ -40,17 +48,26 @@ void UAnimNotify_MonsterDefaultAttack::Notify(USkeletalMeshComponent* MeshComp, 
 		AttackCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 
 		// AttackInterval 후 콜리전 비활성화
-		Monster->GetWorldTimerManager().SetTimer(AttackTimer, FTimerDelegate::CreateLambda([=]
+		Monster->GetWorldTimerManager().SetTimer(AttackTimer, FTimerDelegate::CreateLambda([this, AttackCollision, Monster]
 			{
+				if (Monster.IsValid() == false)
+				{
+					return;
+				}
+
+				UWorld* World = Monster->GetWorld();
+				if (IsValid(World) == false || World->IsInSeamlessTravel())
+				{
+					return;
+				}
+
 				if (IsValid(AttackCollision))
 				{
 					AttackCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 				}
 
-				if (IsValid(Monster))
-				{
-					Monster->OnAttackEnded();
-				}
+				Monster->OnAttackEnded();
+
 			}), AttackInterval, false);
 	}
 }
