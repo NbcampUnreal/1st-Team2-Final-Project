@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 #pragma once
 
 #include "CoreMinimal.h"
@@ -28,6 +28,7 @@ DECLARE_LOG_CATEGORY_EXTERN(InventoryLog, Log, All);
 DECLARE_MULTICAST_DELEGATE(FInventoryUpdateDelegate);
 DECLARE_MULTICAST_DELEGATE(FBatteryUpdateDelegate);
 DECLARE_MULTICAST_DELEGATE_TwoParams(FInventoryInfoUpdateDelegate, int32, int32);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FInventoryAlarm, const FString& Info, const FVector2D& Position);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class ABYSSDIVERUNDERWORLD_API UADInventoryComponent : public UActorComponent
@@ -92,6 +93,10 @@ public:
 	void C_SetEquipBatteryAmount(EChargeBatteryType ItemChargeBatteryType);
 	void C_SetEquipBatteryAmount_Implementation(EChargeBatteryType ItemChargeBatteryType);
 
+	UFUNCTION(Client, Reliable)
+	void C_NotifyInventoryAlarm(const FString& Info, const FVector2D& Position);
+	void C_NotifyInventoryFull_Implementation(const FString& Info, const FVector2D& Position);
+
 	UFUNCTION(BlueprintCallable)
 	void InventoryInitialize();
 
@@ -125,6 +130,7 @@ public:
 	FInventoryUpdateDelegate InventoryUpdateDelegate;
 	FBatteryUpdateDelegate BatteryUpdateDelegate;
 	FInventoryInfoUpdateDelegate InventoryInfoUpdateDelegate;
+	FInventoryAlarm InventoryAlarmDelegate;
 
 private:
 	int8 GetTypeInventoryEmptyIndex(EItemType ItemType); //빈슬롯이 없으면 -1 반환

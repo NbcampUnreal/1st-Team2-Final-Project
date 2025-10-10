@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 #include "Inventory/ADInventoryComponent.h"
 #include "Engine/World.h"
 #include "Engine/EngineTypes.h"
@@ -86,6 +86,16 @@ void UADInventoryComponent::BeginPlay()
 		DataTableSubsystem = GI->GetSubsystem<UDataTableSubsystem>();
 		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
 	}
+
+	APlayerState* PS = Cast<APlayerState>(GetOwner());
+	if (!PS) return;
+	AADPlayerController* PC = Cast<AADPlayerController>(PS->GetOwningController());
+	if (!PC) return;
+
+	UPlayerHUDComponent* HUD = PC->GetPlayerHUDComponent();
+	UPlayerStatusWidget* PSW = HUD->GetPlayerStatusWidget();
+
+	InventoryAlarmDelegate.AddUObject(PSW, &UPlayerStatusWidget::NoticeInfo); 
 	
 	TryCachedDiver();
 	SetComponentTickEnabled(true);
@@ -362,6 +372,14 @@ void UADInventoryComponent::C_SetEquipBatteryAmount_Implementation(EChargeBatter
 		ChargeBatteryWidget->SetEquipBatteryAmount(ItemChargeBatteryType, InventoryList.Items[FindItemIndexByID(static_cast<int8>(ItemChargeBatteryType))].Amount);
 }
 
+void UADInventoryComponent::C_NotifyInventoryAlarm_Implementation(const FString& Info, const FVector2D& Position)
+{
+	if(InventoryAlarmDelegate.IsBound())
+	{
+		InventoryAlarmDelegate.Broadcast(Info, Position);
+	}
+}
+
 void UADInventoryComponent::InventoryInitialize()
 {
 	APlayerController* PC = Cast<APlayerController>(Cast<AADPlayerState>(GetOwner())->GetPlayerController());
@@ -436,6 +454,10 @@ bool UADInventoryComponent::AddInventoryItem(const FItemData& ItemData)
 					else
 					{
 						LOGINVEN(Warning, TEXT("%s Inventory is full"), *StaticEnum<EItemType>()->GetNameStringByValue((int64)ItemData.ItemType));
+						if (ItemData.ItemType == EItemType::Exchangable)
+						{
+							C_NotifyInventoryAlarm(TEXT("광물 인벤토리가 가득 찼습니다!"), FVector2D(985.0f, -260.0f));
+						}
 					}
 				}
 
