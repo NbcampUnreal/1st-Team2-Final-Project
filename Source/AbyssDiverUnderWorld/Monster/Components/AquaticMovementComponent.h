@@ -79,8 +79,10 @@ public:
 	UAquaticMovementComponent();
 
 protected:
+
     virtual void BeginPlay() override;
     virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+    virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 public:
     // === 초기화 ===
@@ -264,7 +266,7 @@ public:
 
     // === 상태 ===   
 
-    UPROPERTY(BlueprintReadOnly, Category = "State")
+    UPROPERTY(Replicated, BlueprintReadOnly, Category = "State")
     FVector CurrentVelocity;
 
     UPROPERTY(BlueprintReadOnly, Category = "State")

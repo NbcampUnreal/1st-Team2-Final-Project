@@ -713,6 +713,12 @@ void AMonster::NotifyLightExposure(float DeltaTime, float TotalExposedTime, cons
 		return;
 	}
 
+	if (Player->IsGroggy() || Player->IsDeath())
+	{
+		LOGV(Log, TEXT("Player is Groggy Or Dead, ignoring light exposure"));
+		return;
+	}
+
 	if (Player->IsHideInSeaweed())
 	{
 		LOGV(Log, TEXT("NotifyLightExposure: Player is hiding in seaweed, ignoring light exposure"));
