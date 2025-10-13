@@ -130,6 +130,9 @@ protected:
 	TObjectPtr<UOverlay> CurrentPhaseOverlay;
 
 	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UOverlay> PhaseProgressbarOverlay;
+
+	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UTextBlock> CurrentPhaseText;
 
 	UPROPERTY(meta = (BindWidget))
@@ -179,7 +182,7 @@ private:
 
 	int32 CachedNextPhaseNumber = 0;
 
-	static const int32 MaxPhaseNumber;
+	int32 MaxPhaseNumber;
 
 	float Period = 0.0f;
 
@@ -200,6 +203,7 @@ public:
 	void SetTotalSpear(int32 InValue);
 	void SetSpearVisibility(bool bVisible);
 	void SetCompassObject(AActor* NewTargetObject);
+	void SetMaxPhaseNumber(int32 NewMaxPhaseNumber);
 
 	UDepthWidget* GetDepthWidget() const { return DepthWidget; }
 #pragma endregion

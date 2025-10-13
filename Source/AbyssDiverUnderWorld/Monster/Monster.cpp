@@ -507,6 +507,14 @@ void AMonster::OnAttackEnded()
 	AttackedPlayers.Empty();
 }
 
+void AMonster::ReceiveKnockback(const FVector& Force)
+{
+	if (UCharacterMovementComponent* MovementComp = GetCharacterMovement())
+	{
+		MovementComp->AddImpulse(Force, true);
+	}
+}
+
 void AMonster::M_PlayMontage_Implementation(UAnimMontage* AnimMontage, float InPlayRate, FName StartSectionName)
 {
 	PlayAnimMontage(AnimMontage, InPlayRate, StartSectionName);
@@ -702,6 +710,12 @@ void AMonster::NotifyLightExposure(float DeltaTime, float TotalExposedTime, cons
 	if (Player == nullptr)
 	{
 		LOGV(Error, TEXT("NotifyLightExposure: Player is not valid"));
+		return;
+	}
+
+	if (Player->IsGroggy() || Player->IsDeath())
+	{
+		LOGV(Log, TEXT("Player is Groggy Or Dead, ignoring light exposure"));
 		return;
 	}
 

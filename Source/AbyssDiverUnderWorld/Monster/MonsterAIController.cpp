@@ -100,6 +100,7 @@ void AMonsterAIController::LoadSightDataFromTable()
 	}
 
 	LOG(TEXT("Loading sight data for MonsterID = %s"), *MonsterID.ToString());
+
 	// Setting up visual information data import from a data table
 	const FMonsterSightData* SightRow = SightDataTable->FindRow<FMonsterSightData>(MonsterID, TEXT("MonsterSight"));
 	if (SightRow && SightConfig)
@@ -119,29 +120,33 @@ void AMonsterAIController::LoadSightDataFromTable()
 
 void AMonsterAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
-	if (!IsValid(Monster)) return;
+	AMonster* OwningMonster = GetOwningMonster();
+	if (!OwningMonster) return;
 
 	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(Actor);
 	if (!IsValid(Player) || Player->IsDeath() || Player->IsGroggy()) return;
 
-	if (Stimulus.WasSuccessfullySensed() && Monster->GetMonsterState() != EMonsterState::Flee)
+	if (Stimulus.WasSuccessfullySensed() && OwningMonster->GetMonsterState() != EMonsterState::Flee)
 	{
-		Monster->AddDetection(Actor);
+		OwningMonster->AddDetection(Actor);
 	}
 	else
 	{
-		Monster->RemoveDetection(Actor);
+		OwningMonster->RemoveDetection(Actor);
 	}
 }
 
 void AMonsterAIController::OnTargetPerceptionForgotten(AActor* ForgottenActor)
 {
+	AMonster* OwningMonster = GetOwningMonster();
+	if (!OwningMonster) return;
+
 	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(ForgottenActor);
 	if (!IsValid(Player)) return;
 
 	// 가끔 Perception이 해제되지 않는 버그가 있는 것 같아서 Forget 기능을 추가
 	// Forget시 해당 액터 감지 해제
-	Monster->RemoveDetection(ForgottenActor);
+	OwningMonster->RemoveDetection(ForgottenActor);
 }
 
 void AMonsterAIController::SetBlackboardPerceptionType(EPerceptionType InPerceptionType)
@@ -206,4 +211,15 @@ float AMonsterAIController::GetHearingRadius() const
 	}
 
 	return HearingConfigInstance->HearingRange;
+}
+
+AMonster* AMonsterAIController::GetOwningMonster()
+{
+	if (Monster.IsValid())
+	{
+		return Monster.Get();
+	}
+
+	Monster = Cast<AMonster>(GetPawn());
+	return Monster.Get();
 }

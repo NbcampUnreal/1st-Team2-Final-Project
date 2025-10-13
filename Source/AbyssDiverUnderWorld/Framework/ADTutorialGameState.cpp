@@ -6,23 +6,23 @@
 
 AADTutorialGameState::AADTutorialGameState()
 {
-	CurrentPhase = ETutorialPhase::None;
+	TutorialCurrentPhase = ETutorialPhase::None;
 }
 
 void AADTutorialGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(AADTutorialGameState, CurrentPhase);
+	DOREPLIFETIME(AADTutorialGameState, TutorialCurrentPhase);
 }
 
 void AADTutorialGameState::SetCurrentPhase(ETutorialPhase NewPhase)
 {
 	if (HasAuthority())
 	{
-		if (CurrentPhase != NewPhase)
+		if (TutorialCurrentPhase != NewPhase)
 		{
-			CurrentPhase = NewPhase;
+			TutorialCurrentPhase = NewPhase;
 			OnRep_PhaseChanged();
 		}
 	}
@@ -30,5 +30,5 @@ void AADTutorialGameState::SetCurrentPhase(ETutorialPhase NewPhase)
 
 void AADTutorialGameState::OnRep_PhaseChanged()
 {
-	OnPhaseChanged.Broadcast(CurrentPhase);
+	OnPhaseChanged.Broadcast(TutorialCurrentPhase);
 }
