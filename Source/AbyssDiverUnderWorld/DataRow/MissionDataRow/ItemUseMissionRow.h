@@ -21,6 +21,10 @@ struct FItemUseMissionRow : public FMissionBaseRow
 	GENERATED_BODY()
 	
 	FItemUseMissionRow()
+		: Mission(EItemUseMission::ItemMission1)
+		, ItemId(0)
+		, ItemTypeTail(NAME_None)
+		, bUseQuery(false)
 	{
 		MissionType = EMissionType::ItemUse;
 	}

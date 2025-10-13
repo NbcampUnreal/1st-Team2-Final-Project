@@ -34,6 +34,12 @@ struct FKillMonsterMissionRow : public FMissionBaseRow
 	GENERATED_BODY()
 
 	FKillMonsterMissionRow()
+		: Mission(EKillMonsterMission::KillMission1)
+		, UnitId(static_cast<EUnitId>(0))
+		, NeededSimultaneousKillCount(1)
+		, KillInterval(0.f)
+		, bUseQuery(false)
+		, UnitTypeTail(NAME_None)
 	{
 		MissionType = EMissionType::KillMonster;
 	}

@@ -61,7 +61,7 @@ void UMissionSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 		{
 			return;
 		}
-
+		AggroTriggerMissionDataArray[i]->BakeTags();
 		MakeAndAddMissionDataForUI((FMissionBaseRow*)AggroTriggerMissionDataArray[i], i);
 	}
 
@@ -80,6 +80,7 @@ void UMissionSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 			return;
 		}
 
+		InteractionMissionDataArray[i]->BakeTags();
 		MakeAndAddMissionDataForUI((FMissionBaseRow*)InteractionMissionDataArray[i], i);
 
 	}
@@ -98,6 +99,7 @@ void UMissionSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 			return;
 		}
 
+		ItemCollectMissionDataArray[i]->BakeTags();
 		MakeAndAddMissionDataForUI((FMissionBaseRow*)ItemCollectMissionDataArray[i], i);
 	}
 
@@ -116,6 +118,7 @@ void UMissionSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 			return;
 		}
 
+		ItemUseMissionDataArray[i]->BakeTags();
 		MakeAndAddMissionDataForUI((FMissionBaseRow*)ItemUseMissionDataArray[i], i);
 	}
 
@@ -134,8 +137,11 @@ void UMissionSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 			return;
 		}
 	
+		KillMonsterMissionDataArray[i]->BakeTags();
 		MakeAndAddMissionDataForUI((FMissionBaseRow*)KillMonsterMissionDataArray[i], i);
 	}
+
+	LOG(TEXT("[MissionSubsystem] UI Exported: %d entries"), MissionDataForUI.Num());
 }
 
 void UMissionSubsystem::UnlockMission(const EAggroTriggerMission& Mission)

@@ -21,6 +21,10 @@ struct FAggroTriggerMissionRow : public FMissionBaseRow
 	GENERATED_BODY()
 	
 	FAggroTriggerMissionRow()
+		:Mission(EAggroTriggerMission::AggroMission1)
+		, bUseQuery(false)
+		, SourceUnitId(static_cast<EUnitId>(0)) // 프로젝트의 None 값으로 교체
+		, SourceUnitTypeTail(NAME_None)
 	{
 		MissionType = EMissionType::AggroTrigger;
 	}

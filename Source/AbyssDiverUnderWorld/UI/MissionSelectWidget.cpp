@@ -65,7 +65,8 @@ void UMissionSelectWidget::UpdateEntrys()
 
 void UMissionSelectWidget::UpdateMissionList(int8 CurrentLevelIndex)
 {
-    if (CurrentLevelIndex == 0) return;
+    if (!ScrollBox_MissionList) return;
+
     ScrollBox_MissionList->ClearChildren();
 
     const TArray<FMissionData>& Missions = GetGameInstance()->GetSubsystem<UMissionSubsystem>()->GetMissionDataForUI();

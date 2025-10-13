@@ -27,7 +27,9 @@ enum class EMissionConditionType : uint8
 UENUM(BlueprintType)
 enum class ELevelName : uint8
 {
-	None,
-	ShallowWaterLevel,
-	DeepWaterLevel,
+	None UMETA(DisplayName = "None"),
+
+	TutorialPool UMETA(DisplayName = "Tutorial Pool"),
+	SecondAbyss UMETA(DisplayName = "Second Abyss"),
+	DeepAbyss UMETA(DisplayName = "Deep Abyss"),
 };

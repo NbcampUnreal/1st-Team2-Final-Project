@@ -21,6 +21,9 @@ struct FInteractionMissionRow : public FMissionBaseRow
 	GENERATED_BODY()
 
 	FInteractionMissionRow()
+		:Mission(EInteractionMission::InteractionMission1)
+		, bUseQuery(false)
+		, InteractTypeTail(NAME_None)
 	{
 		MissionType = EMissionType::Interaction;
 	}

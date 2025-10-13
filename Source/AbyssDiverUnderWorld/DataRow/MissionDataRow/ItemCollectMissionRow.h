@@ -21,6 +21,11 @@ struct FItemCollectMissionRow : public FMissionBaseRow
 	GENERATED_BODY()
 
 	FItemCollectMissionRow()
+		: Mission(EItemCollectMission::ItemMission1)
+		, ItemId(0)
+		, bIsOreMission(0)
+		, bUseQuery(false)
+		, ItemTypeTail(NAME_None)
 	{
 		MissionType = EMissionType::ItemCollection;
 	}

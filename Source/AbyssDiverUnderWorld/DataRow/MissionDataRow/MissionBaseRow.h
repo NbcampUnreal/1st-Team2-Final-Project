@@ -10,6 +10,22 @@ struct FMissionBaseRow : public FTableRowBase
 {
 	GENERATED_BODY()
 	
+	FMissionBaseRow()
+		: MissionType(EMissionType::None)
+		, GoalCount(0)
+		, ConditionType(EMissionConditionType::AtLeast)
+		, MissionName(TEXT(""))
+		, MissionDescription(TEXT(""))
+		, LevelName(static_cast<ELevelName>(0))          // enum의 0번(예: None/Unknown)
+		, UnlockHint(TEXT(""))
+		, Stage(0)
+		, bIsLocked(true)
+		, bShouldCompleteInstantly(false)
+		, MissionImage(nullptr)
+	{
+	}
+
+
 	UPROPERTY(VisibleDefaultsOnly, Category = "MissionBase")
 	EMissionType MissionType;
 
