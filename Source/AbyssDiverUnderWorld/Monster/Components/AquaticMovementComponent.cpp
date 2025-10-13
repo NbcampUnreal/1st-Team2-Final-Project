@@ -35,7 +35,7 @@ UAquaticMovementComponent::UAquaticMovementComponent()
     LastWallDetectionTime = -1.0f;
     LastWallNormal = FVector::ZeroVector;
 
-    SetIsReplicated(true);
+    SetIsReplicated(false);
 }
 
 void UAquaticMovementComponent::BeginPlay()
