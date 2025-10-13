@@ -216,6 +216,8 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	DepthComponent = CreateDefaultSubobject<UDepthComponent>(TEXT("DepthComponent"));
 
 	bIsMovementBlockedByTutorial = false;
+
+	bAlwaysRelevant = true;
 }
 
 void AUnderwaterCharacter::BeginPlay()
