@@ -26,6 +26,8 @@ float AEyeStalker::TakeDamage(float DamageAmount, FDamageEvent const& DamageEven
 {
 	float Damage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
+	OnEyeStalkerDamaged();
+
 	AMonsterAIController* AIC = Cast<AMonsterAIController>(GetController());
 	if (AIC == nullptr)
 	{
@@ -147,6 +149,11 @@ void AEyeStalker::RemoveDetection(AActor* Actor)
 			}
 		}
 	}
+}
+
+void AEyeStalker::ReceiveKnockback(const FVector& Force)
+{
+	// 넉백 당하지 않음.
 }
 
 void AEyeStalker::M_SetEyeOpenness_Implementation(float Openness)

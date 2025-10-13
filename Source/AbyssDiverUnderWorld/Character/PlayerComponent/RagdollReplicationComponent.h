@@ -6,6 +6,7 @@
 #include "Components/ActorComponent.h"
 #include "BonePose.h"
 #include "RagdollTypes.h"
+#include "Interactable/Item/ADUseItem.h"
 #include "RagdollReplicationComponent.generated.h"
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
@@ -41,12 +42,22 @@ protected:
 	 */
 	void CaptureBoneTransforms();
 
-	/** 래그돌 레플리케이션 함수. 래그돌이 활성화일 때만 동기화 된다. */
+	/** 래그돌 레플리케이션 함수. 래그돌이 활성화일 때만 동기화 된다.
+	 * Server의 Bone Transform에 따라 Client의 Boen Transform을 갱신한다.
+	 */
 	UFUNCTION()
 	void OnRep_BoneTransforms();
 
-	/** 캡슐 컴포넌트의 위치와 회전을 래그돌의 특정 본에 맞추어 업데이트한다. */
+	/** 캡슐 컴포넌트의 위치와 회전을 래그돌의 특정 본에 맞추어 업데이트한다.
+	 * 캡슐 컴포넌트의 위치를 갱신함으로써 카메라가 래그돌에 동기화 된다.
+	 */
 	void UpdateCapsuleTransform();
+
+	/** 환경 상태가 변경되었을 때 호출되는 함수
+	* 지상 / 수중에 따라 중력을 적용한다. 
+	*/
+	UFUNCTION()
+	void OnEnvironmentChanged(EEnvironmentState OldEnvironmentState, EEnvironmentState NewEnvironmentState);
 
 #pragma endregion
 

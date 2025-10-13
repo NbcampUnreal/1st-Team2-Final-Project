@@ -3,6 +3,7 @@
 #include "Interactable/Item/Component/ADInteractableComponent.h"
 #include "Framework/ADGameInstance.h"
 #include "AbyssDiverUnderWorld.h"
+#include "Character/UnderwaterCharacter.h"
 
 #include "Engine/TargetPoint.h"
 #include "Subsystems/SoundSubsystem.h"
@@ -47,7 +48,14 @@ void APortal::Interact_Implementation(AActor* InstigatorActor)
 		return;
 	}
 
-	InstigatorActor->SetActorLocation(TaregetDestination->GetActorLocation());
+	if (AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(InstigatorActor))
+	{
+		Player->Teleport(TaregetDestination->GetActorLocation(), TaregetDestination->GetActorRotation());
+	}
+	else
+	{
+		InstigatorActor->SetActorLocation(TaregetDestination->GetActorLocation());
+	}
 }
 
 bool APortal::IsConditionMet()

@@ -124,6 +124,11 @@ void ALimadon::NotifyLightExposure(float DeltaTime, float TotalExposedTime, cons
 	// Limadon은 빛에 반응 하지 않음
 }
 
+void ALimadon::ReceiveKnockback(const FVector& Force)
+{
+	// 넉백 당하지 않음.
+}
+
 void ALimadon::Spit()
 {
 	if (!IsValid(GetTarget()))

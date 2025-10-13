@@ -485,8 +485,10 @@ void AUnderwaterCharacter::OnMovementModeChanged(EMovementMode PrevMovementMode,
 {
 	Super::OnMovementModeChanged(PrevMovementMode, PreviousCustomMode);
 
-	UE_LOG(LogAbyssDiverCharacter,Display, TEXT("Movement Changed : %s"), *UEnum::GetValueAsString(GetCharacterMovement()->MovementMode));
+	UE_LOG(LogAbyssDiverCharacter,Display, TEXT("[%s] Movement Changed : %s"),
+		HasAuthority() ? TEXT("Server") : TEXT("Client"), *UEnum::GetValueAsString(GetCharacterMovement()->MovementMode));
 
+	// 지상에서는 Movement Changed 처리를 하지 않는다.
 	if (EnvironmentState != EEnvironmentState::Underwater)
 	{
 		return;
@@ -525,8 +527,10 @@ void AUnderwaterCharacter::SetEnvironmentState(EEnvironmentState State)
 	const EEnvironmentState OldState = EnvironmentState;
 	EnvironmentState = State;
 
-	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Environment State : %s -> %s"),
-		*UEnum::GetValueAsString(OldState), *UEnum::GetValueAsString(EnvironmentState));
+	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("[%s] Environment State : %s -> %s"),
+		HasAuthority() ? TEXT("Server") : TEXT("Client"),
+		*UEnum::GetValueAsString(OldState),
+		*UEnum::GetValueAsString(EnvironmentState));
 	
 	switch (EnvironmentState)
 	{
@@ -619,7 +623,8 @@ void AUnderwaterCharacter::RequestBind(AUnderwaterCharacter* RequestBinderCharac
 		UE_LOG(LogAbyssDiverCharacter, Error, TEXT("RequestBind called in invalid state or not authority: %s"), *GetName());
 		return;
 	}
-	
+
+	// Request 대상이 이미 Bind되어 있는 경우 UnBind 처리
 	if (BindCharacter == RequestBinderCharacter)
 	{
 		UnBind();
@@ -2438,6 +2443,45 @@ void AUnderwaterCharacter::SetNameWidgetEnabled(bool bNewVisibility)
 	NameWidgetComponent->SetEnable(bShouldEnableNameWidget);
 }
 
+void AUnderwaterCharacter::Teleport(const FVector& NewLocation, const FRotator& ViewRotation)
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	const FVector PrevLocation = GetActorLocation();
+	SetActorLocation(NewLocation, false, nullptr, ETeleportType::TeleportPhysics);
+	if (UCharacterMovementComponent* MovementComponent = GetCharacterMovement())
+	{
+		MovementComponent->Velocity = FVector::ZeroVector;
+	}
+
+	C_ApplyControlRotation(ViewRotation);
+
+	for (AUnderwaterCharacter* BoundCharacter : BoundCharacters)
+	{
+		FVector Offset = BoundCharacter->GetActorLocation() - PrevLocation;
+		Offset.Z = 0.0f; // 높이 차이는 무시
+		FVector TeleportLocation = NewLocation + Offset;
+		BoundCharacter->TeleportTo(TeleportLocation, BoundCharacter->GetActorRotation(), false, true);
+
+		if (UPrimitiveComponent* CharacterMesh = BoundCharacter->GetMesh())
+		{
+			FVector CharacterMeshOffset = TeleportLocation - CharacterMesh->GetComponentLocation();
+			CharacterMesh->SetWorldLocation(TeleportLocation, false, nullptr, ETeleportType::TeleportPhysics);
+			CharacterMesh->SetAllPhysicsLinearVelocity(FVector::ZeroVector);
+			CharacterMesh->SetAllPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
+			
+			// CableComponent의 Old Position을 갱신해서 Cable이 튀는 현상을 방지한다.
+			if (ACableBindingActor* CableActor = BoundCharacter->CableBindingActor)
+			{
+				CableActor->ApplyWorldOffset(CharacterMeshOffset);
+			}
+		}
+	}
+}
+
 void AUnderwaterCharacter::S_PlayEmote_Implementation(uint8 EmoteIndex)
 {
 	RequestPlayEmote(EmoteIndex);
@@ -2684,6 +2728,14 @@ void AUnderwaterCharacter::InitNameWidgetEnabled()
 	{
 		const bool bNameWidgetEnabled = LocalPlayer->IsNameWidgetEnabled();
 		SetNameWidgetEnabled(bNameWidgetEnabled);
+	}
+}
+
+void AUnderwaterCharacter::C_ApplyControlRotation_Implementation(const FRotator& NewControlRotation)
+{
+	if (Controller)
+	{
+		Controller->SetControlRotation(NewControlRotation);
 	}
 }
 

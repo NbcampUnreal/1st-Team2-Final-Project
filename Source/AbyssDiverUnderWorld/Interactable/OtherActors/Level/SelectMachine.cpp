@@ -56,7 +56,7 @@ void ASelectMachine::BeginPlay()
 
 	if (!HasAuthority()) return;
 
-	LevelIDs = { EMapName::Description, EMapName::test1, EMapName::test2 };
+	LevelIDs = { EMapName::Description, EMapName::test1, EMapName::test2 , EMapName::SecondAbyss};
 
 	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
 	{

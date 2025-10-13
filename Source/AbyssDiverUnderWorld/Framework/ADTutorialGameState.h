@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/GameState.h"
+#include "Framework/ADInGameState.h"
 #include "Tutorial/TutorialEnums.h"
 #include "Delegates/Delegate.h"
 #include "ADTutorialGameState.generated.h"
@@ -11,7 +11,7 @@
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPhaseChangedDelegate, ETutorialPhase, NewPhase);
 
 UCLASS()
-class ABYSSDIVERUNDERWORLD_API AADTutorialGameState : public AGameState
+class ABYSSDIVERUNDERWORLD_API AADTutorialGameState : public AADInGameState
 {
 	GENERATED_BODY()
 	
@@ -21,12 +21,13 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Tutorial")
 	FOnPhaseChangedDelegate OnPhaseChanged;
 
-	FORCEINLINE ETutorialPhase GetCurrentPhase() const { return CurrentPhase; }
+	UFUNCTION(BlueprintPure, Category = "Tutorial")
+	FORCEINLINE ETutorialPhase GetCurrentPhase() const { return TutorialCurrentPhase; }
 
 	void SetCurrentPhase(ETutorialPhase NewPhase);
 
 	UPROPERTY(ReplicatedUsing = OnRep_PhaseChanged)
-	ETutorialPhase CurrentPhase;
+	ETutorialPhase TutorialCurrentPhase;
 protected:
 	UFUNCTION()
 	void OnRep_PhaseChanged();

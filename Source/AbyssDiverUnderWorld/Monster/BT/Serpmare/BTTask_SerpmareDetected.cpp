@@ -36,8 +36,9 @@ void UBTTask_SerpmareDetected::TickTask(UBehaviorTreeComponent& OwnerComp, uint8
 	FBTSerpmareDetectedTaskMemory* TaskMemory = (FBTSerpmareDetectedTaskMemory*)NodeMemory;
 	if (!TaskMemory) return;
 	
+	const TSet<TWeakObjectPtr<AActor>>& Detecteds = TaskMemory->Serpmare->GetDetectedPlayers();
 	// 플레이어가 공격 범위 내에 있는 경우
-	if (TaskMemory->Serpmare->GetIsAttackCollisionOverlappedPlayer())
+	if (Detecteds.Num() > 0)
 	{
 		if (TaskMemory->Serpmare->GetCanAttack())
 		{

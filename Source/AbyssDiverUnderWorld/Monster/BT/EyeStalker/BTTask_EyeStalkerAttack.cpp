@@ -57,7 +57,7 @@ void UBTTask_EyeStalkerAttack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8
 	
 	// 플레이어가 이동 상태인지 확인하기 위해 **이동속도** 추출
 	const float PlayerVelocity = Player->GetVelocity().Size();
-	const bool bIsMoving = PlayerVelocity >= 5.0f;
+	const bool bIsMoving = PlayerVelocity >= RecognizationSpeed;
     
 	// 상태가 변경되었으면 시간 리셋
 	if (bIsMoving != TaskMemory->bWasPlayerMoving)
