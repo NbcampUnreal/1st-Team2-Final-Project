@@ -4,6 +4,7 @@
 #include "AbyssDiverUnderWorld.h"
 #include "UI/TabletBaseWidget.h"
 #include "Framework/ADGameInstance.h"
+#include "Framework/ADPlayerController.h"
 
 #include "Subsystems/SoundSubsystem.h"
 #include "Subsystems/Localizations/LocalizationSubsystem.h"
@@ -58,7 +59,7 @@ void AADTablet::BeginPlay()
 void AADTablet::Interact_Implementation(AActor* InstigatorActor)
 {
 	AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(InstigatorActor);
-	
+
 	if (!UnderwaterCharacter) return;
 	LOG(TEXT("Is Character"))
 
@@ -92,6 +93,7 @@ void AADTablet::Pickup(AUnderwaterCharacter* UnderwaterCharacter)
 		TEXT("TabletSocket")
 	);
 	bIsHeld = true;
+
 
 	TabletMesh->SetRelativeLocation(FVector::ZeroVector);
 	TabletMesh->SetRelativeRotation(FRotator::ZeroRotator);

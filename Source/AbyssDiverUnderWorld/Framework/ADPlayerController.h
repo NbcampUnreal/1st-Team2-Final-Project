@@ -11,6 +11,7 @@
 enum class ESFX : uint8;
 enum class EMapName : uint8;
 class ULoadingScreenWidget;
+class AADTablet;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADPlayerController : public APlayerController
