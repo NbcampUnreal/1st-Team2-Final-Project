@@ -44,10 +44,6 @@ private:
 
 #pragma region Variable
 public:
-	/** 태블릿 홀드 상태가 변경될 때 호출되는 Delegate */
-	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnTabletStateChanged, bool, bIsHeld);
-	UPROPERTY(BlueprintAssignable)
-	FOnTabletStateChanged OnTabletStateChanged;
 
 protected:
 	UPROPERTY(VisibleAnywhere)
@@ -83,7 +79,6 @@ public:
 	virtual UADInteractableComponent* GetInteractableComponent() const override { return InteractableComp; }
 	virtual bool IsHoldMode() const override { return false; }
 	virtual FString GetInteractionDescription() const override;
-	bool isTabletHeld() const { return bIsHeld; }
 
 private:
 	USoundSubsystem* GetSoundSubsystem();

@@ -59,19 +59,16 @@ void AADTablet::BeginPlay()
 void AADTablet::Interact_Implementation(AActor* InstigatorActor)
 {
 	AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(InstigatorActor);
-	AADPlayerController* PC = UnderwaterCharacter->GetController<AADPlayerController>();
 
 	if (!UnderwaterCharacter) return;
 	LOG(TEXT("Is Character"))
 
 	if (!bIsHeld)
 	{
-		PC->SetHeldTablet(this);
 		Pickup(UnderwaterCharacter);
 	}
 	else
 	{
-		PC->SetHeldTablet(this);
 		PutDown();
 	}    
 }
@@ -97,8 +94,6 @@ void AADTablet::Pickup(AUnderwaterCharacter* UnderwaterCharacter)
 	);
 	bIsHeld = true;
 
-	OnTabletStateChanged.Broadcast(true);
-	LOG((TEXT("TabletHoldState is updated : pickup")))
 
 	TabletMesh->SetRelativeLocation(FVector::ZeroVector);
 	TabletMesh->SetRelativeRotation(FRotator::ZeroRotator);
@@ -126,8 +121,6 @@ void AADTablet::Pickup(AUnderwaterCharacter* UnderwaterCharacter)
 
 void AADTablet::PutDown()
 {
-	OnTabletStateChanged.Broadcast(false);
-	LOG((TEXT("TabletHoldState is updated : putdown")))
 
 	TabletMesh->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
 	
@@ -150,10 +143,6 @@ void AADTablet::OnRep_Held()
 	{
 		if (HeldBy)
 		{
-			if (AADPlayerController* PC = HeldBy->GetController<AADPlayerController>())
-			{
-				PC->SetHeldTablet(this);
-			}
 			Pickup(HeldBy);
 			LOG(TEXT("Pickup!!"));
 			ScreenWidget->InitWidget();
@@ -162,13 +151,6 @@ void AADTablet::OnRep_Held()
 	}
 	else
 	{
-		if (HeldBy)
-		{
-			if (AADPlayerController* PC = HeldBy->GetController<AADPlayerController>())
-			{
-				PC->SetHeldTablet(this);
-			}
-		}
 		PutDown();
 	}
 }

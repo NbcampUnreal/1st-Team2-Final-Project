@@ -321,55 +321,6 @@ void AADPlayerController::SetActiveRadarWidget(bool bShouldActivate)
 	PlayerHUDComponent->SetActiveRadarWidget(bShouldActivate);
 }
 
-void AADPlayerController::SetHeldTablet(AADTablet* Tablet)
-{
-	// 이전 태블릿 이벤트 해제
-	if (CurrentHeldTablet)
-	{
-		Tablet->OnTabletStateChanged.RemoveAll(this);
-		UE_LOG(LogTemp, Log, TEXT("TabletHod Event is all unbinded"));
-	}
-
-	CurrentHeldTablet = Tablet;
-
-	// 새 태블릿 이벤트 바인딩
-	if (CurrentHeldTablet)
-	{
-		Tablet->OnTabletStateChanged.AddDynamic(this, &AADPlayerController::ShowTabletUI);
-		UE_LOG(LogTemp, Log, TEXT("TabletHold Event is Binded"));
-	}
-}
-
-void AADPlayerController::ShowTabletUI(bool bShow)
-{
-	if (!IsLocalController()) return;
-
-	if (bShow)
-	{
-		if (!TabletHoldWidgetInstance && TabletHoldWidgetClass)
-		{
-			TabletHoldWidgetInstance = CreateWidget<UUserWidget>(
-				this, TabletHoldWidgetClass
-			);
-			UE_LOG(LogTemp, Log, TEXT("TabletUI is made"));
-		}
-
-		if (TabletHoldWidgetInstance)
-		{
-			TabletHoldWidgetInstance->AddToViewport();
-			UE_LOG(LogTemp, Log, TEXT("TabletUI add to viewport"));
-		}
-	}
-	else
-	{
-		if (TabletHoldWidgetInstance)
-		{
-			TabletHoldWidgetInstance->RemoveFromViewport();
-			UE_LOG(LogTemp, Log, TEXT("TabletUI is removed"));
-		}
-	}
-}
-
 void AADPlayerController::BeginSpectatingState()
 {
 	UE_LOG(LogAbyssDiverSpectate, Display, TEXT("Begin Spectating State for %s, GetPawn : %s"), *GetName(), GetPawn() ? *GetPawn()->GetName() : TEXT("None"));

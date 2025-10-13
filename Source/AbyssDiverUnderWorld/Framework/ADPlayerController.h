@@ -109,12 +109,6 @@ public:
 	void S_KillPlayer_Implementation();
 
 	void SetActiveRadarWidget(bool bShouldActivate);
-
-	/** 들고 있는 태블릿을 갱신 */
-	void SetHeldTablet(AADTablet* Tablet);
-	/** 태블릿 UI를 띄우는 함수 */
-	UFUNCTION()
-	void ShowTabletUI(bool bShow);
 protected:
 
 	/** 관전 상태가 시작될 때 호출되는 함수 */
@@ -227,16 +221,6 @@ private:
 	/** 조준선 위젯의 가시성 표시 여부 */
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	uint8 bIsCrosshairWidgetVisible : 1 = true;
-
-	// 태블릿 들기 상태 UI
-	UPROPERTY(EditDefaultsOnly, Category = "UI")
-	TSubclassOf<UUserWidget> TabletHoldWidgetClass;
-
-	UPROPERTY()
-	TObjectPtr<UUserWidget> TabletHoldWidgetInstance;
-
-	UPROPERTY()
-	TObjectPtr<AADTablet> CurrentHeldTablet;
 	
 #pragma endregion 
 
