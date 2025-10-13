@@ -1,5 +1,7 @@
 #include "Framework/ADPlayerController.h"
 
+#include <steam/isteaminventory.h>
+
 #include "ADCampGameMode.h"
 #include "ADInGameState.h"
 #include "ADPlayerState.h"
@@ -36,6 +38,7 @@
 #include "Engine/PawnIterator.h"
 
 #include "Kismet/GameplayStatics.h"
+#include "Subsystems/DataTableSubsystem.h"
 #include "UI/CrosshairWidget.h"
 
 #include "Interactable/OtherActors/Tablet/ADTablet.h"
@@ -484,6 +487,62 @@ void AADPlayerController::HideCrosshairWidget()
 	if (UCrosshairWidget* CrosshairWidget = PlayerHUDComponent->GetCrosshairWidget())
 	{
 		CrosshairWidget->HideCrosshair();
+	}
+}
+
+void AADPlayerController::GetItemById(uint8 ItemId)
+{
+	UADGameInstance* GameInstance = GetGameInstance<UADGameInstance>();
+	if (GameInstance == nullptr)
+	{
+		UE_LOG(AbyssDiver, Error, TEXT("Invalid GameInstance"));
+		return;
+	}
+
+	UDataTableSubsystem* DataTableSubsystem = GameInstance->GetSubsystem<UDataTableSubsystem>();
+	if (DataTableSubsystem == nullptr)
+	{
+		UE_LOG(AbyssDiver, Error, TEXT("Cannot find DataTableSubsystem"));
+		return;
+	}
+
+	if (FFADItemDataRow* ItemData = DataTableSubsystem->GetItemData(ItemId))
+	{
+		S_GetItemById(ItemId);
+	}
+	else
+	{
+		UE_LOG(AbyssDiver, Warning, TEXT("Cannot find ItemData for ItemId: %d"), ItemId);
+	}
+}
+
+void AADPlayerController::S_GetItemById_Implementation(uint8 ItemId)
+{
+	UADGameInstance* GameInstance = GetGameInstance<UADGameInstance>();
+	if (GameInstance == nullptr)
+	{
+		UE_LOG(AbyssDiver, Error, TEXT("Invalid GameInstance"));
+		return;
+	}
+
+	UDataTableSubsystem* DataTableSubsystem = GameInstance->GetSubsystem<UDataTableSubsystem>();
+	if (DataTableSubsystem == nullptr)
+	{
+		UE_LOG(AbyssDiver, Error, TEXT("Cannot find DataTableSubsystem"));
+		return;
+	}
+
+	if (FFADItemDataRow* ItemDataRow = DataTableSubsystem->GetItemData(ItemId))
+	{
+		if (AADPlayerState* ADPlayerState = GetPlayerState<AADPlayerState>())
+		{
+			if (UADInventoryComponent* Inventory = ADPlayerState->GetInventory())
+			{
+				FItemData ItemData(*ItemDataRow);
+				ItemData.Quantity = 1;
+				Inventory->AddInventoryItem(ItemData);
+			}
+		}
 	}
 }
 

@@ -159,6 +159,15 @@ protected:
 	UFUNCTION(Exec)
 	void HideCrosshairWidget();
 
+	/** ItemId에 해당하는 아이템을 인벤토리에 추가 (테스트용) */
+	UFUNCTION(Exec)
+	void GetItemById(uint8 ItemId);
+
+	/** Server에서 ItemId에 해당하는 아이템을 인벤토리에 추가 */
+	UFUNCTION(Server, Reliable)
+	void S_GetItemById(uint8 ItemId);
+	void S_GetItemById_Implementation(uint8 ItemId);
+	
 	UFUNCTION(Server, Reliable)
 	void S_GainShield(int Amount);
 	

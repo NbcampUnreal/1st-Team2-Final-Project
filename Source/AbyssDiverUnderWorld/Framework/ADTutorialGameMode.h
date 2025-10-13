@@ -1,12 +1,13 @@
 ﻿#pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/GameMode.h"
+#include "Framework/ADInGameMode.h"
 #include "Tutorial/TutorialEnums.h"
 #include "Sound/SoundMix.h"
 #include "Interactable/OtherActors/TargetIndicators/IndicatingTarget.h"
 #include "Character/PlayerComponent/OxygenComponent.h"
 #include "Engine/TargetPoint.h"
+#include "GameFramework/PlayerController.h"
 #include "ADTutorialGameMode.generated.h"
 
 class UDataTable;
@@ -18,9 +19,10 @@ class AADDroneSeller;
 class AADDrone;
 class AADPlayerController;
 class UTexture2D;
+class AUnderwaterCharacter;
 
 UCLASS()
-class ABYSSDIVERUNDERWORLD_API AADTutorialGameMode : public AGameMode
+class ABYSSDIVERUNDERWORLD_API AADTutorialGameMode : public AADInGameMode
 {
     GENERATED_BODY()
 
@@ -58,6 +60,9 @@ public:
     void ReviveSinglePlayerAtDrone(int8 PlayerIndex, const AADDrone* Drone);
     bool TutorialTryGetRandomTaggedTargetPointTransform(const FName& Tag, FTransform& OutTM) const;
     FTransform GetBestTutorialRespawnTransform(const class AADDrone* Drone) const;
+
+    UFUNCTION(BlueprintCallable, Category = "Tutorial")
+    void RequestFinishTutorial();
 protected:
     // Phase 핸들러
     void HandleCurrentPhase();
@@ -69,6 +74,7 @@ protected:
     void HandlePhase_Looting();
     void HandlePhase_Inventory();
     void HandlePhase_Drone();
+    void HandlePhase_Dialogue_LightOut();
     void HandlePhase_LightToggle();
     void HandlePhase_Items();
     void HandlePhase_Dialogue_06();
@@ -156,6 +162,9 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Settings|Icons")
     TObjectPtr<UTexture2D> NPCIcon;
 
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Tutorial|Indicators")
+    TObjectPtr<UTexture2D> LadderExitIndicatorIcon;
+
     // Timing
     UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Timing")
     float EmoteToNextPhaseDelay = 2.0f;
@@ -163,6 +172,9 @@ protected:
     // Sound
     UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Sound")
     TObjectPtr<USoundMix> MuteDroneSoundMix;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Sound")
+    TObjectPtr<USoundBase> LightOutSound;
 
     // Drone
     UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Drone")
@@ -177,9 +189,6 @@ protected:
     // Respawn
     UPROPERTY(EditAnywhere, Category = "Tutorial|Respawn")
     FName FixedRespawnPointTag = FName("RespawnPoint");
-
-
-
 private:
     UPROPERTY()
     TWeakObjectPtr<AUnderwaterCharacter> TutorialNPC;

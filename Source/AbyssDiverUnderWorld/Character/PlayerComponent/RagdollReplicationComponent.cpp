@@ -39,6 +39,8 @@ void URagdollReplicationComponent::BeginPlay()
 		}
 
 		CapsuleComponent = Owner->GetCapsuleComponent();
+		
+		Owner->OnEnvironmentStateChangedDelegate.AddDynamic(this, &URagdollReplicationComponent::OnEnvironmentChanged);
 	}
 }
 
@@ -175,5 +177,15 @@ void URagdollReplicationComponent::UpdateCapsuleTransform()
 		const FRotator CapsuleRotation = BoneTransform.GetRotation().Rotator();
 
 		CapsuleComponent->SetWorldLocationAndRotation(CapsuleLocation, CapsuleRotation);
+	}
+}
+
+void URagdollReplicationComponent::OnEnvironmentChanged(EEnvironmentState OldEnvironmentState,
+	EEnvironmentState NewEnvironmentState)
+{
+	const bool bShouldApplyGravity = (NewEnvironmentState == EEnvironmentState::Ground);
+	if (bIsRagdoll && SkeletalMesh)
+	{
+		SkeletalMesh->SetEnableGravity(bShouldApplyGravity);
 	}
 }

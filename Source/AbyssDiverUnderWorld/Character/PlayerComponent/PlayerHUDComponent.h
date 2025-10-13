@@ -75,6 +75,7 @@ public:
 
     void PlayNextPhaseAnim(int32 NextPhaseNumber);
     void SetCurrentPhaseOverlayVisible(bool bShouldVisible);
+    void SetMaxPhaseNumber(int32 NewMaxPhaseNumber);
 
     void BindDepthWidgetFunction(UDepthComponent* DepthComp);
 

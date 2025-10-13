@@ -36,9 +36,10 @@ void UBTTask_SerpmareIdle::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* No
 
 	FBTSerpmareIdleTaskMemory* TaskMemory = (FBTSerpmareIdleTaskMemory*)NodeMemory;
 	if (!TaskMemory) return;
-
+	
+	const TSet<TWeakObjectPtr<AActor>>& Detecteds = TaskMemory->Serpmare->GetDetectedPlayers();
 	// 공격 범위 내에 플레이어가 들어온 경우
-	if (TaskMemory->Serpmare->GetIsAttackCollisionOverlappedPlayer())
+	if (Detecteds.Num() > 0)
 	{
 		if (bIsBigSerpmare)
 		{
@@ -51,17 +52,17 @@ void UBTTask_SerpmareIdle::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* No
 			FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);	
 		}
 
-		TArray<AActor*> OverlappedActors;
-		TaskMemory->Serpmare->AttackCollision->GetOverlappingActors(OverlappedActors);
+		//TArray<AActor*> OverlappedActors;
+		//TaskMemory->Serpmare->AttackCollision->GetOverlappingActors(OverlappedActors);
 
-		for (AActor* OverlappedActor : OverlappedActors)
-		{
-			AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(OverlappedActor);
-			if (IsValid(Player))
-			{
-				TaskMemory->Serpmare->AddDetection(Player);
-				break;
-			}
-		}
+		//for (AActor* OverlappedActor : OverlappedActors)
+		//{
+		//	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(OverlappedActor);
+		//	if (IsValid(Player))
+		//	{
+		//		TaskMemory->Serpmare->AddDetection(Player);
+		//		break;
+		//	}
+		//}
 	}
 }

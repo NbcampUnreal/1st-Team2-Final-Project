@@ -18,6 +18,8 @@ UOxygenComponent::UOxygenComponent()
 	OxygenState.OxygenLevel = 600.0f;
 
 	OxygenConsumeRate = 1.0f;
+
+	bIsInTutorialMode = 0;
 }
 
 void UOxygenComponent::BeginPlay()
@@ -70,6 +72,11 @@ void UOxygenComponent::OnRep_OxygenStateChanged()
 	}
 	
 	OldOxygenLevel = OxygenState.OxygenLevel;
+}
+
+void UOxygenComponent::SetTutorialMode(bool bIsTutorial)
+{
+	bIsInTutorialMode = bIsTutorial;
 }
 
 void UOxygenComponent::ConsumeOxygen(const float DeltaTime)
@@ -161,8 +168,11 @@ void UOxygenComponent::SetOxygenLevel(const float NextOxygenLevel, const bool bA
 	}
 
 	OldOxygenLevel = OxygenState.OxygenLevel;
+
+	const float MinOxygenLevel = bIsInTutorialMode ? MinOxygenInTutorial : 0.0f;
+
+	OxygenState.OxygenLevel = FMath::Clamp(NextOxygenLevel, MinOxygenLevel, OxygenState.MaxOxygenLevel);
 	
-	OxygenState.OxygenLevel  = FMath::Clamp(NextOxygenLevel, 0.0f, OxygenState.MaxOxygenLevel);
 	OnOxygenLevelChanged.Broadcast(OxygenState.OxygenLevel, OxygenState.MaxOxygenLevel);
 	K2_OnOxygenLevelChanged(OxygenState.OxygenLevel, OxygenState.MaxOxygenLevel);
 

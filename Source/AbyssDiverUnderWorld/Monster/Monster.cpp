@@ -32,9 +32,6 @@ AMonster::AMonster()
 	AnimInstance = nullptr;
 	TargetPlayer = nullptr;
 	ChaseTriggerTime = 1.8f;
-	ChaseSpeed = 400.0f;
-	PatrolSpeed = 200.0f;
-	InvestigateSpeed = 300.0f;
 	bIsChasing = false;
 
 	bUseControllerRotationYaw = false;
@@ -510,6 +507,14 @@ void AMonster::OnAttackEnded()
 	AttackedPlayers.Empty();
 }
 
+void AMonster::ReceiveKnockback(const FVector& Force)
+{
+	if (UCharacterMovementComponent* MovementComp = GetCharacterMovement())
+	{
+		MovementComp->AddImpulse(Force, true);
+	}
+}
+
 void AMonster::M_PlayMontage_Implementation(UAnimMontage* AnimMontage, float InPlayRate, FName StartSectionName)
 {
 	PlayAnimMontage(AnimMontage, InPlayRate, StartSectionName);
@@ -705,6 +710,12 @@ void AMonster::NotifyLightExposure(float DeltaTime, float TotalExposedTime, cons
 	if (Player == nullptr)
 	{
 		LOGV(Error, TEXT("NotifyLightExposure: Player is not valid"));
+		return;
+	}
+
+	if (Player->IsGroggy() || Player->IsDeath())
+	{
+		LOGV(Log, TEXT("Player is Groggy Or Dead, ignoring light exposure"));
 		return;
 	}
 
@@ -989,6 +1000,7 @@ void AMonster::ApplyMonsterStateChange(EMonsterState NewState)
 
 		bIsChasing = true;
 		// 추적 속도는 이미 Monster::PerformChasing에서 변경하고 있음
+		// Default ChasingMovementSpeedMultiplier = 2.2f;
 		BlackboardComponent->SetValueAsBool(BlackboardKeys::bIsChasingKey, true);
 		MonsterSoundComponent->S_PlayChaseLoopSound();
 		break;
@@ -996,7 +1008,7 @@ void AMonster::ApplyMonsterStateChange(EMonsterState NewState)
 	case EMonsterState::Patrol:
 
 		bIsChasing = false;
-		SetMaxSwimSpeed(PatrolSpeed);
+		SetMaxSwimSpeed(StatComponent->MoveSpeed);
 		BlackboardComponent->SetValueAsBool(BlackboardKeys::bIsChasingKey, false);
 		MonsterSoundComponent->S_PlayPatrolLoopSound();
 		ForceRemoveDetectedPlayers();
@@ -1004,13 +1016,13 @@ void AMonster::ApplyMonsterStateChange(EMonsterState NewState)
 
 	case EMonsterState::Investigate:
 
-		SetMaxSwimSpeed(InvestigateSpeed);
+		SetMaxSwimSpeed(StatComponent->MoveSpeed * InvestigateMovementSpeedMultiplier);
 		break;
 
 	case EMonsterState::Flee:
 
 		bIsChasing = false;
-		SetMaxSwimSpeed(FleeSpeed);
+		SetMaxSwimSpeed(StatComponent->MoveSpeed * FleeMovementSpeedMultiplier);
 		MonsterSoundComponent->S_PlayFleeLoopSound();
 		BlackboardComponent->SetValueAsBool(BlackboardKeys::bIsChasingKey, false);
 		break;

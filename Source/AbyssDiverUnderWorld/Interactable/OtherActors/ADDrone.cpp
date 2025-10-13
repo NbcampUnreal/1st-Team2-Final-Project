@@ -26,6 +26,7 @@
 #include "UI/InteractPopupWidget.h"
 
 #include "Framework/ADTutorialGameMode.h"   
+#include "Framework/ADTutorialGameState.h"
 
 DEFINE_LOG_CATEGORY(DroneLog);
 
@@ -58,13 +59,25 @@ void AADDrone::BeginPlay()
 		SpawnManager->SpawnByGroup();
 	}
 
+	WorldSubsystem = GetWorld()->GetSubsystem<UADWorldSubsystem>();
+
+
 	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
 	{
 		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
-		if(bIsBgmOn) DrondeThemeSoundNumber = SoundSubsystem->PlayAttach(ESFX_BGM::DroneTheme, RootComponent);
+		
+		FTimerHandle PlayBGMDelayTimerHandle;
+		float PlayBGMDelay = 2.0f;
+		GetWorldTimerManager().SetTimer(PlayBGMDelayTimerHandle, [this]() {
+			if (bIsBgmOn)
+			{
+				const FString CurrentMapName = WorldSubsystem ? WorldSubsystem->GetCurrentLevelName() : TEXT("");
+				if (CurrentMapName != "TutorialPool")
+				{
+					DrondeThemeSoundNumber = SoundSubsystem->PlayAttach(ESFX_BGM::DroneTheme, RootComponent);
+				}
+			}}, PlayBGMDelay, false);
 	}
-
-	WorldSubsystem = GetWorld()->GetSubsystem<UADWorldSubsystem>();
 }
 
 void AADDrone::Tick(float DeltaSeconds)
@@ -90,7 +103,22 @@ void AADDrone::Tick(float DeltaSeconds)
 
 void AADDrone::Destroyed()
 {
-	if(bIsBgmOn) SoundSubsystem->StopAudio(DrondeThemeSoundNumber);
+#if WITH_EDITOR
+
+// 게임 중이 아닌 경우 리턴
+UWorld* World = GetWorld();
+if (World == nullptr || World->IsGameWorld() == false)
+{
+	Super::Destroyed();
+	return;
+}
+
+#endif
+	if (bIsBgmOn)
+	{
+		SoundSubsystem->StopAudio(DrondeThemeSoundNumber);
+		SoundSubsystem->StopAudio(TutorialAlarmSoundId);
+	}
 
 	AADPlayerController* PC = GetWorld()->GetFirstPlayerController<AADPlayerController>();
 	if (IsValid(PC) == false)
@@ -122,7 +150,21 @@ void AADDrone::Interact_Implementation(AActor* InstigatorActor)
 	if (AADTutorialGameMode* TutorialMode = GetWorld()->GetAuthGameMode<AADTutorialGameMode>())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("ADDrone - 튜토리얼 게임 모드를 찾음. 부활 시퀀스 호출!"));
-		TutorialMode->TriggerResurrectionSequence();
+		if (TutorialMode)
+		{
+			if (AADTutorialGameState* TutorialGS = TutorialMode->GetGameState<AADTutorialGameState>())
+			{
+				if (TutorialGS->GetCurrentPhase() == ETutorialPhase::Step15_Resurrection)
+				{
+					TutorialMode->TriggerResurrectionSequence();
+				}
+				if (TutorialGS->GetCurrentPhase() == ETutorialPhase::Step7_Drone)
+				{
+					TutorialMode->AdvanceTutorialPhase();
+				}
+			}
+		}
+		StartRising();
 		return;
 	}
 
@@ -138,6 +180,11 @@ void AADDrone::Interact_Implementation(AActor* InstigatorActor)
 			PlayerHUDComponent->C_ShowConfirmWidget(this);
 		}
 	}
+}
+
+void AADDrone::M_PlayTutorialAlarmSound_Implementation()
+{
+	TutorialAlarmSoundId = GetSoundSubsystem()->PlayAttach(ESFX_BGM::DroneTutorialAlarm, RootComponent);
 }
 
 void AADDrone::M_PlayDroneRisingSound_Implementation()

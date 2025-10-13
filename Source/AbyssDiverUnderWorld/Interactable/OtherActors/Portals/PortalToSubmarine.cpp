@@ -33,12 +33,6 @@ void APortalToSubmarine::Interact_Implementation(AActor* InstigatorActor)
 		return;
 	}
 
-	TArray<AUnderwaterCharacter*> BoundCharacters = PlayerCharacter->GetBoundCharacters();
-	for (AUnderwaterCharacter* BoundCharacter : BoundCharacters)
-	{
-		BoundCharacter->SetActorLocation(TaregetDestination->GetActorLocation(), false, nullptr, ETeleportType::TeleportPhysics);
-	}
-
 	AADPlayerState* PS = Cast<AADPlayerState>(PlayerCharacter->GetPlayerState());
 	if (PS == nullptr)
 	{
@@ -47,6 +41,11 @@ void APortalToSubmarine::Interact_Implementation(AActor* InstigatorActor)
 	}
 
 	PS->SetIsSafeReturn(true);
+
+	if (AADPlayerController* PC = Cast<AADPlayerController>(PlayerCharacter->GetController()))
+	{
+		PC->C_PlaySound(ESFX::EnterSubmarine);
+	}
 }
 
 bool APortalToSubmarine::IsConditionMet()

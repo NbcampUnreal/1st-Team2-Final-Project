@@ -17,10 +17,6 @@ AHorrorCreature::AHorrorCreature()
 
 	// Initialize Variable
 	ChaseTriggerTime = 2.0f;
-	ChaseSpeed = 1400.0f;
-	PatrolSpeed = 200.0f;
-	InvestigateSpeed = 500.0f;
-	FleeSpeed = 2000.0f;
 	SwallowedPlayer = nullptr;
 	FleeTime = 4.5f;
 	SwallowDamage = 900.0f;
@@ -47,6 +43,12 @@ void AHorrorCreature::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	UWorld* World = GetWorld();
+	if (IsValid(World) == false || World->IsInSeamlessTravel())
+	{
+		return;
+	}
+
 	// 먹는 순간만 활성화 되도록
 	if (bSwallowingInProgress && SwallowedPlayer && IsValid(SwallowedPlayer))
 	{
@@ -55,7 +57,7 @@ void AHorrorCreature::Tick(float DeltaTime)
 	}
 
 	// 도망가는 중에만 활성화 되도록
-	if (MonsterState == EMonsterState::Flee)
+	if (MonsterState == EMonsterState::Flee && IsValid(BlackboardComponent))
 	{
 		// DesireLocation을 FleeLocation으로 업데이트
 		SetDesireTargetLocation(BlackboardComponent->GetValueAsVector(BlackboardKeys::HorrorCreature::FleeLocationKey));

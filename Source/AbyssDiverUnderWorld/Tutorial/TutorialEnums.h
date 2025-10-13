@@ -18,6 +18,7 @@ enum class ETutorialPhase : uint8
 	Step6_Inventory,
 	Step7_Drone,
 	Dialogue_03,
+	Dialogue_LightOut,
 	Step8_LightToggle,
 	Step9_Items,
 	Dialogue_06,          
@@ -29,6 +30,7 @@ enum class ETutorialPhase : uint8
 	Dialogue_04,
 	Step14_Die,
 	Step15_Resurrection,
+	Dialogue_07,
 	Complete
 };
 

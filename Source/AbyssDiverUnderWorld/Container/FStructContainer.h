@@ -60,6 +60,11 @@ struct FItemData : public FFastArraySerializerItem
 	{
 
 	}
+	FItemData(const FFADItemDataRow& ItemDataRow)
+		: Name(ItemDataRow.Name), Id(ItemDataRow.Id), Quantity(1), SlotIndex(99), Amount(ItemDataRow.Amount), CurrentAmmoInMag(ItemDataRow.CurrentAmmoInMag), ReserveAmmo(ItemDataRow.ReserveAmmo), Mass(ItemDataRow.Weight), Price(ItemDataRow.Price), ItemType(ItemDataRow.ItemType), BulletType(ItemDataRow.BulletType), Thumbnail(ItemDataRow.Thumbnail)
+	{
+
+	}
 
 	// 이 값이 바뀌면 Replication에 포함됨
 	bool operator==(const FItemData& Other) const
