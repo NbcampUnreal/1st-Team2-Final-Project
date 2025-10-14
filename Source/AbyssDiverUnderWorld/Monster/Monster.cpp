@@ -15,6 +15,7 @@
 #include "Framework/ADPlayerState.h"
 
 #include "Components/CapsuleComponent.h"
+#include "Subsystems/SoundSubsystem.h"
 #include "Kismet/GameplayStatics.h"
 #include "NiagaraFunctionLibrary.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -1058,6 +1059,23 @@ void AMonster::SetTarget(AUnderwaterCharacter* Target)
 {
 	TargetPlayer = Target;
 	AIController->GetBlackboardComponent()->SetValueAsObject(BlackboardKeys::TargetPlayerKey, Target);
+}
+
+class USoundSubsystem* AMonster::GetSoundSubsystem()
+{
+	if (!SoundSubsystem.IsValid())
+	{
+		if (UGameInstance* GameInstance = GetWorld()->GetGameInstance())
+		{
+			SoundSubsystem = GameInstance->GetSubsystem<USoundSubsystem>();
+		}
+		else
+		{
+			UE_LOG(LogAbyssDiverCharacter, Warning, TEXT("SoundSubsystem is not valid and GameInstance is not found."));
+		}
+	}
+
+	return SoundSubsystem.Get();
 }
 
 
