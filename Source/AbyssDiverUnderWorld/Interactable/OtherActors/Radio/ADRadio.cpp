@@ -28,6 +28,15 @@ void AADRadio::BeginPlay()
 	{
 		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
 	}
+
+	if (HasAuthority())
+	{
+		if (!bIsOn)
+		{
+			bIsOn = true;
+			OnRep_IsOn(); // TurnOn() 호출까지 진행
+		}
+	}
 }
 
 void AADRadio::Interact_Implementation(AActor* InstigatorActor)
