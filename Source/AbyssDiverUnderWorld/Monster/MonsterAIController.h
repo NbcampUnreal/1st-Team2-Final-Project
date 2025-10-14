@@ -14,6 +14,7 @@
 
 enum class EPerceptionType : uint8;
 enum class EMonsterState : uint8;
+class AMonster;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AMonsterAIController : public AAIController
@@ -69,7 +70,7 @@ protected:
 	TObjectPtr<UDataTable> SightDataTable;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
-	TObjectPtr<class AMonster> Monster;
+	TWeakObjectPtr<AMonster> Monster;
 
 	UPROPERTY()
 	TMap<TWeakObjectPtr<AActor>, float> LostActorsMap;
@@ -94,5 +95,10 @@ public:
 	float GetSightRadius() const;
 	float GetLoseSightRadius() const;
 	float GetHearingRadius() const;
+
+protected:
+
+	AMonster* GetOwningMonster();
+
 #pragma endregion
 };

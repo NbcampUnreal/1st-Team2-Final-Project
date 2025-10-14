@@ -29,7 +29,7 @@ void UADWorldSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	SetVirtualShadowMapsEnabled(false);
 
 	// 맵 로드가 끝난 뒤 안전한 시점에 켜기 — 지연을 주어서 로드 중의 병목을 피함
-	const float DelaySeconds = 1.5f; // 필요에 따라 조절
+	const float DelaySeconds = 3.0f; // 필요에 따라 조절
 	FTimerDelegate TimerDel;
 	TimerDel.BindUObject(this, &UADWorldSubsystem::SafeEnableVSMDeferred);
 	World->GetTimerManager().SetTimer(EnableTimerHandle, TimerDel, DelaySeconds, false);

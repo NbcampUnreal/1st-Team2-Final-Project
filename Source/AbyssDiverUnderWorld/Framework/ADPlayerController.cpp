@@ -41,6 +41,8 @@
 #include "Subsystems/DataTableSubsystem.h"
 #include "UI/CrosshairWidget.h"
 
+#include "Interactable/OtherActors/Tablet/ADTablet.h"
+
 AADPlayerController::AADPlayerController()
 {
 	static ConstructorHelpers::FObjectFinder<UInputMappingContext> MappingContextAsset(TEXT("/Game/_AbyssDiver/Input/IMC_Player.IMC_Player"));

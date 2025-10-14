@@ -10,6 +10,7 @@
 #include "DrawDebugHelpers.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
+#include "Net/UnrealNetwork.h"
 
 DEFINE_LOG_CATEGORY(LogAquaticMovement);
 
@@ -34,7 +35,7 @@ UAquaticMovementComponent::UAquaticMovementComponent()
     LastWallDetectionTime = -1.0f;
     LastWallNormal = FVector::ZeroVector;
 
-    SetIsReplicated(false);
+    SetIsReplicatedByDefault(true);
 }
 
 void UAquaticMovementComponent::BeginPlay()
@@ -125,6 +126,13 @@ void UAquaticMovementComponent::TickComponent(float DeltaTime, ELevelTick TickTy
     {
         DrawDebugVisualization();
     }
+}
+
+void UAquaticMovementComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+    Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+    DOREPLIFETIME(UAquaticMovementComponent, CurrentVelocity);
 }
 
 // === 이동 업데이트 ===

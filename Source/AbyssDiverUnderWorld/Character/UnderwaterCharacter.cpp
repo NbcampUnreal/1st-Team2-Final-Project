@@ -216,6 +216,8 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	DepthComponent = CreateDefaultSubobject<UDepthComponent>(TEXT("DepthComponent"));
 
 	bIsMovementBlockedByTutorial = false;
+
+	bAlwaysRelevant = true;
 }
 
 void AUnderwaterCharacter::BeginPlay()
@@ -1838,6 +1840,7 @@ float AUnderwaterCharacter::TakeDamage(float DamageAmount, struct FDamageEvent c
 	{
 		return 0.0f;
 	}
+
 	if (bIsInvincible)
 	{
 		return 0.0f;
@@ -1879,6 +1882,12 @@ float AUnderwaterCharacter::TakeDamage(float DamageAmount, struct FDamageEvent c
 		EmitBloodNoise();
 	}
 
+	AADPlayerState* ADPS = Cast<AADPlayerState>(GetPlayerState());
+	if (ADPS && this && DamageCauser)
+	{
+		LOGV(Warning, TEXT("%s(%s) is Damaged By %s, Damage : %f, Distance : %f"), *ADPS->GetPlayerNickname(), *GetName(), *DamageCauser->GetName(), DamageAmount, (GetActorLocation() - DamageCauser->GetActorLocation()).Length());
+	}
+	
 	// Normal State
 	// 1. Shield Logic
 	// 2. Health Logic(StatComponent)

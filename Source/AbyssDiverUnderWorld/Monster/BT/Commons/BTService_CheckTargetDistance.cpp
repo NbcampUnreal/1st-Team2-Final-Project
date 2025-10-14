@@ -1,10 +1,13 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "Monster/BT/Commons/BTService_CheckTargetDistance.h"
-#include "AIController.h"
+
+#include "AbyssDiverUnderWorld.h"
+
+#include "Character/UnderwaterCharacter.h"
+#include "Monster/Monster.h"
+
 #include "BehaviorTree/BlackboardComponent.h"
 #include "GameFramework/Pawn.h"
+#include "AIController.h"
 
 UBTService_CheckTargetDistance::UBTService_CheckTargetDistance()
 {
@@ -19,14 +22,21 @@ void UBTService_CheckTargetDistance::TickNode(UBehaviorTreeComponent& OwnerComp,
 {
 	Super::TickNode(OwnerComp, NodeMemory, DeltaSecond);
 
-	APawn* AIPawn = OwnerComp.GetAIOwner()->GetPawn();
-	if (!AIPawn) return;
+	AMonster* Monster = Cast<AMonster>(OwnerComp.GetAIOwner()->GetPawn());
+	if (!Monster) return;
 
 	UBlackboardComponent* Blackboard = OwnerComp.GetBlackboardComponent();
-	AActor* Target = Cast<AActor>(Blackboard->GetValueAsObject(TargetActorKey.SelectedKeyName));
+	AUnderwaterCharacter* Target = Cast<AUnderwaterCharacter>(Blackboard->GetValueAsObject(TargetActorKey.SelectedKeyName));
 	if (!Target) return;
 
-	const float Distance = FVector::Dist(AIPawn->GetActorLocation(), Target->GetActorLocation());
+	if (Target->IsGroggy() || Target->IsDeath())
+	{
+		LOGV(Log, TEXT("%s Is Groggy Or Dead, Remove Detection"), *Target->GetName());
+		Monster->RemoveDetection(Target);
+		return;
+	}
+
+	const float Distance = FVector::Dist(Monster->GetActorLocation(), Target->GetActorLocation());
 	const bool bInMeleeRange = Distance <= MeleeRange;
 	const bool bInRangedRange = Distance <= RangedRange;
 

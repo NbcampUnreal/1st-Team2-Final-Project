@@ -154,7 +154,7 @@ protected:
     // 시야 판정 설정
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TickControlComponentSettings|View Settings", meta = (AllowPrivateAccess = "true"))
-    float ViewAngleThreshold = 90.0f;
+    float ViewAngleThreshold = 130.0f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TickControlComponentSettings|View Settings", meta = (AllowPrivateAccess = "true"))
     float ViewAngleBuffer = 15.0f;
