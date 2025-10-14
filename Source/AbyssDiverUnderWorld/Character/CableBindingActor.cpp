@@ -106,7 +106,7 @@ bool ACableBindingActor::IsConnectionValid() const
 	return IsValid(SourceCharacter) && IsValid(TargetCharacter);
 }
 
-void ACableBindingActor::ApplyWorldOffset(FVector Offset)
+void ACableBindingActor::ApplyWorldOffsetToCable(FVector Offset)
 {
 	if (CableComponent)
 	{
