@@ -68,6 +68,8 @@ AMonster::AMonster()
 	// 틱 최적화용 컴포넌트 초기화
 	TickControlComponent = CreateDefaultSubobject<UTickControlComponent>(TEXT("Tick Control Component"));
 
+	// 컬링이 되어도 몽타주가 재생되면 본 새로고침이 일어나도록
+	GetMesh()->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickMontagesAndRefreshBonesWhenPlayingMontages;
 }
 
 void AMonster::BeginPlay()
