@@ -238,6 +238,8 @@ protected:
 	uint8 bIsTurning : 1 = false;
 	uint8 bIsAttacking : 1 = false;
 
+	TWeakObjectPtr<class USoundSubsystem> SoundSubsystem;
+
 private:
 	FVector TargetLocation;
 	FVector DesiredTargetLocation; // 새로운 목표 위치 (보간 전)
@@ -277,4 +279,6 @@ public:
 	void SetTarget(AUnderwaterCharacter* Target);
 
 	FORCEINLINE const TSet<TWeakObjectPtr<AActor>>& GetDetectedPlayers() const { return DetectedPlayers; }
+
+	class USoundSubsystem* GetSoundSubsystem();
 };

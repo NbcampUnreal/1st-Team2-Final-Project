@@ -9,9 +9,13 @@ ASerpmare::ASerpmare()
 {
 	LowerBodyMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("LowerBodyMesh"));
 	LowerBodyMesh->SetupAttachment(GetMesh());
+	// 가장 부하가 적음
+	LowerBodyMesh->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickPoseWhenRendered;
 
 	WeakPointMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("WeakPointMesh"));
 	WeakPointMesh->SetupAttachment(GetMesh());
+	// 가장 부하가 적음
+	WeakPointMesh->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickPoseWhenRendered;
 }
 
 void ASerpmare::BeginPlay()
