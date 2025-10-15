@@ -68,10 +68,10 @@ void AADRadio::OnRep_IsOn()
 
 void AADRadio::TurnOn()
 {
-	if (SoundSubsystem == nullptr)
+	if (!SoundSubsystem.IsValid())
 	{
 		SoundSubsystem = GetSoundSubsystem();
-		if (SoundSubsystem == nullptr) { return; }
+		if (!SoundSubsystem.IsValid()) { return; }
 	}
 
 	if (CurrentBGMId != INDEX_NONE && SoundSubsystem->IsPlaying(CurrentBGMId))
@@ -91,10 +91,10 @@ void AADRadio::TurnOn()
 
 void AADRadio::TurnOff()
 {
-	if (SoundSubsystem == nullptr)
+	if (!SoundSubsystem.IsValid())
 	{
 		SoundSubsystem = GetSoundSubsystem();
-		if (SoundSubsystem == nullptr) { return; }
+		if (!SoundSubsystem.IsValid()) { return; }
 	}
 
 	if (CurrentBGMId != INDEX_NONE)
