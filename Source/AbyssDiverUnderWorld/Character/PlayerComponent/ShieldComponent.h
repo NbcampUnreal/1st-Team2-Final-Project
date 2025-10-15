@@ -98,7 +98,7 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat", meta = (AllowPrivateAccess = "true"))
 	uint8 bCanGainShield : 1;
 
-	UPROPERTY(Replicated, EditDefaultsOnly, BlueprintReadOnly, Category = "Stat", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(/*Replicated,*/ EditDefaultsOnly, BlueprintReadOnly, Category = "Stat", meta = (AllowPrivateAccess = "true"))
 	/** 최대 실드 값, 이 값 이상으로 획득할 수 없다. */
 	float MaxShieldValue;
 	
