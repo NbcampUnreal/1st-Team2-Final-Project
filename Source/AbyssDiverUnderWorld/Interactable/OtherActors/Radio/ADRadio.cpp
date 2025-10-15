@@ -1,4 +1,4 @@
-#include "Interactable/OtherActors/Radio/ADRadio.h"
+ï»¿#include "Interactable/OtherActors/Radio/ADRadio.h"
 #include "Subsystems/SoundSubsystem.h"
 #include "Framework/ADGameInstance.h"
 #include "Components/StaticMeshComponent.h"
@@ -34,7 +34,7 @@ void AADRadio::BeginPlay()
 		if (!bIsOn)
 		{
 			bIsOn = true;
-			OnRep_IsOn(); // TurnOn() È£Ãâ±îÁö ÁøÇà
+			OnRep_IsOn(); // TurnOn() í˜¸ì¶œê¹Œì§€ ì§„í–‰
 		}
 	}
 }
@@ -118,12 +118,12 @@ void AADRadio::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetime
 
 USoundSubsystem* AADRadio::GetSoundSubsystem()
 {
-	if (SoundSubsystem) { return SoundSubsystem; }
+	if (SoundSubsystem.IsValid()) { return SoundSubsystem.Get(); }
 
 	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
 	{
 		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
-		return SoundSubsystem;
+		return SoundSubsystem.Get();
 	}
 	return nullptr;
 }
