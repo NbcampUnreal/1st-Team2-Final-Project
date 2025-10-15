@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
@@ -41,7 +41,7 @@ private:
 
 #pragma region Variable
 public:
-	/** Radio ¼Ò¸® °ü·Ã º¯¼ö */
+	/** Radio ì†Œë¦¬ ê´€ë ¨ ë³€ìˆ˜ */
 	UPROPERTY(EditAnywhere, Category = "Radio|Sound", meta = (ClampMin = "0.0", ClampMax = "2.0"))
 	float RadioVolume = 1.0f;
 	UPROPERTY(EditAnywhere, Category = "Radio|Sound")
@@ -53,7 +53,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Radio|Sound")
 	ESFX_BGM RadioBGM = ESFX_BGM::CampRadio;
 
-	// »óÅÂº° »óÈ£ÀÛ¿ë ¹®±¸
+	// ìƒíƒœë³„ ìƒí˜¸ì‘ìš© ë¬¸êµ¬
 	UPROPERTY(EditAnywhere, Category = "Radio|UI")
 	FText DescWhenOn = NSLOCTEXT("Radio", "DescWhenOn", "Turn Off Radio");
 	UPROPERTY(EditAnywhere, Category = "Radio|UI")
@@ -70,7 +70,7 @@ private:
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<UADInteractableComponent> InteractableComp;
 	UPROPERTY()
-	TObjectPtr<USoundSubsystem> SoundSubsystem;
+	TWeakObjectPtr<USoundSubsystem> SoundSubsystem;
 	UPROPERTY(ReplicatedUsing = OnRep_IsOn)
 	uint8 bIsOn : 1 = false;
 	UPROPERTY()
