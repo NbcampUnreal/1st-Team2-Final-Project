@@ -52,6 +52,13 @@ protected:
 	void SetPatrolStateAfterEject();
 
 	UFUNCTION()
+	void ApplyFleeAfterSwallow();
+	void ClearSwallowTimer();
+
+	UFUNCTION()
+	void ForceEjectIfStuck();
+
+	UFUNCTION()
 	void DamageToVictim(AUnderwaterCharacter* Victim, float Damage);
 
 	// void InitializeAggroVariable();
@@ -74,6 +81,8 @@ protected:
 	TObjectPtr<UAIPerceptionComponent> CachedPerceptionComponent;
 
 	FTimerHandle TimerHandle_SetSwimMode;
+	FTimerHandle SwallowToFleeTimerHandle; // 삼키고 도망칠때 0.5초 delay (먹는모션, 소리 재생 )
+	FTimerHandle ForceEjectTimerHandle; // 먹고나서 강제로 뱉게하기 위한 타이머핸들러
 
 private:
 	UPROPERTY(EditAnywhere, Category = "Lanch")
@@ -90,6 +99,10 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Shallow")
 	float SwallowSpeed = 1.5f;
+
+	// 강제로 뱉게 하기 위한 시간 리미트 (6.0초)
+	UPROPERTY(EditAnywhere, Category = "Shallow")
+	float ForceEjectAfterSeconds = 6.0f;
 
 	// Variable about SwallowPlayer Location Lerp
 	FVector VictimLocation;
