@@ -130,9 +130,28 @@ void AHorrorCreature::SwallowPlayer(AUnderwaterCharacter* Victim)
 	CreatureMouthLocation = GetMesh()->GetSocketLocation("MouthSocket");
 	SwallowLerpAlpha = 0.f;
 
-	// Flee (도망가는) 상태로 변경
-	ApplyMonsterStateChange(EMonsterState::Flee);
+	// 타이머 클린업
+	ClearSwallowTimer();
 
+	// Flee (도망가는) 상태로 변경
+	GetWorldTimerManager().SetTimer(
+		SwallowToFleeTimerHandle,
+		this,
+		&AHorrorCreature::ApplyFleeAfterSwallow,
+		1.0f,
+		false
+	);
+	// ApplyMonsterStateChange(EMonsterState::Flee);
+	
+	// 시간 지나면 강제로 뱉도록 설정 
+	GetWorldTimerManager().SetTimer(
+		ForceEjectTimerHandle,
+		this,
+		&AHorrorCreature::ForceEjectIfStuck,
+		ForceEjectAfterSeconds,
+		false
+	);
+	
 	if (BlackboardComponent)
 	{
 		BlackboardComponent->SetValueAsBool(BlackboardKeys::HorrorCreature::bIsPlayerSwallowKey, true);
@@ -242,6 +261,39 @@ void AHorrorCreature::SightPerceptionOn()
 void AHorrorCreature::SetPatrolStateAfterEject()
 {
 	ApplyMonsterStateChange(EMonsterState::Patrol);
+}
+
+void AHorrorCreature::ApplyFleeAfterSwallow()
+{
+	if (!HasAuthority()) return;
+
+	if (!IsValid(this) || !IsValid(SwallowedPlayer))
+	{
+		return;
+	}
+
+	ApplyMonsterStateChange(EMonsterState::Flee);
+}
+
+void AHorrorCreature::ClearSwallowTimer()
+{
+	if (SwallowToFleeTimerHandle.IsValid())
+	{
+		GetWorldTimerManager().ClearTimer(SwallowToFleeTimerHandle);
+		GetWorldTimerManager().ClearTimer(ForceEjectTimerHandle);
+	}
+}
+
+void AHorrorCreature::ForceEjectIfStuck()
+{
+	if (!HasAuthority()) return;
+
+	if (!IsValid(this) || !IsValid(SwallowedPlayer))
+	{
+		return;
+	}
+
+	EjectPlayer(SwallowedPlayer);
 }
 
 void AHorrorCreature::DamageToVictim(AUnderwaterCharacter* Victim, float Damage)

@@ -15,6 +15,7 @@
 #include "Framework/ADPlayerState.h"
 
 #include "Components/CapsuleComponent.h"
+#include "Subsystems/SoundSubsystem.h"
 #include "Kismet/GameplayStatics.h"
 #include "NiagaraFunctionLibrary.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -67,6 +68,8 @@ AMonster::AMonster()
 	// 틱 최적화용 컴포넌트 초기화
 	TickControlComponent = CreateDefaultSubobject<UTickControlComponent>(TEXT("Tick Control Component"));
 
+	// 컬링이 되어도 몽타주가 재생되면 본 새로고침이 일어나도록
+	GetMesh()->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickMontagesAndRefreshBonesWhenPlayingMontages;
 }
 
 void AMonster::BeginPlay()
@@ -1058,6 +1061,23 @@ void AMonster::SetTarget(AUnderwaterCharacter* Target)
 {
 	TargetPlayer = Target;
 	AIController->GetBlackboardComponent()->SetValueAsObject(BlackboardKeys::TargetPlayerKey, Target);
+}
+
+class USoundSubsystem* AMonster::GetSoundSubsystem()
+{
+	if (!SoundSubsystem.IsValid())
+	{
+		if (UGameInstance* GameInstance = GetWorld()->GetGameInstance())
+		{
+			SoundSubsystem = GameInstance->GetSubsystem<USoundSubsystem>();
+		}
+		else
+		{
+			UE_LOG(LogAbyssDiverCharacter, Warning, TEXT("SoundSubsystem is not valid and GameInstance is not found."));
+		}
+	}
+
+	return SoundSubsystem.Get();
 }
 
 

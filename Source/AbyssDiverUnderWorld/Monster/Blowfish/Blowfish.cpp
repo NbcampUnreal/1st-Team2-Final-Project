@@ -5,6 +5,7 @@
 #include "Character/UnderwaterCharacter.h"
 #include "Components/CapsuleComponent.h"
 #include "Engine/OverlapResult.h"
+#include "Subsystems/SoundSubsystem.h"
 #include "Kismet/GameplayStatics.h"
 
 ABlowfish::ABlowfish()
@@ -73,15 +74,9 @@ void ABlowfish::M_TriggerExplosion_Implementation()
 	// Explosion을 1회성으로 호출하기 위한 bool 값 활성화
 	bIsExplosionTriggered = true;
 
-	// 폭발 카운트다운 사운드
-	UGameplayStatics::SpawnSoundAttached(
-		ExplosionCountdownSound,
-		this->GetRootComponent(),
-		NAME_None,                    
-		FVector::ZeroVector,          
-		EAttachLocation::KeepRelativeOffset,
-		true                          // bStopWhenAttachedToDestroyed
-	);
+	float Desired = 1.0f;
+	float NewVolume = Desired * GetSoundSubsystem()->GetSFXVolume() * GetSoundSubsystem()->GetMasterVolume();
+	UGameplayStatics::PlaySoundAtLocation(this, ExplosionCountdownSound, GetActorLocation(), NewVolume);
 
 	// ExplosionDelayTime이 경과 후 폭발 로직 수행
 	GetWorldTimerManager().SetTimer(ExplosionTimerHandle, this, &ABlowfish::Explosion, ExplosionDelayTime, false);
@@ -139,15 +134,10 @@ void ABlowfish::ApplyExplosionEffect()
 	UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 		GetWorld(), ExplosionEffect, GetActorLocation(), FRotator::ZeroRotator, FVector(1.0f), true, true);
 
-	// 터질 때 사운드 효과
-	UGameplayStatics::SpawnSoundAttached(
-		ExplosionSound,
-		this->GetRootComponent(),
-		NAME_None,
-		FVector::ZeroVector,
-		EAttachLocation::KeepRelativeOffset,
-		true                          // bStopWhenAttachedToDestroyed
-	);
+
+	float Desired = 1.0f;
+	float NewVolume = Desired * GetSoundSubsystem()->GetSFXVolume() * GetSoundSubsystem()->GetMasterVolume();
+	UGameplayStatics::PlaySoundAtLocation(this, ExplosionSound, GetActorLocation(), NewVolume);
 
 	// 폭발 디버그 구체 그리기 (파란색, 1초 동안 표시)
 	//DrawDebugSphere(
