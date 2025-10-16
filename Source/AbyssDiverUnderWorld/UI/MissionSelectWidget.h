@@ -84,7 +84,6 @@ protected:
     TObjectPtr<UOverlay> TouchDisplay;
 
     UPROPERTY(meta = (BindWidget))
-
     uint8 bIsMissionGained : 1;
 
 private:
