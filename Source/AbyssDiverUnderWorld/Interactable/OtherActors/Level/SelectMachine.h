@@ -97,7 +97,6 @@ private:
 
 
 	TArray<FMapInfo> LevelInfos;
-	TArray<EMapName> LevelIDs;
 	TArray<uint8> LevelUnLockInfos;
 
 	uint8 bSelectLevel : 1 = false;

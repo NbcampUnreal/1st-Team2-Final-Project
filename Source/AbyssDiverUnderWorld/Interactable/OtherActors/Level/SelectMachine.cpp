@@ -57,10 +57,9 @@ void ASelectMachine::BeginPlay()
 
 	if (!HasAuthority()) return;
 
-	LevelIDs = { EMapName::Description, EMapName::test1, EMapName::SecondAbyss, EMapName::test2};
-
 	TArray<FMapInfoRow*> AllRows;
-	MapInfoDataTable->GetAllRows(TEXT("MapInfoDataTable"), AllRows);
+	if(MapInfoDataTable)
+		MapInfoDataTable->GetAllRows(TEXT("MapInfoDataTable"), AllRows);
 
 	for (FMapInfoRow* Row : AllRows)
 	{

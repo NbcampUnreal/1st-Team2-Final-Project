@@ -95,7 +95,7 @@ public:
 
 	UFUNCTION(Client, Reliable)
 	void C_NotifyInventoryAlarm(const FString& Info, const FVector2D& Position);
-	void C_NotifyInventoryFull_Implementation(const FString& Info, const FVector2D& Position);
+	void C_NotifyInventoryAlarm_Implementation(const FString& Info, const FVector2D& Position);
 
 	UFUNCTION(BlueprintCallable)
 	void InventoryInitialize();
