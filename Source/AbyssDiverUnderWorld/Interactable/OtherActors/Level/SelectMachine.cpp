@@ -196,9 +196,11 @@ void ASelectMachine::AutoSelectLevel(AActor* InteractInstigator)
 		SetSelectMachineStateType(ESelectMachineStateType::MapOpenState);
 	}
 
-	UMissionSelectWidget* SelectWidgetInstance = Cast<UMissionSelectWidget>(SelectMissionWidgetComp->GetWidget());
-	SelectWidgetInstance->UpdateMissionList(CurrentLevelIndex, LevelInfos[CurrentLevelIndex].bIsUnlocked);
-
+	if (UMissionSelectWidget* SelectWidgetInstance = Cast<UMissionSelectWidget>(SelectMissionWidgetComp->GetWidget()))
+	{
+		SelectWidgetInstance->UpdateMissionList(CurrentLevelIndex, LevelInfos[CurrentLevelIndex].bIsUnlocked);
+	}
+	
 	UpdatelevelImage();
 	UpdateButtonDescription();
 }
