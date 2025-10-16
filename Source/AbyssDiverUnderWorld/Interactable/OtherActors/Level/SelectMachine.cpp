@@ -7,6 +7,7 @@
 #include "Subsystems/DataTableSubsystem.h"
 #include "Subsystems/MissionSubsystem.h"
 #include "DataRow/ButtonDataRow.h"
+#include "DataRow/MapInfoRow.h"
 #include "DataRow/PhaseGoalRow.h"
 #include "Framework/ADInGameMode.h"
 #include "Framework/ADCampGameMode.h"
@@ -56,7 +57,19 @@ void ASelectMachine::BeginPlay()
 
 	if (!HasAuthority()) return;
 
-	LevelIDs = { EMapName::Description, EMapName::test1, EMapName::test2 , EMapName::SecondAbyss};
+	LevelIDs = { EMapName::Description, EMapName::test1, EMapName::SecondAbyss, EMapName::test2};
+
+	TArray<FMapInfoRow*> AllRows;
+	MapInfoDataTable->GetAllRows(TEXT("MapInfoDataTable"), AllRows);
+
+	for (FMapInfoRow* Row : AllRows)
+	{
+		if (Row == nullptr) continue;
+		FMapInfo Info;
+		Info.MapEnumType = Row->MapEnumType;
+		Info.bIsUnlocked = Row->bIsUnlocked;
+		LevelInfos.Add(Info);
+	}
 
 	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
 	{
@@ -139,7 +152,7 @@ void ASelectMachine::UpdateWidgetReaction_Implementation(ESelectMachineStateType
 
 void ASelectMachine::UpdatelevelImage_Implementation()
 {
-}
+} 
 
 void ASelectMachine::HandlePrevLevel(AActor* InteractInstigator)
 {
@@ -148,7 +161,7 @@ void ASelectMachine::HandlePrevLevel(AActor* InteractInstigator)
 
 	LOGV(Warning, TEXT("PrevLevel Button Pressed"));
 	--CurrentLevelIndex;
-	CurrentLevelIndex = FMath::Clamp(CurrentLevelIndex, 0, LevelIDs.Num() - 1);
+	CurrentLevelIndex = FMath::Clamp(CurrentLevelIndex, 0, LevelInfos.Num() - 1);
 	AutoSelectLevel(InteractInstigator);
 }
 
@@ -159,7 +172,7 @@ void ASelectMachine::HandleNextLevel(AActor* InteractInstigator)
 
 	LOGV(Warning, TEXT("NextLevel Button Pressed"));
 	++CurrentLevelIndex;
-	CurrentLevelIndex = FMath::Clamp(CurrentLevelIndex, 0, LevelIDs.Num() - 1);
+	CurrentLevelIndex = FMath::Clamp(CurrentLevelIndex, 0, LevelInfos.Num() - 1);
 	AutoSelectLevel(InteractInstigator);
 }
 
@@ -185,7 +198,7 @@ void ASelectMachine::AutoSelectLevel(AActor* InteractInstigator)
 	}
 
 	UMissionSelectWidget* SelectWidgetInstance = Cast<UMissionSelectWidget>(SelectMissionWidgetComp->GetWidget());
-	SelectWidgetInstance->UpdateMissionList(CurrentLevelIndex);
+	SelectWidgetInstance->UpdateMissionList(CurrentLevelIndex, LevelInfos[CurrentLevelIndex].bIsUnlocked);
 
 	UpdatelevelImage();
 	UpdateButtonDescription();
@@ -235,7 +248,11 @@ void ASelectMachine::UpdateButtonDescription()
 {
 	if (bSelectLevel)
 	{
-		GameStartButton->SetButtonDescription(TEXT("게임 시작하기"));
+		if ((!LevelInfos[CurrentLevelIndex].bIsUnlocked))
+		{
+			GameStartButton->SetButtonDescription(TEXT("잠겨 있는 맵입니다."));
+		}
+		else GameStartButton->SetButtonDescription(TEXT("게임 시작하기"));
 	}
 	else
 	{
@@ -245,10 +262,10 @@ void ASelectMachine::UpdateButtonDescription()
 
 bool ASelectMachine::IsConditionMet()
 {
-	if (bSelectLevel)
+	if (bSelectLevel&&LevelInfos[CurrentLevelIndex].bIsUnlocked)
 	{
 		return true;
-	}
+	} 
 	return false;
 }
 

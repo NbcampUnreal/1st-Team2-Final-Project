@@ -13,6 +13,7 @@ class UButton;
 class UScrollBox;
 class UMissionEntryWidget;
 class UBorder;
+class UOverlay;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API UMissionSelectWidget : public UUserWidget
@@ -40,7 +41,7 @@ public:
 
     void UpdateEntrys();
 
-    void UpdateMissionList(int8 CurrentLevelIndex);
+    void UpdateMissionList(int8 CurrentLevelIndex, bool bIsUnlock);
 
 	void UpdateSelectedMissionBox();
 
@@ -75,6 +76,14 @@ protected:
 
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UVerticalBox> SelectedMissionsBox;
+
+    UPROPERTY(meta = (BindWidget))
+    TObjectPtr<UBorder> LockImage;
+
+    UPROPERTY(meta = (BindWidget))
+    TObjectPtr<UOverlay> TouchDisplay;
+
+    UPROPERTY(meta = (BindWidget))
 
     uint8 bIsMissionGained : 1;
 
