@@ -455,7 +455,7 @@ bool UADInventoryComponent::AddInventoryItem(const FItemData& ItemData)
 						LOGINVEN(Warning, TEXT("%s Inventory is full"), *StaticEnum<EItemType>()->GetNameStringByValue((int64)ItemData.ItemType));
 						if (ItemData.ItemType == EItemType::Exchangable)
 						{
-							C_NotifyInventoryAlarm(TEXT("광물 인벤토리가 가득 찼습니다!"), FVector2D(985.0f, -260.0f));
+							C_NotifyInventoryAlarm(TEXT("광물 인벤토리가 가득 찼습니다!"), FVector2D(-7.0f, -260.0f));
 						}
 					}
 				}
