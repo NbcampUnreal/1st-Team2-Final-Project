@@ -117,9 +117,9 @@ void AADPlayerState::CopyProperties(APlayerState* PlayerState)
 		return;
 	}
 
-	LOGV(Log, TEXT("Id Copied, Old : %d, New : %d, Net : %s"), PlayerIndex, NextPlayerState->GetPlayerIndex(), *UniqueNetIdRepl->ToString());
-	
 	NextPlayerState->SetPlayerIndex(PlayerIndex);
+	LOGV(Log, TEXT("Id Copied, Old : %d, New : %d, Net : %s"), PlayerIndex, NextPlayerState->GetPlayerIndex(), *UniqueNetIdRepl->ToString());
+
 	if (UUpgradeComponent* NextUpgradeComponent = NextPlayerState->GetUpgradeComp())
 	{
 		NextUpgradeComponent->CopyProperties(GetUpgradeComp());

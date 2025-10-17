@@ -50,7 +50,7 @@ void AHorrorCreature::Tick(float DeltaTime)
 	}
 
 	// 먹는 순간만 활성화 되도록
-	if (bSwallowingInProgress && SwallowedPlayer && IsValid(SwallowedPlayer))
+	if (bSwallowingInProgress && SwallowedPlayer.IsValid())
 	{
 		// 먹을 때 플레이어 위치 입으로 빨려가도록 해주는 함수
 		UpdateVictimLocation(DeltaTime);
@@ -66,6 +66,11 @@ void AHorrorCreature::Tick(float DeltaTime)
 
 void AHorrorCreature::UpdateVictimLocation(float DeltaTime)
 {
+	if (SwallowedPlayer.IsValid() == false)
+	{
+		return;
+	}
+
 	// 보간 SwallowSpeed 초기값 1.5 (삼키는 속도)
 	SwallowLerpAlpha += DeltaTime * SwallowSpeed;
 
@@ -95,7 +100,7 @@ void AHorrorCreature::OnSwallowTriggerOverlap(
 	bool bFromSweep,
 	const FHitResult& SweepResult)
 {
-	if (!bCanSwallow || !HasAuthority() || SwallowedPlayer) return;
+	if (!bCanSwallow || !HasAuthority() || SwallowedPlayer.IsValid()) return;
 	if (OtherActor == this) return;
 	AUnderwaterCharacter* PlayerCharacter = Cast<AUnderwaterCharacter>(OtherActor);
 	if (!PlayerCharacter || PlayerCharacter->GetCharacterState() != ECharacterState::Normal) return;
@@ -111,7 +116,7 @@ void AHorrorCreature::OnSwallowTriggerOverlap(
 // 플레이어를 삼켰을 때 실행되는 함수
 void AHorrorCreature::SwallowPlayer(AUnderwaterCharacter* Victim)
 {
-	if (!HasAuthority() || !Victim || SwallowedPlayer) return;
+	if (!HasAuthority() || !Victim || SwallowedPlayer.IsValid()) return;
 	AUnderwaterCharacter* PlayerCharacter = Cast<AUnderwaterCharacter>(Victim);
 	if (!PlayerCharacter || PlayerCharacter->GetCharacterState() != ECharacterState::Normal) return;
 
@@ -160,7 +165,8 @@ void AHorrorCreature::SwallowPlayer(AUnderwaterCharacter* Victim)
 
 void AHorrorCreature::EjectPlayer(AUnderwaterCharacter* Victim)
 {
-	if (!Victim) return;
+	UWorld* World = GetWorld();
+	if (!IsValid(Victim) || !World || World->IsInSeamlessTravel()) return;
 
 	// 뱉자마자 플레이어를 인식하지 못하도록 일시적으로 Perception을 끔 (초기값 : 2초)
 	TemporarilyDisalbeSightPerception(DisableSightTime);
@@ -188,6 +194,9 @@ void AHorrorCreature::EjectPlayer(AUnderwaterCharacter* Victim)
 
 void AHorrorCreature::EjectedVictimNormalize(AUnderwaterCharacter* Victim)
 {
+	UWorld* World = GetWorld();
+	if (!IsValid(Victim) || !World || World->IsInSeamlessTravel()) return;
+
 	// 플레이어 뱉고, 어두워진 화면 제거
 	Victim->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 	Victim->SetActorRotation(FRotator(0.f, Victim->GetActorRotation().Yaw, 0.f));
@@ -203,15 +212,31 @@ void AHorrorCreature::EjectedVictimNormalize(AUnderwaterCharacter* Victim)
 		M_PlayMontage(EjectMontage);
 	}
 
+	TWeakObjectPtr<AUnderwaterCharacter> WeakVictim = Victim;
 	// 플레이어 수영모드 On
 	GetWorld()->GetTimerManager().SetTimer(
 		TimerHandle_SetSwimMode,
-		[Victim]()
+		[WeakVictim]()
 		{
-			if (IsValid(Victim) && Victim->GetCharacterMovement())
+			if (WeakVictim.IsValid() == false)
 			{
-				Victim->GetCharacterMovement()->SetMovementMode(MOVE_Swimming);
+				return;
 			}
+
+			AUnderwaterCharacter* VictimRaw = WeakVictim.Get();
+			UWorld* VictimWorld = VictimRaw->GetWorld();
+			if (!VictimWorld || VictimWorld->IsInSeamlessTravel())
+			{
+				return;
+			}
+
+			UCharacterMovementComponent* MovementComp = VictimRaw->GetCharacterMovement();
+			if (IsValid(MovementComp) == false)
+			{
+				return;
+			}
+
+			MovementComp->SetMovementMode(MOVE_Swimming);
 		},
 		0.5f,
 		false
@@ -220,7 +245,7 @@ void AHorrorCreature::EjectedVictimNormalize(AUnderwaterCharacter* Victim)
 
 void AHorrorCreature::NotifyLightExposure(float DeltaTime, float TotalExposedTime, const FVector& PlayerLocation, AActor* PlayerActor)
 {
-	if (SwallowedPlayer) return;
+	if (SwallowedPlayer.IsValid()) return;
 
 	Super::NotifyLightExposure(DeltaTime, TotalExposedTime, PlayerLocation, PlayerActor);
 }
@@ -229,13 +254,13 @@ void AHorrorCreature::OnDeath()
 {
 	Super::OnDeath();
 
-	EjectPlayer(SwallowedPlayer);
+	EjectPlayer(SwallowedPlayer.Get());
 }
 
 // 일시적으로 Sight Perception을 끄는 함수
 void AHorrorCreature::TemporarilyDisalbeSightPerception(float Duration)
 {
-	if (!CachedPerceptionComponent) return;
+	if (!CachedPerceptionComponent.IsValid()) return;
 
 	CachedPerceptionComponent->SetSenseEnabled(UAISense_Sight::StaticClass(), false);
 
@@ -252,7 +277,7 @@ void AHorrorCreature::TemporarilyDisalbeSightPerception(float Duration)
 
 void AHorrorCreature::SightPerceptionOn()
 {
-	if (CachedPerceptionComponent)
+	if (CachedPerceptionComponent.IsValid())
 	{
 		CachedPerceptionComponent->SetSenseEnabled(UAISense_Sight::StaticClass(), true);
 	}
@@ -267,7 +292,7 @@ void AHorrorCreature::ApplyFleeAfterSwallow()
 {
 	if (!HasAuthority()) return;
 
-	if (!IsValid(this) || !IsValid(SwallowedPlayer))
+	if (!IsValid(this) || !SwallowedPlayer.IsValid())
 	{
 		return;
 	}
@@ -288,12 +313,12 @@ void AHorrorCreature::ForceEjectIfStuck()
 {
 	if (!HasAuthority()) return;
 
-	if (!IsValid(this) || !IsValid(SwallowedPlayer))
+	if (!IsValid(this) || !SwallowedPlayer.IsValid())
 	{
 		return;
 	}
 
-	EjectPlayer(SwallowedPlayer);
+	EjectPlayer(SwallowedPlayer.Get());
 }
 
 void AHorrorCreature::DamageToVictim(AUnderwaterCharacter* Victim, float Damage)
