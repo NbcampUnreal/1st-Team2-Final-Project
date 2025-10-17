@@ -324,6 +324,23 @@ void AADPlayerController::SetActiveRadarWidget(bool bShouldActivate)
 	PlayerHUDComponent->SetActiveRadarWidget(bShouldActivate);
 }
 
+void AADPlayerController::AddYawInput(float Val)
+{
+	Super::AddYawInput(Val * MouseXSensitivity);
+}
+
+void AADPlayerController::AddPitchInput(float Val)
+{
+	Super::AddPitchInput(Val * MouseYSensitivity);
+}
+
+void AADPlayerController::SetLookSensitivity(float NewXSensitivity, float NewYSensitivity)
+{
+	MouseXSensitivity = FMath::Clamp(NewXSensitivity, 0.01f, 10.0f);
+	MouseYSensitivity = FMath::Clamp(NewYSensitivity, 0.01f, 10.0f);
+	UE_LOG(AbyssDiver, Display, TEXT("Set Mouse Sensitivity : X: %f, Y: %f"), MouseXSensitivity, MouseYSensitivity);
+}
+
 void AADPlayerController::BeginSpectatingState()
 {
 	UE_LOG(LogAbyssDiverSpectate, Display, TEXT("Begin Spectating State for %s, GetPawn : %s"), *GetName(), GetPawn() ? *GetPawn()->GetName() : TEXT("None"));
