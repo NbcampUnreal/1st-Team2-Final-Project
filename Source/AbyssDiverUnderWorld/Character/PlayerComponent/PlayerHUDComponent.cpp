@@ -704,7 +704,7 @@ void UPlayerHUDComponent::OnShieldUseFailed()
 {
 	LOGV(Error, TEXT("OnShieldUseFailed Succeeded"));
 	if (PlayerStatusWidget)
-		PlayerStatusWidget->NoticeInfo(TEXT("Shield가 가득 찼습니다!"), FVector2D(0.0f, -160.0f));
+		PlayerStatusWidget->NoticeInfo(TEXT("Shield가 가득 찼습니다!"), FVector2D(-7.0f, -260.0f));
 }
 
 void UPlayerHUDComponent::UpdateStaminaHUD(float Stamina, float MaxStamina)
