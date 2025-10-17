@@ -39,8 +39,6 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void ShowPhaseWarning(bool bShouldVisible);
 
-	UFUNCTION(BlueprintCallable)
-	void NoticeInfo(const FString& Info, const FVector2D& Position);
 
 	UFUNCTION(BlueprintCallable)
 	void SetTopName(AADPlayerState* PS, int32 MinedAmount);
@@ -66,6 +64,8 @@ public:
 	void SetSpearGunTypeImage(int8 TypeNum);
 
 	void OnChangedEnvironment(bool bIsUnderwater);
+
+	void NoticeInfo(const FString& Info, const FVector2D& Position);
 
 private:
 

@@ -30,7 +30,12 @@ void UResultScreen::NativeOnInitialized()
 
 void UResultScreen::Update(int32 PlayerIndex, const FResultScreenParams& Params)
 {
-	checkf(PlayerIndex >= 0 && PlayerIndex < PlayerResultInfosArray.Num(), TEXT("인덱스 범위 초과, 범위 : 0~%d, 받은 인덱스 : %d"), PlayerResultInfosArray.Num(), PlayerIndex);
+	if (PlayerIndex < 0 || PlayerIndex >= PlayerResultInfosArray.Num())
+	{
+		LOGV(Error, TEXT("인덱스 범위 초과, 범위 : 0~%d, 받은 인덱스 : %d"), PlayerResultInfosArray.Num(), PlayerIndex);
+		return;
+	}
+
 	PlayerResultInfosArray[PlayerIndex]->SetSlotInfo(Params);
 }
 

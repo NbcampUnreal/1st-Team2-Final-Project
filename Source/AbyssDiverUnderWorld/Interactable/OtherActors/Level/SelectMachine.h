@@ -6,6 +6,12 @@
 #include "GameFramework/Actor.h"
 #include "SelectMachine.generated.h"
 
+enum class EMapName : uint8;
+class UWidgetComponent;
+struct FMissionData;
+class AInteractableButton;
+class USphereComponent;
+
 UENUM(BlueprintType)
 enum class ESelectMachineStateType : uint8
 {
@@ -14,11 +20,17 @@ enum class ESelectMachineStateType : uint8
 	MissionOpenState
 };
 
-enum class EMapName : uint8;
-class UWidgetComponent;
-struct FMissionData;
-class AInteractableButton;
-class USphereComponent;
+USTRUCT(BlueprintType)
+struct FMapInfo
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	EMapName MapEnumType;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	uint8 bIsUnlocked : 1;
+}; 
 	
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API ASelectMachine : public AActor
@@ -44,7 +56,7 @@ public:
 
 	UFUNCTION(BlueprintNativeEvent)
 	void UpdatelevelImage();
-	void UpdatelevelImage_Implementation();
+	void UpdatelevelImage_Implementation(); 
 
 	void HandlePrevLevel(AActor* InteractInstigator);
 	void HandleNextLevel(AActor* InteractInstigator);
@@ -71,24 +83,26 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	TObjectPtr<USphereComponent> OpenWindowCollision;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TObjectPtr<UDataTable> MapInfoDataTable;
+
 	int8 CurrentLevelIndex = 0;
 private:
 
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<USceneComponent> DefaultComp;
 
-
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<AInteractableButton> GameStartButton;
 
 
-	TArray<EMapName> LevelIDs;
+	TArray<FMapInfo> LevelInfos;
+	TArray<uint8> LevelUnLockInfos;
 
 	uint8 bSelectLevel : 1 = false;
 	uint8 bSelectMission : 1 = false;
 
 	EMapName LevelID;
-
 
 	ESelectMachineStateType SelectMachineStateType;
 #pragma endregion
