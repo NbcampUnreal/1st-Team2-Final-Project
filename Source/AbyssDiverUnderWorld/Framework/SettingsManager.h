@@ -16,7 +16,7 @@ public:
 	USettingsManager();
 public:
 
-	//Audio Settgins
+	//Audio Settings
 	UFUNCTION(BlueprintCallable, Category="Settings|Audio")
 	bool SaveAudioSettings();
 
@@ -36,6 +36,18 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Settings|Control")
 	void ApplyKeySettings(const TArray<FKeyBinding>& InBindings, APlayerController* PC);
 
+	/** 마우스 설정 저장 */
+	UFUNCTION(BlueprintCallable, Category = "Settings|Control")
+	bool SaveMouseSettings();
+
+	/** 마우스 설정 불러오고 PC에 적용 */
+	UFUNCTION(BlueprintCallable, Category = "Settings|Control")
+	bool LoadMouseSettings(APlayerController* PC);
+
+	/** 마우스 설정을 PC에 적용 */
+	UFUNCTION(BlueprintCallable, Category = "Settings|Control")
+	void ApplyMouseSettings(const FUserMouseSettings& MouseSettings, APlayerController* PC);
+
 	UFUNCTION(BlueprintCallable, Category = "Settings")
 	void SaveAllSettings();
 
@@ -51,8 +63,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Settings|Control")
 	void InitializeActionMap(const TMap<FName, UInputAction*>& InMap);
 private:
-
-
 
 	void InitializeDefaultKeyBindingsIfEmpty();
 
@@ -71,6 +81,10 @@ protected:
 	UPROPERTY(BlueprintReadOnly)
 	TArray<FKeyBinding> CachedKeyBindings;
 
+	/** 마우스 설정 캐시 */
+	UPROPERTY(BlueprintReadOnly)
+	FUserMouseSettings CachedMouseSettings;
+
 	static const FString SlotName;
 
 public:
@@ -80,4 +94,8 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Settings|Control")
 	TArray<FKeyBinding> GetCachedKeyBindings() const { return CachedKeyBindings; }
 
+	/** 현재 마우스 설정을 반환 */
+	UFUNCTION(BlueprintPure, Category = "Settings|Control")
+	FUserMouseSettings GetCachedMouseSettings() const { return CachedMouseSettings; }
+	
 };

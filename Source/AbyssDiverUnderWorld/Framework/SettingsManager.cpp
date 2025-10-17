@@ -2,14 +2,13 @@
 
 #include "AbyssDiverUnderWorld.h"
 #include "ADGameInstance.h"
+#include "ADPlayerController.h"
 #include "Subsystems/SoundSubsystem.h"
 
 #include "Kismet/GameplayStatics.h"
 #include "EnhancedInputSubsystems.h"
-#include "EnhancedInputComponent.h"
 #include "InputAction.h"
 #include "InputMappingContext.h"
-#include "GameFramework/InputSettings.h"
 #include "GameFramework/PlayerController.h"
 
 const FString USettingsManager::SlotName = TEXT("SettingsSlot");
@@ -158,6 +157,44 @@ void USettingsManager::ApplyKeySettings(const TArray<FKeyBinding>& InBindings, A
 
 }
 
+bool USettingsManager::SaveMouseSettings()
+{
+	UADSettingsSaveGame* SaveGameInstance = Cast<UADSettingsSaveGame>(UGameplayStatics::CreateSaveGameObject(UADSettingsSaveGame::StaticClass()));
+	if (SaveGameInstance == nullptr)
+	{
+		LOGV(Error, TEXT("Fail to Save Mouse Settings"));
+		return false;
+	}
+
+	SaveGameInstance->MouseSettings = CachedMouseSettings;
+	return UGameplayStatics::SaveGameToSlot(SaveGameInstance, SlotName, 0);
+}
+
+bool USettingsManager::LoadMouseSettings(APlayerController* PC)
+{
+	if (UGameplayStatics::DoesSaveGameExist(SlotName, 0))
+	{
+		if (UADSettingsSaveGame* Loaded = Cast<UADSettingsSaveGame>(
+			UGameplayStatics::LoadGameFromSlot(SlotName, 0)))
+		{
+			ApplyMouseSettings(Loaded->MouseSettings, PC);
+			return true;
+		}
+	}
+
+	return false;
+}
+
+void USettingsManager::ApplyMouseSettings(const FUserMouseSettings& MouseSettings, APlayerController* PC)
+{
+	CachedMouseSettings = MouseSettings;
+
+	if (AADPlayerController* ADPlayerController =  Cast<AADPlayerController>(PC))
+	{
+		ADPlayerController->SetLookSensitivity(CachedMouseSettings.Sensitivity, CachedMouseSettings.Sensitivity);
+	}
+}
+
 void USettingsManager::SaveAllSettings()
 {
 	UADSettingsSaveGame* SaveObj = Cast<UADSettingsSaveGame>(
@@ -166,6 +203,7 @@ void USettingsManager::SaveAllSettings()
 
 	SaveObj->AudioSettings = CachedAudioSettings;
 	SaveObj->KeyBindings = CachedKeyBindings;
+	SaveObj->MouseSettings = CachedMouseSettings;
 
 	UGameplayStatics::SaveGameToSlot(SaveObj, SlotName, 0);
 }
@@ -179,6 +217,7 @@ void USettingsManager::LoadAllSettings(APlayerController* PC)
 		{
 			CachedAudioSettings = Loaded->AudioSettings;
 			CachedKeyBindings = Loaded->KeyBindings;
+			CachedMouseSettings = Loaded->MouseSettings;
 		}
 	}
 
@@ -190,6 +229,7 @@ void USettingsManager::ApplyAllSettings(APlayerController* PC)
 {
 	ApplyAudioSettings(CachedAudioSettings);
 	ApplyKeySettings(CachedKeyBindings, PC);
+	ApplyMouseSettings(CachedMouseSettings, PC);
 }
 
 void USettingsManager::UpdateCachedKeyBinding(FName ActionName, FKey NewKey)
