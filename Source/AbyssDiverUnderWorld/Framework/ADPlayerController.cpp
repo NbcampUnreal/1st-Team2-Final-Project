@@ -70,6 +70,15 @@ void AADPlayerController::BeginPlay()
 		{
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
+
+		if (UADGameInstance* GameInstance = Cast<UADGameInstance>(GetGameInstance()))
+		{
+			if (USettingsManager* SettingsManager = GameInstance->GetSettingsManager())
+			{
+				const FUserMouseSettings MouseSettings = SettingsManager->GetCachedMouseSettings();
+				SettingsManager->ApplyMouseSettings(MouseSettings, this);
+			}
+		}
 	}
 }
 
