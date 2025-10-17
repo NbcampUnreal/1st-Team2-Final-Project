@@ -18,8 +18,13 @@ USettingsManager::USettingsManager()
 	CachedAudioSettings = { 0.5, 0.5, 0.5, 0.5 };
 }
 
-bool USettingsManager::SaveAudioSettings()
+bool USettingsManager::PopulateAudioSettings(UADSettingsSaveGame* OutSaveGame)
 {
+	if (OutSaveGame == nullptr)
+	{
+		return false;
+	}
+	
 	UWorld* World = GetWorld();
 	if (World == nullptr)
 	{
@@ -41,40 +46,12 @@ bool USettingsManager::SaveAudioSettings()
 		return false;
 	}
 
-	UADSettingsSaveGame* SaveGameInstance = Cast<UADSettingsSaveGame>(UGameplayStatics::CreateSaveGameObject(UADSettingsSaveGame::StaticClass()));
-	if (SaveGameInstance == nullptr)
-	{
-		LOGV(Error, TEXT("Fail to Save Audio settings"));
-		return false;
-	}
-
 	CachedAudioSettings.AmbientVolume = SoundSubsystem->GetAmbientVolume();
 	CachedAudioSettings.BGMVolume = SoundSubsystem->GetBGMVolume();
 	CachedAudioSettings.MasterVolume = SoundSubsystem->GetMasterVolume();
 	CachedAudioSettings.SFXVolume = SoundSubsystem->GetSFXVolume();
 
-	SaveGameInstance->AudioSettings = CachedAudioSettings;
-	return UGameplayStatics::SaveGameToSlot(SaveGameInstance, SlotName, 0);
-}
-
-bool USettingsManager::LoadAudioSettings()
-{
-	if (UGameplayStatics::DoesSaveGameExist(SlotName, 0) == false)
-	{
-		LOGV(Error, TEXT("Fail to Load AudioSettings"));
-		return false;
-	}
-
-	UADSettingsSaveGame* Loaded = Cast<UADSettingsSaveGame>(UGameplayStatics::LoadGameFromSlot(SlotName, 0));
-	if (Loaded == nullptr)
-	{
-		LOGV(Error, TEXT("Fail to Load AudioSettings"));
-		return false;
-	}
-
-	CachedAudioSettings = Loaded->AudioSettings;
-	ApplyAudioSettings(CachedAudioSettings);
-
+	OutSaveGame->AudioSettings = CachedAudioSettings;
 	return true;
 }
 
@@ -104,20 +81,15 @@ void USettingsManager::SaveKeySettings()
 	UGameplayStatics::SaveGameToSlot(SaveGameInstance, SlotName, 0);
 }
 
-void USettingsManager::LoadKeySettings(APlayerController* PC)
+bool USettingsManager::PopulateMouseSettings(UADSettingsSaveGame* SaveGame)
 {
-	if (UGameplayStatics::DoesSaveGameExist(SlotName, 0))
+	if (!SaveGame)
 	{
-		if (UADSettingsSaveGame* Loaded = Cast<UADSettingsSaveGame>(
-			UGameplayStatics::LoadGameFromSlot(SlotName, 0)))
-		{
-			CachedKeyBindings = Loaded->KeyBindings;
-		}
-		
+		return false;
 	}
 
-	InitializeDefaultKeyBindingsIfEmpty();
-	ApplyKeySettings(CachedKeyBindings, PC);
+	SaveGame->MouseSettings = MouseSettings;
+	return true;
 }
 
 void USettingsManager::ApplyKeySettings(const TArray<FKeyBinding>& InBindings, APlayerController* PC)
@@ -157,58 +129,30 @@ void USettingsManager::ApplyKeySettings(const TArray<FKeyBinding>& InBindings, A
 
 }
 
-bool USettingsManager::SaveMouseSettings()
+void USettingsManager::ApplyMouseSettings(const FUserMouseSettings& NewMouseSettings, APlayerController* PC)
 {
-	UADSettingsSaveGame* SaveGameInstance = Cast<UADSettingsSaveGame>(UGameplayStatics::CreateSaveGameObject(UADSettingsSaveGame::StaticClass()));
-	if (SaveGameInstance == nullptr)
-	{
-		LOGV(Error, TEXT("Fail to Save Mouse Settings"));
-		return false;
-	}
-
-	SaveGameInstance->MouseSettings = CachedMouseSettings;
-	return UGameplayStatics::SaveGameToSlot(SaveGameInstance, SlotName, 0);
-}
-
-bool USettingsManager::LoadMouseSettings(APlayerController* PC)
-{
-	if (UGameplayStatics::DoesSaveGameExist(SlotName, 0))
-	{
-		if (UADSettingsSaveGame* Loaded = Cast<UADSettingsSaveGame>(
-			UGameplayStatics::LoadGameFromSlot(SlotName, 0)))
-		{
-			ApplyMouseSettings(Loaded->MouseSettings, PC);
-			return true;
-		}
-	}
-
-	return false;
-}
-
-void USettingsManager::ApplyMouseSettings(const FUserMouseSettings& MouseSettings, APlayerController* PC)
-{
-	CachedMouseSettings = MouseSettings;
+	MouseSettings = NewMouseSettings;
 
 	if (AADPlayerController* ADPlayerController =  Cast<AADPlayerController>(PC))
 	{
-		ADPlayerController->SetLookSensitivity(CachedMouseSettings.Sensitivity, CachedMouseSettings.Sensitivity);
+		ADPlayerController->SetLookSensitivity(NewMouseSettings.Sensitivity, NewMouseSettings.Sensitivity);
 	}
 }
 
 void USettingsManager::SaveAllSettings()
 {
-	UADSettingsSaveGame* SaveObj = Cast<UADSettingsSaveGame>(
+	UADSettingsSaveGame* SaveGameObject = Cast<UADSettingsSaveGame>(
 		UGameplayStatics::CreateSaveGameObject(UADSettingsSaveGame::StaticClass())
 	);
 
-	SaveObj->AudioSettings = CachedAudioSettings;
-	SaveObj->KeyBindings = CachedKeyBindings;
-	SaveObj->MouseSettings = CachedMouseSettings;
+	PopulateAudioSettings(SaveGameObject);
+	// SaveGameObject->KeyBindings = CachedKeyBindings;
+	PopulateMouseSettings(SaveGameObject);
 
-	UGameplayStatics::SaveGameToSlot(SaveObj, SlotName, 0);
+	UGameplayStatics::SaveGameToSlot(SaveGameObject, SlotName, 0);
 }
 
-void USettingsManager::LoadAllSettings(APlayerController* PC)
+void USettingsManager::LoadAllSettings(bool bShouldApplySettings)
 {
 	if (UGameplayStatics::DoesSaveGameExist(SlotName, 0))
 	{
@@ -217,19 +161,24 @@ void USettingsManager::LoadAllSettings(APlayerController* PC)
 		{
 			CachedAudioSettings = Loaded->AudioSettings;
 			CachedKeyBindings = Loaded->KeyBindings;
-			CachedMouseSettings = Loaded->MouseSettings;
+			MouseSettings = Loaded->MouseSettings;
 		}
 	}
 
 	InitializeDefaultKeyBindingsIfEmpty(); // 키 바인딩 비었을 때 채우기
-	ApplyAllSettings(PC);
+
+	if (bShouldApplySettings)
+	{
+		APlayerController* PC = GetWorld()->GetFirstPlayerController();
+		ApplyCurrentSettings(PC);
+	}
 }
 
-void USettingsManager::ApplyAllSettings(APlayerController* PC)
+void USettingsManager::ApplyCurrentSettings(APlayerController* PC)
 {
 	ApplyAudioSettings(CachedAudioSettings);
-	ApplyKeySettings(CachedKeyBindings, PC);
-	ApplyMouseSettings(CachedMouseSettings, PC);
+	// ApplyKeySettings(CachedKeyBindings, PC);
+	ApplyMouseSettings(MouseSettings, PC);
 }
 
 void USettingsManager::UpdateCachedKeyBinding(FName ActionName, FKey NewKey)
@@ -244,7 +193,6 @@ void USettingsManager::UpdateCachedKeyBinding(FName ActionName, FKey NewKey)
 	}
 
 	CachedKeyBindings.Add(FKeyBinding{ ActionName, NewKey });
-
 }
 
 void USettingsManager::InitializeActionMap(const TMap<FName, UInputAction*>& InMap)
