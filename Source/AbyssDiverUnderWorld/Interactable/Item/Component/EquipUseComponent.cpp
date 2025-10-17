@@ -122,6 +122,7 @@ void UEquipUseComponent::BeginPlay()
 				if (NightVisionInstance)
 				{
 					NightVisionInstance->AddToViewport(-100);
+					NightVisionInstance->SetIsFocusable(false);
 					NightVisionInstance->SetVisibility(ESlateVisibility::Hidden);
 				}
 			}
@@ -130,7 +131,7 @@ void UEquipUseComponent::BeginPlay()
 				ChargeBatteryInstance = CreateWidget<UChargeBatteryWidget>(PC, ChargeBatteryClass);
 				if (ChargeBatteryInstance)
 				{
-					ChargeBatteryInstance->AddToViewport();
+					ChargeBatteryInstance->AddToViewport(100);
 					ChargeBatteryInstance->SetIsFocusable(false);
 					ChargeBatteryInstance->SetVisibility(ESlateVisibility::Hidden);
 				}
@@ -189,7 +190,7 @@ void UEquipUseComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAc
 			if (bNightVisionOn)
 			{
 				bNightVisionOn = false;
-				NightVisionMaterialInstance->SetScalarParameterValue(TEXT("NightBlend"), 0.f);
+				if(NightVisionMaterialInstance) NightVisionMaterialInstance->SetScalarParameterValue(TEXT("NightBlend"), 0.f);
 			}
 		}
 	}

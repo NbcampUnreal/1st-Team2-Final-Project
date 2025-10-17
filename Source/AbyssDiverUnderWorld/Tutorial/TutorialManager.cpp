@@ -38,7 +38,7 @@ void ATutorialManager::BeginPlay()
 		SubtitleWidget = CreateWidget<UTutorialSubtitle>(GetWorld(), TutorialSubtitleClass);
 		if (SubtitleWidget)
 		{
-			SubtitleWidget->AddToViewport();
+			SubtitleWidget->AddToViewport(3);
 			SubtitleWidget->SetVisibility(ESlateVisibility::Hidden);
 		}
 	}
@@ -78,7 +78,7 @@ void ATutorialManager::BeginPlay()
 		HighlightingWidget = CreateWidget<UTutorialHighlighting>(GetWorld(), HighlightingWidgetClass);
 		if (HighlightingWidget)
 		{
-			HighlightingWidget->AddToViewport(-5); 
+			HighlightingWidget->AddToViewport(2); 
 			HighlightingWidget->HighlightEnd(); 
 		}
 	}
@@ -168,7 +168,7 @@ void ATutorialManager::OnTutorialPhaseChanged(ETutorialPhase NewPhase)
 					}
 				});
 			SubtitleWidget->SetSubtitleText(StepDataPtr->SubtitleText);
-			SubtitleWidget->SetVisibility(ESlateVisibility::Visible);
+			SubtitleWidget->SetVisibility(ESlateVisibility::HitTestInvisible);
 		}
 
 		if (TutorialHintPanel)
