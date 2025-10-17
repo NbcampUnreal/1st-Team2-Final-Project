@@ -72,13 +72,13 @@ protected:
 	TObjectPtr<USphereComponent> HorrorCreatureHitSphere;
 
 	UPROPERTY()
-	TObjectPtr<AUnderwaterCharacter> SwallowedPlayer;
+	TWeakObjectPtr<AUnderwaterCharacter> SwallowedPlayer;
 
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<UAnimMontage> EjectMontage;
 
 	UPROPERTY()
-	TObjectPtr<UAIPerceptionComponent> CachedPerceptionComponent;
+	TWeakObjectPtr<UAIPerceptionComponent> CachedPerceptionComponent;
 
 	FTimerHandle TimerHandle_SetSwimMode;
 	FTimerHandle SwallowToFleeTimerHandle; // 삼키고 도망칠때 0.5초 delay (먹는모션, 소리 재생 )
@@ -116,7 +116,7 @@ private:
 #pragma region Getter, Setter
 public:
 	virtual USphereComponent* GetAttackHitComponent() const override { return HorrorCreatureHitSphere; }
-	AUnderwaterCharacter* GetSwallowedPlayer() { return SwallowedPlayer; }
+	AUnderwaterCharacter* GetSwallowedPlayer() { return SwallowedPlayer.Get(); }
 	bool GetbCanSwallow() { return bCanSwallow; }
 
 #pragma endregion
