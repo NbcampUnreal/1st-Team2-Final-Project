@@ -2485,7 +2485,7 @@ void AUnderwaterCharacter::Teleport(const FVector& NewLocation, const FRotator& 
 			// CableComponent의 Old Position을 갱신해서 Cable이 튀는 현상을 방지한다.
 			if (ACableBindingActor* CableActor = BoundCharacter->CableBindingActor)
 			{
-				CableActor->ApplyWorldOffset(CharacterMeshOffset);
+				CableActor->ApplyWorldOffsetToCable(CharacterMeshOffset);
 			}
 		}
 	}
