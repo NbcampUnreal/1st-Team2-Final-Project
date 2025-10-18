@@ -9,6 +9,7 @@
 #include "Missions/ItemCollectionMission.h"
 #include "Missions/ItemUseMission.h"
 #include "Missions/KillMonsterMission.h"
+#include "Missions/MissionManagerComponent.h"
 
 #include "Kismet/GameplayStatics.h"
 
@@ -223,6 +224,29 @@ void UMissionSubsystem::ResetAllPendingMissions()
 {
 	PendingSelectedMissions.Reset();
 	PendingCompletedMissions.Reset();
+}
+
+void UMissionSubsystem::CommitPendingMissionsToManager()
+{
+	if (PendingSelectedMissions.Num() == 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[MissionSubsystem] Commit skipped: no pending missions."));
+		return;
+	}
+
+	// GameState에 붙은 Manager 컴포넌트를 찾는 패턴(네 프로젝트 기준)
+	if (AGameStateBase* GS = UGameplayStatics::GetGameState(this))
+	{
+		if (UMissionManagerComponent* MissionManager = GS->FindComponentByClass<UMissionManagerComponent>())
+		{
+			MissionManager->ApplySelectedMissions(PendingSelectedMissions); // <- Manager 쪽에 이 함수 준비
+			UE_LOG(LogTemp, Log, TEXT("[MissionSubsystem] Committed %d missions to Manager."),
+				PendingSelectedMissions.Num());
+			return;
+		}
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("[MissionSubsystem] Manager not found yet. Commit deferred."));
 }
 
 void UMissionSubsystem::MakeAndAddMissionDataForUI(const FMissionBaseRow* MissionBaseData, const uint8& MissionIndex)

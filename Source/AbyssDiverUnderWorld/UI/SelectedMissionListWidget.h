@@ -46,6 +46,6 @@ protected:
     // 미션 슬롯 위젯 클래스
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mission")
     TSubclassOf<USelectedMissionSlot> SelectedMissionSlotClass;
-
+     
 #pragma endregion
 };

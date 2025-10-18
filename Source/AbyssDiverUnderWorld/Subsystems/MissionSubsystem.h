@@ -68,6 +68,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void ResetAllPendingMissions();
 
+	void CommitPendingMissionsToManager();
+
 private:
 
 	void MakeAndAddMissionDataForUI(const FMissionBaseRow* MissionBaseData, const uint8& MissionIndex);

@@ -1,4 +1,5 @@
 #include "UI/MissionEntryWidget.h"
+#include "AbyssDiverUnderWorld.h"
 #include "Components/TextBlock.h"
 #include "UI/MissionData.h"
 #include "Components/Border.h"

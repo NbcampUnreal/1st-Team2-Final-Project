@@ -44,6 +44,8 @@ public:
 
 	void UpdateSelectedMissionBox();
 
+    void UpdateMissionList_NoFilter();
+
     FOnStartButtonClickedDelegate OnStartButtonClickedDelegate;
     FOnMisionResetButtonClickedDelegate OnMisionResetButtonClickedDelegate;
 #pragma endregion

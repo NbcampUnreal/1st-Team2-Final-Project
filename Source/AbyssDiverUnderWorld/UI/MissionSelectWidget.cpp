@@ -32,18 +32,27 @@ void UMissionSelectWidget::NativeConstruct()
     WarningBorder->SetVisibility(ESlateVisibility::Hidden);
 
     bIsMissionGained = false;
+    UE_LOG(LogTemp, Warning, TEXT("[ Mission Entry] Construct: %s, Parent=%s, Vis=%d, Opacity=%.2f"),
+        *GetPathName(),
+        GetParent() ? *GetParent()->GetPathName() : TEXT("None"),
+        (int)GetVisibility(), GetRenderOpacity());
+    UpdateMissionList_NoFilter();
 }
 
 void UMissionSelectWidget::AddMissionEntry(const FMissionData& Data)
 {
     if (!MissionEntryClass || !ScrollBox_MissionList) return;
 
-    UMissionEntryWidget* Entry = CreateWidget<UMissionEntryWidget>(GetWorld(), MissionEntryClass);
+    UMissionEntryWidget* Entry = CreateWidget<UMissionEntryWidget>(this, MissionEntryClass);
     if (Entry)
     {
         Entry->Setup(Data);
         Entry->OnMissionClicked.AddDynamic(this, &UMissionSelectWidget::OnMissionClicked);
         ScrollBox_MissionList->AddChild(Entry);
+        LOG(TEXT(""));
+        Entry->ForceLayoutPrepass();
+        ScrollBox_MissionList->InvalidateLayoutAndVolatility();
+        ScrollBox_MissionList->ScrollToStart();
     }
 }
 
@@ -69,17 +78,16 @@ void UMissionSelectWidget::UpdateMissionList(int8 CurrentLevelIndex)
 
     ScrollBox_MissionList->ClearChildren();
 
-    const TArray<FMissionData>& Missions = GetGameInstance()->GetSubsystem<UMissionSubsystem>()->GetMissionDataForUI();
-    Algo::Sort(Missions, [](const FMissionData& A, const FMissionData& B)
-        {
-            return A.Stage < B.Stage;
-        });
+    const TArray<FMissionData>& MissionsRef =
+        GetGameInstance()->GetSubsystem<UMissionSubsystem>()->GetMissionDataForUI();
+
+    TArray<FMissionData> Missions = MissionsRef;     // 복사
+    Algo::Sort(Missions, [](const FMissionData& A, const FMissionData& B) { return A.Stage < B.Stage; });
+
     for (const FMissionData& Mission : Missions)
     {
-        if (Mission.Stage == CurrentLevelIndex)
-        {
-            AddMissionEntry(Mission);
-        }
+
+        AddMissionEntry(Mission);
     }
 }
 
@@ -128,8 +136,13 @@ void UMissionSelectWidget::OnStartButtonClicked()
 {
     if (!SelectedMissions.IsEmpty())
     {
-        if (OnStartButtonClickedDelegate.IsBound())
-            OnStartButtonClickedDelegate.Broadcast(SelectedMissions);
+        auto* GI = GetGameInstance();
+        auto* Sub = GI ? GI->GetSubsystem<UMissionSubsystem>() : nullptr;
+        if (ensure(Sub))
+        {
+            Sub->SetPendingSelectedMissions(SelectedMissions);
+            Sub->CommitPendingMissionsToManager();   
+        }
         bIsMissionGained = true;
 
         SelectedMissions.Empty();
@@ -158,4 +171,33 @@ void UMissionSelectWidget::OnMissionResetButtonClicked()
 {
     OnMisionResetButtonClickedDelegate.ExecuteIfBound();
     bIsMissionGained = false;
+}
+
+void UMissionSelectWidget::UpdateMissionList_NoFilter()
+{
+    auto* GI = GetGameInstance();
+    auto* Sub = GI ? GI->GetSubsystem<UMissionSubsystem>() : nullptr;
+    if (!ensure(Sub)) return;
+    if (!ensure(ScrollBox_MissionList)) { UE_LOG(LogTemp, Warning, TEXT("[MSel] ScrollBox is null")); return; }
+    if (!ensure(MissionEntryClass)) { UE_LOG(LogTemp, Warning, TEXT("[MSel] MissionEntryClass is null")); return; }
+
+    const auto& List = Sub->GetMissionDataForUI();
+    UE_LOG(LogTemp, Warning, TEXT("[MSel] Will render %d entries"), List.Num());
+
+    ScrollBox_MissionList->ClearChildren();
+
+    for (const FMissionData& Data : List)
+    {
+        UMissionEntryWidget* Entry = CreateWidget<UMissionEntryWidget>(this, MissionEntryClass);
+        if (!Entry) { UE_LOG(LogTemp, Warning, TEXT("[MSel] CreateWidget failed")); continue; }
+
+        Entry->SetVisibility(ESlateVisibility::SelfHitTestInvisible); // ★ 항상 보이게
+        Entry->SetRenderOpacity(1.0f);                                 // ★ 불투명 강제
+        Entry->Setup(Data);                                      // 너의 세터
+
+        UPanelSlot* asSlot = ScrollBox_MissionList->AddChild(Entry);
+        UE_LOG(LogTemp, Warning, TEXT("[MSel] + Added %s to %s (children=%d)"),
+            *Entry->GetPathName(), *ScrollBox_MissionList->GetPathName(),
+            ScrollBox_MissionList->GetChildrenCount());
+    }
 }
