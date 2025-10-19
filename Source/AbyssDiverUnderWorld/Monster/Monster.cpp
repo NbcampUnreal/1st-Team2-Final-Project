@@ -985,6 +985,15 @@ void AMonster::SetMonsterState(EMonsterState NewState)
 	{
 		BB->SetValueAsEnum(BlackboardKeys::MonsterStateKey, static_cast<uint8>(NewState));
 	}
+
+	if (MonsterState == EMonsterState::Chase || MonsterState == EMonsterState::Attack)
+	{
+		AquaticMovementComponent->SetMoveMode(EMoveMode::Chase);
+	}
+	else
+	{
+		AquaticMovementComponent->SetMoveMode(EMoveMode::Normal);
+	}
 }
 
 void AMonster::ApplyMonsterStateChange(EMonsterState NewState)

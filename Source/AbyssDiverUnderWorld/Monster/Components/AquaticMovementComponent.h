@@ -9,6 +9,12 @@
 
 DECLARE_LOG_CATEGORY_EXTERN(LogAquaticMovement, Log, All);
 
+enum class EMoveMode
+{
+    Normal,
+    Chase
+};
+
 // 경로상의 한 지점 정보
 USTRUCT(BlueprintType)
 struct FTrajectoryPoint
@@ -135,6 +141,8 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Aquatic Movement|Animation")
     void GetBoneDeltas(TArray<FVector>& OutPositionDeltas, TArray<FRotator>& OutRotationDeltas) const;
 
+    FORCEINLINE void SetMoveMode(EMoveMode NewMoveMode) { CurrentMoveMode = NewMoveMode; }
+
 protected:
     // === 경로 관리 ===
 
@@ -228,6 +236,14 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Avoidance")
     float ObstacleAvoidanceStrength = 300.0f;
 
+    // 음수이면 ObstacleDetectionRange 값으로 적용된다.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Avoidance")
+    float ObstacleDetectionRangeWhenChase = -1.0f;
+
+    // 음수이면 ObstacleAvoidanceStrength 값으로 적용된다.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Avoidance")
+    float ObstacleAvoidanceStrengthWhenChase = -1.0f;
+
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Avoidance")
     int32 AvoidanceRayCount = 8; // 회피용 레이케스트 쏘는 횟수
     
@@ -317,6 +333,8 @@ protected:
     int32 CurrentWallFollowDirection; // 현재 벽면 타기 방향 (-1, 0, 1)
     float LastWallDetectionTime; // 마지막 벽 감지 시간
     FVector LastWallNormal; // 마지막 벽 법선
+
+    EMoveMode CurrentMoveMode = EMoveMode::Normal;
 
 private:
 

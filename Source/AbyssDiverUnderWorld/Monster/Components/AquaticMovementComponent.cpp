@@ -62,6 +62,18 @@ void UAquaticMovementComponent::BeginPlay()
     
     // 본 간 평균 거리 계산
     CalculateAverageBoneDistance();
+
+    // 값을 정해주지 않았을 경우 Normal 상태와 같은 값을 사용
+    if (ObstacleDetectionRangeWhenChase < 0)
+    {
+        ObstacleDetectionRangeWhenChase = ObstacleDetectionRange;
+    }
+
+    // 값을 정해주지 않았을 경우 Normal 상태와 같은 값을 사용
+    if (ObstacleAvoidanceStrengthWhenChase < 0)
+    {
+        ObstacleAvoidanceStrengthWhenChase = ObstacleAvoidanceStrength;
+    }
 }
 
 void UAquaticMovementComponent::InitComponent(ACharacter* InCharacter)
@@ -164,8 +176,10 @@ void UAquaticMovementComponent::UpdateMovement(float DeltaTime)
             AvoidanceForce.Size(), SteeringForce.Size());
     }
 
+    float CurrentObstacleAvoidanceStrength = (CurrentMoveMode == EMoveMode::Normal) ? ObstacleAvoidanceStrength : ObstacleAvoidanceStrengthWhenChase;
+
     // 힘 합성 (장애물 회피 우선)
-    FVector TotalForce = SteeringForce + AvoidanceForce * ObstacleAvoidanceStrength;
+    FVector TotalForce = SteeringForce + AvoidanceForce * CurrentObstacleAvoidanceStrength;
 
     // 가속도 적용
     FVector NewAcceleration = TotalForce; // /10(가상 질량)
@@ -335,14 +349,16 @@ FVector UAquaticMovementComponent::CalculateAvoidanceForce()
     // 목표 방향 (있을 경우)
     FVector ToTarget = bHasTarget ? (TargetLocation - CurrentLocation).GetSafeNormal() : Forward;
     
+    float CurrentObstacleDetectionRange = (CurrentMoveMode == EMoveMode::Normal) ? ObstacleDetectionRange : ObstacleAvoidanceStrengthWhenChase;
+
     // 벽면 정보 추적
     FVector ClosestWallNormal = FVector::ZeroVector;
-    float ClosestWallDistance = ObstacleDetectionRange;
+    float ClosestWallDistance = CurrentObstacleDetectionRange;
     bool bFoundWallInPath = false;
     
     // 좌/우 측면 장애물 거리
-    float LeftDistance = ObstacleDetectionRange;
-    float RightDistance = ObstacleDetectionRange;
+    float LeftDistance = CurrentObstacleDetectionRange;
+    float RightDistance = CurrentObstacleDetectionRange;
     
     // 벽면 타기 중이면 측면 감지 강화
     bool bCurrentlyWallFollowing = CurrentWallFollowDirection != 0 && 
@@ -356,7 +372,7 @@ FVector UAquaticMovementComponent::CalculateAvoidanceForce()
 
         FHitResult Hit;
         FVector RayStart = CurrentLocation;
-        FVector RayEnd = RayStart + RayDirection * ObstacleDetectionRange;
+        FVector RayEnd = RayStart + RayDirection * CurrentObstacleDetectionRange;
 
         if (GetWorld()->LineTraceSingleByChannel(Hit, RayStart, RayEnd, ECC_WorldStatic, AvoidanceTraceParams))
         {
@@ -368,7 +384,7 @@ FVector UAquaticMovementComponent::CalculateAvoidanceForce()
 			}
 
             float Distance = Hit.Distance;
-            float BaseAvoidanceStrength = 1.0f - (Distance / ObstacleDetectionRange);
+            float BaseAvoidanceStrength = 1.0f - (Distance / CurrentObstacleDetectionRange);
             
             // 목표 방향과의 각도 계산
             float DotToTarget = FVector::DotProduct(RayDirection, ToTarget);
@@ -385,7 +401,7 @@ FVector UAquaticMovementComponent::CalculateAvoidanceForce()
                 bool bIsFollowingSide = (CurrentWallFollowDirection > 0 && SideDot < -0.5f) || 
                                        (CurrentWallFollowDirection < 0 && SideDot > 0.5f);
                 
-                if (bIsFollowingSide && Distance < ObstacleDetectionRange * 0.5f)
+                if (bIsFollowingSide && Distance < CurrentObstacleDetectionRange * 0.5f)
                 {
                     DirectionWeight = TargetDirectionWeight * 0.8f; // 측면도 중요하게
                     bFoundWallInPath = true;
@@ -426,7 +442,7 @@ FVector UAquaticMovementComponent::CalculateAvoidanceForce()
             
             // 벽면을 따라가는 경우 (벽면 타기 중이면 거리 조건 완화)
             float WallFollowThreshold = bCurrentlyWallFollowing ? 0.5f : 0.3f;
-            if (bFoundWallInPath && ClosestWallDistance < ObstacleDetectionRange * WallFollowThreshold)
+            if (bFoundWallInPath && ClosestWallDistance < CurrentObstacleDetectionRange * WallFollowThreshold)
             {
                 // 벽면의 접선 방향 계산
                 FVector WallTangent;
@@ -1353,6 +1369,8 @@ void UAquaticMovementComponent::DrawDebugVisualization()
         }
     }
 
+    float CurrentObstacleDetectionRange = (CurrentMoveMode == EMoveMode::Normal) ? ObstacleDetectionRange : ObstacleDetectionRangeWhenChase;
+
     // 장애물 회피 시각화
     if (bDrawAvoidance)
     {
@@ -1364,7 +1382,7 @@ void UAquaticMovementComponent::DrawDebugVisualization()
         {
             float Angle = (360.0f / AvoidanceRayCount) * i;
             FVector RayDirection = Forward.RotateAngleAxis(Angle, FVector::UpVector);
-            FVector RayEnd = CurrentLocation + RayDirection * ObstacleDetectionRange;
+            FVector RayEnd = CurrentLocation + RayDirection * CurrentObstacleDetectionRange;
 
             FHitResult Hit;
             bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, CurrentLocation, RayEnd, ECC_WorldStatic);
