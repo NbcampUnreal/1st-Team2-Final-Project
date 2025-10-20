@@ -1355,16 +1355,24 @@ void UEquipUseComponent::SelectSpearType(AADSpearGunBullet* Proj)
 		return;
 	}
 
+	if (CurrentItemData->Name.IsValid() == false)
+	{
+		LOGV(Error, TEXT("CurrentItemData->Name is not valid"));
+		return;
+	}
+
+	FString NameString = CurrentItemData->Name.ToString();
+
 	// FText 변수로 수정
-	if (CurrentItemData->Name == SpearGunTypeNames[0])
+	if (NameString == SpearGunTypeNames[0])
 	{
 		Proj->SetBulletType(ESpearGunType::Basic);
 	}
-	else if (CurrentItemData->Name == SpearGunTypeNames[1])
+	else if (NameString == SpearGunTypeNames[1])
 	{
 		Proj->SetBulletType(ESpearGunType::Poison);
 	}
-	else if (CurrentItemData->Name == SpearGunTypeNames[2])
+	else if (NameString == SpearGunTypeNames[2])
 	{
 		Proj->SetBulletType(ESpearGunType::Bomb);
 	}
