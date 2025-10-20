@@ -25,17 +25,23 @@ public:
 
 #pragma region Method
 public:
+	/** Interactable Interface Begin */
+	virtual UADInteractableComponent* GetInteractableComponent() const override { return InteractableComp; }
+	virtual bool IsHoldMode() const override { return false; }
+	virtual FString GetInteractionDescription() const override;
 	virtual void Interact_Implementation(AActor* InstigatorActor) override;
-	virtual bool CanHighlight_Implementation() const override { return !bIsHeld; }
+	virtual bool CanHighlight_Implementation() const override { return !HeldBy; }
+	/** Interactable Interface End */
+	
 	void Pickup(AUnderwaterCharacter* UnderwaterCharacter);
+	
 	UFUNCTION(BlueprintCallable)
 	void PutDown();
 
 protected:
+	
 	UFUNCTION()
-	void OnRep_Held();
-	//UFUNCTION()
-	//void OnRep_HeldBy();
+	void OnRep_HeldBy();
 
 	virtual void GetLifetimeReplicatedProps(TArray< FLifetimeProperty>& OutLifetimeProps) const override;
 
@@ -48,41 +54,40 @@ public:
 protected:
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<USceneComponent> SceneRoot;
-	
+
+	/** 태블릿 메시 컴포넌트 */
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<UStaticMeshComponent> TabletMesh;
+
+	/** 태블릿 화면 위젯 컴포넌트 */
+	UPROPERTY(EditAnywhere)
+	TObjectPtr<UWidgetComponent> ScreenWidget;
 
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<UADInteractableComponent> InteractableComp;
 
-	UPROPERTY(EditAnywhere)
-	TObjectPtr<UWidgetComponent> ScreenWidget;
-	UPROPERTY()
-	TObjectPtr<USoundSubsystem> SoundSubsystem;
-
 private:
-	UPROPERTY(ReplicatedUsing = OnRep_Held)
-	uint8 bIsHeld : 1;
-	UPROPERTY(Replicated)
-	TObjectPtr<AUnderwaterCharacter> HeldBy;
-	UPROPERTY(EditAnywhere)
-	FVector HoldOffsetLocation = FVector(50.f, 0.f, -20.f);
-	UPROPERTY(EditAnywhere)
-	FRotator HoldOffsetRotation = FRotator(-10.f, 0.f, 0.f);
-	UCameraComponent* OwnerCamera = nullptr;
-	FTransform CachedWorldTransform;
 
+	/** 현재 이 태블릿을 들고 있는 캐릭터 */
+	UPROPERTY(ReplicatedUsing = OnRep_HeldBy)
+	TObjectPtr<AUnderwaterCharacter> HeldBy;
+	
+	UPROPERTY(EditAnywhere)
+	FVector HoldOffsetLocation = FVector(0.f, 0.f, 0.f);
+
+	UPROPERTY(EditAnywhere)
+	FRotator HoldOffsetRotation = FRotator(0.f, 0.f, 0.f);
+
+	UPROPERTY()
+	TWeakObjectPtr<USoundSubsystem> SoundSubsystemWeakPtr;
+	
 #pragma endregion
 
 #pragma region Getter, Setteer
-public:
-	virtual UADInteractableComponent* GetInteractableComponent() const override { return InteractableComp; }
-	virtual bool IsHoldMode() const override { return false; }
-	virtual FString GetInteractionDescription() const override;
-
+	
 private:
+	
 	USoundSubsystem* GetSoundSubsystem();
+	
 #pragma endregion
-
-
 };
