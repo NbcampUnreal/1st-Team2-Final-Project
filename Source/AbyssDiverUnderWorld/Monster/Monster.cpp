@@ -12,6 +12,7 @@
 
 #include "Container/BlackboardKeys.h"
 #include "Interactable/OtherActors/Radars/RadarReturn2DComponent.h"
+#include "Framework/ADPlayerState.h"
 
 #include "Components/CapsuleComponent.h"
 #include "Subsystems/SoundSubsystem.h"
@@ -67,6 +68,8 @@ AMonster::AMonster()
 	// 틱 최적화용 컴포넌트 초기화
 	TickControlComponent = CreateDefaultSubobject<UTickControlComponent>(TEXT("Tick Control Component"));
 
+	// 컬링이 되어도 몽타주가 재생되면 본 새로고침이 일어나도록
+	GetMesh()->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickMontagesAndRefreshBonesWhenPlayingMontages;
 }
 
 void AMonster::BeginPlay()
@@ -602,11 +605,11 @@ void AMonster::OnDeath()
 	// 사망하면 모든 어그로 해제
 	ForceRemoveDetectedPlayers();
 
-	// 모든 몽타주 재생 정지
+	// 모든 몽타주 재생 정지 및 레이더 인식 끄기
 	M_OnDeath();
 
 	UnPossessAI();
-	MonsterRaderOff();
+	/*MonsterRaderOff();*/
 
 	FTimerHandle DestroyTimerHandle;
 	if (HasAuthority())
@@ -626,6 +629,8 @@ void AMonster::M_OnDeath_Implementation()
 	{
 		AnimInstance->StopAllMontages(1.0f);
 	}
+
+	MonsterRaderOff();
 }
 
 void AMonster::HandleSetting_OnDeath()
@@ -669,6 +674,11 @@ void AMonster::OnMeshOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* O
 
 	// 해당 플레이어에게 데미지 적용
 	UGameplayStatics::ApplyDamage(Player, StatComponent->AttackPower, GetController(), this, UDamageType::StaticClass());
+	AADPlayerState* ADPS = Cast<AADPlayerState>(Player->GetPlayerState());
+	if (ADPS && this && Player)
+	{
+		LOGV(Warning, TEXT("%s(%s) is Damaged By %s, Damage : %f, Distance : %f"), *ADPS->GetPlayerNickname(), *Player->GetName(), *GetName(), StatComponent->AttackPower, (GetActorLocation() - Player->GetActorLocation()).Length());
+	}
 
 	// 피격당한 플레이어의 카메라 Shake
 	CameraControllerComponent->ShakePlayerCamera(Player, AttackedCameraShakeScale);
@@ -974,6 +984,15 @@ void AMonster::SetMonsterState(EMonsterState NewState)
 	if (UBlackboardComponent* BB = AIController->GetBlackboardComponent())
 	{
 		BB->SetValueAsEnum(BlackboardKeys::MonsterStateKey, static_cast<uint8>(NewState));
+	}
+
+	if (MonsterState == EMonsterState::Chase || MonsterState == EMonsterState::Attack)
+	{
+		AquaticMovementComponent->SetMoveMode(EMoveMode::Chase);
+	}
+	else
+	{
+		AquaticMovementComponent->SetMoveMode(EMoveMode::Normal);
 	}
 }
 

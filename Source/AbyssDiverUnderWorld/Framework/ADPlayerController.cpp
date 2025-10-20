@@ -41,6 +41,8 @@
 #include "Subsystems/DataTableSubsystem.h"
 #include "UI/CrosshairWidget.h"
 
+#include "Interactable/OtherActors/Tablet/ADTablet.h"
+
 AADPlayerController::AADPlayerController()
 {
 	static ConstructorHelpers::FObjectFinder<UInputMappingContext> MappingContextAsset(TEXT("/Game/_AbyssDiver/Input/IMC_Player.IMC_Player"));
@@ -67,6 +69,15 @@ void AADPlayerController::BeginPlay()
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = GetLocalPlayer()->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
 		{
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
+		}
+
+		if (UADGameInstance* GameInstance = Cast<UADGameInstance>(GetGameInstance()))
+		{
+			if (USettingsManager* SettingsManager = GameInstance->GetSettingsManager())
+			{
+				const FUserMouseSettings MouseSettings = SettingsManager->GetCachedMouseSettings();
+				SettingsManager->ApplyMouseSettings(MouseSettings, this);
+			}
 		}
 	}
 }
@@ -320,6 +331,23 @@ void AADPlayerController::SetActiveRadarWidget(bool bShouldActivate)
 	}
 
 	PlayerHUDComponent->SetActiveRadarWidget(bShouldActivate);
+}
+
+void AADPlayerController::AddYawInput(float Val)
+{
+	Super::AddYawInput(Val * MouseXSensitivity);
+}
+
+void AADPlayerController::AddPitchInput(float Val)
+{
+	Super::AddPitchInput(Val * MouseYSensitivity);
+}
+
+void AADPlayerController::SetLookSensitivity(float NewXSensitivity, float NewYSensitivity)
+{
+	MouseXSensitivity = FMath::Clamp(NewXSensitivity, 0.01f, 10.0f);
+	MouseYSensitivity = FMath::Clamp(NewYSensitivity, 0.01f, 10.0f);
+	UE_LOG(AbyssDiver, Display, TEXT("Set Mouse Sensitivity : X: %f, Y: %f"), MouseXSensitivity, MouseYSensitivity);
 }
 
 void AADPlayerController::BeginSpectatingState()

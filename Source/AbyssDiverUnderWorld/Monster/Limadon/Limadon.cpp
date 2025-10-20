@@ -24,9 +24,13 @@ ALimadon::ALimadon()
 
 	LeftSphereMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Left Sphere Mesh"));
 	LeftSphereMesh->SetupAttachment(GetMesh());
+	// 가장 부하가 적음
+	LeftSphereMesh->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickPoseWhenRendered;
 
 	RightSphereMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Right Sphere Mesh"));
 	RightSphereMesh->SetupAttachment(GetMesh());
+	// 가장 부하가 적음
+	RightSphereMesh->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickPoseWhenRendered;
 
 	StopCaptureHealthCriteria = 1000.0f;
 

@@ -21,8 +21,7 @@ void UADGameInstance::Init()
     InitPlayerInfos();
 
     SettingsManager = NewObject<USettingsManager>(this);
-    SettingsManager->LoadAllSettings(GetFirstLocalPlayerController());
-
+    SettingsManager->LoadAllSettings(true);
     SettingsManager->InitializeActionMap(GetInputActionMap());
 
     if (UGameplayStatics::DoesSaveGameExist(UADTutorialSaveGame::SaveSlotName, UADTutorialSaveGame::UserIndex))

@@ -65,28 +65,29 @@ void UChargeBatteryWidget::StartChargeBattery(FName ItemName)
 		if (Sound) { Sound->Play(); ChargeBatterySound = Sound; }
 	}
 
+	int32 MaxToCompare = (CurrentChargeItem == DPVRow->Name) ? DPVBatteryMax : NVBatteryMax;
+
+	int32 CurrentAmount = 0;
+	if (InventoryComp && EquipUseComp)
+	{
+		if (FItemData* CurEquip = InventoryComp->GetCurrentEquipmentItemData();
+			CurEquip && CurEquip->Name == CurrentChargeItem)
+		{
+			CurrentAmount = EquipUseComp->Amount;
+		}
+		else
+		{
+			if (const FItemData* ItemInfo = InventoryComp->GetInventoryItemData(CurrentChargeItem))
+				CurrentAmount = ItemInfo->Amount;
+		}
+	}
+
+	float StartPct = (MaxToCompare > 0) ? (float)CurrentAmount / (float)MaxToCompare * 100.f : 0.f;
+
 	if (AADTutorialGameMode* GM = GetWorld()->GetAuthGameMode<AADTutorialGameMode>())
 	{
 		if (GM->BatteryStartPercentOverride < 0.f)
 		{
-			int32 MaxToCompare = (CurrentChargeItem == DPVRow->Name) ? DPVBatteryMax : NVBatteryMax;
-
-			int32 CurrentAmount = 0;
-			if (InventoryComp && EquipUseComp)
-			{
-				if (FItemData* CurEquip = InventoryComp->GetCurrentEquipmentItemData();
-					CurEquip && CurEquip->Name == CurrentChargeItem)
-				{
-					CurrentAmount = EquipUseComp->Amount;
-				}
-				else
-				{
-					if (const FItemData* ItemInfo = InventoryComp->GetInventoryItemData(CurrentChargeItem))
-						CurrentAmount = ItemInfo->Amount;
-				}
-			}
-
-			float StartPct = (MaxToCompare > 0) ? (float)CurrentAmount / (float)MaxToCompare * 100.f : 0.f;
 			GM->BatteryStartPercentOverride = FMath::Clamp(StartPct, 0.f, 100.f);
 		}
 	}

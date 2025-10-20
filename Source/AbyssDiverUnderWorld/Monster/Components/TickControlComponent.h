@@ -115,10 +115,10 @@ protected:
     float InView_NearTickInterval = 0.0f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TickControlComponentSettings|In View Tick Rates", meta = (AllowPrivateAccess = "true"))
-    float InView_MediumTickInterval = 0.05f;
+    float InView_MediumTickInterval = 0.03f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TickControlComponentSettings|In View Tick Rates", meta = (AllowPrivateAccess = "true"))
-    float InView_FarTickInterval = 1.0f;
+    float InView_FarTickInterval = 0.5f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TickControlComponentSettings|In View Tick Rates", meta = (AllowPrivateAccess = "true"))
     float InView_VeryFarTickInterval = 2.0f;
@@ -129,7 +129,7 @@ protected:
     float Occluded_NearTickInterval = 0.0f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TickControlComponentSettings|Occluded Tick Rates", meta = (AllowPrivateAccess = "true"))
-    float Occluded_MediumTickInterval = 0.1f;
+    float Occluded_MediumTickInterval = 0.05f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TickControlComponentSettings|Occluded Tick Rates", meta = (AllowPrivateAccess = "true"))
     float Occluded_FarTickInterval = 2000.0f;
@@ -140,10 +140,10 @@ protected:
     // 시야 밖 틱 간격 (초)
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TickControlComponentSettings|Out of View Tick Rates", meta = (AllowPrivateAccess = "true"))
-    float OutOfView_NearTickInterval = 0.1f;
+    float OutOfView_NearTickInterval = 0.05f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TickControlComponentSettings|Out of View Tick Rates", meta = (AllowPrivateAccess = "true"))
-    float OutOfView_MediumTickInterval = 0.1f;
+    float OutOfView_MediumTickInterval = 0.05f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TickControlComponentSettings|Out of View Tick Rates", meta = (AllowPrivateAccess = "true"))
     float OutOfView_FarTickInterval = 2000.0f;
@@ -154,7 +154,7 @@ protected:
     // 시야 판정 설정
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TickControlComponentSettings|View Settings", meta = (AllowPrivateAccess = "true"))
-    float ViewAngleThreshold = 90.0f;
+    float ViewAngleThreshold = 150.0f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TickControlComponentSettings|View Settings", meta = (AllowPrivateAccess = "true"))
     float ViewAngleBuffer = 15.0f;

@@ -11,6 +11,7 @@
 enum class ESFX : uint8;
 enum class EMapName : uint8;
 class ULoadingScreenWidget;
+class AADTablet;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADPlayerController : public APlayerController
@@ -108,6 +109,17 @@ public:
 	void S_KillPlayer_Implementation();
 
 	void SetActiveRadarWidget(bool bShouldActivate);
+
+	/** 마우스 X축 입력에 감도 적용 */
+	virtual void AddYawInput(float Val) override;
+
+	/** 마우스 Y축 입력에 감도 적용 */
+	virtual void AddPitchInput(float Val) override;
+	
+	/** 마우스 감도 설정 */
+	UFUNCTION(Exec, BlueprintCallable, Category = "Control")
+	void SetLookSensitivity(float NewXSensitivity, float NewYSensitivity);
+	
 protected:
 
 	/** 관전 상태가 시작될 때 호출되는 함수 */
@@ -181,7 +193,6 @@ private:
 	
 #pragma region Variable
 
-
 public:
 
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSpectateChanged, bool, bIsSpectating);
@@ -199,6 +210,7 @@ public:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputAction> InteractAction;
+	
 private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputMappingContext> DefaultMappingContext;
@@ -211,7 +223,6 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UInteractionDescriptionWidget> InteractionWidget;
-
 
 	UPROPERTY(EditAnywhere, Category = "UI")
 	TSubclassOf<class UHoldInteractionWidget> InteractionHoldWidgetClass;
@@ -229,6 +240,14 @@ private:
 	/** 조준선 위젯의 가시성 표시 여부 */
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	uint8 bIsCrosshairWidgetVisible : 1 = true;
+
+	/** 마우스 X축 감도 */
+	UPROPERTY(BlueprintReadOnly, Category = "Control", meta = (AllowPrivateAccess = "true"))
+	float MouseXSensitivity = 1.0f;
+
+	/** 마우스 Y축 감도 */
+	UPROPERTY(BlueprintReadOnly, Category = "Control", meta = (AllowPrivateAccess = "true"))
+	float MouseYSensitivity = 1.0f;
 	
 #pragma endregion 
 
@@ -241,6 +260,15 @@ public:
 	/** Name Widget이 활성화 여부를 반환 */
 	FORCEINLINE bool IsNameWidgetEnabled() const { return bIsNameWidgetEnabled; }
 
+	/** 마우스 X축, Y축 감도를 반환 */
+	FVector2D GetMouseSensitivity() const { return FVector2D(MouseXSensitivity, MouseYSensitivity); }
+	
+	/** 마우스 X축 감도를 반환 */
+	float GetMouseXSensitivity() const { return MouseXSensitivity; }
+
+	/** 마우스 Y축 감도를 반환 */
+	float GetMouseYSensitivity() const { return MouseYSensitivity; }
+	
 #pragma endregion
 
 };

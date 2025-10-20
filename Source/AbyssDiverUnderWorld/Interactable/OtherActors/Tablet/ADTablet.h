@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
@@ -44,7 +44,6 @@ private:
 
 #pragma region Variable
 public:
-
 
 protected:
 	UPROPERTY(VisibleAnywhere)
