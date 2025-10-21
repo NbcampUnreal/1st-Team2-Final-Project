@@ -1294,6 +1294,11 @@ private:
 	TWeakObjectPtr<class USoundSubsystem> SoundSubsystem;
 	
 	uint8 bIsMovementBlockedByTutorial : 1;
+
+	/** 캐릭터 상태 잠금에 대한 bool. 변수 Tutorial에서 상태가 바뀌지 않도록 하는데 사용 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	uint8 bIsDeathLocked : 1;
+
 	
 #pragma endregion
 
@@ -1451,6 +1456,9 @@ public:
 	FORCEINLINE UInputAction* GetSelectInventorySlot3() const { return EquipSlot3Action; }
 
 	void SetMovementBlockedByTutorial(bool bIsBlocked);
+
+	/** 캐릭터 상태 변환을 잠그는 함수 */
+	FORCEINLINE void SetIsCharacterStateLocked(const bool bNewDeathLocked) { bIsDeathLocked = bNewDeathLocked; }
 	
 	/** 현재 캐릭터의 이동 방향을 반환. Server와 Client가 동기화되어 있다. */
 	FORCEINLINE EMoveDirection GetMoveDirection() const { return MoveDirection; }
