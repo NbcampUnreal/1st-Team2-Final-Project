@@ -32,9 +32,11 @@ public:
 	virtual void Interact_Implementation(AActor* InstigatorActor) override;
 	virtual bool CanHighlight_Implementation() const override { return !HeldBy; }
 	/** Interactable Interface End */
-	
+
+	/** 태블릿을 들게 한다. */
 	void Pickup(AUnderwaterCharacter* UnderwaterCharacter);
-	
+
+	/** 태블릿을 내려놓게 한다. */
 	UFUNCTION(BlueprintCallable)
 	void PutDown();
 
@@ -44,6 +46,14 @@ protected:
 	void OnRep_HeldBy();
 
 	virtual void GetLifetimeReplicatedProps(TArray< FLifetimeProperty>& OutLifetimeProps) const override;
+
+	/** 감정 표현 시작 시 호출. 현재 Screen Widget을 숨긴다. */
+	UFUNCTION()
+	void OnEmoteStart();
+
+	/** 감정 표현 종료 시 호출. 현재 Screen Widget을 다시 보이게 한다. */
+	UFUNCTION()
+	void OnEmoteEnd();
 
 private:
 #pragma endregion
@@ -71,6 +81,9 @@ private:
 	/** 현재 이 태블릿을 들고 있는 캐릭터 */
 	UPROPERTY(ReplicatedUsing = OnRep_HeldBy)
 	TObjectPtr<AUnderwaterCharacter> HeldBy;
+
+	/** HeldBy의 약한 참조 포인터, Guest에서 Prev HeldBy를 추적하기 위해 사용 */
+	TWeakObjectPtr<AUnderwaterCharacter> HeldByWeakPtr;
 	
 	UPROPERTY(EditAnywhere)
 	FVector HoldOffsetLocation = FVector(0.f, 0.f, 0.f);
@@ -84,6 +97,9 @@ private:
 #pragma endregion
 
 #pragma region Getter, Setteer
+
+	/** 태블릿이 현재 들려져 있는지 여부를 반환 */
+	bool IsHeld() const { return HeldBy != nullptr; }
 	
 private:
 	

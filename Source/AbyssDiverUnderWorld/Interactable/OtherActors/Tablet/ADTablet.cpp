@@ -71,6 +71,7 @@ void AADTablet::Pickup(AUnderwaterCharacter* UnderwaterCharacter)
 	USkeletalMeshComponent* Mesh1P = UnderwaterCharacter->GetMesh1P();
 
 	HeldBy = UnderwaterCharacter;
+	HeldByWeakPtr = UnderwaterCharacter;
 	
 	TabletMesh->SetSimulatePhysics(false);
 	TabletMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
@@ -102,12 +103,22 @@ void AADTablet::Pickup(AUnderwaterCharacter* UnderwaterCharacter)
 		}
 	}
 
+	HeldBy->OnEmoteStartDelegate.AddDynamic(this, &AADTablet::OnEmoteStart);
+	HeldBy->OnEmoteEndDelegate.AddDynamic(this, &AADTablet::OnEmoteEnd);
+	
 	LOG(TEXT("Tablet attached to Mesh at TabletSocket"));
 }
 
 void AADTablet::PutDown()
 {
+	if (HeldByWeakPtr.IsValid())
+	{
+		HeldByWeakPtr.Get()->OnEmoteStartDelegate.RemoveDynamic(this, &AADTablet::OnEmoteStart);
+		HeldByWeakPtr.Get()->OnEmoteEndDelegate.RemoveDynamic(this, &AADTablet::OnEmoteEnd);
+	}
+	
 	HeldBy = nullptr;
+	HeldByWeakPtr = nullptr;
 	
 	TabletMesh->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
 	TabletMesh->SetVisibility(true, true);
@@ -139,6 +150,22 @@ void AADTablet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetim
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AADTablet, HeldBy);
+}
+
+void AADTablet::OnEmoteStart()
+{
+	if (IsValid(HeldBy))
+	{
+		ScreenWidget->SetVisibility(false);
+	}
+}
+
+void AADTablet::OnEmoteEnd()
+{
+	if (IsValid(HeldBy))
+	{
+		ScreenWidget->SetVisibility(true);
+	}
 }
 
 FString AADTablet::GetInteractionDescription() const
