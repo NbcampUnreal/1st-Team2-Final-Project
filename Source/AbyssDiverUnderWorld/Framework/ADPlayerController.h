@@ -70,7 +70,7 @@ public:
 	 */
 	virtual void SetViewTarget(class AActor* NewViewTarget, FViewTargetTransitionParams TransitionParams = FViewTargetTransitionParams()) override;
 
-	/** Camera Blank를 시작한다. FadeAlpha의 X값은 시작 알파 값이고 Y값은 종료 알파 값이다.
+	/** Camera Blink를 시작한다. FadeAlpha의 X값은 시작 알파 값이고 Y값은 종료 알파 값이다.
 	 * FadeStartTime 동안 종료 알파 값으로 Fade Out을 한다.
 	 * FadeEndDelay 동안 대기한다.
 	 * FadeOut 완료되면 FadeEndTime 동안 FadeColor로 Fade In을 한다.
