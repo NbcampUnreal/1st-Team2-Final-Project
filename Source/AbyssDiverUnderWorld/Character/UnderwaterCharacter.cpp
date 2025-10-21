@@ -2169,8 +2169,6 @@ void AUnderwaterCharacter::JumpInputStart(const FInputActionValue& InputActionVa
 
 void AUnderwaterCharacter::JumpInputStop(const FInputActionValue& InputActionValue)
 {
-	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Jump Input Stop"));
-	
 	if (EnvironmentState == EEnvironmentState::Underwater)
 	{
 		// 수중에서는 점프가 불가능하다.
