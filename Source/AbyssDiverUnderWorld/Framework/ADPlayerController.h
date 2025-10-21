@@ -11,7 +11,6 @@
 enum class ESFX : uint8;
 enum class EMapName : uint8;
 class ULoadingScreenWidget;
-class AADTablet;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADPlayerController : public APlayerController
@@ -31,6 +30,9 @@ protected:
 
 public:
 
+	/** 입력 무시할 때, Jump 입력 상태 초기화 */
+	virtual void SetIgnoreMoveInput(bool bNewMoveInput) override;
+	
 	UFUNCTION(Client, Reliable)
 	void C_OnPreClientTravel();
 	void C_OnPreClientTravel_Implementation();
