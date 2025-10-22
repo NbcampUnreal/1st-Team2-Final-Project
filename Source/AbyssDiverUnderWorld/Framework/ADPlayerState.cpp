@@ -15,9 +15,9 @@ AADPlayerState::AADPlayerState()
 	, Damage(0)
 	, MonsterKillCount(0)
 	, Assists(0)
-	, OreMinedCount(0)
 	, GroggyRevive(0)
 	, CorpseRecovery(0)
+	, OreMinedCount(0)
 	, OreCollectedValue(0)
 	, bIsSafeReturn(false)
 	, PlayerIndex(INDEX_NONE)
@@ -117,9 +117,9 @@ void AADPlayerState::CopyProperties(APlayerState* PlayerState)
 		return;
 	}
 
-	LOGV(Log, TEXT("Id Copied, Old : %d, New : %d, Net : %s"), PlayerIndex, NextPlayerState->GetPlayerIndex(), *UniqueNetIdRepl->ToString());
-	
 	NextPlayerState->SetPlayerIndex(PlayerIndex);
+	LOGV(Log, TEXT("Id Copied, Old : %d, New : %d, Net : %s"), PlayerIndex, NextPlayerState->GetPlayerIndex(), *UniqueNetIdRepl->ToString());
+
 	if (UUpgradeComponent* NextUpgradeComponent = NextPlayerState->GetUpgradeComp())
 	{
 		NextUpgradeComponent->CopyProperties(GetUpgradeComp());

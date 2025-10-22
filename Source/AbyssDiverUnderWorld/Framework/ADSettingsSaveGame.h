@@ -35,6 +35,21 @@ struct FKeyBinding
 	FKey AssignedKey;
 };
 
+/** Mouse 설정 저장 구조체 */
+USTRUCT(BlueprintType)
+struct FUserMouseSettings
+{
+	GENERATED_BODY()
+
+	/** 마우스 감도 설정 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Mouse")
+	float Sensitivity = 1.0f;
+
+	/** Y축 반전 설정 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Mouse")
+	bool bInvertY = false;
+};
+
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API UADSettingsSaveGame : public USaveGame
 {
@@ -48,6 +63,9 @@ public:
 	UPROPERTY(BlueprintReadWrite)
 	TArray<FKeyBinding> KeyBindings;
 
+	/** 마우스 설정 */
+	UPROPERTY(BlueprintReadWrite)
+	FUserMouseSettings MouseSettings;
 
 private:
 
