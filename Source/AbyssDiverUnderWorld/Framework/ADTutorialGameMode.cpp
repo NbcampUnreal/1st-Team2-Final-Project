@@ -146,6 +146,7 @@ void AADTutorialGameMode::HandleCurrentPhase()
     {
         switch (TutorialGS->GetCurrentPhase())
         {
+        case ETutorialPhase::Dialogue_01:          break;
         case ETutorialPhase::Step1_Movement:       HandlePhase_Movement(); break;
         case ETutorialPhase::Step2_Sprint:         HandlePhase_Sprint(); break;
         case ETutorialPhase::Step3_Oxygen:         HandlePhase_Oxygen(); break;
@@ -552,21 +553,24 @@ void AADTutorialGameMode::HandlePhase_Revive()
     if (AUnderwaterCharacter* SpawnedNPC = GetWorld()->SpawnActor<AUnderwaterCharacter>(GroggyNPCClass, SpawnTM, Params))
     {
         TutorialNPC = SpawnedNPC;
-        SpawnedNPC->SetCharacterState(ECharacterState::Groggy);
-        TutorialNPC->SetIsCharacterStateLocked(true);
-        TutorialNPC->OnCharacterStateChangedDelegate.AddDynamic(this, &AADTutorialGameMode::OnTutorialNPCStateChanged);
-
-        if (IndicatingTargetClass)
+        if (TutorialNPC.IsValid())
         {
-            if (AIndicatingTarget* Indicator = GetWorld()->SpawnActor<AIndicatingTarget>(IndicatingTargetClass, SpawnedNPC->GetActorTransform()))
+            SpawnedNPC->SetCharacterState(ECharacterState::Groggy);
+            TutorialNPC->SetIsCharacterStateLocked(true);
+            TutorialNPC->OnCharacterStateChangedDelegate.AddDynamic(this, &AADTutorialGameMode::OnTutorialNPCStateChanged);
+
+            if (IndicatingTargetClass)
             {
-                Indicator->SetupIndicator(SpawnedNPC, NPCIcon);
-                if (ATargetIndicatorManager* TargetMgr = *TActorIterator<ATargetIndicatorManager>(GetWorld()))
+                if (AIndicatingTarget* Indicator = GetWorld()->SpawnActor<AIndicatingTarget>(IndicatingTargetClass, SpawnedNPC->GetActorTransform()))
                 {
-                    TargetMgr->RegisterNewTarget(Indicator);
+                    Indicator->SetupIndicator(SpawnedNPC, NPCIcon);
+                    if (ATargetIndicatorManager* TargetMgr = *TActorIterator<ATargetIndicatorManager>(GetWorld()))
+                    {
+                        TargetMgr->RegisterNewTarget(Indicator);
+                    }
+                    TrackPhaseActor(Indicator);
                 }
-                TrackPhaseActor(Indicator);
-            }
+            } 
         }
     }
 }
@@ -1131,7 +1135,7 @@ void AADTutorialGameMode::RequestFinishTutorial()
 {
     APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0);
     
-    TutorialSoundSubsystem->StopAudio(DroneTutorialAlarmId);
+    if (TutorialSoundSubsystem) TutorialSoundSubsystem->StopAudio(DroneTutorialAlarmId);
 
     if (PC && PC->PlayerCameraManager)
     {

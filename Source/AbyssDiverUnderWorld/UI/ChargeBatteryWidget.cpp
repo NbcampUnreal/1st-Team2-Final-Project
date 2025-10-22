@@ -159,7 +159,7 @@ bool UChargeBatteryWidget::CanCharge()
 bool UChargeBatteryWidget::HasBattery()
 {
 	const FItemData* BatteryInfo = InventoryComp->GetInventoryItemData(BatteryRow->Name);
-	if (BatteryInfo->Quantity > 0)
+	if (BatteryInfo && BatteryInfo->Quantity > 0)
 	{
 		LOGB(Warning, TEXT("The battery can be charged"));
 		return true;
