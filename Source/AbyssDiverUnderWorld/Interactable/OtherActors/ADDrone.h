@@ -18,6 +18,7 @@ class USoundSubsystem;
 class ATargetPoint;
 class UADWorldSubsystem;
 class UInteractPopupWidget;
+enum class ESFX_BGM : uint8;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADDrone : public AActor,  public IIADInteractable
@@ -34,12 +35,11 @@ protected:
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void Destroyed() override;
 
-
 #pragma region Method
 public:
 	virtual void Interact_Implementation(AActor* InstigatorActor) override;
-
 	virtual bool CanHighlight_Implementation() const override { return bIsActive; }
+	
 	UFUNCTION(NetMulticast, Unreliable)
 	void M_PlayTutorialAlarmSound();
 	void M_PlayTutorialAlarmSound_Implementation();
@@ -62,24 +62,29 @@ public:
 
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	/** Phase 번호에 해당하는 BGM 타입을 DataTable에서 가져옴 */
+	ESFX_BGM GetPhaseBGM(int32 PhaseNumber) const;
+	
 private:
 #pragma endregion
 
 #pragma region Variable
+
 public:
+	UPROPERTY(EditAnywhere, Category = "DroneSettings")
+	TObjectPtr<AADDroneSeller> CurrentSeller = nullptr;
+	
+protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Component")
 	TObjectPtr<UADInteractableComponent> InteractableComp;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction")
 	uint8 bIsHold : 1;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Money")
-	int32 AccumulatedMoney = 0;
 	UPROPERTY(ReplicatedUsing = OnRep_IsActive, EditAnywhere, BlueprintReadWrite, Category = "DroneSettings")
 	uint8 bIsActive : 1;
 	UPROPERTY(Replicated)
 	uint8 bIsFlying : 1;
-	UPROPERTY(EditAnywhere, Category = "DroneSettings")
-	TObjectPtr<AADDroneSeller> CurrentSeller = nullptr;
 	UPROPERTY(EditAnywhere, Category = "DroneSettings")
 	TObjectPtr<AADDroneSeller> NextSeller = nullptr;
 	UPROPERTY(EditAnywhere, Category = "DroneSettings")
@@ -88,23 +93,15 @@ public:
 	float RaiseSpeed = 200.f;
 	UPROPERTY(EditAnywhere, Category = "DroneSettings")
 	float DestroyDelay = 5.f;
-	UPROPERTY()
-	TObjectPtr<USoundSubsystem> SoundSubsystem;
-	UPROPERTY()
-	TObjectPtr<UADWorldSubsystem> WorldSubsystem;
 	UPROPERTY(EditAnywhere)
 	UDataTable* PhaseBgmTable;
-
-protected:
 
 	// 드론에 해당하는 Phase를 나타내는 숫자
 	UPROPERTY(EditAnywhere, Category = "DroneSettings")
 	int32 DronePhaseNumber = 0;
 
-	// 드론에 해당하는 Phase를 나타내는 숫자
 	UPROPERTY(EditAnywhere, Category = "DroneSettings")
 	uint8 bIsBgmOn : 1;
-
 
 	/** 사망 부활 반경 */
 	UPROPERTY(EditAnywhere, Category = "DroneSettings")
@@ -113,13 +110,25 @@ protected:
 	UPROPERTY(EditInstanceOnly, Category = "DroneSettings")
 	TArray<TObjectPtr<ATargetPoint>> PlayerRespawnLocations;
 
-private:
-
 	FTimerHandle DestroyHandle;
-	int32 CachedSoundNumber;
-	int32 DrondeThemeSoundNumber;
-	int32 TutorialAlarmSoundId;
 
+	/** 현재 재생 중인 BGM 오디오 ID */
+	int32 BGMAudioID = INDEX_NONE;
+
+	/** 드론 테마 오디오 ID */
+	int32 DroneThemeAudioId = INDEX_NONE;
+
+	/** 튜토리얼 알람 사운드 ID */
+	int32 TutorialAlarmSoundId = INDEX_NONE;
+
+private:
+	
+	UPROPERTY()
+	mutable TWeakObjectPtr<USoundSubsystem> SoundSubsystemWeakPtr;
+	
+	UPROPERTY()
+	mutable TWeakObjectPtr<UADWorldSubsystem> WorldSubsystemWeakPtr;
+	
 #pragma endregion
 
 #pragma region Getter, Setteer
@@ -134,7 +143,11 @@ public:
 	float GetReviveDistance() const;
 
 private:
-	USoundSubsystem* GetSoundSubsystem();
+	
+	USoundSubsystem* GetSoundSubsystem() const;
+
+	UADWorldSubsystem* GetWorldSubsystem() const;
+	
 #pragma endregion
 
 	

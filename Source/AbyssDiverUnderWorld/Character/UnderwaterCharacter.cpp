@@ -2160,8 +2160,11 @@ void AUnderwaterCharacter::JumpInputStart(const FInputActionValue& InputActionVa
 	{
 		RequestStopPlayingEmote(PlayEmoteIndex);
 	}
-	
-	Jump();
+
+	if (!IsMoveInputIgnored())
+	{
+		Jump();
+	}
 }
 
 void AUnderwaterCharacter::JumpInputStop(const FInputActionValue& InputActionValue)
