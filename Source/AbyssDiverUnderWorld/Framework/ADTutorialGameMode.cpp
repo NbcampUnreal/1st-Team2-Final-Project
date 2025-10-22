@@ -3,6 +3,7 @@
 #include "Tutorial/TutorialManager.h"
 #include "Framework/ADTutorialGameState.h"
 #include "Framework/ADPlayerState.h"
+#include "Framework/ADGameInstance.h"
 #include "Inventory/ADInventoryComponent.h"
 #include "Interactable/OtherActors/TargetIndicators/TargetIndicatorManager.h"
 #include "Framework/ADTutorialPlayerController.h"
@@ -43,6 +44,7 @@ AADTutorialGameMode::AADTutorialGameMode()
     bIsBodySubmittedInResurrectionPhase = false;
     bIsTypingFinishedForCurrentPhase = false;
     FixedRespawnPointTag = FName("RespawnPoint");
+    DroneTutorialAlarmId = 0;
 }
 
 void AADTutorialGameMode::StartPlay()
@@ -204,11 +206,8 @@ void AADTutorialGameMode::HandlePhase_Movement()
 void AADTutorialGameMode::HandlePhase_Oxygen() {}
 void AADTutorialGameMode::HandlePhase_Dialogue_05() {}
 void AADTutorialGameMode::HandlePhase_Complete() 
-{
-    //위젯 또는 계단 인터랙션?
-	//FTimerHandle OpenMainLevelTimer;
-	//float Delay = 10.0f;
-    //GetWorldTimerManager().SetTimer(OpenMainLevelTimer, [this]() { UGameplayStatics::OpenLevel(this, FName("MainLevel")); }, Delay, false);
+{ 
+    if(TutorialNPC.IsValid()) TutorialNPC->Destroy();
 
     TArray<AActor*> FoundLadders;
     UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("TutorialExitLadder"), FoundLadders);
@@ -227,7 +226,16 @@ void AADTutorialGameMode::HandlePhase_Complete()
             }
             TrackPhaseActor(Indicator);
         }
+        if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+        {
+            TutorialSoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
+            if (TutorialSoundSubsystem)
+            {
+                DroneTutorialAlarmId = TutorialSoundSubsystem->PlayAttach(ESFX_BGM::DroneTutorialAlarm, LadderActor->GetRootComponent());
+            } 
+        }
     }
+
 }
 
 void AADTutorialGameMode::HandlePhase_Sprint()
@@ -404,13 +412,17 @@ void AADTutorialGameMode::HandlePhase_Dialogue_LightOut()
 {
     if (UGameInstance* GameInstance = GetGameInstance())
     {
-        if (USoundSubsystem* TutorialSoundSubsystem = GameInstance->GetSubsystem<USoundSubsystem>())
+        if (TutorialSoundSubsystem) 
         {
             if (IsValid(LightOutSound))
             {
                 const float NewVolume = TutorialSoundSubsystem->GetSFXVolume() * TutorialSoundSubsystem->GetMasterVolume();
                 UGameplayStatics::PlaySound2D(GetWorld(), LightOutSound, NewVolume);
             }
+        }
+        else
+        {
+            TutorialSoundSubsystem = GameInstance->GetSubsystem<USoundSubsystem>();
         }
     }
     else if (IsValid(LightOutSound))
@@ -540,8 +552,9 @@ void AADTutorialGameMode::HandlePhase_Revive()
     if (AUnderwaterCharacter* SpawnedNPC = GetWorld()->SpawnActor<AUnderwaterCharacter>(GroggyNPCClass, SpawnTM, Params))
     {
         TutorialNPC = SpawnedNPC;
-        TutorialNPC->OnCharacterStateChangedDelegate.AddDynamic(this, &AADTutorialGameMode::OnTutorialNPCStateChanged);
         SpawnedNPC->SetCharacterState(ECharacterState::Groggy);
+        TutorialNPC->SetIsCharacterStateLocked(true);
+        TutorialNPC->OnCharacterStateChangedDelegate.AddDynamic(this, &AADTutorialGameMode::OnTutorialNPCStateChanged);
 
         if (IndicatingTargetClass)
         {
@@ -1117,6 +1130,9 @@ FVector AADTutorialGameMode::GetTutorialRandomLocation(const FVector& Center, fl
 void AADTutorialGameMode::RequestFinishTutorial()
 {
     APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0);
+    
+    TutorialSoundSubsystem->StopAudio(DroneTutorialAlarmId);
+
     if (PC && PC->PlayerCameraManager)
     {
         PC->PlayerCameraManager->StartCameraFade(0.0f, 1.0f, 2.0f, FLinearColor::Black, false, true);
