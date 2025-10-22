@@ -167,6 +167,7 @@ void AHorrorCreature::EjectPlayer(AUnderwaterCharacter* Victim)
 {
 	UWorld* World = GetWorld();
 	if (!IsValid(Victim) || !World || World->IsInSeamlessTravel()) return;
+	if (!GetSwallowedPlayer()) return;
 
 	// 뱉자마자 플레이어를 인식하지 못하도록 일시적으로 Perception을 끔 (초기값 : 2초)
 	TemporarilyDisalbeSightPerception(DisableSightTime);
