@@ -4,14 +4,12 @@
 #include "AbyssDiverUnderWorld.h"
 #include "UI/TabletBaseWidget.h"
 #include "Framework/ADGameInstance.h"
-#include "Framework/ADPlayerController.h"
 
 #include "Subsystems/SoundSubsystem.h"
 #include "Subsystems/Localizations/LocalizationSubsystem.h"
 
 #include "Components/WidgetComponent.h"
 #include "Net/UnrealNetwork.h"
-#include "Camera/CameraComponent.h"
 
 // Sets default values
 AADTablet::AADTablet()
@@ -19,8 +17,6 @@ AADTablet::AADTablet()
 	PrimaryActorTick.bCanEverTick = false;
 	bReplicates = true;
 	SetReplicateMovement(true);
-
-	
 
 	SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
 	RootComponent = SceneRoot;
@@ -41,9 +37,6 @@ AADTablet::AADTablet()
 	ScreenWidget->SetPivot({ 0.5f, 0.5f });
 
 	InteractableComp = CreateDefaultSubobject<UADInteractableComponent>(TEXT("InteractableComp"));
-
-	bIsHeld = false;
-
 }
 
 void AADTablet::BeginPlay()
@@ -52,7 +45,7 @@ void AADTablet::BeginPlay()
 
 	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
 	{
-		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
+		SoundSubsystemWeakPtr = GI->GetSubsystem<USoundSubsystem>();
 	}
 }
 
@@ -61,9 +54,8 @@ void AADTablet::Interact_Implementation(AActor* InstigatorActor)
 	AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(InstigatorActor);
 
 	if (!UnderwaterCharacter) return;
-	LOG(TEXT("Is Character"))
 
-	if (!bIsHeld)
+	if (!HeldBy)
 	{
 		Pickup(UnderwaterCharacter);
 	}
@@ -75,79 +67,78 @@ void AADTablet::Interact_Implementation(AActor* InstigatorActor)
 
 void AADTablet::Pickup(AUnderwaterCharacter* UnderwaterCharacter)
 {
+	if (!UnderwaterCharacter || !UnderwaterCharacter->GetMesh1P()) return;
+	USkeletalMeshComponent* Mesh1P = UnderwaterCharacter->GetMesh1P();
 
-	if (!UnderwaterCharacter) return;
-
-
+	HeldBy = UnderwaterCharacter;
+	HeldByWeakPtr = UnderwaterCharacter;
+	
 	TabletMesh->SetSimulatePhysics(false);
 	TabletMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-
 	TabletMesh->SetVisibility(false, true);
-
-	USkeletalMeshComponent* Mesh1P = UnderwaterCharacter->GetMesh1P();
-	if (!Mesh1P) return;
-
+	
 	TabletMesh->AttachToComponent(
 		Mesh1P,
 		FAttachmentTransformRules::SnapToTargetNotIncludingScale,
 		TEXT("TabletSocket")
 	);
-	bIsHeld = true;
-
-
-	TabletMesh->SetRelativeLocation(FVector::ZeroVector);
-	TabletMesh->SetRelativeRotation(FRotator::ZeroRotator);
+	TabletMesh->SetRelativeLocation(HoldOffsetLocation);
+	TabletMesh->SetRelativeRotation(HoldOffsetRotation);
 
 	ScreenWidget->SetVisibility(true);
-
 	if (UUserWidget* UserWidget = ScreenWidget->GetUserWidgetObject())
 	{
 		if (UTabletBaseWidget* TabletWidget = Cast<UTabletBaseWidget>(UserWidget))
 		{
 			if (TabletWidget->Start)
 			{
-				GetSoundSubsystem()->PlayAt(ESFX::OpenTablet, GetActorLocation());
+				if (USoundSubsystem* SoundSubsystem = GetSoundSubsystem())
+				{
+					SoundSubsystem->PlayAt(ESFX::OpenTablet, GetActorLocation());
+				}
+				
 				// PlayAnimation(애니메이션, 시작 시간, LoopCount, 플레이 모드)
 				TabletWidget->PlayAnimation(TabletWidget->Start, 0.f, 1, EUMGSequencePlayMode::Forward, 1.f);
-				LOG(TEXT("TabletUI Animation Start"));
 			}
 		}
 	}
 
-	LOG(TEXT("Tablet attached to Mesh at TabletSocket"));
+	HeldBy->OnEmoteStartDelegate.AddDynamic(this, &AADTablet::OnEmoteStart);
+	HeldBy->OnEmoteEndDelegate.AddDynamic(this, &AADTablet::OnEmoteEnd);
 	
-	HeldBy = UnderwaterCharacter;
+	LOG(TEXT("Tablet attached to Mesh at TabletSocket"));
 }
 
 void AADTablet::PutDown()
 {
-
-	TabletMesh->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+	if (HeldByWeakPtr.IsValid())
+	{
+		HeldByWeakPtr.Get()->OnEmoteStartDelegate.RemoveDynamic(this, &AADTablet::OnEmoteStart);
+		HeldByWeakPtr.Get()->OnEmoteEndDelegate.RemoveDynamic(this, &AADTablet::OnEmoteEnd);
+	}
 	
+	HeldBy = nullptr;
+	HeldByWeakPtr = nullptr;
+	
+	TabletMesh->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
 	TabletMesh->SetVisibility(true, true);
-
 	TabletMesh->SetSimulatePhysics(true);
 	TabletMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-	bIsHeld = false;
-
+	
 	ScreenWidget->SetVisibility(false);
-
+	
 	LOG(TEXT("Tablet detached and placed back"));
-
-	HeldBy = nullptr;
 }
 
-void AADTablet::OnRep_Held()
+void AADTablet::OnRep_HeldBy()
 {
-	if (bIsHeld)
+	if (HeldBy)
 	{
-		if (HeldBy)
-		{
-			Pickup(HeldBy);
-			LOG(TEXT("Pickup!!"));
-			ScreenWidget->InitWidget();
-			ScreenWidget->MarkRenderStateDirty();
-		}
+		LOG(TEXT("OnRep_HeldBy - Picking up tablet"));
+		Pickup(HeldBy);
+		// 추후 문제가 생기지 않는다면 제거
+		// ScreenWidget->InitWidget();
+		// ScreenWidget->MarkRenderStateDirty();
 	}
 	else
 	{
@@ -158,8 +149,23 @@ void AADTablet::OnRep_Held()
 void AADTablet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	DOREPLIFETIME(AADTablet, bIsHeld);
 	DOREPLIFETIME(AADTablet, HeldBy);
+}
+
+void AADTablet::OnEmoteStart()
+{
+	if (IsValid(HeldBy))
+	{
+		ScreenWidget->SetVisibility(false);
+	}
+}
+
+void AADTablet::OnEmoteEnd()
+{
+	if (IsValid(HeldBy))
+	{
+		ScreenWidget->SetVisibility(true);
+	}
 }
 
 FString AADTablet::GetInteractionDescription() const
@@ -176,17 +182,15 @@ FString AADTablet::GetInteractionDescription() const
 
 USoundSubsystem* AADTablet::GetSoundSubsystem()
 {
-	if (SoundSubsystem)
+	if (!SoundSubsystemWeakPtr.IsValid())
 	{
-		return SoundSubsystem;
+		if (UADGameInstance* GameInstance = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+		{
+			SoundSubsystemWeakPtr = GameInstance->GetSubsystem<USoundSubsystem>();
+		}
 	}
 
-	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
-	{
-		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
-		return SoundSubsystem;
-	}
-	return nullptr;
+	return SoundSubsystemWeakPtr.Get();
 }
 
 

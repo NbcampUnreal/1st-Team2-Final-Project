@@ -179,6 +179,8 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<class UNiagaraComponent> MoveBubbleParticleComponent;
 
+	/** 움직일 때 공기 방울의 강도를 제어하는 파라미터 이름, 현재는 2개의 Bubble이 존재한다.
+	 * Bubble Intensity를 키우면 큰 Bubble이 추가적으로 생성된다. */
 	UPROPERTY(EditAnywhere, Category = "Character|UnderwaterEffect")
 	FName MoveBubbleIntensityParameterName = TEXT("BigBubbleIntensity");
 
