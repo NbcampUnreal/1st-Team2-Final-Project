@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "UI/ChargeBatteryWidget.h"
@@ -13,6 +13,7 @@
 #include "Interactable/Item/Component/EquipUseComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Tutorial/TutorialManager.h"
+#include "UI/NoticeWidget.h"
 #include "Components/AudioComponent.h"
 #include "Animation/WidgetAnimation.h"
 #include "Framework/ADTutorialGameMode.h"
@@ -98,6 +99,19 @@ void UChargeBatteryWidget::StartChargeBattery(FName ItemName)
 		GetWorld()->GetTimerManager().SetTimer(IncreaseTimerHandle, this, &UChargeBatteryWidget::ChargeBatteryAmount, IncreaseRepeatDelay, true);
 		LOGB(Warning, TEXT("Start Charge Battery"));
 	}
+	else
+	{ 
+		if(HasBattery())
+		{
+			NoticeWidget->SetNoticeText(TEXT("장비를 사용 중에는 충전이 불가능합니다."));
+			NoticeWidget->ShowNotice();  
+		}
+		else 
+		{
+			NoticeWidget->SetNoticeText(TEXT("소지한 배터리가 없습니다."));
+			NoticeWidget->ShowNotice();
+		}
+	}
 }
 
 
@@ -127,9 +141,8 @@ bool UChargeBatteryWidget::CanCharge()
 		}
 		return false;
 	}
-
-	const FItemData* BatteryInfo = InventoryComp->GetInventoryItemData(BatteryRow->Name);
-	if (BatteryInfo->Quantity > 0)
+	 
+	if (HasBattery())
 	{
 		LOGB(Warning, TEXT("The battery can be charged"));
 		return true;
@@ -140,6 +153,17 @@ bool UChargeBatteryWidget::CanCharge()
 		ChargeBatterySound->Stop();
 	}
 	LOGB(Warning, TEXT("There is no battery."));
+	return false;
+}
+
+bool UChargeBatteryWidget::HasBattery()
+{
+	const FItemData* BatteryInfo = InventoryComp->GetInventoryItemData(BatteryRow->Name);
+	if (BatteryInfo && BatteryInfo->Quantity > 0)
+	{
+		LOGB(Warning, TEXT("The battery can be charged"));
+		return true;
+	}
 	return false;
 }
 

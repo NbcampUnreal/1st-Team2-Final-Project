@@ -109,6 +109,7 @@ void UUnderwaterEffectComponent::SetEnableEffect(bool bNewEnabled)
 	{
 		StopBreathEffect();
 
+		// 수중 이동 소리 중지
 		USoundSubsystem* SoundSubsystem = GetSoundSubsystem();
 		if (SoundSubsystem && SoundSubsystem->IsPlaying(MovementAudioId))
 		{
@@ -120,6 +121,11 @@ void UUnderwaterEffectComponent::SetEnableEffect(bool bNewEnabled)
 		}
 		MoveTimeAccumulator = 0.0f;
 		bShouldPlayMovementEffect = false;
+
+		if (MoveBubbleParticleComponent && MoveBubbleParticleComponent->IsActive())
+		{
+			MoveBubbleParticleComponent->Deactivate();
+		}
 	}
 }
 
@@ -293,6 +299,7 @@ void UUnderwaterEffectComponent::UpdateMovementEffects(float DeltaTime)
 			{
 				SprintMovementAudioId = SoundSubsystem->Play2D(SprintMovementSound, 0.5f);
 			}
+			// 스프린트 중일 때 버블 강도 증가
 			if (MoveBubbleParticleComponent)
 			{
 				MoveBubbleParticleComponent->SetFloatParameter(MoveBubbleIntensityParameterName, 1.0f);

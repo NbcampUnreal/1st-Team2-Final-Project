@@ -303,7 +303,7 @@ void AShop::Tick(float DeltaSeconds)
 
 	if (HasAuthority())
 	{
-		int32 ActualLaunchInterval;
+		float ActualLaunchInterval;
 		switch (CurrentLaunchType)
 		{
 		case ELaunchType::First:
