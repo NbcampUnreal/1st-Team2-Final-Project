@@ -117,6 +117,8 @@ void AHorrorCreature::OnSwallowTriggerOverlap(
 void AHorrorCreature::SwallowPlayer(AUnderwaterCharacter* Victim)
 {
 	if (!HasAuthority() || !Victim || SwallowedPlayer.IsValid()) return;
+	if (MonsterState == EMonsterState::Death) return;
+
 	AUnderwaterCharacter* PlayerCharacter = Cast<AUnderwaterCharacter>(Victim);
 	if (!PlayerCharacter || PlayerCharacter->GetCharacterState() != ECharacterState::Normal) return;
 
@@ -137,6 +139,7 @@ void AHorrorCreature::SwallowPlayer(AUnderwaterCharacter* Victim)
 
 	// 타이머 클린업
 	ClearSwallowTimer();
+	ClearEjectTimer();
 
 	// Flee (도망가는) 상태로 변경
 	GetWorldTimerManager().SetTimer(
@@ -146,8 +149,7 @@ void AHorrorCreature::SwallowPlayer(AUnderwaterCharacter* Victim)
 		1.0f,
 		false
 	);
-	// ApplyMonsterStateChange(EMonsterState::Flee);
-	
+
 	// 시간 지나면 강제로 뱉도록 설정 
 	GetWorldTimerManager().SetTimer(
 		ForceEjectTimerHandle,
@@ -169,6 +171,9 @@ void AHorrorCreature::EjectPlayer(AUnderwaterCharacter* Victim)
 	if (!IsValid(Victim) || !World || World->IsInSeamlessTravel()) return;
 	if (!GetSwallowedPlayer()) return;
 
+	// 타이머 클린업
+	ClearEjectTimer();
+
 	// 뱉자마자 플레이어를 인식하지 못하도록 일시적으로 Perception을 끔 (초기값 : 2초)
 	TemporarilyDisalbeSightPerception(DisableSightTime);
 	
@@ -183,9 +188,8 @@ void AHorrorCreature::EjectPlayer(AUnderwaterCharacter* Victim)
 
 	BlackboardComponent->SetValueAsBool(BlackboardKeys::HorrorCreature::bIsPlayerSwallowKey, false);
 	
-	FTimerHandle SetPatrolTimeHandle;
 	GetWorld()->GetTimerManager().SetTimer(
-		SetPatrolTimeHandle,
+		SetPatrolTimerHandle,
 		this,
 		&AHorrorCreature::SetPatrolStateAfterEject,
 		FleeTime,
@@ -216,7 +220,7 @@ void AHorrorCreature::EjectedVictimNormalize(AUnderwaterCharacter* Victim)
 	TWeakObjectPtr<AUnderwaterCharacter> WeakVictim = Victim;
 	// 플레이어 수영모드 On
 	GetWorld()->GetTimerManager().SetTimer(
-		TimerHandle_SetSwimMode,
+		SetSwimModeTimerHandle,
 		[WeakVictim]()
 		{
 			if (WeakVictim.IsValid() == false)
@@ -266,9 +270,8 @@ void AHorrorCreature::TemporarilyDisalbeSightPerception(float Duration)
 	CachedPerceptionComponent->SetSenseEnabled(UAISense_Sight::StaticClass(), false);
 
 	// Duration (초기값 : 1.5초) 만큼 있다가 다시 Perception On
-	FTimerHandle EnableSightHandle;
 	GetWorld()->GetTimerManager().SetTimer(
-		EnableSightHandle,
+		EnableSightTimerHandle,
 		this,
 		&AHorrorCreature::SightPerceptionOn,
 		Duration,
@@ -306,7 +309,31 @@ void AHorrorCreature::ClearSwallowTimer()
 	if (SwallowToFleeTimerHandle.IsValid())
 	{
 		GetWorldTimerManager().ClearTimer(SwallowToFleeTimerHandle);
+		
+	}
+
+	if (ForceEjectTimerHandle.IsValid())
+	{
 		GetWorldTimerManager().ClearTimer(ForceEjectTimerHandle);
+	}
+}
+
+void AHorrorCreature::ClearEjectTimer()
+{
+	if (EnableSightTimerHandle.IsValid())
+	{
+		GetWorldTimerManager().ClearTimer(EnableSightTimerHandle);
+
+	}
+
+	if (SetPatrolTimerHandle.IsValid())
+	{
+		GetWorldTimerManager().ClearTimer(SetPatrolTimerHandle);
+	}
+
+	if (SetSwimModeTimerHandle.IsValid())
+	{
+		GetWorldTimerManager().ClearTimer(SetSwimModeTimerHandle);
 	}
 }
 
