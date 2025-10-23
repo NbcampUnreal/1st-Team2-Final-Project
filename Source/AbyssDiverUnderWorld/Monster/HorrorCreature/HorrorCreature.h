@@ -54,6 +54,7 @@ protected:
 	UFUNCTION()
 	void ApplyFleeAfterSwallow();
 	void ClearSwallowTimer();
+	void ClearEjectTimer();
 
 	UFUNCTION()
 	void ForceEjectIfStuck();
@@ -80,7 +81,9 @@ protected:
 	UPROPERTY()
 	TWeakObjectPtr<UAIPerceptionComponent> CachedPerceptionComponent;
 
-	FTimerHandle TimerHandle_SetSwimMode;
+	FTimerHandle SetSwimModeTimerHandle;
+	FTimerHandle SetPatrolTimerHandle;
+	FTimerHandle EnableSightTimerHandle;
 	FTimerHandle SwallowToFleeTimerHandle; // 삼키고 도망칠때 0.5초 delay (먹는모션, 소리 재생 )
 	FTimerHandle ForceEjectTimerHandle; // 먹고나서 강제로 뱉게하기 위한 타이머핸들러
 
