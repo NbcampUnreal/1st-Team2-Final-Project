@@ -131,9 +131,16 @@ void ABlowfish::ApplyExplosionEffect()
 		GetWorld(), BloodEffect, GetActorLocation(), FRotator::ZeroRotator, FVector(1.0f), true, true);
 
 	// 터질 때 폭발 효과 (비주얼)
-	UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-		GetWorld(), ExplosionEffect, GetActorLocation(), FRotator::ZeroRotator, FVector(1.0f), true, true);
-
+	UNiagaraFunctionLibrary::SpawnSystemAttached(
+		ExplosionEffect,
+		GetMesh(),               
+		TEXT("TailSocket"),     
+		FVector::ZeroVector,
+		FRotator::ZeroRotator,
+		EAttachLocation::SnapToTarget,
+		true,  
+		true  
+	);
 
 	float Desired = 1.0f;
 	float NewVolume = Desired * GetSoundSubsystem()->GetSFXVolume() * GetSoundSubsystem()->GetMasterVolume();
