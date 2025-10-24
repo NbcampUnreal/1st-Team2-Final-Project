@@ -17,14 +17,8 @@ void UMissionEntryOnHUDWidget::ChangeImage(UTexture2D* Image)
 
 void UMissionEntryOnHUDWidget::UpdateMissionEntryColor(bool bIsMissionCompleted)
 {
-	if (bIsMissionCompleted)
-	{
-		MissionEntryImage->SetColorAndOpacity(CompleteColor);
-	}
-	else
-	{
-		MissionEntryImage->SetColorAndOpacity(IncompleteColor);
-	}
+	if (!MissionEntryImage) return;
+	MissionEntryImage->SetColorAndOpacity(bIsMissionCompleted ? CompleteColor : IncompleteColor);
 }
 
 void UMissionEntryOnHUDWidget::SetVisible(bool bShouldVisible)
@@ -51,7 +45,7 @@ void UMissionEntryOnHUDWidget::SetDescription(const FText& InDesc)
 
 void UMissionEntryOnHUDWidget::SetProgress(int32 Current, int32 Goal)
 {
-	if (Text_Title)
+	if (Text_Progress)
 	{
 		Text_Progress->SetText(FText::FromString(FString::Printf(TEXT("%d / %d"), Current, Goal)));
 	}

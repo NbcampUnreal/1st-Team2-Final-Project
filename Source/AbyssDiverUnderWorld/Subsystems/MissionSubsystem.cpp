@@ -11,6 +11,9 @@
 #include "Missions/KillMonsterMission.h"
 #include "Missions/MissionManagerComponent.h"
 
+#include "Character/PlayerComponent/PlayerHUDComponent.h"
+#include "UI/MissionsOnHUDWidget.h"
+
 #include "Kismet/GameplayStatics.h"
 
 void UMissionSubsystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -143,6 +146,9 @@ void UMissionSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	}
 
 	LOG(TEXT("[MissionSubsystem] UI Exported: %d entries"), MissionDataForUI.Num());
+
+	FWorldDelegates::OnPostWorldInitialization.AddUObject(
+		this, &UMissionSubsystem::HandlePostWorldInit);
 }
 
 void UMissionSubsystem::UnlockMission(const EAggroTriggerMission& Mission)
@@ -228,6 +234,9 @@ void UMissionSubsystem::ResetAllPendingMissions()
 
 void UMissionSubsystem::CommitPendingMissionsToManager()
 {
+	if (!IsServer())
+		return;
+
 	if (PendingSelectedMissions.Num() == 0)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[MissionSubsystem] Commit skipped: no pending missions."));
@@ -242,12 +251,54 @@ void UMissionSubsystem::CommitPendingMissionsToManager()
 			MissionManager->ApplySelectedMissions(PendingSelectedMissions); // <- Manager 쪽에 이 함수 준비
 			UE_LOG(LogTemp, Log, TEXT("[MissionSubsystem] Committed %d missions to Manager."),
 				PendingSelectedMissions.Num());
+
+			if (APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0))
+			{
+				if (UPlayerHUDComponent* HUDComp = PC->FindComponentByClass<UPlayerHUDComponent>())
+				{
+					GetWorld()->GetTimerManager().SetTimerForNextTick([HUDComp]()
+						{
+							if (UMissionsOnHUDWidget* MissionsHUD = HUDComp->GetMissionsOnHudWidget())
+							{
+								MissionsHUD->MissionStatesRefresh(); // 새로고침 함수 하나 만들면 됨
+							}
+						});
+				}
+			}
 			return;
 		}
 	}
 
 	UE_LOG(LogTemp, Warning, TEXT("[MissionSubsystem] Manager not found yet. Commit deferred."));
 }
+
+void UMissionSubsystem::HandlePostWorldInit(UWorld* World, const UWorld::InitializationValues IV)
+{
+	if (!World || World->GetNetMode() == NM_Client) return; // 서버만
+	// 새 월드에서 Manager가 Attach될 때까지 짧게 폴링
+	FTimerDelegate D; D.BindUObject(this, &UMissionSubsystem::TryCommitAfterTravel);
+	World->GetTimerManager().SetTimer(PostTravelCommitTimer, D, 0.25f, true, 0.25f);
+}
+
+void UMissionSubsystem::TryCommitAfterTravel()
+{
+	// 이미 커밋했거나 펜딩이 없으면 폴링 종료
+	if (bCommittedOnce || PendingSelectedMissions.Num() == 0) {
+		GetWorld()->GetTimerManager().ClearTimer(PostTravelCommitTimer);
+		return;
+	}
+
+	LOG(TEXT("[MissionSubsystem] Trying to commit pending missions after travel..."));
+	if (AGameStateBase* GS = UGameplayStatics::GetGameState(this))
+	{
+		if (GS->FindComponentByClass<UMissionManagerComponent>())
+		{
+			CommitPendingMissionsToManager();
+		}
+	}	
+}
+
+
 
 void UMissionSubsystem::MakeAndAddMissionDataForUI(const FMissionBaseRow* MissionBaseData, const uint8& MissionIndex)
 {

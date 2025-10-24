@@ -108,6 +108,11 @@ public:
 	void S_KillPlayer_Implementation();
 
 	void SetActiveRadarWidget(bool bShouldActivate);
+
+	// Widget에 있는 Missions를 MissionManager로 옮기기.
+	UFUNCTION(Server, Reliable)
+	void S_SubmitSelectedMissions(const TArray<FMissionData>& Selection);
+	void S_SubmitSelectedMissions_Implementation(const TArray<FMissionData>& Selection);
 protected:
 
 	/** 관전 상태가 시작될 때 호출되는 함수 */
@@ -171,6 +176,7 @@ protected:
 	void S_GainShield(int Amount);
 	
 	void OnCameraBlankEnd();
+	
 
 private:
 	

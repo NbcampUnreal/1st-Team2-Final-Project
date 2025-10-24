@@ -255,7 +255,7 @@ void AADInGameState::OnRep_ReplicatedHasBegunPlay()
 		return;
 	}
 
-	MissionsWidget->InitWiget();
+	MissionsWidget->InitWidget();
 }
 
 void AADInGameState::OnRep_Money()

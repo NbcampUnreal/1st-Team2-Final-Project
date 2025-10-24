@@ -13,6 +13,7 @@
 #include "Framework/ADPlayerState.h"
 #include "Character/UnderwaterCharacter.h"
 #include "Subsystems/MissionSubsystem.h"
+#include "Framework/ADPlayerController.h"
 
 void UMissionSelectWidget::NativeConstruct()
 {
@@ -136,15 +137,19 @@ void UMissionSelectWidget::OnStartButtonClicked()
 {
     if (!SelectedMissions.IsEmpty())
     {
-        auto* GI = GetGameInstance();
-        auto* Sub = GI ? GI->GetSubsystem<UMissionSubsystem>() : nullptr;
-        if (ensure(Sub))
-        {
-            Sub->SetPendingSelectedMissions(SelectedMissions);
-            Sub->CommitPendingMissionsToManager();   
-        }
-        bIsMissionGained = true;
+        if (SelectedMissions.IsEmpty()) { /* 경고 UI */ return; }
 
+        if (auto* PC = GetOwningPlayer())
+        {
+            if (auto* ADPC = Cast<AADPlayerController>(PC))
+            {
+                ADPC->S_SubmitSelectedMissions(SelectedMissions);
+            }
+        }
+
+
+        // UI 정리
+        bIsMissionGained = true;
         SelectedMissions.Empty();
         UpdateEntrys();
         UpdateSelectedMissionBox();

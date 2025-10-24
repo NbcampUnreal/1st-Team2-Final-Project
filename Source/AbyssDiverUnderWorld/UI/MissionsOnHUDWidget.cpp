@@ -14,33 +14,42 @@
 void UMissionsOnHUDWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
-	InitWiget();
+	GetWorld()->GetTimerManager().SetTimer(InitRetryHandle, this, &UMissionsOnHUDWidget::TryBindManager, 0.25f, true);
 }
 
-void UMissionsOnHUDWidget::InitWiget()
+void UMissionsOnHUDWidget::NativeDestruct()
 {
-	if (GetInGameState() == nullptr)
+	if (MissionManager)
 	{
+		MissionManager->OnMissionStatesUpdated.RemoveAll(this);
+		MissionManager->OnMissionCompletedUI.RemoveAll(this);
+	}
+	GetWorld()->GetTimerManager().ClearTimer(InitRetryHandle);
+	Super::NativeDestruct();
+}
+
+void UMissionsOnHUDWidget::InitWidget()
+{
+	if (!MissionManager)
+	{
+		LOG(TEXT("[MissionsHUD] InitWidget - MissionManager nullptr"));
 		return;
 	}
 
-	if (AGameStateBase* GS = UGameplayStatics::GetGameState(this))
-	{
-		MissionManager = GS->FindComponentByClass<UMissionManagerComponent>();
-	}
-	if (!MissionManager) { return; }
+	LOG(TEXT("[MissionsHUD] InitWidget - Delegate binding start"));
 
-	// 2) Manager 레벨 이벤트 바인딩 (한 곳에만 바인딩)
+	// 중복 바인딩 방지
 	MissionManager->OnMissionStatesUpdated.RemoveAll(this);
-	MissionManager->OnMissionStatesUpdated.AddDynamic(this, &ThisClass::HandleStatesUpdated);
-
 	MissionManager->OnMissionCompletedUI.RemoveAll(this);
+
+	MissionManager->OnMissionStatesUpdated.AddDynamic(this, &ThisClass::HandleStatesUpdated);
 	MissionManager->OnMissionCompletedUI.AddDynamic(this, &ThisClass::HandleMissionCompletedUI);
 
-	// 3) 최초 1회 전체 갱신
-	// 3-1) 스냅샷 빌드 함수가 있으면 사용
+	// 최초 1회 스냅샷으로 그리고 시작
 	TArray<FMissionRuntimeState> States;
 	MissionManager->BuildMissionStateSnapshot(States);
+
+	LOG(TEXT("[MissionsHUD] Snapshot ready - %d states"), States.Num());
 	HandleStatesUpdated(States);
 }
 
@@ -56,8 +65,10 @@ void UMissionsOnHUDWidget::SetVisible(bool bShouldVisible, int32 ElementIndex)
 	Element->SetVisible(bShouldVisible);
 }
 
-void UMissionsOnHUDWidget::UpdateMission(EMissionType MissionType, uint8 MissionIndex, int32 CurrentProgress)
+void UMissionsOnHUDWidget::UpdateMission(EMissionType MissionType, uint8 MissionIndex, int32 CurrentProgress, int32 Goal, bool bCompleted)
 {
+	if (!MissionListBox) return;
+
 	if (GetMissionSubsystem() == nullptr)
 	{
 		return;
@@ -67,46 +78,47 @@ void UMissionsOnHUDWidget::UpdateMission(EMissionType MissionType, uint8 Mission
 	{
 		return;
 	}
+	TPair<EMissionType, uint8> Key(MissionType, MissionIndex);
+	int8* FoundSlotPtr = MissionEntryMap.Find(Key);
+	int8 SlotIndex = FoundSlotPtr ? *FoundSlotPtr : -1;
 
-	const FMissionBaseRow* MissionData = MissionSubsystem->GetMissionData(MissionType, MissionIndex);
-
-	int8* WidgetEntryIndex = ContainedMissions.Find({ MissionType, MissionIndex });
-	int8 ActualIndex = INDEX_NONE;
-	if (WidgetEntryIndex)
+	// 1) 없으면 만들고 붙이기
+	if (SlotIndex == -1)
 	{
-		ActualIndex = *WidgetEntryIndex;
+		// 새로 추가
+		SlotIndex = CreateAndAttachEntry(MissionType, MissionIndex);
+		if (SlotIndex == -1)
+		{
+			LOG(TEXT("[MissionsHUD] UpdateMission - Failed to create entry (T=%d,Idx=%d)"),
+				(int32)MissionType, (int32)MissionIndex);
+			return;
+		}
+
 	}
-	else
+	// 2) 엔트리 가져와서 값 갱신
+	if (UMissionEntryOnHUDWidget* Entry = GetEntryBySlotIndex(SlotIndex))
 	{
-		CreateAndAddEntry(MissionData->MissionImage);
-		ActualIndex = MissionListBox->GetChildrenCount() - 1;
-		ContainedMissions.Add({ MissionType, MissionIndex }, ActualIndex);
+		Entry->SetProgress(CurrentProgress, Goal);
+		Entry->SetCompleted(bCompleted);
+
+		LOG(TEXT("[MissionsHUD]  * Update slot %d (Cur=%d / Goal=%d / Done=%d)"),
+			(int32)SlotIndex, CurrentProgress, Goal, bCompleted);
 	}
 
-	ChangeImage(MissionData->MissionImage, ActualIndex);
-
-	UpdateMissionEntryColor(InGameState->GetActivatedMissionList().MissionInfoList[ActualIndex].bIsCompleted, ActualIndex);
 }
 
-void UMissionsOnHUDWidget::Refresh()
+void UMissionsOnHUDWidget::MissionStatesRefresh()
 {
-	int32 ElementCount = GetElementCount();
-	for (int32 i = 0; i < ElementCount; ++i)
-	{
-		MissionListBox->RemoveChildAt(ElementCount - i - 1);
-	}
+	if (!MissionManager) return;
 
-	ContainedMissions.Reset();
-	
-	const TArray<FActivatedMissionInfo>& Missions = InGameState->GetActivatedMissionList().MissionInfoList;
-	for (const FActivatedMissionInfo& Mission : Missions)
-	{
-		EMissionType MissionType = Mission.MissionType;
-		uint8 MissionIndex = Mission.MissionIndex;
-		int8 Progress = Mission.CurrentProgress;
-		UpdateMission(MissionType, MissionIndex, Progress);
-	}
+	TArray<FMissionRuntimeState> States;
+	MissionManager->BuildMissionStateSnapshot(States);
+
+	LOG(TEXT("[MissionsHUD] MissionStates - %d states"), States.Num());
+	HandleStatesUpdated(States);
 }
+
+
 
 void UMissionsOnHUDWidget::CreateAndAddEntry(UTexture2D* Image)
 {
@@ -146,91 +158,131 @@ void UMissionsOnHUDWidget::UpdateMissionEntryColor(bool bIsMissionCompleted, int
 	Element->UpdateMissionEntryColor(bIsMissionCompleted);
 }
 
-void UMissionsOnHUDWidget::OnMissionChanged(int32 ChangedIndex, const FActivatedMissionInfoList& ChangedValue)
+void UMissionsOnHUDWidget::TryBindManager()
 {
-	LOGV(Log, TEXT("UpdatingMission.."));
-	const FActivatedMissionInfo& MissionInfo = ChangedValue.MissionInfoList[ChangedIndex];
-	UpdateMission(MissionInfo.MissionType, MissionInfo.MissionIndex, MissionInfo.CurrentProgress);
+	if (!MissionManager)
+	{
+		if (AADInGameState* GS = GetInGameState())
+		{
+			MissionManager = GS->FindComponentByClass<UMissionManagerComponent>();
+			LOG(TEXT("[MissionsHUD] TryBindManager - GameState:%s  Manager:%s"),
+				*GetNameSafe(GS), *GetNameSafe(MissionManager));
+		}
+	}
+	if (MissionManager)
+	{
+		GetWorld()->GetTimerManager().ClearTimer(InitRetryHandle);
+		InitWidget();
+	}
 }
 
-void UMissionsOnHUDWidget::OnMissionRemoved(int32 RemovedIndex, const FActivatedMissionInfoList& RemovedValue)
-{
-	LOGV(Log, TEXT("RemovingMission.."));
-}
 
 void UMissionsOnHUDWidget::HandleStatesUpdated(const TArray<FMissionRuntimeState>& States)
 {
-	const int32 ElementCount = GetElementCount();
-	for (int32 i = 0; i < ElementCount; ++i)
+	LOG(TEXT("[MissionsHUD] HandleStatesUpdated - %d states"), States.Num());
+	if (!MissionListBox)
 	{
-		MissionListBox->RemoveChildAt(ElementCount - i - 1);
+		LOG(TEXT("[MissionsHUD] MissionListBox is nullptr"));
+		return;
 	}
-	ContainedMissions.Reset();
 
-	// 제목/이미지 룩업은 기존 Subsystem 로직 유지
-	UMissionSubsystem* Subsys = GetMissionSubsystem();
+	if (!MissionEntryClass)
+	{
+		LOG(TEXT("[MissionsHUD] MissionEntryClass is nullptr"));
+		return;
+	}
+	//  인덱스 맵 구조 특성상 안전하게 전체 재빌드(인덱스 꼬임 방지)
+	MissionListBox->ClearChildren();
+	MissionEntryMap.Empty();
+
+	// (선택) 표시 순서 보장 원하면 여기서 정렬
+	// TArray<FMissionRuntimeState> Sorted = States; ... 정렬 ...
 
 	for (const FMissionRuntimeState& S : States)
 	{
-		// 1) DataRow 룩업(제목/설명/아이콘)
-		FString TitleStr, DescStr;
-		UTexture2D* IconTex = nullptr;
+		LOG(TEXT("[MissionsHUD]  → Mission T=%d Idx=%d Cur=%d Goal=%d Done=%d"),
+			(int32)S.MissionType, (int32)S.MissionIndex, S.Current, S.Goal, S.bCompleted);
 
-		if (Subsys)
-		{
-			const FMissionBaseRow* Row = nullptr;
-			switch (S.MissionType)
-			{
-			case EMissionType::AggroTrigger:   Row = Subsys->GetAggroTriggerMissionData((EAggroTriggerMission)S.MissionIndex); break;
-			case EMissionType::Interaction:    Row = Subsys->GetInteractionMissionData((EInteractionMission)S.MissionIndex);   break;
-			case EMissionType::ItemCollection: Row = Subsys->GetItemCollectMissionData((EItemCollectMission)S.MissionIndex);   break;
-			case EMissionType::ItemUse:        Row = Subsys->GetItemUseMissionData((EItemUseMission)S.MissionIndex);           break;
-			case EMissionType::KillMonster:    Row = Subsys->GetKillMonsterMissionData((EKillMonsterMission)S.MissionIndex);   break;
-			default: break;
-			}
-			if (Row)
-			{
-				TitleStr = Row->MissionName;
-				DescStr = Row->MissionDescription;    // DataRow에 설명 필드가 있다고 가정
-				IconTex = Row->MissionImage;
-			}
-		}
-
-		// 2) 엔트리 생성 (기존 CreateAndAddEntry()가 위젯 리턴한다면 그걸 사용)
-		UMissionEntryOnHUDWidget* Entry = CreateWidget<UMissionEntryOnHUDWidget>(this, MissionEntryClass);
-		if (!Entry) continue;
-
-		Entry->ChangeImage(IconTex);
-		Entry->SetTitle(FText::FromString(TitleStr));
-		Entry->SetDescription(FText::FromString(DescStr));
-		Entry->SetProgress(S.Current, S.Goal);
-		Entry->SetCompleted(S.bCompleted);
-
-		UVerticalBoxSlot* BoxSlot = MissionListBox->AddChildToVerticalBox(Entry);
-		if (BoxSlot)
-		{
-			BoxSlot->SetSize(ESlateSizeRule::Automatic);
-			BoxSlot->SetHorizontalAlignment(HAlign_Fill);
-			BoxSlot->SetVerticalAlignment(VAlign_Top);
-		}
-
-		// 인덱스 맵 유지(완료 즉시 처리용)
-		const int8 ActualIndex = (int8)(MissionListBox->GetChildrenCount() - 1);
-		ContainedMissions.Add({ S.MissionType, (uint8)S.MissionIndex }, ActualIndex);
+		UpdateMission(static_cast<EMissionType>(S.MissionType), (uint8)S.MissionIndex, S.Current, S.Goal, S.bCompleted);
 	}
 }
 
-void UMissionsOnHUDWidget::HandleMissionCompletedUI(EMissionType Type, int32 Index)
+void UMissionsOnHUDWidget::HandleMissionCompletedUI(EMissionType MissionType, int32 MissionIndex)
 {
-	if (int8* P = ContainedMissions.Find({ Type, (uint8)Index }))
+	const TPair<EMissionType, uint8> Key(static_cast<EMissionType>(MissionType), (uint8)MissionIndex);
+	if (int8* Found = MissionEntryMap.Find(Key))
 	{
-		if (auto* Entry = Cast<UMissionEntryOnHUDWidget>(MissionListBox->GetChildAt(*P)))
+		if (UMissionEntryOnHUDWidget* Entry = GetEntryBySlotIndex(*Found))
 		{
 			Entry->SetCompleted(true);
-			// (선택) 여기서 토스트/사운드/진동 재생
+			// BP 쪽 애니메이션을 노출했다면:
+			// Entry->PlayCompleteEffect();
 		}
 	}
 }
+
+UMissionEntryOnHUDWidget* UMissionsOnHUDWidget::GetEntryBySlotIndex(int8 SlotIndex) const
+{
+	if (!MissionListBox)
+		return nullptr;
+	const int32 Count = MissionListBox->GetChildrenCount();
+	if (SlotIndex < 0 || SlotIndex >= Count)
+		return nullptr;
+
+	return Cast<UMissionEntryOnHUDWidget>(MissionListBox->GetChildAt(SlotIndex));
+}
+
+int8 UMissionsOnHUDWidget::CreateAndAttachEntry(EMissionType Type, uint8 MissionIndex)
+{
+	if (!MissionListBox || !MissionEntryClass)
+		return -1;
+
+	UMissionEntryOnHUDWidget* Entry = CreateWidget<UMissionEntryOnHUDWidget>(this, MissionEntryClass);
+	if (!Entry)
+	{
+		LOG(TEXT("[MissionsHUD] CreateAndAttachEntry - CreateWidget failed"));
+		return -1;
+	}
+
+	if (UVerticalBoxSlot* BoxSlot = MissionListBox->AddChildToVerticalBox(Entry))
+	{
+		BoxSlot->SetSize(ESlateSizeRule::Automatic);
+		BoxSlot->SetHorizontalAlignment(HAlign_Fill);
+		BoxSlot->SetVerticalAlignment(VAlign_Top);
+	}
+
+	const int8 NewSlotIndex = static_cast<int8>(MissionListBox->GetChildrenCount() - 1);
+
+	LOG(TEXT("[MissionsHUD]  + Entry created (T=%d,Idx=%d) → Slot=%d"),
+		(int32)Type, (int32)MissionIndex, (int32)NewSlotIndex);
+
+	FillEntryStaticTexts(Entry, Type, MissionIndex);
+
+	Entry->UpdateMissionEntryColor(false);
+	Entry->SetVisible(true);
+
+	MissionEntryMap.Add(TPair<EMissionType, uint8>(Type, MissionIndex), NewSlotIndex);
+	return NewSlotIndex;
+}
+
+void UMissionsOnHUDWidget::FillEntryStaticTexts(UMissionEntryOnHUDWidget* Entry, EMissionType Type, uint8 MissionIndex)
+{
+	if (!Entry) return;
+
+	if (UMissionSubsystem* Subsys = GetMissionSubsystem())
+	{
+		// 예) const FMissionBaseRow* Row = Subsys->FindBaseRow(Type, MissionIndex);
+		if (const FMissionBaseRow* Row = Subsys->GetMissionData(Type, MissionIndex))
+		{
+
+			Entry->SetTitle(FText::FromString(Row->MissionName));
+			Entry->SetDescription(FText::FromString(Row->MissionDescription));
+			// 아이콘/색 등도 필요시 채우기
+		}
+	}
+}
+
+
 
 int32 UMissionsOnHUDWidget::GetElementCount() const
 {

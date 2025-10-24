@@ -70,6 +70,9 @@ public:
 
 	void CommitPendingMissionsToManager();
 
+	void HandlePostWorldInit(UWorld* World, const UWorld::InitializationValues IV);
+	void TryCommitAfterTravel();
+
 private:
 
 	void MakeAndAddMissionDataForUI(const FMissionBaseRow* MissionBaseData, const uint8& MissionIndex);
@@ -82,7 +85,9 @@ private:
 #pragma region Variables
 
 private:
+	FTimerHandle PostTravelCommitTimer;
 
+	uint8 bCommittedOnce : 1 = 0;
 
 
 	// SeamlessTravel 동안 서버에서만 들고 있는 1회용 팀 선택 결과

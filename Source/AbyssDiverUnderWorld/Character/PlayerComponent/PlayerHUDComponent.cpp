@@ -319,10 +319,6 @@ void UPlayerHUDComponent::M_UpdateSpearCount_Implementation(const int32& Current
 	}
 }
 
-void UPlayerHUDComponent::UpdateMissionsOnHUD(EMissionType MissionType, uint8 MissionIndex, int32 CurrentProgress)
-{
-	MissionsOnHUDWidget->UpdateMission(MissionType, MissionIndex, CurrentProgress);
-}
 
 void UPlayerHUDComponent::PlayNextPhaseAnim(int32 NextPhaseNumber)
 {

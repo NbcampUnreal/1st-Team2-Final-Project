@@ -5,6 +5,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 #include "Character/UnitBase.h"
+#include "AbyssDiverUnderWorld.h"
 
 //Mission includes
 #include "MissionBase.h"
@@ -54,8 +55,68 @@ void UMissionManagerComponent::Multicast_NotifyMissionCompleted_Implementation(E
     OnMissionCompletedUI.Broadcast(MissionType, MissionIndex);
 }
 
+void UMissionManagerComponent::ServerApplyCommittedStates(const TArray<FMissionRuntimeState>& NewStates)
+{
+    if (!GetOwner() || GetOwner()->HasAuthority() == false) return;
+
+    // 1) 서버 배열 치환/갱신 (여기서 반드시 “복제되는 그 배열”을 만지자)
+    ActiveStates = NewStates;
+
+    // 2) (선택) 완료 전환 항목이 있으면 체크마크 토스트 알림
+    for (const FMissionRuntimeState& S : ActiveStates)
+    {
+        if (S.bCompleted)
+        {
+            OnMissionCompletedUI.Broadcast(S.MissionType, S.MissionIndex);
+        }
+    }
+
+    // 3) 서버에서도 즉시 브로드캐스트 (Host HUD 갱신)
+    OnMissionStatesUpdated.Broadcast(ActiveStates);
+
+    // 4) 복제 갱신(원격 클라 전파)
+    if (AActor* Owner = GetOwner())
+    {
+        Owner->ForceNetUpdate(); // 또는 FastArray이면 MarkArrayDirty/MarkItemDirty 사용
+    }
+}
+
+void UMissionManagerComponent::ServerUpdateState(const FMissionRuntimeState& S)
+{
+    if (!GetOwner() || GetOwner()->HasAuthority() == false) return;
+
+    // MissionStates에서 S에 해당하는 항목 갱신/삽입
+    bool bFound = false;
+    for (FMissionRuntimeState& It : ActiveStates)
+    {
+        if (It.MissionType == S.MissionType && It.MissionIndex == S.MissionIndex)
+        {
+            It = S;
+            bFound = true;
+            break;
+        }
+    }
+    if (!bFound) { ActiveStates.Add(S); }
+
+    if (S.bCompleted)
+    {
+        OnMissionCompletedUI.Broadcast(S.MissionType, S.MissionIndex);
+    }
+
+    // Host용 즉시 브로드캐스트
+    OnMissionStatesUpdated.Broadcast(ActiveStates);
+
+    // 복제 전파
+    if (AActor* Owner = GetOwner())
+    {
+        Owner->ForceNetUpdate();
+    }
+}
+
 void UMissionManagerComponent::ApplySelectedMissions(const TArray<FMissionData>& Selected)
 {
+    if (!GetOwner()->HasAuthority()) return; // 서버 가드
+
     UnbindAll();
     ActiveMissions.Reset();
     ActiveStates.Reset(Selected.Num());
@@ -84,10 +145,13 @@ void UMissionManagerComponent::ApplySelectedMissions(const TArray<FMissionData>&
         }
     }
 
+    OnMissionStatesUpdated.Broadcast(ActiveStates);
+    if (AActor* Owner = GetOwner())
+        Owner->ForceNetUpdate();
     OnActiveMissionCountChanged(); // <-- BindAll/UnbindAll 대신 이걸로
 }
 
-void UMissionManagerComponent::BuildMissionStateSnapshot(TArray<FMissionRuntimeState>& Out) const
+void UMissionManagerComponent::BuildMissionStateSnapshot(TArray<FMissionRuntimeState>& Out) 
 {
     Out.Reset();
 
@@ -96,6 +160,7 @@ void UMissionManagerComponent::BuildMissionStateSnapshot(TArray<FMissionRuntimeS
     if (bServer)
     {
         // 서버: 실제 미션 객체에서 현재 상태를 조립
+        TArray<FMissionRuntimeState> Temp;
         for (const UMissionBase* M : ActiveMissions)
         {
             if (!M) continue;
@@ -107,7 +172,11 @@ void UMissionManagerComponent::BuildMissionStateSnapshot(TArray<FMissionRuntimeS
             S.Goal = M->GetGoalCount();
             S.bCompleted = M->IsCompleted();
             Out.Add(S);
+            Temp.Add(S);
         }
+
+        Out = Temp;                // HUD로 보낼 Out
+        ActiveStates = Temp;
     }
     else
     {
@@ -133,6 +202,7 @@ void UMissionManagerComponent::OnRep_Missions()
     // 1) 블루프린트 구현형 이벤트(선택)
     BP_OnMissionStatesUpdated(ActiveStates);
     // 2) 멀티캐스트(UMG/C++ 위젯에서 바인딩)
+    LOG(TEXT("[MissionManager] OnRep_Missions on CLIENT: %d states"), ActiveStates.Num());
     OnMissionStatesUpdated.Broadcast(ActiveStates);
 }
 

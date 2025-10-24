@@ -29,6 +29,7 @@
 #include "Character/PlayerComponent/ShieldComponent.h"
 #include "Engine/World.h"
 #include "Subsystems/SoundSubsystem.h"
+#include "Subsystems/MissionSubsystem.h"
 
 #include "UI/HoldInteractionWidget.h"
 
@@ -622,6 +623,16 @@ void AADPlayerController::ShowFadeIn()
 void AADPlayerController::OnCameraBlankEnd()
 {
 	
+}
+
+void AADPlayerController::S_SubmitSelectedMissions_Implementation(const TArray<FMissionData>& Selection)
+{
+	if (UGameInstance* GI = GetGameInstance())
+		if (UMissionSubsystem* Sub = GI->GetSubsystem<UMissionSubsystem>())
+		{
+			Sub->SetPendingSelectedMissions(Selection);   // 서버에서만 write
+			Sub->CommitPendingMissionsToManager();        // Manager->ApplySelectedMissions()
+		}
 }
 
 

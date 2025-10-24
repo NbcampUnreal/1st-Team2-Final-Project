@@ -47,16 +47,24 @@ public:
     void Multicast_NotifyMissionCompleted(EMissionType MissionType, int32 MissionIndex);
 	void Multicast_NotifyMissionCompleted_Implementation(EMissionType MissionType, int32 MissionIndex);
 
+    // 서버에서 상태를 갱신하는 “유일” 경로 (예: Subsystem Commit이 여기로 들어옴)
+    UFUNCTION()
+    void ServerApplyCommittedStates(const TArray<FMissionRuntimeState>& NewStates);
+
+    // 한 항목만 갱신하는 버전이 있다면 여기도 동일하게 처리
+    UFUNCTION()
+    void ServerUpdateState(const FMissionRuntimeState& S);
 
     UFUNCTION(BlueprintAuthorityOnly)
     void ApplySelectedMissions(const TArray<FMissionData>& Selected);
 	
     UFUNCTION(BlueprintCallable, Category = "AbyssDiver|Mission|UI")
-    void BuildMissionStateSnapshot(TArray<FMissionRuntimeState>& Out) const;
+    void BuildMissionStateSnapshot(TArray<FMissionRuntimeState>& Out);
 
     // ② 클라 HUD가 구독할 얇은 복제 상태
     UPROPERTY(ReplicatedUsing = OnRep_Missions)
     TArray<FMissionRuntimeState> ActiveStates;
+
 
     UFUNCTION(BlueprintImplementableEvent, Category = "Mission")
     void BP_OnMissionStatesUpdated(const TArray<FMissionRuntimeState>& States);
