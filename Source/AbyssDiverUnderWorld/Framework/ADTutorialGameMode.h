@@ -176,6 +176,17 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Sound")
     TObjectPtr<USoundBase> LightOutSound;
 
+    UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Sounds")
+    TObjectPtr<USoundBase> RadarAlarmSound;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Sounds")
+    TObjectPtr<USoundBase> ExitAlarmSound;
+
+    UPROPERTY()
+    TObjectPtr<UAudioComponent> LoopingPhaseSoundComponent;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Sounds")
+    TObjectPtr<USoundBase> ReviveNPCIndicatorSound;
     // Drone
     UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Drone")
     TSubclassOf<AADDroneSeller> TutorialDroneSellerClass;
