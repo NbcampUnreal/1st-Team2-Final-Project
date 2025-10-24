@@ -49,6 +49,10 @@ enum class ESFX : uint8
 	FireShotgun,
 	ExplodeMine,
 	EnterSubmarine,
+	BasketballPickup,
+	BasketballThrow,   
+	BasketballBounce,   
+	BasketballScore,    
 	Max UMETA(Hidden)
 };
 
