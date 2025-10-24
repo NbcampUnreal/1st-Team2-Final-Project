@@ -217,6 +217,8 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 
 	bIsMovementBlockedByTutorial = false;
 
+	bIsDeathLocked = false;
+
 	bAlwaysRelevant = true;
 }
 
@@ -1049,10 +1051,11 @@ void AUnderwaterCharacter::M_UpdateAnimSyncState_Implementation(FAnimSyncState N
 
 void AUnderwaterCharacter::SetCharacterState(const ECharacterState NewCharacterState)
 {
-	if (!HasAuthority() || CharacterState == NewCharacterState)	
+	if (!HasAuthority() || CharacterState == NewCharacterState)
 	{
 		return;
 	}
+	if (bIsDeathLocked && CharacterState == ECharacterState::Groggy && NewCharacterState == ECharacterState::Death) return;
 
 	LOGVN(Warning, TEXT("Character State Changed : %s"), *UEnum::GetDisplayValueAsText(NewCharacterState).ToString());
 

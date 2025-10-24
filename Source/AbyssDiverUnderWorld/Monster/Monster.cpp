@@ -651,6 +651,18 @@ void AMonster::OnRep_Ragdoll()
 		// 렉돌 활성화 및 AquaticMovementComponent Tick 비활성화
 		HandleSetting_OnDeath();
 	}
+
+	// 렉돌 활성화 되며 살짝 뒤로 밀리게 끔 설정
+	FTimerHandle Tmp;
+	GetWorldTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
+		{
+			if (USkeletalMeshComponent* Mesh = GetMesh())
+			{
+				const float ImpulseStrength = 500.0f; // 밀리는 정도
+				FVector dir = (-GetActorForwardVector() + FVector(0, 0, 0.25f)).GetSafeNormal(); // 뒤 + 살짝 위로 밀리게
+				Mesh->AddImpulseToAllBodiesBelow(dir * ImpulseStrength, NAME_None, true);
+			}
+		}));
 }
 
 void AMonster::OnMeshOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
