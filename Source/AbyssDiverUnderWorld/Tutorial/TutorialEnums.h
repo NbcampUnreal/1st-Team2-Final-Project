@@ -26,7 +26,7 @@ enum class ETutorialPhase : uint8
 	Step11_Drop,
 	Dialogue_05,
 	Step12_OxygenWarning,
-	Dialogue_08, 
+	Dialogue_08,
 	Step13_Revive,
 	Dialogue_04,
 	Step14_Die,
@@ -47,6 +47,7 @@ enum class ETutorialHintKey : uint8
 	Inventory UMETA(DisplayName = "Inventory"),
 	Drone UMETA(DisplayName = "Drone"),
 	Flashlight UMETA(DisplayName = "Flashlight"),
+	NightVision UMETA(DisplayName = "NightVision"),
 	Items UMETA(DisplayName = "Items"), 
 	Revive UMETA(DisplayName = "Revive")
 };
