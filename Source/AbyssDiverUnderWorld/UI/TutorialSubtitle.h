@@ -9,36 +9,31 @@ DECLARE_MULTICAST_DELEGATE(FOnTypingCompleted);
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API UTutorialSubtitle : public UUserWidget
 {
-    GENERATED_BODY()
+	GENERATED_BODY()
 
-protected:
+	protected:
+	virtual void NativeConstruct() override;
 
-    virtual void NativeConstruct() override;
-
-#pragma region Method
 public:
-    UFUNCTION(BlueprintCallable)
-    void SetSubtitleText(const FText& NewText);
+	UFUNCTION(BlueprintCallable, Category = "Tutorial")
+	void SetSubtitleText(const FText& NewText);
 
 protected:
-    void TypeNext();
-#pragma endregion
+	void TypeNext();
 
-#pragma region Variable
 public:
-    FOnTypingCompleted OnTypingCompleted;
+	FOnTypingCompleted OnTypingCompleted;
 
 protected:
-    UPROPERTY(meta = (BindWidget))
-    TObjectPtr<class UTextBlock> Text_Subtitle;
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<class URichTextBlock> Text_Subtitle;
 
-    UPROPERTY(EditAnywhere, Category = "Typing")
-    float TypingSpeed = 0.04f;
+	UPROPERTY(EditAnywhere, Category = "Typing")
+	float TypingSpeed = 0.04f;
 
-    FTimerHandle TypingTimerHandle;
-    FString TargetText;
-    FString CurrentDisplayText;
-    int32 TargetTextIndex = 0;
-    int32 CurrentTypingStep = 0;
-#pragma endregion
+	FTimerHandle TypingTimerHandle;
+	FString TargetText;
+	FString CurrentDisplayText;
+	int32 TargetTextIndex = 0;
+	int32 CurrentTypingStep = 0;
 };
