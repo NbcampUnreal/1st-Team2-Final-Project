@@ -250,6 +250,7 @@ private:
 
 	UPROPERTY(ReplicatedUsing = OnRep_Ragdoll)
 	bool bIsRagdoll = false;
+	uint8 bIsDeath = false;
 
 #pragma endregion
 
