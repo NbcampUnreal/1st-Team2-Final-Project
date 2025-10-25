@@ -145,6 +145,14 @@ void UMonsterSoundComponent::M_PlayHitReactSound_Implementation()
 	}
 }
 
+void UMonsterSoundComponent::M_PlayDeathSound_Implementation()
+{
+	if (DeathSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, DeathSound, GetOwner()->GetActorLocation());
+	}
+}
+
 void UMonsterSoundComponent::S_StopAllLoopSound_Implementation()
 {
 	if (!IsValid(this)) return;
