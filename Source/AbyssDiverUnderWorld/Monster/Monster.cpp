@@ -599,16 +599,12 @@ float AMonster::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, 
 
 void AMonster::OnDeath()
 {
-	if (bIsDeath) return;
-	bIsDeath = true;
-	
 	ApplyMonsterStateChange(EMonsterState::Death);
 
 	if (MonsterSoundComponent)
 	{
 		// 모든 사운드 해제
 		MonsterSoundComponent->M_StopAllLoopSound();
-		MonsterSoundComponent->M_PlayDeathSound();
 	}
 
 	// 사망하면 모든 어그로 해제

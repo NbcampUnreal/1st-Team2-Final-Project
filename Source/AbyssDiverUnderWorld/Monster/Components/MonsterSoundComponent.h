@@ -53,11 +53,6 @@ public:
 	void M_PlayHitReactSound();
 	void M_PlayHitReactSound_Implementation();
 
-	// Death Sound
-	UFUNCTION(NetMulticast, Reliable)
-	void M_PlayDeathSound();
-	void M_PlayDeathSound_Implementation();
-
 	// Stop Loop Sound
 	UFUNCTION(Server, Reliable)
 	void S_StopAllLoopSound();
@@ -88,9 +83,6 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "Sound|HitReact")
 	TObjectPtr<USoundBase> HitReactSound;
-
-	UPROPERTY(EditAnywhere, Category = "Sound|Death")
-	TObjectPtr<USoundBase> DeathSound;
 
 private:
 	TObjectPtr<UAudioComponent> PatrolLoopComponent;
