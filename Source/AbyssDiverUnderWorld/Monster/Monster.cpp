@@ -47,8 +47,13 @@ AMonster::AMonster()
 
 	// Set Default PossessSetting
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
-	// Set Collision Channel == Monster(ECC_GameTraceChannel3)
-	GetCapsuleComponent()->SetCollisionObjectType(ECC_GameTraceChannel3);
+
+	UCapsuleComponent* Cap = GetCapsuleComponent();
+	Cap->SetCollisionObjectType(ECC_GameTraceChannel3);
+
+	// 충돌 시 너무 멀리 튕기지 않게 설정
+	Cap->BodyInstance.SetOverrideMaxDepenetrationVelocity(true);
+	Cap->BodyInstance.SetMaxDepenetrationVelocity(10.f);
 
 	AttackCollision = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Attack Collision"));
 	AttackCollision->SetupAttachment(GetMesh(), TEXT("AttackSocket"));
