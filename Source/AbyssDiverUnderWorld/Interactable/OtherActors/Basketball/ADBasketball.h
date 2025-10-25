@@ -45,8 +45,10 @@ public:
 		UPrimitiveComponent* OhterComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 protected:
-
-
+	UFUNCTION(NetMulticast, Reliable)
+	void M_ApplyThrowVelocity(const FVector& Velocity);
+	void M_ApplyThrowVelocity_Implementation(const FVector& Velocity);
+	
 	UFUNCTION()
 	void OnRep_HeldBy();
 	UFUNCTION()

@@ -170,30 +170,10 @@ void AADBasketball::Throw()
 
 	// 던진 다음에는 다시 켜기
 	SetReplicateMovement(true);
-
-/*	ProjectileMovement->SetActive(false); 
-	ProjectileMovement->StopMovementImmediately(); */ 
-
-	if (AActor* PrevOwner = CachedHeldBy.Get())
-	{
-		CollisionSphere->IgnoreActorWhenMoving(PrevOwner, true);
-
-		GetWorld()->GetTimerManager().SetTimer(
-			OwnerIgnoreTimerHandle,
-			this,
-			&AADBasketball::ClearOwnerIgnore,
-			OwnerIgnoreTime,
-			false
-		);
-	}
-
 	CollisionSphere->SetSimulatePhysics(true);
 	CollisionSphere->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-
-	/*ProjectileMovement->SetActive(true);
-	ProjectileMovement->Velocity = ThrowVelocity;*/
-	CollisionSphere->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
-	CollisionSphere->SetPhysicsLinearVelocity(ThrowVelocity);
+	
+	M_ApplyThrowVelocity(ThrowVelocity);
 
 	bIsThrown = true;
 	HeldBy = nullptr;
@@ -268,6 +248,40 @@ void AADBasketball::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AAc
 			ScoreBasket(); 
 		}
 	}
+}
+
+void AADBasketball::M_ApplyThrowVelocity_Implementation(const FVector& Velocity)
+{
+	if (!CollisionSphere)
+	{
+		UE_LOG(LogTemp, Error, TEXT("M_ApplyThrowVelocity: CollisionSphere is null"));
+		return;
+	}
+
+	CollisionSphere->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
+	CollisionSphere->SetPhysicsLinearVelocity(Velocity);
+	
+	CollisionSphere->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+
+	LOG(TEXT("[%s] M_ApplyThrowVelocity: velocity=%s, Pawn collision IGNORED"),
+		HasAuthority() ? TEXT("Server") : TEXT("Client"),
+		*Velocity.ToString());
+
+	FTimerHandle PawnIgnoreTimerHandle;
+	GetWorld()->GetTimerManager().SetTimer(
+		PawnIgnoreTimerHandle,
+		[this]()
+		{
+			if (CollisionSphere)
+			{
+				CollisionSphere->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+				LOG(TEXT("[%s] Pawn collision RESTORED"),
+					HasAuthority() ? TEXT("Server") : TEXT("Client"));
+			}
+		},
+		0.1f,
+		false
+	);
 }
 
 void AADBasketball::OnRep_HeldBy()
