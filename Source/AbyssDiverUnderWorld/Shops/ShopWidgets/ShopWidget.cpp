@@ -299,7 +299,7 @@ UShopBuyListEntryData* UShopWidget::AddToBuyList(uint8 ItemId, int32& InOutIncre
 	if (Index == INDEX_NONE)
 	{
 		BuyListEntryData = NewObject<UShopBuyListEntryData>(this);
-		BuyListEntryData->Init(BuyListEntryDataList.Num(), ItemData->Thumbnail, TEXT(""));
+		BuyListEntryData->Init(BuyListEntryDataList.Num(), ItemData->Thumbnail, TEXT(""), false);
 		BuyListEntryData->SetItemCount(InOutIncreasedAmount);
 		BuyListEntryDataList.Emplace(BuyListEntryData);
 		BuyListEntryItemIdList.Emplace(ItemId);

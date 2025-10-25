@@ -2,6 +2,12 @@
 
 #include "Shops/ShopWidgets/ShopItemSlotWidget.h"
 
+void UShopItemEntryData::Init(int32 NewSlotIndex, UTexture2D* NewItemImage, const FString& NewToolTipText, bool bShouldLock)
+{
+	Init(NewSlotIndex, NewItemImage, NewToolTipText);
+	bIsLocked = bShouldLock;
+}
+
 void UShopItemEntryData::Init(int32 NewSlotIndex, UTexture2D* NewItemImage, const FString& NewToolTipText)
 {
 	SlotIndex = NewSlotIndex;
@@ -19,6 +25,11 @@ const FString& UShopItemEntryData::GetToolTipText() const
 	return ToolTipText;
 }
 
+bool UShopItemEntryData::IsLocked() const
+{
+	return bIsLocked;
+}
+
 int32 UShopItemEntryData::GetSlotIndex() const
 {
 	return SlotIndex;
@@ -27,5 +38,10 @@ int32 UShopItemEntryData::GetSlotIndex() const
 void UShopItemEntryData::SetSlotIndex(int32 NewSlotIndex)
 {
 	SlotIndex = NewSlotIndex;
+}
+
+void UShopItemEntryData::SetLockState(bool bShouldLock)
+{
+	bIsLocked = bShouldLock;
 }
 
