@@ -56,6 +56,9 @@ void AHorrorCreature::Tick(float DeltaTime)
 		UpdateVictimLocation(DeltaTime);
 	}
 
+	// 클라 Tick 에서 BB 접근을 막기 위한 방어 코드
+	if (!HasAuthority()) return;
+
 	// 도망가는 중에만 활성화 되도록
 	if (MonsterState == EMonsterState::Flee && IsValid(BlackboardComponent))
 	{
