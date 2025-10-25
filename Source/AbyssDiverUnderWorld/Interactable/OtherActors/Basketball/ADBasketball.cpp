@@ -12,6 +12,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
+#include "Interactable/Item/Component/ADInteractionComponent.h"
 
 // Sets default values
 AADBasketball::AADBasketball()
@@ -44,6 +45,7 @@ AADBasketball::AADBasketball()
 	ProjectileMovement->ProjectileGravityScale = 1.0f;
 	ProjectileMovement->SetIsReplicated(true);
 	ProjectileMovement->bAutoActivate = false;
+	ProjectileMovement->bRotationFollowsVelocity = false;
 
 	InteractableComp = CreateDefaultSubobject<UADInteractableComponent>(TEXT("InteractableComp"));
 
@@ -110,7 +112,7 @@ void AADBasketball::Interact_Implementation(AActor* InstigatorActor)
 
 void AADBasketball::Pickup(AUnderwaterCharacter* Diver)
 {
-	if (!Diver || !Diver->GetMesh1P()) return;
+	if (!Diver || !Diver->GetMesh()) return;
 
 	if (!HasAuthority()) return;
 
@@ -118,23 +120,35 @@ void AADBasketball::Pickup(AUnderwaterCharacter* Diver)
 	CachedHeldBy = Diver;
 	bIsThrown = false;
 
+	// MovementReplication 꺼서 충돌 방지
+	SetReplicateMovement(false);
+
 	CollisionSphere->SetSimulatePhysics(false);
 	CollisionSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	ProjectileMovement->SetActive(false);
 	ProjectileMovement->Velocity = FVector::ZeroVector;
 
-	USkeletalMeshComponent* Mesh1P = Diver->GetMesh1P();
+	USkeletalMeshComponent* Mesh1P = Diver->GetMesh();
 	AttachToComponent(
 		Mesh1P,
 		FAttachmentTransformRules::SnapToTargetNotIncludingScale,
 		BasketballSocketName
 	);
+	PlayBasketballAnimation(Diver);
 
 	if (USoundSubsystem* SoundSubsystem = GetSoundSubsystem())
 	{
 		SoundSubsystem->PlayAt(ESFX::BasketballPickup, GetActorLocation());
 	}
+	if (UADInteractionComponent* InteractionComp = Diver->GetInteractionComponent())
+	{
+		InteractionComp->SetHeldItem(this);
+	}
 
+	LOG(TEXT("[%s] Basketball picked up - Role: %d, RemoteRole: %d"),
+		HasAuthority() ? TEXT("SERVER") : TEXT("CLIENT"),
+		(int32)GetLocalRole(),
+		(int32)GetRemoteRole());
 }
 
 void AADBasketball::Throw()
@@ -142,14 +156,44 @@ void AADBasketball::Throw()
 	if (!HeldBy || !HasAuthority())
 		return;
 
+	StopBasketballAnimation(HeldBy);
+	if (HeldBy)
+	{
+		if (UADInteractionComponent* InteractionComp = HeldBy->FindComponentByClass<UADInteractionComponent>())
+		{
+			InteractionComp->SetHeldItem(nullptr);
+		}
+	}
+
 	FVector ThrowVelocity = CalculateThrowVelocity();
 	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+
+	// 던진 다음에는 다시 켜기
+	SetReplicateMovement(true);
+
+/*	ProjectileMovement->SetActive(false); 
+	ProjectileMovement->StopMovementImmediately(); */ 
+
+	if (AActor* PrevOwner = CachedHeldBy.Get())
+	{
+		CollisionSphere->IgnoreActorWhenMoving(PrevOwner, true);
+
+		GetWorld()->GetTimerManager().SetTimer(
+			OwnerIgnoreTimerHandle,
+			this,
+			&AADBasketball::ClearOwnerIgnore,
+			OwnerIgnoreTime,
+			false
+		);
+	}
 
 	CollisionSphere->SetSimulatePhysics(true);
 	CollisionSphere->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 
-	ProjectileMovement->SetActive(true);
-	ProjectileMovement->Velocity = ThrowVelocity;
+	/*ProjectileMovement->SetActive(true);
+	ProjectileMovement->Velocity = ThrowVelocity;*/
+	CollisionSphere->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
+	CollisionSphere->SetPhysicsLinearVelocity(ThrowVelocity);
 
 	bIsThrown = true;
 	HeldBy = nullptr;
@@ -166,10 +210,26 @@ void AADBasketball::Throw()
 		PickupCooldown,
 		false
 	);
+
+	LOG(TEXT("Basketball thrown with velocity: %s"), *ThrowVelocity.ToString());
 }
 
 void AADBasketball::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
+	LOG(TEXT("[HIT] Self=%s | HitComp=%s | OtherActor=%s | OtherComp=%s\n"
+		"      ImpactPoint=%s | ImpactNormal=%s | Impulse=%.1f\n"
+		"      Bone=%s | FaceIndex=%d | PhysMat=%s"),
+		*GetNameSafe(this),
+		*GetNameSafe(HitComp),
+		*GetNameSafe(OtherActor),
+		*GetNameSafe(OtherComp),
+		*Hit.ImpactPoint.ToString(),
+		*Hit.ImpactNormal.ToString(),
+		NormalImpulse.Size(),
+		*Hit.BoneName.ToString(),
+		Hit.FaceIndex,
+		Hit.PhysMaterial.IsValid() ? *Hit.PhysMaterial->GetName() : TEXT("None"));
+
 	/** 바운스 사운드 재생 */
 	float CurrentTime = GetWorld()->GetTimeSeconds();
 	if (CurrentTime - LastBounceSoundTime > 0.1f)
@@ -214,15 +274,43 @@ void AADBasketball::OnRep_HeldBy()
 {
 	if (HeldBy)
 	{
-		Pickup(HeldBy);
+		PlayBasketballAnimation(HeldBy);
+		SetReplicateMovement(false);
+
+		CollisionSphere->SetSimulatePhysics(false);
+		CollisionSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		ProjectileMovement->SetActive(false);
+
+		if (HeldBy->GetMesh())
+		{
+			AttachToComponent(
+				HeldBy->GetMesh(),
+				FAttachmentTransformRules::SnapToTargetNotIncludingScale,
+				BasketballSocketName
+			);
+		}
+		if (UADInteractionComponent* InteractionComp = HeldBy->GetInteractionComponent())
+		{
+			InteractionComp->SetHeldItem(this);
+			LOG(TEXT("[Client] Set HeldItem in OnRep_HeldBy"));
+		}
 	}
 	else
 	{
+		SetReplicateMovement(true);
+
+		if (CachedHeldBy.IsValid())
+		{
+			StopBasketballAnimation(CachedHeldBy.Get());
+		}
+
 		DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 		CollisionSphere->SetSimulatePhysics(true);
 		CollisionSphere->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		ProjectileMovement->SetActive(true);
 	}
+	LOG(TEXT("[CLIENT] OnRep_HeldBy called - HeldBy: %s"),
+		HeldBy ? *HeldBy->GetName() : TEXT("nullptr"));
 }
 
 void AADBasketball::OnRep_bIsThrown()
@@ -281,6 +369,15 @@ void AADBasketball::PlayBounceSound(float ImpactStrength)
 	}
 }
 
+void AADBasketball::ClearOwnerIgnore()
+{
+	if (AActor* PrevOwner = CachedHeldBy.Get())
+	{
+		CollisionSphere->IgnoreActorWhenMoving(PrevOwner, false);
+		CollisionSphere->MoveIgnoreActors.Remove(PrevOwner);
+	}
+}
+
 FVector AADBasketball::CalculateThrowVelocity() const
 {
 	if (!CachedHeldBy.IsValid())
@@ -288,16 +385,73 @@ FVector AADBasketball::CalculateThrowVelocity() const
 
 	AUnderwaterCharacter* Diver = CachedHeldBy.Get();
 
-	FVector CameraForward = Diver->GetControlRotation().Vector();
+	FVector CameraLocation;
+	FRotator CameraRotation;
+	Diver->GetActorEyesViewPoint(CameraLocation, CameraRotation);
+	FVector CameraForward = CameraRotation.Vector();
 
-	FVector ThrowDirection = CameraForward;
-	ThrowDirection.Z += KnockbackZDirection;
-	ThrowDirection.Normalize();
+	// 라인 트레이스로 타겟 찾기
+	FVector TraceEnd = CameraLocation + (CameraForward * TraceDistance);
+	FHitResult HitResult;
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(Diver);
+	QueryParams.AddIgnoredActor(this);
+
+	FVector TargetPoint;
+	if (GetWorld()->LineTraceSingleByChannel(HitResult, CameraLocation, TraceEnd,
+		ECC_Visibility, QueryParams))
+	{
+		TargetPoint = HitResult.Location;
+	}
+	else
+	{
+		TargetPoint = TraceEnd;
+	}
+
+	// 공 위치에서 타겟으로의 방향
+	FVector BallLocation = GetActorLocation();
+	FVector ThrowDirection = (TargetPoint - BallLocation).GetSafeNormal();
+
+	float Distance = FVector::Dist(BallLocation, TargetPoint);
+	// ⭐ 거리에 비례한 위쪽 힘 추가 (멀수록 더 높이 던짐)
+	float DistanceFactor = FMath::Clamp(Distance / 1000.0f, 0.3f, 2.0f); // 거리 정규화
+	float AdaptiveUpwardForce = ThrowUpwardForce * DistanceFactor;
 
 	FVector Velocity = ThrowDirection * ThrowForce;
-	Velocity.Z += ThrowUpwardForce;
+	Velocity.Z += AdaptiveUpwardForce;
 
 	return Velocity;
+}
+
+void AADBasketball::PlayBasketballAnimation(AUnderwaterCharacter* Character)
+{
+	if (!Character || !BasketballHoldMontage)
+	{
+		LOG(TEXT("Cannot play basketball animation: Character or Montage is null"));
+		return;
+	}
+	FAnimSyncState SyncState;
+	SyncState.bEnableRightHandIK = true;
+	SyncState.bEnableLeftHandIK = false;
+	SyncState.bEnableFootIK = true;
+	SyncState.bIsStrafing = false;
+
+	Character->M_StopAllMontagesOnBothMesh(0.f);
+	Character->M_PlayMontageOnBothMesh(BasketballHoldMontage, 1.0f, NAME_None, SyncState);
+
+	LOG(TEXT("Basketball hold animation started"));
+}
+
+void AADBasketball::StopBasketballAnimation(AUnderwaterCharacter* Character)
+{
+	if (!Character)
+	{
+		LOG(TEXT("Cannot stop basketball animation: Character is null"));
+		return;
+	}
+	Character->M_StopAllMontagesOnBothMesh(0.2f);
+
+	LOG(TEXT("Basketball hold animation stopped"));
 }
 
 USoundSubsystem* AADBasketball::GetSoundSubsystem()

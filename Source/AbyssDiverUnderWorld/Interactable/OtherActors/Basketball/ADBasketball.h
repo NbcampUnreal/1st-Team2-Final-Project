@@ -45,6 +45,8 @@ public:
 		UPrimitiveComponent* OhterComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 protected:
+
+
 	UFUNCTION()
 	void OnRep_HeldBy();
 	UFUNCTION()
@@ -63,10 +65,13 @@ protected:
 	void PlayBounceSound(float ImpactStrength);
 
 private:
-	UPROPERTY(EditAnywhere, Category = "Basketball|Attachment")
-	FName BasketballSocketName = TEXT("Basketball");
+	UFUNCTION()
+	void ClearOwnerIgnore();
 	FVector CalculateThrowVelocity() const;
-	
+
+	void PlayBasketballAnimation(AUnderwaterCharacter* Character);
+
+	void StopBasketballAnimation(AUnderwaterCharacter* Character);
 
 #pragma endregion
 
@@ -116,6 +121,20 @@ protected:
 	FTimerHandle PickupEnableTimerHandle;
 
 	float LastBounceSoundTime = 0.0f;
+
+private:
+	UPROPERTY(EditAnywhere, Category = "Basketball|Throw")
+	float OwnerIgnoreTime = 0.25f;
+	UPROPERTY(EditAnywhere, Category = "Basketball|Attachment")
+	FName BasketballSocketName = TEXT("Basketball");
+	FTimerHandle OwnerIgnoreTimerHandle;
+
+	UPROPERTY(EditAnywhere, Category = "Basketball|Throw")
+	float TraceDistance = 10000.0f;
+	UPROPERTY(EditAnywhere, Category = "Basketball|Throw")
+	float CameraOffset = 30.0f;
+	UPROPERTY(EditAnywhere, Category = "Basketball|Animation")
+	TObjectPtr<UAnimMontage> BasketballHoldMontage;
 
 #pragma endregion
 
