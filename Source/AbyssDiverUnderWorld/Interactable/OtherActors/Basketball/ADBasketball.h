@@ -39,10 +39,6 @@ public:
 	UFUNCTION()
 	void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
 		FVector NormalImpulse, const FHitResult& Hit);
-	
-	UFUNCTION()
-	void OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-		UPrimitiveComponent* OhterComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 protected:
 	UFUNCTION(NetMulticast, Reliable)
@@ -65,10 +61,9 @@ protected:
 	void ScoreBasket();
 
 	void PlayBounceSound(float ImpactStrength);
+	void PlayHitPlayerSound();
 
 private:
-	UFUNCTION()
-	void ClearOwnerIgnore();
 	FVector CalculateThrowVelocity() const;
 
 	void PlayBasketballAnimation(AUnderwaterCharacter* Character);
@@ -111,10 +106,7 @@ protected:
 	float ThrowUpwardForce = 500.0f;
 	/** 플레이어 넉백 힘 */
 	UPROPERTY(EditAnywhere, Category = "Basketball|Knockback")
-	float KnockbackForce = 800.0f;
-	/** 넉백을 일으킬 최소 속도 */
-	UPROPERTY(EditAnywhere, Category = "Basketball|Knockback")
-	float MinVelocityForKnockback = 300.0f;
+	float KnockbackForce = 1500.0f;
 	UPROPERTY(EditAnywhere, Category = "Basketball|Knockback")
 	float KnockbackZDirection = 0.3f;
 	UPROPERTY()

@@ -52,7 +52,8 @@ enum class ESFX : uint8
 	BasketballPickup,
 	BasketballThrow,   
 	BasketballBounce,   
-	BasketballScore,    
+	BasketballScore,
+	BasketballHitPlayer,
 	Max UMETA(Hidden)
 };
 

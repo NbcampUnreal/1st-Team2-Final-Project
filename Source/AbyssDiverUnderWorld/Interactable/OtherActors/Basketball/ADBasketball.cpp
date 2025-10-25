@@ -50,7 +50,6 @@ AADBasketball::AADBasketball()
 	InteractableComp = CreateDefaultSubobject<UADInteractableComponent>(TEXT("InteractableComp"));
 
 	CollisionSphere->OnComponentHit.AddDynamic(this, &AADBasketball::OnHit);
-	CollisionSphere->OnComponentBeginOverlap.AddDynamic(this, &AADBasketball::OnBeginOverlap);
 }
 
 void AADBasketball::BeginPlay()
@@ -215,11 +214,8 @@ void AADBasketball::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPri
 	if (CurrentTime - LastBounceSoundTime > 0.1f)
 	{
 		float ImpactStrength = NormalImpulse.Size();
-		if (ImpactStrength > 100.0f) // 최소 충격 강도
-		{
-			PlayBounceSound(ImpactStrength);
-			LastBounceSoundTime = CurrentTime;
-		}
+		PlayBounceSound(ImpactStrength);
+		LastBounceSoundTime = CurrentTime;
 	}
 
 	/** 플레이어와의 충돌 체크 */
@@ -228,27 +224,12 @@ void AADBasketball::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPri
 		AUnderwaterCharacter* HitDiver = Cast<AUnderwaterCharacter>(OtherActor);
 		if (HitDiver && HitDiver != CachedHeldBy.Get())
 		{
-			FVector CurrentVelocity = ProjectileMovement->Velocity;
-			if (CurrentVelocity.Size() > MinVelocityForKnockback)
-			{
-				KnockbackPlayer(HitDiver, Hit.ImpactPoint);
-			}
+			KnockbackPlayer(HitDiver, Hit.ImpactPoint);
+			PlayHitPlayerSound();
 		}
 	}
 }
 
-void AADBasketball::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OhterComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
-{
-	if (OtherActor->ActorHasTag("BasketballHoop"))
-	{
-		FVector Velocity = ProjectileMovement->Velocity;
-		if (Velocity.Z < -100.0f)
-		{
-			/** 골대에 공을 넣었을 때 이펙트? */
-			ScoreBasket(); 
-		}
-	}
-}
 
 void AADBasketball::M_ApplyThrowVelocity_Implementation(const FVector& Velocity)
 {
@@ -383,12 +364,12 @@ void AADBasketball::PlayBounceSound(float ImpactStrength)
 	}
 }
 
-void AADBasketball::ClearOwnerIgnore()
+void AADBasketball::PlayHitPlayerSound()
 {
-	if (AActor* PrevOwner = CachedHeldBy.Get())
+	if (USoundSubsystem* SoundSubsystem = GetSoundSubsystem())
 	{
-		CollisionSphere->IgnoreActorWhenMoving(PrevOwner, false);
-		CollisionSphere->MoveIgnoreActors.Remove(PrevOwner);
+		// 캐릭터 충돌 전용 사운드 재생
+		SoundSubsystem->PlayAt(ESFX::BasketballHitPlayer, GetActorLocation());
 	}
 }
 
