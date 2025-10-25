@@ -123,9 +123,6 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tutorial|Battery")
     float BatteryStartPercentOverride = -1.f;
 
-    UPROPERTY()
-    TObjectPtr<USoundSubsystem> TutorialSoundSubsystem;
-
 protected:
     UPROPERTY(EditAnywhere, Category = "Tutorial|Debug")
     ETutorialPhase StartPhaseOverride = ETutorialPhase::None;
@@ -179,6 +176,17 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Sound")
     TObjectPtr<USoundBase> LightOutSound;
 
+    UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Sounds")
+    TObjectPtr<USoundBase> RadarAlarmSound;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Sounds")
+    TObjectPtr<USoundBase> ExitAlarmSound;
+
+    UPROPERTY()
+    TObjectPtr<UAudioComponent> LoopingPhaseSoundComponent;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Sounds")
+    TObjectPtr<USoundBase> ReviveNPCIndicatorSound;
     // Drone
     UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Drone")
     TSubclassOf<AADDroneSeller> TutorialDroneSellerClass;
@@ -231,7 +239,5 @@ private:
     uint8 bIsBodySubmittedInResurrectionPhase : 1;
 
     int32 ItemsPhaseProgress = 0;
-
-    int8 DroneTutorialAlarmId;
 #pragma endregion
 };

@@ -78,8 +78,8 @@ void ATutorialManager::BeginPlay()
 		HighlightingWidget = CreateWidget<UTutorialHighlighting>(GetWorld(), HighlightingWidgetClass);
 		if (HighlightingWidget)
 		{
-			HighlightingWidget->AddToViewport(2); 
-			HighlightingWidget->HighlightEnd(); 
+			HighlightingWidget->AddToViewport(2);
+			HighlightingWidget->HighlightEnd();
 		}
 	}
 
@@ -234,7 +234,7 @@ void ATutorialManager::StartGaugeObjective(EGaugeInteractionType InInteractionTy
 	GaugeHoldValuePerSecond = InHoldValuePerSecond;
 
 	CurrentGaugeValue = 0.f;
-	DisplayGaugeValue = 0.f; 
+	DisplayGaugeValue = 0.f;
 	bIsPlayerHoldingKey = false;
 	bIsGaugeObjectiveActive = true;
 
