@@ -249,8 +249,8 @@ private:
 	uint8 bIsAttackCollisionOverlappedPlayer : 1;
 
 	UPROPERTY(ReplicatedUsing = OnRep_Ragdoll)
-	bool bIsRagdoll = false;
-	uint8 bIsDeath = false;
+	uint8 bIsRagdoll : 1 = false;
+	uint8 bIsDeath : 1 = false;
 
 #pragma endregion
 
