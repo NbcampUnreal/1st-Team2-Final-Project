@@ -282,13 +282,13 @@ protected:
 	TArray<uint8> DefaultConsumableItemIdList; // 블루프린트 노출용 판매할 소비 아이템 리스트
 
 	UPROPERTY(EditDefaultsOnly, Category = "ShopSettings|ConsumableItem")
-	TArray<bool> ConsumableItemLockedStates; // 잠음 여부, true이면 구매 불가능하도록 작동한다.
+	TArray<bool> ConsumableItemLockedStates; // 소비 아이템 잠금 여부, true이면 구매 불가능하도록 작동한다.
 
-	UPROPERTY(EditDefaultsOnly, Category = "ShopSettings")
+	UPROPERTY(EditDefaultsOnly, Category = "ShopSettings|EquipmentItem")
 	TArray<uint8> DefaultEquipmentItemIdList; // 블루프린트 노출용 판매할 장비 아이템 리스트
 
 	UPROPERTY(EditDefaultsOnly, Category = "ShopSettings|EquipmentItem")
-	TArray<bool> EquipmentItemLockedStates;
+	TArray<bool> EquipmentItemLockedStates; // 장비 아이템 잠금 여부, true이면 구매 불가능하도록 작동한다.
 	
 	UPROPERTY(EditInstanceOnly, Category = "ShopSettings")
 	TObjectPtr<ATargetPoint> OriginPoint;
