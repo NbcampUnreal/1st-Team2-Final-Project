@@ -164,20 +164,26 @@ void AHorrorCreature::SwallowPlayer(AUnderwaterCharacter* Victim)
 {
 	if (!HasAuthority() || !Victim || SwallowedPlayer.IsValid()) return;
 	if (MonsterState == EMonsterState::Death) return;
+
+	// 삼키는 도중이면 얼리 리턴
 	if (bSwallowingInProgress) return;
 
+	// 도망치고 나서 bCanSwallow가 true로 변환. 그 전엔 얼리 리턴
+	if (bCanSwallow == false) return;
+
 	AUnderwaterCharacter* PlayerCharacter = Cast<AUnderwaterCharacter>(Victim);
-	if (!PlayerCharacter || PlayerCharacter->GetCharacterState() == ECharacterState::Death) return;
+	if (!PlayerCharacter || PlayerCharacter->GetCharacterState() != ECharacterState::Normal) return;
 
 	SwallowedPlayer = Victim;
 	bCanSwallow = false;
 	bSwallowingInProgress = true;
 
+	// 플레이어의 시야 어둡게
+	Victim->StartCaptureState();
+
 	// 데미지 처리
 	DamageToVictim(Victim, SwallowDamage);
 
-	// 플레이어의 시야 어둡게
-	Victim->StartCaptureState();
 
 	// 플레이어 위치, 크리처 입 위치 설정
 	VictimLocation = Victim->GetActorLocation();
@@ -235,7 +241,6 @@ void AHorrorCreature::EjectPlayer(AUnderwaterCharacter* Victim)
 	ForceRemoveDetectedPlayers();
 
 	SwallowedPlayer = nullptr;
-	bCanSwallow = true;
 
 	if (BlackboardComponent)
 	{
@@ -363,6 +368,7 @@ void AHorrorCreature::SightPerceptionOn()
 void AHorrorCreature::SetPatrolStateAfterEject()
 {
 	ApplyMonsterStateChange(EMonsterState::Patrol);
+	bCanSwallow = true;
 }
 
 void AHorrorCreature::ApplyFleeAfterSwallow()
@@ -454,6 +460,7 @@ void AHorrorCreature::ForceEjectIfStuck()
 
 void AHorrorCreature::DamageToVictim(AUnderwaterCharacter* Victim, float Damage)
 {
+	if (!HasAuthority()) return;
 	if (AIController && IsValid(Victim) && IsValid(this))
 	{
 		UGameplayStatics::ApplyDamage(
