@@ -269,6 +269,8 @@ void AADBasketball::OnRep_HeldBy()
 {
 	if (HeldBy)
 	{
+		CachedHeldBy = HeldBy;
+
 		PlayBasketballAnimation(HeldBy);
 		SetReplicateMovement(false);
 
@@ -297,12 +299,20 @@ void AADBasketball::OnRep_HeldBy()
 		if (CachedHeldBy.IsValid())
 		{
 			StopBasketballAnimation(CachedHeldBy.Get());
+
+			if (UADInteractionComponent* InteractionComp = CachedHeldBy->GetInteractionComponent())
+			{
+				InteractionComp->SetHeldItem(nullptr);
+				LOG(TEXT("[Client] Set HeldItem to nullptr in OnRep_HeldBy"));
+			}
 		}
 
 		DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 		CollisionSphere->SetSimulatePhysics(true);
 		CollisionSphere->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		ProjectileMovement->SetActive(true);
+
+		
 	}
 	LOG(TEXT("[CLIENT] OnRep_HeldBy called - HeldBy: %s"),
 		HeldBy ? *HeldBy->GetName() : TEXT("nullptr"));
