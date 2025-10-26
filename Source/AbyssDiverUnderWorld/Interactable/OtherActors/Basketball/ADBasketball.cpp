@@ -167,10 +167,12 @@ void AADBasketball::Throw()
 	ThrowVelocity = CalculateThrowVelocity();
 	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 
-	// 던진 다음에는 다시 켜기
 	SetReplicateMovement(true);
 	CollisionSphere->SetSimulatePhysics(false);
 	CollisionSphere->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	
+	ProjectileMovement->Deactivate();
+	ProjectileMovement->SetUpdatedComponent(CollisionSphere);
 	ProjectileMovement->Bounciness = 0.8f;
 	ProjectileMovement->Friction = 0.1f;
 	ProjectileMovement->ProjectileGravityScale = 1.0f;
@@ -243,7 +245,8 @@ void AADBasketball::M_ApplyThrowVelocity_Implementation(const FVector& Velocity)
 		UE_LOG(LogTemp, Error, TEXT("M_ApplyThrowVelocity: CollisionSphere is null"));
 		return;
 	}
-
+	ProjectileMovement->Deactivate();
+	ProjectileMovement->SetUpdatedComponent(CollisionSphere);
 	if (!HasAuthority())
 	{
 		ProjectileMovement->Bounciness = 0.8f;
@@ -336,6 +339,8 @@ void AADBasketball::OnRep_bIsThrown()
 {
 	if (bIsThrown)
 	{
+		ProjectileMovement->Deactivate();
+		ProjectileMovement->SetUpdatedComponent(CollisionSphere);
 		ProjectileMovement->Bounciness = 0.8f;
 		ProjectileMovement->Friction = 0.1f;
 		ProjectileMovement->ProjectileGravityScale = 1.0f;
