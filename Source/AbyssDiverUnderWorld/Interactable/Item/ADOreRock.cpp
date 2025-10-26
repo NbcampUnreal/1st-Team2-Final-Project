@@ -117,6 +117,8 @@ void AADOreRock::InteractHold_Implementation(AActor* InstigatorActor)
 
 void AADOreRock::OnHoldStart_Implementation(APawn* InstigatorPawn)
 {
+	if (!HasAuthority()) return;
+
 	ActiveInstigators.AddUnique(InstigatorPawn);
 	for (TWeakObjectPtr<APawn> PawnPtr : ActiveInstigators)
 	{
@@ -130,11 +132,12 @@ void AADOreRock::OnHoldStart_Implementation(APawn* InstigatorPawn)
 		{
 			if (UADInventoryComponent* InventoryComp = ADPlayerState->GetInventory())
 			{
+				//int32 Saved = INDEX_NONE;
 				// 무기를 장착하고 있다면
 				if (InventoryComp->HasEquippedItem())
 				{
 					PreviousEquipIndex = InventoryComp->GetSlotIndex();
-					InventoryComp->S_UseInventoryItem_Implementation(EItemType::Equipment, PreviousEquipIndex, true);
+					InventoryComp->S_UseInventoryItem(EItemType::Equipment, PreviousEquipIndex, true);
 				}
 				else
 				{
@@ -161,7 +164,7 @@ void AADOreRock::OnHoldStop_Implementation(APawn* InstigatorPawn)
 			{
 				const float MontageStopDuration = 0.f;
 				Diver->M_StopAllMontagesOnBothMesh(MontageStopDuration);
-				InventoryComp->S_UseInventoryItem_Implementation(EItemType::Equipment, PreviousEquipIndex, true);
+				InventoryComp->S_UseInventoryItem(EItemType::Equipment, PreviousEquipIndex, true);
 				M_CleanupToolAndEffects(Diver);
 				LOGI(Log, TEXT("Skip Mining Stops"));
 				return;
