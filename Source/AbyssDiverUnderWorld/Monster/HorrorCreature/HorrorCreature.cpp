@@ -199,7 +199,7 @@ void AHorrorCreature::SwallowPlayer(AUnderwaterCharacter* Victim)
 		SwallowToFleeTimerHandle,
 		this,
 		&AHorrorCreature::ApplyFleeAfterSwallow,
-		1.0f,
+		0.5f,
 		false
 	);
 
@@ -368,6 +368,8 @@ void AHorrorCreature::SightPerceptionOn()
 void AHorrorCreature::SetPatrolStateAfterEject()
 {
 	ApplyMonsterStateChange(EMonsterState::Patrol);
+
+	// 다시 삼키기 가능하게 on
 	bCanSwallow = true;
 }
 
