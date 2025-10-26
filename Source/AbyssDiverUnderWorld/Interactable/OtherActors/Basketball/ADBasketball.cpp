@@ -61,7 +61,7 @@ void AADBasketball::BeginPlay()
 		SoundSubsystemWeakPtr = GI->GetSubsystem<USoundSubsystem>();
 	}
 
-	CollisionSphere->SetSimulatePhysics(true);
+	CollisionSphere->SetSimulatePhysics(false);
 	ProjectileMovement->SetActive(false);
 }
 
@@ -164,14 +164,19 @@ void AADBasketball::Throw()
 		}
 	}
 
-	FVector ThrowVelocity = CalculateThrowVelocity();
+	ThrowVelocity = CalculateThrowVelocity();
 	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 
 	// 던진 다음에는 다시 켜기
 	SetReplicateMovement(true);
-	CollisionSphere->SetSimulatePhysics(true);
+	CollisionSphere->SetSimulatePhysics(false);
 	CollisionSphere->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-	
+	ProjectileMovement->Bounciness = 0.8f;
+	ProjectileMovement->Friction = 0.1f;
+	ProjectileMovement->ProjectileGravityScale = 1.0f;
+	ProjectileMovement->Velocity = ThrowVelocity;
+	ProjectileMovement->Activate(true);
+
 	M_ApplyThrowVelocity(ThrowVelocity);
 
 	bIsThrown = true;
@@ -233,14 +238,24 @@ void AADBasketball::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPri
 
 void AADBasketball::M_ApplyThrowVelocity_Implementation(const FVector& Velocity)
 {
-	if (!CollisionSphere)
+	if (!CollisionSphere || !ProjectileMovement)
 	{
 		UE_LOG(LogTemp, Error, TEXT("M_ApplyThrowVelocity: CollisionSphere is null"));
 		return;
 	}
 
-	CollisionSphere->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
-	CollisionSphere->SetPhysicsLinearVelocity(Velocity);
+	if (!HasAuthority())
+	{
+		ProjectileMovement->Bounciness = 0.8f;
+		ProjectileMovement->Friction = 0.1f;
+		ProjectileMovement->Velocity = Velocity;
+		ProjectileMovement->Activate(true);
+
+		LOG(TEXT("[CLIENT] M_ApplyThrowVelocity: velocity=%s"), *Velocity.ToString());
+	}
+
+	ProjectileMovement->Velocity = Velocity;
+	ProjectileMovement->Activate(true);
 	
 	CollisionSphere->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
 
@@ -308,10 +323,9 @@ void AADBasketball::OnRep_HeldBy()
 		}
 
 		DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
-		CollisionSphere->SetSimulatePhysics(true);
+		CollisionSphere->SetSimulatePhysics(false);
 		CollisionSphere->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		ProjectileMovement->SetActive(true);
-
 		
 	}
 	LOG(TEXT("[CLIENT] OnRep_HeldBy called - HeldBy: %s"),
@@ -322,7 +336,11 @@ void AADBasketball::OnRep_bIsThrown()
 {
 	if (bIsThrown)
 	{
-		ProjectileMovement->SetActive(true);
+		ProjectileMovement->Bounciness = 0.8f;
+		ProjectileMovement->Friction = 0.1f;
+		ProjectileMovement->ProjectileGravityScale = 1.0f;
+		ProjectileMovement->Velocity = ThrowVelocity;
+		ProjectileMovement->Activate(true);
 	}
 }
 
@@ -331,6 +349,7 @@ void AADBasketball::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AADBasketball, HeldBy);
 	DOREPLIFETIME(AADBasketball, bIsThrown);
+	DOREPLIFETIME(AADBasketball, ThrowVelocity);
 }
 
 void AADBasketball::EnablePickupAfterThrow()

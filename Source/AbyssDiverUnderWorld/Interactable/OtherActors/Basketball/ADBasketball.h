@@ -97,6 +97,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "Baseketball")
 	float PickupCooldown = 0.5f;
+
+	UPROPERTY(Replicated)
+	FVector ThrowVelocity;
 	
 	/** 던지기 힘 */
 	UPROPERTY(EditAnywhere, Category = "Basketball|Throw")
