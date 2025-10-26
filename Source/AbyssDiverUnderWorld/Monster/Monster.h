@@ -263,6 +263,7 @@ public:
 	virtual void SetMonsterState(EMonsterState NewState);
 	void SetMaxSwimSpeed(float Speed);
 	int32 GetDetectionCount() const { return DetectedPlayers.Num();}
+	void SetTarget(AUnderwaterCharacter* Target);
 
 	// Virtual function to get collision components for attack range determination externally
 	virtual USphereComponent* GetAttackHitComponent() const { return nullptr; }
@@ -273,13 +274,11 @@ public:
 	FORCEINLINE UCameraControllerComponent* GetCameraControllerComponent() const { return CameraControllerComponent; };
 	FORCEINLINE void InitTarget() { TargetPlayer = nullptr; };
 	FORCEINLINE AUnderwaterCharacter* GetCachedTarget() const { return CachedTargetPlayer; };
+	FORCEINLINE AUnderwaterCharacter* GetTarget() const { return TargetPlayer.Get(); };
 	FORCEINLINE void SetCachedTarget(AUnderwaterCharacter* Target) { CachedTargetPlayer = Target; };
 	FORCEINLINE void InitCachedTarget() { CachedTargetPlayer = nullptr; };
 	FORCEINLINE void SetDesireTargetLocation(FVector NewLocation) { DesiredTargetLocation = NewLocation; }
-	FORCEINLINE AUnderwaterCharacter* GetTarget() const { return TargetPlayer.Get(); };
-	void SetTarget(AUnderwaterCharacter* Target);
-
 	FORCEINLINE const TSet<TWeakObjectPtr<AActor>>& GetDetectedPlayers() const { return DetectedPlayers; }
 
-	class USoundSubsystem* GetSoundSubsystem();
+	class UMonsterSoundComponent* GetMonsterSoundComp();
 };

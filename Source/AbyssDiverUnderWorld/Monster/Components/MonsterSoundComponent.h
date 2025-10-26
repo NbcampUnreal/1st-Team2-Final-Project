@@ -73,28 +73,41 @@ public:
 	UFUNCTION(NetMulticast, Reliable)
 	void M_AdjustMainSoundVolume(float Volume, float FadeTime);
 	void M_AdjustMainSoundVolume_Implementation(float Volume, float FadeTime);
+
+private:
+	UAudioComponent* CreateLoopAudioComp(USoundBase* InSound);
+	float GetTargetVolumeScale() const;
 #pragma endregion
 
 #pragma region Variable
 protected:
 	UPROPERTY(EditAnywhere, Category = "Sound|Loop")
-	TObjectPtr<USoundBase> PatrolLoopSound;
+	TWeakObjectPtr<USoundBase> PatrolLoopSound;
 
 	UPROPERTY(EditAnywhere, Category = "Sound|Loop")
-	TObjectPtr<USoundBase> ChaseLoopSound;
+	TWeakObjectPtr<USoundBase> ChaseLoopSound;
 
 	UPROPERTY(EditAnywhere, Category = "Sound|Loop")
-	TObjectPtr<USoundBase> FleeLoopSound;
+	TWeakObjectPtr<USoundBase> FleeLoopSound;
 
 	UPROPERTY(EditAnywhere, Category = "Sound|HitReact")
-	TObjectPtr<USoundBase> HitReactSound;
+	TWeakObjectPtr<USoundBase> HitReactSound;
 
 	UPROPERTY(EditAnywhere, Category = "Sound|Death")
-	TObjectPtr<USoundBase> DeathSound;
+	TWeakObjectPtr<USoundBase> DeathSound;
+
+	TWeakObjectPtr<class USoundSubsystem> SoundSubsystem;
 
 private:
-	TObjectPtr<UAudioComponent> PatrolLoopComponent;
-	TObjectPtr<UAudioComponent> ChaseLoopComponent;
-	TObjectPtr<UAudioComponent> FleeLoopComponent;
+	TWeakObjectPtr<UAudioComponent> PatrolLoopComponent;
+	TWeakObjectPtr<UAudioComponent> ChaseLoopComponent;
+	TWeakObjectPtr<UAudioComponent> FleeLoopComponent;
+
+#pragma endregion
+
+#pragma region Getter. Setter
+public:
+	class USoundSubsystem* GetSoundSubsystem();
+
 #pragma endregion
 };
