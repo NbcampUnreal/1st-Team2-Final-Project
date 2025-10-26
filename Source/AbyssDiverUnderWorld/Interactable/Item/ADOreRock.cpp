@@ -67,7 +67,7 @@ void AADOreRock::BeginPlay()
 	}
 	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
 	{
-		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
+		SoundSubsystemWeakPtr = GI->GetSubsystem<USoundSubsystem>();
 	}
 	InteractableComp->SetAlwaysHighlight(true);
 	
@@ -94,6 +94,11 @@ void AADOreRock::M_CleanupToolAndEffects_Implementation(AUnderwaterCharacter* Un
 	{
 		UnderwaterCharacter->CleanupToolAndEffects();
 	}
+}
+
+void AADOreRock::M_PlayCompleteMineSound_Implementation()
+{
+	GetSoundSubsystem()->PlayAt(ESFX::CompleteMine, GetActorLocation(), 2.0f);
 }
 
 void AADOreRock::Interact_Implementation(AActor* InstigatorActor)
@@ -327,10 +332,7 @@ void AADOreRock::PlayFractureFX()
 		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 			GetWorld(), RockFragmentsFX, GetActorLocation());
 
-	//if (FractureSound)
-	//	UGameplayStatics::PlaySoundAtLocation(
-	//		this, FractureSound, GetActorLocation());
-	GetSoundSubsystem()->PlayAt(ESFX::CompleteMine, GetActorLocation(), 2.0f);
+	M_PlayCompleteMineSound();
 }
 
 int32 AADOreRock::SampleDropMass(int32 MinMass, int32 MaxMass) const
@@ -442,16 +444,13 @@ FString AADOreRock::GetInteractionDescription() const
 
 USoundSubsystem* AADOreRock::GetSoundSubsystem()
 {
-	if (SoundSubsystem)
+	if (!SoundSubsystemWeakPtr.IsValid())
 	{
-		return SoundSubsystem;
+		if (UADGameInstance* GameInstance = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+		{
+			SoundSubsystemWeakPtr = GameInstance->GetSubsystem<USoundSubsystem>();
+		}
 	}
-
-	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
-	{
-		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
-		return SoundSubsystem;
-	}
-	return nullptr;
+	return SoundSubsystemWeakPtr.Get();
 }
 

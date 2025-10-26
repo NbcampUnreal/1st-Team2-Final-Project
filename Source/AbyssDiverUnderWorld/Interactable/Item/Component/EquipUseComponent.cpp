@@ -87,7 +87,7 @@ void UEquipUseComponent::BeginPlay()
 
 	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
 	{
-		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
+		SoundSubsystemWeakPtr = GI->GetSubsystem<USoundSubsystem>();
 	}
 
 	// DPV
@@ -1205,17 +1205,15 @@ bool UEquipUseComponent::RecoverRecoil(float DeltaTime)
 
 USoundSubsystem* UEquipUseComponent::GetSoundSubsystem()
 {
-	if (SoundSubsystem)
+	if (!SoundSubsystemWeakPtr.IsValid())
 	{
-		return SoundSubsystem;
+		if (UADGameInstance* GameInstance = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+		{
+			SoundSubsystemWeakPtr = GameInstance->GetSubsystem<USoundSubsystem>();
+		}
 	}
 
-	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
-	{
-		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
-		return SoundSubsystem;
-	}
-	return nullptr;
+	return SoundSubsystemWeakPtr.Get();
 }
 
 void UEquipUseComponent::InitializeAmmoUI()
