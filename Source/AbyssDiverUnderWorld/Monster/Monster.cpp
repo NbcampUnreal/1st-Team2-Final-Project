@@ -679,13 +679,14 @@ void AMonster::OnMeshOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* O
 {
 	// 사망 상태면 얼리 리턴
 	if (MonsterState == EMonsterState::Death) return;
-
 	// 공격 가능한 상태가 아니라면 리턴
 	if (!bIsAttacking) return;
 
 	// 공격 대상이 플레이어가 아닌 경우 얼리 리턴
 	AUnderwaterCharacter* Player = Cast<AUnderwaterCharacter>(OtherActor);
 	if (!IsValid(Player)) return;
+
+	if (!HasAuthority()) return;
 
 	// 해당 플레이어가 이미 공격받은 상태인 경우 얼리 리턴
 	if (AttackedPlayers.Contains(Player)) return;
@@ -695,6 +696,8 @@ void AMonster::OnMeshOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* O
 
 	// 해당 플레이어에게 데미지 적용
 	UGameplayStatics::ApplyDamage(Player, StatComponent->AttackPower, GetController(), this, UDamageType::StaticClass());
+
+	// 디버그 로그
 	AADPlayerState* ADPS = Cast<AADPlayerState>(Player->GetPlayerState());
 	if (ADPS && this && Player)
 	{
