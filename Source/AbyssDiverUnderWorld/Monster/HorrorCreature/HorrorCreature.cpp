@@ -39,6 +39,27 @@ void AHorrorCreature::BeginPlay()
 	HorrorCreatureHitSphere->OnComponentBeginOverlap.AddDynamic(this, &AHorrorCreature::OnSwallowTriggerOverlap);
 }
 
+void AHorrorCreature::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	Super::EndPlay(EndPlayReason);
+
+	// 모든 타이머 정리
+	ClearAllTimers();
+
+	// 상태 초기화해서 나중에 콜백이 와도 의미 없는 로직만 돌게
+	bSwallowingInProgress = false;
+	bVictimLockedAtMouth = false;
+	SwallowedPlayer = nullptr;
+
+	if (IsValid(HorrorCreatureHitSphere))
+	{
+		HorrorCreatureHitSphere->OnComponentBeginOverlap.RemoveDynamic(
+			this,
+			&AHorrorCreature::OnSwallowTriggerOverlap
+		);
+	}
+}
+
 void AHorrorCreature::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -143,9 +164,10 @@ void AHorrorCreature::SwallowPlayer(AUnderwaterCharacter* Victim)
 {
 	if (!HasAuthority() || !Victim || SwallowedPlayer.IsValid()) return;
 	if (MonsterState == EMonsterState::Death) return;
+	if (bSwallowingInProgress) return;
 
 	AUnderwaterCharacter* PlayerCharacter = Cast<AUnderwaterCharacter>(Victim);
-	if (!PlayerCharacter || PlayerCharacter->GetCharacterState() != ECharacterState::Normal) return;
+	if (!PlayerCharacter || PlayerCharacter->GetCharacterState() == ECharacterState::Death) return;
 
 	SwallowedPlayer = Victim;
 	bCanSwallow = false;
@@ -196,6 +218,7 @@ void AHorrorCreature::EjectPlayer(AUnderwaterCharacter* Victim)
 	if (!HasAuthority()) return;
 	if (!IsValid(Victim) || !World || World->IsInSeamlessTravel()) return;
 	if (Victim != SwallowedPlayer.Get()) return;
+	if (SwallowedPlayer.Get() == nullptr) return;
 
 	// 타이머 클린업
 	ClearEjectTimer();
@@ -214,7 +237,10 @@ void AHorrorCreature::EjectPlayer(AUnderwaterCharacter* Victim)
 	SwallowedPlayer = nullptr;
 	bCanSwallow = true;
 
-	BlackboardComponent->SetValueAsBool(BlackboardKeys::HorrorCreature::bIsPlayerSwallowKey, false);
+	if (BlackboardComponent)
+	{
+		BlackboardComponent->SetValueAsBool(BlackboardKeys::HorrorCreature::bIsPlayerSwallowKey, false);
+	}
 	
 	GetWorld()->GetTimerManager().SetTimer(
 		SetPatrolTimerHandle,
@@ -448,6 +474,3 @@ void AHorrorCreature::DamageToVictim(AUnderwaterCharacter* Victim, float Damage)
 // 	TargetPlayer = nullptr;
 // 	BlackboardComponent->ClearValue(BlackboardKeys::InvestigateLocationKey);
 // }
-
-
-
