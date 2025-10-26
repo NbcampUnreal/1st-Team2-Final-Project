@@ -21,19 +21,19 @@ void UMonsterSoundComponent::BeginPlay()
 	Super::BeginPlay();
 
 	// 오디오 컴포넌트 준비해두고 꺼둠.
-	if (PatrolLoopSound.IsValid())
+	if (PatrolLoopSound)
 	{
-		PatrolLoopComponent = CreateLoopAudioComp(PatrolLoopSound.Get());
+		PatrolLoopComponent = CreateLoopAudioComp(PatrolLoopSound);
 	}
 
-	if (ChaseLoopSound.IsValid())
+	if (ChaseLoopSound)
 	{
-		ChaseLoopComponent = CreateLoopAudioComp(ChaseLoopSound.Get());
+		ChaseLoopComponent = CreateLoopAudioComp(ChaseLoopSound);
 	}
 
-	if (FleeLoopSound.IsValid())
+	if (FleeLoopSound)
 	{
-		FleeLoopComponent = CreateLoopAudioComp(FleeLoopSound.Get());
+		FleeLoopComponent = CreateLoopAudioComp(FleeLoopSound);
 	}
 }
 
@@ -147,11 +147,11 @@ void UMonsterSoundComponent::M_PlayHitReactSound_Implementation()
 {
 	if (!IsValid(this)) return;
 
-	if (HitReactSound.IsValid())
+	if (HitReactSound)
 	{
 		float Desired = 1.0f;
 		float NewVolume = Desired * GetSoundSubsystem()->GetSFXVolume()* GetSoundSubsystem()->GetMasterVolume();
-		UGameplayStatics::PlaySoundAtLocation(this, HitReactSound.Get(), GetOwner()->GetActorLocation(), NewVolume);
+		UGameplayStatics::PlaySoundAtLocation(this, HitReactSound, GetOwner()->GetActorLocation(), NewVolume);
 	}
 }
 
@@ -159,11 +159,11 @@ void UMonsterSoundComponent::M_PlayDeathSound_Implementation()
 {
 	if (!IsValid(this)) return;
 
-	if (DeathSound.Get())
+	if (DeathSound)
 	{
 		float Desired = 1.0f;
 		float NewVolume = Desired * GetSoundSubsystem()->GetSFXVolume() * GetSoundSubsystem()->GetMasterVolume();
-		UGameplayStatics::PlaySoundAtLocation(this, DeathSound.Get(), GetOwner()->GetActorLocation(), NewVolume);
+		UGameplayStatics::PlaySoundAtLocation(this, DeathSound, GetOwner()->GetActorLocation(), NewVolume);
 	}
 }
 

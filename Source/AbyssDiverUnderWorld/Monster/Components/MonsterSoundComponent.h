@@ -82,19 +82,19 @@ private:
 #pragma region Variable
 protected:
 	UPROPERTY(EditAnywhere, Category = "Sound|Loop")
-	TWeakObjectPtr<USoundBase> PatrolLoopSound;
+	TObjectPtr<USoundBase> PatrolLoopSound;
 
 	UPROPERTY(EditAnywhere, Category = "Sound|Loop")
-	TWeakObjectPtr<USoundBase> ChaseLoopSound;
+	TObjectPtr<USoundBase> ChaseLoopSound;
 
 	UPROPERTY(EditAnywhere, Category = "Sound|Loop")
-	TWeakObjectPtr<USoundBase> FleeLoopSound;
+	TObjectPtr<USoundBase> FleeLoopSound;
 
 	UPROPERTY(EditAnywhere, Category = "Sound|HitReact")
-	TWeakObjectPtr<USoundBase> HitReactSound;
+	TObjectPtr<USoundBase> HitReactSound;
 
 	UPROPERTY(EditAnywhere, Category = "Sound|Death")
-	TWeakObjectPtr<USoundBase> DeathSound;
+	TObjectPtr<USoundBase> DeathSound;
 
 	TWeakObjectPtr<class USoundSubsystem> SoundSubsystem;
 
