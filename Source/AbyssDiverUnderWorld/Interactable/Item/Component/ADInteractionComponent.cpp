@@ -178,11 +178,26 @@ void UADInteractionComponent::HandleEndOverlap(UPrimitiveComponent* OverlappedCo
 
 void UADInteractionComponent::TryInteract()
 {
-	PerformFocusCheck();
-
 	APawn* Pawn = Cast<APawn>(GetOwner());
 	if (!Pawn) return;
 
+	if (HeldItem.IsValid())
+	{
+		if (IIADInteractable* Interactable = Cast<IIADInteractable>(HeldItem.Get()))
+		{
+			if (Pawn->HasAuthority())
+			{
+				Interactable->Interact_Implementation(Pawn);
+			}
+			else
+			{
+				S_RequestInteract(HeldItem.Get());
+			}
+			return;
+		}
+	}
+
+	PerformFocusCheck();
 	// 포커싱 판정 로직...
 	if (FocusedInteractable)
 	{
@@ -344,6 +359,16 @@ void UADInteractionComponent::ClearFocus()
 
 void UADInteractionComponent::OnInteractPressed()
 {
+	if (HeldItem.IsValid())
+	{
+		if (IIADInteractable* HeldItemInteractable = Cast<IIADInteractable>(HeldItem.Get()))
+		{
+			// 들고 있는 아이템은 홀드 모드가 아니므로 즉시 실행 -> 홀드 모드가 생기면 다시 변경
+			TryInteract();
+			return;
+		}
+	}
+
 	if (!FocusedInteractable || !FocusedInteractable->CanInteractable()) return;
 
 	bIsInteractingStart = true;

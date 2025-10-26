@@ -56,6 +56,18 @@ void AHorrorCreature::Tick(float DeltaTime)
 		UpdateVictimLocation(DeltaTime);
 	}
 
+	// Victim Player가 입 위치에 고정된 상태라면, 매 프레임 강제로 Mouth 위치로 Teleport 시킴
+	// 기존의 Bone에 Victim을 Attach/Detach의 방식은 패키징 버전에서 위험성이 있어서 수정
+	// Attach 하는 과정에서 Victim의 이동, 회전, 속도가 NaN(비정상적 수치)로 망가지고
+	// 이것이 랜더링 파이프라인 까지 전염되어서 Shipping 빌드에서 즉발 크래시로 이어질 위험이 있음.
+	if (bVictimLockedAtMouth && SwallowedPlayer.IsValid())
+	{
+		SwallowedPlayer.Get()->SetActorLocation(CreatureMouthLocation, false, nullptr, ETeleportType::TeleportPhysics);
+	}
+
+	// 클라 Tick 에서 BB 접근을 막기 위한 방어 코드
+	if (!HasAuthority()) return;
+
 	// 도망가는 중에만 활성화 되도록
 	if (MonsterState == EMonsterState::Flee && IsValid(BlackboardComponent))
 	{
@@ -78,17 +90,30 @@ void AHorrorCreature::UpdateVictimLocation(float DeltaTime)
 	const float Alpha = FMath::Clamp(SwallowLerpAlpha, 0.f, 1.f);
 	const FVector NewLoc = FMath::Lerp(VictimLocation, CreatureMouthLocation, Alpha);
 
-	SwallowedPlayer->SetActorLocation(NewLoc);
+	// Sweep=false 로 강제 이동 (충돌 무시)
+	SwallowedPlayer->SetActorLocation(NewLoc, false, nullptr, ETeleportType::TeleportPhysics);
 
 	// 몬스터의 입 위치에 도달했다면
 	if (Alpha >= 1.f)
 	{
 		// Attach
-		SwallowedPlayer->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepWorldTransform, TEXT("MouthSocket"));
-		SwallowedPlayer->SetActorRelativeLocation(FVector::ZeroVector);
+		// SwallowedPlayer->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepWorldTransform, TEXT("MouthSocket"));
+		// SwallowedPlayer->SetActorRelativeLocation(FVector::ZeroVector);
 
-		// 틱 비활성화
+		if (IsValid(SwallowedPlayer.Get()))
+		{
+			UCharacterMovementComponent* PlayerMoveComp = SwallowedPlayer.Get()->GetCharacterMovement();
+			if (IsValid(PlayerMoveComp))
+			{
+				// 잡아먹은 동안에는 플레이어 못움직이게 잠그기
+				PlayerMoveComp->StopMovementImmediately();
+				PlayerMoveComp->DisableMovement();
+			}
+		}
+
+		// 틱 관련 플래그 함수 on/off
 		bSwallowingInProgress = false;
+		bVictimLockedAtMouth = true;
 	}
 }
 
@@ -168,8 +193,9 @@ void AHorrorCreature::SwallowPlayer(AUnderwaterCharacter* Victim)
 void AHorrorCreature::EjectPlayer(AUnderwaterCharacter* Victim)
 {
 	UWorld* World = GetWorld();
+	if (!HasAuthority()) return;
 	if (!IsValid(Victim) || !World || World->IsInSeamlessTravel()) return;
-	if (!GetSwallowedPlayer()) return;
+	if (Victim != SwallowedPlayer.Get()) return;
 
 	// 타이머 클린업
 	ClearEjectTimer();
@@ -178,6 +204,8 @@ void AHorrorCreature::EjectPlayer(AUnderwaterCharacter* Victim)
 	TemporarilyDisalbeSightPerception(DisableSightTime);
 	
 	// 뱉은 플레이어 정상화 함수
+	VictimLocation = Victim->GetActorLocation();
+	CreatureMouthLocation = GetMesh()->GetSocketLocation("MouthSocket");
 	EjectedVictimNormalize(Victim);
 
 	// 어그로 초기화
@@ -202,14 +230,29 @@ void AHorrorCreature::EjectedVictimNormalize(AUnderwaterCharacter* Victim)
 	UWorld* World = GetWorld();
 	if (!IsValid(Victim) || !World || World->IsInSeamlessTravel()) return;
 
+	// 기존의 Detach는 패키징 버전에서 튕기는 위험성이 있으므로 수정
+	// Victim->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+
+	const FVector LaunchDirection = GetActorForwardVector();
+	const FVector LaunchVelocity = LaunchDirection * LaunchStrength;
+	const FRotator SafeYawRotation(0.f, Victim->GetActorRotation().Yaw, 0.f);
+
+	Victim->SetActorLocation(CreatureMouthLocation, false, nullptr, ETeleportType::TeleportPhysics);
+	Victim->SetActorRotation(SafeYawRotation);
+
 	// 플레이어 뱉고, 어두워진 화면 제거
-	Victim->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
-	Victim->SetActorRotation(FRotator(0.f, Victim->GetActorRotation().Yaw, 0.f));
 	Victim->StopCaptureState();
 
-	// 플레이어를 입으로부터 앞으로 Lanch
-	FVector LaunchDirection = GetActorForwardVector();
-	FVector LaunchVelocity = LaunchDirection * LanchStrength;
+	// 이동 컴퍼넌트 정리 후 Lanch로 튕겨나가게
+	if (UCharacterMovementComponent* PlayerMoveComp = Victim->GetCharacterMovement())
+	{
+		// 혹시 모를 이상 속도/NaN 제거
+		PlayerMoveComp->StopMovementImmediately();
+		
+		// 이후 수영모드로 전환하도록 복구
+		PlayerMoveComp->SetMovementMode(MOVE_Swimming);
+	}
+
 	Victim->LaunchCharacter(LaunchVelocity, false, false);
 
 	if (EjectMontage)
@@ -259,7 +302,11 @@ void AHorrorCreature::OnDeath()
 {
 	Super::OnDeath();
 
+	// 죽으면 뱉도록 설정
 	EjectPlayer(SwallowedPlayer.Get());
+
+	// 모든 타이머 정리
+	ClearAllTimers();
 }
 
 // 일시적으로 Sight Perception을 끄는 함수
@@ -334,6 +381,36 @@ void AHorrorCreature::ClearEjectTimer()
 	if (SetSwimModeTimerHandle.IsValid())
 	{
 		GetWorldTimerManager().ClearTimer(SetSwimModeTimerHandle);
+	}
+}
+
+void AHorrorCreature::ClearAllTimers()
+{
+	FTimerManager& TimerManager = GetWorldTimerManager();
+
+	if (SwallowToFleeTimerHandle.IsValid())
+	{
+		TimerManager.ClearTimer(SwallowToFleeTimerHandle);
+	}
+
+	if (ForceEjectTimerHandle.IsValid())
+	{
+		TimerManager.ClearTimer(ForceEjectTimerHandle);
+	}
+
+	if (EnableSightTimerHandle.IsValid())
+	{
+		TimerManager.ClearTimer(EnableSightTimerHandle);
+	}
+
+	if (SetPatrolTimerHandle.IsValid())
+	{
+		TimerManager.ClearTimer(SetPatrolTimerHandle);
+	}
+
+	if (SetSwimModeTimerHandle.IsValid())
+	{
+		TimerManager.ClearTimer(SetSwimModeTimerHandle);
 	}
 }
 

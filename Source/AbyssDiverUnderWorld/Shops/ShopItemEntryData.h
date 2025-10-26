@@ -18,6 +18,7 @@ class ABYSSDIVERUNDERWORLD_API UShopItemEntryData : public UObject
 
 public:
 
+	void Init(int32 NewSlotIndex, UTexture2D* NewItemImage, const FString& NewToolTipText, bool bShouldLock);
 	void Init(int32 NewSlotIndex, UTexture2D* NewItemImage, const FString& NewToolTipText);
 
 	FOnEntryUpdatedFromDataDelegate OnEntryUpdatedFromDataDelegate;
@@ -33,6 +34,7 @@ protected:
 
 	FString ToolTipText;
 	int32 SlotIndex;
+	uint8 bIsLocked : 1;
 
 #pragma endregion
 
@@ -42,9 +44,11 @@ public:
 
 	UTexture2D* GetItemImage() const;
 	const FString& GetToolTipText() const;
+	bool IsLocked() const;
 
 	int32 GetSlotIndex() const;
 	void SetSlotIndex(int32 NewSlotIndex);
+	void SetLockState(bool bShouldLock);
 
 #pragma endregion
 
