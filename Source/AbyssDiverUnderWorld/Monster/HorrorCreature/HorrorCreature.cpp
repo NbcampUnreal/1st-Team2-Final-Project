@@ -39,6 +39,27 @@ void AHorrorCreature::BeginPlay()
 	HorrorCreatureHitSphere->OnComponentBeginOverlap.AddDynamic(this, &AHorrorCreature::OnSwallowTriggerOverlap);
 }
 
+void AHorrorCreature::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	Super::EndPlay(EndPlayReason);
+
+	// 모든 타이머 정리
+	ClearAllTimers();
+
+	// 상태 초기화해서 나중에 콜백이 와도 의미 없는 로직만 돌게
+	bSwallowingInProgress = false;
+	bVictimLockedAtMouth = false;
+	SwallowedPlayer = nullptr;
+
+	if (IsValid(HorrorCreatureHitSphere))
+	{
+		HorrorCreatureHitSphere->OnComponentBeginOverlap.RemoveDynamic(
+			this,
+			&AHorrorCreature::OnSwallowTriggerOverlap
+		);
+	}
+}
+
 void AHorrorCreature::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -144,6 +165,12 @@ void AHorrorCreature::SwallowPlayer(AUnderwaterCharacter* Victim)
 	if (!HasAuthority() || !Victim || SwallowedPlayer.IsValid()) return;
 	if (MonsterState == EMonsterState::Death) return;
 
+	// 삼키는 도중이면 얼리 리턴
+	if (bSwallowingInProgress) return;
+
+	// 도망치고 나서 bCanSwallow가 true로 변환. 그 전엔 얼리 리턴
+	if (bCanSwallow == false) return;
+
 	AUnderwaterCharacter* PlayerCharacter = Cast<AUnderwaterCharacter>(Victim);
 	if (!PlayerCharacter || PlayerCharacter->GetCharacterState() != ECharacterState::Normal) return;
 
@@ -151,11 +178,12 @@ void AHorrorCreature::SwallowPlayer(AUnderwaterCharacter* Victim)
 	bCanSwallow = false;
 	bSwallowingInProgress = true;
 
+	// 플레이어의 시야 어둡게
+	Victim->StartCaptureState();
+
 	// 데미지 처리
 	DamageToVictim(Victim, SwallowDamage);
 
-	// 플레이어의 시야 어둡게
-	Victim->StartCaptureState();
 
 	// 플레이어 위치, 크리처 입 위치 설정
 	VictimLocation = Victim->GetActorLocation();
@@ -171,7 +199,7 @@ void AHorrorCreature::SwallowPlayer(AUnderwaterCharacter* Victim)
 		SwallowToFleeTimerHandle,
 		this,
 		&AHorrorCreature::ApplyFleeAfterSwallow,
-		1.0f,
+		0.5f,
 		false
 	);
 
@@ -196,6 +224,7 @@ void AHorrorCreature::EjectPlayer(AUnderwaterCharacter* Victim)
 	if (!HasAuthority()) return;
 	if (!IsValid(Victim) || !World || World->IsInSeamlessTravel()) return;
 	if (Victim != SwallowedPlayer.Get()) return;
+	if (SwallowedPlayer.Get() == nullptr) return;
 
 	// 타이머 클린업
 	ClearEjectTimer();
@@ -212,9 +241,11 @@ void AHorrorCreature::EjectPlayer(AUnderwaterCharacter* Victim)
 	ForceRemoveDetectedPlayers();
 
 	SwallowedPlayer = nullptr;
-	bCanSwallow = true;
 
-	BlackboardComponent->SetValueAsBool(BlackboardKeys::HorrorCreature::bIsPlayerSwallowKey, false);
+	if (BlackboardComponent)
+	{
+		BlackboardComponent->SetValueAsBool(BlackboardKeys::HorrorCreature::bIsPlayerSwallowKey, false);
+	}
 	
 	GetWorld()->GetTimerManager().SetTimer(
 		SetPatrolTimerHandle,
@@ -337,6 +368,9 @@ void AHorrorCreature::SightPerceptionOn()
 void AHorrorCreature::SetPatrolStateAfterEject()
 {
 	ApplyMonsterStateChange(EMonsterState::Patrol);
+
+	// 다시 삼키기 가능하게 on
+	bCanSwallow = true;
 }
 
 void AHorrorCreature::ApplyFleeAfterSwallow()
@@ -428,6 +462,7 @@ void AHorrorCreature::ForceEjectIfStuck()
 
 void AHorrorCreature::DamageToVictim(AUnderwaterCharacter* Victim, float Damage)
 {
+	if (!HasAuthority()) return;
 	if (AIController && IsValid(Victim) && IsValid(this))
 	{
 		UGameplayStatics::ApplyDamage(
@@ -448,6 +483,3 @@ void AHorrorCreature::DamageToVictim(AUnderwaterCharacter* Victim, float Damage)
 // 	TargetPlayer = nullptr;
 // 	BlackboardComponent->ClearValue(BlackboardKeys::InvestigateLocationKey);
 // }
-
-
-
