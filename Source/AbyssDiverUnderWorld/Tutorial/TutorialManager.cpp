@@ -11,6 +11,7 @@
 #include "Framework/ADTutorialPlayerController.h"
 #include "Framework/ADTutorialGameMode.h"
 #include "Blueprint/UserWidget.h"
+#include "Components/ProgressBar.h" // GaugeProgressBar 캐스팅을 위해 추가 (없을 경우)
 
 ATutorialManager::ATutorialManager()
 {
@@ -159,14 +160,15 @@ void ATutorialManager::OnTutorialPhaseChanged(ETutorialPhase NewPhase)
 	{
 		if (SubtitleWidget)
 		{
+			// *** [수정된 부분 시작] ***
+			// 콜백 함수가 StepDataPtr을 사용할 수 있도록 멤버 변수에 저장
+			CurrentStepDataPtr = StepDataPtr;
+
 			SubtitleWidget->OnTypingCompleted.Clear();
-			SubtitleWidget->OnTypingCompleted.AddLambda([this, StepDataPtr]()
-				{
-					if (StepDataPtr)
-					{
-						OnTypingFinished(*StepDataPtr);
-					}
-				});
+			// AddLambda 대신 AddDynamic을 사용
+			SubtitleWidget->OnTypingCompleted.AddDynamic(this, &ATutorialManager::OnSubtitleTypingCompleted);
+			// *** [수정된 부분 끝] ***
+
 			SubtitleWidget->SetSubtitleText(StepDataPtr->SubtitleText);
 			SubtitleWidget->SetVisibility(ESlateVisibility::HitTestInvisible);
 		}
@@ -197,6 +199,15 @@ void ATutorialManager::OnTutorialPhaseChanged(ETutorialPhase NewPhase)
 		if (SubtitleWidget) SubtitleWidget->SetVisibility(ESlateVisibility::Hidden);
 		if (TutorialHintPanel) TutorialHintPanel->SetVisibility(ESlateVisibility::Hidden);
 	}
+}
+
+void ATutorialManager::OnSubtitleTypingCompleted()
+{
+	if (CurrentStepDataPtr)
+	{
+		OnTypingFinished(*CurrentStepDataPtr);
+	}
+	CurrentStepDataPtr = nullptr;
 }
 
 void ATutorialManager::OnTypingFinished(const FTutorialStepData& StepData)
