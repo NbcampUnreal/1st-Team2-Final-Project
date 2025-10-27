@@ -187,7 +187,7 @@ void AHorrorCreature::SwallowPlayer(AUnderwaterCharacter* Victim)
 
 	// 플레이어 위치, 크리처 입 위치 설정
 	VictimLocation = Victim->GetActorLocation();
-	CreatureMouthLocation = GetMesh()->GetSocketLocation("MouthSocket");
+	CreatureMouthLocation = CalculateSafeMouthLoc();
 	SwallowLerpAlpha = 0.f;
 
 	// 타이머 클린업
@@ -223,24 +223,41 @@ void AHorrorCreature::EjectPlayer(AUnderwaterCharacter* Victim)
 	UWorld* World = GetWorld();
 	if (!HasAuthority()) return;
 	if (!IsValid(Victim) || !World || World->IsInSeamlessTravel()) return;
-	if (Victim != SwallowedPlayer.Get()) return;
-	if (SwallowedPlayer.Get() == nullptr) return;
+
+	// 내가 진짜 삼킨 애 아니면 무시
+	AUnderwaterCharacter* CurrentVictim = SwallowedPlayer.Get();
+	if (Victim != CurrentVictim || CurrentVictim == nullptr)
+	{
+		return;
+	}
+
+	// Death, 강제 뱉기, 위치 도달하면 뱉기 등 뱉는 방식이 많아서 중복 방지를 위한 변수 확인
+	if (bHasEjectedPlayer) return;
+	bHasEjectedPlayer = true;
 
 	// 타이머 클린업
 	ClearEjectTimer();
 
 	// 뱉자마자 플레이어를 인식하지 못하도록 일시적으로 Perception을 끔 (초기값 : 2초)
-	TemporarilyDisalbeSightPerception(DisableSightTime);
+	if (MonsterState != EMonsterState::Death)
+	{
+		TemporarilyDisalbeSightPerception(DisableSightTime);
+	}
 	
-	// 뱉은 플레이어 정상화 함수
+	// Victim, Mouth 위치 계산
 	VictimLocation = Victim->GetActorLocation();
-	CreatureMouthLocation = GetMesh()->GetSocketLocation("MouthSocket");
+	CreatureMouthLocation = CalculateSafeMouthLoc();
+
+	// 뱉은 플레이어 정상화 함수
 	EjectedVictimNormalize(Victim);
 
 	// 어그로 초기화
 	ForceRemoveDetectedPlayers();
 
+	// 상태 정리(Tick 안전화)
 	SwallowedPlayer = nullptr;
+	bSwallowingInProgress = false;
+	bVictimLockedAtMouth = false;
 
 	if (BlackboardComponent)
 	{
@@ -271,9 +288,6 @@ void AHorrorCreature::EjectedVictimNormalize(AUnderwaterCharacter* Victim)
 	Victim->SetActorLocation(CreatureMouthLocation, false, nullptr, ETeleportType::TeleportPhysics);
 	Victim->SetActorRotation(SafeYawRotation);
 
-	// 플레이어 뱉고, 어두워진 화면 제거
-	Victim->StopCaptureState();
-
 	// 이동 컴퍼넌트 정리 후 Lanch로 튕겨나가게
 	if (UCharacterMovementComponent* PlayerMoveComp = Victim->GetCharacterMovement())
 	{
@@ -285,11 +299,6 @@ void AHorrorCreature::EjectedVictimNormalize(AUnderwaterCharacter* Victim)
 	}
 
 	Victim->LaunchCharacter(LaunchVelocity, false, false);
-
-	if (EjectMontage)
-	{
-		M_PlayMontage(EjectMontage);
-	}
 
 	TWeakObjectPtr<AUnderwaterCharacter> WeakVictim = Victim;
 	// 플레이어 수영모드 On
@@ -320,6 +329,28 @@ void AHorrorCreature::EjectedVictimNormalize(AUnderwaterCharacter* Victim)
 		0.5f,
 		false
 	);
+
+	// 플레이어 뱉고, 어두워진 화면 제거
+	Victim->StopCaptureState();
+}
+
+FVector AHorrorCreature::CalculateSafeMouthLoc() const
+{
+	FVector SafeLocation = GetActorLocation() + GetActorForwardVector() * 100.f; // 기본 fallback Location
+
+	// 이미 죽거나, 파괴 예정이라면 기본 fallback Location
+	if (MonsterState == EMonsterState::Death || IsActorBeingDestroyed())
+	{
+		return SafeLocation;
+	}
+
+	USkeletalMeshComponent* MeshComp = GetMesh();
+	if (IsValid(MeshComp) && !MeshComp->IsBeingDestroyed() && MeshComp->DoesSocketExist(TEXT("MouthSocket")))
+	{
+		SafeLocation = MeshComp->GetSocketLocation(TEXT("MouthSocket"));
+	}
+
+	return SafeLocation;
 }
 
 void AHorrorCreature::NotifyLightExposure(float DeltaTime, float TotalExposedTime, const FVector& PlayerLocation, AActor* PlayerActor)
@@ -331,10 +362,10 @@ void AHorrorCreature::NotifyLightExposure(float DeltaTime, float TotalExposedTim
 
 void AHorrorCreature::OnDeath()
 {
-	Super::OnDeath();
-
 	// 죽으면 뱉도록 설정
 	EjectPlayer(SwallowedPlayer.Get());
+
+	Super::OnDeath();
 
 	// 모든 타이머 정리
 	ClearAllTimers();
@@ -457,6 +488,11 @@ void AHorrorCreature::ForceEjectIfStuck()
 		return;
 	}
 
+	if (SwallowedPlayer.Get() == nullptr)
+	{
+		return;
+	}
+
 	EjectPlayer(SwallowedPlayer.Get());
 }
 
@@ -474,12 +510,3 @@ void AHorrorCreature::DamageToVictim(AUnderwaterCharacter* Victim, float Damage)
 		);
 	}
 }
-	
-// void AHorrorCreature::InitializeAggroVariable()
-// {
-// 	if (!AIController || !IsValid(this) || !BlackboardComponent) return;
-// 
-// 	bIsChasing = false;
-// 	TargetPlayer = nullptr;
-// 	BlackboardComponent->ClearValue(BlackboardKeys::InvestigateLocationKey);
-// }

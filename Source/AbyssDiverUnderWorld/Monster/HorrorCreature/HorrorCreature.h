@@ -67,6 +67,7 @@ protected:
 	// void InitializeAggroVariable();
 	void UpdateVictimLocation(float DeltaTime);
 	void EjectedVictimNormalize(AUnderwaterCharacter* Victim);
+	FVector CalculateSafeMouthLoc() const;
 
 	void ClearAllTimers();
 #pragma endregion
@@ -78,9 +79,6 @@ protected:
 
 	UPROPERTY()
 	TWeakObjectPtr<AUnderwaterCharacter> SwallowedPlayer;
-
-	UPROPERTY(EditAnywhere)
-	TObjectPtr<UAnimMontage> EjectMontage;
 
 	UPROPERTY()
 	TWeakObjectPtr<UAIPerceptionComponent> CachedPerceptionComponent;
