@@ -234,8 +234,10 @@ void AADTutorialGameMode::HandlePhase_Complete()
             {
                 DroneTutorialAlarmId = TutorialSoundSubsystem->PlayAttach(ESFX_BGM::DroneTutorialAlarm, LadderActor->GetRootComponent());
             } 
+            GI->bHasPlayedTutorial = true;
         }
     }
+
 
 }
 

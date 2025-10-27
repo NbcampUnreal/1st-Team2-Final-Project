@@ -40,6 +40,9 @@ protected:
 	UFUNCTION()
 	void OnQuitClicked();
 
+	UFUNCTION(BlueprintCallable)
+	void SetPreTutorialButtonsEnabled(bool bEnable);
+
 	void OnCreateTeamWidgetClosed();
 
 	void OnSessionListWidgetClosed();
@@ -47,7 +50,6 @@ protected:
 	void OnOptionsWidgetClosed();
 
 	void OnCreditsWidgetClosed();
-
 
 protected:
 	UPROPERTY(meta = (BindWidget))
