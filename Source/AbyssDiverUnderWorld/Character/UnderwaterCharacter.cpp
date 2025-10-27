@@ -1181,6 +1181,8 @@ void AUnderwaterCharacter::HandleEnterGroggy()
 void AUnderwaterCharacter::HandleExitGroggy()
 {
 	GetWorldTimerManager().ClearTimer(GroggyTimer);
+	GetWorldTimerManager().ClearTimer(GroggyCameraFadeTimer);
+	
 	// @TODO
 	// 1. Groggy UI 제거
 	// 2. Interaction 기능을 비활성화한다.
@@ -1211,6 +1213,7 @@ void AUnderwaterCharacter::HandleEnterNormal()
 		{
 			PlayerController->SetIgnoreLookInput(false);
 			PlayerController->SetIgnoreMoveInput(false);
+			// 이전 State의 Camera 효과 제거
 			PlayerController->ClientSetCameraFade(true,
 				FColor::Black,
 				FVector2D(-1.0f, 0.0f),
@@ -1315,7 +1318,9 @@ void AUnderwaterCharacter::S_Revive_Implementation()
 
 float AUnderwaterCharacter::CalculateGroggyTime(float CurrentGroggyDuration, uint8 CalculateGroggyCount) const
 {
-	return FMath::Max(CurrentGroggyDuration * (1 - GroggyReductionRate), MinGroggyDuration);
+	// Groggy Time이 음수나 0이 되지 않도록 처리
+	const float EffectiveMin = FMath::Max(MinGroggyDuration, 0.001f);
+	return FMath::Max(CurrentGroggyDuration * (1 - GroggyReductionRate), EffectiveMin);
 }
 
 void AUnderwaterCharacter::M_StartCaptureState_Implementation()
@@ -1356,6 +1361,66 @@ void AUnderwaterCharacter::M_StartCaptureState_Implementation()
 	InteractionComponent->OnInteractReleased();
 }
 
+void AUnderwaterCharacter::PlayStopCaptureCameraEffect()
+{
+	AADPlayerController* PlayerController = GetController<AADPlayerController>();
+	if (!PlayerController)
+	{
+		return;
+	}
+
+	if (IsGroggy())
+	{
+		// 1. 현재 Groggy 만큼 Fade Out
+		float GroggyCameraAlpha = 1.0f - FMath::Clamp(GetRemainGroggyTime() / GroggyDuration, 0.0f, 1.0f);
+		PlayerController->PlayerCameraManager->StartCameraFade(
+			1.0f,
+			GroggyCameraAlpha,
+			CaptureFadeTime,
+			FLinearColor::Black,
+			false,
+			true
+		);
+
+		// 2. 이후 Groggy Duration 만큼 Fade Out
+		GetWorldTimerManager().SetTimer(
+			GroggyCameraFadeTimer,
+			FTimerDelegate::CreateLambda([this, PlayerController]()
+			{
+				if (!IsValid(this))
+				{
+					return;
+				}
+
+				const float StartCameraAlpha = PlayerController->PlayerCameraManager->FadeAmount;
+				PlayerController->PlayerCameraManager->StartCameraFade(
+					StartCameraAlpha,
+					1.0f,
+					GetRemainGroggyTime(),
+					FLinearColor::Black,
+					false,
+					true
+				);
+			}),
+			CaptureFadeTime,
+			false
+		);
+	}
+	// Normal State
+	else
+	{
+		PlayerController->PlayerCameraManager->StartCameraFade(
+			1.0f,
+			0.0f,
+			CaptureFadeTime,
+			FLinearColor::Black,
+			false,
+			true
+		);
+	}
+	// Death 상태라면 Death Transition을 통해서 Camera 암전 상태에서 사망 상태로 전이
+}
+
 void AUnderwaterCharacter::M_StopCaptureState_Implementation()
 {
 	if (IsLocallyControlled())
@@ -1367,14 +1432,7 @@ void AUnderwaterCharacter::M_StopCaptureState_Implementation()
 			PlayerController->SetIgnoreLookInput(false);
 			PlayerController->SetIgnoreMoveInput(false);
 
-			PlayerController->PlayerCameraManager->StartCameraFade(
-				1.0f,
-				0.0f,
-				CaptureFadeTime,
-				FLinearColor::Black,
-				false,
-				true
-			);
+			PlayStopCaptureCameraEffect();
 
 			bCanUseEquipment = true;
 		}
