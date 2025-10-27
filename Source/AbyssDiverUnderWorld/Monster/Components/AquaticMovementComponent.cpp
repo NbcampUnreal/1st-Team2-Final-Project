@@ -14,6 +14,8 @@
 
 DEFINE_LOG_CATEGORY(LogAquaticMovement);
 
+FCollisionQueryParams UAquaticMovementComponent::MovementCollisionQueryTraceParams;
+
 UAquaticMovementComponent::UAquaticMovementComponent()
 {
     PrimaryComponentTick.bCanEverTick = true;
@@ -51,6 +53,8 @@ void UAquaticMovementComponent::BeginPlay()
 	    return;
     }
 
+    MovementCollisionQueryTraceParams.AddIgnoredActor(OwnerCharacter.Get());
+
     ACharacter* CachedOwnerCharacter = GetOwnerCharacter();
     if (CachedOwnerCharacter)
     {
@@ -74,6 +78,34 @@ void UAquaticMovementComponent::BeginPlay()
     {
         ObstacleAvoidanceStrengthWhenChase = ObstacleAvoidanceStrength;
     }
+
+    UWorld* World = GetWorld();
+    check(World);
+
+    // 클라이언트가 전부 접속할 때까지 기다려준다.
+    const float DelayTime = 3.0f;
+    FTimerHandle WaitForPlayersTimerHandle;
+    World->GetTimerManager().SetTimer(WaitForPlayersTimerHandle, [this]()
+        {
+            UWorld* CurrentWorld = GetWorld();
+            if (CurrentWorld == nullptr)
+            {
+                return;
+            }
+
+            const int32 MaxPlayerCount = 4;
+            for (int32 i = 0; i < MaxPlayerCount; ++i)
+            {
+                APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(CurrentWorld, i);
+                if (PlayerPawn == nullptr)
+                {
+                    continue;
+                }
+
+                MovementCollisionQueryTraceParams.AddIgnoredActor(PlayerPawn);
+            }
+
+        }, 1, false, DelayTime);
 }
 
 void UAquaticMovementComponent::InitComponent(ACharacter* InCharacter)
@@ -282,11 +314,11 @@ void UAquaticMovementComponent::UpdateMovement(float DeltaTime)
             ObjectParams.AddObjectTypesToQuery(ECC_WorldDynamic);   // WorldDynamic 감지
             // ObjectParams.AddObjectTypesToQuery(ECC_GameTraceChannel3); // Monster (다른 몬스터 감지, 일단 보류)
 
-            FCollisionQueryParams QueryParams(
-                FName(TEXT("UpdateMovementTrace")), 
-                false                               
-            );
-            QueryParams.AddIgnoredActor(Cast<AActor>(OwnerCharacter)); // 본인 무시
+            //FCollisionQueryParams QueryParams(
+            //    FName(TEXT("UpdateMovementTrace")), 
+            //    false                               
+            //);
+            //QueryParams.AddIgnoredActor(Cast<AActor>(OwnerCharacter)); // 본인 무시
 
             const FVector TraceStart = CurrentLocation;
             const FVector TraceEnd = NewLocation + CurrentVelocity.GetSafeNormal() * 50.0f;
@@ -296,7 +328,7 @@ void UAquaticMovementComponent::UpdateMovement(float DeltaTime)
                 TraceStart,
                 TraceEnd,
                 ObjectParams,
-                QueryParams
+                MovementCollisionQueryTraceParams
             );
 
             if (bHit)
@@ -415,7 +447,7 @@ FVector UAquaticMovementComponent::CalculateAvoidanceForce()
             RayStart,
             RayEnd,
             ObjectParams,
-            AvoidanceTraceParams
+            MovementCollisionQueryTraceParams
         );
 
         if (bHit)
@@ -1519,7 +1551,7 @@ void UAquaticMovementComponent::AddIgnoredActorFromAvoidance(AActor* Actor)
 	}
 
     IgnoredActors.Add(Actor);
-	AvoidanceTraceParams.AddIgnoredActor(Actor);
+	MovementCollisionQueryTraceParams.AddIgnoredActor(Actor);
 
     // 액터에 붙어있는 하위 콜리전 들도 무시하도록 처리
     TArray<AActor*> AttachedActors;
@@ -1530,7 +1562,7 @@ void UAquaticMovementComponent::AddIgnoredActorFromAvoidance(AActor* Actor)
         if (IsValid(Child) && !IgnoredActors.Contains(Child))
         {
             IgnoredActors.Add(Child);
-            AvoidanceTraceParams.AddIgnoredActor(Child);
+            MovementCollisionQueryTraceParams.AddIgnoredActor(Child);
         }
     }
 }
