@@ -175,6 +175,7 @@ void AHorrorCreature::SwallowPlayer(AUnderwaterCharacter* Victim)
 	if (!PlayerCharacter || PlayerCharacter->GetCharacterState() != ECharacterState::Normal) return;
 
 	SwallowedPlayer = Victim;
+	bHasEjectedPlayer = false;
 	bCanSwallow = false;
 	bSwallowingInProgress = true;
 
@@ -223,6 +224,11 @@ void AHorrorCreature::EjectPlayer(AUnderwaterCharacter* Victim)
 	UWorld* World = GetWorld();
 	if (!HasAuthority()) return;
 	if (!IsValid(Victim) || !World || World->IsInSeamlessTravel()) return;
+	
+	// Death, 강제 뱉기, 위치 도달하면 뱉기 등 뱉는 방식이 많아서 중복 방지를 위한 변수 확인
+	if (bHasEjectedPlayer) return;
+	bHasEjectedPlayer = true;
+
 	if (Victim != SwallowedPlayer.Get()) return;
 	if (SwallowedPlayer.Get() == nullptr) return;
 
