@@ -362,7 +362,9 @@ protected:
 	void S_Revive();
 	void S_Revive_Implementation();
 
-	/** Groggy 상태에서 사망까지 걸리는 시간을 계산한다. 사망을 할 수록 기간이 길어진다. */
+	/** Groggy 상태에서 사망까지 걸리는 시간을 계산한다. 사망을 할 수록 기간이 길어진다.
+	 * Groggy Time은 [,0.001]으로 0이상이 되는 것을 보장한다.
+	 */
 	virtual float CalculateGroggyTime(float CurrentGroggyDuration, uint8 CalculateGroggyCount) const;
 	
 	/** 캐릭터 사망 시에 Blueprint에서 호출될 함수 */
@@ -386,6 +388,13 @@ protected:
 	UFUNCTION(NetMulticast, Reliable)
 	void M_StartCaptureState();
 	void M_StartCaptureState_Implementation();
+
+	/** Stop Capture 시의 Camera 효과를 재생
+	 * - Normal 로 복귀 시에는 페이드 아웃 효과
+	 * - Groggy 로 복귀 시에는 Groggy Timer만큼 Camera Fade In 후에 Groggy Fade Out 효과
+	 * - Death 시에는 암전 유지
+	 */
+	void PlayStopCaptureCameraEffect();
 
 	/** Capture State Multicast
 	 * Owner : 암전 효과, 입력 처리
@@ -690,6 +699,16 @@ public:
 	/** 캐릭터의 넉백이 끝났을 때 호출되는 델리게이트 */
 	UPROPERTY(BlueprintAssignable)
 	FOnKnockbackEnd OnKnockbackEndDelegate;
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCaptureStart);
+	/** 캐릭터가 캡쳐 상태에 진입했을 때 호출되는 델리게이트. 모든 노드에서 실행 */
+	UPROPERTY(BlueprintAssignable)
+	FOnCaptureStart OnCaptureStartDelegate;
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCaptureEnd);
+	/** 캐릭터가 캡쳐 상태에서 벗어났을 때 호출되는 델리게이트. 모든 노드에서 실행 */
+	UPROPERTY(BlueprintAssignable)
+	FOnCaptureEnd OnCaptureEndDelegate;
 	
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnGroggy);
 	/** 캐릭터가 그로기 상태에 진입했을 때 호출되는 델리게이트 */
@@ -697,7 +716,7 @@ public:
 	FOnGroggy OnGroggyDelegate;
 
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnCharacterStateChanged, AUnderwaterCharacter*, Character, ECharacterState, OldCharacterState, ECharacterState, NewCharacterState);
-	/** 캐릭터 상태가 변경되었을 때 호출되는 델리게이트 */
+	/** 캐릭터 상태가 변경되었을 때 호출되는 델리게이트, 상태에 진입했을 경우 Capture 상태일 수도 있는 것을 확인해야 한다. */
 	UPROPERTY(BlueprintAssignable)
 	FOnCharacterStateChanged OnCharacterStateChangedDelegate;
 
@@ -896,11 +915,12 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float NormalLookSensitivity;
 
-	/** Fade 된 상태에서 Normal 상태로 전이됬을 때 Fade In 되는 시간 */
+	/** Fade 된 상태에서 Normal 상태로 전이됬을 때 Camera Fade In 되는 시간 */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Normal", meta = (AllowPrivateAccess = "true"))
 	float NormalStateFadeInDuration;
 	
-	/** 그로기 상태에서 사망까지 걸리는 시간. 그로기 상태에 진입할 떄마다 줄어든다. */
+	/** 그로기 상태에서 사망까지 걸리는 시간. 그로기 종료 시에 Groggy Count에 따라서 결정되고 다음 Groggy 시에 적용된다.
+	 * 현재 그로기 시간을 알고 싶으면 GetRemainGroggyTime을 호출 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true"))
 	float GroggyDuration;
 
@@ -908,12 +928,12 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true", ClampMin = "0.0"))
 	float GroggyHitPenalty;
 
-	/** 그로기 상태에 진입될 떄마다 감소하는 Groggy Duration 비율. [0, 1]의 범위로 설정한다. 0.3일 경우 0.7배로 감소한다. */
+	/** 그로기 상태에 진입될 때마다 감소하는 Groggy Duration 비율. [0, 1]의 범위로 설정한다. 0.3일 경우 0.7배로 감소한다. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true", ClampMin = "0.0", ClampMax = "1.0"))
 	float GroggyReductionRate;
 
 	/** 그로기 상태를 계산할 때 최소 그로기 상태 시간. GroggyDuration * GroggyReductionRate보다 작을 경우 이 값으로 설정한다. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true", ClampMin = "0.001"))
 	float MinGroggyDuration;
 
 	/** 그로기 상태에 진입한 횟수. uint8이라서 오버플로우에 주의 */
@@ -930,6 +950,9 @@ private:
 
 	/** 그로기에서 사망 전이 Timer */
 	FTimerHandle GroggyTimer;
+
+	/** Capture State에서 탈출 후에 그로기 카메라 페이드 인 Timer */
+	FTimerHandle GroggyCameraFadeTimer;
 
 	/** 그로기 상태에서의 LookSensitivity. Groggy 상태에 진입할 때마다 LookSensitivity를 이 값으로 설정한다. */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Groggy")
@@ -997,6 +1020,10 @@ private:
 	/** Capture 상태에서 Fade Out / In 되는 시간 */
 	UPROPERTY(EditAnywhere, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float CaptureFadeTime;
+
+	/** State를 변환해야 하나, Capture State 이기 때문에 Pending된 상태 */
+	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	uint8 bPendingDeathAfterCapture : 1 = 0;
 
 	/** 피격 시의 출혈 효과를 내는 Noise System Power */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))

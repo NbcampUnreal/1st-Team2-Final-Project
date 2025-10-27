@@ -30,6 +30,8 @@ protected:
 
 public:
 
+	void SetActiveLockImage(bool bShouldActivate);
+
 	FOnShopItemSlotWidgetClickedDelegate OnShopItemSlotWidgetClickedDelegate;
 	FOnShopItemSlotWidgetClickedDelegate OnShopItemSlotWidgetDoubleClickedDelegate;
 
@@ -50,6 +52,9 @@ protected:
 	TObjectPtr<UImage> ToolTipImage;
 
 	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UImage> LockImage;
+
+	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<class URichTextBlock> ToolTipTextBlock;
 
 	// 시간 측정 필요할까
@@ -59,6 +64,7 @@ protected:
 	int32 SlotIndex;
 
 	uint8 bCanDoubleClick : 1 = false;
+	uint8 bIsLocked : 1 = false;
 
 	static const float DoubleClickInterval;
 

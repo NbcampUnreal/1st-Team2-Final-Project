@@ -22,4 +22,6 @@ namespace ST_InteractionDescription
 	const FTextKey OreRock_Mine = TEXT("Interaction.OreRock_Mine");
 
 	const FTextKey LevelTraveler_ReturnToCamp = TEXT("Interaction.LevelTraveler_ReturnToCamp");
+
+	const FTextKey Basketball_Pickup = TEXT("Interaction.Basketball_Pickup");
 }

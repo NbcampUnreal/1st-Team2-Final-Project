@@ -88,18 +88,20 @@ struct FShopItemListChangeInfo
 	{
 	}
 
-	FShopItemListChangeInfo(EShopCategoryTab InTab, int16 InShopIndex, uint8 InItemId, EShopItemChangeType InChangeType)
+	FShopItemListChangeInfo(EShopCategoryTab InTab, int16 InShopIndex, uint8 InItemId, EShopItemChangeType InChangeType, bool bInIsLocked)
 	{
 		ShopTab = InTab;
 		ShopIndex = InShopIndex;
 		ItemIdAfter = InItemId;
 		ChangeType = InChangeType;
+		bIsLocked = bInIsLocked;
 	}
 
 	EShopCategoryTab ShopTab;
 	int16 ShopIndex;
 	uint8 ItemIdAfter;
 	EShopItemChangeType ChangeType;
+	uint8 bIsLocked : 1;
 };
 
 USTRUCT(BlueprintType)
@@ -109,6 +111,9 @@ struct FShopItemId : public FFastArraySerializerItem
 
 	UPROPERTY()
 	uint8 Id = 0;
+
+	UPROPERTY()
+	uint8 bIsLocked : 1 = false;
 
 	void PostReplicatedAdd(const FShopItemIdList& InArraySerializer);
 
@@ -134,7 +139,7 @@ public:
 	// 인덱스 반환, 없으면 INDEX_NONE 반환
 	int32 Contains(uint8 CompareId);
 
-	bool TryAdd(uint8 NewId);
+	bool TryAdd(uint8 NewId, bool bShouldLock);
 
 	// 지워진 인덱스 반환
 	int32 Remove(uint8 Id);
@@ -202,7 +207,7 @@ public:
 	ESellResult SellItem(uint8 ItemId, AUnderwaterCharacter* Seller);
 
 	void AddItems(const TArray<uint8>& Ids, EShopCategoryTab TabType);
-	void AddItemToList(uint8 ItemId, EShopCategoryTab TabType);
+	void AddItemToList(uint8 ItemId, EShopCategoryTab TabType, bool bShouldLock);
 	void RemoveItemToList(uint8 ItemId, EShopCategoryTab TabType);
 
 	void InitUpgradeView();
@@ -273,11 +278,17 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Shop")
 	TObjectPtr<UPointLightComponent> LightComp;
 
-	UPROPERTY(EditDefaultsOnly, Category = "ShopSettings")
-	TArray<uint8> DefaultConsumableItemIdList; // 블루프린트 노출용
+	UPROPERTY(EditDefaultsOnly, Category = "ShopSettings|ConsumableItem")
+	TArray<uint8> DefaultConsumableItemIdList; // 블루프린트 노출용 판매할 소비 아이템 리스트
 
-	UPROPERTY(EditDefaultsOnly, Category = "ShopSettings")
-	TArray<uint8> DefaultEquipmentItemIdList; // 블루프린트 노출용
+	UPROPERTY(EditDefaultsOnly, Category = "ShopSettings|ConsumableItem")
+	TArray<bool> ConsumableItemLockedStates; // 소비 아이템 잠금 여부, true이면 구매 불가능하도록 작동한다.
+
+	UPROPERTY(EditDefaultsOnly, Category = "ShopSettings|EquipmentItem")
+	TArray<uint8> DefaultEquipmentItemIdList; // 블루프린트 노출용 판매할 장비 아이템 리스트
+
+	UPROPERTY(EditDefaultsOnly, Category = "ShopSettings|EquipmentItem")
+	TArray<bool> EquipmentItemLockedStates; // 장비 아이템 잠금 여부, true이면 구매 불가능하도록 작동한다.
 	
 	UPROPERTY(EditInstanceOnly, Category = "ShopSettings")
 	TObjectPtr<ATargetPoint> OriginPoint;

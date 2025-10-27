@@ -53,6 +53,11 @@ public:
 	void M_PlayHitReactSound();
 	void M_PlayHitReactSound_Implementation();
 
+	// Death Sound
+	UFUNCTION(NetMulticast, Reliable)
+	void M_PlayDeathSound();
+	void M_PlayDeathSound_Implementation();
+
 	// Stop Loop Sound
 	UFUNCTION(Server, Reliable)
 	void S_StopAllLoopSound();
@@ -68,6 +73,10 @@ public:
 	UFUNCTION(NetMulticast, Reliable)
 	void M_AdjustMainSoundVolume(float Volume, float FadeTime);
 	void M_AdjustMainSoundVolume_Implementation(float Volume, float FadeTime);
+
+private:
+	UAudioComponent* CreateLoopAudioComp(USoundBase* InSound);
+	float GetTargetVolumeScale() const;
 #pragma endregion
 
 #pragma region Variable
@@ -84,9 +93,21 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Sound|HitReact")
 	TObjectPtr<USoundBase> HitReactSound;
 
+	UPROPERTY(EditAnywhere, Category = "Sound|Death")
+	TObjectPtr<USoundBase> DeathSound;
+
+	TWeakObjectPtr<class USoundSubsystem> SoundSubsystem;
+
 private:
-	TObjectPtr<UAudioComponent> PatrolLoopComponent;
-	TObjectPtr<UAudioComponent> ChaseLoopComponent;
-	TObjectPtr<UAudioComponent> FleeLoopComponent;
+	TWeakObjectPtr<UAudioComponent> PatrolLoopComponent;
+	TWeakObjectPtr<UAudioComponent> ChaseLoopComponent;
+	TWeakObjectPtr<UAudioComponent> FleeLoopComponent;
+
+#pragma endregion
+
+#pragma region Getter. Setter
+public:
+	class USoundSubsystem* GetSoundSubsystem();
+
 #pragma endregion
 };

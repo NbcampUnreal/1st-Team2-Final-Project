@@ -67,7 +67,7 @@ void AADOreRock::BeginPlay()
 	}
 	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
 	{
-		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
+		SoundSubsystemWeakPtr = GI->GetSubsystem<USoundSubsystem>();
 	}
 	InteractableComp->SetAlwaysHighlight(true);
 	
@@ -96,6 +96,11 @@ void AADOreRock::M_CleanupToolAndEffects_Implementation(AUnderwaterCharacter* Un
 	}
 }
 
+void AADOreRock::M_PlayCompleteMineSound_Implementation()
+{
+	GetSoundSubsystem()->PlayAt(ESFX::CompleteMine, GetActorLocation(), 2.0f);
+}
+
 void AADOreRock::Interact_Implementation(AActor* InstigatorActor)
 {
 	if (!HasAuthority()) return;
@@ -112,6 +117,8 @@ void AADOreRock::InteractHold_Implementation(AActor* InstigatorActor)
 
 void AADOreRock::OnHoldStart_Implementation(APawn* InstigatorPawn)
 {
+	if (!HasAuthority()) return;
+
 	ActiveInstigators.AddUnique(InstigatorPawn);
 	for (TWeakObjectPtr<APawn> PawnPtr : ActiveInstigators)
 	{
@@ -125,11 +132,12 @@ void AADOreRock::OnHoldStart_Implementation(APawn* InstigatorPawn)
 		{
 			if (UADInventoryComponent* InventoryComp = ADPlayerState->GetInventory())
 			{
+				//int32 Saved = INDEX_NONE;
 				// 무기를 장착하고 있다면
 				if (InventoryComp->HasEquippedItem())
 				{
 					PreviousEquipIndex = InventoryComp->GetSlotIndex();
-					InventoryComp->S_UseInventoryItem_Implementation(EItemType::Equipment, PreviousEquipIndex, true);
+					InventoryComp->S_UseInventoryItem(EItemType::Equipment, PreviousEquipIndex, true);
 				}
 				else
 				{
@@ -156,7 +164,7 @@ void AADOreRock::OnHoldStop_Implementation(APawn* InstigatorPawn)
 			{
 				const float MontageStopDuration = 0.f;
 				Diver->M_StopAllMontagesOnBothMesh(MontageStopDuration);
-				InventoryComp->S_UseInventoryItem_Implementation(EItemType::Equipment, PreviousEquipIndex, true);
+				InventoryComp->S_UseInventoryItem(EItemType::Equipment, PreviousEquipIndex, true);
 				M_CleanupToolAndEffects(Diver);
 				LOGI(Log, TEXT("Skip Mining Stops"));
 				return;
@@ -327,10 +335,7 @@ void AADOreRock::PlayFractureFX()
 		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 			GetWorld(), RockFragmentsFX, GetActorLocation());
 
-	//if (FractureSound)
-	//	UGameplayStatics::PlaySoundAtLocation(
-	//		this, FractureSound, GetActorLocation());
-	GetSoundSubsystem()->PlayAt(ESFX::CompleteMine, GetActorLocation(), 2.0f);
+	M_PlayCompleteMineSound();
 }
 
 int32 AADOreRock::SampleDropMass(int32 MinMass, int32 MaxMass) const
@@ -442,16 +447,13 @@ FString AADOreRock::GetInteractionDescription() const
 
 USoundSubsystem* AADOreRock::GetSoundSubsystem()
 {
-	if (SoundSubsystem)
+	if (!SoundSubsystemWeakPtr.IsValid())
 	{
-		return SoundSubsystem;
+		if (UADGameInstance* GameInstance = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+		{
+			SoundSubsystemWeakPtr = GameInstance->GetSubsystem<USoundSubsystem>();
+		}
 	}
-
-	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
-	{
-		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
-		return SoundSubsystem;
-	}
-	return nullptr;
+	return SoundSubsystemWeakPtr.Get();
 }
 

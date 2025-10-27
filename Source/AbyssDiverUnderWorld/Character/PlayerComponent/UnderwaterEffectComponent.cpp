@@ -53,6 +53,8 @@ void UUnderwaterEffectComponent::BeginPlay()
 		OwnerCharacter->OnDamageTakenDelegate.AddDynamic(this, &UUnderwaterEffectComponent::OnDamageTaken);
 		OwnerCharacter->OnKnockbackDelegate.AddDynamic(this, &UUnderwaterEffectComponent::OnKnockback);
 		OwnerCharacter->OnKnockbackEndDelegate.AddDynamic(this, &UUnderwaterEffectComponent::OnKnockbackEnd);
+		OwnerCharacter->OnCaptureStartDelegate.AddDynamic(this, &UUnderwaterEffectComponent::OnCaptureStart);
+		OwnerCharacter->OnCaptureEndDelegate.AddDynamic(this, &UUnderwaterEffectComponent::OnCaptureEnd);
 	}
 	else
 	{
@@ -109,6 +111,7 @@ void UUnderwaterEffectComponent::SetEnableEffect(bool bNewEnabled)
 	{
 		StopBreathEffect();
 
+		// 수중 이동 소리 중지
 		USoundSubsystem* SoundSubsystem = GetSoundSubsystem();
 		if (SoundSubsystem && SoundSubsystem->IsPlaying(MovementAudioId))
 		{
@@ -120,6 +123,11 @@ void UUnderwaterEffectComponent::SetEnableEffect(bool bNewEnabled)
 		}
 		MoveTimeAccumulator = 0.0f;
 		bShouldPlayMovementEffect = false;
+
+		if (MoveBubbleParticleComponent && MoveBubbleParticleComponent->IsActive())
+		{
+			MoveBubbleParticleComponent->Deactivate();
+		}
 	}
 }
 
@@ -198,6 +206,16 @@ void UUnderwaterEffectComponent::OnKnockback(FVector KnockbackVelocity)
 }
 
 void UUnderwaterEffectComponent::OnKnockbackEnd()
+{
+	StartBreathEffect(BreathFirstDelay * 0.5f);
+}
+
+void UUnderwaterEffectComponent::OnCaptureStart()
+{
+	StopBreathEffect();
+}
+
+void UUnderwaterEffectComponent::OnCaptureEnd()
 {
 	StartBreathEffect(BreathFirstDelay * 0.5f);
 }
@@ -293,6 +311,7 @@ void UUnderwaterEffectComponent::UpdateMovementEffects(float DeltaTime)
 			{
 				SprintMovementAudioId = SoundSubsystem->Play2D(SprintMovementSound, 0.5f);
 			}
+			// 스프린트 중일 때 버블 강도 증가
 			if (MoveBubbleParticleComponent)
 			{
 				MoveBubbleParticleComponent->SetFloatParameter(MoveBubbleIntensityParameterName, 1.0f);

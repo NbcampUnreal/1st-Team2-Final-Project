@@ -11,7 +11,6 @@
 enum class ESFX : uint8;
 enum class EMapName : uint8;
 class ULoadingScreenWidget;
-class AADTablet;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADPlayerController : public APlayerController
@@ -31,6 +30,9 @@ protected:
 
 public:
 
+	/** 입력 무시할 때, Jump 입력 상태 초기화 */
+	virtual void SetIgnoreMoveInput(bool bNewMoveInput) override;
+	
 	UFUNCTION(Client, Reliable)
 	void C_OnPreClientTravel();
 	void C_OnPreClientTravel_Implementation();
@@ -68,7 +70,7 @@ public:
 	 */
 	virtual void SetViewTarget(class AActor* NewViewTarget, FViewTargetTransitionParams TransitionParams = FViewTargetTransitionParams()) override;
 
-	/** Camera Blank를 시작한다. FadeAlpha의 X값은 시작 알파 값이고 Y값은 종료 알파 값이다.
+	/** Camera Blink를 시작한다. FadeAlpha의 X값은 시작 알파 값이고 Y값은 종료 알파 값이다.
 	 * FadeStartTime 동안 종료 알파 값으로 Fade Out을 한다.
 	 * FadeEndDelay 동안 대기한다.
 	 * FadeOut 완료되면 FadeEndTime 동안 FadeColor로 Fade In을 한다.
@@ -87,7 +89,7 @@ public:
 	void C_StopCameraBlink_Implementation();
 
 	UFUNCTION(Client, Unreliable)
-	void C_PlaySound(ESFX SoundType, float VolumeMultiplier = 1.0f, float PitchMultiplier = 1.0f);
+	void C_PlaySound(ESFX SoundType, float VolumeMultiplier = 1.0f);
 
 	UFUNCTION(Exec)
 	void ShowPlayerHUD();
