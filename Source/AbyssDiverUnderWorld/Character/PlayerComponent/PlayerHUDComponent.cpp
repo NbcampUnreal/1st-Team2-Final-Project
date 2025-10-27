@@ -646,6 +646,10 @@ void UPlayerHUDComponent::ShowSpectatorHUDWidget()
 	{
 		AADPlayerController* PlayerController = Cast<AADPlayerController>(GetOwner());
 		SpectatorHUDWidget = CreateWidget<USpectatorHUDWidget>(PlayerController, SpectatorHUDWidgetClass);
+		if (SpectatorHUDWidget)
+		{
+			SpectatorHUDWidget->BindWidget(PlayerController);
+		}
 	}
 	if (SpectatorHUDWidget && !SpectatorHUDWidget->IsInViewport())
 	{
