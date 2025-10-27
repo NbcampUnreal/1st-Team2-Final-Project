@@ -54,7 +54,11 @@ void UBTTask_EjectVictim::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* Nod
 		if (HorrorCreature && HorrorCreature->GetSwallowedPlayer())
 		{
 			HorrorCreature->EjectPlayer(HorrorCreature->GetSwallowedPlayer());
+			FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 		}
-		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
+		else
+		{
+			FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
+		}
 	}
 }

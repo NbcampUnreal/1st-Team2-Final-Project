@@ -18,6 +18,7 @@ public:
 	AHorrorCreature();
 	
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void Tick(float DeltaTime) override;
 
 #pragma region Method
@@ -30,6 +31,7 @@ public:
 	virtual void NotifyLightExposure(float DeltaTime, float TotalExposedTime, const FVector& PlayerLocation, AActor* PlayerActor) override;
 
 	virtual void OnDeath() override;
+
 
 protected:
 	UFUNCTION()
@@ -54,6 +56,7 @@ protected:
 	UFUNCTION()
 	void ApplyFleeAfterSwallow();
 	void ClearSwallowTimer();
+	void ClearEjectTimer();
 
 	UFUNCTION()
 	void ForceEjectIfStuck();
@@ -64,6 +67,8 @@ protected:
 	// void InitializeAggroVariable();
 	void UpdateVictimLocation(float DeltaTime);
 	void EjectedVictimNormalize(AUnderwaterCharacter* Victim);
+
+	void ClearAllTimers();
 #pragma endregion
 
 #pragma region Variable
@@ -80,13 +85,15 @@ protected:
 	UPROPERTY()
 	TWeakObjectPtr<UAIPerceptionComponent> CachedPerceptionComponent;
 
-	FTimerHandle TimerHandle_SetSwimMode;
+	FTimerHandle SetSwimModeTimerHandle;
+	FTimerHandle SetPatrolTimerHandle;
+	FTimerHandle EnableSightTimerHandle;
 	FTimerHandle SwallowToFleeTimerHandle; // 삼키고 도망칠때 0.5초 delay (먹는모션, 소리 재생 )
 	FTimerHandle ForceEjectTimerHandle; // 먹고나서 강제로 뱉게하기 위한 타이머핸들러
 
 private:
-	UPROPERTY(EditAnywhere, Category = "Lanch")
-	float LanchStrength = 150.0f;
+	UPROPERTY(EditAnywhere, Category = "Launch")
+	float LaunchStrength = 150.0f;
 
 	UPROPERTY(EditAnywhere, Category = "Sight")
 	float DisableSightTime = 2.0f;
@@ -109,6 +116,9 @@ private:
 	FVector CreatureMouthLocation;
 	float SwallowLerpAlpha = 0.0f;
 	uint8 bSwallowingInProgress : 1 = false;
+	
+	// 플레이어가 완전히 입위치에 확인하는 플래그 변수
+	uint8 bVictimLockedAtMouth : 1 = false;
 
 	uint8 bCanSwallow : 1 = true;
 #pragma endregion

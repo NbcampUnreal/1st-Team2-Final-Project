@@ -299,7 +299,7 @@ protected:
 	TSubclassOf<AADShotgunBullet> ShotgunPelletClass = nullptr; 
 
 	UPROPERTY()
-	TObjectPtr<USoundSubsystem> SoundSubsystem;
+	TWeakObjectPtr<USoundSubsystem> SoundSubsystemWeakPtr;
 
 
 	UPROPERTY(EditAnywhere, Category = "Weapon")

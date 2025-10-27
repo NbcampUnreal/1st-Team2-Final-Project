@@ -56,6 +56,9 @@ public:
 	UFUNCTION(NetMulticast, Reliable)
 	void M_CleanupToolAndEffects(AUnderwaterCharacter* UnderwaterCharacter);
 	void M_CleanupToolAndEffects_Implementation(AUnderwaterCharacter* UnderwaterCharacter);
+	UFUNCTION(NetMulticast, Reliable)
+	void M_PlayCompleteMineSound();
+	void M_PlayCompleteMineSound_Implementation();
 
 	virtual void Interact_Implementation(AActor* InstigatorActor) override;
 	virtual void InteractHold_Implementation(AActor* InstigatorActor) override;
@@ -70,6 +73,7 @@ public:
 
 	void PlayMiningFX();
 	void PlayFractureFX();
+
 
 	// 편향된 무게 한 점을 반환하는 함수
 	int32 SampleDropMass(int32 MinMass, int32 MaxMass) const;
@@ -111,7 +115,7 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Mining")
 	TObjectPtr<UNiagaraSystem> RockFragmentsFX;
 	UPROPERTY()
-	TObjectPtr<USoundSubsystem> SoundSubsystem;
+	TWeakObjectPtr<USoundSubsystem> SoundSubsystemWeakPtr;
 
 protected:
 	// 무게 샘플링 강도 (1.0 : 균등, 2.0 : 중간 편향, 클수록 편향이 강해짐)

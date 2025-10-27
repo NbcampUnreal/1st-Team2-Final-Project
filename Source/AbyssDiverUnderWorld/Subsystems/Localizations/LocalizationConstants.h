@@ -22,4 +22,6 @@ namespace ST_InteractionDescription
 	extern const FTextKey OreRock_Mine;
 
 	extern const FTextKey LevelTraveler_ReturnToCamp;
+
+	extern const FTextKey Basketball_Pickup;
 }

@@ -52,29 +52,27 @@ void AADDrone::BeginPlay()
 	{
 		AActor* Found = UGameplayStatics::GetActorOfClass(this, ASpawnManager::StaticClass());
 		SpawnManager = Cast<ASpawnManager>(Found);
-	
 	}
 	if (SpawnManager && DronePhaseNumber == 1)
 	{
 		SpawnManager->SpawnByGroup();
 	}
 
-	WorldSubsystem = GetWorld()->GetSubsystem<UADWorldSubsystem>();
-
+	WorldSubsystemWeakPtr = GetWorld()->GetSubsystem<UADWorldSubsystem>();
 
 	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
 	{
-		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
+		SoundSubsystemWeakPtr = GI->GetSubsystem<USoundSubsystem>();
 		
 		FTimerHandle PlayBGMDelayTimerHandle;
 		float PlayBGMDelay = 2.0f;
 		GetWorldTimerManager().SetTimer(PlayBGMDelayTimerHandle, [this]() {
 			if (bIsBgmOn)
 			{
-				const FString CurrentMapName = WorldSubsystem ? WorldSubsystem->GetCurrentLevelName() : TEXT("");
-				if (CurrentMapName != "TutorialPool")
+				const FString CurrentMapName = GetWorldSubsystem() ? GetWorldSubsystem()->GetCurrentLevelName() : TEXT("");
+				if (CurrentMapName != "TutorialPool" && SoundSubsystemWeakPtr.IsValid())
 				{
-					DrondeThemeSoundNumber = SoundSubsystem->PlayAttach(ESFX_BGM::DroneTheme, RootComponent);
+					DroneThemeAudioId = SoundSubsystemWeakPtr->PlayAttach(ESFX_BGM::DroneTheme, RootComponent);
 				}
 			}}, PlayBGMDelay, false);
 	}
@@ -116,8 +114,11 @@ if (World == nullptr || World->IsGameWorld() == false)
 #endif
 	if (bIsBgmOn)
 	{
-		SoundSubsystem->StopAudio(DrondeThemeSoundNumber);
-		SoundSubsystem->StopAudio(TutorialAlarmSoundId);
+		if (USoundSubsystem* SoundSubsystem = GetSoundSubsystem())
+		{
+			SoundSubsystem->StopAudio(DroneThemeAudioId);
+			SoundSubsystem->StopAudio(TutorialAlarmSoundId);
+		}
 	}
 
 	AADPlayerController* PC = GetWorld()->GetFirstPlayerController<AADPlayerController>();
@@ -189,32 +190,28 @@ void AADDrone::M_PlayTutorialAlarmSound_Implementation()
 
 void AADDrone::M_PlayDroneRisingSound_Implementation()
 {
-	GetSoundSubsystem()->PlayAt(ESFX::SendDrone, GetActorLocation());
+	if (USoundSubsystem* SoundSubsystem = GetSoundSubsystem())
+	{
+		SoundSubsystem->PlayAt(ESFX::SendDrone, GetActorLocation());
+	}
 }
 
 // 나중에 수정..
 void AADDrone::M_PlayPhaseBGM_Implementation(int32 PhaseNumber)
 {
-	const FString CurrentMapName = WorldSubsystem ? WorldSubsystem->GetCurrentLevelName() : TEXT("");
-	static const FString Context(TEXT("PhaseBGM"));
-	if (!PhaseBgmTable)          
-	{
-		LOGN(TEXT("PhaseBgmTable is nullptr"))
+	USoundSubsystem* SoundSubsystem = GetSoundSubsystem();
+	if (SoundSubsystem == nullptr)
 		return;
-	}
-	const FName RowKey = *FString::Printf(TEXT("%s_%d"), *CurrentMapName, PhaseNumber);
-
-	if (const FPhaseBGMRow* Row = PhaseBgmTable->FindRow<FPhaseBGMRow>(RowKey, Context))
+	
+	ESFX_BGM BGM = GetPhaseBGM(PhaseNumber);
+	if (BGM != ESFX_BGM::Max)
 	{
-		if (CachedSoundNumber != INDEX_NONE)
-			GetSoundSubsystem()->StopAudio(CachedSoundNumber, true);
+		if (BGMAudioID != INDEX_NONE)
+			SoundSubsystem->StopAudio(BGMAudioID, true);
 
-		CachedSoundNumber = GetSoundSubsystem()->PlayBGM(Row->BGM, true);
-		LOGN(TEXT("CurrentMapPhaseBGM : %s"), *RowKey.ToString());
-		return;
+		BGMAudioID = SoundSubsystem->PlayBGM(BGM, true);
+		LOGN(TEXT("PhaseBGM Played : %d"), (int32)BGM);
 	}
-	LOGN(TEXT("CurrentMapPhaseBGM : %s"), *RowKey.ToString());
-	LOGN(TEXT("No BGM row for Map:%s Phase:%d"), *CurrentMapName, PhaseNumber);
 
 	//if (PhaseNumber == 1)
 	//{
@@ -278,6 +275,27 @@ void AADDrone::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetime
 	DOREPLIFETIME(AADDrone, bIsFlying);
 }
 
+ESFX_BGM AADDrone::GetPhaseBGM(int32 PhaseNumber) const
+{
+	if (!PhaseBgmTable)          
+	{
+		LOGN(TEXT("PhaseBgmTable is nullptr"))
+		return ESFX_BGM::Max;
+	}
+	
+	const FString CurrentMapName = GetWorldSubsystem() ? GetWorldSubsystem()->GetCurrentLevelName() : TEXT("");
+	static const FString Context(TEXT("PhaseBGM"));
+	const FName RowKey = *FString::Printf(TEXT("%s_%d"), *CurrentMapName, PhaseNumber);
+	if (const FPhaseBGMRow* Row = PhaseBgmTable->FindRow<FPhaseBGMRow>(RowKey, Context))
+	{
+		LOGN(TEXT("CurrentMapPhaseBGM : %s"), *RowKey.ToString());
+		return Row->BGM;
+	}
+	
+	LOGN(TEXT("No BGM row for Map:%s Phase:%d"), *CurrentMapName, PhaseNumber);
+	return ESFX_BGM::Max;
+}
+
 void AADDrone::ExecuteConfirmedInteraction()
 {
 	if (AADTutorialGameMode* TutorialGameMode = GetWorld()->GetAuthGameMode<AADTutorialGameMode>())
@@ -301,13 +319,12 @@ void AADDrone::ExecuteConfirmedInteraction()
 	}
 
 	// 차액 계산
-	int32 Diff = CurrentSeller->GetCurrentMoney() - CurrentSeller->GetTargetMoney();
-
-	if (Diff > 0)
+	int32 ExtraMoney = CurrentSeller->GetCurrentMoney() - CurrentSeller->GetTargetMoney();
+	if (ExtraMoney > 0)
 	{
 		if (AADInGameState* GS = GetWorld()->GetGameState<AADInGameState>())
 		{
-			GS->AddTeamCredit(Diff);
+			GS->AddTeamCredit(ExtraMoney);
 			GS->IncrementPhase();
 			if (NextSeller)
 			{
@@ -322,6 +339,7 @@ void AADDrone::ExecuteConfirmedInteraction()
 			}
 		}
 	}
+	
 	CurrentSeller->DisableSelling();
 	StartRising();
 	bIsFlying = true;
@@ -330,14 +348,9 @@ void AADDrone::ExecuteConfirmedInteraction()
 		SpawnManager->SpawnByGroup();
 		LOGD(Log, TEXT("Monster Spawns"));
 	}
+	
 	// 다음 BGM 실행
-	if (HasAuthority())
-	{
-		LOGN(TEXT("No PhaseSound, DronePhaseNumber : %d"), DronePhaseNumber);
-		LOGN(TEXT("No PhaseSound, DroneName : %s"), *GetName());
-		M_PlayPhaseBGM(DronePhaseNumber + 1);
-		LOGD(Log, TEXT("Next Phase : PhaseSound"));
-	}
+	M_PlayPhaseBGM(DronePhaseNumber + 1);
 }
 
 UADInteractableComponent* AADDrone::GetInteractableComponent() const
@@ -372,18 +385,26 @@ float AADDrone::GetReviveDistance() const
 	return ReviveDistance;
 }
 
-USoundSubsystem* AADDrone::GetSoundSubsystem()
+USoundSubsystem* AADDrone::GetSoundSubsystem() const
 {
-	if (SoundSubsystem)
+	if (!SoundSubsystemWeakPtr.IsValid())
 	{
-		return SoundSubsystem;
+		if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+		{
+			SoundSubsystemWeakPtr = GI->GetSubsystem<USoundSubsystem>();
+		}
+	}
+	
+	return SoundSubsystemWeakPtr.Get();
+}
+
+UADWorldSubsystem* AADDrone::GetWorldSubsystem() const
+{
+	if (!WorldSubsystemWeakPtr.IsValid())
+	{
+		WorldSubsystemWeakPtr = GetWorld() != nullptr ? GetWorld()->GetSubsystem<UADWorldSubsystem>() : nullptr;
 	}
 
-	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
-	{
-		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
-		return SoundSubsystem;
-	}
-	return nullptr;
+	return WorldSubsystemWeakPtr.Get();
 }
 

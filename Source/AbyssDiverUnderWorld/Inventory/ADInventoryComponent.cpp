@@ -823,6 +823,7 @@ void UADInventoryComponent::Equip(FItemData& ItemData, int8 SlotIndex)
 	if (ItemData.ItemType != EItemType::Equipment || ItemData.Quantity == 0) return;
 
 	APlayerState* PS = Cast<APlayerState>(GetOwner());
+	if (!PS || !PS->HasAuthority()) return;
 	APlayerController* PC = Cast<APlayerController>(PS->GetOwningController());
 	if (!PC) return;
 	APawn* Pawn = Cast<APawn>(PC->GetPawn());
@@ -843,12 +844,9 @@ void UADInventoryComponent::Equip(FItemData& ItemData, int8 SlotIndex)
 	{
 		if (MeshComp->DoesSocketExist(HarpoonSocketName) && MeshComp->DoesSocketExist(DPVSocketName))
 		{
-			//const FName SocketName = bIsWeapon ? HarpoonSocketName : DPVSocketName;
-			//FTransform AttachTM = MeshComp->GetSocketTransform(SocketName);
-
 			AADUseItem* SpawnedItem = GetWorld()->SpawnActor<AADUseItem>(
 				AADUseItem::StaticClass(),
-				FVector::ZeroVector,
+				Pawn->GetActorLocation(),
 				FRotator::ZeroRotator,
 				SpawnParams
 			);
