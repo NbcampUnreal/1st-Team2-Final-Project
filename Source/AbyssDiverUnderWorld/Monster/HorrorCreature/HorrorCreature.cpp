@@ -175,6 +175,7 @@ void AHorrorCreature::SwallowPlayer(AUnderwaterCharacter* Victim)
 	if (!PlayerCharacter || PlayerCharacter->GetCharacterState() != ECharacterState::Normal) return;
 
 	SwallowedPlayer = Victim;
+	bHasEjectedPlayer = false;
 	bCanSwallow = false;
 	bSwallowingInProgress = true;
 

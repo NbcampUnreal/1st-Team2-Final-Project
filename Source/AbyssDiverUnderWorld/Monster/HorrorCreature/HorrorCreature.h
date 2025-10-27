@@ -118,7 +118,11 @@ private:
 	// 플레이어가 완전히 입위치에 확인하는 플래그 변수
 	uint8 bVictimLockedAtMouth : 1 = false;
 
+	// 삼키는게 가능한지 확인하는 플래그 변수
 	uint8 bCanSwallow : 1 = true;
+
+	// Eject 중복 방지를 위한 플래그 변수
+	uint8 bHasEjectedPlayer : 1 = false;
 #pragma endregion
 
 #pragma region Getter, Setter
