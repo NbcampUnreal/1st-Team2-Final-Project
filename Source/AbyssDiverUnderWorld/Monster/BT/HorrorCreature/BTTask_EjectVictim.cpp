@@ -59,3 +59,8 @@ void UBTTask_EjectVictim::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* Nod
 		}
 	}
 }
+
+uint16 UBTTask_EjectVictim::GetInstanceMemorySize() const
+{
+	return sizeof(FBTEjectVictimTaskMemory);
+}
