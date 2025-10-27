@@ -132,7 +132,7 @@ protected:
 
     // Spawning
     UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Spawning")
-    TSubclassOf<AActor> LootableOreClass;
+    TSubclassOf<AActor> LootableOreClass; 
 
     UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Spawning")
     TSubclassOf<AIndicatingTarget> IndicatingTargetClass;
