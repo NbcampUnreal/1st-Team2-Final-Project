@@ -18,6 +18,9 @@ void UADGameInstance::Init()
 
 	bIsHost = false;
 
+    bHasPlayedTutorial = false;
+
+
     InitPlayerInfos();
 
     SettingsManager = NewObject<USettingsManager>(this);
