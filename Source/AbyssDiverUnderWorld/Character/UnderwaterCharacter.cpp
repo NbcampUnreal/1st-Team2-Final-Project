@@ -601,6 +601,7 @@ void AUnderwaterCharacter::StartCaptureState()
 	}
 
 	bIsCaptured = true;
+	StopHealthRegen();
 	M_StartCaptureState();
 }
 
@@ -615,6 +616,18 @@ void AUnderwaterCharacter::StopCaptureState()
 	}
 
 	bIsCaptured = false;
+	// Capture 상태에서 벗어났을 때 Health Regen 시작
+	// 전투 중에서는 EndCombat에서 Health Regen 처리
+	if (IsNormal() && !bIsInCombat)
+	{
+		GetWorldTimerManager().SetTimer(
+			HealthRegenStartTimer,
+			this,
+			&AUnderwaterCharacter::StartHealthRegen,
+			HealthRegenDelay,
+			false
+		);
+	}
 	M_StopCaptureState();
 }
 
