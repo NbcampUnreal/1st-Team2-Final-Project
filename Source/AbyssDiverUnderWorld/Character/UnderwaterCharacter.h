@@ -697,7 +697,7 @@ public:
 	FOnGroggy OnGroggyDelegate;
 
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnCharacterStateChanged, AUnderwaterCharacter*, Character, ECharacterState, OldCharacterState, ECharacterState, NewCharacterState);
-	/** 캐릭터 상태가 변경되었을 때 호출되는 델리게이트 */
+	/** 캐릭터 상태가 변경되었을 때 호출되는 델리게이트, 상태에 진입했을 경우 Capture 상태일 수도 있는 것을 확인해야 한다. */
 	UPROPERTY(BlueprintAssignable)
 	FOnCharacterStateChanged OnCharacterStateChangedDelegate;
 
@@ -896,7 +896,7 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float NormalLookSensitivity;
 
-	/** Fade 된 상태에서 Normal 상태로 전이됬을 때 Fade In 되는 시간 */
+	/** Fade 된 상태에서 Normal 상태로 전이됬을 때 Camera Fade In 되는 시간 */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Normal", meta = (AllowPrivateAccess = "true"))
 	float NormalStateFadeInDuration;
 	
@@ -997,6 +997,10 @@ private:
 	/** Capture 상태에서 Fade Out / In 되는 시간 */
 	UPROPERTY(EditAnywhere, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float CaptureFadeTime;
+
+	/** State를 변환해야 하나, Capture State 이기 때문에 Pending된 상태 */
+	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	uint8 bPendingDeathAfterCapture : 1 = 0;
 
 	/** 피격 시의 출혈 효과를 내는 Noise System Power */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
