@@ -98,18 +98,18 @@ void USettingsManager::ApplyKeySettings(const TArray<FKeyBinding>& InBindings, A
 
 	if (!BaseMappingContext || !PC) return;
 
-	// Context º¹Á¦
+	// Context ë³µì œ
 	RuntimeMappingContext = DuplicateObject<UInputMappingContext>(BaseMappingContext, this);
-	// ±âÁ¸ ¸ÅÇÎ Á¦°Å ¡æ Á¤È®ÇÑ Å° ¸ÅÇÎ ½Ö Á¦°Å
+	// ê¸°ì¡´ ë§¤í•‘ ì œê±° â†’ ì •í™•í•œ í‚¤ ë§¤í•‘ ìŒ ì œê±°
 	for (auto& Pair : ActionMap)
 	{
 		if (Pair.Value)
 		{
-			RuntimeMappingContext->UnmapAllKeysFromAction(Pair.Value); // ÀüÃ¼ Å° Á¦°Å
+			RuntimeMappingContext->UnmapAllKeysFromAction(Pair.Value); // ì „ì²´ í‚¤ ì œê±°
 		}
 	}
 
-	// »õ ¸ÅÇÎ Àû¿ë
+	// ìƒˆ ë§¤í•‘ ì ìš©
 	for (const FKeyBinding& Binding : InBindings)
 	{
 		if (const UInputAction* FoundAction = ActionMap.FindRef(Binding.ActionName))
@@ -122,8 +122,8 @@ void USettingsManager::ApplyKeySettings(const TArray<FKeyBinding>& InBindings, A
 	{
 		if (UEnhancedInputLocalPlayerSubsystem* InputSubsystem = LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
 		{
-			InputSubsystem->ClearAllMappings(); // ¸ğµç ±âÁ¸ ¸ÊÇÎ Á¦°Å
-			InputSubsystem->AddMappingContext(RuntimeMappingContext, 0); // »õ ÄÁÅØ½ºÆ® »ğÀÔ
+			InputSubsystem->ClearAllMappings(); // ëª¨ë“  ê¸°ì¡´ ë§µí•‘ ì œê±°
+			InputSubsystem->AddMappingContext(RuntimeMappingContext, 0); // ìƒˆ ì»¨í…ìŠ¤íŠ¸ ì‚½ì…
 		}
 	}
 
@@ -165,7 +165,7 @@ void USettingsManager::LoadAllSettings(bool bShouldApplySettings)
 		}
 	}
 
-	InitializeDefaultKeyBindingsIfEmpty(); // Å° ¹ÙÀÎµù ºñ¾úÀ» ¶§ Ã¤¿ì±â
+	InitializeDefaultKeyBindingsIfEmpty(); // í‚¤ ë°”ì¸ë”© ë¹„ì—ˆì„ ë•Œ ì±„ìš°ê¸°
 
 	if (bShouldApplySettings)
 	{
@@ -205,20 +205,20 @@ void USettingsManager::InitializeDefaultKeyBindingsIfEmpty()
 	if (!CachedKeyBindings.IsEmpty())
 		return;
 
-	CachedKeyBindings.Add({ "Ascend", EKeys::SpaceBar });            // ¼öÁ÷ »ó½Â
-	CachedKeyBindings.Add({ "Descend", EKeys::C });                  // ¼öÁ÷ ÇÏ°­
-	CachedKeyBindings.Add({ "Sprint", EKeys::LeftShift });           // ºü¸¥ ÀÌµ¿
-	CachedKeyBindings.Add({ "Fire", EKeys::LeftMouseButton });       // ¹ß»ç
-	CachedKeyBindings.Add({ "Aim", EKeys::RightMouseButton });       // Á¶ÁØ
-	CachedKeyBindings.Add({ "Interact", EKeys::E });                 // »óÈ£ÀÛ¿ë
-	CachedKeyBindings.Add({ "SlotScroll", EKeys::MouseWheelAxis });  // ¸¶¿ì½º ÈÙ (½ºÅ©·Ñ)
-	CachedKeyBindings.Add({ "Light", EKeys::F });                    // ¶óÀÌÆ®
-	CachedKeyBindings.Add({ "Inventory", EKeys::Tab });              // ÀÎº¥Åä¸®
-	CachedKeyBindings.Add({ "Radar", EKeys::Q });                    // ·¹ÀÌ´õ
-	CachedKeyBindings.Add({ "Reload", EKeys::R });                   // ÀçÀåÀü
-	CachedKeyBindings.Add({ "Jump", EKeys::SpaceBar });              // Á¡ÇÁ
+	CachedKeyBindings.Add({ "Ascend", EKeys::SpaceBar });            // ìˆ˜ì§ ìƒìŠ¹
+	CachedKeyBindings.Add({ "Descend", EKeys::C });                  // ìˆ˜ì§ í•˜ê°•
+	CachedKeyBindings.Add({ "Sprint", EKeys::LeftShift });           // ë¹ ë¥¸ ì´ë™
+	CachedKeyBindings.Add({ "Fire", EKeys::LeftMouseButton });       // ë°œì‚¬
+	CachedKeyBindings.Add({ "Aim", EKeys::RightMouseButton });       // ì¡°ì¤€
+	CachedKeyBindings.Add({ "Interact", EKeys::E });                 // ìƒí˜¸ì‘ìš©
+	CachedKeyBindings.Add({ "SlotScroll", EKeys::MouseWheelAxis });  // ë§ˆìš°ìŠ¤ íœ  (ìŠ¤í¬ë¡¤)
+	CachedKeyBindings.Add({ "Light", EKeys::F });                    // ë¼ì´íŠ¸
+	CachedKeyBindings.Add({ "Inventory", EKeys::Tab });              // ì¸ë²¤í† ë¦¬
+	CachedKeyBindings.Add({ "Radar", EKeys::Q });                    // ë ˆì´ë”
+	CachedKeyBindings.Add({ "Reload", EKeys::R });                   // ì¬ì¥ì „
+	CachedKeyBindings.Add({ "Jump", EKeys::SpaceBar });              // ì í”„
 
-	// ½½·Ô 1~5
+	// ìŠ¬ë¡¯ 1~5
 	CachedKeyBindings.Add({ "Slot1", EKeys::One });
 	CachedKeyBindings.Add({ "Slot2", EKeys::Two });
 	CachedKeyBindings.Add({ "Slot3", EKeys::Three });

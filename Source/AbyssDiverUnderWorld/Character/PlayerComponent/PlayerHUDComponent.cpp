@@ -613,6 +613,7 @@ void UPlayerHUDComponent::C_ShowConfirmWidget_Implementation(AActor* RequestInte
 			InputMode.SetWidgetToFocus(PopupWidget->TakeWidget());
 			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 			PC->SetInputMode(InputMode);
+			PC->SetIgnoreMoveInput(true);
 
 			PopupWidget->OnPopupConfirmed.BindLambda([this, PC, RequestInteractableActor]() {
 				if (!IsValid(this) || !IsValid(PC))
@@ -623,6 +624,7 @@ void UPlayerHUDComponent::C_ShowConfirmWidget_Implementation(AActor* RequestInte
 				this->S_ReportConfirm(RequestInteractableActor, true);
 				PC->bShowMouseCursor = false;
 				PC->SetInputMode(FInputModeGameOnly());
+				PC->SetIgnoreMoveInput(false);
 			});
 			PopupWidget->OnPopupCanceled.BindLambda([this, PC]() {
 				if (!IsValid(this) || !IsValid(PC))
@@ -632,6 +634,7 @@ void UPlayerHUDComponent::C_ShowConfirmWidget_Implementation(AActor* RequestInte
 				
 				PC->bShowMouseCursor = false;
 				PC->SetInputMode(FInputModeGameOnly());
+				PC->SetIgnoreMoveInput(false);
 			});
 		}
 	}
@@ -643,6 +646,10 @@ void UPlayerHUDComponent::ShowSpectatorHUDWidget()
 	{
 		AADPlayerController* PlayerController = Cast<AADPlayerController>(GetOwner());
 		SpectatorHUDWidget = CreateWidget<USpectatorHUDWidget>(PlayerController, SpectatorHUDWidgetClass);
+		if (SpectatorHUDWidget)
+		{
+			SpectatorHUDWidget->BindWidget(PlayerController);
+		}
 	}
 	if (SpectatorHUDWidget && !SpectatorHUDWidget->IsInViewport())
 	{

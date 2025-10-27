@@ -75,7 +75,7 @@ void ABlowfish::M_TriggerExplosion_Implementation()
 	bIsExplosionTriggered = true;
 
 	float Desired = 1.0f;
-	float NewVolume = Desired * GetSoundSubsystem()->GetSFXVolume() * GetSoundSubsystem()->GetMasterVolume();
+	float NewVolume = Desired * GetMonsterSoundComp()->GetSoundSubsystem()->GetSFXVolume() * GetMonsterSoundComp()->GetSoundSubsystem()->GetMasterVolume();
 	UGameplayStatics::PlaySoundAtLocation(this, ExplosionCountdownSound, GetActorLocation(), NewVolume);
 
 	// ExplosionDelayTime이 경과 후 폭발 로직 수행
@@ -131,12 +131,19 @@ void ABlowfish::ApplyExplosionEffect()
 		GetWorld(), BloodEffect, GetActorLocation(), FRotator::ZeroRotator, FVector(1.0f), true, true);
 
 	// 터질 때 폭발 효과 (비주얼)
-	UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-		GetWorld(), ExplosionEffect, GetActorLocation(), FRotator::ZeroRotator, FVector(1.0f), true, true);
-
+	UNiagaraFunctionLibrary::SpawnSystemAttached(
+		ExplosionEffect,
+		GetMesh(),               
+		TEXT("TailSocket"),     
+		FVector::ZeroVector,
+		FRotator::ZeroRotator,
+		EAttachLocation::SnapToTarget,
+		true,  
+		true  
+	);
 
 	float Desired = 1.0f;
-	float NewVolume = Desired * GetSoundSubsystem()->GetSFXVolume() * GetSoundSubsystem()->GetMasterVolume();
+	float NewVolume = Desired * GetMonsterSoundComp()->GetSoundSubsystem()->GetSFXVolume() * GetMonsterSoundComp()->GetSoundSubsystem()->GetMasterVolume();
 	UGameplayStatics::PlaySoundAtLocation(this, ExplosionSound, GetActorLocation(), NewVolume);
 
 	// 폭발 디버그 구체 그리기 (파란색, 1초 동안 표시)

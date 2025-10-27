@@ -1,47 +1,35 @@
 #include "Framework/ADPlayerController.h"
 
-#include <steam/isteaminventory.h>
-
+#include "AbyssDiverUnderWorld.h"
 #include "ADCampGameMode.h"
+#include "ADGameInstance.h"
 #include "ADInGameState.h"
 #include "ADPlayerState.h"
-#include "AbyssDiverUnderWorld.h"
 #include "SettingsManager.h"
-#include "ADGameInstance.h"
+#include "Subsystems/SoundSubsystem.h"
+#include "Subsystems/DataTableSubsystem.h"
 
-#include "Inventory/ADInventoryComponent.h"
-#include "DataRow/PhaseGoalRow.h"
-#include "UI/InteractionDescriptionWidget.h"
-#include "Interactable/Item/Component/ADInteractionComponent.h"
 #include "Character/UnderwaterCharacter.h"
 #include "Character/PlayerComponent/PlayerHUDComponent.h"
-
-#include "EnhancedInputSubsystems.h"
-#include "InputMappingContext.h"
-#include "EnhancedInputComponent.h"
-#include "Character/ADSpectatorPawn.h"
-#include "Kismet/GameplayStatics.h"
-
-#include "UI/LoadingScreenWidget.h"
-
-#include "Camera/PlayerCameraManager.h"
-#include "TimerManager.h"
 #include "Character/PlayerComponent/ShieldComponent.h"
-#include "Engine/World.h"
-#include "Subsystems/SoundSubsystem.h"
-
+#include "DataRow/PhaseGoalRow.h"
+#include "Interactable/Item/Component/ADInteractionComponent.h"
+#include "Inventory/ADInventoryComponent.h"
+#include "UI/InteractionDescriptionWidget.h"
 #include "UI/HoldInteractionWidget.h"
-
-#include "Framework/ADTutorialGameMode.h"
-#include "Framework/ADTutorialGameState.h"
-#include "Character/UnderwaterCharacter.h"
-#include "Engine/PawnIterator.h"
-
-#include "Kismet/GameplayStatics.h"
-#include "Subsystems/DataTableSubsystem.h"
 #include "UI/CrosshairWidget.h"
 
-#include "Interactable/OtherActors/Tablet/ADTablet.h"
+#include "EnhancedInputComponent.h"
+#include "EnhancedInputSubsystems.h"
+#include "InputMappingContext.h"
+#include "Kismet/GameplayStatics.h"
+#include "Character/ADSpectatorPawn.h"
+
+#include "TimerManager.h"
+#include "Camera/PlayerCameraManager.h"
+#include "Engine/World.h"
+
+#include "Engine/PawnIterator.h"
 
 AADPlayerController::AADPlayerController()
 {
@@ -154,6 +142,18 @@ void AADPlayerController::PostSeamlessTravel()
 	OnPostSeamlessTravel();
 }
 
+void AADPlayerController::SetIgnoreMoveInput(bool bNewMoveInput)
+{
+	Super::SetIgnoreMoveInput(bNewMoveInput);
+	if (bNewMoveInput)
+	{
+		if (ACharacter* ControlledCharacter = GetCharacter())
+		{
+			ControlledCharacter->ResetJumpState();
+		}
+	}
+}
+
 void AADPlayerController::C_OnPreClientTravel_Implementation()
 {
 	OnPreClientTravel();
@@ -218,15 +218,15 @@ void AADPlayerController::C_StartCameraBlink_Implementation(FColor FadeColor, FV
 		}
 
 		// Fade Delay 만큼 대기 후 Fade In 
-		TWeakObjectPtr WeakActor = this;
+		TWeakObjectPtr WeakThisController = this;
 		FTimerDelegate TimerDelegate;
 		TimerDelegate.BindWeakLambda(this, [=]()
 		{
-			if (WeakActor.IsValid())
+			if (WeakThisController.IsValid())
 			{
-				if (WeakActor->PlayerCameraManager != nullptr)
+				if (WeakThisController->PlayerCameraManager != nullptr)
 				{
-					WeakActor->PlayerCameraManager->StartCameraFade(BlankFadeEndAlpha, BlankFadeStartAlpha, FadeEndTime, FadeColor.ReinterpretAsLinear(), false, true);
+					WeakThisController->PlayerCameraManager->StartCameraFade(BlankFadeEndAlpha, BlankFadeStartAlpha, FadeEndTime, FadeColor.ReinterpretAsLinear(), false, true);
 				}
 			}
 		});
@@ -306,7 +306,7 @@ void AADPlayerController::S_SetInvincible_Implementation(bool bIsInvincible)
 	SetInvincible(bIsInvincible);
 }
 
-void AADPlayerController::C_PlaySound_Implementation(ESFX SoundType, float VolumeMultiplier, float PitchMultiplier)
+void AADPlayerController::C_PlaySound_Implementation(ESFX SoundType, float VolumeMultiplier)
 {
 	if (UGameInstance* GameInstance = GetGameInstance())
 	{

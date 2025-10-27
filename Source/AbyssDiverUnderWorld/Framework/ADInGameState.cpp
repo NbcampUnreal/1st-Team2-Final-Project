@@ -478,7 +478,7 @@ int32 AADInGameState::GetClearCount() const
 
 void AADInGameState::SetClearCount(int32 NewClearCount)
 {
-	ClearCount = FMath::Max(ClearCount, 0);
+	ClearCount = FMath::Max(NewClearCount, 0);
 }
 
 FString AADInGameState::GetMapDisplayName() const
