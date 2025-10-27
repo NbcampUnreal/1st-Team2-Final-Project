@@ -62,7 +62,7 @@ void AADTutorialGameMode::StartPlay()
         UOxygenComponent* OxygenComp = PlayerChar->FindComponentByClass<UOxygenComponent>();
         if (OxygenComp)
         {
-            OxygenComp->SetTutorialMode(true);
+            OxygenComp->SetTutorialMode(true); 
         }
     }
     SpawnNewWall(FName("TutorialWall_1"));

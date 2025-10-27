@@ -124,7 +124,7 @@ public:
     float BatteryStartPercentOverride = -1.f;
 
     UPROPERTY()
-    TObjectPtr<USoundSubsystem> TutorialSoundSubsystem;
+    TObjectPtr<USoundSubsystem> TutorialSoundSubsystem; 
 
 protected:
     UPROPERTY(EditAnywhere, Category = "Tutorial|Debug")
