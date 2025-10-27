@@ -1372,6 +1372,8 @@ void AUnderwaterCharacter::M_StartCaptureState_Implementation()
 	SetActorHiddenInGame(true);
 	SetActorEnableCollision(false);
 	InteractionComponent->OnInteractReleased();
+
+	OnCaptureStartDelegate.Broadcast();
 }
 
 void AUnderwaterCharacter::PlayStopCaptureCameraEffect()
@@ -1436,6 +1438,8 @@ void AUnderwaterCharacter::PlayStopCaptureCameraEffect()
 
 void AUnderwaterCharacter::M_StopCaptureState_Implementation()
 {
+	bIsCaptured = false;
+	
 	if (IsLocallyControlled())
 	{
 		if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
@@ -1454,6 +1458,8 @@ void AUnderwaterCharacter::M_StopCaptureState_Implementation()
 	SetActorHiddenInGame(false);
 	SetActorEnableCollision(true);
 
+	OnCaptureEndDelegate.Broadcast();
+	
 	if (bPendingDeathAfterCapture)
 	{
 		HandleEnterDeath();

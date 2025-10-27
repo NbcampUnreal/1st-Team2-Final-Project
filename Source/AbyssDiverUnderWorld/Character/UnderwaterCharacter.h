@@ -699,6 +699,16 @@ public:
 	/** 캐릭터의 넉백이 끝났을 때 호출되는 델리게이트 */
 	UPROPERTY(BlueprintAssignable)
 	FOnKnockbackEnd OnKnockbackEndDelegate;
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCaptureStart);
+	/** 캐릭터가 캡쳐 상태에 진입했을 때 호출되는 델리게이트. 모든 노드에서 실행 */
+	UPROPERTY(BlueprintAssignable)
+	FOnCaptureStart OnCaptureStartDelegate;
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCaptureEnd);
+	/** 캐릭터가 캡쳐 상태에서 벗어났을 때 호출되는 델리게이트. 모든 노드에서 실행 */
+	UPROPERTY(BlueprintAssignable)
+	FOnCaptureEnd OnCaptureEndDelegate;
 	
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnGroggy);
 	/** 캐릭터가 그로기 상태에 진입했을 때 호출되는 델리게이트 */

@@ -53,6 +53,8 @@ void UUnderwaterEffectComponent::BeginPlay()
 		OwnerCharacter->OnDamageTakenDelegate.AddDynamic(this, &UUnderwaterEffectComponent::OnDamageTaken);
 		OwnerCharacter->OnKnockbackDelegate.AddDynamic(this, &UUnderwaterEffectComponent::OnKnockback);
 		OwnerCharacter->OnKnockbackEndDelegate.AddDynamic(this, &UUnderwaterEffectComponent::OnKnockbackEnd);
+		OwnerCharacter->OnCaptureStartDelegate.AddDynamic(this, &UUnderwaterEffectComponent::OnCaptureStart);
+		OwnerCharacter->OnCaptureEndDelegate.AddDynamic(this, &UUnderwaterEffectComponent::OnCaptureEnd);
 	}
 	else
 	{
@@ -204,6 +206,16 @@ void UUnderwaterEffectComponent::OnKnockback(FVector KnockbackVelocity)
 }
 
 void UUnderwaterEffectComponent::OnKnockbackEnd()
+{
+	StartBreathEffect(BreathFirstDelay * 0.5f);
+}
+
+void UUnderwaterEffectComponent::OnCaptureStart()
+{
+	StopBreathEffect();
+}
+
+void UUnderwaterEffectComponent::OnCaptureEnd()
 {
 	StartBreathEffect(BreathFirstDelay * 0.5f);
 }
