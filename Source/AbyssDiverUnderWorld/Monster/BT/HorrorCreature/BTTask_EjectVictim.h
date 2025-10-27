@@ -8,10 +8,9 @@
 
 struct FBTEjectVictimTaskMemory
 {
-	TWeakObjectPtr<class AMonsterAIController> AIController;
-	TWeakObjectPtr<class AMonster> Monster;
+	TWeakObjectPtr<class AHorrorCreatureAIController> HCAIController;
+	TWeakObjectPtr<class AHorrorCreature> HorrorCreature;
 	FVector FleeLocation = FVector::ZeroVector;
-	float ElapsedTime = 0.0f;
 };
 
 UCLASS()
@@ -30,8 +29,5 @@ protected:
 	UPROPERTY(EditAnywhere)
 	float EjectTriggerDistance = 300.0f;
 
-	// Maximum time to Eject when FleeLocation is not reached
-	UPROPERTY(EditAnywhere)
-	float MaxEjectDelay = 7.0f;
 #pragma endregion
 };
