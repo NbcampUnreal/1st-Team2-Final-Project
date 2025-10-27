@@ -564,6 +564,8 @@ void UPlayerHUDComponent::HideHudWidget()
 	{
 		PlayerStatusWidget->RemoveFromParent();
 	}
+
+	SetActiveRadarWidget(false);
 }
 
 void UPlayerHUDComponent::ShowHudWidget()
