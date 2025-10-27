@@ -6,6 +6,7 @@
 #include "Inventory/ADInventoryComponent.h"
 #include "Interactable/OtherActors/TargetIndicators/TargetIndicatorManager.h"
 #include "Framework/ADTutorialPlayerController.h"
+#include "Framework/ADGameInstance.h"
 #include "Engine/Light.h"
 #include "EngineUtils.h"
 #include "NiagaraComponent.h"
@@ -280,7 +281,7 @@ void AADTutorialGameMode::HandlePhase_Dialogue_02()
 		float VolumeToPlay = 1.0f;
 		if (UGameInstance* GameInstance = GetGameInstance())
 		{
-			if (USoundSubsystem* TutorialSoundSubsystem = GameInstance->GetSubsystem<USoundSubsystem>())
+			if (TutorialSoundSubsystem = GameInstance->GetSubsystem<USoundSubsystem>())
 			{
 				VolumeToPlay = TutorialSoundSubsystem->GetSFXVolume() * TutorialSoundSubsystem->GetMasterVolume();
 			}
@@ -421,7 +422,7 @@ void AADTutorialGameMode::HandlePhase_Dialogue_LightOut()
 {
 	if (UGameInstance* GameInstance = GetGameInstance())
 	{
-		if (USoundSubsystem* TutorialSoundSubsystem = GameInstance->GetSubsystem<USoundSubsystem>())
+		if (TutorialSoundSubsystem = GameInstance->GetSubsystem<USoundSubsystem>())
 		{
 			if (IsValid(LightOutSound))
 			{
@@ -538,7 +539,7 @@ void AADTutorialGameMode::HandlePhase_Revive()
 		float VolumeToPlay = 1.0f;
 		if (UGameInstance* GameInstance = GetGameInstance())
 		{
-			if (USoundSubsystem* TutorialSoundSubsystem = GameInstance->GetSubsystem<USoundSubsystem>())
+			if (TutorialSoundSubsystem = GameInstance->GetSubsystem<USoundSubsystem>())
 			{
 				VolumeToPlay = TutorialSoundSubsystem->GetSFXVolume() * TutorialSoundSubsystem->GetMasterVolume();
 			}

@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "CoreMinimal.h"
 #include "Framework/ADInGameMode.h"
@@ -124,7 +124,7 @@ public:
     float BatteryStartPercentOverride = -1.f;
 
     UPROPERTY()
-    TObjectPtr<USoundSubsystem> TutorialSoundSubsystem;  
+    TObjectPtr<USoundSubsystem> TutorialSoundSubsystem;
 
 protected:
     UPROPERTY(EditAnywhere, Category = "Tutorial|Debug")
