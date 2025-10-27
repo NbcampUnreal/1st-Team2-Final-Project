@@ -5,6 +5,7 @@
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Container/BlackboardKeys.h"
+#include "Monster/HorrorCreature/HorrorCreatureAIController.h"
 #include "Monster/HorrorCreature/HorrorCreature.h"
 
 UBTTask_EjectVictim::UBTTask_EjectVictim()
@@ -19,16 +20,16 @@ EBTNodeResult::Type UBTTask_EjectVictim::ExecuteTask(UBehaviorTreeComponent& Own
 	FBTEjectVictimTaskMemory* TaskMemory = (FBTEjectVictimTaskMemory*)NodeMemory;
 	if (!TaskMemory) return EBTNodeResult::Failed;
 
-	TaskMemory->AIController = Cast<AMonsterAIController>(OwnerComp.GetAIOwner());
-	TaskMemory->Monster = Cast<AMonster>(OwnerComp.GetAIOwner()->GetCharacter());
+	TaskMemory->HCAIController = Cast<AHorrorCreatureAIController>(OwnerComp.GetAIOwner());
+	TaskMemory->HorrorCreature = Cast<AHorrorCreature>(OwnerComp.GetAIOwner()->GetCharacter());
 	
-	if (!TaskMemory->AIController.IsValid() || !TaskMemory->Monster.IsValid())
+	if (!TaskMemory->HCAIController.IsValid() || !TaskMemory->HorrorCreature.IsValid())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("EjectVictim_Task : AIController or Monster is InValid"));
 		return EBTNodeResult::Failed;
 	}
 
-	UBlackboardComponent* BB = TaskMemory->AIController->GetBlackboardComponent();
+	UBlackboardComponent* BB = TaskMemory->HCAIController->GetBlackboardComponent();
 	if (BB)
 	{
 		TaskMemory->FleeLocation = BB->GetValueAsVector(BlackboardKeys::HorrorCreature::FleeLocationKey);
@@ -42,19 +43,19 @@ void UBTTask_EjectVictim::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* Nod
 	FBTEjectVictimTaskMemory* TaskMemory = (FBTEjectVictimTaskMemory*)NodeMemory;
 	if (!TaskMemory) return;
 
-	FVector MonsterLocation = TaskMemory->Monster->GetActorLocation();
+	FVector MonsterLocation = TaskMemory->HorrorCreature->GetActorLocation();
 	float Distance = FVector::Dist(MonsterLocation, TaskMemory->FleeLocation);
 
-	TaskMemory->ElapsedTime += DeltaSeconds;
-	UE_LOG(LogTemp, Log, TEXT("[EjectVictim] ElapsedTime: %.2f"), TaskMemory->ElapsedTime);
-
-	if (Distance <= EjectTriggerDistance || TaskMemory->ElapsedTime >= MaxEjectDelay)
+	if (Distance <= EjectTriggerDistance)
 	{
-		AHorrorCreature* HorrorCreature = Cast<AHorrorCreature>(TaskMemory->Monster);
-		if (HorrorCreature && HorrorCreature->GetSwallowedPlayer())
+		if (TaskMemory->HorrorCreature.IsValid() && TaskMemory->HorrorCreature->GetSwallowedPlayer() != nullptr)
 		{
-			HorrorCreature->EjectPlayer(HorrorCreature->GetSwallowedPlayer());
+			TaskMemory->HorrorCreature->EjectPlayer(TaskMemory->HorrorCreature->GetSwallowedPlayer());
+			FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 		}
-		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
+		else
+		{
+			FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
+		}
 	}
 }

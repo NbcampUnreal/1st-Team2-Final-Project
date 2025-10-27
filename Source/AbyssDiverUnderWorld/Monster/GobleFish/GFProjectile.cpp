@@ -79,7 +79,7 @@ void AGFProjectile::DestroyProjectile()
 	SetActorEnableCollision(false);
 	SetActorHiddenInGame(true);
 
-	// AActor::Destroy() ¡æ bPendingKill = true
+	// AActor::Destroy() bPendingKill = true
 	SetLifeSpan(0.1f);
 	LOG(TEXT("Projectile has BeginOverlap!! Destroyed!!"))
 }
