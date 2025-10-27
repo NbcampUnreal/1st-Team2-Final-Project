@@ -37,6 +37,12 @@ EBTNodeResult::Type UBTTask_EyeStalkerAttack::ExecuteTask(UBehaviorTreeComponent
 	TaskMemory->EyeStalker->M_SetEyeOpenness(0.3f);		// 눈 반쯤 뜨기
 	TaskMemory->EyeStalker->M_SetTargetPlayer(Player);	// 플레이어 타겟 설정
 	TaskMemory->EyeStalker->M_SetDetectedState(true);	// 탐지 시작
+
+	// 아이스토커 Whisper Sound 재생
+	if (TaskMemory->EyeStalker->GetMonsterSoundComp())
+	{
+		TaskMemory->EyeStalker->GetMonsterSoundComp()->M_PlayChaseLoopSound();
+	}
 	
 	return EBTNodeResult::InProgress;
 }
@@ -92,4 +98,10 @@ void UBTTask_EyeStalkerAttack::OnTaskFinished(UBehaviorTreeComponent& OwnerComp,
 	TaskMemory->AIController->GetBlackboardComponent()->SetValueAsBool(BlackboardKeys::EyeStalker::bIsAttackingKey, false);
 	TaskMemory->AIController->GetBlackboardComponent()->SetValueAsBool(BlackboardKeys::EyeStalker::bHasDetectedKey, false);
 	TaskMemory->AIController->InitTargetPlayer();
+
+	// 아이스토커 Whisper Sound 정지
+	if (TaskMemory->EyeStalker->GetMonsterSoundComp())
+	{
+		TaskMemory->EyeStalker->GetMonsterSoundComp()->M_StopAllLoopSound();
+	}
 }
