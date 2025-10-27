@@ -124,7 +124,7 @@ public:
     float BatteryStartPercentOverride = -1.f;
 
     UPROPERTY()
-    TObjectPtr<USoundSubsystem> TutorialSoundSubsystem; 
+    TObjectPtr<USoundSubsystem> TutorialSoundSubsystem;  
 
 protected:
     UPROPERTY(EditAnywhere, Category = "Tutorial|Debug")
@@ -232,6 +232,6 @@ private:
 
     int32 ItemsPhaseProgress = 0;
 
-    int8 DroneTutorialAlarmId;
+    int8 DroneTutorialAlarmId; 
 #pragma endregion
 };
