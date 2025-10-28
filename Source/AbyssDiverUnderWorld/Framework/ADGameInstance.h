@@ -61,6 +61,9 @@ public:
 	uint8 bIsHost : 1;
 
 	UPROPERTY(BlueprintReadWrite)
+	uint8 bHasPlayedTutorial : 1;
+
+	UPROPERTY(BlueprintReadWrite)
 	EMapName SelectedLevelName;
 
 	UPROPERTY(BlueprintReadWrite)
