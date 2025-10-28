@@ -7,6 +7,7 @@
 #include "Character/PlayerComponent/OxygenComponent.h"
 #include "Character/PlayerComponent/StaminaComponent.h"
 #include "Character/StatComponent.h"
+#include "Character/PlayerComponent/DepthComponent.h"
 
 #include "Framework/ADInGameState.h"
 #include "Framework/ADPlayerState.h"
@@ -19,19 +20,20 @@
 #include "UI/CrosshairWidget.h"
 #include "UI/SpectatorHUDWidget.h"
 #include "UI/RadarWidgets/Radar2DWidget.h"
+#include "UI/DepthWidget.h"
+#include "UI/InteractPopupWidget.h"
 
 #include "Interactable/OtherActors/ADDroneSeller.h"
+#include "Interactable/OtherActors/ADDrone.h"
+
 #include "Subsystems/SoundSubsystem.h"
+#include "Subsystems/ADWorldSubsystem.h"
+
+#include "Inventory/ADInventoryComponent.h"
 
 #include "EngineUtils.h"
 #include "Components/CanvasPanel.h"
 #include "Kismet/GameplayStatics.h"
-#include "Inventory/ADInventoryComponent.h"
-#include "Character/PlayerComponent/DepthComponent.h"
-#include "Interactable/OtherActors/ADDrone.h"
-#include "UI/DepthWidget.h"
-#include "UI/InteractPopupWidget.h"
-#include "Subsystems/ADWorldSubsystem.h"
 
 UPlayerHUDComponent::UPlayerHUDComponent()
 {
@@ -188,25 +190,16 @@ void UPlayerHUDComponent::BeginPlay()
 
 void UPlayerHUDComponent::C_ShowResultScreen_Implementation()
 {
+	UWorld* World = GetWorld();
+	if (World == nullptr)
+	{
+		LOGVN(Error, TEXT("World Is Not Valid"));
+		return;
+	}
+
 	int32 TeamMaxKill = 0;
 	int32 TeamMaxDamage = 0;
 	int32 TeamMaxAssist = 0;
-
-	for (AADPlayerState* PS : TActorRange<AADPlayerState>(GetWorld()))
-	{
-		if (PS->GetDamage() > TeamMaxDamage)
-		{
-			TeamMaxDamage = PS->GetDamage();
-		}
-		if (PS->GetMonsterKillCount() > TeamMaxKill)
-		{
-			TeamMaxKill = PS->GetMonsterKillCount();
-		}
-		if (PS->GetAssists() > TeamMaxAssist)
-		{
-			TeamMaxAssist = PS->GetAssists();
-		}
-	}
 
 	TArray<FResultScreenParams> ResultParamsArray;
 
@@ -214,40 +207,98 @@ void UPlayerHUDComponent::C_ShowResultScreen_Implementation()
 	int32 MaxCombat = 1;
 	int32 MaxSupport = 1;
 
-	for (AADPlayerState* PS : TActorRange<AADPlayerState>(GetWorld()))
+	static const int32 MaxPlayerCount = 4;
+	for (int32 i = 0; i < MaxPlayerCount; ++i)
 	{
-		EAliveInfo AliveInfo = EAliveInfo::Alive;
-
-		if (PS->IsSafeReturn() == false)
+		if (AADPlayerState* PS = Cast<AADPlayerState>(UGameplayStatics::GetPlayerState(World, i)))
 		{
-			AliveInfo = (PS->IsDead()) ? EAliveInfo::Dead : EAliveInfo::Abandoned;
+			if (PS->GetDamage() > TeamMaxDamage)
+			{
+				TeamMaxDamage = PS->GetDamage();
+			}
+			if (PS->GetMonsterKillCount() > TeamMaxKill)
+			{
+				TeamMaxKill = PS->GetMonsterKillCount();
+			}
+			if (PS->GetAssists() > TeamMaxAssist)
+			{
+				TeamMaxAssist = PS->GetAssists();
+			}
+
+			EAliveInfo AliveInfo = EAliveInfo::Alive;
+
+			if (PS->IsSafeReturn() == false)
+			{
+				if (PS->IsDead())
+				{
+					AliveInfo = EAliveInfo::Dead;
+				}
+				else
+				{
+					AliveInfo = EAliveInfo::Abandoned;
+				}
+			}
+			
+			float DamageNomalize = (TeamMaxDamage == 0) ? 0 : ((float)PS->GetDamage() / (float)TeamMaxDamage);
+			float KillNomalize = (TeamMaxKill == 0) ? 0 : ((float)PS->GetTotalMonsterKillCount() / (float)TeamMaxKill);
+			float AssistNomalize = (TeamMaxAssist == 0) ? 0 : ((float)PS->GetAssists() / (float)TeamMaxAssist);
+
+			int32 BattleContribution = 10000 * (0.6 * DamageNomalize + 0.3 * KillNomalize + 0.1 * AssistNomalize);
+			int32 SafeContribution = 100 * (PS->GetGroggyRevive() + PS->GetCorpseRecovery() * 3);
+
+			FResultScreenParams Params
+			(
+				PS->GetPlayerNickname(),
+				AliveInfo,
+				PS->GetOreCollectedValue(), //채집 기여
+				BattleContribution,//전투기여
+				SafeContribution //팀지원
+			);
+
+			MaxCollect = FMath::Max(MaxCollect, Params.CollectionScore);
+			MaxCombat = FMath::Max(MaxCombat, Params.BattleScore);
+			MaxSupport = FMath::Max(MaxSupport, Params.SupportScore);
+
+			ResultParamsArray.Add(Params);
+
+			//UpdateResultScreen(PS->GetPlayerIndex(), Params);
 		}
-
-		float DamageNomalize = (TeamMaxDamage == 0) ? 0 : ((float)PS->GetDamage() / (float)TeamMaxDamage);
-		float KillNomalize = (TeamMaxKill == 0) ? 0 : ((float)PS->GetTotalMonsterKillCount() / (float)TeamMaxKill);
-		float AssistNomalize = (TeamMaxAssist == 0) ? 0 : ((float)PS->GetAssists() / (float)TeamMaxAssist);
-
-		int32 BattleContribution = 10000 * (0.6* DamageNomalize + 0.3* KillNomalize + 0.1* AssistNomalize);
-		int32 SafeContribution = 100 * (PS->GetGroggyRevive() + PS->GetCorpseRecovery() * 3);
-
-		FResultScreenParams Params
-		(
-			PS->GetPlayerNickname(),
-			AliveInfo,
-			PS->GetOreCollectedValue(), //채집 기여
-			BattleContribution,//전투기여
-			SafeContribution //팀지원
-		);
-
-		MaxCollect = FMath::Max(MaxCollect, Params.CollectionScore);
-		MaxCombat = FMath::Max(MaxCombat, Params.BattleScore);
-		MaxSupport = FMath::Max(MaxSupport, Params.SupportScore);
-
-		ResultParamsArray.Add(Params);
-
-
-		UpdateResultScreen(PS->GetPlayerIndex(), Params);
 	}
+
+	//for (AADPlayerState* PS : TActorRange<AADPlayerState>(GetWorld()))
+	//{
+	//	EAliveInfo AliveInfo = EAliveInfo::Alive;
+
+	//	if (PS->IsSafeReturn() == false)
+	//	{
+	//		AliveInfo = (PS->IsDead()) ? EAliveInfo::Dead : EAliveInfo::Abandoned;
+	//	}
+
+	//	float DamageNomalize = (TeamMaxDamage == 0) ? 0 : ((float)PS->GetDamage() / (float)TeamMaxDamage);
+	//	float KillNomalize = (TeamMaxKill == 0) ? 0 : ((float)PS->GetTotalMonsterKillCount() / (float)TeamMaxKill);
+	//	float AssistNomalize = (TeamMaxAssist == 0) ? 0 : ((float)PS->GetAssists() / (float)TeamMaxAssist);
+
+	//	int32 BattleContribution = 10000 * (0.6* DamageNomalize + 0.3* KillNomalize + 0.1* AssistNomalize);
+	//	int32 SafeContribution = 100 * (PS->GetGroggyRevive() + PS->GetCorpseRecovery() * 3);
+
+	//	FResultScreenParams Params
+	//	(
+	//		PS->GetPlayerNickname(),
+	//		AliveInfo,
+	//		PS->GetOreCollectedValue(), //채집 기여
+	//		BattleContribution,//전투기여
+	//		SafeContribution //팀지원
+	//	);
+
+	//	MaxCollect = FMath::Max(MaxCollect, Params.CollectionScore);
+	//	MaxCombat = FMath::Max(MaxCombat, Params.BattleScore);
+	//	MaxSupport = FMath::Max(MaxSupport, Params.SupportScore);
+
+	//	ResultParamsArray.Add(Params);
+
+
+	//	UpdateResultScreen(PS->GetPlayerIndex(), Params);
+	//}
 
 	for (FResultScreenParams& Param : ResultParamsArray)
 	{
