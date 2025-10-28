@@ -322,7 +322,7 @@ protected:
 
     UPROPERTY()
     TSet<TObjectPtr<AActor>> IgnoredActors;
-    static FCollisionQueryParams MovementCollisionQueryTraceParams;
+    FCollisionQueryParams MovementCollisionQueryTraceParams;
 
     float LastRecordTime;
     FVector LastRecordedLocation;

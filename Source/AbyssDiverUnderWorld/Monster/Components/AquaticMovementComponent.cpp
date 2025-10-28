@@ -14,8 +14,6 @@
 
 DEFINE_LOG_CATEGORY(LogAquaticMovement);
 
-FCollisionQueryParams UAquaticMovementComponent::MovementCollisionQueryTraceParams;
-
 UAquaticMovementComponent::UAquaticMovementComponent()
 {
     PrimaryComponentTick.bCanEverTick = true;
