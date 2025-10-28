@@ -571,8 +571,12 @@ void AADTutorialGameMode::HandlePhase_Revive()
 	if (AUnderwaterCharacter* SpawnedNPC = GetWorld()->SpawnActor<AUnderwaterCharacter>(GroggyNPCClass, SpawnTM, Params))
 	{
 		TutorialNPC = SpawnedNPC;
-		TutorialNPC->OnCharacterStateChangedDelegate.AddDynamic(this, &AADTutorialGameMode::OnTutorialNPCStateChanged);
-		SpawnedNPC->SetCharacterState(ECharacterState::Groggy);
+		if (TutorialNPC.IsValid())
+		{
+			TutorialNPC->SetCharacterState(ECharacterState::Groggy);
+			TutorialNPC->SetIsCharacterStateLocked(true);
+			TutorialNPC->OnCharacterStateChangedDelegate.AddDynamic(this, &AADTutorialGameMode::OnTutorialNPCStateChanged);
+		} 
 
 		if (IndicatingTargetClass)
 		{
