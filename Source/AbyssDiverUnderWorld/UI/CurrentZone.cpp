@@ -189,7 +189,7 @@ void ACurrentZone::ApplyCurrentForce()
         FVector PushDir = PushDirection.GetSafeNormal();
         float FinalFlowStrength = FlowStrength;
 
-        const FVector FlowForce = PushDir * FinalFlowStrength * Movement->GetMaxAcceleration() * GetWorld()->DeltaTimeSeconds;
+        const FVector FlowForce = PushDir * FinalFlowStrength * Movement->GetMaxAcceleration() * 0.0167f;
 
         Movement->Velocity += FlowForce;
         LOGV(Log, TEXT("Velocity : %f"), Movement->Velocity.Length());
