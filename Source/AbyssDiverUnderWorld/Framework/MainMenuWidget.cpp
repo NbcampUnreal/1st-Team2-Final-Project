@@ -27,6 +27,10 @@ void UMainMenuWidget::NativeConstruct()
 	if (Button_Quit)
 		Button_Quit->OnClicked.AddDynamic(this, &	UMainMenuWidget::OnQuitClicked);
 
+	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+	{ 
+		SetPreTutorialButtonsEnabled(GI->bHasPlayedTutorial);
+	} 
 }
 
 void UMainMenuWidget::OnCreateClicked()
@@ -96,5 +100,19 @@ void UMainMenuWidget::OnSessionListWidgetClosed()
 		CreateTeamWidgetInstance->StopAllAnimations();
 		CreateTeamWidgetInstance->RemoveFromParent();
 		CreateTeamWidgetInstance = nullptr;
+	}
+}
+
+void UMainMenuWidget::SetPreTutorialButtonsEnabled(bool bEnable)
+{
+	if (bEnable)
+	{
+		Button_Create->SetIsEnabled(true);
+		Button_Join->SetIsEnabled(true);
+	}
+	else
+	{
+		Button_Create->SetIsEnabled(false);
+		Button_Join->SetIsEnabled(false);
 	}
 }

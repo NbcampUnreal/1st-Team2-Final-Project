@@ -8,10 +8,9 @@
 
 struct FBTEjectVictimTaskMemory
 {
-	TWeakObjectPtr<class AMonsterAIController> AIController;
-	TWeakObjectPtr<class AMonster> Monster;
+	TWeakObjectPtr<class AHorrorCreatureAIController> HCAIController;
+	TWeakObjectPtr<class AHorrorCreature> HorrorCreature;
 	FVector FleeLocation = FVector::ZeroVector;
-	float ElapsedTime = 0.0f;
 };
 
 UCLASS()
@@ -25,13 +24,12 @@ public:
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
 	virtual void TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;
 
+	virtual uint16 GetInstanceMemorySize() const override;
+
 #pragma region Variable
 protected:
 	UPROPERTY(EditAnywhere)
 	float EjectTriggerDistance = 300.0f;
 
-	// Maximum time to Eject when FleeLocation is not reached
-	UPROPERTY(EditAnywhere)
-	float MaxEjectDelay = 7.0f;
 #pragma endregion
 };

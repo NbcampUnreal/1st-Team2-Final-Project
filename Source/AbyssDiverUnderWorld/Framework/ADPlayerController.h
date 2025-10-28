@@ -89,7 +89,7 @@ public:
 	void C_StopCameraBlink_Implementation();
 
 	UFUNCTION(Client, Unreliable)
-	void C_PlaySound(ESFX SoundType, float VolumeMultiplier = 1.0f, float PitchMultiplier = 1.0f);
+	void C_PlaySound(ESFX SoundType, float VolumeMultiplier = 1.0f);
 
 	UFUNCTION(Exec)
 	void ShowPlayerHUD();

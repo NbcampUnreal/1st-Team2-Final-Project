@@ -41,10 +41,15 @@ void UPlayerStatusWidget::NativeConstruct()
     FTimerHandle TimerHandle;
     GetWorld()->GetTimerManager().SetTimer(DelayBindTimerHandle, [this]()
         {
-            AADInGameState* GS = Cast<AADInGameState>(GetWorld()->GetGameState());
-            if (GS)
+            UWorld* World = GetWorld();
+            if (!IsValid(this) || !IsValid(World))
             {
-                GS->OnTopMinerChangedDelegate.AddUFunction(this, FName("SetTopName"));
+                return;
+            }
+        
+            if (AADInGameState* GameState = Cast<AADInGameState>(GetWorld()->GetGameState()))
+            {
+                GameState->OnTopMinerChangedDelegate.AddUFunction(this, FName("SetTopName"));
             }
         }, DelayTime, false);
 

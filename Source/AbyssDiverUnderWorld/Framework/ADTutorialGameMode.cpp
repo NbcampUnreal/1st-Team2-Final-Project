@@ -6,6 +6,7 @@
 #include "Inventory/ADInventoryComponent.h"
 #include "Interactable/OtherActors/TargetIndicators/TargetIndicatorManager.h"
 #include "Framework/ADTutorialPlayerController.h"
+#include "Framework/ADGameInstance.h"
 #include "Engine/Light.h"
 #include "EngineUtils.h"
 #include "NiagaraComponent.h"
@@ -202,40 +203,39 @@ void AADTutorialGameMode::HandlePhase_Movement()
 }
 void AADTutorialGameMode::HandlePhase_Oxygen() {}
 void AADTutorialGameMode::HandlePhase_Dialogue_05() {}
+void AADTutorialGameMode::HandlePhase_Complete() 
+{ 
+    if(TutorialNPC.IsValid()) TutorialNPC->Destroy();
 
-void AADTutorialGameMode::HandlePhase_Complete()
-{
-	if (IsValid(ExitAlarmSound))
-	{
-		float VolumeToPlay = 1.0f;
-		if (UGameInstance* GameInstance = GetGameInstance())
-		{
-			if (USoundSubsystem* TutorialSoundSubsystem = GameInstance->GetSubsystem<USoundSubsystem>())
-			{
-				VolumeToPlay = TutorialSoundSubsystem->GetSFXVolume() * TutorialSoundSubsystem->GetMasterVolume();
-			}
-		}
-		LoopingPhaseSoundComponent = UGameplayStatics::SpawnSound2D(GetWorld(), ExitAlarmSound, VolumeToPlay);
-	}
+    TArray<AActor*> FoundLadders;
+    UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("TutorialExitLadder"), FoundLadders);
 
-	TArray<AActor*> FoundLadders;
-	UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("TutorialExitLadder"), FoundLadders);
+    if (FoundLadders.Num() > 0 && IsValid(IndicatingTargetClass))
+    {
+        AActor* LadderActor = FoundLadders[0];
 
-	if (FoundLadders.Num() > 0 && IsValid(IndicatingTargetClass))
-	{
-		AActor* LadderActor = FoundLadders[0];
+        if (AIndicatingTarget* Indicator = GetWorld()->SpawnActor<AIndicatingTarget>(IndicatingTargetClass, LadderActor->GetActorTransform()))
+        {
+            Indicator->SetupIndicator(LadderActor, LadderExitIndicatorIcon);
 
-		if (AIndicatingTarget* Indicator = GetWorld()->SpawnActor<AIndicatingTarget>(IndicatingTargetClass, LadderActor->GetActorTransform()))
-		{
-			Indicator->SetupIndicator(LadderActor, LadderExitIndicatorIcon);
+            if (ATargetIndicatorManager* TargetMgr = *TActorIterator<ATargetIndicatorManager>(GetWorld()))
+            {
+                TargetMgr->RegisterNewTarget(Indicator);
+            }
+            TrackPhaseActor(Indicator);
+        }
+        if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+        {
+            TutorialSoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
+            if (TutorialSoundSubsystem)
+            {
+                DroneTutorialAlarmId = TutorialSoundSubsystem->PlayAttach(ESFX_BGM::DroneTutorialAlarm, LadderActor->GetRootComponent());
+            } 
+            GI->bHasPlayedTutorial = true;
+        }
+    }
 
-			if (ATargetIndicatorManager* TargetMgr = *TActorIterator<ATargetIndicatorManager>(GetWorld()))
-			{
-				TargetMgr->RegisterNewTarget(Indicator);
-			}
-			TrackPhaseActor(Indicator);
-		}
-	}
+
 }
 
 void AADTutorialGameMode::HandlePhase_Sprint()
@@ -281,7 +281,7 @@ void AADTutorialGameMode::HandlePhase_Dialogue_02()
 		float VolumeToPlay = 1.0f;
 		if (UGameInstance* GameInstance = GetGameInstance())
 		{
-			if (USoundSubsystem* TutorialSoundSubsystem = GameInstance->GetSubsystem<USoundSubsystem>())
+			if (TutorialSoundSubsystem = GameInstance->GetSubsystem<USoundSubsystem>())
 			{
 				VolumeToPlay = TutorialSoundSubsystem->GetSFXVolume() * TutorialSoundSubsystem->GetMasterVolume();
 			}
@@ -422,7 +422,7 @@ void AADTutorialGameMode::HandlePhase_Dialogue_LightOut()
 {
 	if (UGameInstance* GameInstance = GetGameInstance())
 	{
-		if (USoundSubsystem* TutorialSoundSubsystem = GameInstance->GetSubsystem<USoundSubsystem>())
+		if (TutorialSoundSubsystem = GameInstance->GetSubsystem<USoundSubsystem>())
 		{
 			if (IsValid(LightOutSound))
 			{
@@ -539,7 +539,7 @@ void AADTutorialGameMode::HandlePhase_Revive()
 		float VolumeToPlay = 1.0f;
 		if (UGameInstance* GameInstance = GetGameInstance())
 		{
-			if (USoundSubsystem* TutorialSoundSubsystem = GameInstance->GetSubsystem<USoundSubsystem>())
+			if (TutorialSoundSubsystem = GameInstance->GetSubsystem<USoundSubsystem>())
 			{
 				VolumeToPlay = TutorialSoundSubsystem->GetSFXVolume() * TutorialSoundSubsystem->GetMasterVolume();
 			}
