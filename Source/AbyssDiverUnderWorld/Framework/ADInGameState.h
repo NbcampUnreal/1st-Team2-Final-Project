@@ -129,6 +129,11 @@ public:
 	virtual void AddPlayerState(APlayerState* PlayerState) override;
 
 	virtual void RemovePlayerState(APlayerState* PlayerState) override;
+
+	/** ClearCount가 1일 때 UI를 띄우도록 모든 클라이언트에 알리는 멀티캐스트 함수 */
+	UFUNCTION(NetMulticast, Reliable)
+	void M_NotifyFirstClear();
+	void M_NotifyFirstClear_Implementation();
 	
 protected:
 
@@ -159,6 +164,9 @@ private:
 
 	void ReceiveDataFromGameInstance();
 	void StartPhaseUIAnim();
+
+	void Server_TriggerFirstClearUINotify();
+	void Server_TriggerTravelToMainLobby();
 
 #pragma endregion
 
@@ -202,6 +210,9 @@ protected:
 
 	/** 최고 채굴자의 채굴량. M_BroadcastTopMinerChanged를 통해서 동기화된다. */
 	int32 TopMiningAmount = 0;
+
+	UPROPERTY(EditAnywhere, Category = "InGameMode")
+	FString MainLobbyMapEnum;
 
 private:
 

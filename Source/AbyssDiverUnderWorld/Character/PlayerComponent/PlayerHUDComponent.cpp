@@ -823,3 +823,27 @@ UPlayerStatusWidget* UPlayerHUDComponent::GetPlayerStatusWidget()
 {
 	return PlayerStatusWidget;
 }
+
+void UPlayerHUDComponent::ShowFirstClearEndingWidget()
+{
+	if (IsValid(FirstClearWidgetClass) == false)
+	{
+		LOGV(Error, TEXT("FirstClearWidgetClass가 설정되지 않았습니다. PlayerHUDComponent BP를 확인하세요."));
+		return;
+	}
+
+	if (IsValid(FirstClearWidgetInstance))
+	{
+		return;
+	}
+
+	FirstClearWidgetInstance = CreateWidget<UEndingWidget>(GetWorld(), FirstClearWidgetClass);
+	if (IsValid(FirstClearWidgetInstance) == false)
+	{
+		LOGV(Error, TEXT("FirstClearWidgetInstance 생성에 실패했습니다."));
+		return;
+	}
+
+	FirstClearWidgetInstance->AddToViewport();
+
+}
