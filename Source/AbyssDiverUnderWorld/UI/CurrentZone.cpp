@@ -173,23 +173,23 @@ void ACurrentZone::ApplyCurrentForce()
             Movement->SetMovementMode(MOVE_Swimming);
         }
 
-        // 캐릭터 속도 0.1배 만들기 필요
-        bool bIsInDeepCurrentZone = CharacterPair.Value;
-        if (bIsInDeepCurrentZone)
-        {
-            Character->SetZoneSpeedMultiplier(0.1f);
-            LOGV(Log, TEXT(" %s : 0.1"), *Character->GetName());
-        }
-        else
-        {
-            Character->SetZoneSpeedMultiplier(1.0f);
-            LOGV(Log, TEXT(" %s : 1.0"), *Character->GetName());
-        }
+        // // 캐릭터 속도 0.1배 만들기 필요
+        // bool bIsInDeepCurrentZone = CharacterPair.Value;
+        // if (bIsInDeepCurrentZone)
+        // {
+        //     Character->SetZoneSpeedMultiplier(0.1f);
+        //     LOGV(Log, TEXT(" %s : 0.1"), *Character->GetName());
+        // }
+        // else
+        // {
+        //     Character->SetZoneSpeedMultiplier(1.0f);
+        //     LOGV(Log, TEXT(" %s : 1.0"), *Character->GetName());
+        // }
 
         FVector PushDir = PushDirection.GetSafeNormal();
         float FinalFlowStrength = FlowStrength;
 
-        const FVector FlowForce = PushDir * FinalFlowStrength * Movement->GetMaxAcceleration() * GetWorld()->DeltaTimeSeconds;
+        const FVector FlowForce = PushDir * FinalFlowStrength * Movement->GetMaxAcceleration() * 0.0167f;
 
         Movement->Velocity += FlowForce;
         LOGV(Log, TEXT("Velocity : %f"), Movement->Velocity.Length());
