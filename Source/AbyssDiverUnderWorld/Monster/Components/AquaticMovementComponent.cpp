@@ -51,8 +51,6 @@ void UAquaticMovementComponent::BeginPlay()
 	    return;
     }
 
-    MovementCollisionQueryTraceParams.AddIgnoredActor(OwnerCharacter.Get());
-
     ACharacter* CachedOwnerCharacter = GetOwnerCharacter();
     if (CachedOwnerCharacter)
     {
@@ -331,10 +329,20 @@ void UAquaticMovementComponent::UpdateMovement(float DeltaTime)
 
             if (bHit)
             {
-                NewLocation = PredictHit.Location - CurrentVelocity.GetSafeNormal() * 30.0f;
+                AActor* HitActor = PredictHit.GetActor();
+                if (HitActor->IsA<AUnderwaterCharacter>())
+                {
+                    AddIgnoredActorFromAvoidance(HitActor);
+                    LOGV(Log, TEXT("Avoidance Ignored Character : %s"), *HitActor->GetName()); // 플레이어 캐릭터는 무시
+                }
+                else
+                {
+                    NewLocation = PredictHit.Location - CurrentVelocity.GetSafeNormal() * 30.0f;
 
-                LastWallNormal = PredictHit.Normal;
-                LastWallDetectionTime = GetWorld()->GetTimeSeconds();
+                    LastWallNormal = PredictHit.Normal;
+                    LastWallDetectionTime = GetWorld()->GetTimeSeconds();
+                }
+                
             }
 
             // // 이동 방향으로 미리 체크 (오리지널 코드)
