@@ -90,6 +90,7 @@ void AADPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME(AADPlayerState, PlayerIndex);
 	DOREPLIFETIME(AADPlayerState, GroggyRevive);
 	DOREPLIFETIME(AADPlayerState, CorpseRecovery);
+	DOREPLIFETIME(AADPlayerState, bIsDead);
 }
 
 void AADPlayerState::CopyProperties(APlayerState* PlayerState)
