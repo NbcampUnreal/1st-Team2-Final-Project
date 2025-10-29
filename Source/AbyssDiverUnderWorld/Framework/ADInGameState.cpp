@@ -176,7 +176,7 @@ void AADInGameState::BeginPlay()
 		GetWorld()->GetTimerManager().SetTimer(
 			FirstClearTimerHandle,
 			this,
-			&AADInGameState::Server_TriggerFirstClearUINotify,
+			&AADInGameState::S_TriggerFirstClearUINotify,
 			2.0f,
 			false
 		);
