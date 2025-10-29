@@ -528,7 +528,7 @@ void AADInGameState::RefreshActivatedMissionList()
 	OnMissionListRefreshedDelegate.Broadcast();
 }
 
-void AADInGameState::Server_TriggerFirstClearUINotify()
+void AADInGameState::S_TriggerFirstClearUINotify()
 {
 	M_NotifyFirstClear();
 

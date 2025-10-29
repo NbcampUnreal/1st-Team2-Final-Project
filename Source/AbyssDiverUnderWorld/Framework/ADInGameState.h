@@ -165,7 +165,7 @@ private:
 	void ReceiveDataFromGameInstance();
 	void StartPhaseUIAnim();
 
-	void Server_TriggerFirstClearUINotify();
+	void S_TriggerFirstClearUINotify();
 
 #pragma endregion
 
