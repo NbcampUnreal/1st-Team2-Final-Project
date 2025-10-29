@@ -532,22 +532,34 @@ void AADInGameState::S_TriggerFirstClearUINotify()
 {
 	M_NotifyFirstClear();
 
+	TWeakObjectPtr<AADInGameState> WeakThis(this);
+
 	FTimerHandle LobbyTravelTimerHandle;
 	GetWorld()->GetTimerManager().SetTimer(
 		LobbyTravelTimerHandle,
-		FTimerDelegate::CreateLambda([this]()
+		FTimerDelegate::CreateLambda([WeakThis]()
 			{
-				AADCampGameMode* GM = GetWorld()->GetAuthGameMode<AADCampGameMode>();
-				if (GM)
+				if (!WeakThis.IsValid())
 				{
-					GM->TravelToMainLobby();
+					return;
 				}
-				else
+
+				AADInGameState* StrongThis = WeakThis.Get();
+
+				if (UWorld* World = StrongThis->GetWorld())
 				{
-					LOGV(Error, TEXT("Failed to get AADCampGameMode to travel to lobby."));
+					AADCampGameMode* GM = World->GetAuthGameMode<AADCampGameMode>();
+					if (GM)
+					{
+						GM->TravelToMainLobby();
+					}
+					else
+					{
+						LOGV(Error, TEXT("Failed to get AADCampGameMode to travel to lobby."));
+					}
 				}
 			}),
-		5.0f, 
+		5.0f,
 		false
 	);
 }
