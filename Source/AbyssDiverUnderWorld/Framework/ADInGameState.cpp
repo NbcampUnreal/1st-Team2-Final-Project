@@ -155,18 +155,6 @@ void AADInGameState::PostInitializeComponents()
 		ReceiveDataFromGameInstance();
 
 		RefreshActivatedMissionList();
-
-		if (GetClearCount() == 1)
-		{
-			FTimerHandle FirstClearTimerHandle;
-			GetWorld()->GetTimerManager().SetTimer(
-				FirstClearTimerHandle,
-				this,
-				&AADInGameState::Server_TriggerFirstClearUINotify,
-				2.0f,
-				false
-			);
-		}
 	}
 
 	const int32 SoundPoolInitCount = 10;
@@ -180,6 +168,18 @@ void AADInGameState::BeginPlay()
 	if (HasAuthority() == false)
 	{
 		return;
+	}
+
+	if (GetClearCount() == 1)
+	{
+		FTimerHandle FirstClearTimerHandle;
+		GetWorld()->GetTimerManager().SetTimer(
+			FirstClearTimerHandle,
+			this,
+			&AADInGameState::Server_TriggerFirstClearUINotify,
+			2.0f,
+			false
+		);
 	}
 
 	TeamCreditsChangedDelegate.Broadcast(TeamCredits);
@@ -535,9 +535,19 @@ void AADInGameState::Server_TriggerFirstClearUINotify()
 	FTimerHandle LobbyTravelTimerHandle;
 	GetWorld()->GetTimerManager().SetTimer(
 		LobbyTravelTimerHandle,
-		this,
-		&AADInGameState::Server_TriggerTravelToMainLobby, 
-		5.0f,
+		FTimerDelegate::CreateLambda([this]()
+			{
+				AADCampGameMode* GM = GetWorld()->GetAuthGameMode<AADCampGameMode>();
+				if (GM)
+				{
+					GM->TravelToMainLobby();
+				}
+				else
+				{
+					LOGV(Error, TEXT("Failed to get AADCampGameMode to travel to lobby."));
+				}
+			}),
+		5.0f, 
 		false
 	);
 }
@@ -554,47 +564,4 @@ void AADInGameState::M_NotifyFirstClear_Implementation()
 	{
 		LOGV(Error, TEXT("M_NotifyFirstClear: PlayerHUDComponent를 찾을 수 없습니다."));
 	}
-}
-
-void AADInGameState::Server_TriggerTravelToMainLobby()
-{
-	if (!HasAuthority())
-	{
-		return;
-	}
-
-	UWorld* World = GetWorld();
-	if (World == nullptr)
-	{
-		LOGV(Error, TEXT("Server_TriggerTravelToMainLobby: GetWorld() failed."));
-		return;
-	}
-
-	FString MapPath = TEXT("/Game/_AbyssDiver/Maps/Final/Level/MainLevel");
-
-	if (MapPath.IsEmpty()) 
-	{
-		LOGV(Error, TEXT("Server_TriggerTravelToMainLobby: MapPath is hardcoded but empty!"));
-		return;
-	}
-
-	for (AADPlayerController* PC : TActorRange<AADPlayerController>(World))
-	{
-		if (PC)
-		{
-			PC->C_OnPreClientTravel();
-		}
-	}
-
-	const float WaitBeforeTravel = 5.0f;
-	FTimerHandle TravelTimerHandle;
-	GetWorldTimerManager().SetTimer(TravelTimerHandle, [World, MapPath]()
-		{
-			if (World)
-			{
-				LOGV(Log, TEXT("Moving to Main Lobby: %s"), *MapPath);
-				FString TravelURL = FString::Printf(TEXT("%s?listen"), *MapPath);
-				World->ServerTravel(TravelURL);
-			}
-		}, WaitBeforeTravel, false);
 }

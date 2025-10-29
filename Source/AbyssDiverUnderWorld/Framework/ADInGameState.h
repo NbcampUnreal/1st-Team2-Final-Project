@@ -166,7 +166,6 @@ private:
 	void StartPhaseUIAnim();
 
 	void Server_TriggerFirstClearUINotify();
-	void Server_TriggerTravelToMainLobby();
 
 #pragma endregion
 
@@ -210,10 +209,6 @@ protected:
 
 	/** 최고 채굴자의 채굴량. M_BroadcastTopMinerChanged를 통해서 동기화된다. */
 	int32 TopMiningAmount = 0;
-
-	UPROPERTY(EditAnywhere, Category = "InGameMode")
-	FString MainLobbyMapEnum;
-
 private:
 
 #pragma endregion

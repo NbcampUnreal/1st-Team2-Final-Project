@@ -13,7 +13,6 @@ enum class EMapName : uint8
 	SecondAbyss UMETA(DisplayName = "SecondAbyss"),
 	test2  UMETA(DisplayName = "level2"),
 	TutorialPool UMETA(DisplayName = "TutorialPool"),
-	MainLevel UMETA(DisplayName = "MainLevel"),
 	Max UMETA(Hidden)
 };
 
