@@ -190,6 +190,35 @@ void AADCampGameMode::TravelToInGameLevel()
 		}, 2.0f, false);
 }
 
+void AADCampGameMode::TravelToMainLobby()
+{
+	UWorld* World = GetWorld();
+	if (World == nullptr)
+	{
+		LOGV(Error, TEXT("RequestTravelToMainLobby: GetWorld() failed."));
+		return;
+	}
+
+	FString MapPath = TEXT("/Game/_AbyssDiver/Maps/Final/Level/MainLevel");
+
+	if (MapPath.IsEmpty())
+	{
+		LOGV(Error, TEXT("RequestTravelToMainLobby: MapPath is hardcoded but empty!"));
+		return;
+	}
+
+	for (AADPlayerController* PC : TActorRange<AADPlayerController>(World))
+	{
+		if (PC)
+		{
+			PC->C_OnPreClientTravel();
+		}
+	}
+
+	FString TravelURL = FString::Printf(TEXT("%s?listen"), *MapPath);
+	World->ServerTravel(TravelURL);
+}
+
 bool AADCampGameMode::HasPressedTravel() const
 {
 	return bHasPressedTravel;

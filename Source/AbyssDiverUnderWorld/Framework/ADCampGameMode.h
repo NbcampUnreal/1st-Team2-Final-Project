@@ -40,6 +40,7 @@ public:
 
 	void TravelToInGameLevel();
 
+	void TravelToMainLobby();
 protected:
 
 	// 인당 초기 지원금
