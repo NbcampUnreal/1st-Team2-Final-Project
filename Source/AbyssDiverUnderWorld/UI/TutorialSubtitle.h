@@ -4,7 +4,7 @@
 #include "Blueprint/UserWidget.h"
 #include "TutorialSubtitle.generated.h"
 
-DECLARE_MULTICAST_DELEGATE(FOnTypingCompleted);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnTypingCompleted);
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API UTutorialSubtitle : public UUserWidget
@@ -22,6 +22,7 @@ protected:
 	void TypeNext();
 
 public:
+	UPROPERTY(BlueprintAssignable, Category = "Tutorial")
 	FOnTypingCompleted OnTypingCompleted;
 
 protected:

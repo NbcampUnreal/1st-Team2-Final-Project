@@ -48,6 +48,8 @@ protected:
 
 	void ContributeToGaugeByTap();
 
+	UFUNCTION()
+	void OnSubtitleTypingCompleted();
 private:
 	UPROPERTY(EditAnywhere, Category = "Tutorial|Data")
 	TObjectPtr<UDataTable> TutorialDataTable;
@@ -96,4 +98,6 @@ private:
 
 	int32 CurrentStepIndex;
 	TArray<FName> StepRowNames;
+
+	const FTutorialStepData* CurrentStepDataPtr;
 };
