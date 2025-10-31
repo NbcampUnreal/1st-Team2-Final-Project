@@ -15,6 +15,7 @@
 #include "UI/SelectedMissionListWidget.h"
 #include "Framework/ADCampGameMode.h"
 #include "Framework/ADPlayerController.h"
+#include "Framework/ADGameInstance.h"
 #include "Character/PlayerComponent/PlayerHUDComponent.h"
 #include "UI/MissionsOnHUDWidget.h"
 #include "TimerManager.h"
@@ -533,6 +534,11 @@ void AADInGameState::S_TriggerFirstClearUINotify()
 	M_NotifyFirstClear();
 
 	TWeakObjectPtr<AADInGameState> WeakThis(this);
+
+	if (UADGameInstance* GI = GetGameInstance<UADGameInstance>())
+	{
+		GI->bHasPlayedTutorial = false;
+	} 
 
 	FTimerHandle LobbyTravelTimerHandle;
 	GetWorld()->GetTimerManager().SetTimer(
