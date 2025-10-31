@@ -23,6 +23,8 @@ ATutorialManager::ATutorialManager()
 	bIsPlayerHoldingKey = false;
 	bIsGaugeObjectiveActive = false;
 	DisplayGaugeValue = 0.f;
+
+	GaugeProgressBar = nullptr;
 }
 
 void ATutorialManager::BeginPlay()
@@ -71,6 +73,7 @@ void ATutorialManager::BeginPlay()
 		{
 			GaugeWidget->AddToViewport(-10);
 			GaugeWidget->SetVisibility(ESlateVisibility::Collapsed);
+			GaugeProgressBar = GaugeWidget->GetGaugeProgressBar();
 		}
 	}
 
@@ -114,9 +117,9 @@ void ATutorialManager::Tick(float DeltaTime)
 		DisplayGaugeValue = FMath::FInterpTo(DisplayGaugeValue, CurrentGaugeValue, DeltaTime, GaugeInterpolationSpeed);
 	}
 
-	if (GaugeWidget && GaugeWidget->GetGaugeProgressBar())
+	if (IsValid(GaugeProgressBar))
 	{
-		GaugeWidget->GetGaugeProgressBar()->SetPercent(DisplayGaugeValue / TargetGaugeValue); 
+		GaugeProgressBar->SetPercent(DisplayGaugeValue / TargetGaugeValue);
 	}
 
 	if (CurrentGaugeValue >= TargetGaugeValue && FMath::IsNearlyEqual(DisplayGaugeValue, TargetGaugeValue, 0.01f))
@@ -264,9 +267,9 @@ void ATutorialManager::StartGaugeObjective(EGaugeInteractionType InInteractionTy
 	bIsPlayerHoldingKey = false;
 	bIsGaugeObjectiveActive = true;
 
-	if (GaugeWidget && GaugeWidget->GetGaugeProgressBar()) 
+	if (IsValid(GaugeProgressBar))
 	{
-		GaugeWidget->GetGaugeProgressBar()->SetPercent(0.f); 
+		GaugeProgressBar->SetPercent(0.f);
 	}
 }
 
