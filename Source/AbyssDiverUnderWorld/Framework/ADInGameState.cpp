@@ -15,6 +15,7 @@
 #include "UI/SelectedMissionListWidget.h"
 #include "Framework/ADCampGameMode.h"
 #include "Framework/ADPlayerController.h"
+#include "Framework/ADGameInstance.h"
 #include "Character/PlayerComponent/PlayerHUDComponent.h"
 #include "UI/MissionsOnHUDWidget.h"
 #include "TimerManager.h"
@@ -176,7 +177,7 @@ void AADInGameState::BeginPlay()
 		GetWorld()->GetTimerManager().SetTimer(
 			FirstClearTimerHandle,
 			this,
-			&AADInGameState::S_TriggerFirstClearUINotify,
+			&AADInGameState::TriggerFirstClearUINotify,
 			2.0f,
 			false
 		);
@@ -528,11 +529,11 @@ void AADInGameState::RefreshActivatedMissionList()
 	OnMissionListRefreshedDelegate.Broadcast();
 }
 
-void AADInGameState::S_TriggerFirstClearUINotify()
+void AADInGameState::TriggerFirstClearUINotify()
 {
 	M_NotifyFirstClear();
 
-	TWeakObjectPtr<AADInGameState> WeakThis(this);
+	TWeakObjectPtr<AADInGameState> WeakThis(this); 
 
 	FTimerHandle LobbyTravelTimerHandle;
 	GetWorld()->GetTimerManager().SetTimer(
@@ -571,6 +572,10 @@ void AADInGameState::M_NotifyFirstClear_Implementation()
 	if (HudComp)
 	{
 		HudComp->ShowFirstClearEndingWidget();
+		if (UADGameInstance* GI = GetGameInstance<UADGameInstance>())
+		{
+			GI->bHasPlayedTutorial = false;
+		}
 	}
 	else
 	{
