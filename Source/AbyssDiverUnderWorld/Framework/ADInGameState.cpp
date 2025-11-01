@@ -560,7 +560,7 @@ void AADInGameState::TriggerFirstClearUINotify()
 					}
 				}
 			}),
-		5.0f,
+		20.0f,
 		false
 	);
 }
