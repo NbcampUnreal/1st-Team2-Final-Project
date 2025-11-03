@@ -161,6 +161,12 @@ void AADCampGameMode::TravelToInGameLevel()
 
 	bHasPressedTravel = true;
 
+	//지스타 전시 후 지우기
+	if (UADGameInstance* GI = Cast<UADGameInstance>(GetGameInstance()))
+	{
+		GI->bHasPlayedInGame = true;
+	}
+
 	for (AADPlayerController* PC : TActorRange<AADPlayerController>(GetWorld()))
 	{
 		PC->C_OnPreClientTravel();
