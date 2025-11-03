@@ -4,6 +4,8 @@
 #include "GameFramework/Actor.h"
 #include "TutorialEnums.h"
 #include "Components/ProgressBar.h"
+#include "UI/NoticeWidget.h"
+#include "UI/GaugeWidget.h"
 #include "TutorialManager.generated.h"
 
 class UUserWidget;
@@ -48,6 +50,12 @@ protected:
 
 	void ContributeToGaugeByTap();
 
+	UFUNCTION()
+	void OnSubtitleTypingCompleted();
+
+public:
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
+	TObjectPtr<UProgressBar> GaugeProgressBar;
 private:
 	UPROPERTY(EditAnywhere, Category = "Tutorial|Data")
 	TObjectPtr<UDataTable> TutorialDataTable;
@@ -61,9 +69,6 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Tutorial|UI")
 	TSubclassOf<UTutorialHighlighting> HighlightingWidgetClass;
 
-	UPROPERTY(EditAnywhere, Category = "Tutorial|UI")
-	TSubclassOf<UUserWidget> GaugeWidgetClass;
-
 	UPROPERTY()
 	TObjectPtr<UTutorialSubtitle> SubtitleWidget;
 
@@ -73,11 +78,11 @@ private:
 	UPROPERTY()
 	TObjectPtr<UTutorialHighlighting> HighlightingWidget;
 
-	UPROPERTY()
-	TObjectPtr<UUserWidget> GaugeWidget;
+	UPROPERTY(EditAnywhere, Category = "Tutorial|UI")
+	TSubclassOf<UGaugeWidget> GaugeWidgetClass; 
 
 	UPROPERTY()
-	TObjectPtr<UProgressBar> GaugeProgressBar;
+	TObjectPtr<UGaugeWidget> GaugeWidget;
 
 	UPROPERTY()
 	TObjectPtr<AADTutorialGameMode> CachedGameMode;
@@ -96,4 +101,6 @@ private:
 
 	int32 CurrentStepIndex;
 	TArray<FName> StepRowNames;
+
+	const FTutorialStepData* CurrentStepDataPtr;
 };

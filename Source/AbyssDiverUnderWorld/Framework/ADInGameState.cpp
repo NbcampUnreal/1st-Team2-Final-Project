@@ -15,8 +15,11 @@
 #include "UI/SelectedMissionListWidget.h"
 #include "Framework/ADCampGameMode.h"
 #include "Framework/ADPlayerController.h"
+#include "Framework/ADGameInstance.h"
 #include "Character/PlayerComponent/PlayerHUDComponent.h"
 #include "UI/MissionsOnHUDWidget.h"
+#include "TimerManager.h"
+#include "EngineUtils.h"
 
 #pragma region FastArraySerializer Methods
 
@@ -166,6 +169,18 @@ void AADInGameState::BeginPlay()
 	if (HasAuthority() == false)
 	{
 		return;
+	}
+
+	if (GetClearCount() == 1)
+	{
+		FTimerHandle FirstClearTimerHandle;
+		GetWorld()->GetTimerManager().SetTimer(
+			FirstClearTimerHandle,
+			this,
+			&AADInGameState::TriggerFirstClearUINotify,
+			2.0f,
+			false
+		);
 	}
 
 	TeamCreditsChangedDelegate.Broadcast(TeamCredits);
@@ -512,4 +527,58 @@ void AADInGameState::RefreshActivatedMissionList()
 	}
 
 	OnMissionListRefreshedDelegate.Broadcast();
+}
+
+void AADInGameState::TriggerFirstClearUINotify()
+{
+	M_NotifyFirstClear();
+
+	TWeakObjectPtr<AADInGameState> WeakThis(this); 
+
+	FTimerHandle LobbyTravelTimerHandle;
+	GetWorld()->GetTimerManager().SetTimer(
+		LobbyTravelTimerHandle,
+		FTimerDelegate::CreateLambda([WeakThis]()
+			{
+				if (!WeakThis.IsValid())
+				{
+					return;
+				}
+
+				AADInGameState* StrongThis = WeakThis.Get();
+
+				if (UWorld* World = StrongThis->GetWorld())
+				{
+					AADCampGameMode* GM = World->GetAuthGameMode<AADCampGameMode>();
+					if (GM)
+					{
+						GM->TravelToMainLobby();
+					}
+					else
+					{
+						LOGV(Error, TEXT("Failed to get AADCampGameMode to travel to lobby."));
+					}
+				}
+			}),
+		20.0f,
+		false
+	);
+}
+
+void AADInGameState::M_NotifyFirstClear_Implementation()
+{
+
+	UPlayerHUDComponent* HudComp = GetPlayerHudComponent();
+	if (HudComp)
+	{
+		HudComp->ShowFirstClearEndingWidget();
+		if (UADGameInstance* GI = GetGameInstance<UADGameInstance>())
+		{
+			GI->bHasPlayedTutorial = false;
+		}
+	}
+	else
+	{
+		LOGV(Error, TEXT("M_NotifyFirstClear: PlayerHUDComponent를 찾을 수 없습니다."));
+	}
 }
