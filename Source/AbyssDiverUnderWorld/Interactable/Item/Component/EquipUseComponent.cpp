@@ -593,8 +593,16 @@ void UEquipUseComponent::DeinitializeEquip()
 	}
 
 	// 부스트·야간투시 효과 끄기
+	if (bNightVisionOn)
+	{
+		bNightVisionOn = false;
+		OnRep_NightVisionOn();
+		if (NightVisionInstance)
+		{
+			NightVisionInstance->NightVigionUnUse();
+		}
+	}
 	bBoostActive = false;
-	bNightVisionOn = false;
 
 	// 속도 복구
 	if (OwningCharacter.IsValid())
