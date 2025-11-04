@@ -171,16 +171,19 @@ void AADInGameState::BeginPlay()
 		return;
 	}
 
-	if (GetClearCount() == 1)
+	if(UADGameInstance* GI = Cast<UADGameInstance>(GetGameInstance()))
 	{
-		FTimerHandle FirstClearTimerHandle;
-		GetWorld()->GetTimerManager().SetTimer(
-			FirstClearTimerHandle,
-			this,
-			&AADInGameState::TriggerFirstClearUINotify,
-			2.0f,
-			false
-		);
+		if (GI->bHasPlayedInGame && SelectedLevelName == EMapName::Description)
+		{
+			FTimerHandle FirstClearTimerHandle;
+			GetWorld()->GetTimerManager().SetTimer(
+				FirstClearTimerHandle,
+				this,
+				&AADInGameState::TriggerFirstClearUINotify,
+				2.0f,
+				false
+			); 
+		}
 	}
 
 	TeamCreditsChangedDelegate.Broadcast(TeamCredits);
@@ -534,35 +537,11 @@ void AADInGameState::TriggerFirstClearUINotify()
 	M_NotifyFirstClear();
 
 	TWeakObjectPtr<AADInGameState> WeakThis(this); 
-
-	FTimerHandle LobbyTravelTimerHandle;
-	GetWorld()->GetTimerManager().SetTimer(
-		LobbyTravelTimerHandle,
-		FTimerDelegate::CreateLambda([WeakThis]()
-			{
-				if (!WeakThis.IsValid())
-				{
-					return;
-				}
-
-				AADInGameState* StrongThis = WeakThis.Get();
-
-				if (UWorld* World = StrongThis->GetWorld())
-				{
-					AADCampGameMode* GM = World->GetAuthGameMode<AADCampGameMode>();
-					if (GM)
-					{
-						GM->TravelToMainLobby();
-					}
-					else
-					{
-						LOGV(Error, TEXT("Failed to get AADCampGameMode to travel to lobby."));
-					}
-				}
-			}),
-		20.0f,
-		false
-	);
+	
+	if (UADGameInstance* GI = Cast<UADGameInstance>(GetGameInstance()))
+	{
+		GI->bHasPlayedInGame = false;
+	} 
 }
 
 void AADInGameState::M_NotifyFirstClear_Implementation()
@@ -571,11 +550,7 @@ void AADInGameState::M_NotifyFirstClear_Implementation()
 	UPlayerHUDComponent* HudComp = GetPlayerHudComponent();
 	if (HudComp)
 	{
-		HudComp->ShowFirstClearEndingWidget();
-		if (UADGameInstance* GI = GetGameInstance<UADGameInstance>())
-		{
-			GI->bHasPlayedTutorial = false;
-		}
+		HudComp->ShowFirstClearEndingWidget(); 
 	}
 	else
 	{
