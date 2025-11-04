@@ -89,7 +89,7 @@ FString AADBasketball::GetInteractionDescription() const
 		// 줍기 가능
 		return LocalizationSubsystem->GetLocalizedText(
 			ST_InteractionDescription::TableKey,
-			TEXT("Basketball_Pickup") // 로컬라이제이션 키 추가 필요
+			ST_InteractionDescription::Basketball_Pickup
 		).ToString();
 	}
 }
