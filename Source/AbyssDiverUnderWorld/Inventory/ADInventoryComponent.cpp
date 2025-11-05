@@ -736,6 +736,11 @@ void UADInventoryComponent::PlayEquipAnimation(AUnderwaterCharacter* Character, 
 	Character->M_PlayMontageOnBothMesh(Montage, 1.0f, NAME_None, SyncState);
 }
 
+void UADInventoryComponent::OnEnvironmentStateChanged(EEnvironmentState OldEnvironmentState, EEnvironmentState NewEnvironmentState)
+{
+	UnEquip();
+}
+
 int8 UADInventoryComponent::GetTypeInventoryEmptyIndex(EItemType ItemType)
 {
 	RebuildIndexMap();

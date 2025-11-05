@@ -306,6 +306,7 @@ void AUnderwaterCharacter::InitPlayerStatus(AADPlayerState* ADPlayerState)
 		CachedInventoryComponent = Inventory;
 		// 인벤토리가 변경될 떄 OnRep에서도 호출되기 때문에 여기서 바인딩하면 Server, Client 양쪽에서 바인딩 가능하다.
 		Inventory->InventoryUpdateDelegate.AddUObject(this, &AUnderwaterCharacter::AdjustSpeed);
+		OnEnvironmentStateChangedDelegate.AddDynamic(Inventory, &UADInventoryComponent::OnEnvironmentStateChanged);
 	}
 	else
 	{

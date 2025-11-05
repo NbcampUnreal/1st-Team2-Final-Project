@@ -111,6 +111,7 @@ void AADTutorialGameMode::StartPlay()
 
 void AADTutorialGameMode::StartFirstTutorialPhase()
 {
+
 	AdvanceTutorialPhase();
 }
 
@@ -159,8 +160,8 @@ void AADTutorialGameMode::HandleCurrentPhase()
 		case ETutorialPhase::Step10_Battery:      HandlePhase_Battery(); break;
 		case ETutorialPhase::Step11_Drop:         HandlePhase_Drop(); break;
 		case ETutorialPhase::Dialogue_05:         break;
-		case ETutorialPhase::Step12_OxygenWarning: HandlePhase_OxygenWarning(); break;
 		case ETutorialPhase::Dialogue_08:		  break;
+		case ETutorialPhase::Step12_OxygenWarning: HandlePhase_OxygenWarning(); break;
 		case ETutorialPhase::Step13_Revive:       HandlePhase_Revive(); break;
 		case ETutorialPhase::Dialogue_04:         break;
 		case ETutorialPhase::Step14_Die:          HandlePhase_Die(); break;
@@ -571,8 +572,12 @@ void AADTutorialGameMode::HandlePhase_Revive()
 	if (AUnderwaterCharacter* SpawnedNPC = GetWorld()->SpawnActor<AUnderwaterCharacter>(GroggyNPCClass, SpawnTM, Params))
 	{
 		TutorialNPC = SpawnedNPC;
-		TutorialNPC->OnCharacterStateChangedDelegate.AddDynamic(this, &AADTutorialGameMode::OnTutorialNPCStateChanged);
-		SpawnedNPC->SetCharacterState(ECharacterState::Groggy);
+		if (TutorialNPC.IsValid())
+		{
+			TutorialNPC->SetCharacterState(ECharacterState::Groggy);
+			TutorialNPC->SetIsCharacterStateLocked(true);
+			TutorialNPC->OnCharacterStateChangedDelegate.AddDynamic(this, &AADTutorialGameMode::OnTutorialNPCStateChanged);
+		} 
 
 		if (IndicatingTargetClass)
 		{

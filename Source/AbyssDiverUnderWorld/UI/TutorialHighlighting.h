@@ -17,7 +17,9 @@ struct ABYSSDIVERUNDERWORLD_API FHighlightingInfo
 	float Multiply = 1.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FVector2D ArrowAnchor = FVector2D(0.f, 0.f);
+	FAnchors ArrowAnchors;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FVector2D ArrowOffset; 
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float ArrowAngle = 0.f;

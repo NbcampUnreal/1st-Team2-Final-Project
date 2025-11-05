@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "UI/PlayerStatusWidget.h"
+#include "UI/EndingWidget.h"
 #include "PlayerHUDComponent.generated.h"
 
 enum class EMissionType : uint8;
@@ -94,6 +95,8 @@ public:
     UFUNCTION(Server, Reliable)
     void S_ReportConfirm(AActor* RequestInteractableActor, bool bConfirmed);
     void S_ReportConfirm_Implementation(AActor* RequestInteractableActor, bool bConfirmed);
+
+    void ShowFirstClearEndingWidget();
     
 protected:
     
@@ -167,6 +170,12 @@ private:
     /** Interact Popup Widget Class */
     UPROPERTY(EditAnywhere)
     TSubclassOf<class UInteractPopupWidget> PopupWidgetClass;
+
+    UPROPERTY(EditDefaultsOnly, Category = UI, meta = (AllowPrivateAccess = "true"))
+    TSubclassOf<UEndingWidget> FirstClearWidgetClass;
+
+    UPROPERTY()
+    TObjectPtr<UEndingWidget> FirstClearWidgetInstance;
     
 #pragma endregion
 
