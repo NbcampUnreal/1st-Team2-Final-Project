@@ -36,6 +36,7 @@ void UPlayerStatusWidget::NativeConstruct()
 
     SetSpearVisibility(false); 
 
+    SetTopNameEmpty(); // Map Transition 시 이전 플레이어 이름이 남아있는 문제 방지
 	FTimerHandle DelayBindTimerHandle;
 	float DelayTime = 1.0f; 
     FTimerHandle TimerHandle;
@@ -49,22 +50,33 @@ void UPlayerStatusWidget::NativeConstruct()
         
             if (AADInGameState* GameState = Cast<AADInGameState>(GetWorld()->GetGameState()))
             {
-                GameState->OnTopMinerChangedDelegate.AddUFunction(this, FName("SetTopName"));
+                GameState->OnTopMinerChangedDelegate.AddUObject(this, &UPlayerStatusWidget::SetTopName);
             }
         }, DelayTime, false);
 
-
-
-    if (IsValid(NextPhaseAnim) == false)
+    const FString CurrentMapName = UGameplayStatics::GetCurrentLevelName(GetWorld(), true);
+    // MainLevel (Camp) 일 때 Hide
+    UE_LOG(AbyssDiver, Warning, TEXT("Current Map Name: %s"), *CurrentMapName);
+    if (CurrentMapName == "Submarine_Lobby")
     {
-        LOGV(Error, TEXT("IsValid(NextPhaseAnim) == false"));
-        return;
+        TopNameOverlay->SetVisibility(ESlateVisibility::Collapsed);
     }
-
-    FWidgetAnimationDynamicEvent OnNextPhaseAnimFinishedDelegate;
-    OnNextPhaseAnimFinishedDelegate.BindUFunction(this, OnNextPhaseAnimFinishedName);
-    UnbindAllFromAnimationFinished(NextPhaseAnim);
-    BindToAnimationFinished(NextPhaseAnim, OnNextPhaseAnimFinishedDelegate);
+    else
+    {
+        TopNameOverlay->SetVisibility(ESlateVisibility::Visible);
+    }
+    
+    if (IsValid(NextPhaseAnim))
+    {
+        FWidgetAnimationDynamicEvent OnNextPhaseAnimFinishedDelegate;
+        OnNextPhaseAnimFinishedDelegate.BindUFunction(this, OnNextPhaseAnimFinishedName);
+        UnbindAllFromAnimationFinished(NextPhaseAnim);
+        BindToAnimationFinished(NextPhaseAnim, OnNextPhaseAnimFinishedDelegate);
+    }
+    else
+    {
+        LOGV(Error, TEXT("NextPhaseAnim is invalid"));
+    }
 
     if (HealthScreenEffect && LoadedMaterial)
     {
@@ -361,12 +373,19 @@ void UPlayerStatusWidget::NoticeInfo(const FString& Info, const FVector2D& Posit
 
 void UPlayerStatusWidget::SetTopName(AADPlayerState* PS, int32 MinedAmount)
 {
-        TopName->SetText(FText::FromString(PS->GetPlayerNickname()));
-        TopNameCopy->SetText(FText::FromString(PS->GetPlayerNickname()));
+    TopName->SetText(FText::FromString(PS->GetPlayerNickname()));
+    TopNameCopy->SetText(FText::FromString(PS->GetPlayerNickname()));
 
-        FString TopAmountString = FString::Printf(TEXT("%dCr"), MinedAmount);
-        TopAmount->SetText(FText::FromString(TopAmountString));
-        PlayAnimation(ChangeTopPlayer);
+    FString TopAmountString = FString::Printf(TEXT("%dCr"), MinedAmount);
+    TopAmount->SetText(FText::FromString(TopAmountString));
+    PlayAnimation(ChangeTopPlayer);
+}
+
+void UPlayerStatusWidget::SetTopNameEmpty()
+{
+    TopName->SetText(FText::FromString(TEXT("")));
+    TopNameCopy->SetText(FText::FromString(TEXT("")));
+    TopAmount->SetText(FText::FromString(TEXT("")));
 }
 
 void UPlayerStatusWidget::SetSpearVisibility(bool bVisible)

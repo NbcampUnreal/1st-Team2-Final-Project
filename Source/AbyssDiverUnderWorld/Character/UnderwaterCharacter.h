@@ -305,6 +305,10 @@ public:
 	void Teleport(const FVector& NewLocation, const FRotator& ViewRotation);
 	
 protected:
+
+	/** 초기 물리 볼륨이 설정됬을 때 호출된다. BeginPlay 다음 프레임에 호출된다. */
+	void OnInitialPhysicsVolumeSet();
+	
 	/** Stat Component의 기본 속도가 변경됬을 때 호출된다. */
 	UFUNCTION()
 	void OnMoveSpeedChanged(float NewMoveSpeed);
