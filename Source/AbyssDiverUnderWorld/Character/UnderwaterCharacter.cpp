@@ -231,6 +231,11 @@ void AUnderwaterCharacter::BeginPlay()
 		*GetNameSafe(GetController()),
 		IsLocallyControlled() ? TEXT("Yes") : TEXT("No")
 	);
+
+	// BeginPlay 시점에서는 PhysicsVolume이 설정되어 있지 않기 때문에 다음 프레임에 조회한다.
+	GetWorldTimerManager().SetTimerForNextTick(
+		FTimerDelegate::CreateUObject(this, &AUnderwaterCharacter::OnInitialPhysicsVolumeSet)
+	);
 	
 	SetDebugCameraMode(bUseDebugCamera);
 	
@@ -262,7 +267,6 @@ void AUnderwaterCharacter::BeginPlay()
 			OnGroggyReviveDelegate.AddUObject(PS, &AADPlayerState::AddOneGroggyRevive);
 		}
 	}, BindPlayerStateDelay, false);
-
 
 	if (HasAuthority())
 	{
@@ -2594,6 +2598,22 @@ void AUnderwaterCharacter::Teleport(const FVector& NewLocation, const FRotator& 
 				CableActor->ApplyWorldOffsetToCable(CharacterMeshOffset);
 			}
 		}
+	}
+}
+
+void AUnderwaterCharacter::OnInitialPhysicsVolumeSet()
+{
+	
+	APhysicsVolume* PhysicsVolume = GetPhysicsVolume();
+	if (PhysicsVolume == nullptr)
+	{
+		return;
+	}
+
+	if (PhysicsVolume->bWaterVolume && HasAuthority())
+	{
+		UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Initial Physics Volume: Water"));
+		LanternComponent->SetLanternLightEnabled(true);
 	}
 }
 
