@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "Animation/AnimNotifies/AnimNotifyState.h"
@@ -31,55 +31,55 @@ private:
 #pragma region Variable
 public:
 	UPROPERTY(EditAnywhere, Category = "Laser")
-	TObjectPtr<UNiagaraSystem> BeamFX = nullptr;               // ¹ß»ç¼±
+	TObjectPtr<UNiagaraSystem> BeamFX = nullptr;               // ë°œì‚¬ì„ 
 
 	UPROPERTY(EditAnywhere, Category = "Laser")
-	TObjectPtr<UNiagaraSystem> ImpactFX = nullptr;             // ÇÇ°İ ÁöÁ¡
+	TObjectPtr<UNiagaraSystem> ImpactFX = nullptr;             // í”¼ê²© ì§€ì 
 
-	// ½î´Â ±æÀÌ(°Å¸®) 
+	// ì˜ëŠ” ê¸¸ì´(ê±°ë¦¬) 
 	UPROPERTY(EditAnywhere, Category = "Laser", meta = (ClampMin = "10.0"))
 	float MaxDistance = 3000.0f;
 
-	// ÃÑ±¸ ¼ÒÄÏ ÀÌ¸§
+	// ì´êµ¬ ì†Œì¼“ ì´ë¦„
 	UPROPERTY(EditAnywhere, Category = "Laser")
 	FName MuzzleSocket = "LaserMuzzle";
 
-	// Niagara ºö¿¡¼­ »ç¿ëÀÚ ÆÄ¶ó¹ÌÅÍ ÀÌ¸§(EndPoint)
+	// Niagara ë¹”ì—ì„œ ì‚¬ìš©ì íŒŒë¼ë¯¸í„° ì´ë¦„(EndPoint)
 	UPROPERTY(EditAnywhere, Category = "Laser")
 	FName BeamEndParam = "LaserEnd";
 
-	// Niagara ºö¿¡¼­ »ç¿ëÀÚ ÆÄ¶ó¹ÌÅÍ ÀÌ¸§(LoopDuration)
+	// Niagara ë¹”ì—ì„œ ì‚¬ìš©ì íŒŒë¼ë¯¸í„° ì´ë¦„(LoopDuration)
 	UPROPERTY(EditAnywhere, Category = "Laser")
 	FName DurationParam = "LoopDuration";
 
-	// 1ÀÎÄª ½ÃÁ¡ ÀÌÆåÆ® Å©±â ºñÀ²
+	// 1ì¸ì¹­ ì‹œì  ì´í™íŠ¸ í¬ê¸° ë¹„ìœ¨
 	UPROPERTY(EditAnywhere, Category = "Laser", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float FirstPersonImpactScale = 0.3f;    
 
-	/* °Å¸® ±â¹İ Á¶Á¤ ÆÄ¶ó¹ÌÅÍµé **/ 
-	// ÃÖ¼Ò °Å¸®
+	/* ê±°ë¦¬ ê¸°ë°˜ ì¡°ì • íŒŒë¼ë¯¸í„°ë“¤ **/ 
+	// ìµœì†Œ ê±°ë¦¬
 	UPROPERTY(EditAnywhere, Category = "Laser|Distance", meta = (ClampMin = "0.0"))
 	float MinEffectDistance = 100.0f;  
-	// ÃÖ´ë °Å¸® (ÀÌ °Å¸® ÀÌ»ó¿¡¼­´Â ¿øº» Å©±â)
+	// ìµœëŒ€ ê±°ë¦¬ (ì´ ê±°ë¦¬ ì´ìƒì—ì„œëŠ” ì›ë³¸ í¬ê¸°)
 	UPROPERTY(EditAnywhere, Category = "Laser|Distance", meta = (ClampMin = "0.0"))
 	float MaxEffectDistance = 1000.0f; 
-	// ÃÖ¼Ò ½ºÄÉÀÏ (20%)
+	// ìµœì†Œ ìŠ¤ì¼€ì¼ (20%)
 	UPROPERTY(EditAnywhere, Category = "Laser|Distance", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float MinEffectScale = 0.2f;  
-	// ÃÖ´ë ½ºÄÉÀÏ (100%)
+	// ìµœëŒ€ ìŠ¤ì¼€ì¼ (100%)
 	UPROPERTY(EditAnywhere, Category = "Laser|Distance", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float MaxEffectScale = 1.0f;  
-	// ÃÖ¼Ò °­µµ
+	// ìµœì†Œ ê°•ë„
 	UPROPERTY(EditAnywhere, Category = "Laser|Distance", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float MinEffectIntensity = 0.1f;  
-	// ÃÖ´ë °­µµ
+	// ìµœëŒ€ ê°•ë„
 	UPROPERTY(EditAnywhere, Category = "Laser|Distance", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float MaxEffectIntensity = 1.0f;  
-	// Ä«¸Ş¶ó·ÎºÎÅÍ ÃÖ¼Ò °Å¸®
+	// ì¹´ë©”ë¼ë¡œë¶€í„° ìµœì†Œ ê±°ë¦¬
 	UPROPERTY(EditAnywhere, Category = "Laser|FirstPerson", meta = (ClampMin = "50.0"))
 	float MinCameraOffset = 150.0f;  
 
-	/* Niagara ÆÄ¶ó¹ÌÅÍ ÀÌ¸§µé **/ 
+	/* Niagara íŒŒë¼ë¯¸í„° ì´ë¦„ë“¤ **/ 
  	UPROPERTY(EditAnywhere, Category = "Laser|Niagara")
 	FName IntensityParam = "Intensity";
 	UPROPERTY(EditAnywhere, Category = "Laser|Niagara")
