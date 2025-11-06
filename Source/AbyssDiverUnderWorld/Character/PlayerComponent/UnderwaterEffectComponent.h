@@ -59,6 +59,14 @@ protected:
 	UFUNCTION()
 	void OnKnockbackEnd();
 
+	/** 캡쳐 상태가 시작되었을 때 호출되는 함수. 숨쉬기 효과를 중지한다. */
+	UFUNCTION()
+	void OnCaptureStart();
+
+	/** 캡쳐 상태가 종료되었을 때 호출되는 함수. 숨쉬기 효과를 재개한다. */
+	UFUNCTION()
+	void OnCaptureEnd();
+	
 	/** 숨쉬기 효과를 재생한다. 이 함수는 숨쉬기 효과가 활성화되었을 때만 호출된다. */
 	void PlayBreathEffects();
 

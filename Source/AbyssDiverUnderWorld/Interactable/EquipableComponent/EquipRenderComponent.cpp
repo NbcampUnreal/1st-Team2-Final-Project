@@ -133,7 +133,7 @@ UMeshComponent* UEquipRenderComponent::Create1PComponent(UEquipableComponent* EC
         /*UStaticMeshComponent* Stat1P = NewObject<UStaticMeshComponent>(GetOwner());*/
         UStaticMeshComponent* Stat1P = NewObject<UStaticMeshComponent>(
             OwningChar,  // GetOwner() 대신 Character를 직접 사용
-            USkeletalMeshComponent::StaticClass(),
+            UStaticMeshComponent::StaticClass(),
             NAME_None,
             RF_Transient
         );
@@ -215,7 +215,7 @@ UMeshComponent* UEquipRenderComponent::Create3PComponent(UEquipableComponent* EC
         /*UStaticMeshComponent* Stat3P = NewObject<UStaticMeshComponent>(GetOwner());*/
         UStaticMeshComponent* Stat3P = NewObject<UStaticMeshComponent>(
             OwningChar,
-            USkeletalMeshComponent::StaticClass(),
+            UStaticMeshComponent::StaticClass(),
             NAME_None,
             RF_Transient
         );

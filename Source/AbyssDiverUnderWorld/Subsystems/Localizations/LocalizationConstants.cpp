@@ -11,6 +11,8 @@ namespace ST_InteractionDescription
 
 	const FTextKey Tablet_Pickup = TEXT("Interaction.Tablet_Pickup");
 
+	const FTextKey Basketball_Pickup = TEXT("Interaction.Basketball_Pickup");
+
 	const FTextKey DroneSeller_SubmitOre = TEXT("Interaction.DroneSeller_SubmitOre");
 
 	const FTextKey Drone_SendDrone = TEXT("Interaction.Drone_SendDrone");
@@ -22,4 +24,5 @@ namespace ST_InteractionDescription
 	const FTextKey OreRock_Mine = TEXT("Interaction.OreRock_Mine");
 
 	const FTextKey LevelTraveler_ReturnToCamp = TEXT("Interaction.LevelTraveler_ReturnToCamp");
+
 }

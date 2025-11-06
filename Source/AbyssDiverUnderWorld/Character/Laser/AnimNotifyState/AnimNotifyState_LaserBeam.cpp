@@ -68,10 +68,52 @@ void UAnimNotifyState_LaserBeam::NotifyBegin(USkeletalMeshComponent* MeshComp, U
     UNiagaraComponent* HitEffect = nullptr;
     if (ImpactFX)
     {
-        const FRotator ImpactRot = Hit.bBlockingHit ? Hit.ImpactNormal.Rotation() : BeamRot;
-        HitEffect = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-            World, ImpactFX, TargetPoint, ImpactRot);
-        HitEffect->SetVariableFloat(DurationParam, TotalDuration);
+        float DistanceToCamera = FVector::Dist(CamLoc, TargetPoint);
+        FVector DisplayLocation = TargetPoint;
+
+        if (IsFirstPersonMesh(MeshComp))
+        {
+            // 1인칭에서 너무 가까운 경우 이펙트 생성 안 함
+            if (DistanceToCamera < MinCameraOffset)
+            {
+                FVector CamToTarget = (TargetPoint - CamLoc).GetSafeNormal();
+                DisplayLocation = CamLoc + CamToTarget * MinCameraOffset;
+                DistanceToCamera = MinCameraOffset;
+            }
+            // 1인칭 시점 스케일 및 강도 조정
+            float ScaleFactor = CalculateDistanceBasedScale(DistanceToCamera) * FirstPersonImpactScale;
+            float IntensityFactor = CalculateDistanceBasedIntensity(DistanceToCamera) * FirstPersonImpactScale;
+
+            const FRotator ImpactRot = Hit.bBlockingHit ? Hit.ImpactNormal.Rotation() : BeamRot;
+            HitEffect = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+                World, ImpactFX, DisplayLocation, ImpactRot,
+                FVector(ScaleFactor), true, true, ENCPoolMethod::AutoRelease);
+
+            if (HitEffect)
+            {
+                HitEffect->SetVariableFloat(IntensityParam, IntensityFactor);
+                HitEffect->SetVariableFloat(OpacityParam, IntensityFactor);
+                HitEffect->SetVariableFloat(DurationParam, TotalDuration);
+            }
+        }
+        else
+        {
+            // 3인칭 시점
+            float ScaleFactor = CalculateDistanceBasedScale(DistanceToCamera);
+            float IntensityFactor = CalculateDistanceBasedIntensity(DistanceToCamera);
+
+            const FRotator ImpactRot = Hit.bBlockingHit ? Hit.ImpactNormal.Rotation() : BeamRot;
+            HitEffect = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+                World, ImpactFX, TargetPoint, ImpactRot,
+                FVector(ScaleFactor), true, true, ENCPoolMethod::AutoRelease);
+
+            if (HitEffect)
+            {
+                HitEffect->SetVariableFloat(IntensityParam, IntensityFactor);
+                HitEffect->SetVariableFloat(OpacityParam, IntensityFactor);
+                HitEffect->SetVariableFloat(DurationParam, TotalDuration);
+            }
+        }
     }
 
     if (IsFirstPersonMesh(MeshComp))
@@ -153,7 +195,41 @@ void UAnimNotifyState_LaserBeam::NotifyTick(USkeletalMeshComponent* MeshComp, UA
     TWeakObjectPtr<UNiagaraComponent>* HitPtr = IsFirstPersonMesh(MeshComp) ? HitMap1P.Find(MeshComp) : HitMap3P.Find(MeshComp);
     if (HitPtr && HitPtr->IsValid())
     {
-        HitPtr->Get()->SetWorldLocation(TargetPoint);
+        UNiagaraComponent* HitEffect = HitPtr->Get();
+
+        float CurrentDistance = FVector::Dist(CamLoc, TargetPoint);
+        if (IsFirstPersonMesh(MeshComp))
+        {
+            FVector AdjustedTargetPoint = TargetPoint;
+
+            if (CurrentDistance < MinCameraOffset)
+            {
+                FVector CamToTarget = (TargetPoint - CamLoc).GetSafeNormal();
+                AdjustedTargetPoint = CamLoc + CamToTarget * MinCameraOffset;
+
+                CurrentDistance = MinCameraOffset;
+            }
+            HitEffect->SetWorldLocation(AdjustedTargetPoint);
+
+            // 거리 기반 스케일/강도 조정
+            float DynamicScale = CalculateDistanceBasedScale(CurrentDistance) * FirstPersonImpactScale;
+            float DynamicIntensity = CalculateDistanceBasedIntensity(CurrentDistance) * FirstPersonImpactScale;
+
+            HitEffect->SetWorldScale3D(FVector(DynamicScale));
+            HitEffect->SetVariableFloat(IntensityParam, DynamicIntensity);
+            HitEffect->SetVariableFloat(OpacityParam, DynamicIntensity);
+        }
+        else
+        {
+            // 3인칭 시점
+            HitEffect->SetWorldLocation(TargetPoint);
+            float DynamicScale = CalculateDistanceBasedScale(CurrentDistance);
+            float DynamicIntensity = CalculateDistanceBasedIntensity(CurrentDistance);
+
+            HitEffect->SetWorldScale3D(FVector(DynamicScale));
+            HitEffect->SetVariableFloat(IntensityParam, DynamicIntensity);
+            HitEffect->SetVariableFloat(OpacityParam, DynamicIntensity);
+        }
     }    
 }
 
@@ -175,4 +251,22 @@ bool UAnimNotifyState_LaserBeam::IsFirstPersonMesh(const USkeletalMeshComponent*
         return MeshComp == UnderwaterCharacter->GetMesh1P();
     }
     return false;
+}
+
+float UAnimNotifyState_LaserBeam::CalculateDistanceBasedScale(float Distance) const
+{
+    return FMath::GetMappedRangeValueClamped(
+        FVector2D(MinEffectDistance, MaxEffectDistance),
+        FVector2D(MinEffectScale, MaxEffectScale),
+        Distance
+    );
+}
+
+float UAnimNotifyState_LaserBeam::CalculateDistanceBasedIntensity(float Distance) const
+{
+    return FMath::GetMappedRangeValueClamped(
+        FVector2D(MinEffectDistance, MaxEffectDistance),
+        FVector2D(MinEffectIntensity, MaxEffectIntensity),
+        Distance
+    );
 }

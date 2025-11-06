@@ -54,9 +54,9 @@ void UTutorialHighlighting::UpdateArrowTransform(const FHighlightingInfo& Info)
 
 	if (Info.bUseManualArrowTransform)
 	{
-		ArrowSlot->SetAnchors(FAnchors(Info.ArrowAnchor.X, Info.ArrowAnchor.Y));
+		ArrowSlot->SetAnchors(Info.ArrowAnchors);
 		ArrowSlot->SetAlignment(FVector2D(0.5f, 0.5f));
-		ArrowSlot->SetPosition(FVector2D::ZeroVector);
+		ArrowSlot->SetPosition(Info.ArrowOffset);
 		HighlightArrow->SetRenderTransformAngle(Info.ArrowAngle);
 		return; 
 	}

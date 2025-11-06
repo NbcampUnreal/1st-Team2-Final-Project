@@ -23,7 +23,6 @@ AGobleFish::AGobleFish()
 void AGobleFish::BeginPlay()
 {
 	Super::BeginPlay();
-	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	GetMesh()->OnComponentBeginOverlap.AddDynamic(this, &AGobleFish::OnMeshOverlapBegin);
 	GobleFishHitSphere->OnComponentBeginOverlap.AddDynamic(this, &AGobleFish::OnMeshOverlapBegin);

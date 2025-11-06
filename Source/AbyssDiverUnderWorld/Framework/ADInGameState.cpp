@@ -15,8 +15,11 @@
 #include "UI/SelectedMissionListWidget.h"
 #include "Framework/ADCampGameMode.h"
 #include "Framework/ADPlayerController.h"
+#include "Framework/ADGameInstance.h"
 #include "Character/PlayerComponent/PlayerHUDComponent.h"
 #include "UI/MissionsOnHUDWidget.h"
+#include "TimerManager.h"
+#include "EngineUtils.h"
 
 #pragma region FastArraySerializer Methods
 
@@ -166,6 +169,21 @@ void AADInGameState::BeginPlay()
 	if (HasAuthority() == false)
 	{
 		return;
+	}
+
+	if(UADGameInstance* GI = Cast<UADGameInstance>(GetGameInstance()))
+	{
+		if (GI->bHasPlayedInGame && SelectedLevelName == EMapName::Description)
+		{
+			FTimerHandle FirstClearTimerHandle;
+			GetWorld()->GetTimerManager().SetTimer(
+				FirstClearTimerHandle,
+				this,
+				&AADInGameState::TriggerFirstClearUINotify,
+				2.0f,
+				false
+			); 
+		}
 	}
 
 	TeamCreditsChangedDelegate.Broadcast(TeamCredits);
@@ -512,4 +530,30 @@ void AADInGameState::RefreshActivatedMissionList()
 	}
 
 	OnMissionListRefreshedDelegate.Broadcast();
+}
+
+void AADInGameState::TriggerFirstClearUINotify()
+{
+	M_NotifyFirstClear();
+
+	TWeakObjectPtr<AADInGameState> WeakThis(this); 
+	
+	if (UADGameInstance* GI = Cast<UADGameInstance>(GetGameInstance()))
+	{
+		GI->bHasPlayedInGame = false;
+	} 
+}
+
+void AADInGameState::M_NotifyFirstClear_Implementation()
+{
+
+	UPlayerHUDComponent* HudComp = GetPlayerHudComponent();
+	if (HudComp)
+	{
+		HudComp->ShowFirstClearEndingWidget(); 
+	}
+	else
+	{
+		LOGV(Error, TEXT("M_NotifyFirstClear: PlayerHUDComponent를 찾을 수 없습니다."));
+	}
 }

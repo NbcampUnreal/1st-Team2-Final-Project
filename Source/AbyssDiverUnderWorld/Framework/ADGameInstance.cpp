@@ -1,4 +1,4 @@
-#include "Framework/ADGameInstance.h"
+﻿#include "Framework/ADGameInstance.h"
 
 #include "AbyssDiverUnderWorld.h"
 #include "Subsystems/SoundSubsystem.h"
@@ -17,6 +17,11 @@ void UADGameInstance::Init()
     Super::Init();
 
 	bIsHost = false;
+
+    //지스타 전시 후 false로 바꾸기
+    bHasPlayedTutorial = true;
+
+    bHasPlayedInGame = false;
 
     InitPlayerInfos();
 

@@ -219,15 +219,15 @@ void AADPlayerController::C_StartCameraBlink_Implementation(FColor FadeColor, FV
 		}
 
 		// Fade Delay 만큼 대기 후 Fade In 
-		TWeakObjectPtr WeakActor = this;
+		TWeakObjectPtr WeakThisController = this;
 		FTimerDelegate TimerDelegate;
 		TimerDelegate.BindWeakLambda(this, [=]()
 		{
-			if (WeakActor.IsValid())
+			if (WeakThisController.IsValid())
 			{
-				if (WeakActor->PlayerCameraManager != nullptr)
+				if (WeakThisController->PlayerCameraManager != nullptr)
 				{
-					WeakActor->PlayerCameraManager->StartCameraFade(BlankFadeEndAlpha, BlankFadeStartAlpha, FadeEndTime, FadeColor.ReinterpretAsLinear(), false, true);
+					WeakThisController->PlayerCameraManager->StartCameraFade(BlankFadeEndAlpha, BlankFadeStartAlpha, FadeEndTime, FadeColor.ReinterpretAsLinear(), false, true);
 				}
 			}
 		});
@@ -307,7 +307,7 @@ void AADPlayerController::S_SetInvincible_Implementation(bool bIsInvincible)
 	SetInvincible(bIsInvincible);
 }
 
-void AADPlayerController::C_PlaySound_Implementation(ESFX SoundType, float VolumeMultiplier, float PitchMultiplier)
+void AADPlayerController::C_PlaySound_Implementation(ESFX SoundType, float VolumeMultiplier)
 {
 	if (UGameInstance* GameInstance = GetGameInstance())
 	{

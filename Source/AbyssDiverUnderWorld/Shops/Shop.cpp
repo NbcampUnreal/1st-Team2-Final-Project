@@ -44,7 +44,7 @@ void FShopItemId::PostReplicatedAdd(const FShopItemIdList& InArraySerializer)
 {
 	LOGS(Warning, TEXT("Shop item added: Id = %d"), Id);
 	int32 Index = InArraySerializer.IdList.IndexOfByKey(*this);
-	FShopItemListChangeInfo Info(InArraySerializer.TabType, Index, Id, EShopItemChangeType::Added);
+	FShopItemListChangeInfo Info(InArraySerializer.TabType, Index, Id, EShopItemChangeType::Added, bIsLocked);
 
 	InArraySerializer.OnShopItemListChangedDelegate.Broadcast(Info);
 }
@@ -54,7 +54,7 @@ void FShopItemId::PostReplicatedChange(const FShopItemIdList& InArraySerializer)
 	LOGS(Warning, TEXT("Shop item changed: Id = %d"), Id);
 
 	int32 Index = InArraySerializer.IdList.IndexOfByKey(*this);
-	FShopItemListChangeInfo Info(InArraySerializer.TabType, Index, Id, EShopItemChangeType::Modified);
+	FShopItemListChangeInfo Info(InArraySerializer.TabType, Index, Id, EShopItemChangeType::Modified, bIsLocked);
 
 	InArraySerializer.OnShopItemListChangedDelegate.Broadcast(Info);
 }
@@ -64,7 +64,7 @@ void FShopItemId::PreReplicatedRemove(const FShopItemIdList& InArraySerializer)
 	LOGS(Warning, TEXT("Shop item removed: Id = %d"), Id);
 
 	int32 Index = InArraySerializer.IdList.IndexOfByKey(*this);
-	FShopItemListChangeInfo Info(InArraySerializer.TabType, Index, Id, EShopItemChangeType::Removed);
+	FShopItemListChangeInfo Info(InArraySerializer.TabType, Index, Id, EShopItemChangeType::Removed, bIsLocked);
 
 	InArraySerializer.OnShopItemListChangedDelegate.Broadcast(Info);
 }
@@ -92,7 +92,7 @@ int32 FShopItemIdList::Contains(uint8 CompareId)
 	return INDEX_NONE;
 }
 
-bool FShopItemIdList::TryAdd(uint8 NewId)
+bool FShopItemIdList::TryAdd(uint8 NewId, bool bShouldLock)
 {
 	if (Contains(NewId) != INDEX_NONE)
 	{
@@ -102,6 +102,7 @@ bool FShopItemIdList::TryAdd(uint8 NewId)
 
 	FShopItemId ShopId;
 	ShopId.Id = NewId;
+	ShopId.bIsLocked = bShouldLock;
 
 	IdList.Add(ShopId);
 	MarkItemDirty(IdList.Last());
@@ -705,7 +706,23 @@ EBuyResult AShop::BuyItems(const TArray<uint8>& ItemIdList, const TArray<int8>& 
 		const int32 ItemCountById = ItemCountList[i];
 		for (int32 j = 0; j < ItemCountById; ++j)
 		{
-			ReadyQueueForLaunchItemById.Enqueue(ItemIdList[i]);
+			if (ItemIdList[i] == 23) // 일단 하드코딩. 패키지 상품을 구매하면 산소팩 2, 실드 2, 야투경 1, 플레어건 1, 샷건 1을 넣는다
+			{
+				ReadyQueueForLaunchItemById.Enqueue(1); // 산소팩
+				ReadyQueueForLaunchItemById.Enqueue(1); // 산소팩
+
+				ReadyQueueForLaunchItemById.Enqueue(0); // 실드
+				ReadyQueueForLaunchItemById.Enqueue(0); // 실드
+
+				ReadyQueueForLaunchItemById.Enqueue(2); // 야투경
+				ReadyQueueForLaunchItemById.Enqueue(16);// 플레어건
+				ReadyQueueForLaunchItemById.Enqueue(18); // 샷건
+			}
+			else
+			{
+				ReadyQueueForLaunchItemById.Enqueue(ItemIdList[i]);
+			}
+			
 		}
 	}
 
@@ -741,11 +758,11 @@ void AShop::AddItems(const TArray<uint8>& Ids, EShopCategoryTab TabType)
 
 	for (auto& Id : Ids)
 	{
-		AddItemToList(Id, TabType);
+		AddItemToList(Id, TabType, false); // 임시로 false 사용
 	}
 }
 
-void AShop::AddItemToList(uint8 ItemId, EShopCategoryTab TabType)
+void AShop::AddItemToList(uint8 ItemId, EShopCategoryTab TabType, bool bShouldLock)
 {
 	if (HasAuthority() == false)
 	{
@@ -765,11 +782,11 @@ void AShop::AddItemToList(uint8 ItemId, EShopCategoryTab TabType)
 	switch (TabType)
 	{
 	case EShopCategoryTab::Consumable:
-		bIsAddSucceeded = ShopConsumableItemIdList.TryAdd(ItemId);
+		bIsAddSucceeded = ShopConsumableItemIdList.TryAdd(ItemId, bShouldLock);
 		SlotIndex = ShopConsumableItemIdList.IdList.Num() - 1;
 		break;
 	case EShopCategoryTab::Equipment:
-		bIsAddSucceeded = ShopEquipmentItemIdList.TryAdd(ItemId);
+		bIsAddSucceeded = ShopEquipmentItemIdList.TryAdd(ItemId, bShouldLock);
 		SlotIndex = ShopEquipmentItemIdList.IdList.Num() - 1;
 		break;
 	case EShopCategoryTab::Upgrade:
@@ -806,7 +823,7 @@ void AShop::AddItemToList(uint8 ItemId, EShopCategoryTab TabType)
 	}
 
 	UShopItemEntryData* EntryData = NewObject<UShopItemEntryData>();
-	EntryData->Init(SlotIndex, ItemDataRow->Thumbnail, ItemDataRow->Description); // 임시
+	EntryData->Init(SlotIndex, ItemDataRow->Thumbnail, ItemDataRow->Description, bShouldLock); // 임시
 	EntryData->OnEntryUpdatedFromDataDelegate.AddUObject(this, &AShop::OnSlotEntryWidgetUpdated);
 
 	ShopWidget->AddItem(EntryData, TabType);
@@ -1011,29 +1028,65 @@ void AShop::InitData()
 		return;
 	}
 
+	const int32 ConsumableItemCount = DefaultConsumableItemIdList.Num();
+
+#if !UE_BUILD_SHIPPING
+
+	const int32 ConsumableItemLockCount = ConsumableItemLockedStates.Num();
+	FString WarningMessage = FString::Printf(TEXT("상점에 등록한 아이템 개수(%d)와 아이템 잠금 여부 목록 개수(%d)가 일치하지 않습니다. 일치 시켜주세요"), ConsumableItemCount, ConsumableItemLockCount);
+
+	if (ensureMsgf(ConsumableItemCount == ConsumableItemLockCount, TEXT("%s"), *WarningMessage) == false)
+	{
+		return;
+	}
+
+#endif // !UE_BUILD_SHIPPING
+
 	ShopConsumableItemIdList.MarkArrayDirty();
 
-	for (const auto& Id : DefaultConsumableItemIdList)
+	for (int32 i = 0; i < ConsumableItemCount; ++i)
 	{
-		AddItemToList(Id, EShopCategoryTab::Consumable);
-		LOGV(Log, TEXT("Adding ConsumableItem, Id : %d "), Id);
+		AddItemToList(DefaultConsumableItemIdList[i], EShopCategoryTab::Consumable, ConsumableItemLockedStates[i]);
 	}
+
+	//for (const auto& Id : DefaultConsumableItemIdList)
+	//{
+	//	AddItemToList(Id, EShopCategoryTab::Consumable, _placeholder_);
+	//	LOGV(Log, TEXT("Adding ConsumableItem, Id : %d "), Id);
+	//}
+
+	const int32 EquipmentItemCount = DefaultEquipmentItemIdList.Num();
+
+#if !UE_BUILD_SHIPPING
+
+	const int32 EquipmentItemLockCount = EquipmentItemLockedStates.Num();
+	WarningMessage = FString::Printf(TEXT("상점에 등록한 아이템 개수(%d)와 아이템 잠금 여부 목록 개수(%d)가 일치하지 않습니다. 일치 시켜주세요"), EquipmentItemCount, EquipmentItemLockCount);
+
+	if (ensureMsgf(EquipmentItemCount == EquipmentItemLockCount, TEXT("%s"), *WarningMessage) == false)
+	{
+		return;
+	}
+
+#endif // !UE_BUILD_SHIPPING
 
 	ShopEquipmentItemIdList.MarkArrayDirty();
 
-	for (const auto& Id : DefaultEquipmentItemIdList)
+	for (int32 i = 0; i < EquipmentItemCount; ++i)
 	{
-		AddItemToList(Id, EShopCategoryTab::Equipment);
-		LOGV(Log, TEXT("Adding Equipment, Id : %d "), Id);
+		AddItemToList(DefaultEquipmentItemIdList[i], EShopCategoryTab::Equipment, EquipmentItemLockedStates[i]);
 	}
+
+	//for (const auto& Id : DefaultEquipmentItemIdList)
+	//{
+	//	AddItemToList(Id, EShopCategoryTab::Equipment, _placeholder_);
+	//	LOGV(Log, TEXT("Adding Equipment, Id : %d "), Id);
+	//}
 
 	ShopWidget->ShowItemViewForTab(EShopCategoryTab::Equipment);
 }
 
 void AShop::OnShopItemListChanged(const FShopItemListChangeInfo& Info)
 {
-	LOGV(Log, TEXT("Begin Change"));
-
 	if (Info.ChangeType >= EShopItemChangeType::Max)
 	{
 		LOGV(Error, TEXT("Weird Change Type : %d"), Info.ChangeType);
@@ -1059,7 +1112,7 @@ void AShop::OnShopItemListChanged(const FShopItemListChangeInfo& Info)
 	case EShopItemChangeType::Added:
 
 		EntryData = NewObject<UShopItemEntryData>();
-		EntryData->Init(Info.ShopIndex, ItemDataRow->Thumbnail, ItemDataRow->Description); // 임시
+		EntryData->Init(Info.ShopIndex, ItemDataRow->Thumbnail, ItemDataRow->Description, Info.bIsLocked); // 임시
 		EntryData->OnEntryUpdatedFromDataDelegate.AddUObject(this, &AShop::OnSlotEntryWidgetUpdated);
 		
 		ShopWidget->AddItem(EntryData, Info.ShopTab);

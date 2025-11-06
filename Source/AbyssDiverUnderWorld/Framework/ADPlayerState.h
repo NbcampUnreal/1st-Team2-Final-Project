@@ -120,6 +120,7 @@ protected:
 	TObjectPtr<UUpgradeComponent> UpgradeComp;
 
 	/** 현재 사망 상태인지 여부 */
+	UPROPERTY(Replicated)
 	uint8 bIsDead : 1;
 	
 #pragma endregion

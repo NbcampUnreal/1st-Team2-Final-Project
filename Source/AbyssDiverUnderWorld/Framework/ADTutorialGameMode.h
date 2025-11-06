@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "CoreMinimal.h"
 #include "Framework/ADInGameMode.h"
@@ -123,13 +123,16 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tutorial|Battery")
     float BatteryStartPercentOverride = -1.f;
 
+    UPROPERTY()
+    TObjectPtr<USoundSubsystem> TutorialSoundSubsystem;
+
 protected:
     UPROPERTY(EditAnywhere, Category = "Tutorial|Debug")
     ETutorialPhase StartPhaseOverride = ETutorialPhase::None;
 
     // Spawning
     UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Spawning")
-    TSubclassOf<AActor> LootableOreClass;
+    TSubclassOf<AActor> LootableOreClass; 
 
     UPROPERTY(EditDefaultsOnly, Category = "Tutorial|Spawning")
     TSubclassOf<AIndicatingTarget> IndicatingTargetClass;
@@ -239,5 +242,7 @@ private:
     uint8 bIsBodySubmittedInResurrectionPhase : 1;
 
     int32 ItemsPhaseProgress = 0;
+
+    int8 DroneTutorialAlarmId; 
 #pragma endregion
 };

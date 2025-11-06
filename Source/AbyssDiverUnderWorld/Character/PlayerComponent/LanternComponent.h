@@ -55,6 +55,9 @@ public:
 	/** 빛이 닿는 거리를 변경. Lantern이 생성되어 있지 않으면 아무 것도 하지 않는다. */
 	void SetLightLength(float NewLightLength);
 	
+	/** 랜턴 라이트 활성화/비활성화 설정 */
+	void SetLanternLightEnabled(const bool bEnable);
+	
 protected:
 
 	/** bIsLanternOn Replicate 함수 */

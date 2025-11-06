@@ -15,10 +15,13 @@ UDebuffComponent::UDebuffComponent()
 
 void UDebuffComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(PoisonDebuffTimerHandle);
+		World->GetTimerManager().ClearTimer(PoisonClearTimerHandle); 
+	}
 	Super::EndPlay(EndPlayReason);
-	GetWorld()->GetTimerManager().ClearTimer(PoisonDebuffTimerHandle);
-	GetWorld()->GetTimerManager().ClearTimer(PoisonClearTimerHandle);
-}
+} 
 
 void UDebuffComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {

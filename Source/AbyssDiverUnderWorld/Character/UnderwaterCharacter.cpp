@@ -231,6 +231,11 @@ void AUnderwaterCharacter::BeginPlay()
 		*GetNameSafe(GetController()),
 		IsLocallyControlled() ? TEXT("Yes") : TEXT("No")
 	);
+
+	// BeginPlay 시점에서는 PhysicsVolume이 설정되어 있지 않기 때문에 다음 프레임에 조회한다.
+	GetWorldTimerManager().SetTimerForNextTick(
+		FTimerDelegate::CreateUObject(this, &AUnderwaterCharacter::OnInitialPhysicsVolumeSet)
+	);
 	
 	SetDebugCameraMode(bUseDebugCamera);
 	
@@ -262,7 +267,6 @@ void AUnderwaterCharacter::BeginPlay()
 			OnGroggyReviveDelegate.AddUObject(PS, &AADPlayerState::AddOneGroggyRevive);
 		}
 	}, BindPlayerStateDelay, false);
-
 
 	if (HasAuthority())
 	{
@@ -306,6 +310,7 @@ void AUnderwaterCharacter::InitPlayerStatus(AADPlayerState* ADPlayerState)
 		CachedInventoryComponent = Inventory;
 		// 인벤토리가 변경될 떄 OnRep에서도 호출되기 때문에 여기서 바인딩하면 Server, Client 양쪽에서 바인딩 가능하다.
 		Inventory->InventoryUpdateDelegate.AddUObject(this, &AUnderwaterCharacter::AdjustSpeed);
+		OnEnvironmentStateChangedDelegate.AddDynamic(Inventory, &UADInventoryComponent::OnEnvironmentStateChanged);
 	}
 	else
 	{
@@ -601,6 +606,7 @@ void AUnderwaterCharacter::StartCaptureState()
 	}
 
 	bIsCaptured = true;
+	StopHealthRegen();
 	M_StartCaptureState();
 }
 
@@ -615,6 +621,18 @@ void AUnderwaterCharacter::StopCaptureState()
 	}
 
 	bIsCaptured = false;
+	// Capture 상태에서 벗어났을 때 Health Regen 시작
+	// 전투 중에서는 EndCombat에서 Health Regen 처리
+	if (IsNormal() && !bIsInCombat)
+	{
+		GetWorldTimerManager().SetTimer(
+			HealthRegenStartTimer,
+			this,
+			&AUnderwaterCharacter::StartHealthRegen,
+			HealthRegenDelay,
+			false
+		);
+	}
 	M_StopCaptureState();
 }
 
@@ -1056,8 +1074,9 @@ void AUnderwaterCharacter::SetCharacterState(const ECharacterState NewCharacterS
 		return;
 	}
 	if (bIsDeathLocked && CharacterState == ECharacterState::Groggy && NewCharacterState == ECharacterState::Death) return;
-
-	LOGVN(Warning, TEXT("Character State Changed : %s"), *UEnum::GetDisplayValueAsText(NewCharacterState).ToString());
+	
+	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Character State Changed : %s"),
+		*UEnum::GetDisplayValueAsText(NewCharacterState).ToString());
 
 	// 각 로직을 Multicast에서 처리하도록 한다.
 	// Listen Server Model 이므로 Multicast에서 Server 로직을 같이 처리할 수 있다.
@@ -1139,14 +1158,18 @@ void AUnderwaterCharacter::HandleEnterGroggy()
 		{
 			PlayerController->SetIgnoreLookInput(false);
 			PlayerController->SetIgnoreMoveInput(true);
-			PlayerController->ClientSetCameraFade(false);
-			PlayerController->ClientSetCameraFade(true,
-				FColor::Black,
-				FVector2D(0.0f, 1.0f),
-				GroggyDuration,
-				true,
-				true
-			);
+			// Capture 상태의 Camera 효과가 우선도를 가진다.
+			if (!IsCaptured())
+			{
+				PlayerController->ClientSetCameraFade(false);
+				PlayerController->ClientSetCameraFade(true,
+					FColor::Black,
+					FVector2D(0.0f, 1.0f),
+					GroggyDuration,
+					true,
+					true
+				);
+			}
 		}
 
 		LookSensitivity = GroggyLookSensitivity;
@@ -1176,6 +1199,8 @@ void AUnderwaterCharacter::HandleEnterGroggy()
 void AUnderwaterCharacter::HandleExitGroggy()
 {
 	GetWorldTimerManager().ClearTimer(GroggyTimer);
+	GetWorldTimerManager().ClearTimer(GroggyCameraFadeTimer);
+	
 	// @TODO
 	// 1. Groggy UI 제거
 	// 2. Interaction 기능을 비활성화한다.
@@ -1206,6 +1231,7 @@ void AUnderwaterCharacter::HandleEnterNormal()
 		{
 			PlayerController->SetIgnoreLookInput(false);
 			PlayerController->SetIgnoreMoveInput(false);
+			// 이전 State의 Camera 효과 제거
 			PlayerController->ClientSetCameraFade(true,
 				FColor::Black,
 				FVector2D(-1.0f, 0.0f),
@@ -1239,6 +1265,12 @@ void AUnderwaterCharacter::HandleEnterDeath()
 	// Case2. Normal -> Death : 산소가 없어서 사망, Black Out을 적용해서 Death 종료
 	// Case3. Groggy -> Death | Oxygen == 0 : Groggy 상태에서 산소가 없어서 사망, Black Out을 적용해서 Death 종료
 
+	if (IsCaptured())
+	{
+		bPendingDeathAfterCapture = true;
+		return;
+	}
+	
 	if (HasAuthority())
 	{
 		GetWorldTimerManager().SetTimer(
@@ -1304,11 +1336,17 @@ void AUnderwaterCharacter::S_Revive_Implementation()
 
 float AUnderwaterCharacter::CalculateGroggyTime(float CurrentGroggyDuration, uint8 CalculateGroggyCount) const
 {
-	return FMath::Max(CurrentGroggyDuration * (1 - GroggyReductionRate), MinGroggyDuration);
+	// Groggy Time이 음수나 0이 되지 않도록 처리
+	const float EffectiveMin = FMath::Max(MinGroggyDuration, 0.001f);
+	return FMath::Max(CurrentGroggyDuration * (1 - GroggyReductionRate), EffectiveMin);
 }
 
 void AUnderwaterCharacter::M_StartCaptureState_Implementation()
 {
+	// Client에서도 Capture State를 동기화한다.
+	bIsCaptured = true;
+	bPendingDeathAfterCapture = false;
+	
 	if (HasAuthority())
 	{
 		UnbindAllBoundCharacters();
@@ -1321,6 +1359,7 @@ void AUnderwaterCharacter::M_StartCaptureState_Implementation()
 			PlayerController->SetIgnoreLookInput(true);
 			PlayerController->SetIgnoreMoveInput(true);
 
+			// Capture 상태의 Camera가 우선도를 가진다.
 			PlayerController->C_StopCameraBlink();
 			PlayerController->PlayerCameraManager->StartCameraFade(
 				0.0f,
@@ -1338,10 +1377,74 @@ void AUnderwaterCharacter::M_StartCaptureState_Implementation()
 	SetActorHiddenInGame(true);
 	SetActorEnableCollision(false);
 	InteractionComponent->OnInteractReleased();
+
+	OnCaptureStartDelegate.Broadcast();
+}
+
+void AUnderwaterCharacter::PlayStopCaptureCameraEffect()
+{
+	AADPlayerController* PlayerController = GetController<AADPlayerController>();
+	if (!PlayerController)
+	{
+		return;
+	}
+
+	if (IsGroggy())
+	{
+		// 1. 현재 Groggy 만큼 Fade Out
+		float GroggyCameraAlpha = 1.0f - FMath::Clamp(GetRemainGroggyTime() / GroggyDuration, 0.0f, 1.0f);
+		PlayerController->PlayerCameraManager->StartCameraFade(
+			1.0f,
+			GroggyCameraAlpha,
+			CaptureFadeTime,
+			FLinearColor::Black,
+			false,
+			true
+		);
+
+		// 2. 이후 Groggy Duration 만큼 Fade Out
+		GetWorldTimerManager().SetTimer(
+			GroggyCameraFadeTimer,
+			FTimerDelegate::CreateLambda([this, PlayerController]()
+			{
+				if (!IsValid(this))
+				{
+					return;
+				}
+
+				const float StartCameraAlpha = PlayerController->PlayerCameraManager->FadeAmount;
+				PlayerController->PlayerCameraManager->StartCameraFade(
+					StartCameraAlpha,
+					1.0f,
+					GetRemainGroggyTime(),
+					FLinearColor::Black,
+					false,
+					true
+				);
+			}),
+			CaptureFadeTime,
+			false
+		);
+	}
+	// Normal State
+	else
+	{
+		PlayerController->PlayerCameraManager->StartCameraFade(
+			1.0f,
+			0.0f,
+			CaptureFadeTime,
+			FLinearColor::Black,
+			false,
+			true
+		);
+	}
+	// Death 상태라면 Death Transition을 통해서 Camera 암전 상태에서 사망 상태로 전이
 }
 
 void AUnderwaterCharacter::M_StopCaptureState_Implementation()
 {
+	bIsCaptured = false;
+	
 	if (IsLocallyControlled())
 	{
 		if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
@@ -1351,23 +1454,21 @@ void AUnderwaterCharacter::M_StopCaptureState_Implementation()
 			PlayerController->SetIgnoreLookInput(false);
 			PlayerController->SetIgnoreMoveInput(false);
 
-			PlayerController->PlayerCameraManager->StartCameraFade(
-				1.0f,
-				0.0f,
-				CaptureFadeTime,
-				FLinearColor::Black,
-				false,
-				true
-			);
+			PlayStopCaptureCameraEffect();
 
 			bCanUseEquipment = true;
 		}
 	}
 	
-	// Play SFX
-
 	SetActorHiddenInGame(false);
 	SetActorEnableCollision(true);
+
+	OnCaptureEndDelegate.Broadcast();
+	
+	if (bPendingDeathAfterCapture)
+	{
+		HandleEnterDeath();
+	}
 }
 
 void AUnderwaterCharacter::StartHealthRegen()
@@ -1848,7 +1949,8 @@ float AUnderwaterCharacter::TakeDamage(float DamageAmount, struct FDamageEvent c
 	{
 		return 0.0f;
 	}
-
+	
+	// Groggy 상태라면 피격 시에 Timer를 감소시키고 0이 되면 Death 상태로 전이시킨다.
 	if (CharacterState == ECharacterState::Groggy)
 	{
 		const float NewRemainGroggyTime = GetRemainGroggyTime() - GroggyHitPenalty;
@@ -1859,6 +1961,7 @@ float AUnderwaterCharacter::TakeDamage(float DamageAmount, struct FDamageEvent c
 		}
 		else
 		{
+			// Update Groggy Timer
 			GetWorldTimerManager().SetTimer(GroggyTimer,
 			                                FTimerDelegate::CreateUObject(
 				                                this, &AUnderwaterCharacter::SetCharacterState, ECharacterState::Death),
@@ -1903,6 +2006,7 @@ float AUnderwaterCharacter::TakeDamage(float DamageAmount, struct FDamageEvent c
 	// 캐릭터의 상태를 검사하는 것이 더 안전하다.
 	OnDamageTakenDelegate.Broadcast(ActualDamage, StatComponent->GetCurrentHealth());
 
+	// 피격 시에는 체력 회복을 중단하고 이후에 재개한다.
 	StopHealthRegen();
 	if (CharacterState == ECharacterState::Normal
 		&& !bIsInCombat)
@@ -2494,6 +2598,22 @@ void AUnderwaterCharacter::Teleport(const FVector& NewLocation, const FRotator& 
 				CableActor->ApplyWorldOffsetToCable(CharacterMeshOffset);
 			}
 		}
+	}
+}
+
+void AUnderwaterCharacter::OnInitialPhysicsVolumeSet()
+{
+	
+	APhysicsVolume* PhysicsVolume = GetPhysicsVolume();
+	if (PhysicsVolume == nullptr)
+	{
+		return;
+	}
+
+	if (PhysicsVolume->bWaterVolume && HasAuthority())
+	{
+		UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Initial Physics Volume: Water"));
+		LanternComponent->SetLanternLightEnabled(true);
 	}
 }
 

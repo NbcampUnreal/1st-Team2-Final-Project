@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 #pragma once
 
 #include "CoreMinimal.h"
@@ -113,6 +113,9 @@ public:
 	
 	UFUNCTION()
 	void OnRep_CurrentEquipItem();
+
+	UFUNCTION()
+	void OnEnvironmentStateChanged(EEnvironmentState OldEnvironmentState, EEnvironmentState NewEnvironmentState);
 
 	int8 FindItemIndexByName(FName ItemName); //아이템 이름으로 InventoryList 인덱스 반환 (빈슬롯이 없으면 -1 반환)
 	int8 FindItemIndexByID(int8 ItemID); //빈슬롯이 없으면 - 1 반환

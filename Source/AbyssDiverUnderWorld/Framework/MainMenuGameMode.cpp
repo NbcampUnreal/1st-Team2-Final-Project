@@ -2,6 +2,7 @@
 
 #include "Subsystems/SoundSubsystem.h"
 #include "Subsystems/Localizations/LocalizationSubsystem.h"
+#include "Framework/ADGameInstance.h"
 
 void AMainMenuGameMode::BeginPlay()
 {
@@ -16,4 +17,14 @@ void AMainMenuGameMode::BeginPlay()
 	//{
 	//	GetGameInstance()->GetSubsystem<ULocalizationSubsystem>()->SetLanguage(ELanguage::Korean);
 	//}
+}
+
+void AMainMenuGameMode::ActivateButtons()
+{
+	if(OnActivateButtonsDelegate.IsBound())
+		OnActivateButtonsDelegate.Broadcast(true);
+	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+	{ 
+		GI->bHasPlayedTutorial = true;
+	}
 }

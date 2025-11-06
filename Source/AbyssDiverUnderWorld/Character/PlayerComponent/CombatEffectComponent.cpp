@@ -137,29 +137,20 @@ void UCombatEffectComponent::OnDamageTaken(float DamageAmount, float CurrentHeal
 		return;
 	}
 
-	AUnderwaterCharacter* UnderwaterCharacter = Cast<AUnderwaterCharacter>(GetOwner());
-	if (!UnderwaterCharacter)
+	if (OwnerCharacter->IsNormal() && !OwnerCharacter->IsCaptured())
 	{
-		return;
-	}
+		if (AADPlayerController* PlayerController = Cast<AADPlayerController>(GetOwner()->GetInstigatorController()))
+		{
+			PlayerController->C_StartCameraBlink(
+				FColor::Black,
+				FVector2D(0.0f, 1.0f),
+				0.0f,
+				HitBlackoutDuration,
+				HitFadeInDuration
+			);
 
-	AADPlayerController* PlayerController = Cast<AADPlayerController>(GetOwner()->GetInstigatorController());
-	if (!PlayerController)
-	{
-		return;
-	}
-
-	if (UnderwaterCharacter->IsNormal() && !UnderwaterCharacter->IsCaptured())
-	{
-		PlayerController->C_StartCameraBlink(
-			FColor::Black,
-			FVector2D(0.0f, 1.0f),
-			0.0f,
-			HitBlackoutDuration,
-			HitFadeInDuration
-		);
-
-		PlayerController->C_PlaySound(DamageTakenSound);
+			PlayerController->C_PlaySound(DamageTakenSound);
+		}
 	}
 }
 

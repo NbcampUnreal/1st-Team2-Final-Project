@@ -87,7 +87,7 @@ void UEquipUseComponent::BeginPlay()
 
 	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
 	{
-		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
+		SoundSubsystemWeakPtr = GI->GetSubsystem<USoundSubsystem>();
 	}
 
 	// DPV
@@ -593,8 +593,16 @@ void UEquipUseComponent::DeinitializeEquip()
 	}
 
 	// 부스트·야간투시 효과 끄기
+	if (bNightVisionOn)
+	{
+		bNightVisionOn = false;
+		OnRep_NightVisionOn();
+		if (NightVisionInstance)
+		{
+			NightVisionInstance->NightVigionUnUse();
+		}
+	}
 	bBoostActive = false;
-	bNightVisionOn = false;
 
 	// 속도 복구
 	if (OwningCharacter.IsValid())
@@ -1205,17 +1213,15 @@ bool UEquipUseComponent::RecoverRecoil(float DeltaTime)
 
 USoundSubsystem* UEquipUseComponent::GetSoundSubsystem()
 {
-	if (SoundSubsystem)
+	if (!SoundSubsystemWeakPtr.IsValid())
 	{
-		return SoundSubsystem;
+		if (UADGameInstance* GameInstance = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+		{
+			SoundSubsystemWeakPtr = GameInstance->GetSubsystem<USoundSubsystem>();
+		}
 	}
 
-	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
-	{
-		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
-		return SoundSubsystem;
-	}
-	return nullptr;
+	return SoundSubsystemWeakPtr.Get();
 }
 
 void UEquipUseComponent::InitializeAmmoUI()
