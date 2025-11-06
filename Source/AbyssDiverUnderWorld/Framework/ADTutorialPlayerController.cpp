@@ -9,7 +9,9 @@
 #include "Kismet/GameplayStatics.h"
 
 AADTutorialPlayerController::AADTutorialPlayerController()
+	: Super()
 {
+	
 }
 
 void AADTutorialPlayerController::BeginPlay()

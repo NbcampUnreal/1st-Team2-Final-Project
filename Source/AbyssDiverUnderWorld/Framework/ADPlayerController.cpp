@@ -18,6 +18,7 @@
 #include "UI/InteractionDescriptionWidget.h"
 #include "UI/HoldInteractionWidget.h"
 #include "UI/CrosshairWidget.h"
+#include "UI/PauseWidget.h"
 
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
@@ -350,6 +351,76 @@ void AADPlayerController::SetLookSensitivity(float NewXSensitivity, float NewYSe
 	UE_LOG(AbyssDiver, Display, TEXT("Set Mouse Sensitivity : X: %f, Y: %f"), MouseXSensitivity, MouseYSensitivity);
 }
 
+void AADPlayerController::ShowPauseMenu()
+{
+	if (!IsLocalController())
+		return;
+
+	if (!PauseWidgetInstance && PauseWidgetClass)
+	{
+		PauseWidgetInstance = CreateWidget<UPauseWidget>(this, PauseWidgetClass);
+	}
+	if (PauseWidgetInstance && !PauseWidgetInstance->IsInViewport())
+	{
+		PauseWidgetInstance->AddToViewport();
+
+		PauseWidgetInstance->PlayInAnimation();
+
+
+		FInputModeGameAndUI InputMode;
+		InputMode.SetWidgetToFocus(PauseWidgetInstance->TakeWidget());
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		SetInputMode(InputMode);
+
+		bShowMouseCursor = true;
+		bIsPauseMenuOpened = true;
+
+	}
+
+}
+
+void AADPlayerController::HidePauseMenu()
+{
+	if (!IsLocalController())
+		return;
+
+	if (PauseWidgetInstance)
+	{
+		PauseWidgetInstance->RemoveFromParent();
+	}
+
+	FInputModeGameOnly InputMode;
+	SetInputMode(InputMode);
+
+	// 2) 마우스 커서 숨기기
+	bShowMouseCursor = false;
+	bIsPauseMenuOpened = false;
+}
+
+void AADPlayerController::TogglePauseMenu()
+{
+	if (!PauseWidgetClass)
+		return;
+
+	if (!bIsPauseMenuOpened)
+	{
+		ShowPauseMenu();
+	}
+	else
+	{
+		if (PauseWidgetInstance)
+		{
+			PauseWidgetInstance->RequestClose();
+		}
+		else
+		{
+			// 혹시 모를 예외: 위젯이 없으면 그냥 바로 정리
+			HidePauseMenu();
+		}
+	}
+	
+}
+
 void AADPlayerController::BeginSpectatingState()
 {
 	UE_LOG(LogAbyssDiverSpectate, Display, TEXT("Begin Spectating State for %s, GetPawn : %s"), *GetName(), GetPawn() ? *GetPawn()->GetName() : TEXT("None"));
@@ -401,6 +472,10 @@ void AADPlayerController::SetupInputComponent()
 		{
 			EnhancedInput->BindAction(InventoryAction, ETriggerEvent::Started, this, &AADPlayerController::ShowInventory);
 			EnhancedInput->BindAction(InventoryAction, ETriggerEvent::Completed, this, &AADPlayerController::HideInventory);
+		}
+		if (IA_Pause)
+		{
+			EnhancedInput->BindAction(IA_Pause, ETriggerEvent::Started, this, &AADPlayerController::TogglePauseMenu);
 		}
 	}
 }
