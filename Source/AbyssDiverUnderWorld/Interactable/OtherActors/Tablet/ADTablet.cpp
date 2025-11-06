@@ -10,6 +10,7 @@
 
 #include "Components/WidgetComponent.h"
 #include "Net/UnrealNetwork.h"
+#include "Camera/CameraComponent.h"  
 
 // Sets default values
 AADTablet::AADTablet()
@@ -77,13 +78,41 @@ void AADTablet::Pickup(AUnderwaterCharacter* UnderwaterCharacter)
 	TabletMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	TabletMesh->SetVisibility(false, true);
 	
-	TabletMesh->AttachToComponent(
-		Mesh1P,
-		FAttachmentTransformRules::SnapToTargetNotIncludingScale,
-		TEXT("TabletSocket")
-	);
-	TabletMesh->SetRelativeLocation(HoldOffsetLocation);
-	TabletMesh->SetRelativeRotation(HoldOffsetRotation);
+	UCameraComponent* Camera1P = UnderwaterCharacter->GetFirstPersonCameraComponent();
+	if (Camera1P)
+	{
+		TabletMesh->AttachToComponent(
+			Camera1P,
+			FAttachmentTransformRules::SnapToTargetNotIncludingScale,
+			NAME_None
+		);
+
+		TabletMesh->SetRelativeLocation(HoldOffsetLocation);
+		TabletMesh->SetRelativeRotation(HoldOffsetRotation);
+		LOG(TEXT("Camera1P"));
+	}
+	else
+	{
+		if (Mesh1P)
+		{
+			TabletMesh->AttachToComponent(
+				Mesh1P,
+				FAttachmentTransformRules::SnapToTargetNotIncludingScale,
+				TEXT("TabletSocket")
+			);
+			TabletMesh->SetRelativeLocation(HoldOffsetLocation);
+			TabletMesh->SetRelativeRotation(HoldOffsetRotation);
+		}
+		LOG(TEXT("No Camera1P"));
+	}
+
+	//TabletMesh->AttachToComponent(
+	//	Mesh1P,
+	//	FAttachmentTransformRules::SnapToTargetNotIncludingScale,
+	//	TEXT("TabletSocket")
+	//);
+	//TabletMesh->SetRelativeLocation(HoldOffsetLocation);
+	//TabletMesh->SetRelativeRotation(HoldOffsetRotation);
 
 	ScreenWidget->SetVisibility(true);
 	if (UUserWidget* UserWidget = ScreenWidget->GetUserWidgetObject())
