@@ -35,6 +35,7 @@
 #include "Kismet/GameplayStatics.h"
 
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Engine/DamageEvents.h"
 
 const FName UEquipUseComponent::BASIC_SPEAR_GUN_NAME = TEXT("BasicSpearGun");
 
@@ -61,6 +62,8 @@ UEquipUseComponent::UEquipUseComponent()
 	bChargeBatteryWidgetVisible = false;
 	bAlreadyCursorShowed = false;
 	bIsReloading = false;
+	EquipType = EEquipmentType::Fist;
+	LeftAction = EAction::Punch;
 
 	// 테스트용
 	if (ACharacter* Char = Cast<ACharacter>(GetOwner()))
@@ -234,6 +237,7 @@ void UEquipUseComponent::S_LeftClick_Implementation()
 	case EAction::ToggleNVGToggle: ToggleNightVision(); break;
 	case EAction::PlaceMine:	   PlaceMine();			break;
 	case EAction::SwingHammer:     SwingHammer();		break;
+	case EAction::Punch:           Punch();				break;
 	default:                      break;
 	}
 }
@@ -573,8 +577,9 @@ void UEquipUseComponent::DeinitializeEquip()
 	bCanFire = true;
 	bIsWeapon = false;
 	bHasNoAnimation = true;
-	LeftAction = EAction::None;
-	RKeyAction = EAction::None;
+	LeftAction = EAction::Punch;
+	RKeyAction = EAction::Punch;
+	EquipType = EEquipmentType::Fist;
 	bIsReloading = false;
 
 	// 탄약/배터리 현재값 초기화
@@ -1039,6 +1044,45 @@ void UEquipUseComponent::SwingHammer()
 		CoolDown,
 		false
 	);
+}
+
+void UEquipUseComponent::Punch()
+{
+	if (!bCanFire || !OwningCharacter.IsValid())
+		return;
+
+	bCanFire = false;
+	AUnderwaterCharacter* Diver = Cast<AUnderwaterCharacter>(OwningCharacter);
+
+	if (PunchMontage && Diver)
+	{
+		FAnimSyncState SyncState;
+		SyncState.bEnableRightHandIK = true;
+		SyncState.bEnableLeftHandIK = false;
+		SyncState.bEnableFootIK = true;
+		SyncState.bIsStrafing = false;
+
+		Diver->M_StopAllMontagesOnBothMesh(0.f);
+		Diver->M_PlayMontageOnBothMesh(
+			PunchMontage,
+			1.0f,
+			NAME_None,
+			SyncState
+		);
+
+		// 쿨다운
+		const float CoolDown = 1.f / FistRateOfAttack;
+		GetWorld()->GetTimerManager().ClearTimer(TimerHandle_HandleRefire);
+		GetWorld()->GetTimerManager().SetTimer(
+			TimerHandle_HandleRefire,
+			[this, Diver]()
+			{
+				bCanFire = true;
+			},
+			CoolDown,
+			false
+		);
+	}
 }
 
 void UEquipUseComponent::FinishReload(int32 InMagazineSize, AUnderwaterCharacter* Diver)
