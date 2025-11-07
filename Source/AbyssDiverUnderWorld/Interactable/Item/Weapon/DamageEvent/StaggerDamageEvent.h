@@ -20,10 +20,6 @@ struct FStaggerDamageEvent : public FDamageEvent
     /** 경직 지속시간 (0 이하일 경우 DamageType 기본값 사용) */
     UPROPERTY()
     float Duration;
-
-    /** DamageType 클래스 (보통 UDamageType_Stagger 사용) */
-    UPROPERTY()
-    TSubclassOf<UDamageType> StaggerDamageTypeClass;
 #pragma endregion
     
 
