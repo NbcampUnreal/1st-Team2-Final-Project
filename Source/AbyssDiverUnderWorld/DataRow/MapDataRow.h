@@ -19,7 +19,7 @@ enum EDepthZone : uint8
 };
 
 /**
- * 맵의 깊이 정보를 저장하는 Table Row 구조체
+ * 맵 정보를 저장하는 데이터 테이블 행 구조체
  * Z 변수는 게임 맵에서의 실제 Z 좌표를 기준으로 한다
  * Depth 변수는 특정 지점에서의 게임적 깊이를 나타낸다.
  */
@@ -61,4 +61,9 @@ struct ABYSSDIVERUNDERWORLD_API FMapDataRow : public FTableRowBase
 	/** 위험 구역의 Z축 값, World Map을 기준으로 한다. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	float DangerZoneZ;
+
+	/** 현재 맵의 최대 산소 비율. 1.0일 경우 기존 산소량과 동일, 0.3일 경우 30%만 제공
+	 * FinalMaxOxygenRate = (DefaultOxygenRate + UpgradeOxygenRate) * MaxOxygenRate */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Meta = (ClampMin = "0", ClampMax = "1", UIMin = "0", UIMax = "1"))
+	float MaxOxygenRate = 1.0f;
 };
