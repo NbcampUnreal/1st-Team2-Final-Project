@@ -94,7 +94,7 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	CameraTransitionDirection = 1.0f;
 	CameraTransitionTimeElapsed = 0.0f;
 	CameraTransitionDuration = 0.25f;
-	EmoteCameraTransitionLength = 500.0f;
+	EmoteCameraTransitionLength = 350.0f;
 	EmoteCameraTransitionEasingType = EEasingFunc::EaseInOut;
 
 	LanternLength = 3000.0f;
