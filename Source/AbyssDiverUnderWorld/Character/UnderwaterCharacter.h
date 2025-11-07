@@ -1341,7 +1341,7 @@ private:
 
 	// — Stagger 상태 변수 —
 	/** 현재 경직 중인지 여부 */
-	bool bIsStaggered = false;
+	uint8  bIsStaggered : 1 = false;
 
 	/** 현재 경직 종료 예정 시각(World TimeSeconds) */
 	float StaggerEndTime = 0.f;
