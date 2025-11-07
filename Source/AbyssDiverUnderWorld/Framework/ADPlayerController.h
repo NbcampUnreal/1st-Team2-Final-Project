@@ -121,7 +121,16 @@ public:
 	/** 마우스 감도 설정 */
 	UFUNCTION(Exec, BlueprintCallable, Category = "Control")
 	void SetLookSensitivity(float NewXSensitivity, float NewYSensitivity);
-	
+
+	UFUNCTION()
+	void ShowPauseMenu();
+
+	UFUNCTION()
+	void HidePauseMenu();
+
+	UFUNCTION()
+	void TogglePauseMenu();
+
 protected:
 
 	/** 관전 상태가 시작될 때 호출되는 함수 */
@@ -185,7 +194,6 @@ protected:
 	void S_GainShield(int Amount);
 	
 	void OnCameraBlankEnd();
-
 private:
 	
 	/** 이름 위젯 가시 상태 설정 */
@@ -212,6 +220,12 @@ public:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputAction> InteractAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputAction> IA_Pause;
+
+	UPROPERTY()
+	uint8 bIsPauseMenuOpened : 1 = 0;
 	
 private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
@@ -232,6 +246,13 @@ private:
 	UPROPERTY()
 	TObjectPtr<UHoldInteractionWidget> InteractionHoldWidget;
 
+	UPROPERTY(EditAnywhere, Category = "UI")
+	TSubclassOf<class UPauseWidget> PauseWidgetClass;
+
+	UPROPERTY()
+	TObjectPtr<UPauseWidget> PauseWidgetInstance;
+
+
 	/** Camera Blank Timer Handle */
 	FTimerHandle CameraBlankTimerHandle;
 
@@ -250,7 +271,7 @@ private:
 	/** 마우스 Y축 감도 */
 	UPROPERTY(BlueprintReadOnly, Category = "Control", meta = (AllowPrivateAccess = "true"))
 	float MouseYSensitivity = 1.0f;
-	
+
 #pragma endregion 
 
 #pragma region Getters / Setters
