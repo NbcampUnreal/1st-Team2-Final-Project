@@ -24,11 +24,15 @@ struct FOxygenState
 {
 	GENERATED_BODY()
 
-	FOxygenState() : MaxOxygenLevel(600.0f), OxygenLevel(600.0f) {};
+	FOxygenState() : MaxOxygenLevel(600.0f), MinOxygenLevel(0.0f), OxygenLevel(600.0f) {};
 	
 	/** 최대 산소량 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	float MaxOxygenLevel;
+
+	/** 최소 산소량 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	float MinOxygenLevel;
 
 	/** 현재 산소량 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
@@ -68,8 +72,7 @@ private:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	
 #pragma region Method
-public:
-	void SetTutorialMode(bool bIsTutorial);
+	
 protected:
 	/** 현재 산소량이 변경됬을 떄 호출 */
 	UFUNCTION(BlueprintImplementableEvent, meta=(DisplayName = "OnOxygenLevelChanged"))
@@ -85,6 +88,7 @@ protected:
 
 	UFUNCTION()
 	void OnRep_OxygenStateChanged();
+	
 private:
 	/** 매 틱마다 산소를 소모 */
 	void ConsumeOxygen(float DeltaTime);
@@ -109,9 +113,7 @@ public:
 	/** 산소가 고갈되었다가 회복될 때 호출되는 델리게이트 */
 	UPROPERTY(BlueprintAssignable)
 	FOxygenRestored OnOxygenRestored;
-	
-	UPROPERTY(EditAnywhere, Category = "Oxygen|Tutorial")
-	float MinOxygenInTutorial = 1.0f;
+
 private:
 	/** 산소 시스템 활성화 여부. 비활성화 되면 산소 회복, 소모를 정지한다. 사망 상태 등에서 사용 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat", meta = (AllowPrivateAccess = "true"))
@@ -121,7 +123,7 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stat", meta=(AllowPrivateAccess = "true"))
 	uint8 bShouldConsumeOxygen : 1;
 
-	/** 현재 산소 상태, MaxOxygenLevel, OxygenLevel을 포함한다. */
+	/** 현재 산소 상태, MaxOxygenLevel, MinOxygenLevel, OxygenLevel을 포함한다. */
 	UPROPERTY(ReplicatedUsing="OnRep_OxygenStatechanged", EditAnywhere, BlueprintReadOnly, Category = "Stat", meta = (AllowPrivateAccess = "true"))
 	FOxygenState OxygenState;
 
@@ -132,7 +134,6 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Stat", meta=(AllowPrivateAccess = "true", ClampMin="0.0"))
 	float OxygenConsumeRate;
 
-	uint8 bIsInTutorialMode : 1;
 #pragma endregion
 
 #pragma region Getter Setter
@@ -163,6 +164,10 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SetMaxOxygenLevel(float NewMaxOxygenLevel);
 
+	/** 최소 산소량을 설정한다. */
+	UFUNCTION(BlueprintCallable)
+	void SetMinOxygenLevel(float NewMinOxygenLevel);
+	
 	/** 현재 산소량 */
 	FORCEINLINE float GetOxygenLevel() const { return OxygenState.OxygenLevel; }
 
