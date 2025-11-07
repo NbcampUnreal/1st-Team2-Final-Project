@@ -251,12 +251,11 @@ void AADInGameMode::Logout(AController* Exiting)
 
 void AADInGameMode::FinishRestartPlayer(AController* NewPlayer, const FRotator& StartRotation)
 {
+	// Finish Restart Player에서 Possess가 호출
 	Super::FinishRestartPlayer(NewPlayer, StartRotation);
 
 	if (AADPlayerState* PlayerState = NewPlayer->GetPlayerState<AADPlayerState>())
 	{
-		PlayerState->SetHasBeenDead(false);
-		
 		int32 PlayerIndex = PlayerState->GetPlayerIndex();
 
 		if (PlayerAliveInfos.IsValidIndex(PlayerIndex) == false)
@@ -503,8 +502,6 @@ FVector AADInGameMode::GetRandomLocation(const FVector& Location, float Distance
 void AADInGameMode::RestartPlayerFromPlayerIndex(int8 PlayerIndex, const FVector& SpawnLocation)
 {
 	AADPlayerController* PlayerController = FindPlayerControllerFromIndex(PlayerIndex);
-	// 현재 관전이 없으므로 Hide 되어 있다.
-	// if (PlayerController == nullptr || PlayerController->GetPawn() != nullptr)
 	if (PlayerController == nullptr)
 	{
 		return;
