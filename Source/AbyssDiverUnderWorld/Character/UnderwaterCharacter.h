@@ -1262,7 +1262,7 @@ private:
 
 	/** 인벤토리 컴포넌트 캐시 */
 	UPROPERTY()
-	TObjectPtr<class UADInventoryComponent> CachedInventoryComponent;
+	TWeakObjectPtr<class UADInventoryComponent> InventoryWeakPtr;
 
 	/** 장착 아이템 렌더링을 위한 컴포넌트 */
 	UPROPERTY()

@@ -318,7 +318,7 @@ void AUnderwaterCharacter::InitPlayerStatus(AADPlayerState* ADPlayerState)
 	
 	if (UADInventoryComponent* Inventory = ADPlayerState->GetInventory())
 	{
-		CachedInventoryComponent = Inventory;
+		InventoryWeakPtr = Inventory;
 		// 인벤토리가 변경될 떄 OnRep에서도 호출되기 때문에 여기서 바인딩하면 Server, Client 양쪽에서 바인딩 가능하다.
 		Inventory->InventoryUpdateDelegate.AddUObject(this, &AUnderwaterCharacter::AdjustSpeed);
 		OnEnvironmentStateChangedDelegate.AddDynamic(Inventory, &UADInventoryComponent::OnEnvironmentStateChanged);
@@ -1579,15 +1579,15 @@ void AUnderwaterCharacter::DropAllExchangeableItems()
 		return;
 	}
 
-	if (CachedInventoryComponent)
+	if (InventoryWeakPtr.IsValid())
 	{
-		const TArray<FItemData>& Items = CachedInventoryComponent->GetInventoryList().Items;
+		const TArray<FItemData>& Items = InventoryWeakPtr->GetInventoryList().Items;
 		const int32 ItemCount = Items.Num();
 		for (int32 i = ItemCount - 1; i >= 0; --i)
 		{
 			if (Items[i].ItemType == EItemType::Exchangable)
 			{
-				CachedInventoryComponent->RemoveBySlotIndex(i, EItemType::Exchangable, true);
+				InventoryWeakPtr->RemoveBySlotIndex(i, EItemType::Exchangable, true);
 			}
 		}
 	}
@@ -2450,29 +2450,29 @@ void AUnderwaterCharacter::Radar(const FInputActionValue& InputActionValue)
 
 void AUnderwaterCharacter::EquipSlot1(const FInputActionValue& InputActionValue)
 {
-	if (CharacterState != ECharacterState::Normal || !bCanUseEquipment || !CachedInventoryComponent)
+	if (CharacterState != ECharacterState::Normal || !bCanUseEquipment || !InventoryWeakPtr.IsValid())
 	{
 		return;
 	}
-	CachedInventoryComponent->S_UseInventoryItem(EItemType::Equipment, 0);
+	InventoryWeakPtr->S_UseInventoryItem(EItemType::Equipment, 0);
 }
 
 void AUnderwaterCharacter::EquipSlot2(const FInputActionValue& InputActionValue)
 {
-	if (CharacterState != ECharacterState::Normal || !bCanUseEquipment || !CachedInventoryComponent)
+	if (CharacterState != ECharacterState::Normal || !bCanUseEquipment || !InventoryWeakPtr.IsValid())
 	{
 		return;
 	}
-	CachedInventoryComponent->S_UseInventoryItem(EItemType::Equipment, 1);
+	InventoryWeakPtr->S_UseInventoryItem(EItemType::Equipment, 1);
 }
 
 void AUnderwaterCharacter::EquipSlot3(const FInputActionValue& InputActionValue)
 {
-	if (CharacterState != ECharacterState::Normal || !bCanUseEquipment || !CachedInventoryComponent)
+	if (CharacterState != ECharacterState::Normal || !bCanUseEquipment || !InventoryWeakPtr.IsValid())
 	{
 		return;
 	}
-	CachedInventoryComponent->S_UseInventoryItem(EItemType::Equipment, 2);
+	InventoryWeakPtr->S_UseInventoryItem(EItemType::Equipment, 2);
 }
 
 void AUnderwaterCharacter::PerformEmote1(const FInputActionValue& InputActionValue)
@@ -3016,7 +3016,7 @@ void AUnderwaterCharacter::SetHideInSeaweed(const bool bNewHideInSeaweed)
 
 bool AUnderwaterCharacter::IsOverloaded() const
 {
-	return IsValid(CachedInventoryComponent) && CachedInventoryComponent->GetTotalWeight() >= OverloadWeight;
+	return InventoryWeakPtr.IsValid() && InventoryWeakPtr->GetTotalWeight() >= OverloadWeight;
 }
 
 void AUnderwaterCharacter::SetZoneSpeedMultiplier(float NewMultiplier)
