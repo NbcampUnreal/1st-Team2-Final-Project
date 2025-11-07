@@ -14,6 +14,8 @@
 
 void UGameGuideWidget::NativeConstruct()
 {
+	Super::NativeConstruct();
+
 	UpdateGuideList();
 	SetGuideVisibility(false);
 }
