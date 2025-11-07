@@ -1,5 +1,7 @@
 ﻿#include "Interactable/Item/Component/AnimNotify/AnimNotify_PunchHit.h"
 #include "Kismet/GameplayStatics.h"
+#include "Interactable/Item/Weapon/DamageType/DamageType_Stagger.h"
+#include "Interactable/Item/Weapon/DamageEvent/StaggerDamageEvent.h"
 
 UAnimNotify_PunchHit::UAnimNotify_PunchHit()
 {
@@ -74,12 +76,30 @@ void UAnimNotify_PunchHit::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenc
             continue;
 
         UniqueActors.Add(Target);
-        UGameplayStatics::ApplyDamage(
-            Target,
-            Damage,
-            Owner->GetInstigatorController(),
-            Owner,
-            UDamageType::StaticClass()
-        );
+
+        if (bCauseStagger)
+        {
+            FStaggerDamageEvent StaggerEvent;
+            StaggerEvent.DamageTypeClass = UDamageType_Stagger::StaticClass();
+            StaggerEvent.Duration = 1.0f;
+
+            Target->TakeDamage(
+                Damage,
+                StaggerEvent,
+                Owner->GetInstigatorController(),
+                Owner
+            );
+        }
+        else
+        {
+            UGameplayStatics::ApplyDamage(
+                Target,
+                Damage,
+                Owner->GetInstigatorController(),
+                Owner,
+                UDamageType::StaticClass()
+            );
+        }
+        
     }
 }

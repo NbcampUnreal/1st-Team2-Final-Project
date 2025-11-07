@@ -32,6 +32,10 @@ public:
     UPROPERTY(EditAnywhere, Category = "Fist")
     float Radius = 40.f;
 
+    // 경직 발생 여부 
+    UPROPERTY(EditAnywhere, Category = "Fist|Stagger")
+    uint8 bCauseStagger : 1 = true;
+
     // 타격 채널 (Pawn + 몬스터 커스텀 채널 허용)
     UPROPERTY(EditAnywhere, Category = "Fist")
     TEnumAsByte<ECollisionChannel> MonsterChannel = ECC_GameTraceChannel3;

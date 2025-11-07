@@ -675,6 +675,13 @@ protected:
 	void C_ApplyControlRotation(const FRotator& NewControlRotation);
 	void C_ApplyControlRotation_Implementation(const FRotator& NewControlRotation);
 	
+	// — Stagger 처리 메서드 (일단 테스트 용으로 로깅만) —
+	/** 경직 시작: 이동을 비활성화하고 타이머를 설정한다 */
+	void StartStagger(float Duration, AActor* DamageCauser);
+
+	/** 경직 종료: 이동을 재활성화하고 상태를 초기화한다 */
+	void EndStagger();
+
 private:
 	/** Montage 콜백을 등록 */
 	void SetupMontageCallbacks();
@@ -1332,7 +1339,16 @@ private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	uint8 bIsDeathLocked : 1;
 
-	
+	// — Stagger 상태 변수 —
+	/** 현재 경직 중인지 여부 */
+	bool bIsStaggered = false;
+
+	/** 현재 경직 종료 예정 시각(World TimeSeconds) */
+	float StaggerEndTime = 0.f;
+
+	/** 경직 종료를 위한 타이머 */
+	FTimerHandle StaggerTimerHandle;
+
 #pragma endregion
 
 #pragma region Getter Setter
