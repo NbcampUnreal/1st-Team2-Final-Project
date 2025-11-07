@@ -142,6 +142,8 @@ protected:
 	void ShowInventory(const FInputActionValue& InputActionValue);
 	void HideInventory(const FInputActionValue& InputActionValue);
 
+	void ToggleGuide(const FInputActionValue& InputActionValue);
+
 	UFUNCTION(Exec)
 	void ToggleTestHUD();
 
@@ -212,6 +214,9 @@ public:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputAction> InteractAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputAction> GuideAction;
 	
 private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))

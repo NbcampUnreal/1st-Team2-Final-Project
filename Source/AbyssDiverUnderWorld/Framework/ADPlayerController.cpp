@@ -402,6 +402,10 @@ void AADPlayerController::SetupInputComponent()
 			EnhancedInput->BindAction(InventoryAction, ETriggerEvent::Started, this, &AADPlayerController::ShowInventory);
 			EnhancedInput->BindAction(InventoryAction, ETriggerEvent::Completed, this, &AADPlayerController::HideInventory);
 		}
+		if (GuideAction)
+		{
+			EnhancedInput->BindAction(GuideAction, ETriggerEvent::Triggered, this, &AADPlayerController::ToggleGuide);
+		}
 	}
 }
 
@@ -432,6 +436,14 @@ void AADPlayerController::HideInventory(const FInputActionValue& InputActionValu
 				PS->GetInventory()->HideInventory();
 			}
 		}
+	}
+}
+
+void AADPlayerController::ToggleGuide(const FInputActionValue& InputActionValue)
+{
+	if (PlayerHUDComponent)
+	{
+		PlayerHUDComponent->ToggleGuide();
 	}
 }
 
