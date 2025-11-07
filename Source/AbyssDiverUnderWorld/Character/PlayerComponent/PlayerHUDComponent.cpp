@@ -22,6 +22,7 @@
 #include "UI/RadarWidgets/Radar2DWidget.h"
 #include "UI/DepthWidget.h"
 #include "UI/InteractPopupWidget.h"
+#include "UI/GameGuideWidget.h"
 
 #include "Interactable/OtherActors/ADDroneSeller.h"
 #include "Interactable/OtherActors/ADDrone.h"
@@ -183,6 +184,12 @@ void UPlayerHUDComponent::BeginPlay()
 		{
 			SpectatorHUDWidget->BindWidget(PlayerController);
 		}
+	}
+
+	if (GameGuideWidgetClass)
+	{
+		GameGuideWidget = CreateWidget<UGameGuideWidget>(PlayerController, GameGuideWidgetClass);
+		GameGuideWidget->AddToViewport(); 
 	}
 
 	BindGameState();
@@ -846,4 +853,34 @@ void UPlayerHUDComponent::ShowFirstClearEndingWidget()
 
 	FirstClearWidgetInstance->AddToViewport();
 
+}
+
+void UPlayerHUDComponent::ToggleGuide()
+{
+	if (GameGuideWidget)
+	{
+		AADPlayerController* PC = Cast<AADPlayerController>(GetOwner());
+		if (!PC) return;
+
+		if (!GameGuideWidget->GetbIsVisibility())
+		{ 
+			FInputModeGameAndUI InputMode;
+			InputMode.SetWidgetToFocus(GameGuideWidget->TakeWidget());
+			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock); 
+			PC->bShowMouseCursor = true;
+			PC->SetInputMode(InputMode);
+		} 
+		else
+		{  
+			PC->SetShowMouseCursor(false);
+			//PC->SetIgnoreMoveInput(false); 
+			//PC->SetIgnoreLookInput(false);
+			PC->SetInputMode(FInputModeGameOnly());
+		}
+
+		FTimerHandle DelayFunctionTimerHandle;
+		float DelayTime = 0.5f;
+		GetWorld()->GetTimerManager().SetTimer(DelayFunctionTimerHandle, [this]() {GameGuideWidget->ToggleGuideVisibility(); }, DelayTime, false);
+		
+	}
 }

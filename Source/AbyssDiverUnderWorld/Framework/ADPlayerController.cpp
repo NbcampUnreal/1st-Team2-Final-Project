@@ -477,6 +477,10 @@ void AADPlayerController::SetupInputComponent()
 		{
 			EnhancedInput->BindAction(IA_Pause, ETriggerEvent::Started, this, &AADPlayerController::TogglePauseMenu);
 		}
+		if (GuideAction)
+		{
+			EnhancedInput->BindAction(GuideAction, ETriggerEvent::Triggered, this, &AADPlayerController::ToggleGuide);
+		}
 	}
 }
 
@@ -507,6 +511,14 @@ void AADPlayerController::HideInventory(const FInputActionValue& InputActionValu
 				PS->GetInventory()->HideInventory();
 			}
 		}
+	}
+}
+
+void AADPlayerController::ToggleGuide(const FInputActionValue& InputActionValue)
+{
+	if (PlayerHUDComponent)
+	{
+		PlayerHUDComponent->ToggleGuide();
 	}
 }
 

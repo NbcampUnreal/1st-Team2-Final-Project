@@ -4,6 +4,7 @@
 #include "Components/ActorComponent.h"
 #include "UI/PlayerStatusWidget.h"
 #include "UI/EndingWidget.h"
+#include "InputAction.h"
 #include "PlayerHUDComponent.generated.h"
 
 enum class EMissionType : uint8;
@@ -97,6 +98,8 @@ public:
     void S_ReportConfirm_Implementation(AActor* RequestInteractableActor, bool bConfirmed);
 
     void ShowFirstClearEndingWidget();
+
+    void ToggleGuide();
     
 protected:
     
@@ -176,6 +179,12 @@ private:
 
     UPROPERTY()
     TObjectPtr<UEndingWidget> FirstClearWidgetInstance;
+
+    UPROPERTY(EditDefaultsOnly, Category = UI, meta = (AllowPrivateAccess = "true"))
+    TSubclassOf<class UGameGuideWidget> GameGuideWidgetClass;
+
+    UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = true))
+    TObjectPtr<UGameGuideWidget> GameGuideWidget;
     
 #pragma endregion
 

@@ -9,6 +9,7 @@
 #include "DataRow/MapDepthRow.h"
 #include "DataRow/PhaseGoalRow.h"
 #include "DataRow/ShopItemMeshTransformRow.h"
+#include "DataRow/GameGuideInfoRow.h"
 #include "Logging/LogMacros.h"
 
 void UDataTableSubsystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -47,6 +48,11 @@ void UDataTableSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	{
 		LOGV(Error, TEXT("ItemDataTable is null"));
 	}
+
+	if (UDataTable* GameGuideInfoDataTable = GI->GameGuideInfoData)
+	{
+		GameGuideInfoDataTable->GetAllRows<FGameGuideInfoRow>(TEXT("GameGuideInfoDataTable"), GameGuideInfoTableArray);
+	}
 	
 	ParseUpgradeDataTable(GI);
 
@@ -68,6 +74,10 @@ void UDataTableSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	Algo::Sort(ShopItemMeshTransformTableArray, [](const FShopItemMeshTransformRow* A, const FShopItemMeshTransformRow* B)
 		{
 			return A->ItemId < B->ItemId;
+		});
+	Algo::Sort(GameGuideInfoTableArray, [](const FGameGuideInfoRow* A, const FGameGuideInfoRow* B)
+		{
+			return A->GuideId < B->GuideId;
 		});
 
 	ParsePhaseGoalDataTable(GI);
@@ -123,6 +133,11 @@ FUpgradeDataRow* UDataTableSubsystem::GetUpgradeData(EUpgradeType UpgradeType, u
 FPhaseGoalRow* UDataTableSubsystem::GetPhaseGoalData(EMapName MapName, int32 Phase) const
 {
 	return PhaseGoalTableMap.FindRef(TPair<EMapName, int32>(MapName, Phase));
+}
+
+FGameGuideInfoRow* UDataTableSubsystem::GetGameGuideInfo(int32 GuideId) const
+{
+	return GameGuideInfoTableArray[GuideId];
 }
 
 FString UDataTableSubsystem::GetMapPath(EMapName MapName) const
