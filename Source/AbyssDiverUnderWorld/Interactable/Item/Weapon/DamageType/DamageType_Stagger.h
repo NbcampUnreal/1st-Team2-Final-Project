@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/DamageType.h"
@@ -14,7 +14,7 @@ public:
 
 #pragma region Variable
 public:
-    /** ±âº» °æÁ÷ Áö¼Ó ½Ã°£(ÃÊ) */
+    /** ê¸°ë³¸ ê²½ì§ ì§€ì† ì‹œê°„(ì´ˆ) */
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stagger")
     float DefaultStaggerDuration;
 
