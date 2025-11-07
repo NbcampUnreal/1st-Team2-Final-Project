@@ -6,7 +6,7 @@
 #include "DataRow/FADItemDataRow.h"
 #include "DataRow/FADProjectileDataRow.h"
 #include "DataRow/ButtonDataRow.h"
-#include "DataRow/MapDepthRow.h"
+#include "DataRow/MapDataRow.h"
 #include "DataRow/PhaseGoalRow.h"
 #include "DataRow/ShopItemMeshTransformRow.h"
 #include "Logging/LogMacros.h"
@@ -240,7 +240,7 @@ void UDataTableSubsystem::ParseShopItemMeshTransformDataTable(UADGameInstance* G
 	LOGV(Log, TEXT("ShopItemMeshTransformTableMap size: %d"), ShopItemMeshTransformTableMap.Num());
 }
 
-FMapDepthRow* UDataTableSubsystem::GetDepthZoneDataRow(FName MapName) const
+FMapDataRow* UDataTableSubsystem::GetDepthZoneDataRow(FName MapName) const
 {
 	UADGameInstance* GameInstance = Cast<UADGameInstance>(GetGameInstance());
 	if (GameInstance == nullptr)
@@ -257,5 +257,5 @@ FMapDepthRow* UDataTableSubsystem::GetDepthZoneDataRow(FName MapName) const
 	}
 		 
 	static const FString Context(TEXT("DepthZoneDataTable"));
-	return MapDepthTable->FindRow<FMapDepthRow>(MapName, Context);
+	return MapDepthTable->FindRow<FMapDataRow>(MapName, Context);
 }

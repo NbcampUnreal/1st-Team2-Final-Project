@@ -4,7 +4,7 @@
 #include "DepthComponent.h"
 
 #include "Character/UnderwaterCharacter.h"
-#include "DataRow/MapDepthRow.h"
+#include "DataRow/MapDataRow.h"
 #include "Framework/ADGameInstance.h"
 #include "Subsystems/ADWorldSubsystem.h"
 #include "Subsystems/DataTableSubsystem.h"
@@ -58,19 +58,19 @@ void UDepthComponent::GetMapDepthData()
 	
 	FName MapName = FName(WorldSubsystem->GetCurrentLevelName());
 	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Depth Component: Current MapName = %s"), *MapName.ToString());
-	const FMapDepthRow* MapDepthRow = DataTableSubsystem->GetDepthZoneDataRow(MapName);
-	if (!MapDepthRow)
+	const FMapDataRow* MapDataRow = DataTableSubsystem->GetDepthZoneDataRow(MapName);
+	if (!MapDataRow)
 	{
 		UE_LOG(LogAbyssDiverCharacter, Error, TEXT("Failed to get MapDepthRow for %s"), *MapName.ToString());
 		return;
 	}
 
-	ReferenceZ = MapDepthRow->ReferenceZ;
-	ReferenceDepth = MapDepthRow->ReferenceDepth;
-	bUseDangerZone = MapDepthRow->bUseDangerZone;
-	bUseWarningZone = MapDepthRow->bUseWarningZone;
-	WarningZoneZ = MapDepthRow->WarningZoneZ;
-	DangerZoneZ = MapDepthRow->DangerZoneZ;
+	ReferenceZ = MapDataRow->ReferenceZ;
+	ReferenceDepth = MapDataRow->ReferenceDepth;
+	bUseDangerZone = MapDataRow->bUseDangerZone;
+	bUseWarningZone = MapDataRow->bUseWarningZone;
+	WarningZoneZ = MapDataRow->WarningZoneZ;
+	DangerZoneZ = MapDataRow->DangerZoneZ;
 	UE_LOG(LogAbyssDiverCharacter, Display,
 		TEXT("Depth Component: ReferenceZ = %f, ReferenceDepth = %f, WarningZoneZ = %f, DangerZoneZ = %f"),
 		ReferenceZ, ReferenceDepth, WarningZoneZ, DangerZoneZ);

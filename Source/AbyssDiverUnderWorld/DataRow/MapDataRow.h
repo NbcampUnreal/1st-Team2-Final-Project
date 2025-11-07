@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Object.h"
-#include "MapDepthRow.generated.h"
+#include "MapDataRow.generated.h"
 
 enum class EMapName : uint8;
 
@@ -24,11 +24,11 @@ enum EDepthZone : uint8
  * Depth 변수는 특정 지점에서의 게임적 깊이를 나타낸다.
  */
 USTRUCT(BlueprintType)
-struct ABYSSDIVERUNDERWORLD_API FMapDepthRow : public FTableRowBase
+struct ABYSSDIVERUNDERWORLD_API FMapDataRow : public FTableRowBase
 {
 	GENERATED_BODY()
 
-	FMapDepthRow();
+	FMapDataRow();
 	
 	/** 깊이 정보를 저장할 Map 이름 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)

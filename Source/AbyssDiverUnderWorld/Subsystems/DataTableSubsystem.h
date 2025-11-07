@@ -5,7 +5,7 @@
 
 #include "DataTableSubsystem.generated.h"
 
-struct FMapDepthRow;
+struct FMapDataRow;
 enum class EUpgradeType : uint8;
 enum class EMapName : uint8;
 struct FFADItemDataRow;
@@ -85,7 +85,7 @@ public:
 	const TArray<FFADItemDataRow*>& GetItemDataTableArray() { return ItemDataTableArray; };
 
 	/** Map 이름에 따라 Depth Zone 정보를 반환 */
-	FMapDepthRow* GetDepthZoneDataRow(FName MapName) const;
+	FMapDataRow* GetDepthZoneDataRow(FName MapName) const;
 	
 #pragma endregion
 };
