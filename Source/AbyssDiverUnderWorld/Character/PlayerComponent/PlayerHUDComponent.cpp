@@ -22,6 +22,7 @@
 #include "UI/RadarWidgets/Radar2DWidget.h"
 #include "UI/DepthWidget.h"
 #include "UI/InteractPopupWidget.h"
+#include "UI/Flipbooks/FlipbookWidget.h"
 #include "UI/GameGuideWidget.h"
 
 #include "Interactable/OtherActors/ADDroneSeller.h"
@@ -190,6 +191,16 @@ void UPlayerHUDComponent::BeginPlay()
 	{
 		GameGuideWidget = CreateWidget<UGameGuideWidget>(PlayerController, GameGuideWidgetClass);
 		GameGuideWidget->AddToViewport(); 
+	}
+	
+	if (FlipbookWidgetClass)
+	{
+		FlipbookWidgetInstance = CreateWidget<UFlipbookWidget>(PlayerController, FlipbookWidgetClass);
+		if (FlipbookWidgetInstance)
+		{
+			FlipbookWidgetInstance->AddToViewport(-1);
+
+		}
 	}
 
 	BindGameState();
@@ -575,6 +586,16 @@ void UPlayerHUDComponent::SetupHudWidgetToNewPawn(APawn* NewPawn, APlayerControl
 		}
 	}
 
+	if (!IsValid(FlipbookWidgetInstance) && FlipbookWidgetClass)
+	{
+		FlipbookWidgetInstance = CreateWidget<UFlipbookWidget>(PlayerController, FlipbookWidgetClass);
+	}
+
+	if (FlipbookWidgetInstance && FlipbookWidgetInstance->IsInViewport() == false)
+	{
+		FlipbookWidgetInstance->AddToViewport(-1);
+	}
+
 	if (AUnderwaterCharacter* UWCharacter = Cast<AUnderwaterCharacter>(NewPawn))
 	{
 		if (UOxygenComponent* OxygenComp = UWCharacter->GetOxygenComponent())
@@ -829,6 +850,11 @@ USoundSubsystem* UPlayerHUDComponent::GetSoundSubsystem()
 UPlayerStatusWidget* UPlayerHUDComponent::GetPlayerStatusWidget()
 {
 	return PlayerStatusWidget;
+}
+
+UFlipbookWidget* UPlayerHUDComponent::GetFlipbookWidget() const
+{
+	return IsValid(FlipbookWidgetInstance) ? FlipbookWidgetInstance : nullptr;
 }
 
 void UPlayerHUDComponent::ShowFirstClearEndingWidget()

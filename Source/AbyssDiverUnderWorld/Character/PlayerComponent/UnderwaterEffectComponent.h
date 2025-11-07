@@ -10,6 +10,8 @@
 
 enum class EAudioFaderCurve : uint8;
 enum class ESFX : uint8;
+enum class EFlipbookType : uint8;
+
 class USoundSubsystem;
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
@@ -37,6 +39,14 @@ public:
 
 	/** Stop Combat sound */
 	void StopCombatEffect();
+
+	UFUNCTION(Unreliable, Client)
+	void C_PlayFlipbookEffect(EFlipbookType FlipbookType, bool bShouldLoop, float PlayTime);
+	void C_PlayFlipbookEffect_Implementation(EFlipbookType FlipbookType, bool bShouldLoop, float PlayTime);
+
+	UFUNCTION(Unreliable, Client)
+	void C_StopFlipbookEffect();
+	void C_StopFlipbookEffect_Implementation();
 
 protected:
 	/** 환경 상태가 변경되었을 때 호출되는 함수. 수중 상태일 때만 효과를 활성화한다. */
