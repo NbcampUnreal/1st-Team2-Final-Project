@@ -11,8 +11,8 @@ class UPaperFlipbook;
 UENUM()
 enum class EFlipbookType : uint8
 {
-	HorrorCreatureShallow = 0,
-	LimadonShallow,
+	HorrorCreatureSwallow = 0,
+	LimadonSwallow,
 	MAX UMETA(Hidden)
 };
 
@@ -30,8 +30,8 @@ protected:
 
 public:
 
-	// PlayTime이 0 이하일 경우 무한재생
-	void PlayFlipbook(EFlipbookType PlayingFlipbook, bool bShouldLoop, float PlayTime = 0);
+	// PlayTime이 0 이하일 경우 재생하지 않음.
+	void PlayFlipbook(EFlipbookType PlayingFlipbook, bool bShouldLoop, float PlayTime);
 	void StopFlipbook();
 
 protected:
@@ -51,7 +51,7 @@ protected:
 
 private:
 
-	TWeakObjectPtr<UPaperFlipbook> CurrentPaperFlipbbook = nullptr;
+	TWeakObjectPtr<UPaperFlipbook> CurrentPaperFlipbook = nullptr;
 
 	FTimerHandle FlipAnimTimerHandle;
 

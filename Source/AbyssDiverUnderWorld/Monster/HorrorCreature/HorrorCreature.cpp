@@ -6,7 +6,7 @@
 #include "Character/PlayerComponent/PlayerHUDComponent.h"
 #include "Character/PlayerComponent/UnderwaterEffectComponent.h"
 
-#include "UI/FlipBooks/FlipBookWidget.h"
+#include "UI/Flipbooks/FlipbookWidget.h"
 
 #include "Monster/HorrorCreature/HorrorCreatureAIController.h"
 #include "Framework/ADPlayerController.h"
@@ -507,7 +507,7 @@ void AHorrorCreature::PlaySwallowFlipAnim(AUnderwaterCharacter* Victim)
 	}
 
 	static const float FlipbookPlayTime = 1.0f;
-	EffectComponent->C_PlayFlipbookEffect(EFlipbookType::HorrorCreatureShallow, true, FlipbookPlayTime);
+	EffectComponent->C_PlayFlipbookEffect(EFlipbookType::HorrorCreatureSwallow, true, FlipbookPlayTime);
 }
 
 void AHorrorCreature::StopSwallowFlipAnim(AUnderwaterCharacter* Victim)

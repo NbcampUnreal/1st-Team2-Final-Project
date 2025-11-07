@@ -4,7 +4,7 @@
 #include "Character/PlayerComponent/PlayerHUDComponent.h"
 
 #include "Framework/ADPlayerController.h"
-#include "UI/FlipBooks/FlipBookWidget.h"
+#include "UI/Flipbooks/FlipbookWidget.h"
 #include "Subsystems/SoundSubsystem.h"
 
 #include "Components/AudioComponent.h"

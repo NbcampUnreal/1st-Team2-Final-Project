@@ -15,6 +15,12 @@ void UFlipbookWidget::NativeConstruct()
 
 void UFlipbookWidget::PlayFlipbook(EFlipbookType PlayingFlipbook, bool bShouldLoop, float PlayTime)
 {
+	if (PlayTime <= 0)
+	{
+		LOGV(Error, TEXT("PlayTime이 0 이하이면 발동하지 않음."));
+		return;
+	}
+
 	if (PlayingFlipbook == EFlipbookType::MAX)
 	{
 		LOGV(Error, TEXT("Not Valid Flipbook Type"));
@@ -29,15 +35,21 @@ void UFlipbookWidget::PlayFlipbook(EFlipbookType PlayingFlipbook, bool bShouldLo
 		return;
 	}
 
-	CurrentPaperFlipbbook = PaperFlipbooks[PlayingFlipbook];
-	if (CurrentPaperFlipbbook.IsValid() == false)
+	if (PaperFlipbooks.Contains(PlayingFlipbook) == false)
+	{
+		LOGV(Log, TEXT("This FlipbookType is not valid -> %d"), PlayingFlipbook);
+		return;
+	}
+
+	CurrentPaperFlipbook = *PaperFlipbooks.Find(PlayingFlipbook);
+	if (CurrentPaperFlipbook.IsValid() == false)
 	{
 		LOGV(Error, TEXT("Not Valid PapaerFlipbook"));
 		StopFlipbook();
 		return;
 	}
 
-	CachedInterval = 1.0f / CurrentPaperFlipbbook->GetFramesPerSecond();
+	CachedInterval = 1.0f / CurrentPaperFlipbook->GetFramesPerSecond();
 
 	CurrentFlipbookType = PlayingFlipbook;
 	CurrentFrameIndex = 0;
@@ -66,19 +78,19 @@ void UFlipbookWidget::StopFlipbook()
 
 void UFlipbookWidget::PlayNextFrame()
 {
-	if (CachedPlayTime > 0.0f && CachedPlayTime <= ElapsedTime)
+	if (CachedPlayTime <= 0.0f || CachedPlayTime <= ElapsedTime)
 	{
 		StopFlipbook();
 		return;
 	}
 
-	if (CurrentPaperFlipbbook.IsValid() == false || CurrentPaperFlipbbook->GetNumFrames() <= CurrentFrameIndex)
+	if (CurrentPaperFlipbook.IsValid() == false || CurrentPaperFlipbook->GetNumFrames() <= CurrentFrameIndex)
 	{
 		StopFlipbook();
 		return;
 	}
 
-	TWeakObjectPtr<UPaperSprite> FrameSprite = CurrentPaperFlipbbook->GetSpriteAtFrame(CurrentFrameIndex);
+	TWeakObjectPtr<UPaperSprite> FrameSprite = CurrentPaperFlipbook->GetSpriteAtFrame(CurrentFrameIndex);
 	if (FrameSprite.IsValid() == false)
 	{
 		LOGV(Error, TEXT("Frame Sprite Is Not Valid. Index : %d"), CurrentFrameIndex);
