@@ -1495,6 +1495,8 @@ public:
 	/** 깊이 컴포넌트를 반환 */
 	FORCEINLINE UDepthComponent* GetDepthComponent() const { return DepthComponent; }
 
+	FORCEINLINE UUnderwaterEffectComponent* GetEffectComponent() const { return UnderwaterEffectComponent; }
+
 	FORCEINLINE UInputAction* GetSprintAction() const { return SprintAction; }
 	FORCEINLINE UInputAction* GetRadarAction() const { return RadarAction; }
 	FORCEINLINE UInputAction* GetInteractAction() const { return InteractionAction; }

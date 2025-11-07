@@ -10,6 +10,7 @@
 enum class EMissionType : uint8;
 class USoundSubsystem;
 class UDepthComponent;
+class UFlipbookWidget;
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class ABYSSDIVERUNDERWORLD_API UPlayerHUDComponent : public UActorComponent
@@ -186,6 +187,12 @@ private:
     UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = true))
     TObjectPtr<UGameGuideWidget> GameGuideWidget;
     
+    UPROPERTY(EditDefaultsOnly, Category = UI, meta = (AllowPrivateAccess = "true"))
+    TSubclassOf<UFlipbookWidget> FlipbookWidgetClass;
+
+    UPROPERTY()
+    TObjectPtr<UFlipbookWidget> FlipbookWidgetInstance;
+    
 #pragma endregion
 
 #pragma region Getter Setter
@@ -196,7 +203,8 @@ public:
 
     UMissionsOnHUDWidget* GetMissionsOnHudWidget() const;
     USoundSubsystem* GetSoundSubsystem();
-    UPlayerStatusWidget* GetPlayerStatusWidget() ;
+    UPlayerStatusWidget* GetPlayerStatusWidget();
+    UFlipbookWidget* GetFlipbookWidget() const;
 
     /** Crosshair Widget 반환 */
     UCrosshairWidget* GetCrosshairWidget() const { return CrosshairWidget; }

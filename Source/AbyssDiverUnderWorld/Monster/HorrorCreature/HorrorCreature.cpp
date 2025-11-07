@@ -1,15 +1,18 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "Monster/HorrorCreature/HorrorCreature.h"
+
 #include "Container/BlackboardKeys.h"
 
-#include "GameFramework/CharacterMovementComponent.h"
 #include "Character/UnderwaterCharacter.h"
+#include "Character/PlayerComponent/PlayerHUDComponent.h"
+#include "Character/PlayerComponent/UnderwaterEffectComponent.h"
+
+#include "UI/FlipBooks/FlipBookWidget.h"
 
 #include "Monster/HorrorCreature/HorrorCreatureAIController.h"
-#include "Kismet/GameplayStatics.h"
+#include "Framework/ADPlayerController.h"
 
+#include "Kismet/GameplayStatics.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 AHorrorCreature::AHorrorCreature()
 {
@@ -181,6 +184,7 @@ void AHorrorCreature::SwallowPlayer(AUnderwaterCharacter* Victim)
 
 	// 플레이어의 시야 어둡게
 	Victim->StartCaptureState();
+	PlaySwallowFlipAnim(Victim);
 
 	// 데미지 처리
 	DamageToVictim(Victim, SwallowDamage);
@@ -333,6 +337,7 @@ void AHorrorCreature::EjectedVictimNormalize(AUnderwaterCharacter* Victim)
 
 	// 플레이어 뱉고, 어두워진 화면 제거
 	Victim->StopCaptureState();
+	StopSwallowFlipAnim(Victim);
 }
 
 FVector AHorrorCreature::CalculateSafeMouthLoc() const
@@ -478,6 +483,55 @@ void AHorrorCreature::ClearAllTimers()
 	{
 		TimerManager.ClearTimer(SetSwimModeTimerHandle);
 	}
+}
+
+void AHorrorCreature::PlaySwallowFlipAnim(AUnderwaterCharacter* Victim)
+{
+	UWorld* World = GetWorld();
+	if (World == nullptr)
+	{
+		LOGV(Error, TEXT("World Is not Valid"));
+		return;
+	}
+
+	if (World->IsInSeamlessTravel())
+	{
+		return;
+	}
+
+	UUnderwaterEffectComponent* EffectComponent = Victim->GetEffectComponent();
+	if (IsValid(EffectComponent) == false)
+	{
+		LOGV(Error, TEXT("EffectComponent is not valid"));
+		return;
+	}
+
+	static const float FlipbookPlayTime = 1.0f;
+	EffectComponent->C_PlayFlipbookEffect(EFlipbookType::HorrorCreatureShallow, true, FlipbookPlayTime);
+}
+
+void AHorrorCreature::StopSwallowFlipAnim(AUnderwaterCharacter* Victim)
+{
+	UWorld* World = GetWorld();
+	if (World == nullptr)
+	{
+		LOGV(Error, TEXT("World Is not Valid"));
+		return;
+	}
+
+	if (World->IsInSeamlessTravel())
+	{
+		return;
+	}
+
+	UUnderwaterEffectComponent* EffectComponent = Victim->GetEffectComponent();
+	if (IsValid(EffectComponent) == false)
+	{
+		LOGV(Error, TEXT("EffectComponent is not valid"));
+		return;
+	}
+
+	EffectComponent->C_StopFlipbookEffect();
 }
 
 void AHorrorCreature::ForceEjectIfStuck()

@@ -70,6 +70,10 @@ protected:
 	FVector CalculateSafeMouthLoc() const;
 
 	void ClearAllTimers();
+
+	void PlaySwallowFlipAnim(AUnderwaterCharacter* Victim);
+	void StopSwallowFlipAnim(AUnderwaterCharacter* Victim);
+
 #pragma endregion
 
 #pragma region Variable
