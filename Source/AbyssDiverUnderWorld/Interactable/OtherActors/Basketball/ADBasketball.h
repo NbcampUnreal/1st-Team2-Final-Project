@@ -10,6 +10,8 @@ class UProjectileMovementComponent;
 class USphereComponent;
 class AUnderwaterCharacter;
 class USoundSubsystem;
+class UEquipableComponent;
+class UEquipRenderComponent;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADBasketball : public AActor, public IIADInteractable
@@ -70,10 +72,17 @@ private:
 
 	void StopBasketballAnimation(AUnderwaterCharacter* Character);
 
+	// 1P/3P 메시 관리를 위한 함수 추가
+	void AttachToPlayerWithEquipRender(AUnderwaterCharacter* Diver);
+
+	void DetachFromPlayerWithEquipRender(AUnderwaterCharacter* Diver);
+
 #pragma endregion
 
 #pragma region Variable
 protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UEquipableComponent> EquipableComp;
 	/** 에셋에 따라 스켈레탈 메시로 바뀔 수도 있음 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TObjectPtr<UStaticMeshComponent> BallMesh;
@@ -133,6 +142,7 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Basketball|Animation")
 	TObjectPtr<UAnimMontage> BasketballHoldMontage;
 
+	TWeakObjectPtr<UEquipRenderComponent> CachedEquipRenderComp;
 #pragma endregion
 
 #pragma region Getter, Setter
@@ -145,6 +155,6 @@ public:
 
 private:
 	USoundSubsystem* GetSoundSubsystem();
-
+	
 #pragma endregion
 };
