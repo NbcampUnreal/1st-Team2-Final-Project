@@ -449,9 +449,9 @@ void AADInGameState::StartPhaseUIAnim()
 		//이전 코드가 드론이 3개일 경우만 고려해서 드론의 개수에 유연한 리팩토링 필요 일단 급한대로 작성
 		const FString CurrentMapName = UGameplayStatics::GetCurrentLevelName(GetWorld(), true);
 		if (CurrentMapName == "Submarine_Lobby") return;
-		if (CurrentMapName == "SecondAbyss")
+		if (CurrentMapName == "OnePhaseCave")
 		{
-			PlayerHudComp->SetMaxPhaseNumber(2);
+			PlayerHudComp->SetMaxPhaseNumber(1);
 		}
 		else PlayerHudComp->SetMaxPhaseNumber(3);
 		PlayerHudComp->PlayNextPhaseAnim(1);
