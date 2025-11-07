@@ -1053,6 +1053,15 @@ void UEquipUseComponent::Punch()
 
 	bCanFire = false;
 	AUnderwaterCharacter* Diver = Cast<AUnderwaterCharacter>(OwningCharacter);
+	if (Diver->IsMining())
+	{
+		UADInteractionComponent* InteractionComp = Diver->GetInteractionComponent();
+		if (InteractionComp)
+		{
+			InteractionComp->OnInteractReleased();
+			LOG(TEXT("Finish Hold Interaction!"));
+		}
+	}
 
 	if (PunchMontage && Diver)
 	{

@@ -801,6 +801,8 @@ public:
 	/** 현재 3p에 장착된 Tool 인스턴스 */
 	TObjectPtr<AActor> SpawnedTool3P;
 
+	uint8 bIsMining : 1 = false;
+
 private:
 
 	UPROPERTY()
@@ -1496,7 +1498,12 @@ public:
 
 	/** 현재 캐릭터가 스프린트를 할 수 있는지 여부를 반환. 전방 이동이 있을 경우에만 스프린트를 할 수 있다. Server / Client 복제됨 */
 	bool CanSprint() const;
+
+	/** 캐릭터의 채광 상태를 변경하는 함수*/
+	FORCEINLINE void SetIsMining(bool bNewIsMining) { bIsMining = bNewIsMining; }
 	
+	/** 캐릭터의 현재 채광 상태를 반환하는 함수*/
+	FORCEINLINE bool IsMining() { return bIsMining; }
 protected:
 
 	class USoundSubsystem* GetSoundSubsystem();
