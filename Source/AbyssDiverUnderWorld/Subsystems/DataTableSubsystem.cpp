@@ -240,7 +240,7 @@ void UDataTableSubsystem::ParseShopItemMeshTransformDataTable(UADGameInstance* G
 	LOGV(Log, TEXT("ShopItemMeshTransformTableMap size: %d"), ShopItemMeshTransformTableMap.Num());
 }
 
-FMapDataRow* UDataTableSubsystem::GetDepthZoneDataRow(FName MapName) const
+FMapDataRow* UDataTableSubsystem::GetMapDataRow(FName MapName) const
 {
 	UADGameInstance* GameInstance = Cast<UADGameInstance>(GetGameInstance());
 	if (GameInstance == nullptr)

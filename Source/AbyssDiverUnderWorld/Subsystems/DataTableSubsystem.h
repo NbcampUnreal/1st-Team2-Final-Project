@@ -84,8 +84,8 @@ private:
 public:
 	const TArray<FFADItemDataRow*>& GetItemDataTableArray() { return ItemDataTableArray; };
 
-	/** Map 이름에 따라 Depth Zone 정보를 반환 */
-	FMapDataRow* GetDepthZoneDataRow(FName MapName) const;
+	/** Map 이름에 따라 MapData 정보를 반환 */
+	FMapDataRow* GetMapDataRow(FName MapName) const;
 	
 #pragma endregion
 };

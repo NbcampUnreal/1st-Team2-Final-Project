@@ -58,7 +58,7 @@ void UDepthComponent::GetMapDepthData()
 	
 	FName MapName = FName(WorldSubsystem->GetCurrentLevelName());
 	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("Depth Component: Current MapName = %s"), *MapName.ToString());
-	const FMapDataRow* MapDataRow = DataTableSubsystem->GetDepthZoneDataRow(MapName);
+	const FMapDataRow* MapDataRow = DataTableSubsystem->GetMapDataRow(MapName);
 	if (!MapDataRow)
 	{
 		UE_LOG(LogAbyssDiverCharacter, Error, TEXT("Failed to get MapDepthRow for %s"), *MapName.ToString());

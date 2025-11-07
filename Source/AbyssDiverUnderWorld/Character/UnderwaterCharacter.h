@@ -13,7 +13,6 @@
 #include "UnderwaterCharacter.generated.h"
 
 #if UE_BUILD_SHIPPING
-enum class EMoveDirection : uint8;
 	#define LOG_ABYSS_DIVER_COMPILE_VERBOSITY Error
 #else
 	#define LOG_ABYSS_DIVER_COMPILE_VERBOSITY All
@@ -379,7 +378,11 @@ protected:
 	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "OnEnvironmentStateChanged"))
 	void K2_OnEnvironmentStateChanged(EEnvironmentState OldEnvironmentState, EEnvironmentState NewEnvironmentState);
 
-	/** Player State를 기반으로 Player Status 초기화 */
+	/** 현재 맵 데이터 행을 반환 */
+	struct FMapDataRow* GetCurrentMapDataRow() const;
+	
+	/** Player State를 기반으로 Player Status 초기화
+	 * Server는 OnPossessed, Client는 OnRep_PlayerState에서 호출 */
 	void InitPlayerStatus(class AADPlayerState* ADPlayerState);
 
 	/** Upgrade Component의 정보를 바탕으로 초기화 */

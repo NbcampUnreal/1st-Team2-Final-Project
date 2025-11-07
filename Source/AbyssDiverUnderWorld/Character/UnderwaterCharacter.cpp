@@ -293,6 +293,17 @@ void AUnderwaterCharacter::BeginPlay()
 	AdjustSpeed();
 }
 
+struct FMapDataRow* AUnderwaterCharacter::GetCurrentMapDataRow() const
+{
+	if (UDataTableSubsystem* DataTableSubsystem = GetGameInstance()->GetSubsystem<UDataTableSubsystem>())
+	{
+		FName MapName = FName(UGameplayStatics::GetCurrentLevelName(GetWorld(), true));
+		return DataTableSubsystem->GetMapDataRow(MapName);
+	}
+
+	return nullptr;
+}
+
 void AUnderwaterCharacter::InitPlayerStatus(AADPlayerState* ADPlayerState)
 {
 	if (ADPlayerState == nullptr)
@@ -316,7 +327,7 @@ void AUnderwaterCharacter::InitPlayerStatus(AADPlayerState* ADPlayerState)
 	{
 		LOGVN(Error, TEXT("Inventory Component Init failed : %d"), GetUniqueID());
 	}
-
+	
 	if (UUpgradeComponent* Upgrade = ADPlayerState->GetUpgradeComp())
 	{
 		ApplyUpgradeFactor(Upgrade);
@@ -348,7 +359,7 @@ void AUnderwaterCharacter::ApplyUpgradeFactor(UUpgradeComponent* UpgradeComponen
 	{
 	    const EUpgradeType Type = static_cast<EUpgradeType>(i);
 		
-		const uint8 Grade = UpgradeComponent->GetCurrentGrade(Type);
+		const uint8 Grade = UpgradeComponent->GetGradeByType(Type);
 		const FUpgradeDataRow* UpgradeData = DataTableSubsystem->GetUpgradeData(Type, Grade);
 		if (UpgradeData == nullptr)
 		{
@@ -357,31 +368,36 @@ void AUnderwaterCharacter::ApplyUpgradeFactor(UUpgradeComponent* UpgradeComponen
 		}
 		
 		const int StatFactor = UpgradeData->StatFactor;
-		
-	    switch (Type)
-	    {
-		    case EUpgradeType::Gather:
-			    GatherMultiplier = StatFactor / 100.0f;
-			    break;
-	    	case EUpgradeType::Oxygen:
-	    		OxygenComponent->InitOxygenSystem(StatFactor, StatFactor);
-			    break;
-	    	case EUpgradeType::Speed:
-	    		// 최종 속도는 나중에 AdjustSpeed를 통해서 계산된다. 현재는 BaseSpeed만 조정하면 된다.
-	    		UpgradeSwimSpeed = StatFactor;
-	    		BaseSwimSpeed += UpgradeSwimSpeed;
-	    		break;
-			case EUpgradeType::Light:
-	    		if (Grade > 1)
-	    		{
-	    			// 정수 곱하기 연산을 먼저하고 나누기 연산을 나중에 해서 소수점 오차를 줄인다.
-	    			LanternLength = LanternLength * (100 + StatFactor) / 100.0f;
-	    			LanternComponent->SetLightLength(LanternLength);
-	    		}
-	    		break;
-		    default: ;
-	    		break;
-	    }
+		const FMapDataRow* MapDataRow = GetCurrentMapDataRow();
+
+		if (EUpgradeType::Gather == Type)
+		{
+			GatherMultiplier = StatFactor / 100.0f;
+		}
+		else if (EUpgradeType::Oxygen == Type)
+		{
+			// FinalMaxOxygen = (BaseOxygen + UpgradeOxygen) * MapMaxOxygenRate
+			float MaxOxygen = OxygenComponent->GetMaxOxygenLevel() + StatFactor;
+			MaxOxygen = (MapDataRow != nullptr) ? MaxOxygen * MapDataRow->MaxOxygenRate : MaxOxygen;
+			MaxOxygen = FMath::FloorToInt(MaxOxygen);
+			MaxOxygen = FMath::Max(MaxOxygen, 1.0f);
+			OxygenComponent->InitOxygenSystem(MaxOxygen, MaxOxygen);
+		}
+		else if (EUpgradeType::Speed == Type)
+		{
+			// 최종 속도는 나중에 AdjustSpeed를 통해서 계산된다. 현재는 BaseSpeed만 조정하면 된다.
+			UpgradeSwimSpeed = StatFactor;
+			BaseSwimSpeed += UpgradeSwimSpeed;
+		}
+		else if (EUpgradeType::Light == Type)
+		{
+			if (Grade > 1)
+			{
+				// 정수 곱하기 연산을 먼저하고 나누기 연산을 나중에 해서 소수점 오차를 줄인다.
+				LanternLength = LanternLength * (100 + StatFactor) / 100.0f;
+				LanternComponent->SetLightLength(LanternLength);
+			}
+		}
 	}
 }
 
