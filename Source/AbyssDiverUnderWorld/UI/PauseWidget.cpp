@@ -1,4 +1,4 @@
-#include "UI/PauseWidget.h"
+ï»¿#include "UI/PauseWidget.h"
 #include "Framework/ADPlayerController.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -11,21 +11,21 @@ void UPauseWidget::NativeOnInitialized()
         FWidgetAnimationDynamicEvent FinishedEvent;
         FinishedEvent.BindDynamic(this, &UPauseWidget::OnOutAnumFinished);
 
-        // ÀÌ µ¨¸®°ÔÀÌÆ®¸¦ FadeOutAnimÀÇ Finished¿¡ ¹ÙÀÎµù
+        // ì´ ë¸ë¦¬ê²Œì´íŠ¸ë¥¼ FadeOutAnimì˜ Finishedì— ë°”ì¸ë”©
         BindToAnimationFinished(OutAnim, FinishedEvent);
     }
 }
 
 void UPauseWidget::RequestClose()
 {
-    // ºí·çÇÁ¸°Æ®¿¡¼­ ÇÏ´ø "Play Animation with Finished"¿¡ ÇØ´ç
+    // ë¸”ë£¨í”„ë¦°íŠ¸ì—ì„œ í•˜ë˜ "Play Animation with Finished"ì— í•´ë‹¹
     if (OutAnim)
     {
         PlayAnimation(OutAnim);
     }
     else
     {
-        // ¾Ö´Ï¸ŞÀÌ¼ÇÀÌ ¾øÀ¸¸é ¹Ù·Î Á¤¸®
+        // ì• ë‹ˆë©”ì´ì…˜ì´ ì—†ìœ¼ë©´ ë°”ë¡œ ì •ë¦¬
         OnOutAnumFinished();
     }
 }
@@ -40,10 +40,10 @@ void UPauseWidget::PlayInAnimation()
 
 void UPauseWidget::OnOutAnumFinished()
 {
-    // ¿©±â¼­´Â ¾Ö´Ï¸ŞÀÌ¼Ç¸¸ ³¡³µ´Ù´Â »ç½Ç¸¸ ¾Ë¸®°í,
-    // ÁøÂ¥ Á¤¸®´Â ÄÁÆ®·Ñ·¯¿¡°Ô ¸Ã±ä´Ù.
+    // ì—¬ê¸°ì„œëŠ” ì• ë‹ˆë©”ì´ì…˜ë§Œ ëë‚¬ë‹¤ëŠ” ì‚¬ì‹¤ë§Œ ì•Œë¦¬ê³ ,
+    // ì§„ì§œ ì •ë¦¬ëŠ” ì»¨íŠ¸ë¡¤ëŸ¬ì—ê²Œ ë§¡ê¸´ë‹¤.
     if (AADPlayerController* PC = GetOwningPlayer<AADPlayerController>())
     {
-        PC->HidePauseMenu();   // ¾Æ·¡¿¡¼­ Á¤¸® ÄÚµå ±¸Çö
+        PC->HidePauseMenu();   // ì•„ë˜ì—ì„œ ì •ë¦¬ ì½”ë“œ êµ¬í˜„
     }
 }
