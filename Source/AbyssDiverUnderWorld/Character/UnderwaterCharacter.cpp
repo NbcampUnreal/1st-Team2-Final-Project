@@ -44,6 +44,8 @@
 #include "PlayerComponent/RagdollReplicationComponent.h"
 #include "Subsystems/SoundSubsystem.h"
 #include "Character/PlayerComponent/PlayerHUDComponent.h"
+#include "Interactable/Item/Weapon/DamageType/DamageType_Stagger.h"
+#include "Interactable/Item/Weapon/DamageEvent/StaggerDamageEvent.h"
 
 DEFINE_LOG_CATEGORY(LogAbyssDiverCharacter);
 
@@ -1965,6 +1967,32 @@ float AUnderwaterCharacter::TakeDamage(float DamageAmount, struct FDamageEvent c
 	{
 		return 0.0f;
 	}
+
+	// 커스텀 Stagger 이벤트 처리
+	if (DamageEvent.GetTypeID() == FStaggerDamageEvent::ClassID)
+	{
+		const FStaggerDamageEvent* StaggerEvent = static_cast<const FStaggerDamageEvent*>(&DamageEvent);
+
+		float StaggerDuration = StaggerEvent->Duration;
+
+		if (StaggerEvent->DamageTypeClass)
+		{
+			const UDamageType_Stagger* DT = Cast<const UDamageType_Stagger>(StaggerEvent->DamageTypeClass->GetDefaultObject());
+			if (DT)
+			{
+				if (StaggerDuration <= 0.f)
+				{
+					StaggerDuration = DT->DefaultStaggerDuration;
+				}
+			}
+		}
+
+		StartStagger(StaggerDuration, DamageCauser);
+
+		// 로그
+		const FString CauserName = DamageCauser ? DamageCauser->GetName() : TEXT("Unknown");
+		LOG(TEXT("[Stagger] Duration=%.2f,Causer=%s"),StaggerDuration, *CauserName);
+	}
 	
 	// Groggy 상태라면 피격 시에 Timer를 감소시키고 0이 되면 Death 상태로 전이시킨다.
 	if (CharacterState == ECharacterState::Groggy)
@@ -2359,6 +2387,10 @@ void AUnderwaterCharacter::Fire(const FInputActionValue& InputActionValue)
 	{
 		return;
 	}
+	if (bIsStaggered)
+	{
+		return;
+	}
 	EquipUseComponent->HandleLeftClick();
 }
 
@@ -2374,6 +2406,10 @@ void AUnderwaterCharacter::StopFire(const FInputActionValue& InputActionValue)
 void AUnderwaterCharacter::Reload(const FInputActionValue& InputActionValue)
 {
 	if (CharacterState != ECharacterState::Normal || !bCanUseEquipment)
+	{
+		return;
+	}
+	if (bIsStaggered)
 	{
 		return;
 	}
@@ -2396,6 +2432,10 @@ void AUnderwaterCharacter::Aim(const FInputActionValue& InputActionValue)
 void AUnderwaterCharacter::Interaction(const FInputActionValue& InputActionValue)
 {
 	if (CharacterState != ECharacterState::Normal)
+	{
+		return;
+	}
+	if (bIsStaggered)
 	{
 		return;
 	}
@@ -2888,6 +2928,69 @@ void AUnderwaterCharacter::C_ApplyControlRotation_Implementation(const FRotator&
 	{
 		Controller->SetControlRotation(NewControlRotation);
 	}
+}
+
+void AUnderwaterCharacter::StartStagger(float Duration, AActor* DamageCauser)
+{
+	if (!HasAuthority()) 
+		return;
+
+	const float CurrentTime = GetWorld()->GetTimeSeconds();
+	const float RequestedEndTime = CurrentTime + Duration;
+
+	// 이미 경직 중이면 남은 시간 갱신
+	if (bIsStaggered)
+	{
+		if (RequestedEndTime > StaggerEndTime)
+		{
+			StaggerEndTime = RequestedEndTime;
+			const float NewRemaining = StaggerEndTime - CurrentTime;
+			GetWorldTimerManager().ClearTimer(StaggerTimerHandle);
+			GetWorldTimerManager().SetTimer(StaggerTimerHandle,
+				this,
+				&AUnderwaterCharacter::EndStagger,
+				NewRemaining,
+				false
+			);
+		}
+		return;
+	}
+
+	// 최초 경직일 경우
+	bIsStaggered = true;
+	StaggerEndTime = RequestedEndTime;
+	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
+	{
+		MoveComp->DisableMovement();
+	}
+
+	GetWorldTimerManager().ClearTimer(StaggerTimerHandle);
+	GetWorldTimerManager().SetTimer(StaggerTimerHandle, 
+		this, 
+		&AUnderwaterCharacter::EndStagger,
+		Duration,
+		false
+	);
+}
+
+void AUnderwaterCharacter::EndStagger()
+{
+	if (!HasAuthority())
+		return;
+	
+	bIsStaggered = false;
+	StaggerEndTime = 0.f;
+	GetWorldTimerManager().ClearTimer(StaggerTimerHandle);
+
+	// 이동 재활성화
+	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
+	{
+		if (EnvironmentState == EEnvironmentState::Underwater)
+			MoveComp->SetMovementMode(EMovementMode::MOVE_Swimming);
+		else
+			MoveComp->SetMovementMode(EMovementMode::MOVE_Walking);
+	}
+	LOG(TEXT("[Stagger] Ended"));
 }
 
 void AUnderwaterCharacter::BindToCharacter(AUnderwaterCharacter* BoundCharacter)

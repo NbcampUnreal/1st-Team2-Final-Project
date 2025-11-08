@@ -63,7 +63,7 @@ public:
 	UPROPERTY(BlueprintReadWrite)
 	uint8 bHasPlayedTutorial : 1;
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	uint8 bHasPlayedInGame : 1;
 
 	UPROPERTY(BlueprintReadWrite)
@@ -100,6 +100,9 @@ public:
 	/** 맵의 깊이 정보를 담고 있는 데이터 테이블 */
 	UPROPERTY(EditDefaultsOnly, Category = "ADGameInstance", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.MapDepthRow"))
 	TObjectPtr<UDataTable> MapDepthTable;
+
+	UPROPERTY(EditDefaultsOnly, Category = "ADGameInstance", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.GameGuideInfoRow"))
+	TObjectPtr<UDataTable> GameGuideInfoData;
 
 #pragma region Sound Tables
 

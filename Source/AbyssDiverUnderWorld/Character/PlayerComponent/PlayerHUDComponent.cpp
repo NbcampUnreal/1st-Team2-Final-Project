@@ -22,6 +22,8 @@
 #include "UI/RadarWidgets/Radar2DWidget.h"
 #include "UI/DepthWidget.h"
 #include "UI/InteractPopupWidget.h"
+#include "UI/Flipbooks/FlipbookWidget.h"
+#include "UI/GameGuideWidget.h"
 
 #include "Interactable/OtherActors/ADDroneSeller.h"
 #include "Interactable/OtherActors/ADDrone.h"
@@ -182,6 +184,22 @@ void UPlayerHUDComponent::BeginPlay()
 		if (SpectatorHUDWidget)
 		{
 			SpectatorHUDWidget->BindWidget(PlayerController);
+		}
+	}
+
+	if (GameGuideWidgetClass)
+	{
+		GameGuideWidget = CreateWidget<UGameGuideWidget>(PlayerController, GameGuideWidgetClass);
+		GameGuideWidget->AddToViewport(); 
+	}
+	
+	if (FlipbookWidgetClass)
+	{
+		FlipbookWidgetInstance = CreateWidget<UFlipbookWidget>(PlayerController, FlipbookWidgetClass);
+		if (FlipbookWidgetInstance)
+		{
+			FlipbookWidgetInstance->AddToViewport(-1);
+
 		}
 	}
 
@@ -568,6 +586,16 @@ void UPlayerHUDComponent::SetupHudWidgetToNewPawn(APawn* NewPawn, APlayerControl
 		}
 	}
 
+	if (!IsValid(FlipbookWidgetInstance) && FlipbookWidgetClass)
+	{
+		FlipbookWidgetInstance = CreateWidget<UFlipbookWidget>(PlayerController, FlipbookWidgetClass);
+	}
+
+	if (FlipbookWidgetInstance && FlipbookWidgetInstance->IsInViewport() == false)
+	{
+		FlipbookWidgetInstance->AddToViewport(-1);
+	}
+
 	if (AUnderwaterCharacter* UWCharacter = Cast<AUnderwaterCharacter>(NewPawn))
 	{
 		if (UOxygenComponent* OxygenComp = UWCharacter->GetOxygenComponent())
@@ -824,6 +852,11 @@ UPlayerStatusWidget* UPlayerHUDComponent::GetPlayerStatusWidget()
 	return PlayerStatusWidget;
 }
 
+UFlipbookWidget* UPlayerHUDComponent::GetFlipbookWidget() const
+{
+	return IsValid(FlipbookWidgetInstance) ? FlipbookWidgetInstance : nullptr;
+}
+
 void UPlayerHUDComponent::ShowFirstClearEndingWidget()
 {
 	if (IsValid(FirstClearWidgetClass) == false)
@@ -846,4 +879,34 @@ void UPlayerHUDComponent::ShowFirstClearEndingWidget()
 
 	FirstClearWidgetInstance->AddToViewport();
 
+}
+
+void UPlayerHUDComponent::ToggleGuide()
+{
+	if (GameGuideWidget)
+	{
+		AADPlayerController* PC = Cast<AADPlayerController>(GetOwner());
+		if (!PC) return;
+
+		if (!GameGuideWidget->GetbIsVisibility())
+		{ 
+			FInputModeGameAndUI InputMode;
+			InputMode.SetWidgetToFocus(GameGuideWidget->TakeWidget());
+			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock); 
+			PC->bShowMouseCursor = true;
+			PC->SetInputMode(InputMode);
+		} 
+		else
+		{  
+			PC->SetShowMouseCursor(false);
+			//PC->SetIgnoreMoveInput(false); 
+			//PC->SetIgnoreLookInput(false);
+			PC->SetInputMode(FInputModeGameOnly());
+		}
+
+		FTimerHandle DelayFunctionTimerHandle;
+		float DelayTime = 0.5f;
+		GetWorld()->GetTimerManager().SetTimer(DelayFunctionTimerHandle, [this]() {GameGuideWidget->ToggleGuideVisibility(); }, DelayTime, false);
+		
+	}
 }
