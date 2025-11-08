@@ -264,13 +264,13 @@ FMapDataRow* UDataTableSubsystem::GetMapDataRow(FName MapName) const
 		return nullptr;
 	}
 	
-	const UDataTable* MapDepthTable = GameInstance->MapDepthTable;
-	if (MapDepthTable == nullptr)
+	const UDataTable* MapDataTable = GameInstance->MapDataTable;
+	if (MapDataTable == nullptr)
 	{
 		LOGV(Error, TEXT("MapDepthTable is null"));
 		return nullptr;
 	}
 		 
 	static const FString Context(TEXT("DepthZoneDataTable"));
-	return MapDepthTable->FindRow<FMapDataRow>(MapName, Context);
+	return MapDataTable->FindRow<FMapDataRow>(MapName, Context);
 }
