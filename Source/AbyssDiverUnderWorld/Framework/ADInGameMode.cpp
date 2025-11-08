@@ -29,12 +29,37 @@
 #include "EngineUtils.h"
 #include "Components/CapsuleComponent.h"
 #include "Algo/RandomShuffle.h"
+#include "Character/ADSpectatorPawn.h"
 #include "Engine/TargetPoint.h"
 
 AADInGameMode::AADInGameMode()
 {
 	bUseSeamlessTravel = true;
 
+	ConstructorHelpers::FClassFinder<AADPlayerController> PlayerControllerFinder(TEXT("/Game/_AbyssDiver/Blueprints/Framework/BP_ADPlayerController"));
+	if (PlayerControllerFinder.Succeeded())
+	{
+		PlayerControllerClass = PlayerControllerFinder.Class;
+	}
+
+	ConstructorHelpers::FClassFinder<AADPlayerState> PlayerStateFinder(TEXT("/Game/_AbyssDiver/Blueprints/Framework/BP_ADPlayerState"));
+	if (PlayerStateFinder.Succeeded())
+	{
+		PlayerStateClass = PlayerStateFinder.Class;
+	}
+
+	ConstructorHelpers::FClassFinder<AUnderwaterCharacter> PlayerCharacterFinder(TEXT("/Game/_AbyssDiver/Blueprints/Character/BP_UnderwaterCharacter"));
+	if (PlayerCharacterFinder.Succeeded())
+	{
+		DefaultPawnClass = PlayerCharacterFinder.Class;
+	}
+
+	ConstructorHelpers::FClassFinder<AADSpectatorPawn> SpectatorPawnFinder(TEXT("/Game/_AbyssDiver/Blueprints/Character/BP_ADSpectatorPawn"));
+	if (SpectatorPawnFinder.Succeeded())
+	{
+		SpectatorClass = SpectatorPawnFinder.Class;
+	}
+	
 	ConstructorHelpers::FClassFinder<AADSpearGunBullet> SpearGunBulletFinder(TEXT("/Game/_AbyssDiver/Blueprints/Projectile/BP_ADSpearGunBullet"));
 	if (SpearGunBulletFinder.Succeeded())
 	{
@@ -226,12 +251,11 @@ void AADInGameMode::Logout(AController* Exiting)
 
 void AADInGameMode::FinishRestartPlayer(AController* NewPlayer, const FRotator& StartRotation)
 {
+	// Finish Restart Player에서 Possess가 호출
 	Super::FinishRestartPlayer(NewPlayer, StartRotation);
 
 	if (AADPlayerState* PlayerState = NewPlayer->GetPlayerState<AADPlayerState>())
 	{
-		PlayerState->SetHasBeenDead(false);
-		
 		int32 PlayerIndex = PlayerState->GetPlayerIndex();
 
 		if (PlayerAliveInfos.IsValidIndex(PlayerIndex) == false)
@@ -478,8 +502,6 @@ FVector AADInGameMode::GetRandomLocation(const FVector& Location, float Distance
 void AADInGameMode::RestartPlayerFromPlayerIndex(int8 PlayerIndex, const FVector& SpawnLocation)
 {
 	AADPlayerController* PlayerController = FindPlayerControllerFromIndex(PlayerIndex);
-	// 현재 관전이 없으므로 Hide 되어 있다.
-	// if (PlayerController == nullptr || PlayerController->GetPawn() != nullptr)
 	if (PlayerController == nullptr)
 	{
 		return;
