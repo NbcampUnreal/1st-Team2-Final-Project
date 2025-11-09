@@ -13,7 +13,6 @@
 #include "UnderwaterCharacter.generated.h"
 
 #if UE_BUILD_SHIPPING
-enum class EMoveDirection : uint8;
 	#define LOG_ABYSS_DIVER_COMPILE_VERBOSITY Error
 #else
 	#define LOG_ABYSS_DIVER_COMPILE_VERBOSITY All
@@ -305,6 +304,10 @@ public:
 	void Teleport(const FVector& NewLocation, const FRotator& ViewRotation);
 	
 protected:
+
+	/** 초기 물리 볼륨이 설정됬을 때 호출된다. BeginPlay 다음 프레임에 호출된다. */
+	void OnInitialPhysicsVolumeSet();
+	
 	/** Stat Component의 기본 속도가 변경됬을 때 호출된다. */
 	UFUNCTION()
 	void OnMoveSpeedChanged(float NewMoveSpeed);
@@ -375,7 +378,11 @@ protected:
 	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "OnEnvironmentStateChanged"))
 	void K2_OnEnvironmentStateChanged(EEnvironmentState OldEnvironmentState, EEnvironmentState NewEnvironmentState);
 
-	/** Player State를 기반으로 Player Status 초기화 */
+	/** 현재 맵 데이터 행을 반환 */
+	struct FMapDataRow* GetCurrentMapDataRow() const;
+	
+	/** Player State를 기반으로 Player Status 초기화
+	 * Server는 OnPossessed, Client는 OnRep_PlayerState에서 호출 */
 	void InitPlayerStatus(class AADPlayerState* ADPlayerState);
 
 	/** Upgrade Component의 정보를 바탕으로 초기화 */
@@ -671,6 +678,13 @@ protected:
 	void C_ApplyControlRotation(const FRotator& NewControlRotation);
 	void C_ApplyControlRotation_Implementation(const FRotator& NewControlRotation);
 	
+	// — Stagger 처리 메서드 (일단 테스트 용으로 로깅만) —
+	/** 경직 시작: 이동을 비활성화하고 타이머를 설정한다 */
+	void StartStagger(float Duration, AActor* DamageCauser);
+
+	/** 경직 종료: 이동을 재활성화하고 상태를 초기화한다 */
+	void EndStagger();
+
 private:
 	/** Montage 콜백을 등록 */
 	void SetupMontageCallbacks();
@@ -796,6 +810,8 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = "Mining")
 	/** 현재 3p에 장착된 Tool 인스턴스 */
 	TObjectPtr<AActor> SpawnedTool3P;
+
+	uint8 bIsMining : 1 = false;
 
 private:
 
@@ -1255,7 +1271,7 @@ private:
 
 	/** 인벤토리 컴포넌트 캐시 */
 	UPROPERTY()
-	TObjectPtr<class UADInventoryComponent> CachedInventoryComponent;
+	TWeakObjectPtr<class UADInventoryComponent> InventoryWeakPtr;
 
 	/** 장착 아이템 렌더링을 위한 컴포넌트 */
 	UPROPERTY()
@@ -1326,7 +1342,16 @@ private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	uint8 bIsDeathLocked : 1;
 
-	
+	// — Stagger 상태 변수 —
+	/** 현재 경직 중인지 여부 */
+	uint8  bIsStaggered : 1 = false;
+
+	/** 현재 경직 종료 예정 시각(World TimeSeconds) */
+	float StaggerEndTime = 0.f;
+
+	/** 경직 종료를 위한 타이머 */
+	FTimerHandle StaggerTimerHandle;
+
 #pragma endregion
 
 #pragma region Getter Setter
@@ -1473,6 +1498,8 @@ public:
 	/** 깊이 컴포넌트를 반환 */
 	FORCEINLINE UDepthComponent* GetDepthComponent() const { return DepthComponent; }
 
+	FORCEINLINE UUnderwaterEffectComponent* GetEffectComponent() const { return UnderwaterEffectComponent; }
+
 	FORCEINLINE UInputAction* GetSprintAction() const { return SprintAction; }
 	FORCEINLINE UInputAction* GetRadarAction() const { return RadarAction; }
 	FORCEINLINE UInputAction* GetInteractAction() const { return InteractionAction; }
@@ -1492,7 +1519,12 @@ public:
 
 	/** 현재 캐릭터가 스프린트를 할 수 있는지 여부를 반환. 전방 이동이 있을 경우에만 스프린트를 할 수 있다. Server / Client 복제됨 */
 	bool CanSprint() const;
+
+	/** 캐릭터의 채광 상태를 변경하는 함수*/
+	FORCEINLINE void SetIsMining(bool bNewIsMining) { bIsMining = bNewIsMining; }
 	
+	/** 캐릭터의 현재 채광 상태를 반환하는 함수*/
+	FORCEINLINE bool IsMining() { return bIsMining; }
 protected:
 
 	class USoundSubsystem* GetSoundSubsystem();

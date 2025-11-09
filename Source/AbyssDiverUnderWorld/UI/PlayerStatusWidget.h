@@ -43,7 +43,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SetTopName(AADPlayerState* PS, int32 MinedAmount);
 
-
+	UFUNCTION(BlueprintCallable)
+	void SetTopNameEmpty();
 
 	// 일반 함수
 	void SetSpearCount(int32 Current, int32 Total);
@@ -107,6 +108,8 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Compass")
 	TObjectPtr<AActor> CompassTargetObject;
 
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UOverlay> TopNameOverlay;
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UTextBlock> TopName;

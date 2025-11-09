@@ -13,6 +13,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 #include "Interactable/Item/Component/ADInteractionComponent.h"
+#include "Interactable/EquipableComponent/EquipableComponent.h"
+#include "Interactable/EquipableComponent/EquipRenderComponent.h"
 
 // Sets default values
 AADBasketball::AADBasketball()
@@ -48,6 +50,7 @@ AADBasketball::AADBasketball()
 	ProjectileMovement->bRotationFollowsVelocity = false;
 
 	InteractableComp = CreateDefaultSubobject<UADInteractableComponent>(TEXT("InteractableComp"));
+	EquipableComp = CreateDefaultSubobject<UEquipableComponent>(TEXT("EquipableComp"));
 
 	CollisionSphere->OnComponentHit.AddDynamic(this, &AADBasketball::OnHit);
 }
@@ -112,7 +115,6 @@ void AADBasketball::Interact_Implementation(AActor* InstigatorActor)
 void AADBasketball::Pickup(AUnderwaterCharacter* Diver)
 {
 	if (!Diver || !Diver->GetMesh()) return;
-
 	if (!HasAuthority()) return;
 
 	HeldBy = Diver;
@@ -127,12 +129,9 @@ void AADBasketball::Pickup(AUnderwaterCharacter* Diver)
 	ProjectileMovement->SetActive(false);
 	ProjectileMovement->Velocity = FVector::ZeroVector;
 
-	USkeletalMeshComponent* Mesh1P = Diver->GetMesh();
-	AttachToComponent(
-		Mesh1P,
-		FAttachmentTransformRules::SnapToTargetNotIncludingScale,
-		BasketballSocketName
-	);
+	BallMesh->SetVisibility(false);
+	AttachToPlayerWithEquipRender(Diver);
+
 	PlayBasketballAnimation(Diver);
 
 	if (USoundSubsystem* SoundSubsystem = GetSoundSubsystem())
@@ -155,6 +154,7 @@ void AADBasketball::Throw()
 	if (!HeldBy || !HasAuthority())
 		return;
 
+	FVector HandLocation = GetActorLocation();
 	StopBasketballAnimation(HeldBy);
 	if (HeldBy)
 	{
@@ -163,7 +163,9 @@ void AADBasketball::Throw()
 			InteractionComp->SetHeldItem(nullptr);
 		}
 	}
-
+	DetachFromPlayerWithEquipRender(HeldBy);
+	SetActorLocation(HandLocation);
+	BallMesh->SetVisibility(true);
 	ThrowVelocity = CalculateThrowVelocity();
 	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 
@@ -296,14 +298,9 @@ void AADBasketball::OnRep_HeldBy()
 		CollisionSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		ProjectileMovement->SetActive(false);
 
-		if (HeldBy->GetMesh())
-		{
-			AttachToComponent(
-				HeldBy->GetMesh(),
-				FAttachmentTransformRules::SnapToTargetNotIncludingScale,
-				BasketballSocketName
-			);
-		}
+		BallMesh->SetVisibility(false);
+		AttachToPlayerWithEquipRender(HeldBy);
+
 		if (UADInteractionComponent* InteractionComp = HeldBy->GetInteractionComponent())
 		{
 			InteractionComp->SetHeldItem(this);
@@ -317,6 +314,9 @@ void AADBasketball::OnRep_HeldBy()
 		if (CachedHeldBy.IsValid())
 		{
 			StopBasketballAnimation(CachedHeldBy.Get());
+
+			DetachFromPlayerWithEquipRender(CachedHeldBy.Get());
+			BallMesh->SetVisibility(true);
 
 			if (UADInteractionComponent* InteractionComp = CachedHeldBy->GetInteractionComponent())
 			{
@@ -481,6 +481,62 @@ void AADBasketball::StopBasketballAnimation(AUnderwaterCharacter* Character)
 	Character->M_StopAllMontagesOnBothMesh(0.2f);
 
 	LOG(TEXT("Basketball hold animation stopped"));
+}
+
+void AADBasketball::AttachToPlayerWithEquipRender(AUnderwaterCharacter* Diver)
+{
+	if (!Diver) return;
+
+	// EquipRenderComponent 찾기 또는 생성
+	UEquipRenderComponent* EquipRender = Diver->FindComponentByClass<UEquipRenderComponent>();
+	if (!EquipRender)
+	{
+		EquipRender = NewObject<UEquipRenderComponent>(Diver, UEquipRenderComponent::StaticClass(), NAME_None, RF_Transient);
+		EquipRender->RegisterComponent();
+		LOG(TEXT("Created new EquipRenderComponent for player"));
+	}
+
+	// 캐싱
+	CachedEquipRenderComp = EquipRender;
+
+	// EquipRenderComponent를 통해 1P/3P 메시 부착
+	EquipRender->AttachItem(this, BasketballSocketName);
+
+	// 원본 농구공을 플레이어의 루트에 부착 (위치 동기화용)
+	USkeletalMeshComponent* Mesh1P = Diver->GetMesh1P();
+	if (Mesh1P)
+	{
+		AttachToComponent(
+			Mesh1P,
+			FAttachmentTransformRules::SnapToTargetNotIncludingScale,
+			BasketballSocketName  // 손 소켓에 부착
+		);
+
+		// 농구공 액터의 위치를 소켓 위치로 설정
+		SetActorRelativeLocation(FVector::ZeroVector);
+		SetActorRelativeRotation(FRotator::ZeroRotator);
+	}
+
+	LOG(TEXT("Basketball attached using EquipRenderComponent"));
+}
+
+void AADBasketball::DetachFromPlayerWithEquipRender(AUnderwaterCharacter* Diver)
+{
+	if (!Diver) return;
+
+	// EquipRenderComponent를 통해 1P/3P 메시 제거
+	if (CachedEquipRenderComp.IsValid())
+	{
+		CachedEquipRenderComp->DetachItem(this);
+		LOG(TEXT("Basketball detached from EquipRenderComponent"));
+	}
+	else if (UEquipRenderComponent* EquipRender = Diver->FindComponentByClass<UEquipRenderComponent>())
+	{
+		EquipRender->DetachItem(this);
+		LOG(TEXT("Basketball detached from found EquipRenderComponent"));
+	}
+
+	CachedEquipRenderComp.Reset();
 }
 
 USoundSubsystem* AADBasketball::GetSoundSubsystem()
