@@ -320,6 +320,10 @@ void AADDrone::ApplyState(EDroneState NewDroneState)
 
 			SetActorRotation(FRotator(OriginalRotation.Pitch, LookRotation.Yaw, OriginalRotation.Roll));
 		}
+		else
+		{
+			ApplyState(EDroneState::Activated);
+		}
 
 		break;
 	case EDroneState::Departing:
@@ -365,10 +369,10 @@ void AADDrone::OnRep_CurrentDroneState()
 			SetActorHiddenInGame(false);
 			SetActorTickEnabled(true);
 			SetActivePropellerEffect(true);
-		}
 
-		PlayDromeTheme();
-		PlaySendDroneSound();
+			PlayDromeTheme();
+			PlaySendDroneSound();
+		}
 
 		break;
 	case EDroneState::Departing:
