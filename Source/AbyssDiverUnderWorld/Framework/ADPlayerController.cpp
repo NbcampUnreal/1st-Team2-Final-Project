@@ -330,6 +330,14 @@ void AADPlayerController::SetActiveRadarWidget(bool bShouldActivate)
 	}
 
 	PlayerHUDComponent->SetActiveRadarWidget(bShouldActivate);
+	if (bShouldActivate)
+	{
+		HideCrosshairWidget();
+	}
+	else
+	{
+		ShowCrosshairWidget();
+	}
 }
 
 void AADPlayerController::AddYawInput(float Val)

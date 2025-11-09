@@ -98,8 +98,8 @@ public:
 	TObjectPtr<UDataTable> ShopMeshTransformTable;
 
 	/** 맵의 깊이 정보를 담고 있는 데이터 테이블 */
-	UPROPERTY(EditDefaultsOnly, Category = "ADGameInstance", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.MapDepthRow"))
-	TObjectPtr<UDataTable> MapDepthTable;
+	UPROPERTY(EditDefaultsOnly, Category = "ADGameInstance", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.MapDataRow"))
+	TObjectPtr<UDataTable> MapDataTable;
 
 	UPROPERTY(EditDefaultsOnly, Category = "ADGameInstance", meta = (RequiredAssetDataTags = "RowStructure=/Script/AbyssDiverUnderWorld.GameGuideInfoRow"))
 	TObjectPtr<UDataTable> GameGuideInfoData;

@@ -1,9 +1,9 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "MapDepthRow.h"
+#include "MapDataRow.h"
 
-FMapDepthRow::FMapDepthRow():
+FMapDataRow::FMapDataRow():
 	MapName(),
 	ReferenceZ(0),
 	ReferenceDepth(0),
