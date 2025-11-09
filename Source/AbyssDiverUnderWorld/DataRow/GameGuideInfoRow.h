@@ -24,6 +24,8 @@ struct FGameGuideContent
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Game Guide Content")
+	FText ContentTitle;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Game Guide Content")
 	TObjectPtr<UTexture2D> ContentImage;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Game Guide Content")
 	FText ContentDescription;
@@ -45,4 +47,7 @@ struct ABYSSDIVERUNDERWORLD_API FGameGuideInfoRow : public FTableRowBase
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Game Guide Info")
 	TArray<FGameGuideContent> GuideContents;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Game Guide Info")
+	uint8 bShouldBlink : 1;
 };

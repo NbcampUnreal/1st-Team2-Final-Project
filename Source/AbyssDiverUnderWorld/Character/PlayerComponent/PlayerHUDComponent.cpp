@@ -267,45 +267,8 @@ void UPlayerHUDComponent::C_ShowResultScreen_Implementation()
 			MaxSupport = FMath::Max(MaxSupport, Params.SupportScore);
 
 			ResultParamsArray.Add(Params);
-
-			//UpdateResultScreen(PS->GetPlayerIndex(), Params);
 		}
 	}
-
-	//for (AADPlayerState* PS : TActorRange<AADPlayerState>(GetWorld()))
-	//{
-	//	EAliveInfo AliveInfo = EAliveInfo::Alive;
-
-	//	if (PS->IsSafeReturn() == false)
-	//	{
-	//		AliveInfo = (PS->IsDead()) ? EAliveInfo::Dead : EAliveInfo::Abandoned;
-	//	}
-
-	//	float DamageNomalize = (TeamMaxDamage == 0) ? 0 : ((float)PS->GetDamage() / (float)TeamMaxDamage);
-	//	float KillNomalize = (TeamMaxKill == 0) ? 0 : ((float)PS->GetTotalMonsterKillCount() / (float)TeamMaxKill);
-	//	float AssistNomalize = (TeamMaxAssist == 0) ? 0 : ((float)PS->GetAssists() / (float)TeamMaxAssist);
-
-	//	int32 BattleContribution = 10000 * (0.6* DamageNomalize + 0.3* KillNomalize + 0.1* AssistNomalize);
-	//	int32 SafeContribution = 100 * (PS->GetGroggyRevive() + PS->GetCorpseRecovery() * 3);
-
-	//	FResultScreenParams Params
-	//	(
-	//		PS->GetPlayerNickname(),
-	//		AliveInfo,
-	//		PS->GetOreCollectedValue(), //채집 기여
-	//		BattleContribution,//전투기여
-	//		SafeContribution //팀지원
-	//	);
-
-	//	MaxCollect = FMath::Max(MaxCollect, Params.CollectionScore);
-	//	MaxCombat = FMath::Max(MaxCombat, Params.BattleScore);
-	//	MaxSupport = FMath::Max(MaxSupport, Params.SupportScore);
-
-	//	ResultParamsArray.Add(Params);
-
-
-	//	UpdateResultScreen(PS->GetPlayerIndex(), Params);
-	//}
 
 	for (FResultScreenParams& Param : ResultParamsArray)
 	{
@@ -573,7 +536,15 @@ void UPlayerHUDComponent::SetupHudWidgetToNewPawn(APawn* NewPawn, APlayerControl
 			Radar2DWidget->AddToViewport(-1);
 			SetActiveRadarWidget(false);
 		}
+	}  
+	if (!IsValid(GameGuideWidget) && GameGuideWidgetClass)
+	{
+		GameGuideWidget = CreateWidget<UGameGuideWidget>(PlayerController, GameGuideWidgetClass);
 	}
+	if (GameGuideWidget)
+	{
+		GameGuideWidget->AddToViewport(); 
+	}  
 
 	if (AUnderwaterCharacter* UWCharacter = Cast<AUnderwaterCharacter>(NewPawn))
 	{
@@ -873,13 +844,11 @@ void UPlayerHUDComponent::ToggleGuide()
 		else
 		{  
 			PC->SetShowMouseCursor(false);
-			//PC->SetIgnoreMoveInput(false); 
-			//PC->SetIgnoreLookInput(false);
 			PC->SetInputMode(FInputModeGameOnly());
 		}
 
 		FTimerHandle DelayFunctionTimerHandle;
-		float DelayTime = 0.5f;
+		float DelayTime = 0.2f;
 		GetWorld()->GetTimerManager().SetTimer(DelayFunctionTimerHandle, [this]() {GameGuideWidget->ToggleGuideVisibility(); }, DelayTime, false);
 		
 	}
