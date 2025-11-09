@@ -52,10 +52,12 @@ public:
 	void SetLightColor(FLinearColor NewColor);
 
 	UFUNCTION(NetMulticast, Reliable)
-	void Multicast_TemporarilyHighlightGreen(bool bReachedGoal);
+	void M_TemporarilyHighlightGreen(bool bReachedGoal);
+	void M_TemporarilyHighlightGreen_Implementation(bool bReachedGoal);
 
 	/** InstigatorActor가 소유하고 있는 Bound Player를 제출한다. */
 	void SubmitPlayer(AActor* InstigatorActor);
+
 protected:
 	int32 SellAllExchangeableItems(AActor* InstigatorActor);
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;

@@ -7,6 +7,8 @@
 #include "Framework/ADPlayerState.h"
 #include "Framework/ADGameInstance.h"
 #include "Framework/ADPlayerController.h"
+#include "Framework/ADTutorialGameMode.h"
+#include "Framework/ADTutorialGameState.h"
 
 #include "Character/UnderwaterCharacter.h"
 #include "Character/PlayerComponent/OxygenComponent.h"
@@ -18,9 +20,6 @@
 #include "Subsystems/Localizations/LocalizationSubsystem.h"
 
 #include "Net/UnrealNetwork.h"
-
-#include "Framework/ADTutorialGameMode.h"
-#include "Framework/ADTutorialGameState.h"
 
 AADDroneSeller::AADDroneSeller()
 {
@@ -127,12 +126,13 @@ void AADDroneSeller::Interact_Implementation(AActor* InstigatorActor)
 
 	// 🔸 모든 클라이언트에서 색상 전환 연출
 	const bool bReachedGoal = (CurrentMoney >= TargetMoney);
-	Multicast_TemporarilyHighlightGreen(bReachedGoal);
+	M_TemporarilyHighlightGreen(bReachedGoal);
 
 	if (bReachedGoal && IsValid(CurrentDrone))
 	{
 		LOGD(Log, TEXT("목표 달성! Drone 활성화 호출"));
-		CurrentDrone->Activate();
+		//CurrentDrone->Activate();
+		CurrentDrone->ApplyState(EDroneState::Approaching);
 		GetSoundSubsystem()->PlayAt(ESFX::ActivateDrone, GetActorLocation());
 	}
 	else
@@ -367,7 +367,7 @@ void AADDroneSeller::SetLightColor(FLinearColor NewColor)
 	}
 }
 
-void AADDroneSeller::Multicast_TemporarilyHighlightGreen_Implementation(bool bReachedGoal)
+void AADDroneSeller::M_TemporarilyHighlightGreen_Implementation(bool bReachedGoal)
 {
 	SetLightColor(FLinearColor::Green);
 
