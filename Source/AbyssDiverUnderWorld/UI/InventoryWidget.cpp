@@ -19,6 +19,7 @@ void UInventoryWidget::RefreshInventoryWidget()
 			{
 				UInventorySlotWidget* SlotWidget = CreateWidget<UInventorySlotWidget>(PC, SlotWidgetClass);
 				int8 InventoryItemIndexByType = InventoryComp->GetInventoryIndexesByType(InventoryItemType)[i];
+				if(InventoryItemType == EItemType::Equipment) SlotWidget->SetKeyNumber(i+1);
 				if (InventoryItemIndexByType >= 0)
 				{
 					SlotWidget->SetItemData(InventoryComp->GetInventoryList().Items[InventoryItemIndexByType], i, InventoryComp);

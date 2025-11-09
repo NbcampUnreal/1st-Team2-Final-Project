@@ -3,6 +3,7 @@
 
 #include "UI/InventorySlotWidget.h"
 #include "Components/RichTextBlock.h"
+#include "Components/TextBlock.h"
 #include "Container/FStructContainer.h"
 #include "Components/Image.h"
 #include "Blueprint/WidgetBlueprintLibrary.h"
@@ -125,6 +126,11 @@ void UInventorySlotWidget::SetItemData(FItemData ItemInfo, int32 Index, UADInven
 		QuantityText->SetText(FText::FromString(FString::Printf(TEXT("%d"), ItemInfo.Quantity)));
 		break;
 	}
+}
+
+void UInventorySlotWidget::SetKeyNumber(int8 Key)
+{
+	KeyNumber->SetText(FText::AsNumber(Key));
 }
 
 void UInventorySlotWidget::HandleDragCancelled(UDragDropOperation* Operation)
