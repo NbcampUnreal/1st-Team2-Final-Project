@@ -8,6 +8,7 @@
 
 class UListView;
 class UImage;
+class UTextBlock;
 class URichTextBlock;
 class UHorizontalBox;
 struct FGameGuideContent;
@@ -17,12 +18,15 @@ class ABYSSDIVERUNDERWORLD_API UGameGuideWidget : public UUserWidget
 {
 	GENERATED_BODY()
 public:
+	virtual bool Initialize() override;
 	virtual void NativeConstruct() override;
 
 	UFUNCTION(BlueprintCallable)
 	void PlayGameGuideAnimation(bool bIsInAnim);
 
 	void ToggleGuideVisibility();
+
+	void UpdateGuideList();
 
 #pragma region Method
 private:
@@ -38,7 +42,6 @@ private:
 	UFUNCTION()
 	void UpdateGuideContentArray(int GuideId);
 
-	void UpdateGuideList();
 
 	void UpdateGuideContent(int ContentIdx);
 
@@ -56,6 +59,9 @@ protected:
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UImage> GuideImage;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> GuideTitle;
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<URichTextBlock> GuideDescription;

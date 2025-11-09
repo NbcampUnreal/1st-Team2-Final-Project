@@ -114,9 +114,7 @@ void AADPlayerController::SetPawn(APawn* InPawn)
 				}
 			}
 		}
-	}
-
-
+	} 
 }
 
 void AADPlayerController::PostNetInit()

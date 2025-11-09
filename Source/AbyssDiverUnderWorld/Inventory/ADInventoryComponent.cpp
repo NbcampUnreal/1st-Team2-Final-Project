@@ -417,6 +417,7 @@ bool UADInventoryComponent::AddInventoryItem(const FItemData& ItemData)
 				{
 					if (ItemIndex != -1)
 					{
+						C_NotifyInventoryAlarm(TEXT("이미 소지한 아이템입니다!"), FVector2D(-7.0f, -260.0f));
 						return false;
 					}		
 				}

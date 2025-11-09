@@ -3,6 +3,7 @@
 
 #include "UI/GameGuideListSlot.h"
 #include "Components/TextBlock.h"
+#include "Components/Border.h" 
 #include "UI/GameGuideInfoData.h"
 #include "Subsystems/SoundSubsystem.h"
 
@@ -11,7 +12,7 @@ void UGameGuideListSlot::NativeOnListItemObjectSet(UObject* ListItemObject)
 	IUserObjectListEntry::NativeOnListItemObjectSet(ListItemObject);
 
 	UGameGuideInfoData* GuideInfoData = Cast<UGameGuideInfoData>(ListItemObject);
-	SetGuideInfo(GuideInfoData->GetSlotIndex(), GuideInfoData->GetTitle().ToString());
+	SetGuideInfo(GuideInfoData->GetSlotIndex(), GuideInfoData->GetTitle().ToString(), GuideInfoData->GetbShouldBlink());
 	GuideInfoData->OnGameGuideEntryUpdatedFromDataDelegate.Broadcast(this);
 }
 
@@ -23,10 +24,13 @@ FReply UGameGuideListSlot::NativeOnMouseButtonUp(const FGeometry& InGeometry, co
 	GetGameInstance()->GetSubsystem<USoundSubsystem>()->Play2D(ESFX_UI::UIClicked);
 
 	return Replay;
-}
+} 
 
-void UGameGuideListSlot::SetGuideInfo(int32 NewGuideId, const FString& NewGuideTitle)
+void UGameGuideListSlot::SetGuideInfo(int32 NewGuideId, const FString& NewGuideTitle, uint8 NewbIsBlinkSlot)
 {
 	GuideId = NewGuideId;
-	GuideTitle->SetText(FText::FromString(NewGuideTitle));
+	GuideTitle->SetText(FText::FromString(NewGuideTitle)); 
+	if (NewbIsBlinkSlot) SlotImage->SetBrushFromMaterial(BlinkTexture);
+	else SlotImage->SetBrushFromTexture(DefaultTexture);
+	if(bIsBlinkSlot != NewbIsBlinkSlot) bIsBlinkSlot = NewbIsBlinkSlot;
 }
