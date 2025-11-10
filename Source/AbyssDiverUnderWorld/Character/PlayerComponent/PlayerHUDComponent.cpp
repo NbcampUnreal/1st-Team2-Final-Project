@@ -190,7 +190,7 @@ void UPlayerHUDComponent::BeginPlay()
 	if (GameGuideWidgetClass)
 	{
 		GameGuideWidget = CreateWidget<UGameGuideWidget>(PlayerController, GameGuideWidgetClass);
-		GameGuideWidget->AddToViewport(); 
+		GameGuideWidget->AddToViewport(20); 
 	}
 	
 	if (FlipbookWidgetClass)
@@ -554,7 +554,7 @@ void UPlayerHUDComponent::SetupHudWidgetToNewPawn(APawn* NewPawn, APlayerControl
 	}
 	if (GameGuideWidget)
 	{
-		GameGuideWidget->AddToViewport(); 
+		GameGuideWidget->AddToViewport(20); 
 	}  
 
 	if (!IsValid(FlipbookWidgetInstance) && FlipbookWidgetClass)
