@@ -3,6 +3,8 @@
 #include "AbyssDiverUnderWorld.h"
 #include "Interactable/OtherActors/TargetIndicators/IndicatingTarget.h"
 #include "UI/TargetIndicatorWidget.h"
+#include "Interactable/OtherActors/ADDroneSeller.h"
+#include "Interactable/OtherActors/ADDrone.h"
 
 #include "EngineUtils.h"
 #include "Components/BillboardComponent.h"
@@ -76,6 +78,38 @@ void ATargetIndicatorManager::BeginPlay()
 	TargetIndicatorWidgetInstance->ChangeTargetImage(Target->GetTargetIcon());
 }
 
+void ATargetIndicatorManager::SkipCurrentTarget()
+{
+	AIndicatingTarget* Target = nullptr;
+	if (TryGetCurrentTarget(Target) == false)
+	{
+		return;
+	}
+
+	SkipTarget(Target->GetTargetOrder());
+}
+
+void ATargetIndicatorManager::SkipTargetIfDroneActivated()
+{
+	AIndicatingTarget* Target = nullptr;
+	if (TryGetCurrentTarget(Target) == false)
+	{
+		return;
+	}
+
+	if (AADDroneSeller* OwnerSeller = Cast<AADDroneSeller>(Target->GetOwnerActor()))
+	{
+		if (AADDrone* OwnerDrone = OwnerSeller->GetCurrentDrone())
+		{
+			EDroneState CurrentDroneState = OwnerDrone->GetCurrentState();
+			if (CurrentDroneState == EDroneState::Approaching || CurrentDroneState == EDroneState::Activated || CurrentDroneState == EDroneState::Departing)
+			{
+				SkipCurrentTarget();
+			}
+		}
+	}
+}
+
 void ATargetIndicatorManager::OnIndicatingTargetOverlapped(int32 TargetOrder)
 {
 	if (bIsActivated == false)
@@ -90,6 +124,11 @@ void ATargetIndicatorManager::OnIndicatingTargetOverlapped(int32 TargetOrder)
 	}
 
 	if (Target->GetTargetOrder() != TargetOrder)
+	{
+		return;
+	}
+
+	if (Target->HasOwnerActor())
 	{
 		return;
 	}
@@ -110,6 +149,8 @@ void ATargetIndicatorManager::TryActivateNextTarget()
 	}
 
 	TargetIndicatorWidgetInstance->ChangeTargetImage(NextTarget->GetTargetIcon());
+
+	SkipTargetIfDroneActivated();
 }
 
 void ATargetIndicatorManager::SkipTarget(int32 TargetOrderForSkip)
