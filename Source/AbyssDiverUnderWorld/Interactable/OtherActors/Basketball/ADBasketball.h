@@ -52,6 +52,10 @@ protected:
 	UFUNCTION()
 	void OnRep_bIsThrown();
 
+	/** 수중 맵에서도 지상 중력 적용을 위한 함수 */
+	UFUNCTION()
+	void AdjustGravityScale();
+
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	/** 던진 후 일정 시간 후에 다시 줍기 가능하게 만들기 */
