@@ -64,6 +64,8 @@ void AADBasketball::BeginPlay()
 		SoundSubsystemWeakPtr = GI->GetSubsystem<USoundSubsystem>();
 	}
 
+	AdjustGravityScale();
+
 	CollisionSphere->SetSimulatePhysics(false);
 	ProjectileMovement->SetActive(false);
 }
@@ -177,9 +179,11 @@ void AADBasketball::Throw()
 	ProjectileMovement->SetUpdatedComponent(CollisionSphere);
 	ProjectileMovement->Bounciness = 0.8f;
 	ProjectileMovement->Friction = 0.1f;
-	ProjectileMovement->ProjectileGravityScale = 1.0f;
+	AdjustGravityScale();
 	ProjectileMovement->Velocity = ThrowVelocity;
 	ProjectileMovement->Activate(true);
+
+	
 
 	M_ApplyThrowVelocity(ThrowVelocity);
 
@@ -343,9 +347,32 @@ void AADBasketball::OnRep_bIsThrown()
 		ProjectileMovement->SetUpdatedComponent(CollisionSphere);
 		ProjectileMovement->Bounciness = 0.8f;
 		ProjectileMovement->Friction = 0.1f;
-		ProjectileMovement->ProjectileGravityScale = 1.0f;
+		AdjustGravityScale();
 		ProjectileMovement->Velocity = ThrowVelocity;
 		ProjectileMovement->Activate(true);
+	}
+}
+
+void AADBasketball::AdjustGravityScale()
+{
+	if (!ProjectileMovement || !GetWorld()) return;
+
+	const float DesiredGravity = 980.0f;
+	float WorldGravity = FMath::Abs(GetWorld()->GetGravityZ());
+
+	// 월드 중력이 이미 지상 중력과 같거나 비슷하면 스케일 1.0 사용
+	if (FMath::IsNearlyEqual(WorldGravity, DesiredGravity, 10.0f))
+	{
+		ProjectileMovement->ProjectileGravityScale = 1.0f;
+		LOG(TEXT("Basketball: Using default gravity scale (World is already Earth)"));
+	}
+	// 월드 중력이 다른 경우 스케일 조정
+	else if (WorldGravity > SMALL_NUMBER)  // 0으로 나누기 방지
+	{
+		float NewScale = DesiredGravity / WorldGravity;
+		ProjectileMovement->ProjectileGravityScale = NewScale;
+		LOG(TEXT("Basketball: Adjusted gravity scale to %f (World: %f, Desired: %f)"),
+			NewScale, GetWorld()->GetGravityZ(), -DesiredGravity);
 	}
 }
 
