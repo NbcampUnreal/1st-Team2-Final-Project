@@ -14,12 +14,14 @@
 #include "Character/PlayerComponent/OxygenComponent.h"
 
 #include "Interactable/Item/Component/ADInteractableComponent.h"
+#include "Interactable/OtherActors/TargetIndicators/TargetIndicatorManager.h"
 
 #include "Subsystems/SoundSubsystem.h"
 #include "Subsystems/MissionSubsystem.h"
 #include "Subsystems/Localizations/LocalizationSubsystem.h"
 
 #include "Net/UnrealNetwork.h"
+#include "Kismet/GameplayStatics.h"
 
 AADDroneSeller::AADDroneSeller()
 {
@@ -155,7 +157,6 @@ void AADDroneSeller::Activate()
 	OnRep_IsActive(); // 서버에서는 직접 호출해저야함
 }
 
-
 void AADDroneSeller::OnRep_IsActive()
 {
 	//TODO : UI 업데이트
@@ -267,6 +268,8 @@ void AADDroneSeller::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME(AADDroneSeller, CurrentMoney);
 	DOREPLIFETIME(AADDroneSeller, TargetMoney);
 	DOREPLIFETIME(AADDroneSeller, MoneyRatio);
+	// 리팩토링 필요. 지스타를 위한 임시 코딩. Way Point를 위한 것
+	DOREPLIFETIME(AADDroneSeller, CurrentDrone);
 }
 
 void AADDroneSeller::UpdatePlayerState(AActor* Actor, int32 GainedValue)
@@ -334,6 +337,11 @@ UMissionSubsystem* AADDroneSeller::GetMissionSubsystem()
 void AADDroneSeller::SetCurrentDrone(AADDrone* InDrone)
 {
 	CurrentDrone = InDrone;
+}
+
+AADDrone* AADDroneSeller::GetCurrentDrone() const
+{
+	return CurrentDrone;
 }
 
 void AADDroneSeller::SetLightColor(FLinearColor NewColor)

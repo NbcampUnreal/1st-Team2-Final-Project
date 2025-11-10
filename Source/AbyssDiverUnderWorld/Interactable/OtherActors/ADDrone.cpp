@@ -8,6 +8,8 @@
 
 #include "Interactable/Item/Component/ADInteractableComponent.h"
 #include "Interactable/OtherActors/Portals/PortalToSubmarine.h"
+#include "Interactable/OtherActors/TargetIndicators/IndicatingTarget.h"
+#include "Interactable/OtherActors/TargetIndicators/TargetIndicatorManager.h"
 
 #include "FrameWork/ADInGameState.h"
 #include "Framework/ADGameInstance.h"
@@ -179,8 +181,8 @@ if (World == nullptr || World->IsGameWorld() == false)
 	}
 
 	LOGVN(Log, TEXT("OnPhaseChangeDelegate Bound"));
-	OnPhaseChangeDelegate.AddUObject(PlayerHudComponent, &UPlayerHUDComponent::PlayNextPhaseAnim);
-
+	//OnPhaseChangeDelegate.AddDynamic(PlayerHudComponent, &UPlayerHUDComponent::PlayNextPhaseAnim); 이게 왜 있지? 아래 코드로 대체함.
+	PlayerHudComponent->PlayNextPhaseAnim(DronePhaseNumber + 1);
 	LOGV(Log, TEXT("OnPhaseChangeDelegate Broadcast : %d"), DronePhaseNumber + 1);
 	OnPhaseChangeDelegate.Broadcast(DronePhaseNumber + 1);
 	Super::Destroyed();
@@ -344,6 +346,13 @@ void AADDrone::OnRep_IsActive()
 
 void AADDrone::OnRep_CurrentDroneState()
 {
+	// 매우매우 임시 코드 지스타 끝나면 리팩토링 필요
+	ATargetIndicatorManager* TargetIndicatorManager = Cast<ATargetIndicatorManager>(UGameplayStatics::GetActorOfClass(GetWorld(), ATargetIndicatorManager::StaticClass()));
+	if (TargetIndicatorManager)
+	{
+		TargetIndicatorManager->SkipTargetIfDroneActivated();
+	}
+
 	switch (CurrentDroneState)
 	{
 	case EDroneState::HiddenInGame:

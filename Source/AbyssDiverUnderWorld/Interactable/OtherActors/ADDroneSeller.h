@@ -87,8 +87,10 @@ protected:
 	/* 현재 드론에 제출된 시체 플레이어의 Index 배열 */
 	TArray<int8> SubmittedPlayerIndexes;
 	
-	UPROPERTY(EditAnywhere)
+	// 현재 임시로 Way Point를 위한 Replicate, 지스타 이후 리팩토링 필요
+	UPROPERTY(Replicated, EditAnywhere)
 	TObjectPtr<class AADDrone> CurrentDrone = nullptr;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction")
 	TObjectPtr<class UADInteractableComponent> InteractableComp;
 	UPROPERTY()
@@ -130,6 +132,9 @@ public:
 	
 	UFUNCTION(BlueprintCallable, Category = "Drone")
 	void SetCurrentDrone(AADDrone* InDrone);
+
+	AADDrone* GetCurrentDrone() const;
+
 private:
 
 	void SetCurrentMoney(const int32& NewCurrentMoney)
