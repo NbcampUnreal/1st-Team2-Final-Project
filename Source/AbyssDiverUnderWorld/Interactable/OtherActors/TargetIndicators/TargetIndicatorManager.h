@@ -24,12 +24,21 @@ protected:
 
 #pragma region Methods
 
+public:
+
+	void SkipCurrentTarget();
+
+	// 만약 현재 타겟이 DroneSeller일 경우 Drone이 활성화 된 상태일 때면 스킵한다.
+	// 나중에 리펙토링 필요.. 지스타를 위한 임시 함수
+	void SkipTargetIfDroneActivated();
+
 private:
 
 	void OnIndicatingTargetOverlapped(int32 TargetOrder);
 	void TryActivateNextTarget();
 
 	void SkipTarget(int32 TargetOrderForSkip);
+
 
 #pragma endregion
 
@@ -55,8 +64,8 @@ private:
 	UPROPERTY()
 	TArray<TObjectPtr<AIndicatingTarget>> TargetArrayByReverseOrder;
 
-	UPROPERTY()
-	TObjectPtr<AIndicatingTarget> CurrentTarget;
+	//UPROPERTY()
+	//TObjectPtr<AIndicatingTarget> CurrentTarget;
 
 #pragma endregion
 

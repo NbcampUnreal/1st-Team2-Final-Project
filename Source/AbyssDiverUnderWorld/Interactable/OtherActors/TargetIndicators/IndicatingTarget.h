@@ -73,15 +73,20 @@ protected:
 	UPROPERTY(EditInstanceOnly, Category = "IndicatingTargetSettings")
 	TObjectPtr<AActor> OwnerActor;
 
+	UPROPERTY(EditInstanceOnly, Category = "IndicatingTargetSettings")
+	TObjectPtr<AActor> ActorToAttach;
+
 #pragma endregion
 
 #pragma region Getters / Setters
 
 public:
+
 	void SetupIndicator(AActor* NewOwner, UTexture2D* NewIcon);
 	int32 GetTargetOrder() const;
 	UTexture2D* GetTargetIcon() const;
-
+	bool HasOwnerActor() const;
+	AActor* GetOwnerActor() const;
 
 #pragma endregion
 
