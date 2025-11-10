@@ -46,6 +46,7 @@
 #include "Character/PlayerComponent/PlayerHUDComponent.h"
 #include "Interactable/Item/Weapon/DamageType/DamageType_Stagger.h"
 #include "Interactable/Item/Weapon/DamageEvent/StaggerDamageEvent.h"
+#include "PlayerComponent/CameraEffectComponent.h"
 
 DEFINE_LOG_CATEGORY(LogAbyssDiverCharacter);
 
@@ -222,6 +223,8 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	bIsDeathLocked = false;
 
 	bAlwaysRelevant = true;
+
+	CameraEffectComponent = CreateDefaultSubobject<UCameraEffectComponent>(TEXT("CameraEffectComponent"));
 }
 
 void AUnderwaterCharacter::BeginPlay()
