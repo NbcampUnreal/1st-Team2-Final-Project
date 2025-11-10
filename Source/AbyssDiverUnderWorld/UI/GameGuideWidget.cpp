@@ -93,9 +93,7 @@ void UGameGuideWidget::SetGuideVisibility(bool NewbIsVisible)
 
 void UGameGuideWidget::PlayGameGuideAnimation(bool bIsInAnim)
 {
-	if (bIsAnimationPlaying) return;
-
-	if (this) UE_LOG(LogTemp, Warning, TEXT("Test"));
+	if (bIsAnimationPlaying) return; 
 
 	if (bIsInAnim)
 	{
