@@ -854,7 +854,7 @@ void UPlayerHUDComponent::ShowFirstClearEndingWidget()
 
 void UPlayerHUDComponent::ToggleGuide()
 {
-	if (GameGuideWidget)
+	if (GameGuideWidget && !GameGuideWidget->GetbIsAnimationPlaying())
 	{
 		AADPlayerController* PC = Cast<AADPlayerController>(GetOwner());
 		if (!PC) return;
@@ -875,7 +875,11 @@ void UPlayerHUDComponent::ToggleGuide()
 
 		FTimerHandle DelayFunctionTimerHandle;
 		float DelayTime = 0.2f;
-		GetWorld()->GetTimerManager().SetTimer(DelayFunctionTimerHandle, [this]() {GameGuideWidget->ToggleGuideVisibility(); }, DelayTime, false);
+		GetWorld()->GetTimerManager().SetTimer(DelayFunctionTimerHandle, [this]() {
+			
+			GameGuideWidget->ToggleGuideVisibility(); 
+			
+			}, DelayTime, false);
 		
 	}
 }
