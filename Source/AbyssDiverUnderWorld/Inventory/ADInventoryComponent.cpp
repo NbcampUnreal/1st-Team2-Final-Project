@@ -86,18 +86,24 @@ void UADInventoryComponent::BeginPlay()
 		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
 	}
 
-	APlayerState* PS = Cast<APlayerState>(GetOwner());
-	if (!PS) return;
-	AADPlayerController* PC = Cast<AADPlayerController>(PS->GetOwningController());
-	if (!PC) return;
+	FTimerHandle BindDelayTimerHandle;
+	float BindDelayTime = 1.0f;
+	GetWorld()->GetTimerManager().SetTimer(BindDelayTimerHandle, [this]() {
+		APlayerState* PS = Cast<APlayerState>(GetOwner());
+		if (!PS) return;
+		AADPlayerController* PC = Cast<AADPlayerController>(PS->GetOwningController());
+		if (!PC) return;
 
-	UPlayerHUDComponent* HUD = PC->GetPlayerHUDComponent();
-	UPlayerStatusWidget* PSW = HUD->GetPlayerStatusWidget();
+		UPlayerHUDComponent* HUD = PC->GetPlayerHUDComponent();
+		if (!HUD) return;
+		UPlayerStatusWidget* PSW = HUD->GetPlayerStatusWidget();
+		if (!PSW) return;
 
-	InventoryAlarmDelegate.AddUObject(PSW, &UPlayerStatusWidget::NoticeInfo); 
-	
-	TryCachedDiver();
-	SetComponentTickEnabled(true);
+		InventoryAlarmDelegate.AddUObject(PSW, &UPlayerStatusWidget::NoticeInfo);
+
+		TryCachedDiver();
+		SetComponentTickEnabled(true); }, BindDelayTime, false);
+
 }
 
 void UADInventoryComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
