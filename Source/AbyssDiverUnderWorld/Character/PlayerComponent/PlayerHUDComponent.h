@@ -4,11 +4,13 @@
 #include "Components/ActorComponent.h"
 #include "UI/PlayerStatusWidget.h"
 #include "UI/EndingWidget.h"
+#include "InputAction.h"
 #include "PlayerHUDComponent.generated.h"
 
 enum class EMissionType : uint8;
 class USoundSubsystem;
 class UDepthComponent;
+class UFlipbookWidget;
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class ABYSSDIVERUNDERWORLD_API UPlayerHUDComponent : public UActorComponent
@@ -97,6 +99,8 @@ public:
     void S_ReportConfirm_Implementation(AActor* RequestInteractableActor, bool bConfirmed);
 
     void ShowFirstClearEndingWidget();
+
+    void ToggleGuide();
     
 protected:
     
@@ -176,6 +180,18 @@ private:
 
     UPROPERTY()
     TObjectPtr<UEndingWidget> FirstClearWidgetInstance;
+
+    UPROPERTY(EditDefaultsOnly, Category = UI, meta = (AllowPrivateAccess = "true"))
+    TSubclassOf<class UGameGuideWidget> GameGuideWidgetClass;
+
+    UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = true))
+    TObjectPtr<UGameGuideWidget> GameGuideWidget;
+    
+    UPROPERTY(EditDefaultsOnly, Category = UI, meta = (AllowPrivateAccess = "true"))
+    TSubclassOf<UFlipbookWidget> FlipbookWidgetClass;
+
+    UPROPERTY()
+    TObjectPtr<UFlipbookWidget> FlipbookWidgetInstance;
     
 #pragma endregion
 
@@ -187,7 +203,8 @@ public:
 
     UMissionsOnHUDWidget* GetMissionsOnHudWidget() const;
     USoundSubsystem* GetSoundSubsystem();
-    UPlayerStatusWidget* GetPlayerStatusWidget() ;
+    UPlayerStatusWidget* GetPlayerStatusWidget();
+    UFlipbookWidget* GetFlipbookWidget() const;
 
     /** Crosshair Widget 반환 */
     UCrosshairWidget* GetCrosshairWidget() const { return CrosshairWidget; }

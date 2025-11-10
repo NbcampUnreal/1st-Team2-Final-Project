@@ -62,7 +62,7 @@ void UUpgradeComponent::S_RequestUpgrade_Implementation(EUpgradeType UpgradeType
 
 	int32 TotalTeamCredit = GS->GetTotalTeamCredit();
 
-	int32 Grade = GetCurrentGrade(UpgradeType);
+	int32 Grade = GetGradeByType(UpgradeType);
 
 	FUpgradeDataRow* UpgradeData = DataTableSubsystem->GetUpgradeData(UpgradeType, Grade + 1);
 	if (TotalTeamCredit < UpgradeData->Price)
@@ -135,7 +135,7 @@ void UUpgradeComponent::CopyProperties(UUpgradeComponent* Other)
 	UpgradeGradeMap = Other->UpgradeGradeMap;
 }
 
-uint8 UUpgradeComponent::GetCurrentGrade(EUpgradeType UpgradeType) const
+uint8 UUpgradeComponent::GetGradeByType(EUpgradeType UpgradeType) const
 {
 	const int32 Index = static_cast<int32>(UpgradeType);
 	return UpgradeGradeMap.IsValidIndex(Index) ? UpgradeGradeMap[Index] : 0;

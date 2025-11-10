@@ -4,6 +4,7 @@
 #include "OxygenComponent.h"
 
 #include "AbyssDiverUnderWorld.h"
+#include "Character/UnderwaterCharacter.h"
 #include "Net/UnrealNetwork.h"
 
 UOxygenComponent::UOxygenComponent()
@@ -18,8 +19,6 @@ UOxygenComponent::UOxygenComponent()
 	OxygenState.OxygenLevel = 600.0f;
 
 	OxygenConsumeRate = 1.0f;
-
-	bIsInTutorialMode = 0;
 }
 
 void UOxygenComponent::BeginPlay()
@@ -74,11 +73,6 @@ void UOxygenComponent::OnRep_OxygenStateChanged()
 	OldOxygenLevel = OxygenState.OxygenLevel;
 }
 
-void UOxygenComponent::SetTutorialMode(bool bIsTutorial)
-{
-	bIsInTutorialMode = bIsTutorial;
-}
-
 void UOxygenComponent::ConsumeOxygen(const float DeltaTime)
 {
 	SetOxygenLevel(OxygenState.OxygenLevel - OxygenConsumeRate * DeltaTime);
@@ -130,6 +124,22 @@ void UOxygenComponent::SetMaxOxygenLevel(float NewMaxOxygenLevel)
 	}
 }
 
+void UOxygenComponent::SetMinOxygenLevel(float NewMinOxygenLevel)
+{
+	if (GetOwnerRole() != ROLE_Authority || NewMinOxygenLevel <= 0)
+	{
+		return;
+	}
+
+	OxygenState.MinOxygenLevel = NewMinOxygenLevel;
+	// 현재 산소량이 최소 산소량보다 작으면 최소 산소량으로 설정한다.
+	if (OxygenState.OxygenLevel < OxygenState.MinOxygenLevel)
+	{
+		SetOxygenLevel(OxygenState.MinOxygenLevel);
+	}
+	// Min Oxygen Level은 UI적으로 표현하지 않으므로 OnOxygenLevelChanged는 호출하지 않는다.
+}
+
 EOXygenChangeResult UOxygenComponent::RefillOxygen(const float RefillAmount)
 {
 	if (GetOwnerRole() != ROLE_Authority)
@@ -157,6 +167,8 @@ void UOxygenComponent::SetConsumeRate(float NewConsumeRate)
 		return;
 	}
 
+	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("%s Oxygen Consume Rate changed : %f -> %f"),
+		*GetNameSafe(GetOwner()), OxygenConsumeRate, NewConsumeRate);
 	OxygenConsumeRate = NewConsumeRate;
 }
 
@@ -169,9 +181,7 @@ void UOxygenComponent::SetOxygenLevel(const float NextOxygenLevel, const bool bA
 
 	OldOxygenLevel = OxygenState.OxygenLevel;
 
-	const float MinOxygenLevel = bIsInTutorialMode ? MinOxygenInTutorial : 0.0f;
-
-	OxygenState.OxygenLevel = FMath::Clamp(NextOxygenLevel, MinOxygenLevel, OxygenState.MaxOxygenLevel);
+	OxygenState.OxygenLevel = FMath::Clamp(NextOxygenLevel, OxygenState.MinOxygenLevel, OxygenState.MaxOxygenLevel);
 	
 	OnOxygenLevelChanged.Broadcast(OxygenState.OxygenLevel, OxygenState.MaxOxygenLevel);
 	K2_OnOxygenLevelChanged(OxygenState.OxygenLevel, OxygenState.MaxOxygenLevel);

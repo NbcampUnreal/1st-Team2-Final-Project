@@ -1,16 +1,18 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+﻿#include "UnderwaterEffectComponent.h"
 
-
-#include "UnderwaterEffectComponent.h"
-
-#include "NiagaraComponent.h"
-#include "NiagaraFunctionLibrary.h"
 #include "Character/UnderwaterCharacter.h"
+#include "Character/PlayerComponent/PlayerHUDComponent.h"
+
+#include "Framework/ADPlayerController.h"
+#include "UI/Flipbooks/FlipbookWidget.h"
+#include "Subsystems/SoundSubsystem.h"
+
 #include "Components/AudioComponent.h"
-#include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Logging/LogMacros.h"
-#include "Subsystems/SoundSubsystem.h"
+#include "NiagaraComponent.h"
+#include "NiagaraFunctionLibrary.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 UUnderwaterEffectComponent::UUnderwaterEffectComponent()
 {
@@ -189,6 +191,61 @@ void UUnderwaterEffectComponent::StopCombatEffect()
 	{
 		CombatAudioComponent->FadeOut(1.5f, 0.0f); //  Decrease naturally Sound for 1.5 seconds
 		CombatAudioComponent = nullptr;
+	}
+}
+
+void UUnderwaterEffectComponent::C_PlayFlipbookEffect_Implementation(EFlipbookType FlipbookType, bool bShouldLoop, float PlayTime)
+{
+	AADPlayerController* PlayerController = Cast<AADPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
+	if (PlayerController == nullptr)
+	{
+		LOGV(Error, TEXT("PlayerController is not valid"));
+		return;
+	}
+
+	UPlayerHUDComponent* Hud = PlayerController->GetPlayerHUDComponent();
+	if (Hud == nullptr)
+	{
+		LOGV(Error, TEXT("Hud is not valid"));
+		return;
+	}
+
+	UFlipbookWidget* FlipbookWidget = Hud->GetFlipbookWidget();
+	if (FlipbookWidget == nullptr)
+	{
+		LOGV(Error, TEXT("FlipbookWidget is not valid"));
+		return;
+	}
+
+	FlipbookWidget->PlayFlipbook(FlipbookType, bShouldLoop, PlayTime);
+}
+
+void UUnderwaterEffectComponent::C_StopFlipbookEffect_Implementation()
+{
+	AADPlayerController* PlayerController = Cast<AADPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
+	if (PlayerController == nullptr)
+	{
+		LOGV(Error, TEXT("PlayerController is not valid"));
+		return;
+	}
+
+	UPlayerHUDComponent* Hud = PlayerController->GetPlayerHUDComponent();
+	if (Hud == nullptr)
+	{
+		LOGV(Error, TEXT("Hud is not valid"));
+		return;
+	}
+
+	UFlipbookWidget* FlipbookWidget = Hud->GetFlipbookWidget();
+	if (FlipbookWidget == nullptr)
+	{
+		LOGV(Error, TEXT("FlipbookWidget is not valid"));
+		return;
+	}
+
+	if (FlipbookWidget->IsPlaying())
+	{
+		FlipbookWidget->StopFlipbook();
 	}
 }
 

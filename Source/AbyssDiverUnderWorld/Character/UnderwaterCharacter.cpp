@@ -16,7 +16,7 @@
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/PawnNoiseEmitterComponent.h"
-#include "DataRow/MapDepthRow.h"
+#include "DataRow/MapDataRow.h"
 #include "DataRow/SoundDataRow/SFXDataRow.h"
 #include "Footstep/FootstepComponent.h"
 #include "Framework/ADPlayerState.h"
@@ -96,7 +96,7 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	CameraTransitionDirection = 1.0f;
 	CameraTransitionTimeElapsed = 0.0f;
 	CameraTransitionDuration = 0.25f;
-	EmoteCameraTransitionLength = 500.0f;
+	EmoteCameraTransitionLength = 350.0f;
 	EmoteCameraTransitionEasingType = EEasingFunc::EaseInOut;
 
 	LanternLength = 3000.0f;
@@ -295,6 +295,17 @@ void AUnderwaterCharacter::BeginPlay()
 	AdjustSpeed();
 }
 
+struct FMapDataRow* AUnderwaterCharacter::GetCurrentMapDataRow() const
+{
+	if (UDataTableSubsystem* DataTableSubsystem = GetGameInstance()->GetSubsystem<UDataTableSubsystem>())
+	{
+		FName MapName = FName(UGameplayStatics::GetCurrentLevelName(GetWorld(), true));
+		return DataTableSubsystem->GetMapDataRow(MapName);
+	}
+
+	return nullptr;
+}
+
 void AUnderwaterCharacter::InitPlayerStatus(AADPlayerState* ADPlayerState)
 {
 	if (ADPlayerState == nullptr)
@@ -309,7 +320,7 @@ void AUnderwaterCharacter::InitPlayerStatus(AADPlayerState* ADPlayerState)
 	
 	if (UADInventoryComponent* Inventory = ADPlayerState->GetInventory())
 	{
-		CachedInventoryComponent = Inventory;
+		InventoryWeakPtr = Inventory;
 		// 인벤토리가 변경될 떄 OnRep에서도 호출되기 때문에 여기서 바인딩하면 Server, Client 양쪽에서 바인딩 가능하다.
 		Inventory->InventoryUpdateDelegate.AddUObject(this, &AUnderwaterCharacter::AdjustSpeed);
 		OnEnvironmentStateChangedDelegate.AddDynamic(Inventory, &UADInventoryComponent::OnEnvironmentStateChanged);
@@ -318,7 +329,7 @@ void AUnderwaterCharacter::InitPlayerStatus(AADPlayerState* ADPlayerState)
 	{
 		LOGVN(Error, TEXT("Inventory Component Init failed : %d"), GetUniqueID());
 	}
-
+	
 	if (UUpgradeComponent* Upgrade = ADPlayerState->GetUpgradeComp())
 	{
 		ApplyUpgradeFactor(Upgrade);
@@ -350,7 +361,7 @@ void AUnderwaterCharacter::ApplyUpgradeFactor(UUpgradeComponent* UpgradeComponen
 	{
 	    const EUpgradeType Type = static_cast<EUpgradeType>(i);
 		
-		const uint8 Grade = UpgradeComponent->GetCurrentGrade(Type);
+		const uint8 Grade = UpgradeComponent->GetGradeByType(Type);
 		const FUpgradeDataRow* UpgradeData = DataTableSubsystem->GetUpgradeData(Type, Grade);
 		if (UpgradeData == nullptr)
 		{
@@ -359,31 +370,36 @@ void AUnderwaterCharacter::ApplyUpgradeFactor(UUpgradeComponent* UpgradeComponen
 		}
 		
 		const int StatFactor = UpgradeData->StatFactor;
-		
-	    switch (Type)
-	    {
-		    case EUpgradeType::Gather:
-			    GatherMultiplier = StatFactor / 100.0f;
-			    break;
-	    	case EUpgradeType::Oxygen:
-	    		OxygenComponent->InitOxygenSystem(StatFactor, StatFactor);
-			    break;
-	    	case EUpgradeType::Speed:
-	    		// 최종 속도는 나중에 AdjustSpeed를 통해서 계산된다. 현재는 BaseSpeed만 조정하면 된다.
-	    		UpgradeSwimSpeed = StatFactor;
-	    		BaseSwimSpeed += UpgradeSwimSpeed;
-	    		break;
-			case EUpgradeType::Light:
-	    		if (Grade > 1)
-	    		{
-	    			// 정수 곱하기 연산을 먼저하고 나누기 연산을 나중에 해서 소수점 오차를 줄인다.
-	    			LanternLength = LanternLength * (100 + StatFactor) / 100.0f;
-	    			LanternComponent->SetLightLength(LanternLength);
-	    		}
-	    		break;
-		    default: ;
-	    		break;
-	    }
+		const FMapDataRow* MapDataRow = GetCurrentMapDataRow();
+
+		if (EUpgradeType::Gather == Type)
+		{
+			GatherMultiplier = StatFactor / 100.0f;
+		}
+		else if (EUpgradeType::Oxygen == Type)
+		{
+			// FinalMaxOxygen = (BaseOxygen + UpgradeOxygen) * MapMaxOxygenRate
+			float MaxOxygen = OxygenComponent->GetMaxOxygenLevel() + StatFactor;
+			MaxOxygen = (MapDataRow != nullptr) ? MaxOxygen * MapDataRow->MaxOxygenRate : MaxOxygen;
+			MaxOxygen = FMath::FloorToInt(MaxOxygen);
+			MaxOxygen = FMath::Max(MaxOxygen, 1.0f);
+			OxygenComponent->InitOxygenSystem(MaxOxygen, MaxOxygen);
+		}
+		else if (EUpgradeType::Speed == Type)
+		{
+			// 최종 속도는 나중에 AdjustSpeed를 통해서 계산된다. 현재는 BaseSpeed만 조정하면 된다.
+			UpgradeSwimSpeed = StatFactor;
+			BaseSwimSpeed += UpgradeSwimSpeed;
+		}
+		else if (EUpgradeType::Light == Type)
+		{
+			if (Grade > 1)
+			{
+				// 정수 곱하기 연산을 먼저하고 나누기 연산을 나중에 해서 소수점 오차를 줄인다.
+				LanternLength = LanternLength * (100 + StatFactor) / 100.0f;
+				LanternComponent->SetLightLength(LanternLength);
+			}
+		}
 	}
 }
 
@@ -1565,15 +1581,15 @@ void AUnderwaterCharacter::DropAllExchangeableItems()
 		return;
 	}
 
-	if (CachedInventoryComponent)
+	if (InventoryWeakPtr.IsValid())
 	{
-		const TArray<FItemData>& Items = CachedInventoryComponent->GetInventoryList().Items;
+		const TArray<FItemData>& Items = InventoryWeakPtr->GetInventoryList().Items;
 		const int32 ItemCount = Items.Num();
 		for (int32 i = ItemCount - 1; i >= 0; --i)
 		{
 			if (Items[i].ItemType == EItemType::Exchangable)
 			{
-				CachedInventoryComponent->RemoveBySlotIndex(i, EItemType::Exchangable, true);
+				InventoryWeakPtr->RemoveBySlotIndex(i, EItemType::Exchangable, true);
 			}
 		}
 	}
@@ -2474,29 +2490,29 @@ void AUnderwaterCharacter::Radar(const FInputActionValue& InputActionValue)
 
 void AUnderwaterCharacter::EquipSlot1(const FInputActionValue& InputActionValue)
 {
-	if (CharacterState != ECharacterState::Normal || !bCanUseEquipment || !CachedInventoryComponent)
+	if (CharacterState != ECharacterState::Normal || !bCanUseEquipment || !InventoryWeakPtr.IsValid())
 	{
 		return;
 	}
-	CachedInventoryComponent->S_UseInventoryItem(EItemType::Equipment, 0);
+	InventoryWeakPtr->S_UseInventoryItem(EItemType::Equipment, 0);
 }
 
 void AUnderwaterCharacter::EquipSlot2(const FInputActionValue& InputActionValue)
 {
-	if (CharacterState != ECharacterState::Normal || !bCanUseEquipment || !CachedInventoryComponent)
+	if (CharacterState != ECharacterState::Normal || !bCanUseEquipment || !InventoryWeakPtr.IsValid())
 	{
 		return;
 	}
-	CachedInventoryComponent->S_UseInventoryItem(EItemType::Equipment, 1);
+	InventoryWeakPtr->S_UseInventoryItem(EItemType::Equipment, 1);
 }
 
 void AUnderwaterCharacter::EquipSlot3(const FInputActionValue& InputActionValue)
 {
-	if (CharacterState != ECharacterState::Normal || !bCanUseEquipment || !CachedInventoryComponent)
+	if (CharacterState != ECharacterState::Normal || !bCanUseEquipment || !InventoryWeakPtr.IsValid())
 	{
 		return;
 	}
-	CachedInventoryComponent->S_UseInventoryItem(EItemType::Equipment, 2);
+	InventoryWeakPtr->S_UseInventoryItem(EItemType::Equipment, 2);
 }
 
 void AUnderwaterCharacter::PerformEmote1(const FInputActionValue& InputActionValue)
@@ -3103,7 +3119,7 @@ void AUnderwaterCharacter::SetHideInSeaweed(const bool bNewHideInSeaweed)
 
 bool AUnderwaterCharacter::IsOverloaded() const
 {
-	return IsValid(CachedInventoryComponent) && CachedInventoryComponent->GetTotalWeight() >= OverloadWeight;
+	return InventoryWeakPtr.IsValid() && InventoryWeakPtr->GetTotalWeight() >= OverloadWeight;
 }
 
 void AUnderwaterCharacter::SetZoneSpeedMultiplier(float NewMultiplier)

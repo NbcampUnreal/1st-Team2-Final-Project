@@ -5,7 +5,7 @@
 
 #include "DataTableSubsystem.generated.h"
 
-struct FMapDepthRow;
+struct FMapDataRow;
 enum class EUpgradeType : uint8;
 enum class EMapName : uint8;
 struct FFADItemDataRow;
@@ -16,6 +16,7 @@ struct FDropEntry;
 struct FPhaseGoalRow;
 struct FMapPathDataRow;
 struct FShopItemMeshTransformRow;
+struct FGameGuideInfoRow;
 
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API UDataTableSubsystem : public UGameInstanceSubsystem
@@ -40,6 +41,8 @@ public:
 	FUpgradeDataRow* GetUpgradeData(EUpgradeType UpgradeType, uint8 Grade) const;
 
 	FPhaseGoalRow* GetPhaseGoalData(EMapName MapName, int32 Phase) const;
+
+	FGameGuideInfoRow* GetGameGuideInfo(int32 GuideId) const;
 
 	// 유효하지 않으면 "invalid" 반환
 	FString GetMapPath(EMapName MapName) const;
@@ -77,15 +80,18 @@ private:
 	TArray<FShopItemMeshTransformRow*> ShopItemMeshTransformTableArray;
 	TMap<uint8, FShopItemMeshTransformRow*> ShopItemMeshTransformTableMap;
 
+	TArray<FGameGuideInfoRow*> GameGuideInfoTableArray;
+
 #pragma endregion
 
 #pragma region Getter/Setter
 
 public:
 	const TArray<FFADItemDataRow*>& GetItemDataTableArray() { return ItemDataTableArray; };
+	const TArray<FGameGuideInfoRow*>& GetGameGuideInfoTableArray() { return GameGuideInfoTableArray; };
 
-	/** Map 이름에 따라 Depth Zone 정보를 반환 */
-	FMapDepthRow* GetDepthZoneDataRow(FName MapName) const;
+	/** Map 이름에 따라 MapData 정보를 반환 */
+	FMapDataRow* GetMapDataRow(FName MapName) const;
 	
 #pragma endregion
 };

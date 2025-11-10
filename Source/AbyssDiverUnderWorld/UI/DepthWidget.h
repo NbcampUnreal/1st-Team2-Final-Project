@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "DataRow/MapDepthRow.h"
+#include "DataRow/MapDataRow.h"
 #include "DepthWidget.generated.h"
 
 class UTextBlock;

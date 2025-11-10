@@ -22,6 +22,8 @@
 #include "UI/RadarWidgets/Radar2DWidget.h"
 #include "UI/DepthWidget.h"
 #include "UI/InteractPopupWidget.h"
+#include "UI/Flipbooks/FlipbookWidget.h"
+#include "UI/GameGuideWidget.h"
 
 #include "Interactable/OtherActors/ADDroneSeller.h"
 #include "Interactable/OtherActors/ADDrone.h"
@@ -185,6 +187,22 @@ void UPlayerHUDComponent::BeginPlay()
 		}
 	}
 
+	if (GameGuideWidgetClass)
+	{
+		GameGuideWidget = CreateWidget<UGameGuideWidget>(PlayerController, GameGuideWidgetClass);
+		GameGuideWidget->AddToViewport(20); 
+	}
+	
+	if (FlipbookWidgetClass)
+	{
+		FlipbookWidgetInstance = CreateWidget<UFlipbookWidget>(PlayerController, FlipbookWidgetClass);
+		if (FlipbookWidgetInstance)
+		{
+			FlipbookWidgetInstance->AddToViewport(-1);
+
+		}
+	}
+
 	BindGameState();
 }
 
@@ -260,45 +278,8 @@ void UPlayerHUDComponent::C_ShowResultScreen_Implementation()
 			MaxSupport = FMath::Max(MaxSupport, Params.SupportScore);
 
 			ResultParamsArray.Add(Params);
-
-			//UpdateResultScreen(PS->GetPlayerIndex(), Params);
 		}
 	}
-
-	//for (AADPlayerState* PS : TActorRange<AADPlayerState>(GetWorld()))
-	//{
-	//	EAliveInfo AliveInfo = EAliveInfo::Alive;
-
-	//	if (PS->IsSafeReturn() == false)
-	//	{
-	//		AliveInfo = (PS->IsDead()) ? EAliveInfo::Dead : EAliveInfo::Abandoned;
-	//	}
-
-	//	float DamageNomalize = (TeamMaxDamage == 0) ? 0 : ((float)PS->GetDamage() / (float)TeamMaxDamage);
-	//	float KillNomalize = (TeamMaxKill == 0) ? 0 : ((float)PS->GetTotalMonsterKillCount() / (float)TeamMaxKill);
-	//	float AssistNomalize = (TeamMaxAssist == 0) ? 0 : ((float)PS->GetAssists() / (float)TeamMaxAssist);
-
-	//	int32 BattleContribution = 10000 * (0.6* DamageNomalize + 0.3* KillNomalize + 0.1* AssistNomalize);
-	//	int32 SafeContribution = 100 * (PS->GetGroggyRevive() + PS->GetCorpseRecovery() * 3);
-
-	//	FResultScreenParams Params
-	//	(
-	//		PS->GetPlayerNickname(),
-	//		AliveInfo,
-	//		PS->GetOreCollectedValue(), //채집 기여
-	//		BattleContribution,//전투기여
-	//		SafeContribution //팀지원
-	//	);
-
-	//	MaxCollect = FMath::Max(MaxCollect, Params.CollectionScore);
-	//	MaxCombat = FMath::Max(MaxCombat, Params.BattleScore);
-	//	MaxSupport = FMath::Max(MaxSupport, Params.SupportScore);
-
-	//	ResultParamsArray.Add(Params);
-
-
-	//	UpdateResultScreen(PS->GetPlayerIndex(), Params);
-	//}
 
 	for (FResultScreenParams& Param : ResultParamsArray)
 	{
@@ -566,6 +547,24 @@ void UPlayerHUDComponent::SetupHudWidgetToNewPawn(APawn* NewPawn, APlayerControl
 			Radar2DWidget->AddToViewport(-1);
 			SetActiveRadarWidget(false);
 		}
+	}  
+	if (!IsValid(GameGuideWidget) && GameGuideWidgetClass)
+	{
+		GameGuideWidget = CreateWidget<UGameGuideWidget>(PlayerController, GameGuideWidgetClass);
+	}
+	if (GameGuideWidget)
+	{
+		GameGuideWidget->AddToViewport(20); 
+	}  
+
+	if (!IsValid(FlipbookWidgetInstance) && FlipbookWidgetClass)
+	{
+		FlipbookWidgetInstance = CreateWidget<UFlipbookWidget>(PlayerController, FlipbookWidgetClass);
+	}
+
+	if (FlipbookWidgetInstance && FlipbookWidgetInstance->IsInViewport() == false)
+	{
+		FlipbookWidgetInstance->AddToViewport(-1);
 	}
 
 	if (AUnderwaterCharacter* UWCharacter = Cast<AUnderwaterCharacter>(NewPawn))
@@ -824,6 +823,11 @@ UPlayerStatusWidget* UPlayerHUDComponent::GetPlayerStatusWidget()
 	return PlayerStatusWidget;
 }
 
+UFlipbookWidget* UPlayerHUDComponent::GetFlipbookWidget() const
+{
+	return IsValid(FlipbookWidgetInstance) ? FlipbookWidgetInstance : nullptr;
+}
+
 void UPlayerHUDComponent::ShowFirstClearEndingWidget()
 {
 	if (IsValid(FirstClearWidgetClass) == false)
@@ -846,4 +850,32 @@ void UPlayerHUDComponent::ShowFirstClearEndingWidget()
 
 	FirstClearWidgetInstance->AddToViewport();
 
+}
+
+void UPlayerHUDComponent::ToggleGuide()
+{
+	if (GameGuideWidget)
+	{
+		AADPlayerController* PC = Cast<AADPlayerController>(GetOwner());
+		if (!PC) return;
+
+		if (!GameGuideWidget->GetbIsVisibility())
+		{ 
+			FInputModeGameAndUI InputMode;
+			InputMode.SetWidgetToFocus(GameGuideWidget->TakeWidget());
+			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock); 
+			PC->bShowMouseCursor = true;
+			PC->SetInputMode(InputMode);
+		} 
+		else
+		{  
+			PC->SetShowMouseCursor(false);
+			PC->SetInputMode(FInputModeGameOnly());
+		}
+
+		FTimerHandle DelayFunctionTimerHandle;
+		float DelayTime = 0.2f;
+		GetWorld()->GetTimerManager().SetTimer(DelayFunctionTimerHandle, [this]() {GameGuideWidget->ToggleGuideVisibility(); }, DelayTime, false);
+		
+	}
 }

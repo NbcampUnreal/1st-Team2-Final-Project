@@ -74,7 +74,7 @@ public:
 	
 	/** Upgrade Type에 해당하는 Grade를 반환, Grade는 1부터 시작하며 잘못된 입력을 할 경우 0을 반환 */
 	UFUNCTION(BlueprintCallable)
-	uint8 GetCurrentGrade(EUpgradeType UpgradeType) const;
+	uint8 GetGradeByType(EUpgradeType UpgradeType) const;
 
 	/** Upgrade Type에 해당하는 Grade를 1 증가, 최대 레벨일 경우 false를 반환 */
 	UFUNCTION(BlueprintCallable)

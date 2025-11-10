@@ -9,6 +9,7 @@
 struct FItemData;
 enum class EItemType : uint8;
 class URichTextBlock;
+class UTextBlock;
 class UImage;
 class UDragPreviewWidget;
 class UADInventoryComponent;
@@ -26,8 +27,13 @@ public:
 	virtual bool NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation);
 	UFUNCTION(BlueprintCallable)
 	void SetItemData(FItemData ItemInfo, int32 Index, UADInventoryComponent* InventoryComp);
+
+	void SetKeyNumber(int8 Key);
 	UFUNCTION()
 	void HandleDragCancelled(UDragDropOperation* Operation);
+
+
+
 #pragma endregion
 
 #pragma region Variable
@@ -43,6 +49,8 @@ private:
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<URichTextBlock> QuantityText;
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> KeyNumber;
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UImage> Image;
 	TObjectPtr<UADInventoryComponent> InventoryComponent;
