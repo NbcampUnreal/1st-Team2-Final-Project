@@ -6,6 +6,8 @@
 #include "Monster/Components/TickControlComponent.h"
 
 #include "Character/UnderwaterCharacter.h"
+#include "Framework/ADPlayerController.h"
+#include "Monster/Effect/PostProcessSettingComponent.h"
 
 AEyeStalker::AEyeStalker()
 {
@@ -111,43 +113,33 @@ void AEyeStalker::RemoveDetection(AActor* Actor)
 	Player->OnUntargeted(this);
 
 	// 만약 현재 설정된 TargetPlayer가 빠졌다면 다른 타겟 지정해야함
-	const bool bWasTarget = (TargetPlayer.Get() == Actor);
-
-	if (bWasTarget)
+	const bool bHasTarget = (TargetPlayer.Get() == Actor);
+	if (bHasTarget)
 	{
-		// 우선 TargetPlayer 비움.
-		//InitTarget();
-		TargetPlayer.Reset();
-
-		if (BlackboardComponent)
+		// Task Node에서는 Remove Detection으로 빠지기 때문에 잃어버린 Target에 대해서 처리할 수가 없기 때문에 여기서 처리 
+		Player->SetIsAttackedByEyeStalker(false);
+		if (UPostProcessSettingComponent* PostProcessSettingComponent = Player->GetPostProcessSettingComponent())
 		{
-			SetTarget(nullptr);
+			PostProcessSettingComponent->C_DeactivateVignetteEffect();
 		}
-
-		if (DetectedPlayers.Num() == 0)
+		if (AADPlayerController* PC = Player->GetController<AADPlayerController>())
 		{
-			return;
+			PC->C_SetRadialBlurEffect(false);
 		}
-
-		// TSet 순회하여 요소(Player)가 남아있으면 해당 플레이어를 TargetPlayer로 지정
+		
+		// TSet 순회하여 요소(Player)가 남아있으면 첫번째 플레이어를 TargetPlayer로 지정
+		AUnderwaterCharacter* DetectedPlayer = nullptr;
 		for (const TWeakObjectPtr<AActor>& Elem : DetectedPlayers)
 		{
 			if (AActor* NewTarget = Elem.Get())
 			{
-				AUnderwaterCharacter* DetectedPlayer = Cast<AUnderwaterCharacter>(NewTarget);
-
-				if (DetectedPlayer)
-				{
-					TargetPlayer = DetectedPlayer;
-				}
-
-				if (BlackboardComponent)
-				{
-					SetTarget(TargetPlayer.Get());
-				}
-				return;
+				DetectedPlayer = Cast<AUnderwaterCharacter>(NewTarget);
+				break;
 			}
 		}
+		
+		TargetPlayer = DetectedPlayer;
+		SetTarget(DetectedPlayer);
 	}
 }
 
