@@ -1,4 +1,4 @@
-#include "UI/InteractionDescriptionWidget.h"
+﻿#include "UI/InteractionDescriptionWidget.h"
 
 #include "AbyssDiverUnderWorld.h"
 
@@ -31,9 +31,11 @@ void UInteractionDescriptionWidget::HandleFocus(AActor* Actor, FString Descripti
     {
         FName Name = BaseItem->GetItemName();
         int32 Price = BaseItem->GetItemPrice();
-
-        FText TextName = LocalizationSubsystem->GetLocalizedItemName(Name);
-        NameText->SetText(TextName);
+        // 오류로 잠시 Localization 기능 비활성화. 지스타 이후 원인 파악해야 함.
+        //FText TextName = LocalizationSubsystem->GetLocalizedItemName(Name);
+        
+        NameText->SetText(FText::FromName(Name));
+        //NameText->SetText(TextName);
         NameText->SetVisibility(ESlateVisibility::Visible);
         UE_LOG(LogTemp, Warning, TEXT("NameText is Visible"));
 

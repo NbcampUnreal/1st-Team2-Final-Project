@@ -8,6 +8,8 @@
 #include "GameGuideListSlot.generated.h"
  
 class UTextBlock;
+class UBorder;
+class UMaterialInterface;
 
 DECLARE_DELEGATE_OneParam(FOnGameGuideListSlotClickedDelegate, int32 /*SlotIndex*/);
 
@@ -20,15 +22,32 @@ protected:
 	virtual void NativeOnListItemObjectSet(UObject* ListItemObject) override;
 	virtual FReply NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 
-public:
+public: 
+
 	FOnGameGuideListSlotClickedDelegate OnGameGuideListSlotClickedDelegate;
 
 private:
-	void SetGuideInfo(int32 NewGuideId, const FString& NewGuideTitle);
+	void SetGuideInfo(int32 NewGuideId, const FString& NewGuideTitle, uint8 NewbIsBlinkSlot);
 	
 protected:
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UTextBlock> GuideTitle;
 
+	UPROPERTY(meta = (BindWidget), BlueprintReadWrite)
+	TObjectPtr<UBorder> SlotImage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	uint8 bIsBlinkSlot : 1 ;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TObjectPtr<UMaterialInterface> BlinkTexture;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TObjectPtr<UTexture2D> DefaultTexture;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TObjectPtr<UTexture2D> BlinkHoverTexture;
+
 	int32 GuideId;
+
 };

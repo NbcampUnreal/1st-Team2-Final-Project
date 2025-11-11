@@ -115,9 +115,7 @@ void AADPlayerController::SetPawn(APawn* InPawn)
 				}
 			}
 		}
-	}
-
-
+	} 
 }
 
 void AADPlayerController::PostNetInit()
@@ -365,16 +363,15 @@ void AADPlayerController::ShowPauseMenu()
 	if (!IsLocalController())
 		return;
 
-	if (!PauseWidgetInstance && PauseWidgetClass)
+	if (!PauseWidgetInstance)
 	{
 		PauseWidgetInstance = CreateWidget<UPauseWidget>(this, PauseWidgetClass);
 	}
 	if (PauseWidgetInstance && !PauseWidgetInstance->IsInViewport())
 	{
 		PauseWidgetInstance->AddToViewport();
-
+		PauseWidgetInstance->ShowMainPanel();
 		PauseWidgetInstance->PlayInAnimation();
-
 
 		FInputModeGameAndUI InputMode;
 		InputMode.SetWidgetToFocus(PauseWidgetInstance->TakeWidget());
@@ -411,21 +408,37 @@ void AADPlayerController::TogglePauseMenu()
 	if (!PauseWidgetClass)
 		return;
 
-	if (!bIsPauseMenuOpened)
+	if (!IsLocalController())
+		return;
+
+	switch (CurrentMenuState)
 	{
+	case EMenuState::None:
+		// Pause 열기
 		ShowPauseMenu();
-	}
-	else
-	{
+
+		CurrentMenuState = EMenuState::PauseMain;
+		break;
+
+	case EMenuState::PauseMain:
+		// Pause 닫기
+		HidePauseMenu();
+
+		CurrentMenuState = EMenuState::None;
+		break;
+
+	case EMenuState::PauseOptions:
+	case EMenuState::PauseSaveLoad:
+		// 옵션이나 저장창일 때 ESC → 메인 메뉴로 돌아가기
 		if (PauseWidgetInstance)
 		{
-			PauseWidgetInstance->RequestClose();
+			PauseWidgetInstance->ShowMainPanel();
 		}
-		else
-		{
-			// 혹시 모를 예외: 위젯이 없으면 그냥 바로 정리
-			HidePauseMenu();
-		}
+		CurrentMenuState = EMenuState::PauseMain;
+		break;
+
+	default:
+		break;
 	}
 	
 }

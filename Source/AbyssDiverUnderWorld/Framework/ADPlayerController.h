@@ -12,6 +12,15 @@ enum class ESFX : uint8;
 enum class EMapName : uint8;
 class ULoadingScreenWidget;
 
+UENUM(BlueprintType)
+enum class EMenuState : uint8
+{
+	None,
+	PauseMain,
+	PauseOptions,
+	PauseSaveLoad
+};
+
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADPlayerController : public APlayerController
 {
@@ -234,6 +243,10 @@ public:
 
 	UPROPERTY()
 	uint8 bIsPauseMenuOpened : 1 = 0;
+
+
+	UPROPERTY(BlueprintReadWrite)
+	EMenuState CurrentMenuState = EMenuState::None;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputAction> GuideAction;

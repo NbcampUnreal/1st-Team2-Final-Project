@@ -8,15 +8,27 @@
 #include "DataRow/GameGuideInfoRow.h"
 #include "Components/ListView.h"
 #include "Components/Image.h"
+#include "Components/TextBlock.h"
 #include "Components/RichTextBlock.h"
 #include "Components/HorizontalBox.h"
 #include "UI/GameGuideListSlot.h"
 
-void UGameGuideWidget::NativeConstruct()
+bool UGameGuideWidget::Initialize()
 {
-	Super::NativeConstruct();
+	if (!Super::Initialize())
+	{
+		return false;
+	}
 
 	UpdateGuideList();
+
+	return true;
+}
+
+void UGameGuideWidget::NativeConstruct()
+{
+	Super::NativeConstruct(); 
+
 	SetGuideVisibility(false);
 }
 
@@ -29,7 +41,7 @@ void UGameGuideWidget::UpdateGuideList()
 		for (FGameGuideInfoRow* GuideInfo : GuideInfoList)
 		{ 
 			UGameGuideInfoData* GuideData = NewObject<UGameGuideInfoData>();
-			GuideData->Init(GuideInfo->GuideId, GuideInfo->GuideTitle);
+			GuideData->Init(GuideInfo->GuideId, GuideInfo->GuideTitle, GuideInfo->bShouldBlink);
 			GuideData->OnGameGuideEntryUpdatedFromDataDelegate.AddUObject(this, &UGameGuideWidget::OnSlotEntryWidgetUpdated);
 			GuideList->AddItem(GuideData); 
 			UpdateGuideContentArray(0);
@@ -51,6 +63,8 @@ void UGameGuideWidget::UpdateGuideContentArray(int GuideId)
 void UGameGuideWidget::UpdateGuideContent(int ContentIdx)
 {
 	if (Contents.IsEmpty() || !Contents.IsValidIndex(ContentIdx)) return;
+
+	GuideTitle->SetText(Contents[ContentIdx].ContentTitle);
 	GuideImage->SetBrushFromTexture(Contents[ContentIdx].ContentImage);
 	GuideDescription->SetText(Contents[ContentIdx].ContentDescription);
 
@@ -79,7 +93,8 @@ void UGameGuideWidget::SetGuideVisibility(bool NewbIsVisible)
 
 void UGameGuideWidget::PlayGameGuideAnimation(bool bIsInAnim)
 {
-	if (bIsAnimationPlaying) return;
+	if (bIsAnimationPlaying) return; 
+
 	if (bIsInAnim)
 	{
 		PlayAnimation(ShowAnim);
@@ -92,8 +107,7 @@ void UGameGuideWidget::PlayGameGuideAnimation(bool bIsInAnim)
 
 void UGameGuideWidget::ToggleGuideVisibility()
 {
-	PlayGameGuideAnimation(!bIsVisibility);
-
+	PlayGameGuideAnimation(!bIsVisibility); 
 }
 
 void UGameGuideWidget::MovePage(bool bIsNext)

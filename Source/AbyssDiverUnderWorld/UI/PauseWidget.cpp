@@ -2,6 +2,10 @@
 #include "Framework/ADPlayerController.h"
 #include "Kismet/GameplayStatics.h"
 
+// UI Components
+#include "Components/WidgetSwitcher.h"
+
+
 void UPauseWidget::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
@@ -36,6 +40,24 @@ void UPauseWidget::PlayInAnimation()
     {
         PlayAnimation(InAnim);
     }
+}
+
+void UPauseWidget::ShowMainPanel()
+{
+    if (WidgetSwitcher && Panel_Main)
+        WidgetSwitcher->SetActiveWidget(Panel_Main);
+}
+
+void UPauseWidget::ShowOptionsPanel()
+{
+    if (WidgetSwitcher && Panel_Options)
+        WidgetSwitcher->SetActiveWidget(Panel_Options);
+}
+
+void UPauseWidget::ShowSaveLoadPanel()
+{
+    if (WidgetSwitcher && Panel_SaveLoad)
+        WidgetSwitcher->SetActiveWidget(Panel_SaveLoad);
 }
 
 void UPauseWidget::OnOutAnumFinished()
