@@ -622,7 +622,7 @@ protected:
 	void SetCameraFirstPerson(bool bFirstPersonCamera);
 	
 	/** 카메라 Transition Update */
-	void UpdateCameraTransition();
+	void UpdateEmoteCameraTransition();
 
 	/** Binder Character 함수. Bound Characters를 저장한다. */
 	void BindToCharacter(AUnderwaterCharacter* BoundCharacter);
@@ -685,6 +685,12 @@ protected:
 	/** 경직 종료: 이동을 재활성화하고 상태를 초기화한다 */
 	void EndStagger();
 
+	/** 카메라 전환을 실행한다. */
+	void StartCameraTransition(float Distance, float Duration);
+
+	/** 카메라 전환 업데이트 함수 */
+	void UpdateCameraTransition();
+	
 private:
 	/** Montage 콜백을 등록 */
 	void SetupMontageCallbacks();
@@ -870,7 +876,7 @@ private:
 
 	/** 카메라 Transition에 걸리는 시간 */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Emote", meta = (AllowPrivateAccess = "true", ClampMin = "0.0"))
-	float CameraTransitionDuration;
+	float EmoteCameraTransitionDuration;
 
 	/** Emote Camera 시에 Spring Arm 길이 */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Emote", meta = (AllowPrivateAccess = "true", ClampMin = "0.0"))
@@ -1355,6 +1361,33 @@ private:
 	/** 경직 종료를 위한 타이머 */
 	FTimerHandle StaggerTimerHandle;
 
+	/** 현재 카메라 전환 타겟 거리 */
+	float CameraTransitionTargetLength = 0.f;
+
+	/** 현재 카메라 전환 진행 시간 */
+	float CameraTransitionDuration = 0.f;
+
+	/** 현재 카메라 전환 경과 시간 */
+	float CameraTransitionElapsedTime = 0.f;
+
+	/** 카메라 전환 시작 길이 */
+	float CameraTransitionStartLength = 0.f;
+	
+	/** 그로기 상태 카메라 전환 길이 */
+	UPROPERTY(EditDefaultsOnly)
+	float GroggyCameraTransitionLength = 350.0f;
+
+	/** 그로기 상태 카메라 전환 시간 */
+	UPROPERTY(EditDefaultsOnly)
+	float GroggyCameraTransitionDuration = 0.5f;
+
+	/** 카메라 전환 타이머 핸들 */
+	FTimerHandle CameraTransitionTimer;
+
+	/** 카메라 위치 갱신 주기 */
+	UPROPERTY(EditDefaultsOnly)
+	float CameraUpdateInterval = 0.016f;
+	
 #pragma endregion
 
 #pragma region Getter Setter
