@@ -948,7 +948,7 @@ void AShop::InitUpgradeView()
 	for (int32 i = 0; i < EnumCount; ++i)
 	{
 		EUpgradeType UpgradeType = EUpgradeType(i);
-		uint8 Grade = UpgradeComp->GetCurrentGrade(UpgradeType);
+		uint8 Grade = UpgradeComp->GetGradeByType(UpgradeType);
 
 		if (Grade == 0)
 		{
@@ -1304,7 +1304,7 @@ void AShop::OnBuyButtonClicked()
 			return;
 		}
 
-		int32 Grade = UpgradeComp->GetCurrentGrade(CurrentSelectedUpgradeType);
+		int32 Grade = UpgradeComp->GetGradeByType(CurrentSelectedUpgradeType);
 		FUpgradeDataRow* UpgradeData = DataTableSubsystem->GetUpgradeData(CurrentSelectedUpgradeType, Grade + 1);
 
 		if (TotalTeamCredit < UpgradeData->Price)
@@ -1380,7 +1380,7 @@ void AShop::OnUpgradeSlotEntryClicked(int32 ClickedSlotIndex)
 
 	EUpgradeType UpgradeType = EUpgradeType(ClickedSlotIndex);
 	
-	uint8 CurrentGrade = UpgradeComp->GetCurrentGrade(UpgradeType);
+	uint8 CurrentGrade = UpgradeComp->GetGradeByType(UpgradeType);
 	if (CurrentGrade == 0)
 	{
 		LOGV(Log, TEXT("Weird Upgrade Type Detected : %d"), UpgradeType);

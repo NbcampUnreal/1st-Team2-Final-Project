@@ -51,6 +51,11 @@ void AIndicatingTarget::BeginPlay()
 
 		OwnerActor->OnDestroyed.AddDynamic(this, &AIndicatingTarget::OnOwnerActorDestroyed);
 	}
+
+	if (ActorToAttach)
+	{
+		AttachToActor(ActorToAttach, FAttachmentTransformRules(EAttachmentRule::SnapToTarget, false));
+	}
 }
 
 bool AIndicatingTarget::IsActivateConditionMet()
@@ -111,4 +116,14 @@ int32 AIndicatingTarget::GetTargetOrder() const
 UTexture2D* AIndicatingTarget::GetTargetIcon() const
 {
 	return TargetIcon;
+}
+
+bool AIndicatingTarget::HasOwnerActor() const
+{
+	return !!OwnerActor;
+}
+
+AActor* AIndicatingTarget::GetOwnerActor() const
+{
+	return OwnerActor;
 }

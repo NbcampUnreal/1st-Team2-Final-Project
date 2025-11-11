@@ -160,6 +160,8 @@ protected:
 	void ShowInventory(const FInputActionValue& InputActionValue);
 	void HideInventory(const FInputActionValue& InputActionValue);
 
+	void ToggleGuide(const FInputActionValue& InputActionValue);
+
 	UFUNCTION(Exec)
 	void ToggleTestHUD();
 
@@ -236,8 +238,13 @@ public:
 	UPROPERTY()
 	uint8 bIsPauseMenuOpened : 1 = 0;
 
+
 	UPROPERTY(BlueprintReadWrite)
 	EMenuState CurrentMenuState = EMenuState::None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputAction> GuideAction;
+
 	
 private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))

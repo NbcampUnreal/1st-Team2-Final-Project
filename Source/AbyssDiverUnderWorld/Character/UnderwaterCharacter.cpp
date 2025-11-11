@@ -16,7 +16,7 @@
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/PawnNoiseEmitterComponent.h"
-#include "DataRow/MapDepthRow.h"
+#include "DataRow/MapDataRow.h"
 #include "DataRow/SoundDataRow/SFXDataRow.h"
 #include "Footstep/FootstepComponent.h"
 #include "Framework/ADPlayerState.h"
@@ -44,6 +44,8 @@
 #include "PlayerComponent/RagdollReplicationComponent.h"
 #include "Subsystems/SoundSubsystem.h"
 #include "Character/PlayerComponent/PlayerHUDComponent.h"
+#include "Interactable/Item/Weapon/DamageType/DamageType_Stagger.h"
+#include "Interactable/Item/Weapon/DamageEvent/StaggerDamageEvent.h"
 
 DEFINE_LOG_CATEGORY(LogAbyssDiverCharacter);
 
@@ -94,7 +96,7 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	CameraTransitionDirection = 1.0f;
 	CameraTransitionTimeElapsed = 0.0f;
 	CameraTransitionDuration = 0.25f;
-	EmoteCameraTransitionLength = 500.0f;
+	EmoteCameraTransitionLength = 350.0f;
 	EmoteCameraTransitionEasingType = EEasingFunc::EaseInOut;
 
 	LanternLength = 3000.0f;
@@ -293,6 +295,17 @@ void AUnderwaterCharacter::BeginPlay()
 	AdjustSpeed();
 }
 
+struct FMapDataRow* AUnderwaterCharacter::GetCurrentMapDataRow() const
+{
+	if (UDataTableSubsystem* DataTableSubsystem = GetGameInstance()->GetSubsystem<UDataTableSubsystem>())
+	{
+		FName MapName = FName(UGameplayStatics::GetCurrentLevelName(GetWorld(), true));
+		return DataTableSubsystem->GetMapDataRow(MapName);
+	}
+
+	return nullptr;
+}
+
 void AUnderwaterCharacter::InitPlayerStatus(AADPlayerState* ADPlayerState)
 {
 	if (ADPlayerState == nullptr)
@@ -307,7 +320,7 @@ void AUnderwaterCharacter::InitPlayerStatus(AADPlayerState* ADPlayerState)
 	
 	if (UADInventoryComponent* Inventory = ADPlayerState->GetInventory())
 	{
-		CachedInventoryComponent = Inventory;
+		InventoryWeakPtr = Inventory;
 		// 인벤토리가 변경될 떄 OnRep에서도 호출되기 때문에 여기서 바인딩하면 Server, Client 양쪽에서 바인딩 가능하다.
 		Inventory->InventoryUpdateDelegate.AddUObject(this, &AUnderwaterCharacter::AdjustSpeed);
 		OnEnvironmentStateChangedDelegate.AddDynamic(Inventory, &UADInventoryComponent::OnEnvironmentStateChanged);
@@ -316,7 +329,7 @@ void AUnderwaterCharacter::InitPlayerStatus(AADPlayerState* ADPlayerState)
 	{
 		LOGVN(Error, TEXT("Inventory Component Init failed : %d"), GetUniqueID());
 	}
-
+	
 	if (UUpgradeComponent* Upgrade = ADPlayerState->GetUpgradeComp())
 	{
 		ApplyUpgradeFactor(Upgrade);
@@ -348,7 +361,7 @@ void AUnderwaterCharacter::ApplyUpgradeFactor(UUpgradeComponent* UpgradeComponen
 	{
 	    const EUpgradeType Type = static_cast<EUpgradeType>(i);
 		
-		const uint8 Grade = UpgradeComponent->GetCurrentGrade(Type);
+		const uint8 Grade = UpgradeComponent->GetGradeByType(Type);
 		const FUpgradeDataRow* UpgradeData = DataTableSubsystem->GetUpgradeData(Type, Grade);
 		if (UpgradeData == nullptr)
 		{
@@ -357,31 +370,36 @@ void AUnderwaterCharacter::ApplyUpgradeFactor(UUpgradeComponent* UpgradeComponen
 		}
 		
 		const int StatFactor = UpgradeData->StatFactor;
-		
-	    switch (Type)
-	    {
-		    case EUpgradeType::Gather:
-			    GatherMultiplier = StatFactor / 100.0f;
-			    break;
-	    	case EUpgradeType::Oxygen:
-	    		OxygenComponent->InitOxygenSystem(StatFactor, StatFactor);
-			    break;
-	    	case EUpgradeType::Speed:
-	    		// 최종 속도는 나중에 AdjustSpeed를 통해서 계산된다. 현재는 BaseSpeed만 조정하면 된다.
-	    		UpgradeSwimSpeed = StatFactor;
-	    		BaseSwimSpeed += UpgradeSwimSpeed;
-	    		break;
-			case EUpgradeType::Light:
-	    		if (Grade > 1)
-	    		{
-	    			// 정수 곱하기 연산을 먼저하고 나누기 연산을 나중에 해서 소수점 오차를 줄인다.
-	    			LanternLength = LanternLength * (100 + StatFactor) / 100.0f;
-	    			LanternComponent->SetLightLength(LanternLength);
-	    		}
-	    		break;
-		    default: ;
-	    		break;
-	    }
+		const FMapDataRow* MapDataRow = GetCurrentMapDataRow();
+
+		if (EUpgradeType::Gather == Type)
+		{
+			GatherMultiplier = StatFactor / 100.0f;
+		}
+		else if (EUpgradeType::Oxygen == Type)
+		{
+			// FinalMaxOxygen = (BaseOxygen + UpgradeOxygen) * MapMaxOxygenRate
+			float MaxOxygen = OxygenComponent->GetMaxOxygenLevel() + StatFactor;
+			MaxOxygen = (MapDataRow != nullptr) ? MaxOxygen * MapDataRow->MaxOxygenRate : MaxOxygen;
+			MaxOxygen = FMath::FloorToInt(MaxOxygen);
+			MaxOxygen = FMath::Max(MaxOxygen, 1.0f);
+			OxygenComponent->InitOxygenSystem(MaxOxygen, MaxOxygen);
+		}
+		else if (EUpgradeType::Speed == Type)
+		{
+			// 최종 속도는 나중에 AdjustSpeed를 통해서 계산된다. 현재는 BaseSpeed만 조정하면 된다.
+			UpgradeSwimSpeed = StatFactor;
+			BaseSwimSpeed += UpgradeSwimSpeed;
+		}
+		else if (EUpgradeType::Light == Type)
+		{
+			if (Grade > 1)
+			{
+				// 정수 곱하기 연산을 먼저하고 나누기 연산을 나중에 해서 소수점 오차를 줄인다.
+				LanternLength = LanternLength * (100 + StatFactor) / 100.0f;
+				LanternComponent->SetLightLength(LanternLength);
+			}
+		}
 	}
 }
 
@@ -1563,15 +1581,15 @@ void AUnderwaterCharacter::DropAllExchangeableItems()
 		return;
 	}
 
-	if (CachedInventoryComponent)
+	if (InventoryWeakPtr.IsValid())
 	{
-		const TArray<FItemData>& Items = CachedInventoryComponent->GetInventoryList().Items;
+		const TArray<FItemData>& Items = InventoryWeakPtr->GetInventoryList().Items;
 		const int32 ItemCount = Items.Num();
 		for (int32 i = ItemCount - 1; i >= 0; --i)
 		{
 			if (Items[i].ItemType == EItemType::Exchangable)
 			{
-				CachedInventoryComponent->RemoveBySlotIndex(i, EItemType::Exchangable, true);
+				InventoryWeakPtr->RemoveBySlotIndex(i, EItemType::Exchangable, true);
 			}
 		}
 	}
@@ -1948,6 +1966,32 @@ float AUnderwaterCharacter::TakeDamage(float DamageAmount, struct FDamageEvent c
 	if (bIsInvincible)
 	{
 		return 0.0f;
+	}
+
+	// 커스텀 Stagger 이벤트 처리
+	if (DamageEvent.GetTypeID() == FStaggerDamageEvent::ClassID)
+	{
+		const FStaggerDamageEvent* StaggerEvent = static_cast<const FStaggerDamageEvent*>(&DamageEvent);
+
+		float StaggerDuration = StaggerEvent->Duration;
+
+		if (StaggerEvent->DamageTypeClass)
+		{
+			const UDamageType_Stagger* DT = Cast<const UDamageType_Stagger>(StaggerEvent->DamageTypeClass->GetDefaultObject());
+			if (DT)
+			{
+				if (StaggerDuration <= 0.f)
+				{
+					StaggerDuration = DT->DefaultStaggerDuration;
+				}
+			}
+		}
+
+		StartStagger(StaggerDuration, DamageCauser);
+
+		// 로그
+		const FString CauserName = DamageCauser ? DamageCauser->GetName() : TEXT("Unknown");
+		LOG(TEXT("[Stagger] Duration=%.2f,Causer=%s"),StaggerDuration, *CauserName);
 	}
 	
 	// Groggy 상태라면 피격 시에 Timer를 감소시키고 0이 되면 Death 상태로 전이시킨다.
@@ -2343,6 +2387,10 @@ void AUnderwaterCharacter::Fire(const FInputActionValue& InputActionValue)
 	{
 		return;
 	}
+	if (bIsStaggered)
+	{
+		return;
+	}
 	EquipUseComponent->HandleLeftClick();
 }
 
@@ -2358,6 +2406,10 @@ void AUnderwaterCharacter::StopFire(const FInputActionValue& InputActionValue)
 void AUnderwaterCharacter::Reload(const FInputActionValue& InputActionValue)
 {
 	if (CharacterState != ECharacterState::Normal || !bCanUseEquipment)
+	{
+		return;
+	}
+	if (bIsStaggered)
 	{
 		return;
 	}
@@ -2380,6 +2432,10 @@ void AUnderwaterCharacter::Aim(const FInputActionValue& InputActionValue)
 void AUnderwaterCharacter::Interaction(const FInputActionValue& InputActionValue)
 {
 	if (CharacterState != ECharacterState::Normal)
+	{
+		return;
+	}
+	if (bIsStaggered)
 	{
 		return;
 	}
@@ -2434,29 +2490,29 @@ void AUnderwaterCharacter::Radar(const FInputActionValue& InputActionValue)
 
 void AUnderwaterCharacter::EquipSlot1(const FInputActionValue& InputActionValue)
 {
-	if (CharacterState != ECharacterState::Normal || !bCanUseEquipment || !CachedInventoryComponent)
+	if (CharacterState != ECharacterState::Normal || !bCanUseEquipment || !InventoryWeakPtr.IsValid())
 	{
 		return;
 	}
-	CachedInventoryComponent->S_UseInventoryItem(EItemType::Equipment, 0);
+	InventoryWeakPtr->S_UseInventoryItem(EItemType::Equipment, 0);
 }
 
 void AUnderwaterCharacter::EquipSlot2(const FInputActionValue& InputActionValue)
 {
-	if (CharacterState != ECharacterState::Normal || !bCanUseEquipment || !CachedInventoryComponent)
+	if (CharacterState != ECharacterState::Normal || !bCanUseEquipment || !InventoryWeakPtr.IsValid())
 	{
 		return;
 	}
-	CachedInventoryComponent->S_UseInventoryItem(EItemType::Equipment, 1);
+	InventoryWeakPtr->S_UseInventoryItem(EItemType::Equipment, 1);
 }
 
 void AUnderwaterCharacter::EquipSlot3(const FInputActionValue& InputActionValue)
 {
-	if (CharacterState != ECharacterState::Normal || !bCanUseEquipment || !CachedInventoryComponent)
+	if (CharacterState != ECharacterState::Normal || !bCanUseEquipment || !InventoryWeakPtr.IsValid())
 	{
 		return;
 	}
-	CachedInventoryComponent->S_UseInventoryItem(EItemType::Equipment, 2);
+	InventoryWeakPtr->S_UseInventoryItem(EItemType::Equipment, 2);
 }
 
 void AUnderwaterCharacter::PerformEmote1(const FInputActionValue& InputActionValue)
@@ -2874,6 +2930,69 @@ void AUnderwaterCharacter::C_ApplyControlRotation_Implementation(const FRotator&
 	}
 }
 
+void AUnderwaterCharacter::StartStagger(float Duration, AActor* DamageCauser)
+{
+	if (!HasAuthority()) 
+		return;
+
+	const float CurrentTime = GetWorld()->GetTimeSeconds();
+	const float RequestedEndTime = CurrentTime + Duration;
+
+	// 이미 경직 중이면 남은 시간 갱신
+	if (bIsStaggered)
+	{
+		if (RequestedEndTime > StaggerEndTime)
+		{
+			StaggerEndTime = RequestedEndTime;
+			const float NewRemaining = StaggerEndTime - CurrentTime;
+			GetWorldTimerManager().ClearTimer(StaggerTimerHandle);
+			GetWorldTimerManager().SetTimer(StaggerTimerHandle,
+				this,
+				&AUnderwaterCharacter::EndStagger,
+				NewRemaining,
+				false
+			);
+		}
+		return;
+	}
+
+	// 최초 경직일 경우
+	bIsStaggered = true;
+	StaggerEndTime = RequestedEndTime;
+	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
+	{
+		MoveComp->DisableMovement();
+	}
+
+	GetWorldTimerManager().ClearTimer(StaggerTimerHandle);
+	GetWorldTimerManager().SetTimer(StaggerTimerHandle, 
+		this, 
+		&AUnderwaterCharacter::EndStagger,
+		Duration,
+		false
+	);
+}
+
+void AUnderwaterCharacter::EndStagger()
+{
+	if (!HasAuthority())
+		return;
+	
+	bIsStaggered = false;
+	StaggerEndTime = 0.f;
+	GetWorldTimerManager().ClearTimer(StaggerTimerHandle);
+
+	// 이동 재활성화
+	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
+	{
+		if (EnvironmentState == EEnvironmentState::Underwater)
+			MoveComp->SetMovementMode(EMovementMode::MOVE_Swimming);
+		else
+			MoveComp->SetMovementMode(EMovementMode::MOVE_Walking);
+	}
+	LOG(TEXT("[Stagger] Ended"));
+}
+
 void AUnderwaterCharacter::BindToCharacter(AUnderwaterCharacter* BoundCharacter)
 {
 	if (BoundCharacter == nullptr)
@@ -3000,7 +3119,7 @@ void AUnderwaterCharacter::SetHideInSeaweed(const bool bNewHideInSeaweed)
 
 bool AUnderwaterCharacter::IsOverloaded() const
 {
-	return IsValid(CachedInventoryComponent) && CachedInventoryComponent->GetTotalWeight() >= OverloadWeight;
+	return InventoryWeakPtr.IsValid() && InventoryWeakPtr->GetTotalWeight() >= OverloadWeight;
 }
 
 void AUnderwaterCharacter::SetZoneSpeedMultiplier(float NewMultiplier)

@@ -20,6 +20,7 @@ enum class EEquipmentType : uint8
 	NightVision = 4,
 	Mine = 5,
 	ToyHammer = 6,
+	Fist = 7,
 	Max = 7 UMETA(Hidden)
 };
 
@@ -59,7 +60,8 @@ enum class EAction : uint8
 	ApplyChargeUI,
 	PlaceMine,
 	DetonateMine,
-	SwingHammer
+	SwingHammer,
+	Punch
 };
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -150,6 +152,8 @@ public:
 	void DetonateMine();
 	UFUNCTION(BlueprintCallable)
 	void SwingHammer();
+	UFUNCTION(BlueprintCallable)
+	void Punch();
 	UFUNCTION(BlueprintCallable)
 	void HandleLeftClick();
 	UFUNCTION(BlueprintCallable)
@@ -275,7 +279,13 @@ public:
 	// SpearType 저장
 	TArray<FString> SpearGunTypeNames = { "BasicSpearGun", "PoisonSpearGun", "BombSpearGun" };
 
-	
+	// 주먹 관련 변수
+	UPROPERTY(EditDefaultsOnly, Category = "Fist")
+	float FistRateOfAttack = 0.5f;
+
+	UPROPERTY(EditAnywhere, Category = "Fist")
+	TObjectPtr<UAnimMontage> PunchMontage;
+
 protected:
 	UPROPERTY(EditAnywhere)
 	float DrainPerSecond;

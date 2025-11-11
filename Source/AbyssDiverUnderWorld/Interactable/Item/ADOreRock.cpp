@@ -132,6 +132,7 @@ void AADOreRock::OnHoldStart_Implementation(APawn* InstigatorPawn)
 		{
 			if (UADInventoryComponent* InventoryComp = ADPlayerState->GetInventory())
 			{
+				Diver->SetIsMining(true);
 				//int32 Saved = INDEX_NONE;
 				// 무기를 장착하고 있다면
 				if (InventoryComp->HasEquippedItem())
@@ -156,6 +157,7 @@ void AADOreRock::OnHoldStop_Implementation(APawn* InstigatorPawn)
 	if (!Diver) return;
 	ActiveInstigators.Remove(InstigatorPawn);
 
+	Diver->SetIsMining(false);
 	if (PreviousEquipIndex != INDEX_NONE)
 	{
 		if (AADPlayerState* ADPlayerState = InstigatorPawn->GetPlayerState<AADPlayerState>())
@@ -225,6 +227,7 @@ void AADOreRock::HandleMineRequest(APawn* InstigatorPawn)
 		AUnderwaterCharacter* Diver = Cast<AUnderwaterCharacter>(InstigatorPawn);
 		if (!Diver) return;
 
+		Diver->SetIsMining(false);
 		AADPlayerState* PS = Diver->GetPlayerState<AADPlayerState>();
 		if (PS)
 		{

@@ -114,9 +114,7 @@ void AADPlayerController::SetPawn(APawn* InPawn)
 				}
 			}
 		}
-	}
-
-
+	} 
 }
 
 void AADPlayerController::PostNetInit()
@@ -332,6 +330,14 @@ void AADPlayerController::SetActiveRadarWidget(bool bShouldActivate)
 	}
 
 	PlayerHUDComponent->SetActiveRadarWidget(bShouldActivate);
+	if (bShouldActivate)
+	{
+		HideCrosshairWidget();
+	}
+	else
+	{
+		ShowCrosshairWidget();
+	}
 }
 
 void AADPlayerController::AddYawInput(float Val)
@@ -492,6 +498,10 @@ void AADPlayerController::SetupInputComponent()
 		{
 			EnhancedInput->BindAction(IA_Pause, ETriggerEvent::Started, this, &AADPlayerController::TogglePauseMenu);
 		}
+		if (GuideAction)
+		{
+			EnhancedInput->BindAction(GuideAction, ETriggerEvent::Triggered, this, &AADPlayerController::ToggleGuide);
+		}
 	}
 }
 
@@ -522,6 +532,14 @@ void AADPlayerController::HideInventory(const FInputActionValue& InputActionValu
 				PS->GetInventory()->HideInventory();
 			}
 		}
+	}
+}
+
+void AADPlayerController::ToggleGuide(const FInputActionValue& InputActionValue)
+{
+	if (PlayerHUDComponent)
+	{
+		PlayerHUDComponent->ToggleGuide();
 	}
 }
 
