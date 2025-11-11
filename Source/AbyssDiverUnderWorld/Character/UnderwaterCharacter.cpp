@@ -96,7 +96,7 @@ AUnderwaterCharacter::AUnderwaterCharacter()
 	CameraTransitionUpdateInterval = 0.01f;
 	CameraTransitionDirection = 1.0f;
 	CameraTransitionTimeElapsed = 0.0f;
-	CameraTransitionDuration = 0.25f;
+	EmoteCameraTransitionDuration = 0.25f;
 	EmoteCameraTransitionLength = 350.0f;
 	EmoteCameraTransitionEasingType = EEasingFunc::EaseInOut;
 
@@ -1201,6 +1201,8 @@ void AUnderwaterCharacter::HandleEnterGroggy()
 		{
 			GroggySfxId = SoundSystem->Play2D(GroggySfx);
 		}
+
+		StartCameraTransition(GroggyCameraTransitionLength, GroggyCameraTransitionDuration);
 	}
 
 	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
@@ -1263,6 +1265,8 @@ void AUnderwaterCharacter::HandleEnterNormal()
 		}
 
 		LookSensitivity = NormalLookSensitivity;
+
+		StartCameraTransition(0.0f, GroggyCameraTransitionDuration);
 	}
 	
 	InteractableComponent->SetInteractable(false);
@@ -2799,7 +2803,7 @@ void AUnderwaterCharacter::StartEmoteCameraTransition()
 	GetWorldTimerManager().SetTimer(
 		EmoteCameraTransitionTimer,
 		this,
-		&AUnderwaterCharacter::UpdateCameraTransition,
+		&AUnderwaterCharacter::UpdateEmoteCameraTransition,
 		CameraTransitionUpdateInterval,
 		true
 	);
@@ -2811,18 +2815,18 @@ void AUnderwaterCharacter::SetCameraFirstPerson(bool bFirstPersonCamera)
 	GetMesh1P()->SetOwnerNoSee(!bFirstPersonCamera);
 }
 
-void AUnderwaterCharacter::UpdateCameraTransition()
+void AUnderwaterCharacter::UpdateEmoteCameraTransition()
 {
-	if (CameraTransitionDuration <= 0.0f || CameraTransitionUpdateInterval <= 0.0f)
+	if (EmoteCameraTransitionDuration <= 0.0f || CameraTransitionUpdateInterval <= 0.0f)
 	{
 		UE_LOG(LogAbyssDiverCharacter, Error, TEXT("Camera Transition Duration or Update Interval is not set properly. Duration: %f, Update Interval: %f"),
-			CameraTransitionDuration, CameraTransitionUpdateInterval);
+			EmoteCameraTransitionDuration, CameraTransitionUpdateInterval);
 		return;
 	}
 	
 	CameraTransitionTimeElapsed += CameraTransitionUpdateInterval * CameraTransitionDirection;
-	CameraTransitionTimeElapsed = FMath::Clamp(CameraTransitionTimeElapsed, 0.0f, CameraTransitionDuration);
-	const float Alpha = CameraTransitionTimeElapsed / CameraTransitionDuration;
+	CameraTransitionTimeElapsed = FMath::Clamp(CameraTransitionTimeElapsed, 0.0f, EmoteCameraTransitionDuration);
+	const float Alpha = CameraTransitionTimeElapsed / EmoteCameraTransitionDuration;
 
 	// First Person Camera Transition End
 	if (Alpha <= 0.0f && CameraTransitionDirection < 0.0f)
@@ -2994,6 +2998,44 @@ void AUnderwaterCharacter::EndStagger()
 			MoveComp->SetMovementMode(EMovementMode::MOVE_Walking);
 	}
 	LOG(TEXT("[Stagger] Ended"));
+}
+
+void AUnderwaterCharacter::StartCameraTransition(float Length, float Duration)
+{
+	CameraTransitionTargetLength = FMath::Max(Length, 0.0f);
+	CameraTransitionDuration = FMath::Max(Duration, 0.01);
+	CameraTransitionElapsedTime = 0.0f;
+	CameraTransitionStartLength = FirstPersonCameraArm->TargetArmLength;
+
+	GetWorldTimerManager().SetTimer(
+		CameraTransitionTimer,
+		this,
+		&AUnderwaterCharacter::UpdateCameraTransition,
+		CameraTransitionUpdateInterval,
+		true
+	);
+}
+
+void AUnderwaterCharacter::UpdateCameraTransition()
+{
+	CameraTransitionElapsedTime += CameraTransitionUpdateInterval;
+	CameraTransitionElapsedTime = FMath::Clamp(CameraTransitionElapsedTime, 0.0f, CameraTransitionDuration);
+	const float Alpha = CameraTransitionElapsedTime / CameraTransitionDuration;
+	const float NewSpringArmLength = UKismetMathLibrary::Ease(
+		CameraTransitionStartLength,
+		CameraTransitionTargetLength,
+		Alpha,
+		EEasingFunc::EaseOut
+	);
+	FirstPersonCameraArm->TargetArmLength = NewSpringArmLength;
+
+	const bool bIsFirstPerson = NewSpringArmLength <= KINDA_SMALL_NUMBER;
+	SetCameraFirstPerson(bIsFirstPerson);
+	
+	if (Alpha >= 1.0f)
+	{
+		GetWorldTimerManager().ClearTimer(CameraTransitionTimer);
+	}
 }
 
 void AUnderwaterCharacter::BindToCharacter(AUnderwaterCharacter* BoundCharacter)
