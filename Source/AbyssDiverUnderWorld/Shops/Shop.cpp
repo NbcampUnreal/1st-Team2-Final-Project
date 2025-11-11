@@ -1346,6 +1346,9 @@ void AShop::OnBuyButtonClicked()
 
 		ShopInteractionComp->S_RequestBuyItems(SelectedItemIdArray, SelectedItemCountArray);
 		ClearSelectedInfos();
+
+		// 구매하고 바로 상점 닫기
+		OnCloseButtonClicked();
 	}
 }
 

@@ -12,7 +12,7 @@ UENUM()
 enum class EFlipbookType : uint8
 {
 	HorrorCreatureSwallow = 0,
-	LimadonSwallow,
+	EyeStalkerGaze,
 	MAX UMETA(Hidden)
 };
 

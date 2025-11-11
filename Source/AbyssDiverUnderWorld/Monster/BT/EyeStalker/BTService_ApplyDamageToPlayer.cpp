@@ -1,10 +1,12 @@
 ﻿#include "Monster/BT/EyeStalker/BTService_ApplyDamageToPlayer.h"
 
 #include "Monster/Monster.h"
-//#include "Monster/Boss/EnhancedBossAIController.h"
 #include "Monster/MonsterAIController.h"
 
 #include "Character/UnderwaterCharacter.h"
+#include "Character/PlayerComponent/UnderwaterEffectComponent.h"
+
+#include "UI/Flipbooks/FlipbookWidget.h"
 #include "Container/BlackboardKeys.h"
 
 #include "Kismet/GameplayStatics.h"
@@ -98,6 +100,13 @@ void UBTService_ApplyDamageToPlayer::TickNode(UBehaviorTreeComponent& OwnerComp,
 	// 그렇지 않으면 다수의 EyeStalker가 있을 때 이동하며 시야에서 차례로 벗어날 경우 연속적인 공격이 들어와서..
 	if (TaskMemory->bIsDamageApplied == false)
 	{
+		UUnderwaterEffectComponent* EffectComp = Player->GetEffectComponent();
+		if (IsValid(EffectComp))
+		{
+			const float EffectPlayTime = 0.2f;
+			EffectComp->C_PlayFlipbookEffect(EFlipbookType::EyeStalkerGaze, true, EffectPlayTime);
+		}
+
 		TaskMemory->bIsDamageApplied = true;
 		return;
 	}
