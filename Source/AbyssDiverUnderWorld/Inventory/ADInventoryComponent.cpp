@@ -90,8 +90,13 @@ void UADInventoryComponent::BeginPlay()
 	float BindDelayTime = 1.0f;
 	GetWorld()->GetTimerManager().SetTimer(BindDelayTimerHandle, [this]() {
 
+		if (IsValid(this) == false)
+		{
+			return;
+		}
+
 		UWorld* World = GetWorld();
-		if (IsValid(this) == false || IsValid(World) == false || World->IsInSeamlessTravel())
+		if (IsValid(World) == false || World->IsInSeamlessTravel())
 		{
 			return;
 		}
