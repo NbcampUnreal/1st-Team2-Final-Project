@@ -241,3 +241,25 @@ UMeshComponent* UEquipRenderComponent::Create3PComponent(UEquipableComponent* EC
     }
 }
 
+void UEquipRenderComponent::SetRenderFirstPerson(bool bNewFirstPerson)
+{
+	// bNewFirstPerson == true
+	// Mesh1P : Owner No See == false (보임)
+	// Mesh3P : Owner No See == true  (안보임)
+	// bNewFirstPerson == false
+	// Mesh1P : Owner No See == true  (안보임)
+	// Mesh3P : Owner No See == false (보임)
+	for (TPair<TWeakObjectPtr<AActor>, FRenderEntry>& EntryPair : ActiveEntries)
+	{
+		FRenderEntry& Entry = EntryPair.Value;
+		if (Entry.Mesh1P.IsValid())
+		{
+			Entry.Mesh1P->SetOwnerNoSee(!bNewFirstPerson);
+		}
+		if (Entry.Mesh3P.IsValid())
+		{
+			Entry.Mesh3P->SetOwnerNoSee(bNewFirstPerson);
+		}
+	}
+}
+
