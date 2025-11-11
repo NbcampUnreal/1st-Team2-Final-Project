@@ -1246,6 +1246,14 @@ void AUnderwaterCharacter::HandleEnterNormal()
 		{
 			StartHealthRegen();
 		}
+
+		if (IsWeaponEquipped())
+		{
+			if (InventoryWeakPtr.IsValid())
+			{
+				InventoryWeakPtr->PlayEquipAnimation(this, EquipUseComponent->GetEquipType());
+			}
+		}
 	}
 	
 	if (IsLocallyControlled())
@@ -2813,6 +2821,7 @@ void AUnderwaterCharacter::SetCameraFirstPerson(bool bFirstPersonCamera)
 {
 	GetMesh()->SetOwnerNoSee(bFirstPersonCamera);
 	GetMesh1P()->SetOwnerNoSee(!bFirstPersonCamera);
+	EquipRenderComp->SetRenderFirstPerson(bFirstPersonCamera);
 }
 
 void AUnderwaterCharacter::UpdateEmoteCameraTransition()
