@@ -22,7 +22,28 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Pause")
 	void PlayInAnimation();
 
+	UFUNCTION(BlueprintCallable)
+	void ShowMainPanel();
+
+	UFUNCTION(BlueprintCallable)
+	void ShowOptionsPanel();
+
+	UFUNCTION(BlueprintCallable)
+	void ShowSaveLoadPanel();
+
 protected:
+	UPROPERTY(meta = (BindWidget))
+	class UWidgetSwitcher* WidgetSwitcher;
+
+	UPROPERTY(meta = (BindWidget))
+	class UWidget* Panel_Main;
+
+	UPROPERTY(meta = (BindWidget))
+	class UWidget* Panel_Options;
+
+	UPROPERTY(meta = (BindWidget))
+	class UWidget* Panel_SaveLoad;
+
 	UPROPERTY(BlueprintReadOnly, Transient, meta = (BindWidgetAnimOptional))
 	TObjectPtr<UWidgetAnimation> InAnim;
 
