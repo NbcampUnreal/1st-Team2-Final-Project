@@ -50,7 +50,6 @@ UEquipUseComponent::UEquipUseComponent()
 	NightVisionDrainPerSecond = 0.5f;
 	DrainAcc = 0.f;
 	bBoostActive = false;
-	bOriginalExposureCached = false;
 	bCanFire = true;
 	bIsWeapon = true;
 	bHasNoAnimation = false;
@@ -106,10 +105,10 @@ void UEquipUseComponent::BeginPlay()
 		NightVisionMaterialInstance->SetScalarParameterValue("NightBlend", 0.f);
 	}
 
-	CameraComp = OwningCharacter->FindComponentByClass<UCameraComponent>(); // Getter를 사용하는 것이 좋아 보임
-	if (!CameraComp) return;
-	CameraComp->PostProcessSettings.WeightedBlendables.Array.Add(FWeightedBlendable(1.f, NightVisionMaterialInstance));
-	OriginalPPSettings = CameraComp->PostProcessSettings;
+	if (UCameraComponent* Camera = OwningCharacter->FindComponentByClass<UCameraComponent>())
+	{
+		Camera->PostProcessSettings.WeightedBlendables.Array.Add(FWeightedBlendable(1.f, NightVisionMaterialInstance));
+	}
 
 	// 위젯 추가
 	LOGN(TEXT("OwningCharacter : %s"), *OwningCharacter->GetName());
@@ -620,11 +619,6 @@ void UEquipUseComponent::DeinitializeEquip()
 	{
 		NightVisionMaterialInstance->SetScalarParameterValue(TEXT("NightBlend"), 0.f);
 	}
-	if (CameraComp)
-	{
-		CameraComp->PostProcessSettings = OriginalPPSettings;
-	}
-
 	
 	if (ChargeWidget)
 	{
@@ -828,7 +822,7 @@ void UEquipUseComponent::BoostOff()
 
 void UEquipUseComponent::ToggleNightVision()
 {
-	if (!NightVisionMaterialInstance || !CameraComp) return;
+	if (!NightVisionMaterialInstance) return;
 	if (Amount <= 0 || bBoostActive) return;
 	
 	if (!bNightVisionOn)
