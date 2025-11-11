@@ -446,7 +446,7 @@ FVector UAquaticMovementComponent::CalculateAvoidanceForce()
         FCollisionObjectQueryParams ObjectParams;
         ObjectParams.AddObjectTypesToQuery(ECC_WorldStatic);    // WorldStatic 감지
         ObjectParams.AddObjectTypesToQuery(ECC_WorldDynamic);   // WorldDynamic 감지
-        // ObjectParams.AddObjectTypesToQuery(ECC_GameTraceChannel3); // Monster (다른 몬스터 감지, 일단 보류)
+        //ObjectParams.AddObjectTypesToQuery(ECC_GameTraceChannel3); // Monster (다른 몬스터 감지, 일단 보류)
 
         const bool bHit = GetWorld()->LineTraceSingleByObjectType(
             Hit,
@@ -1478,8 +1478,20 @@ void UAquaticMovementComponent::DrawDebugVisualization()
             FVector RayDirection = Forward.RotateAngleAxis(Angle, FVector::UpVector);
             FVector RayEnd = CurrentLocation + RayDirection * CurrentObstacleDetectionRange;
 
+            FCollisionObjectQueryParams ObjectParams;
+            ObjectParams.AddObjectTypesToQuery(ECC_WorldStatic);    // WorldStatic 감지
+            ObjectParams.AddObjectTypesToQuery(ECC_WorldDynamic);
+            //ObjectParams.AddObjectTypesToQuery(ECC_GameTraceChannel3); // Monster (다른 몬스터 감지, 일단 보류)
             FHitResult Hit;
-            bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, CurrentLocation, RayEnd, ECC_WorldStatic);
+            //bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, CurrentLocation, RayEnd, ECC_WorldStatic);
+
+            bool bHit = GetWorld()->LineTraceSingleByObjectType(
+                Hit,
+                CurrentLocation, 
+                RayEnd, 
+                ObjectParams, 
+                MovementCollisionQueryTraceParams
+            );
 
             DrawDebugLine(GetWorld(), CurrentLocation, bHit ? Hit.Location : RayEnd,
                 bHit ? FColor::Red : FColor::Green, false, -1.0f, 0, 1.0f);
