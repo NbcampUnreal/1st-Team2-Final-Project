@@ -89,6 +89,18 @@ void UADInventoryComponent::BeginPlay()
 	FTimerHandle BindDelayTimerHandle;
 	float BindDelayTime = 1.0f;
 	GetWorld()->GetTimerManager().SetTimer(BindDelayTimerHandle, [this]() {
+
+		if (IsValid(this) == false)
+		{
+			return;
+		}
+
+		UWorld* World = GetWorld();
+		if (IsValid(World) == false || World->IsInSeamlessTravel())
+		{
+			return;
+		}
+
 		APlayerState* PS = Cast<APlayerState>(GetOwner());
 		if (!PS) return;
 		AADPlayerController* PC = Cast<AADPlayerController>(PS->GetOwningController());
