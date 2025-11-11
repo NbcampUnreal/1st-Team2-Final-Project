@@ -5,9 +5,8 @@
 
 #include "Character/UnderwaterCharacter.h"
 
-#include "Perception/AIPerceptionComponent.h"
-#include "Perception/AISense_Sight.h"
 #include "BehaviorTree/BlackboardComponent.h"
+#include "Framework/ADPlayerController.h"
 
 void AEyeStalkerAIController::BeginPlay()
 {
@@ -26,6 +25,10 @@ void AEyeStalkerAIController::InitTargetPlayer()
 	Player->OnUntargeted(GetPawn());
 
 	PostProcessSettingComponent->C_DeactivateVignetteEffect();
+	if (AADPlayerController* PC = Player->GetController<AADPlayerController>())
+	{
+		PC->C_SetRadialBlurEffect(false);
+	}
 	
 	GetBlackboardComponent()->SetValueAsObject(BlackboardKeys::TargetPlayerKey, nullptr);
 	GetBlackboardComponent()->SetValueAsBool(BlackboardKeys::EyeStalker::bIsAttackingKey, false);

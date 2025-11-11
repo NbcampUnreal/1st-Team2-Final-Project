@@ -340,9 +340,7 @@ private:
 	float DrainAcc = 0.f;
 	int32 DPVAudioID = 0;
 	// NVG 설정 변수
-	TObjectPtr<class UCameraComponent> CameraComp = nullptr;
-	FPostProcessSettings OriginalPPSettings;
-	uint8 bOriginalExposureCached : 1;
+	
 	static const FName BASIC_SPEAR_GUN_NAME;
 
 	UPROPERTY(EditAnywhere, Category = "Recoil")

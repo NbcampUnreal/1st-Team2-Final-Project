@@ -1092,7 +1092,10 @@ void AMonster::SetMaxSwimSpeed(float Speed)
 void AMonster::SetTarget(AUnderwaterCharacter* Target)
 {
 	TargetPlayer = Target;
-	AIController->GetBlackboardComponent()->SetValueAsObject(BlackboardKeys::TargetPlayerKey, Target);
+	if (BlackboardComponent)
+	{
+		AIController->GetBlackboardComponent()->SetValueAsObject(BlackboardKeys::TargetPlayerKey, Target);
+	}
 }
 
 UMonsterSoundComponent* AMonster::GetMonsterSoundComp()

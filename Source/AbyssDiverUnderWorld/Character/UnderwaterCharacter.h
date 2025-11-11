@@ -1280,6 +1280,9 @@ private:
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<URadar2DComponent> RadarComponent;
 
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<class UCameraEffectComponent> CameraEffectComponent;
+
 	/** Tool 소켓 명 (1P/3P 공용) */
 	FName LaserSocketName = TEXT("Laser");
 
@@ -1525,6 +1528,9 @@ public:
 	
 	/** 캐릭터의 현재 채광 상태를 반환하는 함수*/
 	FORCEINLINE bool IsMining() { return bIsMining; }
+
+	FORCEINLINE UCameraEffectComponent* GetCameraEffectComponent() const { return CameraEffectComponent; }
+	
 protected:
 
 	class USoundSubsystem* GetSoundSubsystem();

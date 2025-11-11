@@ -140,6 +140,12 @@ public:
 	UFUNCTION()
 	void TogglePauseMenu();
 
+	/** Radial Blur Effect 설정
+	 * 내부적으로 Count를 이용해서 Enable의 개수가 0보다 크면 활성화, 0이 되면 비활성화 된다. */
+	UFUNCTION(Client, Reliable, BlueprintCallable)
+	void C_SetRadialBlurEffect(bool bEnable);
+	void C_SetRadialBlurEffect_Implementation(bool bEnable);
+	
 protected:
 
 	/** 관전 상태가 시작될 때 호출되는 함수 */
@@ -244,7 +250,6 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputAction> GuideAction;
-
 	
 private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
@@ -291,8 +296,8 @@ private:
 	UPROPERTY(BlueprintReadOnly, Category = "Control", meta = (AllowPrivateAccess = "true"))
 	float MouseYSensitivity = 1.0f;
 
+	int32 RadialBlurCount = 0;
 	
-
 #pragma endregion 
 
 #pragma region Getters / Setters

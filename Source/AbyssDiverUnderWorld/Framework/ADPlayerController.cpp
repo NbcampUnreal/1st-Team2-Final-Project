@@ -28,6 +28,7 @@
 
 #include "TimerManager.h"
 #include "Camera/PlayerCameraManager.h"
+#include "Character/PlayerComponent/CameraEffectComponent.h"
 #include "Engine/World.h"
 
 #include "Engine/PawnIterator.h"
@@ -440,6 +441,17 @@ void AADPlayerController::TogglePauseMenu()
 		break;
 	}
 	
+}
+
+void AADPlayerController::C_SetRadialBlurEffect_Implementation(bool bEnable)
+{
+	RadialBlurCount = FMath::Max(RadialBlurCount + (bEnable ? 1 : -1), 0);
+	UCameraEffectComponent* CameraEffectComponent = GetPawn() ? GetPawn()->FindComponentByClass<UCameraEffectComponent>() : nullptr;
+	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("C_SetRadialBlurEffect : bEnable=%s, RadialBlurCount=%d"), bEnable ? TEXT("True") : TEXT("False"), RadialBlurCount);
+	if (CameraEffectComponent)
+	{
+		CameraEffectComponent->StartRadialBlurFade(RadialBlurCount > 0);
+	}
 }
 
 void AADPlayerController::BeginSpectatingState()

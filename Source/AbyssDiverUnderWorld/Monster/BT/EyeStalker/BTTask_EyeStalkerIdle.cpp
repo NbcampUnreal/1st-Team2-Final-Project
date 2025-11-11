@@ -40,7 +40,7 @@ void UBTTask_EyeStalkerIdle::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* 
 	FEyeStalkerIdleMemory* TaskMemory = (FEyeStalkerIdleMemory*)NodeMemory;
 	if (!TaskMemory) return;
 
-	// TargetPlayers 전체를 대상으로 이동속도 확인
+	// DetectedPlayers 전체를 대상으로 이동속도 확인
 	for (const auto& TargetActor : TaskMemory->EyeStalker->GetDetectedPlayers())
 	{
 		AUnderwaterCharacter* TargetPlayer = Cast<AUnderwaterCharacter>(TargetActor.Get());

@@ -6,6 +6,7 @@
 
 #include "Character/UnderwaterCharacter.h"
 #include "Container/BlackboardKeys.h"
+#include "Framework/ADPlayerController.h"
 
 UBTTask_EyeStalkerDetected::UBTTask_EyeStalkerDetected()
 {
@@ -36,6 +37,10 @@ EBTNodeResult::Type UBTTask_EyeStalkerDetected::ExecuteTask(UBehaviorTreeCompone
 
 	// 비네트 효과 적용
 	PostProcessSettingComponent->C_ActivateVignetteEffect();
+	if (AADPlayerController* PC = Player->GetController<AADPlayerController>())
+	{
+		PC->C_SetRadialBlurEffect(true);
+	}
 
 	// EyeStalker 상태 초기화
 	TaskMemory->EyeStalker->M_SetEyeOpenness(1.0f);		// 눈 뜨기
