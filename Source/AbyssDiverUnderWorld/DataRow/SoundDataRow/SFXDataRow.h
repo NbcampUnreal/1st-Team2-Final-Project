@@ -48,6 +48,12 @@ enum class ESFX : uint8
 	WhaleSound,
 	FireShotgun,
 	ExplodeMine,
+	EnterSubmarine,
+	BasketballPickup,
+	BasketballThrow,   
+	BasketballBounce,   
+	BasketballScore,
+	BasketballHitPlayer,
 	Max UMETA(Hidden)
 };
 

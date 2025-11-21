@@ -1,4 +1,4 @@
-#include "Framework/ADGameInstance.h"
+﻿#include "Framework/ADGameInstance.h"
 
 #include "AbyssDiverUnderWorld.h"
 #include "Subsystems/SoundSubsystem.h"
@@ -18,11 +18,15 @@ void UADGameInstance::Init()
 
 	bIsHost = false;
 
+    //지스타 전시 후 false로 바꾸기
+    bHasPlayedTutorial = true;
+
+    bHasPlayedInGame = false;
+
     InitPlayerInfos();
 
     SettingsManager = NewObject<USettingsManager>(this);
-    SettingsManager->LoadAllSettings(GetFirstLocalPlayerController());
-
+    SettingsManager->LoadAllSettings(true);
     SettingsManager->InitializeActionMap(GetInputActionMap());
 
     if (UGameplayStatics::DoesSaveGameExist(UADTutorialSaveGame::SaveSlotName, UADTutorialSaveGame::UserIndex))

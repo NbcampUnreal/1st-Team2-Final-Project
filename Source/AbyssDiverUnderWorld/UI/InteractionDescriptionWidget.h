@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
@@ -16,10 +16,10 @@ class ABYSSDIVERUNDERWORLD_API UInteractionDescriptionWidget : public UUserWidge
 	
 #pragma region Method
 public:
-	// »óÈ£ÀÛ¿ë °¡´ÉÇÒ ¶§ È£ÃâÇÒ ÇÔ¼ö
+	// ìƒí˜¸ì‘ìš© ê°€ëŠ¥í•  ë•Œ í˜¸ì¶œí•  í•¨ìˆ˜
 	UFUNCTION()
 	void HandleFocus(AActor* Actor, FString Description);
-	// »óÈ£ÀÛ¿ë ºÒ°¡´ÉÇÒ ¶§ È£ÃâÇÒ ÇÔ¼ö
+	// ìƒí˜¸ì‘ìš© ë¶ˆê°€ëŠ¥í•  ë•Œ í˜¸ì¶œí•  í•¨ìˆ˜
 	UFUNCTION()
 	void HandleFocusLost();
 

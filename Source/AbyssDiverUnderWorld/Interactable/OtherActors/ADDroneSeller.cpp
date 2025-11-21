@@ -7,20 +7,21 @@
 #include "Framework/ADPlayerState.h"
 #include "Framework/ADGameInstance.h"
 #include "Framework/ADPlayerController.h"
+#include "Framework/ADTutorialGameMode.h"
+#include "Framework/ADTutorialGameState.h"
 
 #include "Character/UnderwaterCharacter.h"
 #include "Character/PlayerComponent/OxygenComponent.h"
 
 #include "Interactable/Item/Component/ADInteractableComponent.h"
+#include "Interactable/OtherActors/TargetIndicators/TargetIndicatorManager.h"
 
 #include "Subsystems/SoundSubsystem.h"
 #include "Subsystems/MissionSubsystem.h"
 #include "Subsystems/Localizations/LocalizationSubsystem.h"
 
 #include "Net/UnrealNetwork.h"
-
-#include "Framework/ADTutorialGameMode.h"
-#include "Framework/ADTutorialGameState.h"
+#include "Kismet/GameplayStatics.h"
 
 AADDroneSeller::AADDroneSeller()
 {
@@ -111,22 +112,13 @@ void AADDroneSeller::Interact_Implementation(AActor* InstigatorActor)
 
 	if (!HasAuthority() || !bIsActive) return;
 
+	SubmitPlayer(InstigatorActor);
+	
 	int32 Gained = SellAllExchangeableItems(InstigatorActor);
 	if (Gained <= 0)
 	{
 		LOGD(Log, TEXT("Gained <= 0"));
 		return;
-	}
-
-	if (TutorialMode)
-	{
-		if (AADTutorialGameState* TutorialGS = TutorialMode->GetGameState<AADTutorialGameState>())
-		{
-			if (TutorialGS->GetCurrentPhase() == ETutorialPhase::Step7_Drone)
-			{
-				TutorialMode->AdvanceTutorialPhase();
-			}
-		}
 	}
 
 	SetCurrentMoney(CurrentMoney + Gained);
@@ -136,12 +128,13 @@ void AADDroneSeller::Interact_Implementation(AActor* InstigatorActor)
 
 	// 🔸 모든 클라이언트에서 색상 전환 연출
 	const bool bReachedGoal = (CurrentMoney >= TargetMoney);
-	Multicast_TemporarilyHighlightGreen(bReachedGoal);
+	M_TemporarilyHighlightGreen(bReachedGoal);
 
 	if (bReachedGoal && IsValid(CurrentDrone))
 	{
 		LOGD(Log, TEXT("목표 달성! Drone 활성화 호출"));
-		CurrentDrone->Activate();
+		//CurrentDrone->Activate();
+		CurrentDrone->ApplyState(EDroneState::Approaching);
 		GetSoundSubsystem()->PlayAt(ESFX::ActivateDrone, GetActorLocation());
 	}
 	else
@@ -163,7 +156,6 @@ void AADDroneSeller::Activate()
 	bIsActive = true;
 	OnRep_IsActive(); // 서버에서는 직접 호출해저야함
 }
-
 
 void AADDroneSeller::OnRep_IsActive()
 {
@@ -276,6 +268,8 @@ void AADDroneSeller::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME(AADDroneSeller, CurrentMoney);
 	DOREPLIFETIME(AADDroneSeller, TargetMoney);
 	DOREPLIFETIME(AADDroneSeller, MoneyRatio);
+	// 리팩토링 필요. 지스타를 위한 임시 코딩. Way Point를 위한 것
+	DOREPLIFETIME(AADDroneSeller, CurrentDrone);
 }
 
 void AADDroneSeller::UpdatePlayerState(AActor* Actor, int32 GainedValue)
@@ -345,6 +339,11 @@ void AADDroneSeller::SetCurrentDrone(AADDrone* InDrone)
 	CurrentDrone = InDrone;
 }
 
+AADDrone* AADDroneSeller::GetCurrentDrone() const
+{
+	return CurrentDrone;
+}
+
 void AADDroneSeller::SetLightColor(FLinearColor NewColor)
 {
 	if (!IsValid(CachedMesh))
@@ -376,7 +375,7 @@ void AADDroneSeller::SetLightColor(FLinearColor NewColor)
 	}
 }
 
-void AADDroneSeller::Multicast_TemporarilyHighlightGreen_Implementation(bool bReachedGoal)
+void AADDroneSeller::M_TemporarilyHighlightGreen_Implementation(bool bReachedGoal)
 {
 	SetLightColor(FLinearColor::Green);
 

@@ -58,15 +58,7 @@ void ULanternComponent::RequestToggleLanternLight()
 {
 	if (GetOwnerRole() == ROLE_Authority)
 	{
-		bIsLanternOn = !bIsLanternOn;
-		OnRep_bIsLanternOn();
-		
-		if (LightDetectionComponent)
-		{
-			LightDetectionComponent->SetCollisionEnabled(
-				bIsLanternOn ? ECollisionEnabled::QueryOnly : ECollisionEnabled::NoCollision
-			);
-		}
+		SetLanternLightEnabled(!bIsLanternOn);
 	}
 	else
 	{
@@ -162,6 +154,24 @@ void ULanternComponent::SetLightLength(float NewLightLength)
 	else
 	{
 		UE_LOG(LogAbyssDiverCharacter, Warning, TEXT("LanternLightComponent is not valid. Should Spawn Light first."));
+	}
+}
+
+void ULanternComponent::SetLanternLightEnabled(const bool bEnable)
+{
+	if (bIsLanternOn == bEnable)
+	{
+		return;
+	}
+
+	bIsLanternOn = bEnable;
+	OnRep_bIsLanternOn();
+
+	if (GetOwnerRole() == ROLE_Authority && LightDetectionComponent)
+	{
+		LightDetectionComponent->SetCollisionEnabled(
+			bIsLanternOn ? ECollisionEnabled::QueryOnly : ECollisionEnabled::NoCollision
+		);
 	}
 }
 

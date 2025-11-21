@@ -2,14 +2,13 @@
 
 #include "AbyssDiverUnderWorld.h"
 #include "ADGameInstance.h"
+#include "ADPlayerController.h"
 #include "Subsystems/SoundSubsystem.h"
 
 #include "Kismet/GameplayStatics.h"
 #include "EnhancedInputSubsystems.h"
-#include "EnhancedInputComponent.h"
 #include "InputAction.h"
 #include "InputMappingContext.h"
-#include "GameFramework/InputSettings.h"
 #include "GameFramework/PlayerController.h"
 
 const FString USettingsManager::SlotName = TEXT("SettingsSlot");
@@ -19,8 +18,13 @@ USettingsManager::USettingsManager()
 	CachedAudioSettings = { 0.5, 0.5, 0.5, 0.5 };
 }
 
-bool USettingsManager::SaveAudioSettings()
+bool USettingsManager::PopulateAudioSettings(UADSettingsSaveGame* OutSaveGame)
 {
+	if (OutSaveGame == nullptr)
+	{
+		return false;
+	}
+	
 	UWorld* World = GetWorld();
 	if (World == nullptr)
 	{
@@ -42,40 +46,12 @@ bool USettingsManager::SaveAudioSettings()
 		return false;
 	}
 
-	UADSettingsSaveGame* SaveGameInstance = Cast<UADSettingsSaveGame>(UGameplayStatics::CreateSaveGameObject(UADSettingsSaveGame::StaticClass()));
-	if (SaveGameInstance == nullptr)
-	{
-		LOGV(Error, TEXT("Fail to Save Audio settings"));
-		return false;
-	}
-
 	CachedAudioSettings.AmbientVolume = SoundSubsystem->GetAmbientVolume();
 	CachedAudioSettings.BGMVolume = SoundSubsystem->GetBGMVolume();
 	CachedAudioSettings.MasterVolume = SoundSubsystem->GetMasterVolume();
 	CachedAudioSettings.SFXVolume = SoundSubsystem->GetSFXVolume();
 
-	SaveGameInstance->AudioSettings = CachedAudioSettings;
-	return UGameplayStatics::SaveGameToSlot(SaveGameInstance, SlotName, 0);
-}
-
-bool USettingsManager::LoadAudioSettings()
-{
-	if (UGameplayStatics::DoesSaveGameExist(SlotName, 0) == false)
-	{
-		LOGV(Error, TEXT("Fail to Load AudioSettings"));
-		return false;
-	}
-
-	UADSettingsSaveGame* Loaded = Cast<UADSettingsSaveGame>(UGameplayStatics::LoadGameFromSlot(SlotName, 0));
-	if (Loaded == nullptr)
-	{
-		LOGV(Error, TEXT("Fail to Load AudioSettings"));
-		return false;
-	}
-
-	CachedAudioSettings = Loaded->AudioSettings;
-	ApplyAudioSettings(CachedAudioSettings);
-
+	OutSaveGame->AudioSettings = CachedAudioSettings;
 	return true;
 }
 
@@ -105,20 +81,15 @@ void USettingsManager::SaveKeySettings()
 	UGameplayStatics::SaveGameToSlot(SaveGameInstance, SlotName, 0);
 }
 
-void USettingsManager::LoadKeySettings(APlayerController* PC)
+bool USettingsManager::PopulateMouseSettings(UADSettingsSaveGame* SaveGame)
 {
-	if (UGameplayStatics::DoesSaveGameExist(SlotName, 0))
+	if (!SaveGame)
 	{
-		if (UADSettingsSaveGame* Loaded = Cast<UADSettingsSaveGame>(
-			UGameplayStatics::LoadGameFromSlot(SlotName, 0)))
-		{
-			CachedKeyBindings = Loaded->KeyBindings;
-		}
-		
+		return false;
 	}
 
-	InitializeDefaultKeyBindingsIfEmpty();
-	ApplyKeySettings(CachedKeyBindings, PC);
+	SaveGame->MouseSettings = MouseSettings;
+	return true;
 }
 
 void USettingsManager::ApplyKeySettings(const TArray<FKeyBinding>& InBindings, APlayerController* PC)
@@ -127,18 +98,18 @@ void USettingsManager::ApplyKeySettings(const TArray<FKeyBinding>& InBindings, A
 
 	if (!BaseMappingContext || !PC) return;
 
-	// Context º¹Á¦
+	// Context ë³µì œ
 	RuntimeMappingContext = DuplicateObject<UInputMappingContext>(BaseMappingContext, this);
-	// ±âÁ¸ ¸ÅÇÎ Á¦°Å ¡æ Á¤È®ÇÑ Å° ¸ÅÇÎ ½Ö Á¦°Å
+	// ê¸°ì¡´ ë§¤í•‘ ì œê±° â†’ ì •í™•í•œ í‚¤ ë§¤í•‘ ìŒ ì œê±°
 	for (auto& Pair : ActionMap)
 	{
 		if (Pair.Value)
 		{
-			RuntimeMappingContext->UnmapAllKeysFromAction(Pair.Value); // ÀüÃ¼ Å° Á¦°Å
+			RuntimeMappingContext->UnmapAllKeysFromAction(Pair.Value); // ì „ì²´ í‚¤ ì œê±°
 		}
 	}
 
-	// »õ ¸ÅÇÎ Àû¿ë
+	// ìƒˆ ë§¤í•‘ ì ìš©
 	for (const FKeyBinding& Binding : InBindings)
 	{
 		if (const UInputAction* FoundAction = ActionMap.FindRef(Binding.ActionName))
@@ -151,26 +122,37 @@ void USettingsManager::ApplyKeySettings(const TArray<FKeyBinding>& InBindings, A
 	{
 		if (UEnhancedInputLocalPlayerSubsystem* InputSubsystem = LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
 		{
-			InputSubsystem->ClearAllMappings(); // ¸ğµç ±âÁ¸ ¸ÊÇÎ Á¦°Å
-			InputSubsystem->AddMappingContext(RuntimeMappingContext, 0); // »õ ÄÁÅØ½ºÆ® »ğÀÔ
+			InputSubsystem->ClearAllMappings(); // ëª¨ë“  ê¸°ì¡´ ë§µí•‘ ì œê±°
+			InputSubsystem->AddMappingContext(RuntimeMappingContext, 0); // ìƒˆ ì»¨í…ìŠ¤íŠ¸ ì‚½ì…
 		}
 	}
 
 }
 
+void USettingsManager::ApplyMouseSettings(const FUserMouseSettings& NewMouseSettings, APlayerController* PC)
+{
+	MouseSettings = NewMouseSettings;
+
+	if (AADPlayerController* ADPlayerController =  Cast<AADPlayerController>(PC))
+	{
+		ADPlayerController->SetLookSensitivity(NewMouseSettings.Sensitivity, NewMouseSettings.Sensitivity);
+	}
+}
+
 void USettingsManager::SaveAllSettings()
 {
-	UADSettingsSaveGame* SaveObj = Cast<UADSettingsSaveGame>(
+	UADSettingsSaveGame* SaveGameObject = Cast<UADSettingsSaveGame>(
 		UGameplayStatics::CreateSaveGameObject(UADSettingsSaveGame::StaticClass())
 	);
 
-	SaveObj->AudioSettings = CachedAudioSettings;
-	SaveObj->KeyBindings = CachedKeyBindings;
+	PopulateAudioSettings(SaveGameObject);
+	// SaveGameObject->KeyBindings = CachedKeyBindings;
+	PopulateMouseSettings(SaveGameObject);
 
-	UGameplayStatics::SaveGameToSlot(SaveObj, SlotName, 0);
+	UGameplayStatics::SaveGameToSlot(SaveGameObject, SlotName, 0);
 }
 
-void USettingsManager::LoadAllSettings(APlayerController* PC)
+void USettingsManager::LoadAllSettings(bool bShouldApplySettings)
 {
 	if (UGameplayStatics::DoesSaveGameExist(SlotName, 0))
 	{
@@ -179,17 +161,24 @@ void USettingsManager::LoadAllSettings(APlayerController* PC)
 		{
 			CachedAudioSettings = Loaded->AudioSettings;
 			CachedKeyBindings = Loaded->KeyBindings;
+			MouseSettings = Loaded->MouseSettings;
 		}
 	}
 
-	InitializeDefaultKeyBindingsIfEmpty(); // Å° ¹ÙÀÎµù ºñ¾úÀ» ¶§ Ã¤¿ì±â
-	ApplyAllSettings(PC);
+	InitializeDefaultKeyBindingsIfEmpty(); // í‚¤ ë°”ì¸ë”© ë¹„ì—ˆì„ ë•Œ ì±„ìš°ê¸°
+
+	if (bShouldApplySettings)
+	{
+		APlayerController* PC = GetWorld()->GetFirstPlayerController();
+		ApplyCurrentSettings(PC);
+	}
 }
 
-void USettingsManager::ApplyAllSettings(APlayerController* PC)
+void USettingsManager::ApplyCurrentSettings(APlayerController* PC)
 {
 	ApplyAudioSettings(CachedAudioSettings);
-	ApplyKeySettings(CachedKeyBindings, PC);
+	// ApplyKeySettings(CachedKeyBindings, PC);
+	ApplyMouseSettings(MouseSettings, PC);
 }
 
 void USettingsManager::UpdateCachedKeyBinding(FName ActionName, FKey NewKey)
@@ -204,7 +193,6 @@ void USettingsManager::UpdateCachedKeyBinding(FName ActionName, FKey NewKey)
 	}
 
 	CachedKeyBindings.Add(FKeyBinding{ ActionName, NewKey });
-
 }
 
 void USettingsManager::InitializeActionMap(const TMap<FName, UInputAction*>& InMap)
@@ -217,20 +205,20 @@ void USettingsManager::InitializeDefaultKeyBindingsIfEmpty()
 	if (!CachedKeyBindings.IsEmpty())
 		return;
 
-	CachedKeyBindings.Add({ "Ascend", EKeys::SpaceBar });            // ¼öÁ÷ »ó½Â
-	CachedKeyBindings.Add({ "Descend", EKeys::C });                  // ¼öÁ÷ ÇÏ°­
-	CachedKeyBindings.Add({ "Sprint", EKeys::LeftShift });           // ºü¸¥ ÀÌµ¿
-	CachedKeyBindings.Add({ "Fire", EKeys::LeftMouseButton });       // ¹ß»ç
-	CachedKeyBindings.Add({ "Aim", EKeys::RightMouseButton });       // Á¶ÁØ
-	CachedKeyBindings.Add({ "Interact", EKeys::E });                 // »óÈ£ÀÛ¿ë
-	CachedKeyBindings.Add({ "SlotScroll", EKeys::MouseWheelAxis });  // ¸¶¿ì½º ÈÙ (½ºÅ©·Ñ)
-	CachedKeyBindings.Add({ "Light", EKeys::F });                    // ¶óÀÌÆ®
-	CachedKeyBindings.Add({ "Inventory", EKeys::Tab });              // ÀÎº¥Åä¸®
-	CachedKeyBindings.Add({ "Radar", EKeys::Q });                    // ·¹ÀÌ´õ
-	CachedKeyBindings.Add({ "Reload", EKeys::R });                   // ÀçÀåÀü
-	CachedKeyBindings.Add({ "Jump", EKeys::SpaceBar });              // Á¡ÇÁ
+	CachedKeyBindings.Add({ "Ascend", EKeys::SpaceBar });            // ìˆ˜ì§ ìƒìŠ¹
+	CachedKeyBindings.Add({ "Descend", EKeys::C });                  // ìˆ˜ì§ í•˜ê°•
+	CachedKeyBindings.Add({ "Sprint", EKeys::LeftShift });           // ë¹ ë¥¸ ì´ë™
+	CachedKeyBindings.Add({ "Fire", EKeys::LeftMouseButton });       // ë°œì‚¬
+	CachedKeyBindings.Add({ "Aim", EKeys::RightMouseButton });       // ì¡°ì¤€
+	CachedKeyBindings.Add({ "Interact", EKeys::E });                 // ìƒí˜¸ì‘ìš©
+	CachedKeyBindings.Add({ "SlotScroll", EKeys::MouseWheelAxis });  // ë§ˆìš°ìŠ¤ íœ  (ìŠ¤í¬ë¡¤)
+	CachedKeyBindings.Add({ "Light", EKeys::F });                    // ë¼ì´íŠ¸
+	CachedKeyBindings.Add({ "Inventory", EKeys::Tab });              // ì¸ë²¤í† ë¦¬
+	CachedKeyBindings.Add({ "Radar", EKeys::Q });                    // ë ˆì´ë”
+	CachedKeyBindings.Add({ "Reload", EKeys::R });                   // ì¬ì¥ì „
+	CachedKeyBindings.Add({ "Jump", EKeys::SpaceBar });              // ì í”„
 
-	// ½½·Ô 1~5
+	// ìŠ¬ë¡¯ 1~5
 	CachedKeyBindings.Add({ "Slot1", EKeys::One });
 	CachedKeyBindings.Add({ "Slot2", EKeys::Two });
 	CachedKeyBindings.Add({ "Slot3", EKeys::Three });

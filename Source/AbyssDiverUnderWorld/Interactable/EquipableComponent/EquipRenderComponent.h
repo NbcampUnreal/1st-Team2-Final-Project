@@ -42,7 +42,8 @@ public:
     UMeshComponent* Create1PComponent(UEquipableComponent* EComp, ACharacter* OwningChar, FName SocketName);
     UMeshComponent* Create3PComponent(UEquipableComponent* EComp, ACharacter* OwningChar, FName SocketName);
 
-
+	void SetRenderFirstPerson(bool bNewFirstPerson);
+	
 #pragma endregion
 
 #pragma region Variable

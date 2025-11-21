@@ -96,7 +96,12 @@ void UTargetIndicatorWidget::CalcAndSetCorrectTargetPosition()
 
 	DirectionToTarget.Normalize();
 
-	SetVisible(bIsOnScreen);
+	SetVisible(true);
+
+	if (bIsOnScreen == false)
+	{
+		return;
+	}
 
 	UGameViewportClient* Viewport = World->GetGameViewport();
 	if (Viewport == nullptr)
@@ -107,9 +112,9 @@ void UTargetIndicatorWidget::CalcAndSetCorrectTargetPosition()
 
 	FVector2D ViewportSize;
 	Viewport->GetViewportSize(ViewportSize);
-
-	TargetScreenPos.X = FMath::Clamp(TargetScreenPos.X, 0, ViewportSize.X);
-	TargetScreenPos.Y = FMath::Clamp(TargetScreenPos.Y, 0, ViewportSize.Y);
+	const float ViewportPadding = 50.0f;
+	TargetScreenPos.X = FMath::Clamp(TargetScreenPos.X, ViewportPadding, ViewportSize.X - ViewportPadding);
+	TargetScreenPos.Y = FMath::Clamp(TargetScreenPos.Y, ViewportPadding, ViewportSize.Y - ViewportPadding);
 	
 	float DPIScale = UWidgetLayoutLibrary::GetViewportScale(GetWorld());
 	ChangeTargetPosition(TargetScreenPos / DPIScale);

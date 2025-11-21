@@ -45,3 +45,12 @@ do{\
 #endif
 
 DECLARE_LOG_CATEGORY_EXTERN(AbyssDiver, Log, All);
+
+namespace ABCollisionChannels
+{
+	constexpr ECollisionChannel ECC_Interaction = ECC_GameTraceChannel1;
+	constexpr ECollisionChannel ECC_Projectile = ECC_GameTraceChannel2;
+	constexpr ECollisionChannel ECC_Monster = ECC_GameTraceChannel3;
+	constexpr ECollisionChannel ECC_InteractionRay = ECC_GameTraceChannel4;
+	constexpr ECollisionChannel ECC_ShopBlock = ECC_GameTraceChannel5;
+}

@@ -97,7 +97,13 @@ UMeshComponent* UEquipRenderComponent::Create1PComponent(UEquipableComponent* EC
         USkeletalMesh* MeshSkelAsset = SkelSource->GetSkeletalMeshAsset();
         if (!MeshSkelAsset) return nullptr;
 
-        USkeletalMeshComponent* Skel1P = NewObject<USkeletalMeshComponent>(GetOwner());
+        /*USkeletalMeshComponent* Skel1P = NewObject<USkeletalMeshComponent>(GetOwner());*/
+        USkeletalMeshComponent* Skel1P = NewObject<USkeletalMeshComponent>(
+            OwningChar,  // GetOwner() 대신 Character를 직접 사용
+            USkeletalMeshComponent::StaticClass(),
+            NAME_None,
+            RF_Transient
+        );
         Skel1P->RegisterComponent();
         Skel1P->SetSkeletalMesh(MeshSkelAsset);
         Skel1P->AttachToComponent(
@@ -124,7 +130,13 @@ UMeshComponent* UEquipRenderComponent::Create1PComponent(UEquipableComponent* EC
         UStaticMesh* MeshStatAsset = StatSource->GetStaticMesh();
         if (!MeshStatAsset) return nullptr;
 
-        UStaticMeshComponent* Stat1P = NewObject<UStaticMeshComponent>(GetOwner());
+        /*UStaticMeshComponent* Stat1P = NewObject<UStaticMeshComponent>(GetOwner());*/
+        UStaticMeshComponent* Stat1P = NewObject<UStaticMeshComponent>(
+            OwningChar,  // GetOwner() 대신 Character를 직접 사용
+            UStaticMeshComponent::StaticClass(),
+            NAME_None,
+            RF_Transient
+        );
         Stat1P->RegisterComponent();
         Stat1P->SetStaticMesh(MeshStatAsset);
         Stat1P->AttachToComponent(
@@ -164,7 +176,13 @@ UMeshComponent* UEquipRenderComponent::Create3PComponent(UEquipableComponent* EC
         USkeletalMesh* MeshSkelAsset = SkelSource->GetSkeletalMeshAsset();
         if (!MeshSkelAsset) return nullptr;
 
-        USkeletalMeshComponent* Skel3P = NewObject<USkeletalMeshComponent>(GetOwner());
+        /*USkeletalMeshComponent* Skel3P = NewObject<USkeletalMeshComponent>(GetOwner());*/
+        USkeletalMeshComponent* Skel3P = NewObject<USkeletalMeshComponent>(
+            OwningChar,
+            USkeletalMeshComponent::StaticClass(),
+            NAME_None,
+            RF_Transient
+        );
         Skel3P->RegisterComponent();
         Skel3P->SetSkeletalMesh(MeshSkelAsset);
         Skel3P->AttachToComponent(
@@ -194,7 +212,13 @@ UMeshComponent* UEquipRenderComponent::Create3PComponent(UEquipableComponent* EC
         UStaticMesh* MeshStatAsset = StatSource->GetStaticMesh();
         if (!MeshStatAsset) return nullptr;
 
-        UStaticMeshComponent* Stat3P = NewObject<UStaticMeshComponent>(GetOwner());
+        /*UStaticMeshComponent* Stat3P = NewObject<UStaticMeshComponent>(GetOwner());*/
+        UStaticMeshComponent* Stat3P = NewObject<UStaticMeshComponent>(
+            OwningChar,
+            UStaticMeshComponent::StaticClass(),
+            NAME_None,
+            RF_Transient
+        );
         Stat3P->RegisterComponent();
         Stat3P->SetStaticMesh(MeshStatAsset);
         Stat3P->AttachToComponent(
@@ -215,5 +239,27 @@ UMeshComponent* UEquipRenderComponent::Create3PComponent(UEquipableComponent* EC
 
         return Stat3P;
     }
+}
+
+void UEquipRenderComponent::SetRenderFirstPerson(bool bNewFirstPerson)
+{
+	// bNewFirstPerson == true
+	// Mesh1P : Owner No See == false (보임)
+	// Mesh3P : Owner No See == true  (안보임)
+	// bNewFirstPerson == false
+	// Mesh1P : Owner No See == true  (안보임)
+	// Mesh3P : Owner No See == false (보임)
+	for (TPair<TWeakObjectPtr<AActor>, FRenderEntry>& EntryPair : ActiveEntries)
+	{
+		FRenderEntry& Entry = EntryPair.Value;
+		if (Entry.Mesh1P.IsValid())
+		{
+			Entry.Mesh1P->SetOwnerNoSee(!bNewFirstPerson);
+		}
+		if (Entry.Mesh3P.IsValid())
+		{
+			Entry.Mesh3P->SetOwnerNoSee(bNewFirstPerson);
+		}
+	}
 }
 

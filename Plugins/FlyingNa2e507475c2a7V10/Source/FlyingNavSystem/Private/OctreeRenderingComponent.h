@@ -8,6 +8,7 @@
 #include "FlyingNavSystemTypes.h"
 #include "StaticMeshResources.h"
 #include "Math/GenericOctree.h"
+#include "DynamicMeshBuilder.h"
 
 #include "OctreeRenderingComponent.generated.h"
 

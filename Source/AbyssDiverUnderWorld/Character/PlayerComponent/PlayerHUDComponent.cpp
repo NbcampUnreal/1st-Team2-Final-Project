@@ -7,31 +7,45 @@
 #include "Character/PlayerComponent/OxygenComponent.h"
 #include "Character/PlayerComponent/StaminaComponent.h"
 #include "Character/StatComponent.h"
+#include "Character/PlayerComponent/DepthComponent.h"
 
 #include "Framework/ADInGameState.h"
 #include "Framework/ADPlayerState.h"
 #include "Framework/ADPlayerController.h"
 
 #include "UI/ResultScreen.h"
+#include "UI/ResultScreenSlot.h"
 #include "UI/PlayerStatusWidget.h"
 #include "UI/MissionsOnHUDWidget.h"
 #include "UI/CrosshairWidget.h"
 #include "UI/SpectatorHUDWidget.h"
 #include "UI/RadarWidgets/Radar2DWidget.h"
+#include "UI/DepthWidget.h"
+#include "UI/InteractPopupWidget.h"
+#include "UI/Flipbooks/FlipbookWidget.h"
+#include "UI/GameGuideWidget.h"
 
 #include "Interactable/OtherActors/ADDroneSeller.h"
+#include "Interactable/OtherActors/ADDrone.h"
+
 #include "Subsystems/SoundSubsystem.h"
+#include "Subsystems/ADWorldSubsystem.h"
+
+#include "Inventory/ADInventoryComponent.h"
 
 #include "EngineUtils.h"
 #include "Components/CanvasPanel.h"
 #include "Kismet/GameplayStatics.h"
-#include "Inventory/ADInventoryComponent.h"
-#include "Character/PlayerComponent/DepthComponent.h"
-#include "UI/DepthWidget.h"
 
 UPlayerHUDComponent::UPlayerHUDComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
+
+	ConstructorHelpers::FClassFinder<UInteractPopupWidget> PopupFinder(TEXT("/Game/_AbyssDiver/Blueprints/UI/InteractableUI/WBP_InteractPopupWidget"));
+	if (PopupFinder.Succeeded())
+	{
+		PopupWidgetClass = PopupFinder.Class;
+	}
 }
 
 void UPlayerHUDComponent::BindGameState()
@@ -139,8 +153,11 @@ void UPlayerHUDComponent::BeginPlay()
 
 		if (UDepthComponent* DepthComp = Character->FindComponentByClass<UDepthComponent>())
 		{
-			BindDeptWidgetFunction(DepthComp);
+			BindDepthWidgetFunction(DepthComp);
 		}
+
+		Character->OnEnvironmentStateChangedDelegate.AddDynamic(this, &UPlayerHUDComponent::UpdateEnvironmentState);
+		UpdateEnvironmentState(Character->GetEnvironmentState(), Character->GetEnvironmentState());
 	}
 
 	if (ResultScreenWidgetClass)
@@ -170,29 +187,141 @@ void UPlayerHUDComponent::BeginPlay()
 		}
 	}
 
+	if (GameGuideWidgetClass)
+	{
+		GameGuideWidget = CreateWidget<UGameGuideWidget>(PlayerController, GameGuideWidgetClass);
+		GameGuideWidget->AddToViewport(20); 
+	}
+	
+	if (FlipbookWidgetClass)
+	{
+		FlipbookWidgetInstance = CreateWidget<UFlipbookWidget>(PlayerController, FlipbookWidgetClass);
+		if (FlipbookWidgetInstance)
+		{
+			FlipbookWidgetInstance->AddToViewport(-1);
+
+		}
+	}
+
 	BindGameState();
 }
 
 void UPlayerHUDComponent::C_ShowResultScreen_Implementation()
 {
-	for (AADPlayerState* PS : TActorRange<AADPlayerState>(GetWorld()))
+	UWorld* World = GetWorld();
+	if (World == nullptr)
 	{
-		EAliveInfo AliveInfo = EAliveInfo::Alive;
+		LOGVN(Error, TEXT("World Is Not Valid"));
+		return;
+	}
 
-		if (PS->IsSafeReturn() == false)
+	int32 TeamMaxKill = 0;
+	int32 TeamMaxDamage = 0;
+	int32 TeamMaxAssist = 0;
+
+	TArray<FResultScreenParams> ResultParamsArray;
+
+	int32 MaxCollect = 1;
+	int32 MaxCombat = 1;
+	int32 MaxSupport = 1;
+
+	static const int32 MaxPlayerCount = 4;
+	for (int32 i = 0; i < MaxPlayerCount; ++i)
+	{
+		if (AADPlayerState* PS = Cast<AADPlayerState>(UGameplayStatics::GetPlayerState(World, i)))
 		{
-			AliveInfo = (PS->IsDead()) ? EAliveInfo::Dead : EAliveInfo::Abandoned;
+			if (PS->GetDamage() > TeamMaxDamage)
+			{
+				TeamMaxDamage = PS->GetDamage();
+			}
+			if (PS->GetMonsterKillCount() > TeamMaxKill)
+			{
+				TeamMaxKill = PS->GetMonsterKillCount();
+			}
+			if (PS->GetAssists() > TeamMaxAssist)
+			{
+				TeamMaxAssist = PS->GetAssists();
+			}
+
+			EAliveInfo AliveInfo = EAliveInfo::Alive;
+
+			if (PS->IsSafeReturn() == false)
+			{
+				if (PS->IsDead())
+				{
+					AliveInfo = EAliveInfo::Dead;
+				}
+				else
+				{
+					AliveInfo = EAliveInfo::Abandoned;
+				}
+			}
+			
+			float DamageNomalize = (TeamMaxDamage == 0) ? 0 : ((float)PS->GetDamage() / (float)TeamMaxDamage);
+			float KillNomalize = (TeamMaxKill == 0) ? 0 : ((float)PS->GetTotalMonsterKillCount() / (float)TeamMaxKill);
+			float AssistNomalize = (TeamMaxAssist == 0) ? 0 : ((float)PS->GetAssists() / (float)TeamMaxAssist);
+
+			int32 BattleContribution = 10000 * (0.6 * DamageNomalize + 0.3 * KillNomalize + 0.1 * AssistNomalize);
+			int32 SafeContribution = 100 * (PS->GetGroggyRevive() + PS->GetCorpseRecovery() * 3);
+
+			FResultScreenParams Params
+			(
+				PS->GetPlayerNickname(),
+				AliveInfo,
+				PS->GetOreCollectedValue(), //채집 기여
+				BattleContribution,//전투기여
+				SafeContribution //팀지원
+			);
+
+			MaxCollect = FMath::Max(MaxCollect, Params.CollectionScore);
+			MaxCombat = FMath::Max(MaxCombat, Params.BattleScore);
+			MaxSupport = FMath::Max(MaxSupport, Params.SupportScore);
+
+			ResultParamsArray.Add(Params);
 		}
+	}
 
-		FResultScreenParams Params
-		(
-			PS->GetPlayerNickname(),
-			98,
-			PS->GetOreMinedCount(),
-			AliveInfo
-		);
+	for (FResultScreenParams& Param : ResultParamsArray)
+	{
+		Param.NormalizedCollectScore = (float)Param.CollectionScore / (float)MaxCollect;
+		Param.NormalizedCombatScore = (float)Param.BattleScore / (float)MaxCombat;
+		Param.NormalizedSupportScore = (float)Param.SupportScore / (float)MaxSupport;
 
-		UpdateResultScreen(PS->GetPlayerIndex(), Params);
+		float TotalScore = Param.NormalizedCollectScore + Param.NormalizedCombatScore + Param.NormalizedSupportScore;
+		if (Param.AliveInfo == EAliveInfo::Alive) // 생존 보너스
+		{
+			Param.MVPScore = TotalScore * 1.5f;
+		}
+		else
+		{
+			Param.MVPScore = TotalScore;
+		}
+	}
+
+	ResultParamsArray.Sort([](const FResultScreenParams& A, const FResultScreenParams& B)
+		{
+			if (!FMath::IsNearlyEqual(A.MVPScore, B.MVPScore))
+			{
+				return A.MVPScore > B.MVPScore;
+			}
+
+			// 동점일 경우 우선순위
+			if (A.CollectionScore != B.CollectionScore)
+				return A.CollectionScore > B.CollectionScore;
+
+			if (A.BattleScore != B.BattleScore)
+				return A.BattleScore > B.BattleScore;
+
+			if (A.SupportScore != B.SupportScore)
+				return A.SupportScore > B.SupportScore;
+
+			// 마지막으로 생존자 우선
+			return A.AliveInfo == EAliveInfo::Alive && B.AliveInfo != EAliveInfo::Alive;
+		});
+
+	for (int32 i = 0; i < ResultParamsArray.Num(); ++i)
+	{
+		UpdateResultScreen(i, ResultParamsArray[i]);
 	}
 
 	AADInGameState* GS = Cast<AADInGameState>(GetWorld()->GetGameState());
@@ -250,10 +379,25 @@ void UPlayerHUDComponent::SetCurrentPhaseOverlayVisible(bool bShouldVisible)
 	PlayerStatusWidget->SetCurrentPhaseOverlayVisible(bShouldVisible);
 }
 
-void UPlayerHUDComponent::BindDeptWidgetFunction(UDepthComponent* DepthComp)
+void UPlayerHUDComponent::SetMaxPhaseNumber(int32 NewMaxPhaseNumber)
+{
+	PlayerStatusWidget->SetMaxPhaseNumber(NewMaxPhaseNumber);
+}
+
+void UPlayerHUDComponent::BindDepthWidgetFunction(UDepthComponent* DepthComp)
 {
 	UDepthWidget* DepthWidget = PlayerStatusWidget->GetDepthWidget();
-	if (!DepthWidget || !DepthComp) return;
+	if (!DepthWidget)
+	{
+		UE_LOG(LogAbyssDiverCharacter, Warning, TEXT("DepthWidget is nullptr"));
+		return;
+	}
+	if (!DepthComp)
+	{
+		UE_LOG(LogAbyssDiverCharacter, Warning, TEXT("DepthComp is nullptr"));
+		return;
+	}
+	
 	DepthComp->OnDepthZoneChangedDelegate.AddDynamic(DepthWidget, &UDepthWidget::ApplyZoneChangeToWidget);
 	DepthComp->OnDepthUpdatedDelegate.AddDynamic(DepthWidget, &UDepthWidget::SetDepthText);
 }
@@ -261,6 +405,23 @@ void UPlayerHUDComponent::BindDeptWidgetFunction(UDepthComponent* DepthComp)
 void UPlayerHUDComponent::C_SetSpearGunTypeImage_Implementation(int8 TypeNum)
 {
 	PlayerStatusWidget->SetSpearGunTypeImage(TypeNum);
+}
+
+void UPlayerHUDComponent::S_ReportConfirm_Implementation(AActor* RequestInteractableActor, bool bConfirmed)
+{
+	if (!IsValid(RequestInteractableActor))
+	{
+		return;
+	}
+
+	// 현재는 단일한 Interface가 없기 때문에 Drone과 같은 구체 클래스를 통해서 호출
+	if (AADDrone* Drone = Cast<AADDrone>(RequestInteractableActor))
+	{
+		if (bConfirmed)
+		{
+			Drone->ExecuteConfirmedInteraction();
+		}
+	}
 }
 
 void UPlayerHUDComponent::OnSpectatingStateChanged(bool bIsSpectating)
@@ -386,6 +547,24 @@ void UPlayerHUDComponent::SetupHudWidgetToNewPawn(APawn* NewPawn, APlayerControl
 			Radar2DWidget->AddToViewport(-1);
 			SetActiveRadarWidget(false);
 		}
+	}  
+	if (!IsValid(GameGuideWidget) && GameGuideWidgetClass)
+	{
+		GameGuideWidget = CreateWidget<UGameGuideWidget>(PlayerController, GameGuideWidgetClass);
+	}
+	if (GameGuideWidget)
+	{
+		GameGuideWidget->AddToViewport(20); 
+	}  
+
+	if (!IsValid(FlipbookWidgetInstance) && FlipbookWidgetClass)
+	{
+		FlipbookWidgetInstance = CreateWidget<UFlipbookWidget>(PlayerController, FlipbookWidgetClass);
+	}
+
+	if (FlipbookWidgetInstance && FlipbookWidgetInstance->IsInViewport() == false)
+	{
+		FlipbookWidgetInstance->AddToViewport(-1);
 	}
 
 	if (AUnderwaterCharacter* UWCharacter = Cast<AUnderwaterCharacter>(NewPawn))
@@ -411,8 +590,11 @@ void UPlayerHUDComponent::SetupHudWidgetToNewPawn(APawn* NewPawn, APlayerControl
 
 		if (UDepthComponent* DepthComp = UWCharacter->FindComponentByClass<UDepthComponent>())
 		{
-			BindDeptWidgetFunction(DepthComp);
+			BindDepthWidgetFunction(DepthComp);
 		}
+
+		UWCharacter->OnEnvironmentStateChangedDelegate.AddDynamic(this, &UPlayerHUDComponent::UpdateEnvironmentState);
+		UpdateEnvironmentState(UWCharacter->GetEnvironmentState(), UWCharacter->GetEnvironmentState());
 	}
 }
 
@@ -432,6 +614,8 @@ void UPlayerHUDComponent::HideHudWidget()
 	{
 		PlayerStatusWidget->RemoveFromParent();
 	}
+
+	SetActiveRadarWidget(false);
 }
 
 void UPlayerHUDComponent::ShowHudWidget()
@@ -462,12 +646,62 @@ void UPlayerHUDComponent::SetActiveRadarWidget(bool bShouldActivate)
 	}
 }
 
+void UPlayerHUDComponent::C_ShowConfirmWidget_Implementation(AActor* RequestInteractableActor)
+{
+	UE_LOG(LogTemp,Display, TEXT("%s request Confirm Widget"), *RequestInteractableActor->GetName());
+
+	AADPlayerController* PC = Cast<AADPlayerController>(GetOwner());
+	if (!PC || !PC->IsLocalController()) return;
+	
+	if (PopupWidgetClass)
+	{
+		if (UInteractPopupWidget* PopupWidget = CreateWidget<UInteractPopupWidget>(PC, PopupWidgetClass))
+		{
+			PopupWidget->AddToViewport();
+			
+			PC->bShowMouseCursor = true;
+			
+			FInputModeUIOnly InputMode;
+			InputMode.SetWidgetToFocus(PopupWidget->TakeWidget());
+			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+			PC->SetInputMode(InputMode);
+			PC->SetIgnoreMoveInput(true);
+
+			PopupWidget->OnPopupConfirmed.BindLambda([this, PC, RequestInteractableActor]() {
+				if (!IsValid(this) || !IsValid(PC))
+				{
+					return;
+				}
+				
+				this->S_ReportConfirm(RequestInteractableActor, true);
+				PC->bShowMouseCursor = false;
+				PC->SetInputMode(FInputModeGameOnly());
+				PC->SetIgnoreMoveInput(false);
+			});
+			PopupWidget->OnPopupCanceled.BindLambda([this, PC]() {
+				if (!IsValid(this) || !IsValid(PC))
+				{
+					return;
+				}
+				
+				PC->bShowMouseCursor = false;
+				PC->SetInputMode(FInputModeGameOnly());
+				PC->SetIgnoreMoveInput(false);
+			});
+		}
+	}
+}
+
 void UPlayerHUDComponent::ShowSpectatorHUDWidget()
 {
 	if (!SpectatorHUDWidget && SpectatorHUDWidgetClass)
 	{
 		AADPlayerController* PlayerController = Cast<AADPlayerController>(GetOwner());
 		SpectatorHUDWidget = CreateWidget<USpectatorHUDWidget>(PlayerController, SpectatorHUDWidgetClass);
+		if (SpectatorHUDWidget)
+		{
+			SpectatorHUDWidget->BindWidget(PlayerController);
+		}
 	}
 	if (SpectatorHUDWidget && !SpectatorHUDWidget->IsInViewport())
 	{
@@ -529,7 +763,7 @@ void UPlayerHUDComponent::OnShieldUseFailed()
 {
 	LOGV(Error, TEXT("OnShieldUseFailed Succeeded"));
 	if (PlayerStatusWidget)
-		PlayerStatusWidget->NoticeInfo(TEXT("Shield가 가득 찼습니다!"), FVector2D(0.0f, -160.0f));
+		PlayerStatusWidget->NoticeInfo(TEXT("Shield가 가득 찼습니다!"), FVector2D(-7.0f, -260.0f));
 }
 
 void UPlayerHUDComponent::UpdateStaminaHUD(float Stamina, float MaxStamina)
@@ -538,6 +772,15 @@ void UPlayerHUDComponent::UpdateStaminaHUD(float Stamina, float MaxStamina)
 	{
 		const float Ratio = MaxStamina > 0 ? Stamina / MaxStamina : 0.f;
 		PlayerStatusWidget->SetStaminaPercent(Ratio);
+	}
+}
+
+void UPlayerHUDComponent::UpdateEnvironmentState(EEnvironmentState OldEnvironmentState,	EEnvironmentState NewEnvironmentState)
+{
+	const bool bIsUnderwater = (NewEnvironmentState == EEnvironmentState::Underwater);
+	if (PlayerStatusWidget)
+	{
+		PlayerStatusWidget->OnChangedEnvironment(bIsUnderwater);
 	}
 }
 
@@ -578,4 +821,65 @@ USoundSubsystem* UPlayerHUDComponent::GetSoundSubsystem()
 UPlayerStatusWidget* UPlayerHUDComponent::GetPlayerStatusWidget()
 {
 	return PlayerStatusWidget;
+}
+
+UFlipbookWidget* UPlayerHUDComponent::GetFlipbookWidget() const
+{
+	return IsValid(FlipbookWidgetInstance) ? FlipbookWidgetInstance : nullptr;
+}
+
+void UPlayerHUDComponent::ShowFirstClearEndingWidget()
+{
+	if (IsValid(FirstClearWidgetClass) == false)
+	{
+		LOGV(Error, TEXT("FirstClearWidgetClass가 설정되지 않았습니다. PlayerHUDComponent BP를 확인하세요."));
+		return;
+	}
+
+	if (IsValid(FirstClearWidgetInstance))
+	{
+		return;
+	}
+
+	FirstClearWidgetInstance = CreateWidget<UEndingWidget>(GetWorld(), FirstClearWidgetClass);
+	if (IsValid(FirstClearWidgetInstance) == false)
+	{
+		LOGV(Error, TEXT("FirstClearWidgetInstance 생성에 실패했습니다."));
+		return;
+	}
+
+	FirstClearWidgetInstance->AddToViewport();
+
+}
+
+void UPlayerHUDComponent::ToggleGuide()
+{
+	if (GameGuideWidget && !GameGuideWidget->GetbIsAnimationPlaying())
+	{
+		AADPlayerController* PC = Cast<AADPlayerController>(GetOwner());
+		if (!PC) return;
+
+		if (!GameGuideWidget->GetbIsVisibility())
+		{ 
+			FInputModeGameAndUI InputMode;
+			InputMode.SetWidgetToFocus(GameGuideWidget->TakeWidget());
+			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock); 
+			PC->bShowMouseCursor = true;
+			PC->SetInputMode(InputMode);
+		} 
+		else
+		{  
+			PC->SetShowMouseCursor(false);
+			PC->SetInputMode(FInputModeGameOnly());
+		}
+
+		FTimerHandle DelayFunctionTimerHandle;
+		float DelayTime = 0.2f;
+		GetWorld()->GetTimerManager().SetTimer(DelayFunctionTimerHandle, [this]() {
+			
+			GameGuideWidget->ToggleGuideVisibility(); 
+			
+			}, DelayTime, false);
+		
+	}
 }

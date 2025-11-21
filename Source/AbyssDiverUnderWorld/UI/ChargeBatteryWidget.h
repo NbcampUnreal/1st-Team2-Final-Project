@@ -11,6 +11,7 @@ class URichTextBlock;
 class UADInventoryComponent;
 class UEquipUseComponent;
 class UButton;
+class UNoticeWidget;
 struct FFADItemDataRow;
 
 UENUM()
@@ -42,6 +43,8 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	bool CanCharge();
+
+	bool HasBattery();
 
 	void ChargeBatteryAmount();
 
@@ -76,12 +79,13 @@ private:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<URichTextBlock> DPVBatteryText;
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<URichTextBlock> NVBatteryText;
-
+	TObjectPtr<URichTextBlock> NVBatteryText; 
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UButton> DPVButton;
+	TObjectPtr<UButton> DPVButton; 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> NVButton;
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UNoticeWidget> NoticeWidget;
 
 	UPROPERTY()
 	TObjectPtr<UADInventoryComponent> InventoryComp = nullptr;

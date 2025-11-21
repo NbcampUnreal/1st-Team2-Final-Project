@@ -13,12 +13,13 @@ AHorrorCreatureAIController::AHorrorCreatureAIController()
 
 void AHorrorCreatureAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
-	if (!IsValid(Monster)) return;
+	AMonster* OwningMonster = GetOwningMonster();
+	if (!OwningMonster) return;
 
-	AHorrorCreature* HorrorMonster = Cast<AHorrorCreature>(Monster);
+	AHorrorCreature* HorrorMonster = Cast<AHorrorCreature>(OwningMonster);
 	if (HorrorMonster && HorrorMonster->GetSwallowedPlayer())
 	{
-		// Ignore detection when swallowed
+		// 만약 삼킨 상태라면 리턴
 		return;
 	}
 

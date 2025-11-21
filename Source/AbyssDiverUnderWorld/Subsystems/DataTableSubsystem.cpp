@@ -6,9 +6,10 @@
 #include "DataRow/FADItemDataRow.h"
 #include "DataRow/FADProjectileDataRow.h"
 #include "DataRow/ButtonDataRow.h"
-#include "DataRow/MapDepthRow.h"
+#include "DataRow/MapDataRow.h"
 #include "DataRow/PhaseGoalRow.h"
 #include "DataRow/ShopItemMeshTransformRow.h"
+#include "DataRow/GameGuideInfoRow.h"
 #include "Logging/LogMacros.h"
 
 void UDataTableSubsystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -47,6 +48,11 @@ void UDataTableSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	{
 		LOGV(Error, TEXT("ItemDataTable is null"));
 	}
+
+	if (UDataTable* GameGuideInfoDataTable = GI->GameGuideInfoData)
+	{
+		GameGuideInfoDataTable->GetAllRows<FGameGuideInfoRow>(TEXT("GameGuideInfoDataTable"), GameGuideInfoTableArray);
+	}
 	
 	ParseUpgradeDataTable(GI);
 
@@ -69,6 +75,10 @@ void UDataTableSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 		{
 			return A->ItemId < B->ItemId;
 		});
+	Algo::Sort(GameGuideInfoTableArray, [](const FGameGuideInfoRow* A, const FGameGuideInfoRow* B)
+		{
+			return A->GuideId < B->GuideId;
+		});
 
 	ParsePhaseGoalDataTable(GI);
 	ParseMapPathDataTable(GI);
@@ -78,7 +88,7 @@ void UDataTableSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 FFADItemDataRow* UDataTableSubsystem::GetItemData(int32 ItemId) const
 {
-	return ItemDataTableArray[ItemId];
+	return ItemDataTableArray.IsValidIndex(ItemId) ? ItemDataTableArray[ItemId] : nullptr;
 }
 
 FFADItemDataRow* UDataTableSubsystem::GetItemDataByName(FName ItemName) const
@@ -123,6 +133,11 @@ FUpgradeDataRow* UDataTableSubsystem::GetUpgradeData(EUpgradeType UpgradeType, u
 FPhaseGoalRow* UDataTableSubsystem::GetPhaseGoalData(EMapName MapName, int32 Phase) const
 {
 	return PhaseGoalTableMap.FindRef(TPair<EMapName, int32>(MapName, Phase));
+}
+
+FGameGuideInfoRow* UDataTableSubsystem::GetGameGuideInfo(int32 GuideId) const
+{
+	return GameGuideInfoTableArray[GuideId];
 }
 
 FString UDataTableSubsystem::GetMapPath(EMapName MapName) const
@@ -240,7 +255,7 @@ void UDataTableSubsystem::ParseShopItemMeshTransformDataTable(UADGameInstance* G
 	LOGV(Log, TEXT("ShopItemMeshTransformTableMap size: %d"), ShopItemMeshTransformTableMap.Num());
 }
 
-FMapDepthRow* UDataTableSubsystem::GetDepthZoneDataRow(FName MapName) const
+FMapDataRow* UDataTableSubsystem::GetMapDataRow(FName MapName) const
 {
 	UADGameInstance* GameInstance = Cast<UADGameInstance>(GetGameInstance());
 	if (GameInstance == nullptr)
@@ -249,13 +264,13 @@ FMapDepthRow* UDataTableSubsystem::GetDepthZoneDataRow(FName MapName) const
 		return nullptr;
 	}
 	
-	const UDataTable* MapDepthTable = GameInstance->MapDepthTable;
-	if (MapDepthTable == nullptr)
+	const UDataTable* MapDataTable = GameInstance->MapDataTable;
+	if (MapDataTable == nullptr)
 	{
 		LOGV(Error, TEXT("MapDepthTable is null"));
 		return nullptr;
 	}
 		 
 	static const FString Context(TEXT("DepthZoneDataTable"));
-	return MapDepthTable->FindRow<FMapDepthRow>(MapName, Context);
+	return MapDataTable->FindRow<FMapDataRow>(MapName, Context);
 }

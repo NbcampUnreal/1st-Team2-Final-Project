@@ -9,7 +9,9 @@
 #include "Kismet/GameplayStatics.h"
 
 AADTutorialPlayerController::AADTutorialPlayerController()
+	: Super()
 {
+	
 }
 
 void AADTutorialPlayerController::BeginPlay()
@@ -200,10 +202,7 @@ void AADTutorialPlayerController::OnInventoryStarted(const FInputActionValue& Va
 
 		if (GS && GS->GetCurrentPhase() == ETutorialPhase::Step6_Inventory)
 		{
-			if (CachedTutorialManager->IsGaugeObjectiveActive())
-			{
-				CachedTutorialManager->NotifyInteractionStart();
-			}
+			CachedTutorialManager->NotifyInteractionStart();
 		}
 	}
 }

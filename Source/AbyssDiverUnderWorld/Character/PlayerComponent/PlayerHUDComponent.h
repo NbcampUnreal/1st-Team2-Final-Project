@@ -3,11 +3,14 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "UI/PlayerStatusWidget.h"
+#include "UI/EndingWidget.h"
+#include "InputAction.h"
 #include "PlayerHUDComponent.generated.h"
 
 enum class EMissionType : uint8;
 class USoundSubsystem;
 class UDepthComponent;
+class UFlipbookWidget;
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class ABYSSDIVERUNDERWORLD_API UPlayerHUDComponent : public UActorComponent
@@ -61,6 +64,10 @@ public:
     UFUNCTION()
     void UpdateStaminaHUD(float CurrentStamina, float MaxStamina);
 
+    /** 환경 상태가 변환될 때 호출되는 함수 */
+    UFUNCTION()
+    void UpdateEnvironmentState(EEnvironmentState OldEnvironmentState, EEnvironmentState NewEnvironmentState);
+
     UFUNCTION()
     void UpdateHealthHUD(int32 CurrentHealth, int32 MaxHealth);
 
@@ -71,16 +78,29 @@ public:
 
     void PlayNextPhaseAnim(int32 NextPhaseNumber);
     void SetCurrentPhaseOverlayVisible(bool bShouldVisible);
+    void SetMaxPhaseNumber(int32 NewMaxPhaseNumber);
 
-    void BindDeptWidgetFunction(UDepthComponent* DepthComp);
+    void BindDepthWidgetFunction(UDepthComponent* DepthComp);
 
     /** HUD 위젯을 숨긴다. */
     void HideHudWidget();
 
-    /** 위젯을 보이게 한다. */
+    /** HUD 위젯을 보이게 한다. */
     void ShowHudWidget();
 
     void SetActiveRadarWidget(bool bShouldActivate);
+
+    UFUNCTION(Client, Reliable)
+    void C_ShowConfirmWidget(AActor* RequestInteractableActor);
+    void C_ShowConfirmWidget_Implementation(AActor* RequestInteractableActor);
+
+    UFUNCTION(Server, Reliable)
+    void S_ReportConfirm(AActor* RequestInteractableActor, bool bConfirmed);
+    void S_ReportConfirm_Implementation(AActor* RequestInteractableActor, bool bConfirmed);
+
+    void ShowFirstClearEndingWidget();
+
+    void ToggleGuide();
     
 protected:
     
@@ -151,6 +171,28 @@ private:
     UPROPERTY()
     TObjectPtr<class URadar2DWidget> Radar2DWidget;
 
+    /** Interact Popup Widget Class */
+    UPROPERTY(EditAnywhere)
+    TSubclassOf<class UInteractPopupWidget> PopupWidgetClass;
+
+    UPROPERTY(EditDefaultsOnly, Category = UI, meta = (AllowPrivateAccess = "true"))
+    TSubclassOf<UEndingWidget> FirstClearWidgetClass;
+
+    UPROPERTY()
+    TObjectPtr<UEndingWidget> FirstClearWidgetInstance;
+
+    UPROPERTY(EditDefaultsOnly, Category = UI, meta = (AllowPrivateAccess = "true"))
+    TSubclassOf<class UGameGuideWidget> GameGuideWidgetClass;
+
+    UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = true))
+    TObjectPtr<UGameGuideWidget> GameGuideWidget;
+    
+    UPROPERTY(EditDefaultsOnly, Category = UI, meta = (AllowPrivateAccess = "true"))
+    TSubclassOf<UFlipbookWidget> FlipbookWidgetClass;
+
+    UPROPERTY()
+    TObjectPtr<UFlipbookWidget> FlipbookWidgetInstance;
+    
 #pragma endregion
 
 #pragma region Getter Setter
@@ -161,7 +203,11 @@ public:
 
     UMissionsOnHUDWidget* GetMissionsOnHudWidget() const;
     USoundSubsystem* GetSoundSubsystem();
-    UPlayerStatusWidget* GetPlayerStatusWidget() ;
+    UPlayerStatusWidget* GetPlayerStatusWidget();
+    UFlipbookWidget* GetFlipbookWidget() const;
+
+    /** Crosshair Widget 반환 */
+    UCrosshairWidget* GetCrosshairWidget() const { return CrosshairWidget; }
 
 #pragma endregion
 };

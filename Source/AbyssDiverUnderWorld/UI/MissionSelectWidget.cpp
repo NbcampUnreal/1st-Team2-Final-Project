@@ -5,6 +5,7 @@
 #include "Components/ScrollBox.h"
 #include "Components/Button.h"
 #include "Components/Border.h"
+#include "Components/Overlay.h"
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
 #include "Components/VerticalBoxSlot.h"
@@ -27,7 +28,7 @@ void UMissionSelectWidget::NativeConstruct()
         Button_MissionReset->SetIsEnabled(true); 
     }
 
-    UpdateMissionList(0);
+    UpdateMissionList(0, false);
 
     WarningBorder->SetVisibility(ESlateVisibility::Hidden);
 
@@ -63,10 +64,20 @@ void UMissionSelectWidget::UpdateEntrys()
     }
 }
 
-void UMissionSelectWidget::UpdateMissionList(int8 CurrentLevelIndex)
+void UMissionSelectWidget::UpdateMissionList(int8 CurrentLevelIndex, bool bIsUnlock)
 {
     if (CurrentLevelIndex == 0) return;
     ScrollBox_MissionList->ClearChildren();
+    if (bIsUnlock)
+    {
+        LockImage->SetVisibility(ESlateVisibility::Hidden);
+        TouchDisplay->SetVisibility(ESlateVisibility::Visible);
+    }
+    else
+    {
+        LockImage->SetVisibility(ESlateVisibility::Visible);
+        TouchDisplay->SetVisibility(ESlateVisibility::HitTestInvisible);
+    }
 
     const TArray<FMissionData>& Missions = GetGameInstance()->GetSubsystem<UMissionSubsystem>()->GetMissionDataForUI();
     Algo::Sort(Missions, [](const FMissionData& A, const FMissionData& B)

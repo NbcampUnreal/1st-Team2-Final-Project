@@ -1,41 +1,37 @@
 #include "Framework/ADPlayerController.h"
 
+#include "AbyssDiverUnderWorld.h"
 #include "ADCampGameMode.h"
+#include "ADGameInstance.h"
 #include "ADInGameState.h"
 #include "ADPlayerState.h"
-#include "AbyssDiverUnderWorld.h"
 #include "SettingsManager.h"
-#include "ADGameInstance.h"
+#include "Subsystems/SoundSubsystem.h"
+#include "Subsystems/DataTableSubsystem.h"
 
-#include "Inventory/ADInventoryComponent.h"
-#include "DataRow/PhaseGoalRow.h"
-#include "UI/InteractionDescriptionWidget.h"
-#include "Interactable/Item/Component/ADInteractionComponent.h"
 #include "Character/UnderwaterCharacter.h"
 #include "Character/PlayerComponent/PlayerHUDComponent.h"
+#include "Character/PlayerComponent/ShieldComponent.h"
+#include "DataRow/PhaseGoalRow.h"
+#include "Interactable/Item/Component/ADInteractionComponent.h"
+#include "Inventory/ADInventoryComponent.h"
+#include "UI/InteractionDescriptionWidget.h"
+#include "UI/HoldInteractionWidget.h"
+#include "UI/CrosshairWidget.h"
+#include "UI/PauseWidget.h"
 
+#include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputMappingContext.h"
-#include "EnhancedInputComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "Character/ADSpectatorPawn.h"
-#include "Kismet/GameplayStatics.h"
 
-#include "UI/LoadingScreenWidget.h"
-
-#include "Camera/PlayerCameraManager.h"
 #include "TimerManager.h"
-#include "Character/PlayerComponent/ShieldComponent.h"
+#include "Camera/PlayerCameraManager.h"
+#include "Character/PlayerComponent/CameraEffectComponent.h"
 #include "Engine/World.h"
-#include "Subsystems/SoundSubsystem.h"
 
-#include "UI/HoldInteractionWidget.h"
-
-#include "Framework/ADTutorialGameMode.h"
-#include "Framework/ADTutorialGameState.h"
-#include "Character/UnderwaterCharacter.h"
 #include "Engine/PawnIterator.h"
-
-#include "Kismet/GameplayStatics.h"
 
 AADPlayerController::AADPlayerController()
 {
@@ -63,6 +59,15 @@ void AADPlayerController::BeginPlay()
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = GetLocalPlayer()->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
 		{
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
+		}
+
+		if (UADGameInstance* GameInstance = Cast<UADGameInstance>(GetGameInstance()))
+		{
+			if (USettingsManager* SettingsManager = GameInstance->GetSettingsManager())
+			{
+				const FUserMouseSettings MouseSettings = SettingsManager->GetCachedMouseSettings();
+				SettingsManager->ApplyMouseSettings(MouseSettings, this);
+			}
 		}
 	}
 }
@@ -110,9 +115,7 @@ void AADPlayerController::SetPawn(APawn* InPawn)
 				}
 			}
 		}
-	}
-
-
+	} 
 }
 
 void AADPlayerController::PostNetInit()
@@ -137,6 +140,18 @@ void AADPlayerController::PostSeamlessTravel()
 	Super::PostSeamlessTravel();
 
 	OnPostSeamlessTravel();
+}
+
+void AADPlayerController::SetIgnoreMoveInput(bool bNewMoveInput)
+{
+	Super::SetIgnoreMoveInput(bNewMoveInput);
+	if (bNewMoveInput)
+	{
+		if (ACharacter* ControlledCharacter = GetCharacter())
+		{
+			ControlledCharacter->ResetJumpState();
+		}
+	}
 }
 
 void AADPlayerController::C_OnPreClientTravel_Implementation()
@@ -190,6 +205,7 @@ void AADPlayerController::C_StartCameraBlink_Implementation(FColor FadeColor, FV
 {
 	if (PlayerCameraManager != nullptr)
 	{
+		// Camera Fade Out 시작, FadeStartTime이 0.0f 이하일 경우 바로 FadeColor로 지정된 알파 값으로 변경
 		const float BlankFadeStartAlpha = FadeAlpha.X >= 0.0f ? FadeAlpha.X : PlayerCameraManager->FadeAmount;
 		const float BlankFadeEndAlpha = FadeAlpha.Y;
 		if (FadeStartTime > 0.0f)
@@ -201,15 +217,16 @@ void AADPlayerController::C_StartCameraBlink_Implementation(FColor FadeColor, FV
 			PlayerCameraManager->SetManualCameraFade(BlankFadeEndAlpha, FadeColor.ReinterpretAsLinear(), false);
 		}
 
-		TWeakObjectPtr WeakActor = this;
+		// Fade Delay 만큼 대기 후 Fade In 
+		TWeakObjectPtr WeakThisController = this;
 		FTimerDelegate TimerDelegate;
 		TimerDelegate.BindWeakLambda(this, [=]()
 		{
-			if (WeakActor.IsValid())
+			if (WeakThisController.IsValid())
 			{
-				if (WeakActor->PlayerCameraManager != nullptr)
+				if (WeakThisController->PlayerCameraManager != nullptr)
 				{
-					WeakActor->PlayerCameraManager->StartCameraFade(BlankFadeEndAlpha, BlankFadeStartAlpha, FadeEndTime, FadeColor.ReinterpretAsLinear(), false, true);
+					WeakThisController->PlayerCameraManager->StartCameraFade(BlankFadeEndAlpha, BlankFadeStartAlpha, FadeEndTime, FadeColor.ReinterpretAsLinear(), false, true);
 				}
 			}
 		});
@@ -222,9 +239,20 @@ void AADPlayerController::C_StartCameraBlink_Implementation(FColor FadeColor, FV
 	}
 }
 
-bool AADPlayerController::IsCameraBlanking() const
+bool AADPlayerController::IsCameraBlinking() const
 {
 	return GetWorldTimerManager().IsTimerActive(CameraBlankTimerHandle) || (PlayerCameraManager && PlayerCameraManager->bEnableFading);
+}
+
+void AADPlayerController::C_StopCameraBlink_Implementation()
+{
+	// Camera Fade를 중지하고 원래 상태로 복구
+	if (PlayerCameraManager != nullptr)
+	{
+		PlayerCameraManager->StopCameraFade();
+		PlayerCameraManager->SetManualCameraFade(0.0f, FLinearColor::Black, false);				
+	}
+	GetWorldTimerManager().ClearTimer(CameraBlankTimerHandle);
 }
 
 void AADPlayerController::ShowPlayerHUD()
@@ -278,7 +306,7 @@ void AADPlayerController::S_SetInvincible_Implementation(bool bIsInvincible)
 	SetInvincible(bIsInvincible);
 }
 
-void AADPlayerController::C_PlaySound_Implementation(ESFX SoundType, float VolumeMultiplier, float PitchMultiplier)
+void AADPlayerController::C_PlaySound_Implementation(ESFX SoundType, float VolumeMultiplier)
 {
 	if (UGameInstance* GameInstance = GetGameInstance())
 	{
@@ -303,6 +331,127 @@ void AADPlayerController::SetActiveRadarWidget(bool bShouldActivate)
 	}
 
 	PlayerHUDComponent->SetActiveRadarWidget(bShouldActivate);
+	if (bShouldActivate)
+	{
+		HideCrosshairWidget();
+	}
+	else
+	{
+		ShowCrosshairWidget();
+	}
+}
+
+void AADPlayerController::AddYawInput(float Val)
+{
+	Super::AddYawInput(Val * MouseXSensitivity);
+}
+
+void AADPlayerController::AddPitchInput(float Val)
+{
+	Super::AddPitchInput(Val * MouseYSensitivity);
+}
+
+void AADPlayerController::SetLookSensitivity(float NewXSensitivity, float NewYSensitivity)
+{
+	MouseXSensitivity = FMath::Clamp(NewXSensitivity, 0.01f, 10.0f);
+	MouseYSensitivity = FMath::Clamp(NewYSensitivity, 0.01f, 10.0f);
+	UE_LOG(AbyssDiver, Display, TEXT("Set Mouse Sensitivity : X: %f, Y: %f"), MouseXSensitivity, MouseYSensitivity);
+}
+
+void AADPlayerController::ShowPauseMenu()
+{
+	if (!IsLocalController())
+		return;
+
+	if (!PauseWidgetInstance)
+	{
+		PauseWidgetInstance = CreateWidget<UPauseWidget>(this, PauseWidgetClass);
+	}
+	if (PauseWidgetInstance && !PauseWidgetInstance->IsInViewport())
+	{
+		PauseWidgetInstance->AddToViewport();
+		PauseWidgetInstance->ShowMainPanel();
+		PauseWidgetInstance->PlayInAnimation();
+
+		FInputModeGameAndUI InputMode;
+		InputMode.SetWidgetToFocus(PauseWidgetInstance->TakeWidget());
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		SetInputMode(InputMode);
+
+		bShowMouseCursor = true;
+		bIsPauseMenuOpened = true;
+
+	}
+
+}
+
+void AADPlayerController::HidePauseMenu()
+{
+	if (!IsLocalController())
+		return;
+
+	if (PauseWidgetInstance)
+	{
+		PauseWidgetInstance->RemoveFromParent();
+	}
+
+	FInputModeGameOnly InputMode;
+	SetInputMode(InputMode);
+
+	// 2) 마우스 커서 숨기기
+	bShowMouseCursor = false;
+	bIsPauseMenuOpened = false;
+}
+
+void AADPlayerController::TogglePauseMenu()
+{
+	if (!PauseWidgetClass)
+		return;
+
+	if (!IsLocalController())
+		return;
+
+	switch (CurrentMenuState)
+	{
+	case EMenuState::None:
+		// Pause 열기
+		ShowPauseMenu();
+
+		CurrentMenuState = EMenuState::PauseMain;
+		break;
+
+	case EMenuState::PauseMain:
+		// Pause 닫기
+		HidePauseMenu();
+
+		CurrentMenuState = EMenuState::None;
+		break;
+
+	case EMenuState::PauseOptions:
+	case EMenuState::PauseSaveLoad:
+		// 옵션이나 저장창일 때 ESC → 메인 메뉴로 돌아가기
+		if (PauseWidgetInstance)
+		{
+			PauseWidgetInstance->ShowMainPanel();
+		}
+		CurrentMenuState = EMenuState::PauseMain;
+		break;
+
+	default:
+		break;
+	}
+	
+}
+
+void AADPlayerController::C_SetRadialBlurEffect_Implementation(bool bEnable)
+{
+	RadialBlurCount = FMath::Max(RadialBlurCount + (bEnable ? 1 : -1), 0);
+	UCameraEffectComponent* CameraEffectComponent = GetPawn() ? GetPawn()->FindComponentByClass<UCameraEffectComponent>() : nullptr;
+	UE_LOG(LogAbyssDiverCharacter, Display, TEXT("C_SetRadialBlurEffect : bEnable=%s, RadialBlurCount=%d"), bEnable ? TEXT("True") : TEXT("False"), RadialBlurCount);
+	if (CameraEffectComponent)
+	{
+		CameraEffectComponent->StartRadialBlurFade(RadialBlurCount > 0);
+	}
 }
 
 void AADPlayerController::BeginSpectatingState()
@@ -357,6 +506,14 @@ void AADPlayerController::SetupInputComponent()
 			EnhancedInput->BindAction(InventoryAction, ETriggerEvent::Started, this, &AADPlayerController::ShowInventory);
 			EnhancedInput->BindAction(InventoryAction, ETriggerEvent::Completed, this, &AADPlayerController::HideInventory);
 		}
+		if (IA_Pause)
+		{
+			EnhancedInput->BindAction(IA_Pause, ETriggerEvent::Started, this, &AADPlayerController::TogglePauseMenu);
+		}
+		if (GuideAction)
+		{
+			EnhancedInput->BindAction(GuideAction, ETriggerEvent::Triggered, this, &AADPlayerController::ToggleGuide);
+		}
 	}
 }
 
@@ -387,6 +544,14 @@ void AADPlayerController::HideInventory(const FInputActionValue& InputActionValu
 				PS->GetInventory()->HideInventory();
 			}
 		}
+	}
+}
+
+void AADPlayerController::ToggleGuide(const FInputActionValue& InputActionValue)
+{
+	if (PlayerHUDComponent)
+	{
+		PlayerHUDComponent->ToggleGuide();
 	}
 }
 
@@ -437,6 +602,94 @@ void AADPlayerController::HideNameWidgets()
 	bIsNameWidgetEnabled = false;
 
 	SetAllNameWidgetsEnabled(bIsNameWidgetEnabled);
+}
+
+void AADPlayerController::ToggleCrosshairWidget()
+{
+	if (bIsCrosshairWidgetVisible)
+	{
+		HideCrosshairWidget();
+	}
+	else
+	{
+		ShowCrosshairWidget();
+	}
+}
+
+void AADPlayerController::ShowCrosshairWidget()
+{
+	bIsCrosshairWidgetVisible = true;
+
+	if (UCrosshairWidget* CrosshairWidget = PlayerHUDComponent->GetCrosshairWidget())
+	{
+		CrosshairWidget->ShowCrosshair();
+	}
+}
+
+void AADPlayerController::HideCrosshairWidget()
+{
+	bIsCrosshairWidgetVisible = false;
+
+	if (UCrosshairWidget* CrosshairWidget = PlayerHUDComponent->GetCrosshairWidget())
+	{
+		CrosshairWidget->HideCrosshair();
+	}
+}
+
+void AADPlayerController::GetItemById(uint8 ItemId)
+{
+	UADGameInstance* GameInstance = GetGameInstance<UADGameInstance>();
+	if (GameInstance == nullptr)
+	{
+		UE_LOG(AbyssDiver, Error, TEXT("Invalid GameInstance"));
+		return;
+	}
+
+	UDataTableSubsystem* DataTableSubsystem = GameInstance->GetSubsystem<UDataTableSubsystem>();
+	if (DataTableSubsystem == nullptr)
+	{
+		UE_LOG(AbyssDiver, Error, TEXT("Cannot find DataTableSubsystem"));
+		return;
+	}
+
+	if (FFADItemDataRow* ItemData = DataTableSubsystem->GetItemData(ItemId))
+	{
+		S_GetItemById(ItemId);
+	}
+	else
+	{
+		UE_LOG(AbyssDiver, Warning, TEXT("Cannot find ItemData for ItemId: %d"), ItemId);
+	}
+}
+
+void AADPlayerController::S_GetItemById_Implementation(uint8 ItemId)
+{
+	UADGameInstance* GameInstance = GetGameInstance<UADGameInstance>();
+	if (GameInstance == nullptr)
+	{
+		UE_LOG(AbyssDiver, Error, TEXT("Invalid GameInstance"));
+		return;
+	}
+
+	UDataTableSubsystem* DataTableSubsystem = GameInstance->GetSubsystem<UDataTableSubsystem>();
+	if (DataTableSubsystem == nullptr)
+	{
+		UE_LOG(AbyssDiver, Error, TEXT("Cannot find DataTableSubsystem"));
+		return;
+	}
+
+	if (FFADItemDataRow* ItemDataRow = DataTableSubsystem->GetItemData(ItemId))
+	{
+		if (AADPlayerState* ADPlayerState = GetPlayerState<AADPlayerState>())
+		{
+			if (UADInventoryComponent* Inventory = ADPlayerState->GetInventory())
+			{
+				FItemData ItemData(*ItemDataRow);
+				ItemData.Quantity = 1;
+				Inventory->AddInventoryItem(ItemData);
+			}
+		}
+	}
 }
 
 void AADPlayerController::SetAllNameWidgetsEnabled(bool bNewEnabled)

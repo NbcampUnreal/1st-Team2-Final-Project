@@ -6,39 +6,10 @@
 #include "ResultScreen.generated.h"
 
 class UTextBlock;
+class UResultScreenSlot;
+struct FResultScreenParams;
+enum class EAliveInfo;
 
-enum class EAliveInfo
-{
-	Alive,
-	Abandoned,
-	Dead,
-	MAX UMETA(Hidden)
-};
-
-struct FResultScreenParams
-{
-	FResultScreenParams()
-	{
-
-	}
-
-	FResultScreenParams(const FString& InPlayerNicName, int32 InContributionScore, int32 InOreScore, EAliveInfo InAliveInfo)
-	{
-		PlayerNickName = InPlayerNicName;
-		ContributionScore = InContributionScore;
-		OreScore = InOreScore;
-		AliveInfo = InAliveInfo;
-	}
-
-	FString PlayerNickName;
-	int32 ContributionScore;
-	int32 OreScore;
-	EAliveInfo AliveInfo;
-};
-
-/**
- * 
- */
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API UResultScreen : public UUserWidget
 {
@@ -52,25 +23,8 @@ protected:
 
 public:
 
-	// Player Index는 1부터 시작
 	void Update(int32 PlayerIndex, const FResultScreenParams& Params);
 
-	// Player Index는 1부터 시작
-	void ChangePlayerNickNameText(int32 PlayerIndex, const FString& NewText);
-
-	// Player Index는 1부터 시작
-	void ChangePlayerAliveText(int32 PlayerIndex, EAliveInfo AliveInfo);
-	void ChangePlayerAliveText(int32 PlayerIndex, const FString& NewText);
-
-	// Player Index는 1부터 시작
-	void ChangePlayerContributionText(int32 PlayerIndex, int32 ContributionScore);
-	void ChangePlayerContributionText(int32 PlayerIndex, const FString& NewText);
-
-	// Player Index는 1부터 시작
-	void ChangePlayerOreText(int32 PlayerIndex, int32 OreScore);
-	void ChangePlayerOreText(int32 PlayerIndex, const FString& NewText);
-
-	// Player Index는 1부터 시작
 	void ChangeTeamMoneyText(int32 NewTeamMoney);
 	void ChangeTeamMoneyText(const FString& NewText);
 
@@ -91,6 +45,9 @@ protected:
 
 	UPROPERTY()
 	TArray<TObjectPtr<UTextBlock>> PlayerOreTextArray;
+
+	UPROPERTY()
+	TArray<TObjectPtr<UResultScreenSlot>> PlayerResultInfosArray;
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UTextBlock> TeamMoneyText;

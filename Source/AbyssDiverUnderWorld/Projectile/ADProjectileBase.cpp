@@ -6,7 +6,7 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "AbyssDiverUnderWorld.h"
-#include "Boss/Boss.h"
+#include "Monster/Boss/Boss.h"
 #include "Monster/Monster.h"
 #include "NiagaraSystem.h"
 #include "NiagaraComponent.h"
@@ -96,8 +96,9 @@ void AADProjectileBase::Activate()
     if (HasAuthority())
     {
         ProjectileMovementComp->SetActive(true);
+        ProjectileMovementComp->PrimaryComponentTick.bCanEverTick = true;
+        ProjectileMovementComp->SetComponentTickEnabled(true);
 
-        float DeactivateDelay = 10.0f;
 	    GetWorld()->GetTimerManager().SetTimer(LifeTimerHandle, this, &AADProjectileBase::Deactivate, DeactivateDelay, false);
         TrailEffect->SetForceSolo(true);
         TrailEffect->Activate();
@@ -115,12 +116,17 @@ void AADProjectileBase::Deactivate()
         TrailEffect->Deactivate();
     }
 
-    if(ObjectPool)
+    if (ObjectPool)
+    {
         ObjectPool->ReturnObject();
+    }
+        
 	GetWorld()->GetTimerManager().ClearTimer(LifeTimerHandle);
     GetWorld()->GetTimerManager().ClearTimer(TrailDeactivateTimerHandle);
     SetOwner(nullptr);
     ProjectileMovementComp->SetActive(false);
+    ProjectileMovementComp->PrimaryComponentTick.bCanEverTick = false;
+    ProjectileMovementComp->SetComponentTickEnabled(false);
 }
 
 void AADProjectileBase::InitializeTransform(const FVector& Location, const FRotator& Rotation)

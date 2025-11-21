@@ -15,6 +15,9 @@ void UMainMenuWidget::NativeConstruct()
 	if (Button_Join)
 		Button_Join->OnClicked.AddDynamic(this, &UMainMenuWidget::OnJoinClicked);
 
+	if (Button_Tutorial)
+		Button_Tutorial->OnClicked.AddDynamic(this, &UMainMenuWidget::OnTutorialClicked);
+
 	if (Button_Options)
 		Button_Options->OnClicked.AddDynamic(this, &UMainMenuWidget::OnOptionsClicked);
 
@@ -24,6 +27,10 @@ void UMainMenuWidget::NativeConstruct()
 	if (Button_Quit)
 		Button_Quit->OnClicked.AddDynamic(this, &	UMainMenuWidget::OnQuitClicked);
 
+	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+	{ 
+		SetPreTutorialButtonsEnabled(GI->bHasPlayedTutorial);
+	} 
 }
 
 void UMainMenuWidget::OnCreateClicked()
@@ -49,6 +56,11 @@ void UMainMenuWidget::OnCreateClicked()
 void UMainMenuWidget::OnJoinClicked()
 {
 	
+}
+
+void UMainMenuWidget::OnTutorialClicked()
+{
+	UGameplayStatics::OpenLevel(this, FName("TutorialPool"));
 }
 
 void UMainMenuWidget::OnOptionsClicked()
@@ -91,20 +103,16 @@ void UMainMenuWidget::OnSessionListWidgetClosed()
 	}
 }
 
-//void UMainMenuWidget::OnOptionsWidgetClosed()
-//{
-//	if (OptionsWidgetInstance)
-//	{
-//		OptionsWidgetInstance->RemoveFromParent();
-//		OptionsWidgetInstance = nullptr;
-//	}
-//}
-//
-//void UMainMenuWidget::OnCreditsWidgetClosed()
-//{
-//	if (CreditsWidgetInstance)
-//	{
-//		CreditsWidgetInstance->RemoveFromParent();
-//		CreditsWidgetInstance = nullptr;
-//	}
-//}
+void UMainMenuWidget::SetPreTutorialButtonsEnabled(bool bEnable)
+{
+	if (bEnable)
+	{
+		Button_Create->SetIsEnabled(true);
+		Button_Join->SetIsEnabled(true);
+	}
+	else
+	{
+		Button_Create->SetIsEnabled(false);
+		Button_Join->SetIsEnabled(false);
+	}
+}

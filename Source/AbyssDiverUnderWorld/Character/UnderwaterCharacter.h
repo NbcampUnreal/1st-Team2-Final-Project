@@ -13,7 +13,6 @@
 #include "UnderwaterCharacter.generated.h"
 
 #if UE_BUILD_SHIPPING
-enum class EMoveDirection : uint8;
 	#define LOG_ABYSS_DIVER_COMPILE_VERBOSITY Error
 #else
 	#define LOG_ABYSS_DIVER_COMPILE_VERBOSITY All
@@ -22,7 +21,7 @@ enum class EMoveDirection : uint8;
 #define LOG_NETWORK(Category, Verbosity, Format, ...) \
 	UE_LOG(Category, Verbosity, TEXT("[%s] %s %s"), LOG_NETMODEINFO, LOG_CALLINFO, *FString::Printf(Format, ##__VA_ARGS__))
 
-enum EDepthZone : int;
+enum EDepthZone : uint8;
 DECLARE_LOG_CATEGORY_EXTERN(LogAbyssDiverCharacter, Log, LOG_ABYSS_DIVER_COMPILE_VERBOSITY);
 
 // @TODO : Character Status Replicate 문제
@@ -203,13 +202,16 @@ public:
 	void StopCaptureState();
 
 	/*
-	 * Bind Character : 로프를 묶은 캐릭터
+	 * Bind Character ----- Rope ----- Bound Character 
+	 * Bind Character : 로프를 묶은 캐릭터, Bound Character를 여러개 묶을 수 있다.
 	 * Bound Character : 로프에 묶인 캐릭터
 	 * Bound Character 중심으로 로직을 작성
 	 * Bind Character, Bound Character를 Replicate해서 구현
+	 * Cable Binding Actor : 로프를 시각화하고 물리 제약을 적용하는 Actor
+	 * Cable Binding Actor는 Bound Character가 소유
 	 */
 
-	/** 캐릭터가 로프에 묶이는 요청을 한다. Authority Node에서만 실행되어야 한다. */
+	/** Bind Character가 Binder Character를 로프에 묶이는 요청을 한다. Authority Node에서만 실행되어야 한다. */
 	void RequestBind(AUnderwaterCharacter* RequestBinderCharacter);
 
 	/** Bound Character 함수. 현재 캐릭터를 UnBind 한다. Binder가 시체를 들고 있을 수 없는 상황에서도 호출된다.
@@ -298,7 +300,14 @@ public:
 	 */
 	void SetNameWidgetEnabled(bool bNewVisibility);
 
+	/** 새로운 위치로 순간이동한다. 순간 이동 후에는 속도를 초기화하며 View Rotation을 설정한다. */
+	void Teleport(const FVector& NewLocation, const FRotator& ViewRotation);
+	
 protected:
+
+	/** 초기 물리 볼륨이 설정됬을 때 호출된다. BeginPlay 다음 프레임에 호출된다. */
+	void OnInitialPhysicsVolumeSet();
+	
 	/** Stat Component의 기본 속도가 변경됬을 때 호출된다. */
 	UFUNCTION()
 	void OnMoveSpeedChanged(float NewMoveSpeed);
@@ -356,7 +365,9 @@ protected:
 	void S_Revive();
 	void S_Revive_Implementation();
 
-	/** Groggy 상태에서 사망까지 걸리는 시간을 계산한다. 사망을 할 수록 기간이 길어진다. */
+	/** Groggy 상태에서 사망까지 걸리는 시간을 계산한다. 사망을 할 수록 기간이 길어진다.
+	 * Groggy Time은 [,0.001]으로 0이상이 되는 것을 보장한다.
+	 */
 	virtual float CalculateGroggyTime(float CurrentGroggyDuration, uint8 CalculateGroggyCount) const;
 	
 	/** 캐릭터 사망 시에 Blueprint에서 호출될 함수 */
@@ -367,7 +378,11 @@ protected:
 	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "OnEnvironmentStateChanged"))
 	void K2_OnEnvironmentStateChanged(EEnvironmentState OldEnvironmentState, EEnvironmentState NewEnvironmentState);
 
-	/** Player State를 기반으로 Player Status 초기화 */
+	/** 현재 맵 데이터 행을 반환 */
+	struct FMapDataRow* GetCurrentMapDataRow() const;
+	
+	/** Player State를 기반으로 Player Status 초기화
+	 * Server는 OnPossessed, Client는 OnRep_PlayerState에서 호출 */
 	void InitPlayerStatus(class AADPlayerState* ADPlayerState);
 
 	/** Upgrade Component의 정보를 바탕으로 초기화 */
@@ -380,6 +395,13 @@ protected:
 	UFUNCTION(NetMulticast, Reliable)
 	void M_StartCaptureState();
 	void M_StartCaptureState_Implementation();
+
+	/** Stop Capture 시의 Camera 효과를 재생
+	 * - Normal 로 복귀 시에는 페이드 아웃 효과
+	 * - Groggy 로 복귀 시에는 Groggy Timer만큼 Camera Fade In 후에 Groggy Fade Out 효과
+	 * - Death 시에는 암전 유지
+	 */
+	void PlayStopCaptureCameraEffect();
 
 	/** Capture State Multicast
 	 * Owner : 암전 효과, 입력 처리
@@ -600,7 +622,7 @@ protected:
 	void SetCameraFirstPerson(bool bFirstPersonCamera);
 	
 	/** 카메라 Transition Update */
-	void UpdateCameraTransition();
+	void UpdateEmoteCameraTransition();
 
 	/** Binder Character 함수. Bound Characters를 저장한다. */
 	void BindToCharacter(AUnderwaterCharacter* BoundCharacter);
@@ -651,6 +673,24 @@ protected:
 	 */
 	void InitNameWidgetEnabled();
 
+	/** Teleport 후에 Client의 Control Rotation을 설정한다. */
+	UFUNCTION(Reliable, Client)
+	void C_ApplyControlRotation(const FRotator& NewControlRotation);
+	void C_ApplyControlRotation_Implementation(const FRotator& NewControlRotation);
+	
+	// — Stagger 처리 메서드 (일단 테스트 용으로 로깅만) —
+	/** 경직 시작: 이동을 비활성화하고 타이머를 설정한다 */
+	void StartStagger(float Duration, AActor* DamageCauser);
+
+	/** 경직 종료: 이동을 재활성화하고 상태를 초기화한다 */
+	void EndStagger();
+
+	/** 카메라 전환을 실행한다. */
+	void StartCameraTransition(float Distance, float Duration);
+
+	/** 카메라 전환 업데이트 함수 */
+	void UpdateCameraTransition();
+	
 private:
 	/** Montage 콜백을 등록 */
 	void SetupMontageCallbacks();
@@ -679,6 +719,16 @@ public:
 	/** 캐릭터의 넉백이 끝났을 때 호출되는 델리게이트 */
 	UPROPERTY(BlueprintAssignable)
 	FOnKnockbackEnd OnKnockbackEndDelegate;
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCaptureStart);
+	/** 캐릭터가 캡쳐 상태에 진입했을 때 호출되는 델리게이트. 모든 노드에서 실행 */
+	UPROPERTY(BlueprintAssignable)
+	FOnCaptureStart OnCaptureStartDelegate;
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCaptureEnd);
+	/** 캐릭터가 캡쳐 상태에서 벗어났을 때 호출되는 델리게이트. 모든 노드에서 실행 */
+	UPROPERTY(BlueprintAssignable)
+	FOnCaptureEnd OnCaptureEndDelegate;
 	
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnGroggy);
 	/** 캐릭터가 그로기 상태에 진입했을 때 호출되는 델리게이트 */
@@ -686,7 +736,7 @@ public:
 	FOnGroggy OnGroggyDelegate;
 
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnCharacterStateChanged, AUnderwaterCharacter*, Character, ECharacterState, OldCharacterState, ECharacterState, NewCharacterState);
-	/** 캐릭터 상태가 변경되었을 때 호출되는 델리게이트 */
+	/** 캐릭터 상태가 변경되었을 때 호출되는 델리게이트, 상태에 진입했을 경우 Capture 상태일 수도 있는 것을 확인해야 한다. */
 	UPROPERTY(BlueprintAssignable)
 	FOnCharacterStateChanged OnCharacterStateChangedDelegate;
 
@@ -741,6 +791,14 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Character|Emote")
 	FOnEmoteStart OnEmoteEndDelegate;
 
+	DECLARE_MULTICAST_DELEGATE(FOnGroggyRevive);
+	/** 그로기에 걸린 팀원 부활 시 호출되는 델리게이트 */
+	FOnGroggyRevive OnGroggyReviveDelegate;
+
+	DECLARE_MULTICAST_DELEGATE_OneParam(FOnHiddenChanged, bool /* bNewHidden */);
+	/** 캐릭터의 Hidden 상태가 변경되었을 때 호출되는 델리게이트 */
+	FOnHiddenChanged OnHiddenChangedDelegate;
+
 	UPROPERTY(VisibleAnywhere, Category = "Mining")
 	/** 현재 1p에 장착된 Tool 인스턴스 */
 	TObjectPtr<AActor> SpawnedTool;
@@ -758,6 +816,8 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = "Mining")
 	/** 현재 3p에 장착된 Tool 인스턴스 */
 	TObjectPtr<AActor> SpawnedTool3P;
+
+	uint8 bIsMining : 1 = false;
 
 private:
 
@@ -816,7 +876,7 @@ private:
 
 	/** 카메라 Transition에 걸리는 시간 */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Emote", meta = (AllowPrivateAccess = "true", ClampMin = "0.0"))
-	float CameraTransitionDuration;
+	float EmoteCameraTransitionDuration;
 
 	/** Emote Camera 시에 Spring Arm 길이 */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Emote", meta = (AllowPrivateAccess = "true", ClampMin = "0.0"))
@@ -877,11 +937,12 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float NormalLookSensitivity;
 
-	/** Fade 된 상태에서 Normal 상태로 전이됬을 때 Fade In 되는 시간 */
+	/** Fade 된 상태에서 Normal 상태로 전이됬을 때 Camera Fade In 되는 시간 */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Normal", meta = (AllowPrivateAccess = "true"))
 	float NormalStateFadeInDuration;
 	
-	/** 그로기 상태에서 사망까지 걸리는 시간. 그로기 상태에 진입할 떄마다 줄어든다. */
+	/** 그로기 상태에서 사망까지 걸리는 시간. 그로기 종료 시에 Groggy Count에 따라서 결정되고 다음 Groggy 시에 적용된다.
+	 * 현재 그로기 시간을 알고 싶으면 GetRemainGroggyTime을 호출 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true"))
 	float GroggyDuration;
 
@@ -889,12 +950,12 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true", ClampMin = "0.0"))
 	float GroggyHitPenalty;
 
-	/** 그로기 상태에 진입될 떄마다 감소하는 Groggy Duration 비율. [0, 1]의 범위로 설정한다. 0.3일 경우 0.7배로 감소한다. */
+	/** 그로기 상태에 진입될 때마다 감소하는 Groggy Duration 비율. [0, 1]의 범위로 설정한다. 0.3일 경우 0.7배로 감소한다. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true", ClampMin = "0.0", ClampMax = "1.0"))
 	float GroggyReductionRate;
 
 	/** 그로기 상태를 계산할 때 최소 그로기 상태 시간. GroggyDuration * GroggyReductionRate보다 작을 경우 이 값으로 설정한다. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character|Groggy", meta = (AllowPrivateAccess = "true", ClampMin = "0.001"))
 	float MinGroggyDuration;
 
 	/** 그로기 상태에 진입한 횟수. uint8이라서 오버플로우에 주의 */
@@ -911,6 +972,9 @@ private:
 
 	/** 그로기에서 사망 전이 Timer */
 	FTimerHandle GroggyTimer;
+
+	/** Capture State에서 탈출 후에 그로기 카메라 페이드 인 Timer */
+	FTimerHandle GroggyCameraFadeTimer;
 
 	/** 그로기 상태에서의 LookSensitivity. Groggy 상태에 진입할 때마다 LookSensitivity를 이 값으로 설정한다. */
 	UPROPERTY(EditDefaultsOnly, Category = "Character|Groggy")
@@ -978,6 +1042,10 @@ private:
 	/** Capture 상태에서 Fade Out / In 되는 시간 */
 	UPROPERTY(EditAnywhere, Category = Character, meta = (AllowPrivateAccess = "true"))
 	float CaptureFadeTime;
+
+	/** State를 변환해야 하나, Capture State 이기 때문에 Pending된 상태 */
+	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	uint8 bPendingDeathAfterCapture : 1 = 0;
 
 	/** 피격 시의 출혈 효과를 내는 Noise System Power */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
@@ -1209,7 +1277,7 @@ private:
 
 	/** 인벤토리 컴포넌트 캐시 */
 	UPROPERTY()
-	TObjectPtr<class UADInventoryComponent> CachedInventoryComponent;
+	TWeakObjectPtr<class UADInventoryComponent> InventoryWeakPtr;
 
 	/** 장착 아이템 렌더링을 위한 컴포넌트 */
 	UPROPERTY()
@@ -1217,6 +1285,9 @@ private:
 
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<URadar2DComponent> RadarComponent;
+
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<class UCameraEffectComponent> CameraEffectComponent;
 
 	/** Tool 소켓 명 (1P/3P 공용) */
 	FName LaserSocketName = TEXT("Laser");
@@ -1247,9 +1318,11 @@ private:
 	UPROPERTY(ReplicatedUsing = OnRep_BoundCharacters, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TArray<TObjectPtr<AUnderwaterCharacter>> BoundCharacters;
 
+	/** 시체 로프를 연결할 CableBindingActor 클래스 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<class ACableBindingActor> CableBindingActorClass;
-	
+
+	/** 시체를 연결하는 로프 클래스 엑터, BoundCharacter가 소유하고 있다. */
 	UPROPERTY()
 	TObjectPtr<class ACableBindingActor> CableBindingActor;
 
@@ -1273,6 +1346,47 @@ private:
 	TWeakObjectPtr<class USoundSubsystem> SoundSubsystem;
 	
 	uint8 bIsMovementBlockedByTutorial : 1;
+
+	/** 캐릭터 상태 잠금에 대한 bool. 변수 Tutorial에서 상태가 바뀌지 않도록 하는데 사용 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	uint8 bIsDeathLocked : 1;
+
+	// — Stagger 상태 변수 —
+	/** 현재 경직 중인지 여부 */
+	uint8  bIsStaggered : 1 = false;
+
+	/** 현재 경직 종료 예정 시각(World TimeSeconds) */
+	float StaggerEndTime = 0.f;
+
+	/** 경직 종료를 위한 타이머 */
+	FTimerHandle StaggerTimerHandle;
+
+	/** 현재 카메라 전환 타겟 거리 */
+	float CameraTransitionTargetLength = 0.f;
+
+	/** 현재 카메라 전환 진행 시간 */
+	float CameraTransitionDuration = 0.f;
+
+	/** 현재 카메라 전환 경과 시간 */
+	float CameraTransitionElapsedTime = 0.f;
+
+	/** 카메라 전환 시작 길이 */
+	float CameraTransitionStartLength = 0.f;
+	
+	/** 그로기 상태 카메라 전환 길이 */
+	UPROPERTY(EditDefaultsOnly)
+	float GroggyCameraTransitionLength = 350.0f;
+
+	/** 그로기 상태 카메라 전환 시간 */
+	UPROPERTY(EditDefaultsOnly)
+	float GroggyCameraTransitionDuration = 0.5f;
+
+	/** 카메라 전환 타이머 핸들 */
+	FTimerHandle CameraTransitionTimer;
+
+	/** 카메라 위치 갱신 주기 */
+	UPROPERTY(EditDefaultsOnly)
+	float CameraUpdateInterval = 0.016f;
 	
 #pragma endregion
 
@@ -1414,10 +1528,13 @@ public:
 	/** 캐릭터가 현재 Capture State 인지 여부를 반환 */
 	FORCEINLINE bool IsCaptured() const { return bIsCaptured; }
 
+	/** 캐릭터의 소유자 AADPlayerController 반환 */
 	FORCEINLINE AADPlayerController* GetOwnerController() const { return OwnerController; }
 
 	/** 깊이 컴포넌트를 반환 */
 	FORCEINLINE UDepthComponent* GetDepthComponent() const { return DepthComponent; }
+
+	FORCEINLINE UUnderwaterEffectComponent* GetEffectComponent() const { return UnderwaterEffectComponent; }
 
 	FORCEINLINE UInputAction* GetSprintAction() const { return SprintAction; }
 	FORCEINLINE UInputAction* GetRadarAction() const { return RadarAction; }
@@ -1429,12 +1546,23 @@ public:
 	FORCEINLINE UInputAction* GetSelectInventorySlot3() const { return EquipSlot3Action; }
 
 	void SetMovementBlockedByTutorial(bool bIsBlocked);
+
+	/** 캐릭터 상태 변환을 잠그는 함수 */
+	FORCEINLINE void SetIsCharacterStateLocked(const bool bNewDeathLocked) { bIsDeathLocked = bNewDeathLocked; }
 	
 	/** 현재 캐릭터의 이동 방향을 반환. Server와 Client가 동기화되어 있다. */
 	FORCEINLINE EMoveDirection GetMoveDirection() const { return MoveDirection; }
 
 	/** 현재 캐릭터가 스프린트를 할 수 있는지 여부를 반환. 전방 이동이 있을 경우에만 스프린트를 할 수 있다. Server / Client 복제됨 */
 	bool CanSprint() const;
+
+	/** 캐릭터의 채광 상태를 변경하는 함수*/
+	FORCEINLINE void SetIsMining(bool bNewIsMining) { bIsMining = bNewIsMining; }
+	
+	/** 캐릭터의 현재 채광 상태를 반환하는 함수*/
+	FORCEINLINE bool IsMining() { return bIsMining; }
+
+	FORCEINLINE UCameraEffectComponent* GetCameraEffectComponent() const { return CameraEffectComponent; }
 	
 protected:
 

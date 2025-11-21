@@ -18,17 +18,20 @@ enum class ETutorialPhase : uint8
 	Step6_Inventory,
 	Step7_Drone,
 	Dialogue_03,
+	Dialogue_LightOut,
 	Step8_LightToggle,
 	Step9_Items,
-	Dialogue_06,          
+	Dialogue_06,
 	Step10_Battery,
 	Step11_Drop,
-	Dialogue_05,          
+	Dialogue_05,
+	Dialogue_08,
 	Step12_OxygenWarning,
 	Step13_Revive,
 	Dialogue_04,
 	Step14_Die,
 	Step15_Resurrection,
+	Dialogue_07,
 	Complete
 };
 
@@ -39,13 +42,15 @@ enum class ETutorialHintKey : uint8
 	Move UMETA(DisplayName = "Move"),
 	Sprint UMETA(DisplayName = "Sprint"),
 	Oxygen UMETA(DisplayName = "Oxygen"),
-	Radar UMETA(DisplayName = "Radar"),
+	Radar UMETA(DisplayName = "Radar"),         
 	Looting UMETA(DisplayName = "Looting"),
-	Inventory UMETA(DisplayName = "Inventory"),
+	Inventory UMETA(DisplayName = "Inventory"), 
 	Drone UMETA(DisplayName = "Drone"),
 	Flashlight UMETA(DisplayName = "Flashlight"),
-	Items UMETA(DisplayName = "Items"), 
-	Revive UMETA(DisplayName = "Revive")
+	NightVision UMETA(DisplayName = "NightVision"),
+	Items UMETA(DisplayName = "Items"),
+	Revive UMETA(DisplayName = "Revive"),
+	Equipment UMETA(DisplayName = "Equipment") 
 };
 
 UENUM(BlueprintType)

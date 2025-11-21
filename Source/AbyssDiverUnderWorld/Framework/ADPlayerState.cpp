@@ -12,7 +12,11 @@ AADPlayerState::AADPlayerState()
 	, TotalOreMinedCount(0)
 	, SafeReturnCount(0)
 	, PersonalCredit(0)
+	, Damage(0)
 	, MonsterKillCount(0)
+	, Assists(0)
+	, GroggyRevive(0)
+	, CorpseRecovery(0)
 	, OreMinedCount(0)
 	, OreCollectedValue(0)
 	, bIsSafeReturn(false)
@@ -30,6 +34,7 @@ AADPlayerState::AADPlayerState()
 void AADPlayerState::BeginPlay()
 {
 	Super::BeginPlay();
+	
 
 	APlayerController* PC = GetPlayerController();
 	if (PC == nullptr || HasAuthority() == false)
@@ -76,11 +81,16 @@ void AADPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME(AADPlayerState, TotalOreMinedCount);
 	DOREPLIFETIME(AADPlayerState, SafeReturnCount);
 	DOREPLIFETIME(AADPlayerState, PersonalCredit);
+	DOREPLIFETIME(AADPlayerState, Damage);
 	DOREPLIFETIME(AADPlayerState, MonsterKillCount);
+	DOREPLIFETIME(AADPlayerState, Assists);
 	DOREPLIFETIME(AADPlayerState, OreMinedCount);
 	DOREPLIFETIME(AADPlayerState, OreCollectedValue);
 	DOREPLIFETIME(AADPlayerState, bIsSafeReturn);
 	DOREPLIFETIME(AADPlayerState, PlayerIndex);
+	DOREPLIFETIME(AADPlayerState, GroggyRevive);
+	DOREPLIFETIME(AADPlayerState, CorpseRecovery);
+	DOREPLIFETIME(AADPlayerState, bIsDead);
 }
 
 void AADPlayerState::CopyProperties(APlayerState* PlayerState)
@@ -108,9 +118,9 @@ void AADPlayerState::CopyProperties(APlayerState* PlayerState)
 		return;
 	}
 
-	LOGV(Log, TEXT("Id Copied, Old : %d, New : %d, Net : %s"), PlayerIndex, NextPlayerState->GetPlayerIndex(), *UniqueNetIdRepl->ToString());
-	
 	NextPlayerState->SetPlayerIndex(PlayerIndex);
+	LOGV(Log, TEXT("Id Copied, Old : %d, New : %d, Net : %s"), PlayerIndex, NextPlayerState->GetPlayerIndex(), *UniqueNetIdRepl->ToString());
+
 	if (UUpgradeComponent* NextUpgradeComponent = NextPlayerState->GetUpgradeComp())
 	{
 		NextUpgradeComponent->CopyProperties(GetUpgradeComp());

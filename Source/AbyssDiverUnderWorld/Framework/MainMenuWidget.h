@@ -29,6 +29,9 @@ protected:
 	void OnJoinClicked();
 
 	UFUNCTION()
+	void OnTutorialClicked();
+
+	UFUNCTION()
 	void OnOptionsClicked();
 
 	UFUNCTION()
@@ -36,6 +39,9 @@ protected:
 
 	UFUNCTION()
 	void OnQuitClicked();
+
+	UFUNCTION(BlueprintCallable)
+	void SetPreTutorialButtonsEnabled(bool bEnable);
 
 	void OnCreateTeamWidgetClosed();
 
@@ -45,13 +51,15 @@ protected:
 
 	void OnCreditsWidgetClosed();
 
-
 protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> Button_Create;
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> Button_Join;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UButton> Button_Tutorial;
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> Button_Options;

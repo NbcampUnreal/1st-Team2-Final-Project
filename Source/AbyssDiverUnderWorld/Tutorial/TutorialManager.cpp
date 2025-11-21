@@ -11,16 +11,20 @@
 #include "Framework/ADTutorialPlayerController.h"
 #include "Framework/ADTutorialGameMode.h"
 #include "Blueprint/UserWidget.h"
+#include "Components/ProgressBar.h"
+#include "Animation/WidgetAnimation.h"
 
 ATutorialManager::ATutorialManager()
 {
-	UE_LOG(LogTemp, Error, TEXT("!!!!!!!! TUTORIAL MANAGER CONSTRUCTED !!!!!"));
+	//UE_LOG(LogTemp, Error, TEXT("!!!!!!!! TUTORIAL MANAGER CONSTRUCTED !!!!!"));
 	PrimaryActorTick.bCanEverTick = true;
 	CurrentStepIndex = 0;
 
 	bIsPlayerHoldingKey = false;
 	bIsGaugeObjectiveActive = false;
 	DisplayGaugeValue = 0.f;
+
+	GaugeProgressBar = nullptr;
 }
 
 void ATutorialManager::BeginPlay()
@@ -38,7 +42,7 @@ void ATutorialManager::BeginPlay()
 		SubtitleWidget = CreateWidget<UTutorialSubtitle>(GetWorld(), TutorialSubtitleClass);
 		if (SubtitleWidget)
 		{
-			SubtitleWidget->AddToViewport(-100);
+			SubtitleWidget->AddToViewport(3);
 			SubtitleWidget->SetVisibility(ESlateVisibility::Hidden);
 		}
 	}
@@ -64,12 +68,12 @@ void ATutorialManager::BeginPlay()
 
 	if (GaugeWidgetClass)
 	{
-		GaugeWidget = CreateWidget<UUserWidget>(GetWorld(), GaugeWidgetClass);
+		GaugeWidget = CreateWidget<UGaugeWidget>(GetWorld(), GaugeWidgetClass);
 		if (GaugeWidget)
 		{
 			GaugeWidget->AddToViewport(-10);
 			GaugeWidget->SetVisibility(ESlateVisibility::Collapsed);
-			GaugeProgressBar = Cast<UProgressBar>(GaugeWidget->GetWidgetFromName(TEXT("GaugeBar")));
+			GaugeProgressBar = GaugeWidget->GetGaugeProgressBar();
 		}
 	}
 
@@ -78,8 +82,8 @@ void ATutorialManager::BeginPlay()
 		HighlightingWidget = CreateWidget<UTutorialHighlighting>(GetWorld(), HighlightingWidgetClass);
 		if (HighlightingWidget)
 		{
-			HighlightingWidget->AddToViewport(-5); 
-			HighlightingWidget->HighlightEnd(); 
+			HighlightingWidget->AddToViewport(2);
+			HighlightingWidget->HighlightEnd();
 		}
 	}
 
@@ -113,7 +117,7 @@ void ATutorialManager::Tick(float DeltaTime)
 		DisplayGaugeValue = FMath::FInterpTo(DisplayGaugeValue, CurrentGaugeValue, DeltaTime, GaugeInterpolationSpeed);
 	}
 
-	if (GaugeProgressBar)
+	if (IsValid(GaugeProgressBar))
 	{
 		GaugeProgressBar->SetPercent(DisplayGaugeValue / TargetGaugeValue);
 	}
@@ -159,16 +163,13 @@ void ATutorialManager::OnTutorialPhaseChanged(ETutorialPhase NewPhase)
 	{
 		if (SubtitleWidget)
 		{
+			CurrentStepDataPtr = StepDataPtr;
+
 			SubtitleWidget->OnTypingCompleted.Clear();
-			SubtitleWidget->OnTypingCompleted.AddLambda([this, StepDataPtr]()
-				{
-					if (StepDataPtr)
-					{
-						OnTypingFinished(*StepDataPtr);
-					}
-				});
+			SubtitleWidget->OnTypingCompleted.AddDynamic(this, &ATutorialManager::OnSubtitleTypingCompleted);
+
 			SubtitleWidget->SetSubtitleText(StepDataPtr->SubtitleText);
-			SubtitleWidget->SetVisibility(ESlateVisibility::Visible);
+			SubtitleWidget->SetVisibility(ESlateVisibility::HitTestInvisible);
 		}
 
 		if (TutorialHintPanel)
@@ -199,11 +200,39 @@ void ATutorialManager::OnTutorialPhaseChanged(ETutorialPhase NewPhase)
 	}
 }
 
+void ATutorialManager::OnSubtitleTypingCompleted()
+{
+	if (CurrentStepDataPtr)
+	{
+		OnTypingFinished(*CurrentStepDataPtr);
+	}
+	CurrentStepDataPtr = nullptr;
+}
+
 void ATutorialManager::OnTypingFinished(const FTutorialStepData& StepData)
 {
 	if (CachedGameMode)
 	{
 		CachedGameMode->OnTypingAnimationFinished();
+	}
+
+	if (bIsGaugeObjectiveActive && GaugeWidget)
+	{
+		GaugeWidget->SetVisibility(ESlateVisibility::Visible);
+
+		if (GaugeWidget->GetShowAnimation())
+		{
+			GaugeWidget->PlayAnimation(GaugeWidget->GetShowAnimation(), 0.0f, 1); 
+		}
+		if (GaugeWidget->GetPulseAnimation())
+		{
+			GaugeWidget->PlayAnimation(GaugeWidget->GetPulseAnimation(), 0.0f, 0); 
+		}
+	}
+
+	if (bIsGaugeObjectiveActive && GaugeWidget)
+	{
+		GaugeWidget->SetVisibility(ESlateVisibility::Visible);
 	}
 
 	if (!StepData.bWaitForPlayerTrigger)
@@ -234,14 +263,13 @@ void ATutorialManager::StartGaugeObjective(EGaugeInteractionType InInteractionTy
 	GaugeHoldValuePerSecond = InHoldValuePerSecond;
 
 	CurrentGaugeValue = 0.f;
-	DisplayGaugeValue = 0.f; 
+	DisplayGaugeValue = 0.f;
 	bIsPlayerHoldingKey = false;
 	bIsGaugeObjectiveActive = true;
 
-	if (GaugeWidget && GaugeProgressBar)
+	if (IsValid(GaugeProgressBar))
 	{
 		GaugeProgressBar->SetPercent(0.f);
-		GaugeWidget->SetVisibility(ESlateVisibility::Visible);
 	}
 }
 
@@ -249,14 +277,14 @@ void ATutorialManager::NotifyInteractionStart()
 {
 	if (!bIsGaugeObjectiveActive) return;
 
-	if (CachedGameMode && !CachedGameMode->IsTypingFinishedForCurrentPhase())
-	{
-		return;
-	}
-
 	if (CurrentInteractionType == EGaugeInteractionType::Tap || CurrentInteractionType == EGaugeInteractionType::Hybrid)
 	{
 		ContributeToGaugeByTap();
+	}
+
+	if (CachedGameMode && !CachedGameMode->IsTypingFinishedForCurrentPhase())
+	{
+		return;
 	}
 
 	if (CurrentInteractionType == EGaugeInteractionType::Hold || CurrentInteractionType == EGaugeInteractionType::Hybrid)

@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 #include "Inventory/ADInventoryComponent.h"
 #include "Engine/World.h"
 #include "Engine/EngineTypes.h"
@@ -11,8 +11,7 @@
 #include "Subsystems/DataTableSubsystem.h"
 #include "Framework/ADPlayerState.h"
 #include "Interactable/Item/ADUseItem.h"
-#include "Interactable/Item/UseFunction/UseStrategy.h"
-#include "Actions/PawnActionsComponent.h"
+#include "Interactable/Item/UseFunction/UseStrategy.h" 
 #include "GameFramework/Character.h"
 #include "Interactable/Item/Component/EquipUseComponent.h"
 #include "UI/ChargeBatteryWidget.h"
@@ -37,8 +36,8 @@ UADInventoryComponent::UADInventoryComponent() :
 	TotalPrice(0),
 	CurrentEquipmentSlotIndex(INDEX_NONE),
 	CurrentEquipmentInstance(nullptr),
-	WeightMax(100),
 	ToggleWidgetInstance(nullptr),
+	WeightMax(100),
 	bCanUseItem(true),
 	DataTableSubsystem(nullptr),
 	ChargeBatteryWidget(nullptr)
@@ -86,9 +85,37 @@ void UADInventoryComponent::BeginPlay()
 		DataTableSubsystem = GI->GetSubsystem<UDataTableSubsystem>();
 		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
 	}
-	
-	TryCachedDiver();
-	SetComponentTickEnabled(true);
+
+	FTimerHandle BindDelayTimerHandle;
+	float BindDelayTime = 1.0f;
+	GetWorld()->GetTimerManager().SetTimer(BindDelayTimerHandle, [this]() {
+
+		if (IsValid(this) == false)
+		{
+			return;
+		}
+
+		UWorld* World = GetWorld();
+		if (IsValid(World) == false || World->IsInSeamlessTravel())
+		{
+			return;
+		}
+
+		APlayerState* PS = Cast<APlayerState>(GetOwner());
+		if (!PS) return;
+		AADPlayerController* PC = Cast<AADPlayerController>(PS->GetOwningController());
+		if (!PC) return;
+
+		UPlayerHUDComponent* HUD = PC->GetPlayerHUDComponent();
+		if (!HUD) return;
+		UPlayerStatusWidget* PSW = HUD->GetPlayerStatusWidget();
+		if (!PSW) return;
+
+		InventoryAlarmDelegate.AddUObject(PSW, &UPlayerStatusWidget::NoticeInfo);
+
+		TryCachedDiver();
+		SetComponentTickEnabled(true); }, BindDelayTime, false);
+
 }
 
 void UADInventoryComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -362,6 +389,14 @@ void UADInventoryComponent::C_SetEquipBatteryAmount_Implementation(EChargeBatter
 		ChargeBatteryWidget->SetEquipBatteryAmount(ItemChargeBatteryType, InventoryList.Items[FindItemIndexByID(static_cast<int8>(ItemChargeBatteryType))].Amount);
 }
 
+void UADInventoryComponent::C_NotifyInventoryAlarm_Implementation(const FString& Info, const FVector2D& Position)
+{
+	if(InventoryAlarmDelegate.IsBound())
+	{
+		InventoryAlarmDelegate.Broadcast(Info, Position);
+	}
+}
+
 void UADInventoryComponent::InventoryInitialize()
 {
 	APlayerController* PC = Cast<APlayerController>(Cast<AADPlayerState>(GetOwner())->GetPlayerController());
@@ -400,6 +435,7 @@ bool UADInventoryComponent::AddInventoryItem(const FItemData& ItemData)
 				{
 					if (ItemIndex != -1)
 					{
+						C_NotifyInventoryAlarm(TEXT("이미 소지한 아이템입니다!"), FVector2D(-7.0f, -260.0f));
 						return false;
 					}		
 				}
@@ -436,6 +472,10 @@ bool UADInventoryComponent::AddInventoryItem(const FItemData& ItemData)
 					else
 					{
 						LOGINVEN(Warning, TEXT("%s Inventory is full"), *StaticEnum<EItemType>()->GetNameStringByValue((int64)ItemData.ItemType));
+						if (ItemData.ItemType == EItemType::Exchangable)
+						{
+							C_NotifyInventoryAlarm(TEXT("광물 인벤토리가 가득 찼습니다!"), FVector2D(-7.0f, -260.0f));
+						}
 					}
 				}
 
@@ -715,6 +755,11 @@ void UADInventoryComponent::PlayEquipAnimation(AUnderwaterCharacter* Character, 
 	Character->M_PlayMontageOnBothMesh(Montage, 1.0f, NAME_None, SyncState);
 }
 
+void UADInventoryComponent::OnEnvironmentStateChanged(EEnvironmentState OldEnvironmentState, EEnvironmentState NewEnvironmentState)
+{
+	UnEquip();
+}
+
 int8 UADInventoryComponent::GetTypeInventoryEmptyIndex(EItemType ItemType)
 {
 	RebuildIndexMap();
@@ -802,6 +847,7 @@ void UADInventoryComponent::Equip(FItemData& ItemData, int8 SlotIndex)
 	if (ItemData.ItemType != EItemType::Equipment || ItemData.Quantity == 0) return;
 
 	APlayerState* PS = Cast<APlayerState>(GetOwner());
+	if (!PS || !PS->HasAuthority()) return;
 	APlayerController* PC = Cast<APlayerController>(PS->GetOwningController());
 	if (!PC) return;
 	APawn* Pawn = Cast<APawn>(PC->GetPawn());
@@ -822,12 +868,9 @@ void UADInventoryComponent::Equip(FItemData& ItemData, int8 SlotIndex)
 	{
 		if (MeshComp->DoesSocketExist(HarpoonSocketName) && MeshComp->DoesSocketExist(DPVSocketName))
 		{
-			//const FName SocketName = bIsWeapon ? HarpoonSocketName : DPVSocketName;
-			//FTransform AttachTM = MeshComp->GetSocketTransform(SocketName);
-
 			AADUseItem* SpawnedItem = GetWorld()->SpawnActor<AADUseItem>(
 				AADUseItem::StaticClass(),
-				FVector::ZeroVector,
+				Pawn->GetActorLocation(),
 				FRotator::ZeroRotator,
 				SpawnParams
 			);

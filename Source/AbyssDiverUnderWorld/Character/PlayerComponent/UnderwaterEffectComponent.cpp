@@ -1,16 +1,18 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+﻿#include "UnderwaterEffectComponent.h"
 
-
-#include "UnderwaterEffectComponent.h"
-
-#include "NiagaraComponent.h"
-#include "NiagaraFunctionLibrary.h"
 #include "Character/UnderwaterCharacter.h"
+#include "Character/PlayerComponent/PlayerHUDComponent.h"
+
+#include "Framework/ADPlayerController.h"
+#include "UI/Flipbooks/FlipbookWidget.h"
+#include "Subsystems/SoundSubsystem.h"
+
 #include "Components/AudioComponent.h"
-#include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Logging/LogMacros.h"
-#include "Subsystems/SoundSubsystem.h"
+#include "NiagaraComponent.h"
+#include "NiagaraFunctionLibrary.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 UUnderwaterEffectComponent::UUnderwaterEffectComponent()
 {
@@ -53,6 +55,8 @@ void UUnderwaterEffectComponent::BeginPlay()
 		OwnerCharacter->OnDamageTakenDelegate.AddDynamic(this, &UUnderwaterEffectComponent::OnDamageTaken);
 		OwnerCharacter->OnKnockbackDelegate.AddDynamic(this, &UUnderwaterEffectComponent::OnKnockback);
 		OwnerCharacter->OnKnockbackEndDelegate.AddDynamic(this, &UUnderwaterEffectComponent::OnKnockbackEnd);
+		OwnerCharacter->OnCaptureStartDelegate.AddDynamic(this, &UUnderwaterEffectComponent::OnCaptureStart);
+		OwnerCharacter->OnCaptureEndDelegate.AddDynamic(this, &UUnderwaterEffectComponent::OnCaptureEnd);
 	}
 	else
 	{
@@ -109,6 +113,7 @@ void UUnderwaterEffectComponent::SetEnableEffect(bool bNewEnabled)
 	{
 		StopBreathEffect();
 
+		// 수중 이동 소리 중지
 		USoundSubsystem* SoundSubsystem = GetSoundSubsystem();
 		if (SoundSubsystem && SoundSubsystem->IsPlaying(MovementAudioId))
 		{
@@ -120,6 +125,11 @@ void UUnderwaterEffectComponent::SetEnableEffect(bool bNewEnabled)
 		}
 		MoveTimeAccumulator = 0.0f;
 		bShouldPlayMovementEffect = false;
+
+		if (MoveBubbleParticleComponent && MoveBubbleParticleComponent->IsActive())
+		{
+			MoveBubbleParticleComponent->Deactivate();
+		}
 	}
 }
 
@@ -184,6 +194,61 @@ void UUnderwaterEffectComponent::StopCombatEffect()
 	}
 }
 
+void UUnderwaterEffectComponent::C_PlayFlipbookEffect_Implementation(EFlipbookType FlipbookType, bool bShouldLoop, float PlayTime)
+{
+	AADPlayerController* PlayerController = Cast<AADPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
+	if (PlayerController == nullptr)
+	{
+		LOGV(Error, TEXT("PlayerController is not valid"));
+		return;
+	}
+
+	UPlayerHUDComponent* Hud = PlayerController->GetPlayerHUDComponent();
+	if (Hud == nullptr)
+	{
+		LOGV(Error, TEXT("Hud is not valid"));
+		return;
+	}
+
+	UFlipbookWidget* FlipbookWidget = Hud->GetFlipbookWidget();
+	if (FlipbookWidget == nullptr)
+	{
+		LOGV(Error, TEXT("FlipbookWidget is not valid"));
+		return;
+	}
+
+	FlipbookWidget->PlayFlipbook(FlipbookType, bShouldLoop, PlayTime);
+}
+
+void UUnderwaterEffectComponent::C_StopFlipbookEffect_Implementation()
+{
+	AADPlayerController* PlayerController = Cast<AADPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
+	if (PlayerController == nullptr)
+	{
+		LOGV(Error, TEXT("PlayerController is not valid"));
+		return;
+	}
+
+	UPlayerHUDComponent* Hud = PlayerController->GetPlayerHUDComponent();
+	if (Hud == nullptr)
+	{
+		LOGV(Error, TEXT("Hud is not valid"));
+		return;
+	}
+
+	UFlipbookWidget* FlipbookWidget = Hud->GetFlipbookWidget();
+	if (FlipbookWidget == nullptr)
+	{
+		LOGV(Error, TEXT("FlipbookWidget is not valid"));
+		return;
+	}
+
+	if (FlipbookWidget->IsPlaying())
+	{
+		FlipbookWidget->StopFlipbook();
+	}
+}
+
 void UUnderwaterEffectComponent::OnDamageTaken(float DamageAmount, float CurrentHealth)
 {
 	// 피해를 입으면 피해 사운드가 재생되어야 한다.
@@ -198,6 +263,16 @@ void UUnderwaterEffectComponent::OnKnockback(FVector KnockbackVelocity)
 }
 
 void UUnderwaterEffectComponent::OnKnockbackEnd()
+{
+	StartBreathEffect(BreathFirstDelay * 0.5f);
+}
+
+void UUnderwaterEffectComponent::OnCaptureStart()
+{
+	StopBreathEffect();
+}
+
+void UUnderwaterEffectComponent::OnCaptureEnd()
 {
 	StartBreathEffect(BreathFirstDelay * 0.5f);
 }
@@ -293,6 +368,7 @@ void UUnderwaterEffectComponent::UpdateMovementEffects(float DeltaTime)
 			{
 				SprintMovementAudioId = SoundSubsystem->Play2D(SprintMovementSound, 0.5f);
 			}
+			// 스프린트 중일 때 버블 강도 증가
 			if (MoveBubbleParticleComponent)
 			{
 				MoveBubbleParticleComponent->SetFloatParameter(MoveBubbleIntensityParameterName, 1.0f);

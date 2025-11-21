@@ -37,6 +37,16 @@ public:
 
 	void ResetLevelResults();
 
+	void AddOneMonsterKillCount() { MonsterKillCount += 1; }
+
+	void AddDamage(int32 Amount) { Damage += Amount; }
+
+	void AddOneAssists() { Assists += 1; }
+
+	void AddOneGroggyRevive() { GroggyRevive += 1; }
+
+	void AddOneCorpseRecovery() { CorpseRecovery += 1; }
+
 #pragma endregion
 
 #pragma region Variable
@@ -66,7 +76,21 @@ protected:
 	int32 PersonalCredit;
 
 	UPROPERTY(Replicated)
+	int32 Damage;
+
+	UPROPERTY(Replicated)
 	int32 MonsterKillCount;
+
+	UPROPERTY(Replicated)
+	int32 Assists;
+
+	/** 그로기 상태 팀원 상호작용 부활 횟수 */
+	UPROPERTY(Replicated)
+	uint8 GroggyRevive;
+
+	/** 드론 반납 후 페이즈 완료 시 부활 카운트 */
+	UPROPERTY(Replicated)
+	uint8 CorpseRecovery;
 
 	/** 채광 횟수 */
 	UPROPERTY(Replicated)
@@ -75,6 +99,7 @@ protected:
 	/** 제출한 광물 가치 총량 */
 	UPROPERTY(Replicated)
 	int32 OreCollectedValue;
+
 
 	UPROPERTY(Replicated)
 	uint8 bIsSafeReturn : 1;
@@ -95,6 +120,7 @@ protected:
 	TObjectPtr<UUpgradeComponent> UpgradeComp;
 
 	/** 현재 사망 상태인지 여부 */
+	UPROPERTY(Replicated)
 	uint8 bIsDead : 1;
 	
 #pragma endregion
@@ -144,11 +170,13 @@ public:
 	UFUNCTION(BlueprintPure)
 	int32 GetMonsterKillCount() const { return MonsterKillCount; }
 
+
 	/** 채광 횟수 설정 */
 	UFUNCTION(BlueprintCallable)
 	void SetOreMinedCount(int32 Value) { OreMinedCount = Value; }
 	UFUNCTION(BlueprintPure)
 	int32 GetOreMinedCount() const { return OreMinedCount; }
+
 
 	/** 제출한 광물 가치 총량 설정 */
 	UFUNCTION(BlueprintCallable)
@@ -185,6 +213,14 @@ public:
 	FORCEINLINE bool IsDead() const { return bIsDead; }
 
 	void SetIsDead(bool bNewIsDead);
+
+	int32 GetAssists() const { return Assists; }
+
+	int32 GetDamage() const { return Damage; }
+
+	uint8 GetGroggyRevive() { return GroggyRevive; }
+
+	uint8 GetCorpseRecovery() { return CorpseRecovery; }
 
 #pragma endregion
 };

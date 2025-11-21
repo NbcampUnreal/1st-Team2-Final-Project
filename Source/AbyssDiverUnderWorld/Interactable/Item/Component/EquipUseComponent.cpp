@@ -35,6 +35,7 @@
 #include "Kismet/GameplayStatics.h"
 
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Engine/DamageEvents.h"
 
 const FName UEquipUseComponent::BASIC_SPEAR_GUN_NAME = TEXT("BasicSpearGun");
 
@@ -49,7 +50,6 @@ UEquipUseComponent::UEquipUseComponent()
 	NightVisionDrainPerSecond = 0.5f;
 	DrainAcc = 0.f;
 	bBoostActive = false;
-	bOriginalExposureCached = false;
 	bCanFire = true;
 	bIsWeapon = true;
 	bHasNoAnimation = false;
@@ -61,6 +61,8 @@ UEquipUseComponent::UEquipUseComponent()
 	bChargeBatteryWidgetVisible = false;
 	bAlreadyCursorShowed = false;
 	bIsReloading = false;
+	EquipType = EEquipmentType::Fist;
+	LeftAction = EAction::Punch;
 
 	// 테스트용
 	if (ACharacter* Char = Cast<ACharacter>(GetOwner()))
@@ -87,7 +89,7 @@ void UEquipUseComponent::BeginPlay()
 
 	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
 	{
-		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
+		SoundSubsystemWeakPtr = GI->GetSubsystem<USoundSubsystem>();
 	}
 
 	// DPV
@@ -103,10 +105,10 @@ void UEquipUseComponent::BeginPlay()
 		NightVisionMaterialInstance->SetScalarParameterValue("NightBlend", 0.f);
 	}
 
-	CameraComp = OwningCharacter->FindComponentByClass<UCameraComponent>(); // Getter를 사용하는 것이 좋아 보임
-	if (!CameraComp) return;
-	CameraComp->PostProcessSettings.WeightedBlendables.Array.Add(FWeightedBlendable(1.f, NightVisionMaterialInstance));
-	OriginalPPSettings = CameraComp->PostProcessSettings;
+	if (UCameraComponent* Camera = OwningCharacter->FindComponentByClass<UCameraComponent>())
+	{
+		Camera->PostProcessSettings.WeightedBlendables.Array.Add(FWeightedBlendable(1.f, NightVisionMaterialInstance));
+	}
 
 	// 위젯 추가
 	LOGN(TEXT("OwningCharacter : %s"), *OwningCharacter->GetName());
@@ -122,6 +124,7 @@ void UEquipUseComponent::BeginPlay()
 				if (NightVisionInstance)
 				{
 					NightVisionInstance->AddToViewport(-100);
+					NightVisionInstance->SetIsFocusable(false);
 					NightVisionInstance->SetVisibility(ESlateVisibility::Hidden);
 				}
 			}
@@ -130,7 +133,7 @@ void UEquipUseComponent::BeginPlay()
 				ChargeBatteryInstance = CreateWidget<UChargeBatteryWidget>(PC, ChargeBatteryClass);
 				if (ChargeBatteryInstance)
 				{
-					ChargeBatteryInstance->AddToViewport();
+					ChargeBatteryInstance->AddToViewport(100);
 					ChargeBatteryInstance->SetIsFocusable(false);
 					ChargeBatteryInstance->SetVisibility(ESlateVisibility::Hidden);
 				}
@@ -189,7 +192,7 @@ void UEquipUseComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAc
 			if (bNightVisionOn)
 			{
 				bNightVisionOn = false;
-				NightVisionMaterialInstance->SetScalarParameterValue(TEXT("NightBlend"), 0.f);
+				if(NightVisionMaterialInstance) NightVisionMaterialInstance->SetScalarParameterValue(TEXT("NightBlend"), 0.f);
 			}
 		}
 	}
@@ -233,6 +236,7 @@ void UEquipUseComponent::S_LeftClick_Implementation()
 	case EAction::ToggleNVGToggle: ToggleNightVision(); break;
 	case EAction::PlaceMine:	   PlaceMine();			break;
 	case EAction::SwingHammer:     SwingHammer();		break;
+	case EAction::Punch:           Punch();				break;
 	default:                      break;
 	}
 }
@@ -572,8 +576,9 @@ void UEquipUseComponent::DeinitializeEquip()
 	bCanFire = true;
 	bIsWeapon = false;
 	bHasNoAnimation = true;
-	LeftAction = EAction::None;
-	RKeyAction = EAction::None;
+	LeftAction = EAction::Punch;
+	RKeyAction = EAction::Punch;
+	EquipType = EEquipmentType::Fist;
 	bIsReloading = false;
 
 	// 탄약/배터리 현재값 초기화
@@ -592,8 +597,16 @@ void UEquipUseComponent::DeinitializeEquip()
 	}
 
 	// 부스트·야간투시 효과 끄기
+	if (bNightVisionOn)
+	{
+		bNightVisionOn = false;
+		OnRep_NightVisionOn();
+		if (NightVisionInstance)
+		{
+			NightVisionInstance->NightVigionUnUse();
+		}
+	}
 	bBoostActive = false;
-	bNightVisionOn = false;
 
 	// 속도 복구
 	if (OwningCharacter.IsValid())
@@ -606,11 +619,6 @@ void UEquipUseComponent::DeinitializeEquip()
 	{
 		NightVisionMaterialInstance->SetScalarParameterValue(TEXT("NightBlend"), 0.f);
 	}
-	if (CameraComp)
-	{
-		CameraComp->PostProcessSettings = OriginalPPSettings;
-	}
-
 	
 	if (ChargeWidget)
 	{
@@ -757,7 +765,6 @@ void UEquipUseComponent::FireShotgun()
 		{
 			/* 속도, 데미지, 수명 등 설정 */
 			Pellet->InitializeSpeed(RandDir, PelletSpeed);       // 짧은 사거리
-			Pellet->SetLifeSpan(PelletLifeSec);                      // 0.5초 후 파괴
 			//Pellet->SetBaseDamage(ShotgunBaseDamage / PelletCount);
 		}
 	}
@@ -815,7 +822,7 @@ void UEquipUseComponent::BoostOff()
 
 void UEquipUseComponent::ToggleNightVision()
 {
-	if (!NightVisionMaterialInstance || !CameraComp) return;
+	if (!NightVisionMaterialInstance) return;
 	if (Amount <= 0 || bBoostActive) return;
 	
 	if (!bNightVisionOn)
@@ -982,13 +989,19 @@ void UEquipUseComponent::PlaceMine()
 {
 	if (Amount <= 0 || !MineClass) return;
 	AUnderwaterCharacter* Diver = Cast<AUnderwaterCharacter>(OwningCharacter.Get());
+	if (!Diver) return;
+
+	FActorSpawnParameters Params;
+	Params.Owner = Diver;
+	Params.Instigator = Diver;
+
 	FVector SpawnLoc = Diver->GetActorLocation() + Diver->GetActorForwardVector() * 100.f;
-	AADMine* MineActor = GetWorld()->SpawnActor<AADMine>(MineClass, SpawnLoc, FRotator::ZeroRotator);
+	AADMine* MineActor = GetWorld()->SpawnActor<AADMine>(MineClass, SpawnLoc, FRotator::ZeroRotator, Params);
 	if (MineActor)
 	{
 		PlacedMines.Add(MineActor);
 		Amount = FMath::Max(0, Amount - 1);
-		OnRep_Amount(); // UI 업데이트
+		OnRep_Amount(); 
 	}
 }
 
@@ -1025,6 +1038,54 @@ void UEquipUseComponent::SwingHammer()
 		CoolDown,
 		false
 	);
+}
+
+void UEquipUseComponent::Punch()
+{
+	if (!bCanFire || !OwningCharacter.IsValid())
+		return;
+
+	bCanFire = false;
+	AUnderwaterCharacter* Diver = Cast<AUnderwaterCharacter>(OwningCharacter);
+	if (Diver->IsMining())
+	{
+		UADInteractionComponent* InteractionComp = Diver->GetInteractionComponent();
+		if (InteractionComp)
+		{
+			InteractionComp->OnInteractReleased();
+			LOG(TEXT("Finish Hold Interaction!"));
+		}
+	}
+
+	if (PunchMontage && Diver)
+	{
+		FAnimSyncState SyncState;
+		SyncState.bEnableRightHandIK = true;
+		SyncState.bEnableLeftHandIK = false;
+		SyncState.bEnableFootIK = true;
+		SyncState.bIsStrafing = false;
+
+		Diver->M_StopAllMontagesOnBothMesh(0.f);
+		Diver->M_PlayMontageOnBothMesh(
+			PunchMontage,
+			1.0f,
+			NAME_None,
+			SyncState
+		);
+
+		// 쿨다운
+		const float CoolDown = 1.f / FistRateOfAttack;
+		GetWorld()->GetTimerManager().ClearTimer(TimerHandle_HandleRefire);
+		GetWorld()->GetTimerManager().SetTimer(
+			TimerHandle_HandleRefire,
+			[this, Diver]()
+			{
+				bCanFire = true;
+			},
+			CoolDown,
+			false
+		);
+	}
 }
 
 void UEquipUseComponent::FinishReload(int32 InMagazineSize, AUnderwaterCharacter* Diver)
@@ -1199,17 +1260,15 @@ bool UEquipUseComponent::RecoverRecoil(float DeltaTime)
 
 USoundSubsystem* UEquipUseComponent::GetSoundSubsystem()
 {
-	if (SoundSubsystem)
+	if (!SoundSubsystemWeakPtr.IsValid())
 	{
-		return SoundSubsystem;
+		if (UADGameInstance* GameInstance = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+		{
+			SoundSubsystemWeakPtr = GameInstance->GetSubsystem<USoundSubsystem>();
+		}
 	}
 
-	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
-	{
-		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
-		return SoundSubsystem;
-	}
-	return nullptr;
+	return SoundSubsystemWeakPtr.Get();
 }
 
 void UEquipUseComponent::InitializeAmmoUI()
@@ -1349,16 +1408,24 @@ void UEquipUseComponent::SelectSpearType(AADSpearGunBullet* Proj)
 		return;
 	}
 
+	if (CurrentItemData->Name.IsValid() == false)
+	{
+		LOGV(Error, TEXT("CurrentItemData->Name is not valid"));
+		return;
+	}
+
+	FString NameString = CurrentItemData->Name.ToString();
+
 	// FText 변수로 수정
-	if (CurrentItemData->Name == SpearGunTypeNames[0])
+	if (NameString == SpearGunTypeNames[0])
 	{
 		Proj->SetBulletType(ESpearGunType::Basic);
 	}
-	else if (CurrentItemData->Name == SpearGunTypeNames[1])
+	else if (NameString == SpearGunTypeNames[1])
 	{
 		Proj->SetBulletType(ESpearGunType::Poison);
 	}
-	else if (CurrentItemData->Name == SpearGunTypeNames[2])
+	else if (NameString == SpearGunTypeNames[2])
 	{
 		Proj->SetBulletType(ESpearGunType::Bomb);
 	}

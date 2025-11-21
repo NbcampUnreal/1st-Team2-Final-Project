@@ -79,7 +79,6 @@ protected:
 
 private:
 
-
 #pragma endregion
 
 #pragma region Variable
@@ -127,6 +126,8 @@ protected:
 
 
 private:
+    UPROPERTY()
+    TWeakObjectPtr<AActor> HeldItem;
     FString CachedDesc;
     float InteractionRadius = 400.f;
 
@@ -134,6 +135,8 @@ private:
 
 #pragma region Getter, Setteer
 public:
+    void SetHeldItem(AActor* Item) { HeldItem = Item; }
+    AActor* GetHeldItem() const { return HeldItem.Get(); }
     UFUNCTION(BlueprintPure, Category = "Interaction")
     UADInteractableComponent* GetFocusedInteractable() const
     {

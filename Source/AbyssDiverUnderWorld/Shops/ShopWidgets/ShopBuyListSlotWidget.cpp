@@ -22,6 +22,7 @@ void UShopBuyListSlotWidget::NativeOnListItemObjectSet(UObject* ListItemObject)
     SlotIndex = EntryData->GetSlotIndex();
     ItemCount = EntryData->GetItemCount();
     SetItemCountText(ItemCount);
+    SetActiveLockImage(false);
 
     EntryData->OnEntryUpdatedFromDataDelegate.Broadcast(this);
     LOGV(Error, TEXT("BuyListEntry Updated, Index : %d, Count : %d"), SlotIndex, ItemCount);

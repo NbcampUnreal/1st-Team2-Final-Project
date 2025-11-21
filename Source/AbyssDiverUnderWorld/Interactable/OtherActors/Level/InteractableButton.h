@@ -51,7 +51,7 @@ private:
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<USceneComponent> DefaultComp;
 
-	UPROPERTY(ReplicatedUsing = OnRep_SetMesh)
+	UPROPERTY(/*ReplicatedUsing = OnRep_SetMesh*/)
 	TObjectPtr<UStaticMeshComponent> MeshComp;
 
 	UPROPERTY(ReplicatedUsing = OnRep_SetMesh)

@@ -20,6 +20,7 @@ enum class EEquipmentType : uint8
 	NightVision = 4,
 	Mine = 5,
 	ToyHammer = 6,
+	Fist = 7,
 	Max = 7 UMETA(Hidden)
 };
 
@@ -59,7 +60,8 @@ enum class EAction : uint8
 	ApplyChargeUI,
 	PlaceMine,
 	DetonateMine,
-	SwingHammer
+	SwingHammer,
+	Punch
 };
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -151,6 +153,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SwingHammer();
 	UFUNCTION(BlueprintCallable)
+	void Punch();
+	UFUNCTION(BlueprintCallable)
 	void HandleLeftClick();
 	UFUNCTION(BlueprintCallable)
 	void HandleLeftRelease();
@@ -241,7 +245,6 @@ public:
 	uint8 bHasNoAnimation : 1;
 
 	float PelletSpeed = 2000.f; 
-	float PelletLifeSec = 0.4f;      
 
 	FTimerHandle TimerHandle_HandleRefire;
 	FTimerHandle TimerHandle_HandleReload;
@@ -276,7 +279,13 @@ public:
 	// SpearType 저장
 	TArray<FString> SpearGunTypeNames = { "BasicSpearGun", "PoisonSpearGun", "BombSpearGun" };
 
-	
+	// 주먹 관련 변수
+	UPROPERTY(EditDefaultsOnly, Category = "Fist")
+	float FistRateOfAttack = 0.5f;
+
+	UPROPERTY(EditAnywhere, Category = "Fist")
+	TObjectPtr<UAnimMontage> PunchMontage;
+
 protected:
 	UPROPERTY(EditAnywhere)
 	float DrainPerSecond;
@@ -300,7 +309,7 @@ protected:
 	TSubclassOf<AADShotgunBullet> ShotgunPelletClass = nullptr; 
 
 	UPROPERTY()
-	TObjectPtr<USoundSubsystem> SoundSubsystem;
+	TWeakObjectPtr<USoundSubsystem> SoundSubsystemWeakPtr;
 
 
 	UPROPERTY(EditAnywhere, Category = "Weapon")
@@ -331,9 +340,7 @@ private:
 	float DrainAcc = 0.f;
 	int32 DPVAudioID = 0;
 	// NVG 설정 변수
-	TObjectPtr<class UCameraComponent> CameraComp = nullptr;
-	FPostProcessSettings OriginalPPSettings;
-	uint8 bOriginalExposureCached : 1;
+	
 	static const FName BASIC_SPEAR_GUN_NAME;
 
 	UPROPERTY(EditAnywhere, Category = "Recoil")
@@ -394,16 +401,14 @@ inline TBullet* UEquipUseComponent::SpawnBulletCommon(const FVector& Loc, const 
 	if (!Pool) return nullptr;
 
 	// 객체 가져오기 ------------------------------------------------------------------
-	TBullet* Bullet = Pool->GetObject<TBullet>();
+	// 객체를 Activate하기 전에 위치, 회전을 설정해서 (0,0,0)에서 충돌이 발생하는 것을 방지
+	TBullet* Bullet = Pool->GetObject<TBullet>(Loc, Rot);
 	if (!Bullet) return nullptr;
 
 	// 소유자‧Instigator 세팅 ----------------------------------------------------------
 	if (APawn* PawnOwner = PC->GetPawn())
 		Bullet->SetInstigator(PawnOwner);
 	Bullet->SetOwner(PC);
-
-	// 위치·회전 초기화 ---------------------------------------------------------------
-	Bullet->InitializeTransform(Loc, Rot);
 
 	return Bullet;
 }

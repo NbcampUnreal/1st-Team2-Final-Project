@@ -12,6 +12,15 @@ enum class ESFX : uint8;
 enum class EMapName : uint8;
 class ULoadingScreenWidget;
 
+UENUM(BlueprintType)
+enum class EMenuState : uint8
+{
+	None,
+	PauseMain,
+	PauseOptions,
+	PauseSaveLoad
+};
+
 UCLASS()
 class ABYSSDIVERUNDERWORLD_API AADPlayerController : public APlayerController
 {
@@ -30,6 +39,9 @@ protected:
 
 public:
 
+	/** 입력 무시할 때, Jump 입력 상태 초기화 */
+	virtual void SetIgnoreMoveInput(bool bNewMoveInput) override;
+	
 	UFUNCTION(Client, Reliable)
 	void C_OnPreClientTravel();
 	void C_OnPreClientTravel_Implementation();
@@ -67,19 +79,26 @@ public:
 	 */
 	virtual void SetViewTarget(class AActor* NewViewTarget, FViewTargetTransitionParams TransitionParams = FViewTargetTransitionParams()) override;
 
-	/** Camera Blank를 시작한다. FadeAlpha의 X값은 시작 알파 값이고 Y값은 종료 알파 값이다.
-	 * FadeTime 동안 종료 알파 값으로 Fade Out을 한다.
-	 * FadeOut 완료되면 FadeTime 동안 FadeColor로 Fade In을 한다.
+	/** Camera Blink를 시작한다. FadeAlpha의 X값은 시작 알파 값이고 Y값은 종료 알파 값이다.
+	 * FadeStartTime 동안 종료 알파 값으로 Fade Out을 한다.
+	 * FadeEndDelay 동안 대기한다.
+	 * FadeOut 완료되면 FadeEndTime 동안 FadeColor로 Fade In을 한다.
 	*/
 	UFUNCTION(Reliable, Client)
 	void C_StartCameraBlink(FColor FadeColor, FVector2D FadeAlpha, float FadeStartTime, float FadeEndDelay, float FadeEndTime);
 	void C_StartCameraBlink_Implementation(FColor FadeColor, FVector2D FadeAlpha, float FadeStartTime, float FadeEndDelay, float FadeEndTime);
 
+	/** Camera Blink가 진행 중인지 여부를 반환한다. */
 	UFUNCTION(BlueprintCallable)
-	bool IsCameraBlanking() const;
+	bool IsCameraBlinking() const;
+
+	/** Camera Blink를 즉시 중단한다. Fade In이 진행 중일 경우에도 중단된다. */
+	UFUNCTION(Reliable, Client)
+	void C_StopCameraBlink();
+	void C_StopCameraBlink_Implementation();
 
 	UFUNCTION(Client, Unreliable)
-	void C_PlaySound(ESFX SoundType, float VolumeMultiplier = 1.0f, float PitchMultiplier = 1.0f);
+	void C_PlaySound(ESFX SoundType, float VolumeMultiplier = 1.0f);
 
 	UFUNCTION(Exec)
 	void ShowPlayerHUD();
@@ -101,6 +120,32 @@ public:
 	void S_KillPlayer_Implementation();
 
 	void SetActiveRadarWidget(bool bShouldActivate);
+
+	/** 마우스 X축 입력에 감도 적용 */
+	virtual void AddYawInput(float Val) override;
+
+	/** 마우스 Y축 입력에 감도 적용 */
+	virtual void AddPitchInput(float Val) override;
+	
+	/** 마우스 감도 설정 */
+	UFUNCTION(Exec, BlueprintCallable, Category = "Control")
+	void SetLookSensitivity(float NewXSensitivity, float NewYSensitivity);
+
+	UFUNCTION()
+	void ShowPauseMenu();
+
+	UFUNCTION()
+	void HidePauseMenu();
+
+	UFUNCTION()
+	void TogglePauseMenu();
+
+	/** Radial Blur Effect 설정
+	 * 내부적으로 Count를 이용해서 Enable의 개수가 0보다 크면 활성화, 0이 되면 비활성화 된다. */
+	UFUNCTION(Client, Reliable, BlueprintCallable)
+	void C_SetRadialBlurEffect(bool bEnable);
+	void C_SetRadialBlurEffect_Implementation(bool bEnable);
+	
 protected:
 
 	/** 관전 상태가 시작될 때 호출되는 함수 */
@@ -121,6 +166,8 @@ protected:
 	void ShowInventory(const FInputActionValue& InputActionValue);
 	void HideInventory(const FInputActionValue& InputActionValue);
 
+	void ToggleGuide(const FInputActionValue& InputActionValue);
+
 	UFUNCTION(Exec)
 	void ToggleTestHUD();
 
@@ -139,11 +186,31 @@ protected:
 	UFUNCTION(Exec)
 	void HideNameWidgets();
 
+	/** 조준선 위젯의 표시 상태를 토글 */
+	UFUNCTION(Exec)
+	void ToggleCrosshairWidget();
+
+	/** 조준선 위젯을 표시하도록 설정 */
+	UFUNCTION(Exec)
+	void ShowCrosshairWidget();
+
+	/** 조준선 위젯을 숨기도록 설정 */
+	UFUNCTION(Exec)
+	void HideCrosshairWidget();
+
+	/** ItemId에 해당하는 아이템을 인벤토리에 추가 (테스트용) */
+	UFUNCTION(Exec)
+	void GetItemById(uint8 ItemId);
+
+	/** Server에서 ItemId에 해당하는 아이템을 인벤토리에 추가 */
+	UFUNCTION(Server, Reliable)
+	void S_GetItemById(uint8 ItemId);
+	void S_GetItemById_Implementation(uint8 ItemId);
+	
 	UFUNCTION(Server, Reliable)
 	void S_GainShield(int Amount);
 	
 	void OnCameraBlankEnd();
-
 private:
 	
 	/** 이름 위젯 가시 상태 설정 */
@@ -152,7 +219,6 @@ private:
 #pragma endregion
 	
 #pragma region Variable
-
 
 public:
 
@@ -171,6 +237,20 @@ public:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputAction> InteractAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputAction> IA_Pause;
+
+	UPROPERTY()
+	uint8 bIsPauseMenuOpened : 1 = 0;
+
+
+	UPROPERTY(BlueprintReadWrite)
+	EMenuState CurrentMenuState = EMenuState::None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputAction> GuideAction;
+	
 private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputMappingContext> DefaultMappingContext;
@@ -184,18 +264,39 @@ private:
 	UPROPERTY()
 	TObjectPtr<UInteractionDescriptionWidget> InteractionWidget;
 
-
 	UPROPERTY(EditAnywhere, Category = "UI")
 	TSubclassOf<class UHoldInteractionWidget> InteractionHoldWidgetClass;
 
 	UPROPERTY()
 	TObjectPtr<UHoldInteractionWidget> InteractionHoldWidget;
 
+	UPROPERTY(EditAnywhere, Category = "UI")
+	TSubclassOf<class UPauseWidget> PauseWidgetClass;
+
+	UPROPERTY()
+	TObjectPtr<UPauseWidget> PauseWidgetInstance;
+
+
 	/** Camera Blank Timer Handle */
 	FTimerHandle CameraBlankTimerHandle;
 
 	/** Name Widget 가시성 표시 여부. 비활성화되면 모든 Name Widget이 숨김 처리된다. */
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	uint8 bIsNameWidgetEnabled : 1;
+
+	/** 조준선 위젯의 가시성 표시 여부 */
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	uint8 bIsCrosshairWidgetVisible : 1 = true;
+
+	/** 마우스 X축 감도 */
+	UPROPERTY(BlueprintReadOnly, Category = "Control", meta = (AllowPrivateAccess = "true"))
+	float MouseXSensitivity = 1.0f;
+
+	/** 마우스 Y축 감도 */
+	UPROPERTY(BlueprintReadOnly, Category = "Control", meta = (AllowPrivateAccess = "true"))
+	float MouseYSensitivity = 1.0f;
+
+	int32 RadialBlurCount = 0;
 	
 #pragma endregion 
 
@@ -208,6 +309,15 @@ public:
 	/** Name Widget이 활성화 여부를 반환 */
 	FORCEINLINE bool IsNameWidgetEnabled() const { return bIsNameWidgetEnabled; }
 
+	/** 마우스 X축, Y축 감도를 반환 */
+	FVector2D GetMouseSensitivity() const { return FVector2D(MouseXSensitivity, MouseYSensitivity); }
+	
+	/** 마우스 X축 감도를 반환 */
+	float GetMouseXSensitivity() const { return MouseXSensitivity; }
+
+	/** 마우스 Y축 감도를 반환 */
+	float GetMouseYSensitivity() const { return MouseYSensitivity; }
+	
 #pragma endregion
 
 };

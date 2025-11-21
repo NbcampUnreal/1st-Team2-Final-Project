@@ -1,5 +1,8 @@
 #include "CurrentZone.h"
+
 #include "Character/UnderwaterCharacter.h"
+
+#include "Components/ArrowComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "TimerManager.h"
 
@@ -25,6 +28,9 @@ ACurrentZone::ACurrentZone()
     DeepTriggerZone->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
     DeepTriggerZone->SetGenerateOverlapEvents(true);
 
+    ArrowComponent = CreateDefaultSubobject<UArrowComponent>(TEXT("Current Direction Arrow"));
+    ArrowComponent->SetupAttachment(RootComponent);
+
     if (TriggerZone->OnComponentBeginOverlap.IsBound())
     {
         return;
@@ -42,9 +48,14 @@ void ACurrentZone::BeginPlay()
     Super::BeginPlay();
 
     // PushDirection이 0일 경우 대비
-    if (PushDirection.IsNearlyZero())
+    if (PushDirection.IsNearlyZero() && bShouldUseArrowDirection == false)
     {
         PushDirection = FVector(1.f, 0.f, 0.f);
+    }
+
+    if (bShouldUseArrowDirection)
+    {
+        PushDirection = ArrowComponent->GetForwardVector();
     }
 }
 
@@ -52,16 +63,18 @@ void ACurrentZone::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* O
     UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
     bool bFromSweep, const FHitResult& SweepResult)
 {
+    LOGVN(Log, TEXT("Current OnOverlapBegin Begin"));
     if (AUnderwaterCharacter* Character = Cast<AUnderwaterCharacter>(OtherActor))
     {
         AffectedCharacters.Add(Character, false);
-        
+        LOGVN(Log, TEXT("AffectedCharacters Add(%s)"), *Character->GetName());
         if (UCharacterMovementComponent* Movement = Character->GetCharacterMovement())
         {
             if (!OriginalSpeeds.Contains(Character))
             {
                 OriginalSpeeds.Add(Character, Movement->MaxWalkSpeed);
                 OriginalAccelerations.Add(Character, Movement->MaxAcceleration);
+                LOGVN(Log, TEXT("Save Original Speed(%f) and Original Acceleration(%f) (%s)"), Movement->MaxWalkSpeed, Movement->MaxAcceleration, *Character->GetName());
             }
 
             // 무조건 타이머 재시작 (중복 등록 방지용 IsTimerActive 제거)
@@ -73,21 +86,24 @@ void ACurrentZone::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* O
 void ACurrentZone::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
     UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
+    LOGVN(Log, TEXT("Current OverlapEnd Begin"));
     if (AUnderwaterCharacter* Character = Cast<AUnderwaterCharacter>(OtherActor))
     {
         AffectedCharacters.Remove(Character);
-
+        LOGVN(Log, TEXT("AffectedCharacters Remove(%s)"), *Character->GetName());
         if (UCharacterMovementComponent* Movement = Character->GetCharacterMovement())
         {
             if (OriginalSpeeds.Contains(Character))
             {
                 Movement->MaxWalkSpeed = OriginalSpeeds[Character];
                 OriginalSpeeds.Remove(Character);
+                LOGVN(Log, TEXT("Restore to OriginalSpeeds : %f (%s)"), Movement->MaxWalkSpeed, *Character->GetName());
             }
             if (OriginalAccelerations.Contains(Character))
             {
                 Movement->MaxAcceleration = OriginalAccelerations[Character];
                 OriginalAccelerations.Remove(Character);
+                LOGVN(Log, TEXT("Restore to OriginalAccelerations : %f (%s)"), Movement->MaxAcceleration, *Character->GetName());
             }
         }
 
@@ -97,7 +113,7 @@ void ACurrentZone::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* Oth
         }
 
         FTimerHandle RecoverMovementTimer;
-        GetWorld()->GetTimerManager().SetTimer(RecoverMovementTimer, [Character]()
+        GetWorld()->GetTimerManager().SetTimer(RecoverMovementTimer, [Character, this]()
             {
                 if (IsValid(Character) && Character->IsPendingKillPending() == false && Character->IsValidLowLevel() && Character->GetCharacterMovement())
                 {
@@ -106,7 +122,7 @@ void ACurrentZone::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* Oth
                     {
                         return;
                     }
-
+                    LOGVN(Log, TEXT("Set Movement mode to Swimming (%s)"), *Character->GetName());
                     CharacterMovement->SetMovementMode(MOVE_Swimming);
                 }
             }, 2.0f, false);
@@ -143,7 +159,7 @@ void ACurrentZone::OnDeepTriggerOverlapEnd(UPrimitiveComponent* OverlappedComp, 
 
 void ACurrentZone::ApplyCurrentForce()
 {
-    for (TPair<TObjectPtr<AUnderwaterCharacter>, bool>& CharacterPair : AffectedCharacters)
+    for (const TPair<TObjectPtr<AUnderwaterCharacter>, bool>& CharacterPair : AffectedCharacters)
     {
         AUnderwaterCharacter* Character = CharacterPair.Key;
 
@@ -157,24 +173,25 @@ void ACurrentZone::ApplyCurrentForce()
             Movement->SetMovementMode(MOVE_Swimming);
         }
 
-        // 캐릭터 속도 0.1배 만들기 필요
-        bool bIsInDeepCurrentZone = CharacterPair.Value;
-        if (bIsInDeepCurrentZone)
-        {
-            Character->SetZoneSpeedMultiplier(0.1f);
-            LOGV(Log, TEXT(" %s : 0.1"), *Character->GetName());
-        }
-        else
-        {
-            Character->SetZoneSpeedMultiplier(1.0f);
-            LOGV(Log, TEXT(" %s : 1.0"), *Character->GetName());
-        }
+        // // 캐릭터 속도 0.1배 만들기 필요
+        // bool bIsInDeepCurrentZone = CharacterPair.Value;
+        // if (bIsInDeepCurrentZone)
+        // {
+        //     Character->SetZoneSpeedMultiplier(0.1f);
+        //     LOGV(Log, TEXT(" %s : 0.1"), *Character->GetName());
+        // }
+        // else
+        // {
+        //     Character->SetZoneSpeedMultiplier(1.0f);
+        //     LOGV(Log, TEXT(" %s : 1.0"), *Character->GetName());
+        // }
 
         FVector PushDir = PushDirection.GetSafeNormal();
         float FinalFlowStrength = FlowStrength;
 
-        const FVector FlowForce = PushDir * FinalFlowStrength * Movement->GetMaxAcceleration() * GetWorld()->DeltaTimeSeconds;
+        const FVector FlowForce = PushDir * FinalFlowStrength * Movement->GetMaxAcceleration() * 0.0167f;
 
         Movement->Velocity += FlowForce;
+        LOGV(Log, TEXT("Velocity : %f"), Movement->Velocity.Length());
     }
 }

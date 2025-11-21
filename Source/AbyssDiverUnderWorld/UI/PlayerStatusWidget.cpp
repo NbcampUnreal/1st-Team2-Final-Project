@@ -19,7 +19,6 @@
 #include "Kismet/GameplayStatics.h"
 
 const FName UPlayerStatusWidget::OnNextPhaseAnimFinishedName = TEXT("OnNextPhaseAnimFinished");
-const int32 UPlayerStatusWidget::MaxPhaseNumber = 3;
 
 UPlayerStatusWidget::UPlayerStatusWidget(const FObjectInitializer& ObjectInitializer)
     : Super(ObjectInitializer)
@@ -37,30 +36,47 @@ void UPlayerStatusWidget::NativeConstruct()
 
     SetSpearVisibility(false); 
 
+    SetTopNameEmpty(); // Map Transition 시 이전 플레이어 이름이 남아있는 문제 방지
 	FTimerHandle DelayBindTimerHandle;
 	float DelayTime = 1.0f; 
     FTimerHandle TimerHandle;
     GetWorld()->GetTimerManager().SetTimer(DelayBindTimerHandle, [this]()
         {
-            AADInGameState* GS = Cast<AADInGameState>(GetWorld()->GetGameState());
-            if (GS)
+            UWorld* World = GetWorld();
+            if (!IsValid(this) || !IsValid(World))
             {
-                GS->OnTopMinerChangedDelegate.AddUFunction(this, FName("SetTopName"));
+                return;
+            }
+        
+            if (AADInGameState* GameState = Cast<AADInGameState>(GetWorld()->GetGameState()))
+            {
+                GameState->OnTopMinerChangedDelegate.AddUObject(this, &UPlayerStatusWidget::SetTopName);
             }
         }, DelayTime, false);
 
-
-
-    if (IsValid(NextPhaseAnim) == false)
+    const FString CurrentMapName = UGameplayStatics::GetCurrentLevelName(GetWorld(), true);
+    // MainLevel (Camp) 일 때 Hide
+    UE_LOG(AbyssDiver, Warning, TEXT("Current Map Name: %s"), *CurrentMapName);
+    if (CurrentMapName == "Submarine_Lobby")
     {
-        LOGV(Error, TEXT("IsValid(NextPhaseAnim) == false"));
-        return;
+        TopNameOverlay->SetVisibility(ESlateVisibility::Collapsed);
     }
-
-    FWidgetAnimationDynamicEvent OnNextPhaseAnimFinishedDelegate;
-    OnNextPhaseAnimFinishedDelegate.BindUFunction(this, OnNextPhaseAnimFinishedName);
-    UnbindAllFromAnimationFinished(NextPhaseAnim);
-    BindToAnimationFinished(NextPhaseAnim, OnNextPhaseAnimFinishedDelegate);
+    else
+    {
+        TopNameOverlay->SetVisibility(ESlateVisibility::Visible);
+    }
+    
+    if (IsValid(NextPhaseAnim))
+    {
+        FWidgetAnimationDynamicEvent OnNextPhaseAnimFinishedDelegate;
+        OnNextPhaseAnimFinishedDelegate.BindUFunction(this, OnNextPhaseAnimFinishedName);
+        UnbindAllFromAnimationFinished(NextPhaseAnim);
+        BindToAnimationFinished(NextPhaseAnim, OnNextPhaseAnimFinishedDelegate);
+    }
+    else
+    {
+        LOGV(Error, TEXT("NextPhaseAnim is invalid"));
+    }
 
     if (HealthScreenEffect && LoadedMaterial)
     {
@@ -315,10 +331,12 @@ void UPlayerStatusWidget::OnNextPhaseAnimFinished()
     if (CachedNextPhaseNumber > MaxPhaseNumber)
     {
         SetCurrentPhaseText(TEXT("잠수정으로 돌아가라."));
+        PhaseProgressbarOverlay->SetVisibility(ESlateVisibility::Collapsed);
     }
     else
     {
         SetCurrentPhaseText(FString::Printf(TEXT("Phase%d"), CachedNextPhaseNumber));
+        PhaseProgressbarOverlay->SetVisibility(ESlateVisibility::Visible);
     }
 }
 
@@ -355,12 +373,19 @@ void UPlayerStatusWidget::NoticeInfo(const FString& Info, const FVector2D& Posit
 
 void UPlayerStatusWidget::SetTopName(AADPlayerState* PS, int32 MinedAmount)
 {
-        TopName->SetText(FText::FromString(PS->GetPlayerNickname()));
-        TopNameCopy->SetText(FText::FromString(PS->GetPlayerNickname()));
+    TopName->SetText(FText::FromString(PS->GetPlayerNickname()));
+    TopNameCopy->SetText(FText::FromString(PS->GetPlayerNickname()));
 
-        FString TopAmountString = FString::Printf(TEXT("%dCr"), MinedAmount);
-        TopAmount->SetText(FText::FromString(TopAmountString));
-        PlayAnimation(ChangeTopPlayer);
+    FString TopAmountString = FString::Printf(TEXT("%dCr"), MinedAmount);
+    TopAmount->SetText(FText::FromString(TopAmountString));
+    PlayAnimation(ChangeTopPlayer);
+}
+
+void UPlayerStatusWidget::SetTopNameEmpty()
+{
+    TopName->SetText(FText::FromString(TEXT("")));
+    TopNameCopy->SetText(FText::FromString(TEXT("")));
+    TopAmount->SetText(FText::FromString(TEXT("")));
 }
 
 void UPlayerStatusWidget::SetSpearVisibility(bool bVisible)
@@ -374,5 +399,10 @@ void UPlayerStatusWidget::SetSpearVisibility(bool bVisible)
 void UPlayerStatusWidget::SetCompassObject(AActor* NewTargetObject)
 {
     CompassTargetObject = NewTargetObject;
+}
+
+void UPlayerStatusWidget::SetMaxPhaseNumber(int32 NewMaxPhaseNumber)
+{
+    MaxPhaseNumber = NewMaxPhaseNumber;
 }
 

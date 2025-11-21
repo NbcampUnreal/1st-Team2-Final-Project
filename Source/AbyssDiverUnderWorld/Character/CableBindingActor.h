@@ -44,12 +44,17 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void DisconnectActors();
 
-protected:
+	/** CableComponent에 World Offset을 적용한다.
+	 * Particle에 직접적으로 접근할 수 없으므로 ApplyWorldOffset을 통해서 간접적으로 OldPosition을 갱신한다.
+	 */
+	UFUNCTION(BlueprintCallable)
+	void ApplyWorldOffsetToCable(FVector Offset);
 
-	/** Cable이 연결되어 있는지 확인한다.
+protected:
+	/** 현재 Cable이 유효한지 확인한다.
 	 * Source Actor와 Target Actor가 모두 유효한지 확인한다.
 	 */
-	void UpdateCable();
+	bool IsConnectionValid() const;
 	
 #pragma endregion
 

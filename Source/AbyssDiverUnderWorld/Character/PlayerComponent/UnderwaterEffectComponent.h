@@ -10,6 +10,8 @@
 
 enum class EAudioFaderCurve : uint8;
 enum class ESFX : uint8;
+enum class EFlipbookType : uint8;
+
 class USoundSubsystem;
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
@@ -38,6 +40,14 @@ public:
 	/** Stop Combat sound */
 	void StopCombatEffect();
 
+	UFUNCTION(Unreliable, Client)
+	void C_PlayFlipbookEffect(EFlipbookType FlipbookType, bool bShouldLoop, float PlayTime);
+	void C_PlayFlipbookEffect_Implementation(EFlipbookType FlipbookType, bool bShouldLoop, float PlayTime);
+
+	UFUNCTION(Unreliable, Client)
+	void C_StopFlipbookEffect();
+	void C_StopFlipbookEffect_Implementation();
+
 protected:
 	/** 환경 상태가 변경되었을 때 호출되는 함수. 수중 상태일 때만 효과를 활성화한다. */
 	UFUNCTION()
@@ -59,6 +69,14 @@ protected:
 	UFUNCTION()
 	void OnKnockbackEnd();
 
+	/** 캡쳐 상태가 시작되었을 때 호출되는 함수. 숨쉬기 효과를 중지한다. */
+	UFUNCTION()
+	void OnCaptureStart();
+
+	/** 캡쳐 상태가 종료되었을 때 호출되는 함수. 숨쉬기 효과를 재개한다. */
+	UFUNCTION()
+	void OnCaptureEnd();
+	
 	/** 숨쉬기 효과를 재생한다. 이 함수는 숨쉬기 효과가 활성화되었을 때만 호출된다. */
 	void PlayBreathEffects();
 
@@ -179,6 +197,8 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<class UNiagaraComponent> MoveBubbleParticleComponent;
 
+	/** 움직일 때 공기 방울의 강도를 제어하는 파라미터 이름, 현재는 2개의 Bubble이 존재한다.
+	 * Bubble Intensity를 키우면 큰 Bubble이 추가적으로 생성된다. */
 	UPROPERTY(EditAnywhere, Category = "Character|UnderwaterEffect")
 	FName MoveBubbleIntensityParameterName = TEXT("BigBubbleIntensity");
 

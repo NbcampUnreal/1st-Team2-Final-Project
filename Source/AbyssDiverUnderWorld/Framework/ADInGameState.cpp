@@ -15,8 +15,11 @@
 #include "UI/SelectedMissionListWidget.h"
 #include "Framework/ADCampGameMode.h"
 #include "Framework/ADPlayerController.h"
+#include "Framework/ADGameInstance.h"
 #include "Character/PlayerComponent/PlayerHUDComponent.h"
 #include "UI/MissionsOnHUDWidget.h"
+#include "TimerManager.h"
+#include "EngineUtils.h"
 
 #pragma region FastArraySerializer Methods
 
@@ -166,6 +169,21 @@ void AADInGameState::BeginPlay()
 	if (HasAuthority() == false)
 	{
 		return;
+	}
+
+	if(UADGameInstance* GI = Cast<UADGameInstance>(GetGameInstance()))
+	{
+		if (GI->bHasPlayedInGame && SelectedLevelName == EMapName::Description)
+		{
+			FTimerHandle FirstClearTimerHandle;
+			GetWorld()->GetTimerManager().SetTimer(
+				FirstClearTimerHandle,
+				this,
+				&AADInGameState::TriggerFirstClearUINotify,
+				2.0f,
+				false
+			); 
+		}
 	}
 
 	TeamCreditsChangedDelegate.Broadcast(TeamCredits);
@@ -426,8 +444,16 @@ void AADInGameState::StartPhaseUIAnim()
 		return;
 	}
 
-	if (SelectedLevelName == EMapName::test1 || SelectedLevelName == EMapName::test2)
+	if (SelectedLevelName == EMapName::test1 || SelectedLevelName == EMapName::test2 || SelectedLevelName == EMapName::SecondAbyss)
 	{
+		//이전 코드가 드론이 3개일 경우만 고려해서 드론의 개수에 유연한 리팩토링 필요 일단 급한대로 작성
+		const FString CurrentMapName = UGameplayStatics::GetCurrentLevelName(GetWorld(), true);
+		if (CurrentMapName == "Submarine_Lobby") return;
+		if (CurrentMapName == "OnePhaseCave")
+		{
+			PlayerHudComp->SetMaxPhaseNumber(1);
+		}
+		else PlayerHudComp->SetMaxPhaseNumber(3);
 		PlayerHudComp->PlayNextPhaseAnim(1);
 		PlayerHudComp->SetCurrentPhaseOverlayVisible(true);
 	}
@@ -470,7 +496,7 @@ int32 AADInGameState::GetClearCount() const
 
 void AADInGameState::SetClearCount(int32 NewClearCount)
 {
-	ClearCount = FMath::Max(ClearCount, 0);
+	ClearCount = FMath::Max(NewClearCount, 0);
 }
 
 FString AADInGameState::GetMapDisplayName() const
@@ -504,4 +530,30 @@ void AADInGameState::RefreshActivatedMissionList()
 	}
 
 	OnMissionListRefreshedDelegate.Broadcast();
+}
+
+void AADInGameState::TriggerFirstClearUINotify()
+{
+	M_NotifyFirstClear();
+
+	TWeakObjectPtr<AADInGameState> WeakThis(this); 
+	
+	if (UADGameInstance* GI = Cast<UADGameInstance>(GetGameInstance()))
+	{
+		GI->bHasPlayedInGame = false;
+	} 
+}
+
+void AADInGameState::M_NotifyFirstClear_Implementation()
+{
+
+	UPlayerHUDComponent* HudComp = GetPlayerHudComponent();
+	if (HudComp)
+	{
+		HudComp->ShowFirstClearEndingWidget(); 
+	}
+	else
+	{
+		LOGV(Error, TEXT("M_NotifyFirstClear: PlayerHUDComponent를 찾을 수 없습니다."));
+	}
 }

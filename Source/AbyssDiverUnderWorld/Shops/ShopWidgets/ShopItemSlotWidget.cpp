@@ -20,19 +20,37 @@ void UShopItemSlotWidget::NativeOnListItemObjectSet(UObject* ListItemObject)
         return;
     }
 
-    SetSlotImage(EntryData->GetItemImage());
-    SetToolTipText(EntryData->GetToolTipText());
-    SlotIndex = EntryData->GetSlotIndex();
+    bIsLocked = EntryData->IsLocked();
+    SetActiveLockImage(bIsLocked);
 
+    if (bIsLocked)
+    {
+        SetToolTipText(TEXT("Locked"));
+    }
+    else
+    {
+        SetToolTipText(EntryData->GetToolTipText());
+    }
+
+    SetSlotImage(EntryData->GetItemImage());
+    
+    SlotIndex = EntryData->GetSlotIndex();
+    
     EntryData->OnEntryUpdatedFromDataDelegate.Broadcast(this);
 }
 
 FReply UShopItemSlotWidget::NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
 {
-    FReply Replay =  Super::NativeOnMouseButtonUp(InGeometry, InMouseEvent);
+    FReply Reply =  Super::NativeOnMouseButtonUp(InGeometry, InMouseEvent);
+
+    if (bIsLocked)
+    {
+        LOGV(Log, TEXT("ShopItemSlotWidgetClicked, But Locked, Index : %d"), SlotIndex);
+        return Reply;
+    }
 
     LOGV(Log, TEXT("ShopItemSlotWidgetClicked, Index : %d"), SlotIndex);
-    
+
     GetGameInstance()->GetSubsystem<USoundSubsystem>()->Play2D(ESFX_UI::UIClicked);
 
     if (bCanDoubleClick)
@@ -59,7 +77,7 @@ FReply UShopItemSlotWidget::NativeOnMouseButtonUp(const FGeometry& InGeometry, c
         OnShopItemSlotWidgetClickedDelegate.ExecuteIfBound(SlotIndex);
     }
 
-    return Replay;
+    return Reply;
 }
 
 void UShopItemSlotWidget::NativeOnMouseEnter(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
@@ -74,6 +92,18 @@ void UShopItemSlotWidget::NativeOnMouseLeave(const FPointerEvent& InMouseEvent)
     Super::NativeOnMouseLeave(InMouseEvent);
 
     UpdateToolTipVisibility(false);
+}
+
+void UShopItemSlotWidget::SetActiveLockImage(bool bShouldActivate)
+{
+    if (bShouldActivate)
+    {
+        LockImage->SetVisibility(ESlateVisibility::HitTestInvisible);
+    }
+    else
+    {
+        LockImage->SetVisibility(ESlateVisibility::Hidden);
+    }
 }
 
 void UShopItemSlotWidget::UpdateToolTipVisibility(bool bShouldShow)

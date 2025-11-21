@@ -4,14 +4,19 @@
 #include "ADDroneSeller.h"
 #include "Gimmic/Spawn/SpawnManager.h"
 #include "DataRow/PhaseBGMRow.h"
+#include "UI/InteractPopupWidget.h"
 
 #include "Interactable/Item/Component/ADInteractableComponent.h"
 #include "Interactable/OtherActors/Portals/PortalToSubmarine.h"
+#include "Interactable/OtherActors/TargetIndicators/IndicatingTarget.h"
+#include "Interactable/OtherActors/TargetIndicators/TargetIndicatorManager.h"
 
 #include "FrameWork/ADInGameState.h"
 #include "Framework/ADGameInstance.h"
 #include "Framework/ADPlayerController.h"
 #include "Framework/ADInGameMode.h"
+#include "Framework/ADTutorialGameMode.h"   
+#include "Framework/ADTutorialGameState.h"
 
 #include "Character/PlayerComponent/PlayerHUDComponent.h"
 #include "Character/UnderwaterCharacter.h"
@@ -23,9 +28,8 @@
 #include "Net/UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/TargetPoint.h"
-#include "UI/InteractPopupWidget.h"
-
-#include "Framework/ADTutorialGameMode.h"   
+#include "NiagaraComponent.h"
+#include "NiagaraFunctionLibrary.h"
 
 DEFINE_LOG_CATEGORY(DroneLog);
 
@@ -33,19 +37,20 @@ AADDrone::AADDrone()
 {
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = false;
+
+	DroneMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DroneMesh"));
+	check(DroneMeshComponent);
+
 	InteractableComp = CreateDefaultSubobject<UADInteractableComponent>(TEXT("InteractableComp"));
+
 	bReplicates = true;
 	SetReplicateMovement(true); // 위치 상승하는 것 보이도록
+
 	bIsActive = false;
 	bIsFlying = false;
 	bIsHold = false;
+	bIsBgmOn = true;
 	ReviveDistance = 1000.f;
-
-	ConstructorHelpers::FClassFinder<UInteractPopupWidget> PopupFinder(TEXT("/Game/_AbyssDiver/Blueprints/UI/InteractableUI/WBP_InteractPopupWidget"));
-	if (PopupFinder.Succeeded())
-	{
-		PopupWidgetClass = PopupFinder.Class;
-	}
 }
 
 void AADDrone::BeginPlay()
@@ -56,27 +61,55 @@ void AADDrone::BeginPlay()
 	{
 		AActor* Found = UGameplayStatics::GetActorOfClass(this, ASpawnManager::StaticClass());
 		SpawnManager = Cast<ASpawnManager>(Found);
-	
 	}
+
 	if (SpawnManager && DronePhaseNumber == 1)
 	{
 		SpawnManager->SpawnByGroup();
 	}
 
-	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+	WorldSubsystemWeakPtr = GetWorld()->GetSubsystem<UADWorldSubsystem>();
+
+	DroneDestinationPoint = GetActorLocation();
+	if (DroneStartPoint)
 	{
-		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
-		DrondeThemeSoundNumber = SoundSubsystem->PlayAttach(ESFX_BGM::DroneTheme, RootComponent);
+		SetActorHiddenInGame(true);
+		ApplyState(EDroneState::HiddenInGame);
+	}
+	else
+	{
+		PlayDromeTheme();
+		ApplyState(EDroneState::Deactivated);
 	}
 
-	WorldSubsystem = GetWorld()->GetSubsystem<UADWorldSubsystem>();
+	if (IsValid(PropellerBubbleParticleSystem))
+	{
+		static const int32 PropellerEffectCount = 6;
+		PropellerEffectComponents.SetNum(PropellerEffectCount, EAllowShrinking::No);
+
+		static const FString PropellerSocketName("Propeller");
+		for (int32 i = 0; i < PropellerEffectCount; ++i)
+		{
+			FName SocketName(FString::Printf(TEXT("%s%d"), *PropellerSocketName, i));
+			PropellerEffectComponents[i] = UNiagaraFunctionLibrary::SpawnSystemAttached(
+				PropellerBubbleParticleSystem,
+				DroneMeshComponent,
+				SocketName,
+				FVector::ZeroVector,
+				FRotator::ZeroRotator,
+				EAttachLocation::SnapToTarget,
+				false,
+				false
+			);
+		}
+	}
 }
 
 void AADDrone::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
-
-	if (bIsActive)
+	LOGVN(Error, TEXT("Tick, Drone State : %d"), CurrentDroneState);
+	if (CurrentDroneState == EDroneState::Departing)
 	{
 		float DeltaZ = RaiseSpeed * DeltaSeconds;
 
@@ -91,11 +124,45 @@ void AADDrone::Tick(float DeltaSeconds)
 			CurrentSeller->SetActorLocation(SellerLoc);
 		}
 	}
+	else if (CurrentDroneState == EDroneState::Approaching)
+	{
+		const FVector StartPoint = DroneStartPoint->GetActorLocation();
+		const FVector Direction = (DroneDestinationPoint - StartPoint).GetSafeNormal();
+		const FVector Velocity = Direction * ApproachingSpeed * DeltaSeconds;
+		const FVector NextPoint = Velocity + GetActorLocation();
+
+		SetActorLocation(NextPoint);
+		
+		const float ApproachTolerance = Velocity.SquaredLength() * 2.0f;
+		if ((NextPoint - DroneDestinationPoint).SquaredLength() < ApproachTolerance)
+		{
+			SetActorLocation(DroneDestinationPoint);
+			ApplyState(EDroneState::Activated);
+		}
+	}
 }
 
 void AADDrone::Destroyed()
 {
-	SoundSubsystem->StopAudio(DrondeThemeSoundNumber);
+#if WITH_EDITOR
+
+// 게임 중이 아닌 경우 리턴
+UWorld* World = GetWorld();
+if (World == nullptr || World->IsGameWorld() == false)
+{
+	Super::Destroyed();
+	return;
+}
+
+#endif
+	if (bIsBgmOn)
+	{
+		if (USoundSubsystem* SoundSubsystem = GetSoundSubsystem())
+		{
+			SoundSubsystem->StopAudio(DroneThemeAudioId);
+			SoundSubsystem->StopAudio(TutorialAlarmSoundId);
+		}
+	}
 
 	AADPlayerController* PC = GetWorld()->GetFirstPlayerController<AADPlayerController>();
 	if (IsValid(PC) == false)
@@ -114,8 +181,8 @@ void AADDrone::Destroyed()
 	}
 
 	LOGVN(Log, TEXT("OnPhaseChangeDelegate Bound"));
-	OnPhaseChangeDelegate.AddUObject(PlayerHudComponent, &UPlayerHUDComponent::PlayNextPhaseAnim);
-
+	//OnPhaseChangeDelegate.AddDynamic(PlayerHudComponent, &UPlayerHUDComponent::PlayNextPhaseAnim); 이게 왜 있지? 아래 코드로 대체함.
+	PlayerHudComponent->PlayNextPhaseAnim(DronePhaseNumber + 1);
 	LOGV(Log, TEXT("OnPhaseChangeDelegate Broadcast : %d"), DronePhaseNumber + 1);
 	OnPhaseChangeDelegate.Broadcast(DronePhaseNumber + 1);
 	Super::Destroyed();
@@ -127,13 +194,22 @@ void AADDrone::Interact_Implementation(AActor* InstigatorActor)
 	if (AADTutorialGameMode* TutorialMode = GetWorld()->GetAuthGameMode<AADTutorialGameMode>())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("ADDrone - 튜토리얼 게임 모드를 찾음. 부활 시퀀스 호출!"));
-		TutorialMode->TriggerResurrectionSequence();
+		if (TutorialMode)
+		{
+			if (AADTutorialGameState* TutorialGS = TutorialMode->GetGameState<AADTutorialGameState>())
+			{
+				if (TutorialGS->GetCurrentPhase() == ETutorialPhase::Step15_Resurrection)
+				{
+					TutorialMode->TriggerResurrectionSequence();
+				}
+				if (TutorialGS->GetCurrentPhase() == ETutorialPhase::Step7_Drone)
+				{
+					TutorialMode->AdvanceTutorialPhase();
+				}
+			}
+		}
+		StartRising();
 		return;
-	}
-	else
-	{
-		AGameModeBase* CurrentGameMode = GetWorld()->GetAuthGameMode();
-		UE_LOG(LogTemp, Error, TEXT("ADDrone - 튜토리얼 게임 모드 변환 실패! 현재 게임 모드: %s"), *GetNameSafe(CurrentGameMode));
 	}
 
 	if (!HasAuthority() || !bIsActive || !IsValid(CurrentSeller) || bIsFlying) return;
@@ -141,60 +217,45 @@ void AADDrone::Interact_Implementation(AActor* InstigatorActor)
 	APlayerController* PC = Cast<APlayerController>(InstigatorActor->GetInstigatorController());
 	if(!PC) return;
 
-	if (PopupWidgetClass)
+	if (AADPlayerController* PlayerController = InstigatorActor->GetInstigatorController<AADPlayerController>())
 	{
-		UInteractPopupWidget* Popup = CreateWidget<UInteractPopupWidget>(PC, PopupWidgetClass);
-		if (Popup)
+		if (UPlayerHUDComponent* PlayerHUDComponent = PlayerController->GetPlayerHUDComponent())
 		{
-			Popup->AddToViewport();
-			PC->bShowMouseCursor = true;
-			
-			FInputModeUIOnly InputMode;
-			InputMode.SetWidgetToFocus(Popup->TakeWidget());
-			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-			PC->SetInputMode(InputMode);
-
-			Popup->OnPopupConfirmed.BindLambda([this, PC]() {
-					this->ExecuteConfirmedInteraction();
-					PC->bShowMouseCursor = false;
-					PC->SetInputMode(FInputModeGameOnly());
-			});
-			Popup->OnPopupCanceled.BindLambda([this, PC]() {
-				PC->bShowMouseCursor = false;
-				PC->SetInputMode(FInputModeGameOnly());
-				});
+			PlayerHUDComponent->C_ShowConfirmWidget(this);
 		}
 	}
 }
 
+void AADDrone::M_PlayTutorialAlarmSound_Implementation()
+{
+	TutorialAlarmSoundId = GetSoundSubsystem()->PlayAttach(ESFX_BGM::DroneTutorialAlarm, RootComponent);
+}
+
 void AADDrone::M_PlayDroneRisingSound_Implementation()
 {
-	GetSoundSubsystem()->PlayAt(ESFX::SendDrone, GetActorLocation());
+	/*if (USoundSubsystem* SoundSubsystem = GetSoundSubsystem())
+	{
+		SoundSubsystem->PlayAt(ESFX::SendDrone, GetActorLocation());
+	}*/
+	PlaySendDroneSound();
 }
 
 // 나중에 수정..
 void AADDrone::M_PlayPhaseBGM_Implementation(int32 PhaseNumber)
 {
-	const FString CurrentMapName = WorldSubsystem ? WorldSubsystem->GetCurrentLevelName() : TEXT("");
-	static const FString Context(TEXT("PhaseBGM"));
-	if (!PhaseBgmTable)          
-	{
-		LOGN(TEXT("PhaseBgmTable is nullptr"))
+	USoundSubsystem* SoundSubsystem = GetSoundSubsystem();
+	if (SoundSubsystem == nullptr)
 		return;
-	}
-	const FName RowKey = *FString::Printf(TEXT("%s_%d"), *CurrentMapName, PhaseNumber);
-
-	if (const FPhaseBGMRow* Row = PhaseBgmTable->FindRow<FPhaseBGMRow>(RowKey, Context))
+	
+	ESFX_BGM BGM = GetPhaseBGM(PhaseNumber);
+	if (BGM != ESFX_BGM::Max)
 	{
-		if (CachedSoundNumber != INDEX_NONE)
-			GetSoundSubsystem()->StopAudio(CachedSoundNumber, true);
+		if (BGMAudioID != INDEX_NONE)
+			SoundSubsystem->StopAudio(BGMAudioID, true);
 
-		CachedSoundNumber = GetSoundSubsystem()->PlayBGM(Row->BGM, true);
-		LOGN(TEXT("CurrentMapPhaseBGM : %s"), *RowKey.ToString());
-		return;
+		BGMAudioID = SoundSubsystem->PlayBGM(BGM, true);
+		LOGN(TEXT("PhaseBGM Played : %d"), (int32)BGM);
 	}
-	LOGN(TEXT("CurrentMapPhaseBGM : %s"), *RowKey.ToString());
-	LOGN(TEXT("No BGM row for Map:%s Phase:%d"), *CurrentMapName, PhaseNumber);
 
 	//if (PhaseNumber == 1)
 	//{
@@ -224,9 +285,114 @@ void AADDrone::Activate()
 	OnRep_IsActive(); // 서버에서는 직접 호출해저야함
 }
 
+void AADDrone::ApplyState(EDroneState NewDroneState)
+{
+	if (HasAuthority() == false)
+	{
+		return;
+	}
+
+	SetDroneState(NewDroneState);
+
+	switch (NewDroneState)
+	{
+	case EDroneState::HiddenInGame:
+
+		if (DroneStartPoint)
+		{
+			SetActorLocation(DroneStartPoint->GetActorLocation());
+		}
+
+	case EDroneState::Deactivated:
+		break;
+	case EDroneState::Activated:
+
+		Activate();
+		break;
+	case EDroneState::Approaching:
+
+		if (DroneStartPoint)
+		{
+			SetActorTickEnabled(true);
+
+			static const FVector StartPoint = DroneStartPoint->GetActorLocation();
+			static const FVector Direction = (DroneDestinationPoint - StartPoint).GetSafeNormal();
+			static const FRotator LookRotation = Direction.Rotation();
+			static const FRotator OriginalRotation = GetActorRotation();
+
+			SetActorRotation(FRotator(OriginalRotation.Pitch, LookRotation.Yaw, OriginalRotation.Roll));
+		}
+		else
+		{
+			ApplyState(EDroneState::Activated);
+		}
+
+		break;
+	case EDroneState::Departing:
+		StartRising();
+		break;
+	case EDroneState::MAX:
+		return;
+	default:
+		check(false);
+		return;
+	}
+}
+
 void AADDrone::OnRep_IsActive()
 {
 	// TODO : UI
+}
+
+void AADDrone::OnRep_CurrentDroneState()
+{
+	// 매우매우 임시 코드 지스타 끝나면 리팩토링 필요
+	ATargetIndicatorManager* TargetIndicatorManager = Cast<ATargetIndicatorManager>(UGameplayStatics::GetActorOfClass(GetWorld(), ATargetIndicatorManager::StaticClass()));
+	if (TargetIndicatorManager)
+	{
+		TargetIndicatorManager->SkipTargetIfDroneActivated();
+	}
+
+	switch (CurrentDroneState)
+	{
+	case EDroneState::HiddenInGame:
+
+		if (DroneStartPoint)
+		{
+			SetActorHiddenInGame(true);
+			SetActivePropellerEffect(false);
+		}
+
+	case EDroneState::Deactivated:
+
+		SetActivePropellerEffect(false);
+		break;
+	case EDroneState::Activated:
+		SetActivePropellerEffect(false);
+		StopSendDroneSound();
+		break;
+	case EDroneState::Approaching:
+
+		if (DroneStartPoint)
+		{
+			SetActorHiddenInGame(false);
+			SetActorTickEnabled(true);
+			SetActivePropellerEffect(true);
+
+			PlayDromeTheme();
+			PlaySendDroneSound();
+		}
+
+		break;
+	case EDroneState::Departing:
+		SetActivePropellerEffect(true);
+		break;
+	case EDroneState::MAX:
+		return;
+	default:
+		check(false);
+		return;
+	}
 }
 
 void AADDrone::StartRising()
@@ -254,8 +420,100 @@ void AADDrone::OnDestroyTimer()
 void AADDrone::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
 	DOREPLIFETIME(AADDrone, bIsActive);
 	DOREPLIFETIME(AADDrone, bIsFlying);
+	DOREPLIFETIME(AADDrone, CurrentDroneState);
+}
+
+ESFX_BGM AADDrone::GetPhaseBGM(int32 PhaseNumber) const
+{
+	if (!PhaseBgmTable)          
+	{
+		LOGN(TEXT("PhaseBgmTable is nullptr"))
+		return ESFX_BGM::Max;
+	}
+	
+	const FString CurrentMapName = GetWorldSubsystem() ? GetWorldSubsystem()->GetCurrentLevelName() : TEXT("");
+	static const FString Context(TEXT("PhaseBGM"));
+	const FName RowKey = *FString::Printf(TEXT("%s_%d"), *CurrentMapName, PhaseNumber);
+	if (const FPhaseBGMRow* Row = PhaseBgmTable->FindRow<FPhaseBGMRow>(RowKey, Context))
+	{
+		LOGN(TEXT("CurrentMapPhaseBGM : %s"), *RowKey.ToString());
+		return Row->BGM;
+	}
+	
+	LOGN(TEXT("No BGM row for Map:%s Phase:%d"), *CurrentMapName, PhaseNumber);
+	return ESFX_BGM::Max;
+}
+
+void AADDrone::SetActivePropellerEffect(bool bShouldActivate)
+{
+	if (IsValid(PropellerBubbleParticleSystem) == false)
+	{
+		return;
+	}
+
+	for (const TObjectPtr<UNiagaraComponent>& EffectComp : PropellerEffectComponents)
+	{
+		TWeakObjectPtr<UNiagaraComponent> WeakEffectComp = EffectComp;
+		if (WeakEffectComp.IsValid() == false)
+		{
+			continue;
+		}
+
+		if (bShouldActivate)
+		{
+			WeakEffectComp->Activate();
+			LOGV(Error, TEXT("Activated : %s"), *WeakEffectComp->GetName());
+		}
+		else
+		{
+			WeakEffectComp->Deactivate();
+			LOGV(Error, TEXT("Deactivated : %s"), *WeakEffectComp->GetName());
+		}
+	}
+}
+
+void AADDrone::PlayDromeTheme()
+{
+	if (GetSoundSubsystem() == nullptr || SoundSubsystemWeakPtr.IsValid() == false || SoundSubsystemWeakPtr->IsPlaying(DroneThemeAudioId))
+	{
+		return;
+	}
+
+	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+	{
+		SoundSubsystemWeakPtr = GI->GetSubsystem<USoundSubsystem>();
+
+		FTimerHandle PlayBGMDelayTimerHandle;
+		float PlayBGMDelay = 2.0f;
+		GetWorldTimerManager().SetTimer(PlayBGMDelayTimerHandle, [this]() {
+			if (bIsBgmOn)
+			{
+				const FString CurrentMapName = GetWorldSubsystem() ? GetWorldSubsystem()->GetCurrentLevelName() : TEXT("");
+				if (CurrentMapName != "TutorialPool" && SoundSubsystemWeakPtr.IsValid())
+				{
+					DroneThemeAudioId = SoundSubsystemWeakPtr->PlayAttach(ESFX_BGM::DroneTheme, RootComponent);
+				}
+			}}, PlayBGMDelay, false);
+	}
+}
+
+void AADDrone::PlaySendDroneSound()
+{
+	if (SoundSubsystemWeakPtr.IsValid())
+	{
+		SendDroneSoundId = SoundSubsystemWeakPtr->PlayAttach(ESFX::SendDrone, RootComponent);
+	}
+}
+
+void AADDrone::StopSendDroneSound()
+{
+	if (SoundSubsystemWeakPtr.IsValid() && SoundSubsystemWeakPtr->IsPlaying(SendDroneSoundId))
+	{
+		SoundSubsystemWeakPtr->StopAudio(SendDroneSoundId, true, 1.0f);
+	}
 }
 
 void AADDrone::ExecuteConfirmedInteraction()
@@ -269,6 +527,7 @@ void AADDrone::ExecuteConfirmedInteraction()
 		return;
 	}
 
+	if (!HasAuthority() || !bIsActive || !IsValid(CurrentSeller) || bIsFlying) return;
 
 	if (!CurrentSeller->GetSubmittedPlayerIndexes().IsEmpty())
 	{
@@ -280,13 +539,12 @@ void AADDrone::ExecuteConfirmedInteraction()
 	}
 
 	// 차액 계산
-	int32 Diff = CurrentSeller->GetCurrentMoney() - CurrentSeller->GetTargetMoney();
-
-	if (Diff > 0)
+	int32 ExtraMoney = CurrentSeller->GetCurrentMoney() - CurrentSeller->GetTargetMoney();
+	if (ExtraMoney > 0)
 	{
 		if (AADInGameState* GS = GetWorld()->GetGameState<AADInGameState>())
 		{
-			GS->AddTeamCredit(Diff);
+			GS->AddTeamCredit(ExtraMoney);
 			GS->IncrementPhase();
 			if (NextSeller)
 			{
@@ -301,22 +559,20 @@ void AADDrone::ExecuteConfirmedInteraction()
 			}
 		}
 	}
+	
 	CurrentSeller->DisableSelling();
-	StartRising();
+	//StartRising();
+	ApplyState(EDroneState::Departing);
+
 	bIsFlying = true;
 	if (SpawnManager && NextSeller)
 	{
 		SpawnManager->SpawnByGroup();
 		LOGD(Log, TEXT("Monster Spawns"));
 	}
+	
 	// 다음 BGM 실행
-	if (HasAuthority())
-	{
-		LOGN(TEXT("No PhaseSound, DronePhaseNumber : %d"), DronePhaseNumber);
-		LOGN(TEXT("No PhaseSound, DroneName : %s"), *GetName());
-		M_PlayPhaseBGM(DronePhaseNumber + 1);
-		LOGD(Log, TEXT("Next Phase : PhaseSound"));
-	}
+	M_PlayPhaseBGM(DronePhaseNumber + 1);
 }
 
 UADInteractableComponent* AADDrone::GetInteractableComponent() const
@@ -351,18 +607,37 @@ float AADDrone::GetReviveDistance() const
 	return ReviveDistance;
 }
 
-USoundSubsystem* AADDrone::GetSoundSubsystem()
+void AADDrone::SetDroneState(EDroneState NewDroneState)
 {
-	if (SoundSubsystem)
+	if (HasAuthority() == false)
 	{
-		return SoundSubsystem;
+		return;
 	}
 
-	if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+	CurrentDroneState = NewDroneState;
+	OnRep_CurrentDroneState();
+}
+
+USoundSubsystem* AADDrone::GetSoundSubsystem() const
+{
+	if (!SoundSubsystemWeakPtr.IsValid())
 	{
-		SoundSubsystem = GI->GetSubsystem<USoundSubsystem>();
-		return SoundSubsystem;
+		if (UADGameInstance* GI = Cast<UADGameInstance>(GetWorld()->GetGameInstance()))
+		{
+			SoundSubsystemWeakPtr = GI->GetSubsystem<USoundSubsystem>();
+		}
 	}
-	return nullptr;
+	
+	return SoundSubsystemWeakPtr.Get();
+}
+
+UADWorldSubsystem* AADDrone::GetWorldSubsystem() const
+{
+	if (!WorldSubsystemWeakPtr.IsValid())
+	{
+		WorldSubsystemWeakPtr = GetWorld() != nullptr ? GetWorld()->GetSubsystem<UADWorldSubsystem>() : nullptr;
+	}
+
+	return WorldSubsystemWeakPtr.Get();
 }
 

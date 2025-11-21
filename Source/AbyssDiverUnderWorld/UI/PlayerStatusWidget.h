@@ -39,13 +39,12 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void ShowPhaseWarning(bool bShouldVisible);
 
-	UFUNCTION(BlueprintCallable)
-	void NoticeInfo(const FString& Info, const FVector2D& Position);
 
 	UFUNCTION(BlueprintCallable)
 	void SetTopName(AADPlayerState* PS, int32 MinedAmount);
 
-
+	UFUNCTION(BlueprintCallable)
+	void SetTopNameEmpty();
 
 	// 일반 함수
 	void SetSpearCount(int32 Current, int32 Total);
@@ -66,6 +65,8 @@ public:
 	void SetSpearGunTypeImage(int8 TypeNum);
 
 	void OnChangedEnvironment(bool bIsUnderwater);
+
+	void NoticeInfo(const FString& Info, const FVector2D& Position);
 
 private:
 
@@ -107,6 +108,8 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Compass")
 	TObjectPtr<AActor> CompassTargetObject;
 
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UOverlay> TopNameOverlay;
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UTextBlock> TopName;
@@ -128,6 +131,9 @@ protected:
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UOverlay> CurrentPhaseOverlay;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UOverlay> PhaseProgressbarOverlay;
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UTextBlock> CurrentPhaseText;
@@ -179,7 +185,7 @@ private:
 
 	int32 CachedNextPhaseNumber = 0;
 
-	static const int32 MaxPhaseNumber;
+	int32 MaxPhaseNumber;
 
 	float Period = 0.0f;
 
@@ -200,6 +206,7 @@ public:
 	void SetTotalSpear(int32 InValue);
 	void SetSpearVisibility(bool bVisible);
 	void SetCompassObject(AActor* NewTargetObject);
+	void SetMaxPhaseNumber(int32 NewMaxPhaseNumber);
 
 	UDepthWidget* GetDepthWidget() const { return DepthWidget; }
 #pragma endregion
